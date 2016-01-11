@@ -1,6 +1,6 @@
 # Carp
 
-<img src="https://github.com/eriksvedang/Carp/blob/master/img/temp_logo2.jpg" alt="Logo" style="float:right; margin:0px;"/>
+<img src="https://github.com/eriksvedang/Carp/blob/master/img/temp_logo2.jpg" alt="Logo" align="right" />
 
 Carp is a programming language in the Lisp family. It's designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
