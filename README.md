@@ -5,7 +5,7 @@
 Carp is a small programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
 The key features of Carp are the following:
-* Automatic and deterministic memory management (no garbage collector)
+* Automatic and deterministic memory management (no garbage collector or VM)
 * Inferred static types for great speed and reliability
 * Live reloading of code, REPL-driven development
 * Ownership tracking enables a functional programming style while still using mutation for fast updating of data structures
