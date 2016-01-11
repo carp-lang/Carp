@@ -9,7 +9,7 @@ The key features of Carp are the following:
 * Statically inferred types
 * Live reloading of code, REPL-driven development
 * Ownership tracking enables a functional programming style while still using mutation for fast updating of data structures
-* No hidden performance penalties, allocation and copying is explicit
+* No hidden performance penalties – allocation and copying is explicit
 * Very good integration with exisiting C code
 
 ## The Language
@@ -41,6 +41,6 @@ For example, to compile the function defined above you would enter the following
 λ> (bake fib)
 ```
 
-This results in the compiler analyzing the code form for 'fib' and compiling it to some very fast binary code, loading this back into the REPL so that it can be called from there.
+This results in the compiler analyzing the code form for 'fib' and compiling it to some very fast binary code, loading this back into the REPL so that it can be called conveniently from there.
 
 (C) Erik Svedäng 2015 - 2016
