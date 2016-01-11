@@ -10,7 +10,7 @@ The key features of Carp are the following:
 * Static, inferred types system that enables very fast code execution and fewer runtime errors
 * Dynamic code loading and live evaluation allows interactive (REPL-driven) development of your program
 * No hidden performance penalties, everything that can slow down your program is explicit and visible in the code
-* Ownership system that enables a functional programming style with the performance characteristics of C
+* Ownership system that enables a pure functional programming style while still using mutation to get fast updating of data structures
 * Very good integration with C libraries
 
 ## The Language
