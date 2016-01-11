@@ -33,6 +33,18 @@ int fib(int n) {
 }
 ```
 
+The most important thing in Carp is to work with arrays of data. Here's how that looks:
+
+```clojure
+(defn move-enemies (enemies)
+  (map (fn (enemy) (let [moved (move enemy)]
+                      (if (< (.x enemy) 0.0f) (restart enemy) enemy)))
+       enemies))
+```
+
+The ownership system can see that the map function takes over the enemies-array. This allows 'map' to use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed!
+
+
 ## The Compiler
 Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (the dynamic version is implemented in C). To work on a Carp program you run ```carp``` which puts you in the compiler REPL. Everything you want to do with your program can be controlled from here.
 
