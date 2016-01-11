@@ -7,8 +7,8 @@ Carp is a small programming language designed to work well for interactive and p
 The key features of Carp are the following:
 
 * No garbage collection or runtime system, all memory management is deterministic and compiled into the final library or executable
-* Static (100% inferred) type system that enables very fast code execution and fewer runtime errors
-* Dynamic code loading and live evaluation enables interactive (REPL-driven) development of your program
+* Static, inferred types system that enables very fast code execution and fewer runtime errors
+* Dynamic code loading and live evaluation allows interactive (REPL-driven) development of your program
 * No hidden performance penalties, everything that can slow down your program is explicit and visible in the code
 * Ownership system that enables a functional programming style with the performance characteristics of C
 * Very good integration with C libraries
