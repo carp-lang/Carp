@@ -22,6 +22,17 @@ Carp borrows its looks from Clojure but the runtime semantics are much closer to
     (+ (fib (- n 2)) (fib (- n 1)))))
 ```
 
+This compiles to the equivalent of the following C program:
+```C
+int fib(int n) {
+  if(n < 2) {
+    return 1;
+  } else {
+    return fib(n - 2) + fib(n - 1);
+  }
+}
+```
+
 ## The Compiler
 Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (the dynamic version is implemented in C). To compile or work on a Carp program you start the Carp compiler system which puts you in the compiler REPL. Everything you want to do with your program can be controlled from here.
 
