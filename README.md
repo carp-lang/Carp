@@ -14,7 +14,7 @@ The key features of Carp are the following:
 * Very good integration with C libraries
 
 ## The Language
-Carp is heavily inspired by languages like Clojure, Scheme, Haskell & ML. Here's a sample program:
+Carp is heavily inspired by languages like Clojure, Scheme, Haskell, ML and Rust. Here's a sample program:
 
 ```clojure
 (defn main ()
