@@ -49,13 +49,13 @@ The ownership system can see that the map function takes over the enemies-array.
 
 
 ## The Compiler
-Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (the dynamic version is implemented in C). To work on a Carp program you run ```carp``` which puts you in the compiler REPL. Everything you want to do with your program can be controlled from here.
+Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
 
 For example, to compile the function defined above you would enter the following:
 ```clojure
 λ> (bake fib)
 ```
 
-This results in the compiler analyzing the code form for 'fib' and compiling it to some very fast binary code, loading this back into the REPL so that it can be called conveniently from there.
+This results in the compiler analyzing the code form for 'fib' and compiling it to some very fast binary code, immediately loading this back into the REPL so that it can be called from there.
 
 (C) Erik Svedäng 2015 - 2016
