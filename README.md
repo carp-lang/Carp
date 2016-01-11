@@ -38,7 +38,7 @@ The most important thing in Carp is to work with arrays of data. Here's how that
 ```clojure
 (defn move-enemies (enemies)
   (map (fn (enemy) (let [moved (move enemy)]
-                      (if (< (.x enemy) 0.0f) (restart enemy) enemy)))
+                      (if (< (.x moved) 0.0f) (restart moved) moved)))
        enemies))
 ```
 
