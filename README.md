@@ -48,6 +48,7 @@ All the array modification functions like 'map', 'filter', etc. use C-style muta
 ```clojure
 100 ; int
 3.14 ; float
+true ; bool
 "hello" ; string
 [1,2,3] ; array
 ```
@@ -66,10 +67,22 @@ All the array modification functions like 'map', 'filter', etc. use C-style muta
 
 ### Structs
 ```clojure
-(defstruct Vector3 (x :float, y :float, z :float))
+(defstruct Vector3
+  x :float
+  y :float
+  z :float)
 
 (def position (Vector3 4.0 5.0 -2.0))
 (def x-position (.x position)
+```
+
+### Algebraic Data Types (tagged structs)
+```clojure
+(defdata Color 
+  (RGB r :float, g :float, b :float)
+  (Grayscale amount :float))
+
+(def color (Grayscale 50.0f))
 ```
 
 ### C interop
