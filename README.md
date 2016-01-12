@@ -50,7 +50,8 @@ All the array modification functions like 'map', 'filter', etc. use C-style muta
 3.14 ; float
 true ; bool
 "hello" ; string
-[1,2,3] ; array
+'e' ; char
+[1 2 3] ; array
 ```
 
 ### Special Forms
