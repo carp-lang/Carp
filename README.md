@@ -44,6 +44,39 @@ The most important thing in Carp is to work with arrays of data. Here's how that
 
 All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed!
 
+### Data Literals
+```clojure
+100 ; int
+3.14 ; float
+"hello" ; string
+[1,2,3] ; array
+```
+
+### Special Forms
+```clojure
+(def variable-name value)
+(defn function-name (arg1 arg2 ...) (function-body ...))
+(let [var1 expr1, var2 expr2, ...] body)
+(do expr1 expr2 ...)
+(if expression true-branch false-branch)
+(while expression body)
+(for (i 0 100, j 0 100) body)
+(set! variable value)
+```
+
+### Structs
+```clojure
+(defstruct Vector3 (x :float, y :float, z :float))
+
+(def position (Vector3 4.0 5.0 -2.0))
+(def x-position (.x position)
+```
+
+### C interop
+```clojure
+(def blah (load-dylib "./libs/blah.so"))
+(register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
+```
 
 ## The Compiler
 Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
