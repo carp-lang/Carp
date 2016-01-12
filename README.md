@@ -80,6 +80,7 @@ Omit the name tag to create a data constructor with the same name as the type:
 
 (def position (Vector3 4.0 5.0 -2.0))
 (def x-position (.x position)
+```
 
 ### C interop
 ```clojure
