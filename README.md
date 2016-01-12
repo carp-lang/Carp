@@ -38,16 +38,11 @@ int fib(int n) {
 The most important thing in Carp is to work with arrays of data. Here's how that looks:
 
 ```clojure
-(defn move-enemies (enemies)
-  (map (fn (enemy) 
-         (let [moved (move enemy)]
-           (if (< (.x moved) 0.0f) 
-               (restart moved) 
-               moved)))
-       enemies))
+(defn weird-sum (nums)
+  (reduce + 0 (map inc (filter even? nums))))
 ```
 
-The ownership system can see that the map function takes over the enemies-array. This allows 'map' to use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed!
+All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed!
 
 
 ## The Compiler
