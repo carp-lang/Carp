@@ -65,25 +65,21 @@ true ; bool
 (set! variable value)
 ```
 
-### Structs
-```clojure
-(defstruct Vector3
-  x :float
-  y :float
-  z :float)
-
-(def position (Vector3 4.0 5.0 -2.0))
-(def x-position (.x position)
-```
-
-### Algebraic Data Types (tagged structs)
+### Algebraic Data Types
 ```clojure
 (defdata Color 
-  (RGB r :float, g :float, b :float)
-  (Grayscale amount :float))
+  RGB [r :float, g :float, b :float]
+  Grayscale [amount :float])
 
 (def color (Grayscale 50.0f))
 ```
+
+Omit the name tag to create a data constructor with the same name as the type:
+```clojure
+(defdata Vector3 [x :float, y :float, z :float])
+
+(def position (Vector3 4.0 5.0 -2.0))
+(def x-position (.x position)
 
 ### C interop
 ```clojure
