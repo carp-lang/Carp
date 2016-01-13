@@ -3,8 +3,8 @@
   (let [glfw (load-dylib "libglfw3.dylib")
         gl-constants (load-dylib (str carp-dir "gl-constants/gl_constants.so"))]
     (do
-      (reset! files (cons "<GLFW/glfw3.h>" files))
-      (reset! files (cons "\"../gl-constants/gl_constants.h\"" files))
+      (reset! header-files (cons "<GLFW/glfw3.h>" header-files))
+      (reset! header-files (cons "\"../gl-constants/gl_constants.h\"" header-files))
       
       (register glfw "glfwInit" '() :bool)
       (register glfw "glfwCreateWindow" '(:int :int :string (:ptr :GLFWmonitor) (:ptr :GLFWwindow)) '(:ptr :GLFWwindow))

@@ -12,6 +12,7 @@ char input[MAX_INPUT_BUFFER_SIZE];
 
 void repl(Obj *env) {
   while(1) {
+    gc(env, NULL);
     printf("\e[36mλ>\e[0m ");
     fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);
     if(strcmp(input, "q\n") == 0) {
@@ -19,8 +20,10 @@ void repl(Obj *env) {
     }
     eval_text(env, input, true);
     while(stack_pos > 0) {
-      //printf("°"); // Popping extra stack value
-      stack_pop();
+      printf("°"); // Popping extra stack value
+      Obj *popped = stack_pop();
+      obj_print(popped);
+      printf("\n");
     }
     printf("\n");
     //assert(stack_pos == 0);
@@ -158,4 +161,15 @@ void env_new_global() {
   register_ffi_internal("getenv", (VoidFn)getenv, getenv_args, type_string);
   
   //printf("Global env: %s\n", obj_to_string(env)->s);
+}
+
+
+void env_new_global_mini() {
+  global_env = obj_new_environment(NULL);
+
+  nil = obj_new_cons(NULL, NULL);
+  define("nil", nil);
+
+  lisp_quote = obj_new_symbol("quote");
+  define("quote", lisp_quote);
 }

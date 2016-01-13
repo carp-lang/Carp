@@ -142,32 +142,6 @@ void match(Obj *env, Obj *value, Obj *attempts) {
   set_error("Failed to find a suitable match for: ", value);
 }
 
-void eval_text(Obj *env, char *text, bool print) {
-  Obj *forms = read_string(env, text);
-  Obj *form = forms;
-  while(form && form->car) {
-    Obj *result = eval(env, form->car);
-    if(error) {
-      printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(error)->s);
-      function_trace_print();
-      error = NULL;
-      gc(env, NULL);
-      return;
-    }
-    if(print) {
-      if(result) {
-	obj_print(result);
-      }
-      else {
-	printf("Result was NULL when evaling %s\n", obj_to_string(form->car)->s);
-      }
-      printf("\n");
-    }
-    form = form->cdr;
-    gc(env, forms);
-  }
-}
-
 void apply(Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
     Obj *calling_env = obj_new_environment(function->env);
@@ -563,11 +537,37 @@ void eval_internal(Obj *env, Obj *o) {
 
 Obj *eval(Obj *env, Obj *form) {
   error = NULL;
-  stack_pos = 0;
+  //stack_pos = 0;
   function_trace_pos = 0;
   eval_internal(env, form);
   Obj *result = stack_pop();
   return result;
 }
 
-
+void eval_text(Obj *env, char *text, bool print) {
+  Obj *forms = read_string(env, text);
+  Obj *form = forms;
+  stack_push(forms);
+  while(form && form->car) {
+    Obj *result = eval(env, form->car);
+    if(error) {
+      printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(error)->s);
+      function_trace_print();
+      error = NULL;
+      gc(env, NULL);
+      return;
+    }
+    if(print) {
+      if(result) {
+	obj_print(result);
+      }
+      else {
+	printf("Result was NULL when evaling %s\n", obj_to_string(form->car)->s);
+      }
+      printf("\n");
+    }
+    form = form->cdr;
+    gc(env, NULL);
+  }
+  stack_pop(); // pop the 'forms' that was pushed above
+}

@@ -4,75 +4,68 @@
 Obj *obj_latest = NULL;
 int obj_total = 0;
 
-Obj *obj_new() {
+Obj *obj_new(char tag) {  
   Obj *o = malloc(sizeof(Obj));
   o->prev = obj_latest;
   o->alive = false;
+  o->tag = tag;
   obj_latest = o;
   obj_total++;
+  //printf("alloc %p %c\n", o, o->tag);  
   return o;
 }
 
 Obj *obj_new_cons(Obj *car, Obj *cdr) {
-  Obj *o = obj_new();
-  o->tag = 'C';
+  Obj *o = obj_new('C');
   o->car = car;
   o->cdr = cdr;
   return o;
 }
 
 Obj *obj_new_int(int i) {
-  Obj *o = obj_new();
-  o->tag = 'I';
+  Obj *o = obj_new('I');
   o->i = i;
   return o;
 }
 
 Obj *obj_new_float(float x) {
-  Obj *o = obj_new();
-  o->tag = 'V';
+  Obj *o = obj_new('V');
   o->f32 = x;
   return o;
 }
 
 Obj *obj_new_string(char *s) {
-  Obj *o = obj_new();
-  o->tag = 'S';
+  Obj *o = obj_new('S');
   o->s = strdup(s);
   return o;
 }
 
 Obj *obj_new_symbol(char *s) {
-  Obj *o = obj_new();
-  o->tag = 'Y';
+  Obj *o = obj_new('Y');
   o->s = strdup(s);
   return o;
 }
 
 Obj *obj_new_keyword(char *s) {
-  Obj *o = obj_new();
-  o->tag = 'K';
+  Obj *o = obj_new('K');
   o->s = strdup(s);
   return o;
 }
 
 Obj *obj_new_primop(Primop p) {
-  Obj *o = obj_new();
-  o->tag = 'P';
+  Obj *o = obj_new('P');
   o->primop = p;
   return o;
 }
 
 Obj *obj_new_dylib(void *dylib) {
-  Obj *o = obj_new();
-  o->tag = 'D';
+  Obj *o = obj_new('D');
   o->primop = dylib;
   return o;
 }
 
 Obj *obj_new_ptr(void *ptr) {
-  Obj *o = obj_new();
-  o->tag = 'Q';
+  Obj *o = obj_new('Q');
   o->void_ptr = ptr;
   return o;
 }
@@ -82,8 +75,7 @@ Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_o
   assert(arg_types);
   assert(arg_types->tag == 'C');
   assert(return_type_obj);
-  Obj *o = obj_new();
-  o->tag = 'F';
+  Obj *o = obj_new('F');
   o->cif = cif;
   o->funptr = funptr;
   o->arg_types = arg_types;
@@ -98,11 +90,10 @@ Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(env);
   assert(env->tag == 'E');
   assert(code);
-  Obj *o = obj_new();
+  Obj *o = obj_new('L');
   o->params = params;
   o->body = body;
   o->env = env;
-  o->tag = 'L';
   o->code = code;
   return o;
 }
@@ -113,20 +104,18 @@ Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(body);
   assert(env);
   assert(env->tag == 'E');
-  Obj *o = obj_new();
+  Obj *o = obj_new('M');
   o->params = params;
   o->body = body;
   o->env = env;
-  o->tag = 'M';
   o->code = code;
   return o;
 }
 
 Obj *obj_new_environment(Obj *parent) {
-  Obj *o = obj_new();
+  Obj *o = obj_new('E');
   o->parent = parent;
   o->bindings = NULL;
-  o->tag = 'E';
   return o;
 }
 

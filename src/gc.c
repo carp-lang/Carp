@@ -6,7 +6,8 @@ void obj_mark_alive(Obj *o) {
   if(!o || o->alive) {
     return;
   }
-  
+
+  //printf("marking %p alive\n", o);  
   o->alive = true;
   
   if(o->tag == 'C') {
@@ -45,9 +46,15 @@ void gc_sweep() {
     if(!(*p)->alive) {
       Obj *dead = *p;
       *p = dead->prev;
+
       free_internal_data(dead);
-      //printf("free %p %c\n", dead, dead->tag);
       free(dead);
+
+      /* printf("free %p %c \t", dead, dead->tag); */
+      /* if(dead->tag == 'S') printf("\"%s\"", dead->s); */
+      /* if(dead->tag == 'I') printf("%d", dead->i); */
+      /* printf("\n"); */
+      
       obj_total--;
       kill_count++;
     }
@@ -57,7 +64,7 @@ void gc_sweep() {
     }
   }
   if(LOG_GC_KILLS) {
-    printf("\e[33mDeleted %d Obj:s.\e[0m\n", kill_count);
+    printf("\e[33mDeleted %d Obj:s, %d left.\e[0m\n", kill_count, obj_total);
   }
 }
 
@@ -66,7 +73,7 @@ void gc(Obj *env, Obj *forms) {
     obj_mark_alive(forms);
   }
   obj_mark_alive(env);
-  for(int i = 0; i < stack_pos - 1; i++) {
+  for(int i = 0; i < stack_pos; i++) {
     obj_mark_alive(stack[i]);
   }
   gc_sweep();
