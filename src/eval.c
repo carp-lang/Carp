@@ -525,6 +525,7 @@ void eval_internal(Obj *env, Obj *o) {
   if(error) { return; }
 
   //printf("%s\n", obj_to_string(o)->s);
+  //gc(global_env, o);
   
   if(!o) {
     stack_push(nil);

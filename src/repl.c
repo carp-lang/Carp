@@ -26,7 +26,7 @@ void repl(Obj *env) {
     //assert(stack_pos == 0);
     //stack_print();
   }
-  gc_sweep();
+  gc_all();
 }
 
 void env_new_global() {

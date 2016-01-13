@@ -3,6 +3,5 @@
 #include "obj.h"
 #include "eval.h"
 
-void gc_sweep();
-void gc();
-
+void gc(Obj *env, Obj *forms);
+void gc_all();

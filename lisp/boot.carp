@@ -2,6 +2,6 @@
 
 (load-lisp (str carp-dir "lisp/core.lisp"))
 (load-lisp (str carp-dir "lisp/compiler.lisp"))
-;;(load-lisp (str carp-dir "lisp/glfw_test.lisp"))
 (load-lisp (str carp-dir "lisp/example.lisp"))
 
+;;(load-lisp (str carp-dir "lisp/glfw_test.lisp"))

@@ -72,3 +72,7 @@ void gc(Obj *env, Obj *forms) {
   gc_sweep();
 }
 
+void gc_all() {
+  gc_sweep();
+}
+
