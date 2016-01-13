@@ -14,6 +14,11 @@ The key features of Carp are the following:
 * No hidden performance penalties – allocation and copying is explicit
 * Very good integration with exisiting C code
 
+## Installation
+Run ```make``` in the root of the project to build. Add the bin directory to your path to enable calling the ```carp``` command:
+
+```export PATH=$PATH:/Users/erik/Carp/bin/
+
 ## The Language
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
 
