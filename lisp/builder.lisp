@@ -6,6 +6,11 @@
 (defn builder-add (builder category block)
   (update-in builder (list category) (fn (blocks) (cons-last blocks block))))
 
+(defn builder-add-headers (builder files)
+  (reduce (fn (b file) (builder-add b :headers (str "#include " file)))
+          builder
+          files))
+
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
   (let [funcs (get builder :functions)

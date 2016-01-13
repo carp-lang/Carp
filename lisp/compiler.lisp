@@ -26,11 +26,6 @@
 
 (def header-files (list "\"functions.h\"" "\"shared.h\""))
 
-(defn add-headers (builder)
-  (reduce (fn (b file) (builder-add b :headers (str "#include " file)))
-          builder
-          header-files))
-
 (def baked-funcs {})
 
 (defn add-func! (func-name func-proto func-dylib)
@@ -77,9 +72,9 @@
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
         ast-annotated (annotate-ast ast-named)
-        builder-with-headers (add-headers builder)
-        new-builder (builder-visit-ast builder-with-headers ast-annotated func-name)
-        c-program-string (builder-merge-to-c new-builder)
+        builder-with-headers (builder-add-headers builder header-files)
+        builder-with-functions (builder-visit-ast builder-with-headers ast-annotated func-name)
+        c-program-string (builder-merge-to-c builder-with-functions)
         proto (get-function-prototype ast-annotated func-name)
         c-file-name (str "out/" func-name ".c")
         c-func-name (c-ify-name func-name)]
@@ -100,10 +95,9 @@
                                         (lib-paths) " "
 					(framework-paths) " "
                                         (link-libs dependencies))]
-                 (do
-                   ;;(println clang-command)
-                   (def cmd clang-command)
-                   (system clang-command)))
+                 (do ;;(println clang-command)
+		     (def cmd clang-command)
+		     (system clang-command)))
                (unload-if-necessary func-name)
                (def out-lib (load-dylib (str "./out/" c-func-name ".so")))
                (register out-lib c-func-name arg-types return-type)
