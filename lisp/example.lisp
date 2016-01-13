@@ -2,11 +2,6 @@
 (defn max (a b)
   (if (< a b) b a))
 
-(defn fib (n)
-  (if (< n 2)
-    1
-    (+ (fib (- n 2)) (fib (- n 1)))))
-
 (defn blah (x s)
   (* x (strlen s)))
 

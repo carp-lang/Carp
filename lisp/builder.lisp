@@ -1,0 +1,198 @@
+;; Creates a C code builder which allows for out-of-order generation of C from the AST
+(defn new-builder ()
+  {:headers ()
+   :functions ()})
+
+(defn builder-add (builder category block)
+  (update-in builder (list category) (fn (blocks) (cons-last blocks block))))
+
+;; Takes a completed C code builder and returns its string with C code
+(defn builder-merge-to-c (builder)
+  (let [funcs (get builder :functions)
+        headers (get builder :headers)]
+    (join "\n\n"
+          (list (join "\n" headers)
+                (join "\n" funcs)))))
+
+(def indent-level 1)
+
+(defn indent ()
+  (join "" (replicate "  " indent-level)))
+
+(defn indent-in! ()
+  (swap! indent-level inc))
+
+(defn indent-out! ()
+  (swap! indent-level dec))
+
+(defn free-variables! (c free-list)
+  (do
+    (str-append! c (str (indent) "/* FREE: */\n"))
+    (map (fn (variable)
+           (str-append! c (str (indent) "free(" variable ")")))
+         free-list)
+    (str-append! c (str (indent) "/* * * * */\n"))))
+
+(defn c-ify-name (lisp-name)
+  (let [x0 (str-replace lisp-name "-" "_")
+        x1 (str-replace x0 "?" "QMARK")
+        x2 (str-replace x1 "!" "BANG")]
+    x2))
+
+(defn type-build (t)
+  (if (string? t)
+    "typevar"
+    (match t
+           :? "unknown"
+           (:arrow _ _) "arrow"
+           (:ptr p) (str (name p) "*")
+           x (name x))))
+
+(defn visit-arg (c arg)
+  (let [result (visit-form c arg true)]
+    (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))))
+
+(defn visit-args (c args)
+  (let []
+    (do
+      ;;(println "visit args:" args)
+      (map (fn (arg) (visit-arg c arg)) args)
+      (map (fn (arg) {:c (:arg-name arg)}) args))))
+
+(defn visit-bindings (c bindings)
+  ;;(println bindings)
+  (map (fn (b) (let [value-result (visit-form c (:value b) false)]
+                 (str-append! c (str (indent) (type-build (:type b)) " " (:name b) " = " (:c value-result) ";\n"))))
+       bindings))
+
+(defn visit-form (c form toplevel)
+  (match (get form :node)
+
+         :binop (let [result-a (visit-form c (get form :a) false)
+                      result-b (visit-form c (get form :b) false)]
+                  {:c (str (if toplevel "" "(") (:c result-a) " " (:op form) " " (:c result-b) (if toplevel "" ")"))})
+         
+         :literal (let [val (:value form)]
+                    (if (symbol? val)
+                      {:c (c-ify-name (name val))}
+                      (if (string? val)
+                        {:c (str "strdup(" (prn val) ")")}
+                        {:c (prn val)})))
+
+         :if (let [if-expr (visit-form c (get form :expr) true)
+                   n (get form :if-result-name)
+                   ifexpr (get form :if-expr-name)]
+               (do (str-append! c (str (indent) (type-build (get-in form '(:expr :type))) " " ifexpr " = " (get if-expr :c) ";\n"))
+                   (if (= :void (:type form))
+                     () ;; no result variable needed
+                     (str-append! c (str (indent) (type-build (:type form)) " " n ";\n")))
+                   
+                   (str-append! c (str (indent) "if(" ifexpr ")"))
+                                
+                   ;; true-block begins
+                   (str-append! c " {\n")
+                   (indent-in!)
+                   (let [result-a (visit-form c (get form :a) true)]
+                     (do
+                       (if (= :void (:type form))
+                         () ;; no-op
+                         (str-append! c (str (indent) n " = " (get result-a :c) ";\n")))
+                       (indent-out!)
+                       (str-append! c (str (indent) "} else {\n"))))
+                   
+                   (indent-in!) ;; false-block-begins
+                   (let [result-b (visit-form c (get form :b) true)]
+                     (do
+                       (if (= :void (:type form))
+                         () ;; no-op
+                         (str-append! c (str (indent) n " = " (get result-b :c) ";\n")))
+                       (indent-out!)
+                       (str-append! c (str (indent) "}\n"))))
+                   {:c n}))
+  
+         :app (let [head (get form :head)
+                    func-name (get head :value)
+                    c-func-name (c-ify-name (str func-name))
+                    n (:app-result-name form)
+                    arg-results (visit-args c (get form :tail))
+                    arg-vars (map (fn (x) (get x :c)) arg-results)]
+                (do (if (= :void (:type form))
+                      (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
+                      (str-append! c (str (indent) (type-build (:type form)) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n")))
+                    {:c n}))
+
+         :do (let [forms (:forms form)
+                   results (map (fn (x) (visit-form c x toplevel)) forms)]
+               {:c (:c (last results))})
+
+         :let (let [n (:let-result-name form)]
+                (do (if (= :void (:type form))
+                      () ;; nothing
+                      (str-append! c (str (indent) (type-build (:type form)) " " n ";\n")))
+                    (str-append! c (str (indent) "{\n"))
+                    (indent-in!)
+                    (let [body (:body form)
+                          _ (visit-bindings c (:bindings form))
+                          result (visit-form c body false)]
+                      (do (if (= :void (:type form))
+                            ()
+                            (str-append! c (str (indent) n " = " (:c result) ";\n")))
+                          ;;(free-variables! c )
+                          ))
+                    (indent-out!)
+                    (str-append! c  (str (indent) "}\n"))
+                    {:c n}))
+
+         :while (let [while-expr (visit-form c (get form :expr) true)
+                      while-expr-name (:while-expr-name form)]
+                  (do (str-append! c (str (indent) (type-build (get-in form '(:expr :type))) " " while-expr-name " = " (get while-expr :c) ";\n"))
+                      (str-append! c (str (indent) "while(" while-expr-name ") {\n"))
+                      (indent-in!)
+                      (let [body (:body form)]
+                        (visit-form c body false))
+                      (let [while-expr-again (visit-form c (get form :expr) true)]
+                        (str-append! c (str (indent) while-expr-name " = " (get while-expr-again :c) ";\n")))
+                      (indent-out!)
+                      (str-append! c  (str (indent) "}\n"))))
+
+	 :c-code (do
+		     ;;(str-append! c )
+		     {:c (:code form)})
+
+         :null {:c "NULL"}
+  
+         x (error (str "visit-form failed to match " x))))
+
+(defn arg-list-build (args)
+  (join ", " (map (fn (arg) (str (type-build (get arg :type)) " " (get arg :name)))args)))
+
+(defn visit-function (builder ast func-name)
+  (let [t (:type ast)
+        _ (when (not (list? t)) (error "Can't generate code for function, it's type is not a list."))
+        return-type (nth t 2)
+        args (get ast :args)
+        body (get ast :body)
+        c (copy "") ;; mutable string holding the resulting C code for the function
+        result (visit-form c body true)
+        ]
+    (do
+      ;;(println "visit-function: \n" ast)
+      (let [code (str (name return-type) " " (c-ify-name func-name)
+                      "(" (arg-list-build args) ") {\n"
+                      c 
+                      (if (= :void (:type body))
+                        "" ;; no return
+                        (str (indent) "return " (get result :c) ";\n"))
+                      "}")]
+        (builder-add builder :functions code)))))
+
+(defn get-function-prototype (ast func-name)
+  (let [t (get ast :type)
+        return-type (nth t 2)
+        args (get ast :args)]
+    (str (name return-type) " " func-name "(" (arg-list-build args) ");")))
+
+(defn builder-visit-ast (builder ast func-name)
+  (match (get ast :node)
+         :function (visit-function builder ast func-name)
+         x (error (str "Can't match :ast '" x "' in builder-visit-ast."))))

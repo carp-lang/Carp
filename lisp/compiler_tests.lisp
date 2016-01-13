@@ -37,23 +37,30 @@
 ;; (test-constraint-solving-4)
 ;; (test-constraint-solving-5)
 
+(defn fib (n)
+  (if (< n 2)
+    1
+    (+ (fib (- n 2)) (fib (- n 1)))))
+
 (defn test-fib ()
   (do
-    (def fibast (lambda-to-ast (code fib)))
-    (def fibcon (gencon fibast))
-    (def fibsolved (solve-constraints fibcon))
-    (def fibasta (annotate-ast fibast))))
+    (bake fib)
+    (assert-eq (fib 6) 13)
+    (assert-eq (type fib) :foreign)
+    :fib-is-ok))
+
+
 
 (defn foo (x)
-  (+ (- x 100) 1))
+  (+ (- (fib x) 100) 7))
 
 (defn test-foo ()
-  (do (bake foo)
-      (assert-eq (foo 200) 101)
+  (do (bake* foo '(fib))
+      (assert-eq (foo 6) -80)
       (assert-eq (type foo) :foreign)
       :foo-is-ok))
 
-;;(test-foo)
+
 
 (defn hypo (x y)
   (sqrtf (+ (* x x) (* y y))))
@@ -64,7 +71,13 @@
       (assert-eq (type hypo) :foreign)
       :hypo-is-ok))
 
-;;(test-hypo)
+
+
+(test-fib)
+(test-foo)
+(test-hypo)
+
+
 
 (defn f (s)
   (strlen s))
