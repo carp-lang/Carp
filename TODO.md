@@ -1,3 +1,13 @@
+# Compiler
+  - Track dependencies between functions
+  - Change :a and :b in binop and if to :left and :right
+  - Compilation of generic functions
+  - lambdas / lambda lifting
+  - compile a whole file to a single dylib
+  - nicer names for compiler generated variables
+  - speed up some passes by mutating a single variable instead of copying immutable versions around
+  - make "shared.h" be included by using <> instead, add it to include path automatically
+  
 # Dynamic Runtime
   - meta data on Objs: Line nr, line pos, source file,
   - warn if a let statement has more than one body form (implicit do)
@@ -17,13 +27,4 @@
   - polymorphic math operators?
   - matching/destructuring in let statements and function arguments too?
   - reading of dotted pairs
-
-# Compiler
-  - Track dependencies between functions
-  - Change :a and :b in binop and if to :left and :right
-  - Compilation of generic functions
-  - lambdas / lambda lifting
-  - compile a whole file to a single dylib
-  - nicer names for compiler generated variables
-  - speed up some passes by mutating a single variable instead of copying immutable versions around
 
