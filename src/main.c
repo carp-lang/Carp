@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <string.h>
-#include "mini.h"
+#include "repl.h"
+#include "eval.h"
+#include "../out/shared.h"
 
 int main() {
   env_new_global();
