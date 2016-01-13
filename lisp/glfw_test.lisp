@@ -1,0 +1,71 @@
+
+(defn register-glfw ()
+  (let [glfw (load-dylib "libglfw3.dylib")
+        gl-constants (load-dylib (str carp-dir "gl-constants/gl_constants.so"))]
+    (do
+      (reset! files (cons "<GLFW/glfw3.h>" files))
+      (reset! files (cons "\"../gl-constants/gl_constants.h\"" files))
+      
+      (register glfw "glfwInit" '() :bool)
+      (register glfw "glfwCreateWindow" '(:int :int :string (:ptr :GLFWmonitor) (:ptr :GLFWwindow)) '(:ptr :GLFWwindow))
+      (register glfw "glfwMakeContextCurrent" '((:ptr :GLFWwindow)) :void)
+      (register glfw "glfwTerminate" '() :void)
+      (register glfw "glfwPollEvents" '() :void)
+      (register glfw "glfwWindowShouldClose" '((:ptr :GLFWwindow)) :bool)
+      (register glfw "glfwSwapBuffers" '((:ptr :GLFWwindow)) :void)
+      
+      (register glfw "glClearColor" '(:float :float :float :float) :void)
+      (register glfw "glClear" '(:int) :void)
+      (register glfw "glColor3f" '(:float :float :float) :void)
+      (register glfw "glBegin" '(:int) :void)
+      (register glfw "glEnd" '() :void)
+      (register glfw "glVertex3f" '(:float, :float, :float) :void)
+
+      (register-variable gl-constants "gl_color_buffer_bit" :int)
+      (register-variable gl-constants "gl_lines" :int)
+      (register-variable gl-constants "gl_line_strip" :int)
+      (register-variable gl-constants "gl_triangles" :int)
+      
+      )))
+
+(register-glfw)
+
+(defn set-clear-color ()
+  (glClearColor 0.0f 0.95f 0.75f 1.0f))
+
+(defn draw-rect (x y w h)
+  (do (glBegin gl-triangles)
+      (glVertex3f x y 0.0f)
+      (glVertex3f (+ x w) y 0.0f)
+      (glVertex3f (+ x w) (+ y h) 0.0f)
+      (glVertex3f (+ x w) (+ y h) 0.0f)
+      (glVertex3f x (+ y h) 0.0f)
+      (glVertex3f x y 0.0f)
+      (glEnd)))
+
+(defn app ()
+  (if (glfwInit)
+    (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
+      (if (null? window)
+        (panic "No window.")
+        (do (println "Window OK.")
+            (glfwMakeContextCurrent window)
+            (while (not (glfwWindowShouldClose window))
+              (do
+                (glClearColor 0.0f 0.95f 0.75f 1.0f)
+                (glClear gl-color-buffer-bit)
+                (glColor3f 1.0f 1.0f 1.0f)
+                (draw-rect 0f 0f 0.2f 0.4f)              
+                (glfwSwapBuffers window)
+                (glfwPollEvents)))
+            (glfwTerminate))))
+    (panic "Failed to initialize glfw.")))
+
+(defn main ()
+  (do (app)
+      0))
+
+(def app-ast (lambda-to-ast (code app)))
+;; (def glcon (gencon glast))
+;; (def glasta (annotate-ast glast))
+

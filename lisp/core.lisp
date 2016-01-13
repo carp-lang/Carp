@@ -1,0 +1,164 @@
+;; TODO
+;; -> and ->>
+;; shuffle
+;; conversions between a list of pairs and dictionaries
+
+(def defmacro (macro (name args body) (list 'def name (list 'macro args body))))
+
+(defmacro when (expr a) (list 'if expr a nil))
+(defmacro if-not (expr a b) (list 'if (list 'not expr) a b))
+(defmacro comment (form) nil)
+
+(defmacro assert-eq (a b)
+  (list 'if-not (list '= a b)
+	(list 'error (list 'str "assert-eq fail: " (str a) " => " a " - VS - " (str b) " => " b))
+	nil))
+
+(defmacro defn (name args body)
+  (list 'def name (list 'fn args body)))
+
+(defn assert-approx-eq (target x)
+  (do
+      (assert-eq true (< x (+ target 0.1)))
+      (assert-eq true (< (- target 0.1) x))))
+
+(defn id (x) x)
+
+(defn get-in (dict keys)
+  (if (= () keys)
+    dict
+    (get-in (get dict (first keys)) (rest keys))))
+
+(defn dict-set-in! (dict keys value)
+  (if (= 1 (count keys))
+    (dict-set! dict (first keys) value)
+    (dict-set-in! (get dict (first keys)) (rest keys) value)))
+
+(defn update-in! (dict key-path f)
+  (dict-set-in! dict key-path (f (get-in dict key-path))))
+
+(defn update-in (dict key-path f)
+  (let (new (copy dict))
+    (do (update-in! new key-path f)
+	new)))
+
+(defn assoc (dict key val)
+  (let [new (copy dict)]
+    (do 
+      (dict-set! new key val)
+      new)))
+
+(defn assoc-in (dict keys val)
+  (let [new (copy dict)]
+    (do 
+      (dict-set-in! new keys val)
+      new)))
+
+(defn join (separator xs)
+  (match (count xs)
+         0 ""
+         1 (str (first xs))
+         _ (str (first xs) separator (join separator (rest xs)))))
+
+(defn replicate (thing times)
+  (if (< times 1)
+    '()
+    (cons thing (replicate thing (- times 1)))))
+
+(defn repeatedly (f times)
+  (if (< times 1)
+    '()
+    (cons (f) (repeatedly f (- times 1)))))
+
+(defmacro time (form)
+  (list 'let (list 't1 (list 'now))
+    (list 'do
+	(list 'let (list 'result form)
+	  (list 'println (list 'str "Evaluating form took " (list '- (list 'now) 't1) "ms. Result = " 'result))))))
+
+(defmacro swap! (sym f)
+  (list 'reset! sym (list f sym)))
+
+(defn inc (x) (+ x 1))
+(defn dec (x) (- x 1))
+
+(defn contains? (items item)
+  (match items
+         () false
+         (x & xs) (if (= x item)
+                    true
+                    (contains? xs item))))
+
+(defn log (message value)
+  (do
+    (println (str message value))
+      value))
+
+(defn nil? (x) (= nil x))
+
+(defn int? (x) (= :int (type x)))
+(defn string? (x) (= :string (type x)))
+(defn symbol? (x) (= :symbol (type x)))
+(defn keyword? (x) (= :keyword (type x)))
+(defn env? (x) (= :env (type x)))
+(def dict? env?)
+(defn list? (x) (= :list (type x)))
+(defn macro? (x) (= :macro (type x)))
+(defn lambda? (x) (= :lambda (type x)))
+(defn foreign? (x) (= :foreign (type x)))
+(defn primop? (x) (= :primop (type x)))
+
+(defn range (start stop)
+  (if (< start stop)
+    (cons start (range (inc start) stop))
+    '()))
+
+(defn range-f (start stop step)
+  (if (< start stop)
+    (cons start (range-f (+ start step) stop step))
+    '()))
+
+(defn reverse (l)
+  (match l
+	 () ()
+	 (x) (list x)
+	 (x & xs) (cons-last (reverse xs) x)))
+
+(defn has-key? (dict key)
+  (not (= () (get-maybe dict key))))
+
+(defn even? (x) (= 0 (mod x 2)))
+(defn odd? (x) (= 1 (mod x 2)))
+
+(defn last (xs)
+  (match xs
+	 () (error "Can't call last on empty list.")
+	 (x) x
+	 _ (last (rest xs))))
+
+(defn mapcat (f xs)
+  (apply concat (map f xs)))
+
+(def load load-lisp) ;; alias to allow inferior-lisp-mode to load file
+
+(defn true? (x) (= true x))
+(defn false? (x) (= false x))
+
+(defn all? (pred xs)
+  (= (count xs) (count (filter pred xs))))
+
+(register-builtin "srand" '(:int) :void)
+(register-builtin "rand" '() :int)
+(register-builtin "strlen" '(:string) :int)
+(register-builtin "sinf" '(:float) :float)
+(register-builtin "cosf" '(:float) :float)
+(register-builtin "sqrtf" '(:float) :float)
+(register-builtin "itof" '(:int) :float)
+(register-builtin "itos" '(:int) :string)
+(register-builtin "panic" '(:string) :void)
+(register-builtin "printf" '(:string) :void)
+(register-builtin "print" '(:string) :void)
+(register-builtin "println" '(:string) :void)
+(register-builtin "sleep" '(:int) :void)
+(register-builtin "nullQMARK" '((:ptr :any)) :bool)
+(register-builtin "not" '(:bool) :bool)

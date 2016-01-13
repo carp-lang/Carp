@@ -1,0 +1,296 @@
+
+(defn test-negative-numbers ()
+  (do
+    (assert-eq (- 10) -10)
+    (assert-eq 123 (- 0 -123))))
+
+(defn test-str-replace ()
+  (do
+    (assert-eq "Erik" (str-replace "erik" "e" "E"))))
+
+(defn test-all-predicate ()
+  (do
+    (assert-eq true (all? even? (list 2 4 6 8)))
+    (assert-eq false (all? even? (list 2 4 6 9)))
+    (assert-eq true (all? even? ()))))
+
+(defn test-while-loop ()
+  (let [x 0
+        s ""]
+    (do
+      (while (< x 10)
+        (do
+          (str-append! s (str x))
+          (swap! x inc)))
+      (assert-eq "0123456789" s))))
+
+(defn test-mapcat ()
+  (assert-eq '(1 2 3 1 2 3 4 1 2 3 4 5) (mapcat (fn (x) (range 1 (inc x))) '(3 4 5))))
+
+(defn test-floats ()
+  (do
+    (let [x 3.5f
+          y 2.0f]
+      (do
+        (assert-eq false (< x y))
+        (assert-eq true (< y x))
+        (assert-approx-eq 5.5 (+ x y))
+        (assert-approx-eq 7.0 (* x y))
+        (assert-approx-eq 1.5 (- x y))
+        (assert-approx-eq 1.75 (/ x y))
+        ))))
+
+(defn test-shadowing ()
+  (let [x 100
+        shadow-fn (fn (x)
+                    (do
+                      (reset! x 42)
+                      (assert-eq x 42)))]
+    (do
+      (shadow-fn 0)
+      (assert-eq 100 x))))
+
+(defn test-keyword-in-list-in-match ()
+  (assert-eq (match true
+                    true '(:a :b (:c) :d))
+             (list :a :b (list :c) :d)))
+
+(defn test-varable-capture ()
+  (let [x 3
+        capture (fn ()
+                  (fn (y) (* x y)))
+        captured (capture)]
+    (assert-eq (captured 4) 12)))
+
+(defn test-cons-last ()
+  (assert-eq '(100 200 300 400 500) (cons-last '(100 200 300 400) 500)))
+
+(defn test-match-2 ()
+  (assert-eq (match '(hej du)
+                    ('blargh _) :error
+                    ('hej _) :correct
+                    _ :also-error)
+             :correct))
+
+(defn test-assoc ()
+  (let [m {:a 10}]
+    (do
+      (assert-eq 100 (get (assoc m :a 100) :a))
+      (assert-eq 200 (get (assoc m :b 200) :b))
+      (assert-eq 10 (get m :a)))))
+
+(defn test-has-key ()
+  (do
+    (assert-eq true (has-key? {:a 10 :b 20} :a))
+    (assert-eq true (has-key? {:a 10 :b 20} :b))
+    (assert-eq false (has-key? {:a 10 :b 20} :c))))
+
+(defn test-keyword-lookup ()
+  (assert-eq 20 (:b {:a 10 :b 20 :c 30})))
+
+(defn test-range ()
+  (do
+    (assert-eq '(3 4 5 6) (range 3 7))
+    (assert-eq () (range 20 10))))
+
+(defn test-assoc-in ()
+  (let [m2 {:a {:b 20}}]
+    (do
+      (assert-eq 200 (get-in (assoc-in m2 '(:a :b) 200) '(:a :b))) ; change local copy
+      (assert-eq 20 (get-in m2 '(:a :b)))))) ; unchanged)
+
+(defn test-swap ()
+  (let [x 10]
+    (swap! x inc)
+    (assert-eq 11 x)))
+
+(defn test-str-append ()
+  (let [greeting "hej"]
+    (do
+      (str-append! greeting "!")
+      (str-append! greeting "!")
+      (str-append! greeting "!")
+      (assert-eq "hej!!!" greeting))))
+
+(defn test-str-join ()
+  (do
+    (assert-eq "" (join "," '()))
+    (assert-eq "10" (join "," '(10)))
+    (assert-eq "10,20,30" (join "," '(10 20 30)))))
+
+(defn test-apply-str ()
+  (assert-eq "erikisaksvedang" (apply str (list "erik" "isak" "svedang"))))
+
+(defn test-contains ()
+  (do
+    (assert-eq true (contains? (list 10 20 30) 20))
+    (assert-eq true (contains? '(30) 30))
+    (assert-eq false (contains? (list 10 20 30) 50))
+    (assert-eq false (contains? () 100))))
+
+(defn test-fib ()
+  (let [fib (fn (n)
+              (match n
+                     0 0
+                     1 1
+                     2 1
+                     x (+ (fib (- x 2)) (fib (- x 1)))))]
+    (assert-eq '(1 1 2 3 5 8 13 21 34) (map fib '(1 2 3 4 5 6 7 8 9)))))
+
+(defn test-dictionary-mutation ()
+  (let [stuff {:a 100 :b 200 :c 300 123 102030 :d () :e (+ 2 3)}
+        gruff (list "hej" :boo 'nice)
+        tree {:a 10 :b {:a 20 :b 30} :c {:a 40 :b 50}}]
+    (do
+      (dict-set-in! tree '(:b :a) "hejsan")
+      (assert-eq (get-in tree '(:b :a)) "hejsan")
+
+      (update-in! tree '(:c :a) (fn (x) (* x 1000)))
+      (assert-eq (get-in tree '(:c :a)) 40000)
+
+      (let [tree-2 (update-in tree '(:c :a) (fn (x) (- x 1)))]
+        (do
+          (assert-eq (get-in tree '(:c :a)) 40000)
+          (assert-eq (get-in tree-2 '(:c :a)) 39999))))))
+
+(defn test-dictionary-copy ()
+  (let [a {:x 100}
+        b (copy a)
+        c a]
+    (do
+      (dict-set-in! a '(:x) 200)
+      (assert-eq 200 (get a :x))
+      (assert-eq 100 (get b :x)) ; unchanged, because of copy
+      (assert-eq 200 (get c :x)) ; changed, just an alias
+      )))
+
+(defn test-dictionary-evaluation ()
+  ;; Evaluation of dictionaries should not modify the literal
+  (let [self-destruct ( fn  (x)
+                       {:x x}
+                       (assert-eq (str (fn (x) {:x x})) (str self-destruct))
+                       (self-destruct 10))]
+    (assert-eq (str (fn (x) {:x x})) (str self-destruct))))
+
+(defn test-map ()
+  (assert-eq (map (fn (x) (* x x)) '(1 2 3 4 5))
+             (list 1 4 9 16 25)))
+
+(defn test-filter ()
+  (assert-eq (filter even? '(1 2 3 4 5 6))
+             (list 2 4 6)))
+
+(defn test-reduce ()
+  (assert-eq (reduce + 0 '(1 2 3 4 5))
+             15))
+
+(defn test-match ()
+  (do
+    (assert-eq 123 (match 123 x x))
+    (assert-eq (match 20
+                      10 :a
+                      20 :b
+                      30 :c)
+               :b)
+    (assert-eq (match 42
+                      a (+ a 10))
+               52)
+    (assert-eq (match '(1 2 3)
+                      (a b c) (+ a b (* c c)))
+               12)
+    (let [me (list "erik" 29)
+          me-2 (match me (name age) {:name name :age age})]
+      (assert-eq (get me-2 :age) 29))))
+
+(defn test-not ()
+    (do
+      (assert-eq true (not false))
+      (assert-eq true (not (not true)))
+      (assert-eq true (not false false false))
+      (assert-eq false (not false false true false))
+      (assert-eq false (not true))
+      (assert-eq false (not (not false)))))
+
+(defn test-misc ()
+  (do
+    (assert-eq 10 (id 10))))
+
+(defn test-concat ()
+  (do
+    (assert-eq (concat '(1 2) '(3 4)) '(1 2 3 4))
+    (assert-eq (concat '(1 ) '(2 3 4)) '(1 2 3 4))
+    (assert-eq (concat '() '(1 2 3 4)) '(1 2 3 4))
+    (assert-eq (concat '(1 2 3) '(4)) '(1 2 3 4))
+    (assert-eq (concat '(1 2 3 4) '()) '(1 2 3 4))
+    (assert-eq (concat '(1 2) '(3) '(4)) '(1 2 3 4))
+    (assert-eq (concat '(1 2) () '(3) () '(4)) '(1 2 3 4))
+    (assert-eq (concat '() '(1) () '(2) () '(3) () '(4) ()) '(1 2 3 4))
+    (assert-eq (concat '() '()) '())
+    (assert-eq (concat '() '() '()) '())))
+
+(defn test-reset ()
+  (let [temp ""
+        abc (fn (x)
+              (do
+                (reset! temp (str temp "Ole, "))
+                (reset! temp (str temp "dole, "))
+                (reset! temp (str temp "doff!"))
+                x))]
+    (do
+      (assert-eq "hej" (abc "hej"))
+      (assert-eq "Ole, dole, doff!" temp))))
+
+(defn test-self-destruct-2 ()
+  ;; Doesn't work when pretty printing of lambda bodies is turned off
+  (do
+    (defn self-destruct-2 (x)
+      (list 1 2 x 4 5))
+    (assert-eq "(fn (x) (list 1 2 x 4 5))" (str self-destruct-2))
+    (self-destruct-2 10)
+    (assert-eq "(fn (x) (list 1 2 x 4 5))" (str self-destruct-2))
+    (reset! print-lambda-body before)))
+
+(defn run-core-tests ()
+  (do
+    (test-keyword-in-list-in-match)
+    (test-shadowing)
+    (test-varable-capture)
+    (test-str-append)
+    (test-str-join)
+    (test-apply-str)
+    (test-not)
+    (test-misc)
+    (test-map)
+    (test-filter)
+    (test-reduce)
+    (test-match)
+    (test-concat)
+    (test-contains)
+    (test-fib)
+    (test-dictionary-mutation)
+    (test-dictionary-copy)
+    (test-dictionary-evaluation)
+    (test-reset)
+    (test-swap)
+    (test-assoc)
+    (test-has-key)
+    (test-keyword-lookup)
+    (test-range)
+    (test-assoc-in)
+    (test-cons-last)
+    (test-match-2)
+    (test-floats)
+    (test-mapcat)
+    (test-while-loop)
+    (test-all-predicate)
+    (test-str-replace)
+    (test-negative-numbers)
+    ))
+
+(run-core-tests)
+
+;; Can't test this inside a function:
+(defn define-at-toplevel ()
+  (def top-var :mountain-high))
+(define-at-toplevel)
+(assert-eq :mountain-high top-var)
