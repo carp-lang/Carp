@@ -811,7 +811,7 @@
 					(framework-paths) " "
                                         (link-libs dependencies))]
                  (do
-                   (println clang-command)
+                   ;;(println clang-command)
                    (def cmd clang-command)
                    (system clang-command)))
                (unload-if-necessary func-name)
