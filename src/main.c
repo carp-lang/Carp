@@ -1,6 +1,8 @@
 #include "repl.h"
 #include "eval.h"
 #include "../out/shared.h"
+/* #include <unistd.h> */
+/* #include <math.h> */
 
 int main() {
   env_new_global();
