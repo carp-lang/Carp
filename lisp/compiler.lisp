@@ -50,14 +50,14 @@
 (defn save-function-prototypes ()
   (save (str out-dir "functions.h")
         (str
-         "#include \"shared.h\"\n"
+         "#include <shared.h>\n"
          (join "\n" (map c-ify-name (map :func-proto (values baked-funcs)))))))
 
 (defn link-libs (dependencies)
   (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) ".so")) dependencies)))
 
 (defn include-paths ()
-  "-I/usr/local/include")
+  (str "-I/usr/local/include" " -I" carp-dir "/shared"))
 
 (defn lib-paths ()
   "-L/usr/local/lib/ -lglfw3")
@@ -65,7 +65,7 @@
 (defn framework-paths ()
   "-framework OpenGL -framework Cocoa -framework IOKit")
 
-(def out-dir "./out/")
+(def out-dir "./")
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal (builder func-name func-code dependencies)
