@@ -7,6 +7,7 @@ int main() {
   shadow_stack_pos = 0;
   env_new_global();
   eval_text(global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false);
+  pop_stacks_to_zero();
   repl(global_env);  
   assert(obj_total == 0);
 }

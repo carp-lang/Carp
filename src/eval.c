@@ -170,8 +170,7 @@ void match(Obj *env, Obj *value, Obj *attempts) {
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(p->cdr->car)->s); //, obj_to_string(new_env)->s);
       eval_internal(new_env, p->cdr->car); // eval the following form using the new environment
-      Obj *e = shadow_stack_pop(); // new_env
-      assert(e == new_env);
+      shadow_stack_pop(); // new_env
       return;
     }
     
@@ -496,6 +495,7 @@ void eval_list(Obj *env, Obj *o) {
     
     while(p && p->car) {
       if(error) {
+	shadow_stack_pop();
 	return;
       }
       
@@ -510,6 +510,7 @@ void eval_list(Obj *env, Obj *o) {
     }
 
     if(error) {
+      shadow_stack_pop();
       return;
     }
 
@@ -560,18 +561,20 @@ void eval_list(Obj *env, Obj *o) {
       }
     }
 
-    //printf("time to pop!\n");
-    for(int i = 0; i < count; i++) {
+    if(!error) {
+      //printf("time to pop!\n");
+      for(int i = 0; i < count; i++) {
+	shadow_stack_pop();
+      }
       shadow_stack_pop();
-    }
-    shadow_stack_pop();
-
-    Obj *oo = shadow_stack_pop(); // o
-    if(o != oo) {
-      printf("o != oo");
-      printf("o: %p ", o); obj_print_cout(o); printf("\n");
-      printf("oo: %p ", oo); obj_print_cout(oo); printf("\n");
-      assert(false);
+      
+      Obj *oo = shadow_stack_pop(); // o
+      if(o != oo) {
+	printf("o != oo\n");
+	printf("o: %p ", o); obj_print_cout(o); printf("\n");
+	printf("oo: %p ", oo); obj_print_cout(oo); printf("\n");
+	assert(false);
+      }
     }
   }
 }

@@ -26,17 +26,27 @@ void repl(Obj *env) {
       break;
     }
     eval_text(env, input, true);
-    while(stack_pos > 0) {
-      printf("°"); // Popping extra stack value
-      Obj *popped = stack_pop();
-      obj_print(popped);
-      printf("\n");
-    }
+    pop_stacks_to_zero();
     printf("\n");
     //assert(stack_pos == 0);
     //stack_print();
   }
   gc_all();
+}
+
+void pop_stacks_to_zero() {
+  while(stack_pos > 0) {
+    //printf("Pop: "); // Popping extra stack value
+    Obj *popped = stack_pop();
+    //obj_print(popped);
+    //printf("\n");
+  }
+  while(shadow_stack_pos > 0) {
+    //printf("Shadow pop: "); // Popping extra stack value
+    Obj *popped = shadow_stack_pop();
+    //obj_print(popped);
+    //printf("\n");
+  }
 }
 
 void env_new_global() {
