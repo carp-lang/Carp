@@ -9,6 +9,7 @@
 #define LOG_SHADOW_STACK 0
 #define SHOW_MACRO_EXPANSION 0
 #define LOG_FUNC_APPLICATION 0
+#define GC_COLLECT_AFTER_EACH_FORM 0
 
 #define STACK_TRACE_LEN 256
 char function_trace[STACK_SIZE][STACK_TRACE_LEN];
@@ -582,10 +583,18 @@ void eval_internal(Obj *env, Obj *o) {
   if(LOG_EVAL) {
     printf("> "); obj_print_cout(o); printf("\n");
   }
-  if(LOG_GC_POINTS) {
-    printf("Running GC in eval:\n");
+  if(obj_total > obj_total_max) {
+    //printf("obj_total = %d\n", obj_total);
+    if(LOG_GC_POINTS) {
+      printf("Running GC in eval:\n");
+    }
+    gc(global_env);
+    obj_total_max += 1000;
+    //printf("new obj_total_max = %d\n", obj_total_max);
   }
-  gc(global_env, o);
+  else {
+      //printf("%d/%d\n", obj_total, obj_total_max);
+  }
   
   if(!o) {
     stack_push(nil);
@@ -645,7 +654,7 @@ void eval_text(Obj *env, char *text, bool print) {
       if(LOG_GC_POINTS) {
         printf("Running GC after error occured:\n");
       }
-      gc(env, NULL);
+      gc(env);
       return;
     }
     if(print) {
@@ -658,10 +667,12 @@ void eval_text(Obj *env, char *text, bool print) {
       printf("\n");
     }
     form = form->cdr;
-    if(LOG_GC_POINTS) {
-      printf("Running GC after evaluation of single form in eval_text:\n");
+    if(GC_COLLECT_AFTER_EACH_FORM) {
+      if(LOG_GC_POINTS) {
+        printf("Running GC after evaluation of single form in eval_text:\n");
+      }
+      gc(env);
     }
-    gc(env, NULL);
   }
   stack_pop(); // pop the 'forms' that was pushed above
 }

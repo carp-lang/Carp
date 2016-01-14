@@ -10,12 +10,16 @@
 #define MAX_INPUT_BUFFER_SIZE 2048
 char input[MAX_INPUT_BUFFER_SIZE];
 
+#define GC_COLLECT_BEFORE_REPL_INPUT 0
+
 void repl(Obj *env) {
   while(1) {
-    if(LOG_GC_POINTS) {
-      printf("Running GC before taking REPL input:\n");
+    if(GC_COLLECT_BEFORE_REPL_INPUT) {
+      if(LOG_GC_POINTS) {
+	printf("Running GC before taking REPL input:\n");
+      }
+      gc(env);
     }
-    gc(env, NULL);
     printf("\e[36mλ>\e[0m ");
     fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);
     if(strcmp(input, "q\n") == 0) {

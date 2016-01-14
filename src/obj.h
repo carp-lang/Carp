@@ -102,6 +102,7 @@ void obj_print_cout(Obj *o);
 
 Obj *obj_latest;
 int obj_total;
+int obj_total_max;
 
 Obj *global_env;
 

@@ -68,14 +68,11 @@ void gc_sweep() {
     }
   }
   if(LOG_GC_KILL_COUNT) {
-    printf("\e[33mDeleted %d Obj:s, %d left.\e[0m\n", kill_count, obj_total);
+    printf("\e[33mGC:d %d Obj:s, %d left.\e[0m\n", kill_count, obj_total);
   }
 }
 
-void gc(Obj *env, Obj *forms) {
-  if(forms) {
-    obj_mark_alive(forms);
-  }
+void gc(Obj *env) {
   obj_mark_alive(env);
   for(int i = 0; i < stack_pos; i++) {
     obj_mark_alive(stack[i]);

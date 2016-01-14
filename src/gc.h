@@ -3,5 +3,5 @@
 #include "obj.h"
 #include "eval.h"
 
-void gc(Obj *env, Obj *forms);
+void gc(Obj *env);
 void gc_all();

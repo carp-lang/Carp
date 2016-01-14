@@ -6,4 +6,4 @@
 (load-lisp (str carp-dir "lisp/compiler_tests.lisp"))
 (load-lisp (str carp-dir "lisp/examples.lisp"))
 
-;; (load-lisp (str carp-dir "lisp/glfw_test.lisp"))
+(load-lisp (str carp-dir "lisp/glfw_test.lisp"))
