@@ -113,6 +113,7 @@ Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code) {
 }
 
 Obj *obj_new_environment(Obj *parent) {
+  //obj_print_cout(parent);
   Obj *o = obj_new('E');
   o->parent = parent;
   o->bindings = NULL;
@@ -270,3 +271,64 @@ bool is_true(Obj *o) {
   }
 }
 
+void obj_print_cout(Obj *o) {
+  if(!o) {
+    printf("NULL");
+  }
+  else if(o->tag == 'C') {
+    printf("(");
+    Obj *p = o;
+    while(p && p->car && p->tag == 'C') {
+      obj_print_cout(p->car);
+      if(p->cdr && p->cdr->tag == 'C' && p->cdr->cdr) {
+    	printf(" ");
+      }
+      p = p->cdr;
+    }
+    printf(")");
+  }
+  else if(o->tag == 'E') {
+    printf("{ ... }");
+  }
+  else if(o->tag == 'Q') {
+    printf("%p", o->void_ptr);
+  }
+  else if(o->tag == 'I') {
+    printf("%d", o->i);
+  }
+  else if(o->tag == 'V') {
+    printf("%f", o->f32);
+  }
+  else if(o->tag == 'S') {
+    printf("\"%s\"", o->s);
+  }
+  else if(o->tag == 'Y') {
+    printf("%s", o->s);
+  }
+  else if(o->tag == 'K') {
+    printf(":%s", o->s);
+  }
+  else if(o->tag == 'P') {
+    printf("<primop:%p>", o->primop);
+  }
+  else if(o->tag == 'D') {
+    printf("<dylib:%p>", o->dylib);
+  }
+  else if(o->tag == 'F') {
+    printf("<foreign>");
+  }
+  else if(o->tag == 'L') {
+    printf("(fn ");
+    obj_print_cout(o->params);
+    printf(" ");
+    obj_print_cout(o->body);
+    printf(")");
+  }
+  else if(o->tag == 'M') {
+    printf("%p", o);
+  }
+  else {
+    printf("obj_print_cout() can't handle type tag %c (%d).\n", o->tag, o->tag);
+    assert(false);
+  }
+}

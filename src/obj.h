@@ -91,12 +91,14 @@ Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
 
 Obj *obj_copy(Obj *o);
-Obj *obj_list_internal(Obj *objs[]);
 
+Obj *obj_list_internal(Obj *objs[]);
 #define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});
 
 bool obj_eq(Obj *a, Obj *b);
 bool is_true(Obj *o);
+
+void obj_print_cout(Obj *o);
 
 Obj *obj_latest;
 int obj_total;

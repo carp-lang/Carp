@@ -4,7 +4,9 @@
 #include "reader.h"
 #include "gc.h"
 
+#define LOG_EVAL 0
 #define LOG_STACK 0
+#define LOG_SHADOW_STACK 0
 #define SHOW_MACRO_EXPANSION 0
 #define LOG_FUNC_APPLICATION 0
 
@@ -50,6 +52,46 @@ Obj *stack_pop() {
     stack_print();
   }
   return o;
+}
+
+void shadow_stack_push(Obj *o) {
+  if(LOG_SHADOW_STACK) {
+    printf("Pushing to shadow stack: ");
+    obj_print_cout(o);
+    printf("\n");
+  }
+  if(shadow_stack_pos >= STACK_SIZE) {
+    printf("Shadow stack overflow.");
+    exit(1);
+  }
+  shadow_stack[shadow_stack_pos++] = o;
+}
+
+Obj *shadow_stack_pop() {
+  if(error) {
+    return nil;
+  }
+  if(shadow_stack_pos <= 0) {
+    printf("Shadow stack underflow.");
+    assert(false);
+  }
+  Obj *o = shadow_stack[--shadow_stack_pos];
+  if(LOG_SHADOW_STACK) {
+    printf("Popping from shadow stack: ");
+    obj_print_cout(o);
+    printf("\n");
+  }
+  return o;
+}
+
+void shadow_stack_print() {
+  printf("----- SHADOW STACK -----\n");
+  for(int i = 0; i < stack_pos - 1; i++) {
+    printf("%d\t", i);
+    obj_print_cout(shadow_stack[i]);
+    printf("\n");
+  }
+  printf("-----  END  -----\n\n");
 }
 
 void function_trace_print() {
@@ -144,11 +186,18 @@ void match(Obj *env, Obj *value, Obj *attempts) {
 
 void apply(Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
+
+    //printf("Calling function "); obj_print_cout(function); printf(" with: "); obj_print_cout(function->params); printf("\n");
+    
     Obj *calling_env = obj_new_environment(function->env);
-    //printf("Calling function that has parameters: %s\n", obj_to_string(function->params)->s);
     env_extend_with_args(calling_env, function, arg_count, args);
     //printf("Lambda env: %s\n", obj_to_string(calling_env)->s);
+
+    shadow_stack_push(function);
+    shadow_stack_push(calling_env);
     eval_internal(calling_env, function->body);
+    shadow_stack_pop();
+    shadow_stack_pop();
   }
   else if(function->tag == 'P') {
     Obj *result = function->primop(args, arg_count);
@@ -454,11 +503,14 @@ void eval_list(Obj *env, Obj *o) {
     if(error) {
       return;
     }
+
+    shadow_stack_push(function);
     
     Obj *args[count];
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop();
       args[count - i - 1] = arg;
+      shadow_stack_push(arg);
     }
 
     if(function->tag == 'M') {
@@ -492,14 +544,24 @@ void eval_list(Obj *env, Obj *o) {
 	function_trace_pos--;
       }
     }
+
+    shadow_stack_pop();
+    for(int i = 0; i < count; i++) {
+      shadow_stack_pop();
+    }
   }
 }
 
 void eval_internal(Obj *env, Obj *o) {
   if(error) { return; }
 
-  //printf("%s\n", obj_to_string(o)->s);
-  //gc(global_env, o);
+  //shadow_stack_print();
+  if(LOG_EVAL) {
+    printf("> "); obj_print_cout(o); printf("\n");
+  }
+  if(LOG_GC_POINTS) {
+    printf("Running GC in eval:\n"); gc(global_env, o);
+  }
   
   if(!o) {
     stack_push(nil);
@@ -554,6 +616,9 @@ void eval_text(Obj *env, char *text, bool print) {
       printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(error)->s);
       function_trace_print();
       error = NULL;
+      if(LOG_GC_POINTS) {
+        printf("Running GC after error occured:\n");
+      }
       gc(env, NULL);
       return;
     }
@@ -567,6 +632,9 @@ void eval_text(Obj *env, char *text, bool print) {
       printf("\n");
     }
     form = form->cdr;
+    if(LOG_GC_POINTS) {
+      printf("Running GC after evaluation of single form in eval_text:\n");
+    }
     gc(env, NULL);
   }
   stack_pop(); // pop the 'forms' that was pushed above

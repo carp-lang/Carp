@@ -12,6 +12,9 @@ char input[MAX_INPUT_BUFFER_SIZE];
 
 void repl(Obj *env) {
   while(1) {
+    if(LOG_GC_POINTS) {
+      printf("Running GC before taking REPL input:\n");
+    }
     gc(env, NULL);
     printf("\e[36mλ>\e[0m ");
     fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);

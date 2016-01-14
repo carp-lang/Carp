@@ -3,9 +3,14 @@
 #include "obj.h"
 #include "obj_string.h"
 
+#define LOG_GC_POINTS 0
+
 #define STACK_SIZE 512
 Obj *stack[STACK_SIZE];
 int stack_pos;
+
+Obj *shadow_stack[STACK_SIZE];
+int shadow_stack_pos;
 
 void function_trace_print();
 

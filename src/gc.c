@@ -1,13 +1,15 @@
 #include "gc.h"
 
-#define LOG_GC_KILLS 0
+#define LOG_GC_KILL_COUNT 0
+#define LOG_FREE 0
 
 void obj_mark_alive(Obj *o) {
   if(!o || o->alive) {
     return;
   }
 
-  //printf("marking %p alive\n", o);  
+  //printf("marking %p alive: ", o); obj_print_cout(o); printf("\n");
+  
   o->alive = true;
   
   if(o->tag == 'C') {
@@ -45,15 +47,17 @@ void gc_sweep() {
   while(*p) {
     if(!(*p)->alive) {
       Obj *dead = *p;
-      *p = dead->prev;
 
+      if(LOG_FREE) {
+	printf("free ");
+	printf("%p %c ", dead, dead->tag);
+	//obj_print_cout(dead);
+	printf("\n");
+      }
+
+      *p = dead->prev;
       free_internal_data(dead);
       free(dead);
-
-      /* printf("free %p %c \t", dead, dead->tag); */
-      /* if(dead->tag == 'S') printf("\"%s\"", dead->s); */
-      /* if(dead->tag == 'I') printf("%d", dead->i); */
-      /* printf("\n"); */
       
       obj_total--;
       kill_count++;
@@ -63,7 +67,7 @@ void gc_sweep() {
       p = &(*p)->prev;
     }
   }
-  if(LOG_GC_KILLS) {
+  if(LOG_GC_KILL_COUNT) {
     printf("\e[33mDeleted %d Obj:s, %d left.\e[0m\n", kill_count, obj_total);
   }
 }
@@ -75,6 +79,9 @@ void gc(Obj *env, Obj *forms) {
   obj_mark_alive(env);
   for(int i = 0; i < stack_pos; i++) {
     obj_mark_alive(stack[i]);
+  }
+  for(int i = 0; i < shadow_stack_pos; i++) {
+    obj_mark_alive(shadow_stack[i]);
   }
   gc_sweep();
 }
