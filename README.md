@@ -15,9 +15,9 @@ The key features of Carp are the following:
 * Very good integration with exisiting C code
 
 ## Installation
-Clone this repo, then run ```make``` in its root. Add the /bin directory to your path to enable calling the ```carp``` command:
+Clone this repo, then run ```make``` in its root. Add the 'bin' directory to your path to enable calling the ```carp``` command:
 
-```export PATH=$PATH:/Users/erik/Carp/bin/```
+```export PATH=$PATH:~/Carp/bin/```
 
 ## The Language
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
