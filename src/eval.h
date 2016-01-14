@@ -12,6 +12,9 @@ int stack_pos;
 Obj *shadow_stack[STACK_SIZE];
 int shadow_stack_pos;
 
+void shadow_stack_push(Obj *o);
+Obj *shadow_stack_pop();
+
 void function_trace_print();
 
 void stack_push(Obj *o);

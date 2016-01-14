@@ -56,7 +56,7 @@ Obj *stack_pop() {
 
 void shadow_stack_push(Obj *o) {
   if(LOG_SHADOW_STACK) {
-    printf("Pushing to shadow stack: ");
+    printf("Pushing to shadow stack: %p ", o);
     obj_print_cout(o);
     printf("\n");
   }
@@ -77,7 +77,7 @@ Obj *shadow_stack_pop() {
   }
   Obj *o = shadow_stack[--shadow_stack_pos];
   if(LOG_SHADOW_STACK) {
-    printf("Popping from shadow stack: ");
+    printf("Popping from shadow stack: %p ", o);
     obj_print_cout(o);
     printf("\n");
   }
@@ -187,7 +187,7 @@ void match(Obj *env, Obj *value, Obj *attempts) {
 void apply(Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
-    //printf("Calling function "); obj_print_cout(function); printf(" with: "); obj_print_cout(function->params); printf("\n");
+    //printf("Calling function "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
     
     Obj *calling_env = obj_new_environment(function->env);
     env_extend_with_args(calling_env, function, arg_count, args);
@@ -200,8 +200,18 @@ void apply(Obj *function, Obj **args, int arg_count) {
     shadow_stack_pop();
   }
   else if(function->tag == 'P') {
+    /* shadow_stack_push(function); */
+    /* for(int i = 0; i < arg_count; i++) { */
+    /*   shadow_stack_push(args[i]); */
+    /* } */
+    
     Obj *result = function->primop(args, arg_count);
     stack_push(result);
+
+    /* shadow_stack_pop(); */
+    /* for(int i = 0; i < arg_count; i++) { */
+    /*   shadow_stack_pop(); */
+    /* } */
   }
   else if(function->tag == 'F') {
     assert(function);
@@ -474,12 +484,15 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else {
-    // Lambda, primop or macro
+    shadow_stack_push(o);
+    
+    // Lambda, primop or macro   
     eval_internal(env, o->car);
     if(error) { return; }
     
     Obj *function = stack_pop();
     assert_or_set_error(function, "Can't call NULL.", o);
+    shadow_stack_push(function);
     
     bool eval_args = function->tag != 'M'; // macros don't eval their args
     Obj *p = o->cdr;
@@ -504,8 +517,7 @@ void eval_list(Obj *env, Obj *o) {
       return;
     }
 
-    shadow_stack_push(function);
-    
+    //printf("Popping args:\n");
     Obj *args[count];
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop();
@@ -538,8 +550,11 @@ void eval_list(Obj *env, Obj *o) {
       
       snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", obj_to_string(o)->s);
       function_trace_pos++;
-      
+
+      //printf("apply start: "); obj_print_cout(function); printf("\n");
       apply(function, args, count);
+      //printf("apply end\n");
+      
       if(!error) {
 	function_trace_pos--;
       }
@@ -549,6 +564,9 @@ void eval_list(Obj *env, Obj *o) {
     for(int i = 0; i < count; i++) {
       shadow_stack_pop();
     }
+
+    Obj *oo = shadow_stack_pop(); // o
+    assert(o == oo);
   }
 }
 
@@ -560,8 +578,9 @@ void eval_internal(Obj *env, Obj *o) {
     printf("> "); obj_print_cout(o); printf("\n");
   }
   if(LOG_GC_POINTS) {
-    printf("Running GC in eval:\n"); gc(global_env, o);
+    printf("Running GC in eval:\n");
   }
+  gc(global_env, o);
   
   if(!o) {
     stack_push(nil);

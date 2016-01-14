@@ -1,6 +1,8 @@
 #include "obj.h"
 #include "obj_string.h"
 
+#define LOG_ALLOCS 0
+
 Obj *obj_latest = NULL;
 int obj_total = 0;
 
@@ -11,7 +13,9 @@ Obj *obj_new(char tag) {
   o->tag = tag;
   obj_latest = o;
   obj_total++;
-  //printf("alloc %p %c\n", o, o->tag);  
+  if(LOG_ALLOCS) {
+    printf("alloc %p %c\n", o, o->tag);
+  }
   return o;
 }
 
