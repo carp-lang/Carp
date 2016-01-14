@@ -1,6 +1,5 @@
 # Compiler
   - Track dependencies between functions
-  - Remove the out directory and just put build artifacts into the current directory?
   - Change :a and :b in binop and if to :left and :right
   - Compilation of generic functions
   - lambdas / lambda lifting
@@ -10,6 +9,7 @@
   - make "shared.h" be included by using <> instead, add it to include path automatically
   
 # Dynamic Runtime
+  - call boot.carp file if it exists in ~/.carp or the folder where you run the carp command
   - meta data on Objs: Line nr, line pos, source file,
   - warn if a let statement has more than one body form (implicit do)
   - add array as its own tag for Obj, [] syntax, etc
