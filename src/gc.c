@@ -1,6 +1,6 @@
 #include "gc.h"
 
-#define LOG_GC_KILL_COUNT 0
+#define LOG_GC_KILL_COUNT 1
 #define LOG_FREE 0
 
 void obj_mark_alive(Obj *o) {

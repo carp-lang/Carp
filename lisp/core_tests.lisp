@@ -294,3 +294,4 @@
   (def top-var :mountain-high))
 (define-at-toplevel)
 (assert-eq :mountain-high top-var)
+

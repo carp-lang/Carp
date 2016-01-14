@@ -68,9 +68,6 @@ void shadow_stack_push(Obj *o) {
 }
 
 Obj *shadow_stack_pop() {
-  if(error) {
-    return nil;
-  }
   if(shadow_stack_pos <= 0) {
     printf("Shadow stack underflow.");
     assert(false);
@@ -166,11 +163,14 @@ void match(Obj *env, Obj *value, Obj *attempts) {
   while(p && p->car) {
     //printf("\nWill match %s with value %s\n", obj_to_string(p->car)->s, obj_to_string(value)->s);
     Obj *new_env = obj_new_environment(env);
+    shadow_stack_push(new_env);
     bool result = obj_match(new_env, p->car, value);
 
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(p->cdr->car)->s); //, obj_to_string(new_env)->s);
       eval_internal(new_env, p->cdr->car); // eval the following form using the new environment
+      Obj *e = shadow_stack_pop(); // new_env
+      assert(e == new_env);
       return;
     }
     
@@ -179,6 +179,9 @@ void match(Obj *env, Obj *value, Obj *attempts) {
     }
       
     p = p->cdr->cdr;
+
+    Obj *e = shadow_stack_pop(); // new_env
+    assert(e == new_env);
   }
 
   set_error("Failed to find a suitable match for: ", value);
@@ -199,19 +202,9 @@ void apply(Obj *function, Obj **args, int arg_count) {
     shadow_stack_pop();
     shadow_stack_pop();
   }
-  else if(function->tag == 'P') {
-    /* shadow_stack_push(function); */
-    /* for(int i = 0; i < arg_count; i++) { */
-    /*   shadow_stack_push(args[i]); */
-    /* } */
-    
+  else if(function->tag == 'P') {   
     Obj *result = function->primop(args, arg_count);
     stack_push(result);
-
-    /* shadow_stack_pop(); */
-    /* for(int i = 0; i < arg_count; i++) { */
-    /*   shadow_stack_pop(); */
-    /* } */
   }
   else if(function->tag == 'F') {
     assert(function);
@@ -358,6 +351,7 @@ void eval_list(Obj *env, Obj *o) {
   }
   else if(HEAD_EQ("let")) {
     Obj *let_env = obj_new_environment(env);
+    shadow_stack_push(let_env);
     Obj *p = o->cdr->car;
     assert_or_set_error(o->cdr->car, "No bindings in 'let' form.", o);
     while(p && p->car) {
@@ -372,6 +366,7 @@ void eval_list(Obj *env, Obj *o) {
     }
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
     eval_internal(let_env, o->cdr->cdr->car);
+    shadow_stack_pop(); // let_env
   }
   else if(HEAD_EQ("not")) {
     Obj *p = o->cdr;
@@ -517,7 +512,7 @@ void eval_list(Obj *env, Obj *o) {
       return;
     }
 
-    //printf("Popping args:\n");
+    //printf("Popping args!\n");
     Obj *args[count];
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop();
@@ -528,13 +523,17 @@ void eval_list(Obj *env, Obj *o) {
     if(function->tag == 'M') {
       Obj *calling_env = obj_new_environment(function->env);
       env_extend_with_args(calling_env, function, count, args);
+      shadow_stack_push(calling_env);
       eval_internal(calling_env, function->body);
       if(error) { return; }
       Obj *expanded = stack_pop();
       if(SHOW_MACRO_EXPANSION) {
 	printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
       }
+      shadow_stack_push(expanded);
       eval_internal(env, expanded);
+      shadow_stack_pop(); // expanded
+      shadow_stack_pop(); // calling_env
     }
     else {
       if(function_trace_pos > STACK_SIZE - 1) {
@@ -560,13 +559,19 @@ void eval_list(Obj *env, Obj *o) {
       }
     }
 
-    shadow_stack_pop();
+    //printf("time to pop!\n");
     for(int i = 0; i < count; i++) {
       shadow_stack_pop();
     }
+    shadow_stack_pop();
 
     Obj *oo = shadow_stack_pop(); // o
-    assert(o == oo);
+    if(o != oo) {
+      printf("o != oo");
+      printf("o: %p ", o); obj_print_cout(o); printf("\n");
+      printf("oo: %p ", oo); obj_print_cout(oo); printf("\n");
+      assert(false);
+    }
   }
 }
 
@@ -590,6 +595,7 @@ void eval_internal(Obj *env, Obj *o) {
   }
   else if(o->tag == 'E') {
     Obj *new_env = obj_copy(o);
+    shadow_stack_push(new_env);
     Obj *p = new_env->bindings;
     while(p && p->car) {
       Obj *pair = p->car;
@@ -599,6 +605,7 @@ void eval_internal(Obj *env, Obj *o) {
       p = p->cdr;
     }
     stack_push(new_env);
+    shadow_stack_pop(); // new_env
   }
   else if(o->tag == 'Y') {
     Obj *result = env_lookup(env, o);
