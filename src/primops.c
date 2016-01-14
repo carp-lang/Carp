@@ -650,7 +650,7 @@ Obj *p_map(Obj** args, int arg_count) {
   for(int i = 0; i < shadow_count; i++) {
     shadow_stack_pop();
   }
-  shadow_stack_pop();
+  shadow_stack_pop(); // list
   //printf("map end\n");
   return list;
 }
@@ -664,17 +664,25 @@ Obj *p_map2(Obj** args, int arg_count) {
   Obj *p = args[1];
   Obj *p2 = args[2];
   Obj *list = obj_new_cons(NULL, NULL);
-  Obj *prev = list; 
+  shadow_stack_push(list);
+  Obj *prev = list;
+  int shadow_count = 0;
   while(p && p->car && p2 && p2->car) {
     Obj *argz[2] = { p->car, p2->car };
     apply(f, argz, 2);
     prev->car = stack_pop();
     Obj *new = obj_new_cons(NULL, NULL);
+    shadow_stack_push(new);
+    shadow_count++;
     prev->cdr = new;
     prev = new;
     p = p->cdr;
     p2 = p2->cdr;
   }
+  for(int i = 0; i < shadow_count; i++) {
+    shadow_stack_pop();
+  }
+  shadow_stack_pop(); // list
   return list;
 }
 
@@ -745,19 +753,27 @@ Obj *p_filter(Obj** args, int arg_count) {
   Obj *f = args[0];
   Obj *p = args[1];
   Obj *list = obj_new_cons(NULL, NULL);
-  Obj *prev = list; 
+  shadow_stack_push(list);
+  Obj *prev = list;
+  int shadow_count = 0;
   while(p && p->car) {
     Obj *arg[1] = { p->car };
     apply(f, arg, 1);
     Obj *result = stack_pop();
     if(is_true(result)) {
       Obj *new = obj_new_cons(NULL, NULL);
+      shadow_stack_push(new);
+      shadow_count++;
       prev->car = p->car;
       prev->cdr = new;
       prev = new;
     }
     p = p->cdr;
   }
+  for(int i = 0; i < shadow_count; i++) {
+    shadow_stack_pop();
+  }
+  shadow_stack_pop(); // list
   return list;
 }
 
@@ -921,8 +937,10 @@ Obj *p_env(Obj** args, int arg_count) {
 
 Obj *p_load_lisp(Obj** args, int arg_count) {
   Obj *file_string = open_file(args[0]->s);
+  shadow_stack_push(file_string);
   if(file_string->tag == 'S') {
     Obj *forms = read_string(global_env, file_string->s);
+    shadow_stack_push(forms);
     Obj *form = forms;
     while(form && form->car) {
       eval_internal(global_env, form->car);
@@ -930,7 +948,9 @@ Obj *p_load_lisp(Obj** args, int arg_count) {
       Obj *result = stack_pop();
       form = form->cdr;
     }
+    shadow_stack_pop(); // forms
   }
+  shadow_stack_pop(); // file_string
   return nil;
 }
 
