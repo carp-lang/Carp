@@ -1,5 +1,6 @@
 # Compiler
   - Track dependencies between functions
+  - Remove the out directory and just put build artifacts into the current directory?
   - Change :a and :b in binop and if to :left and :right
   - Compilation of generic functions
   - lambdas / lambda lifting

@@ -48,13 +48,13 @@
 
 ;; Saves the signatures of all the baked functions to a header file so that they can include each other
 (defn save-function-prototypes ()
-  (save "out/functions.h"
+  (save (str out-dir "functions.h")
         (str
          "#include \"shared.h\"\n"
          (join "\n" (map c-ify-name (map :func-proto (values baked-funcs)))))))
 
 (defn link-libs (dependencies)
-  (join " " (map (fn (f) (str "./out/" (c-ify-name (str f)) ".so")) dependencies)))
+  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) ".so")) dependencies)))
 
 (defn include-paths ()
   "-I/usr/local/include")
@@ -65,7 +65,7 @@
 (defn framework-paths ()
   "-framework OpenGL -framework Cocoa -framework IOKit")
 
-(def compile-exe false)
+(def out-dir "./out/")
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal (builder func-name func-code dependencies)
@@ -76,7 +76,7 @@
         builder-with-functions (builder-visit-ast builder-with-headers ast-annotated func-name)
         c-program-string (builder-merge-to-c builder-with-functions)
         proto (get-function-prototype ast-annotated func-name)
-        c-file-name (str "out/" func-name ".c")
+        c-file-name (str out-dir func-name ".c")
         c-func-name (c-ify-name func-name)]
     (do
       (def ast ast-annotated)
@@ -87,9 +87,7 @@
                (save-function-prototypes)
                (save c-file-name c-program-string)
                (let [clang-command (str "clang "
-                                        (if compile-exe
-                                          (str "-o out/a.out ")
-                                          (str "-shared -o out/" c-func-name ".so "))
+                                        (str "-shared -o " out-dir c-func-name ".so ")
                                         c-file-name " "
                                         (include-paths)  " "
                                         (lib-paths) " "
@@ -99,7 +97,7 @@
 		     (def cmd clang-command)
 		     (system clang-command)))
                (unload-if-necessary func-name)
-               (def out-lib (load-dylib (str "./out/" c-func-name ".so")))
+               (def out-lib (load-dylib (str out-dir c-func-name ".so")))
                (register out-lib c-func-name arg-types return-type)
                (add-func! func-name proto out-lib)
 	       (let [f (eval (read func-name))]
@@ -113,6 +111,4 @@
 
 (defmacro bake* (func-symbol dependencies)
   (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies))
-
-(load (str carp-dir "lisp/compiler_tests.lisp"))
 
