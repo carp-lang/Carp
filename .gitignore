@@ -1,7 +1,6 @@
 /bin/carp-repl
 *.dSYM
 /gl-constants/gl_constants.o
-/gl-constants/gl_constants.so
 /out/*.c
 /out/*.so
 /src/*.o

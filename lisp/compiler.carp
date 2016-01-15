@@ -11,12 +11,12 @@
 ;; 6. Make the C generator spit out beautiful C for the AST node
 ;; 7. Profit!
 
-(load-lisp (str carp-dir "lisp/compiler_helpers.lisp"))
-(load-lisp (str carp-dir "lisp/ast.lisp"))
-(load-lisp (str carp-dir "lisp/infer_types.lisp"))
-(load-lisp (str carp-dir "lisp/generate_names.lisp"))
-(load-lisp (str carp-dir "lisp/calculate_lifetimes.lisp"))
-(load-lisp (str carp-dir "lisp/builder.lisp"))
+(load-lisp (str carp-dir "lisp/compiler_helpers.carp"))
+(load-lisp (str carp-dir "lisp/ast.carp"))
+(load-lisp (str carp-dir "lisp/infer_types.carp"))
+(load-lisp (str carp-dir "lisp/generate_names.carp"))
+(load-lisp (str carp-dir "lisp/calculate_lifetimes.carp"))
+(load-lisp (str carp-dir "lisp/builder.carp"))
 
 (defn annotate-ast (ast)
   (let [ast-typed (infer-types ast)
