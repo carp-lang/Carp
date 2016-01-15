@@ -1,4 +1,47 @@
 
-(defn calculate-lifetimes (ast)
-  ast)
+(defn convert-param-node (a)
+  {:name (:name a)
+   :type (:type a)})
 
+(defn convert-arg-node (a)
+  {:name (:arg-name a)
+   :type (:type a)})
+
+
+;; (defn literal-variables (literal-ast)
+;;   ())
+
+(defn manage? (descriptor)
+  (= (:type descriptor) :string))
+
+(defn calculate-lifetimes-internal (data)
+  (let [ast (:ast data)
+        vars (:vars data)]
+    (match (:node ast)
+
+           :function (let [arg-nodes (:args ast)
+                           variables (filter manage? (map convert-param-node arg-nodes))
+                           data-after (calculate-lifetimes-internal {:ast (:body ast)
+                                                                     :vars variables})
+                           final-free-list (:vars data-after)]
+                       {:ast (assoc ast :free final-free-list)
+                        :vars '()})
+
+           ;; :literal (if (heap-allocated? ast)
+           ;;            (let [new-vars (cons (:literal-name ast) vars)]
+           ;;              {:ast ast
+           ;;               :vars new-vars})
+           ;;            data)
+
+           :app (let [tail (:tail ast)
+                      new-vars (concat (filter manage? (map convert-arg-node tail)) vars)
+                      ;;_ (println (str "new-vars: " new-vars))
+                      ]
+                  {:ast ast
+                   :vars new-vars})
+
+           _ data)))
+
+(defn calculate-lifetimes (ast)
+  (:ast (calculate-lifetimes-internal {:ast ast
+                                       :vars '()})))

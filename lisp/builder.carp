@@ -33,13 +33,10 @@
 (defn indent-out! ()
   (swap! indent-level dec))
 
-(defn free-variables! (c free-list)
-  (do
-    (str-append! c (str (indent) "/* FREE: */\n"))
-    (map (fn (variable)
-           (str-append! c (str (indent) "free(" variable ")")))
-         free-list)
-    (str-append! c (str (indent) "/* * * * */\n"))))
+(defn free-variables (free-list)
+  (str
+    (join "\n" (map (fn (variable) (str (indent) "free(" (:name variable) ");")) free-list))
+    "\n"))
 
 (defn c-ify-name (lisp-name)
   (let [x0 (str-replace lisp-name "-" "_")
@@ -189,7 +186,8 @@
       ;;(println "visit-function: \n" ast)
       (let [code (str (name return-type) " " (c-ify-name func-name)
                       "(" (arg-list-build args) ") {\n"
-                      c 
+                      c
+                      (free-variables (:free ast))
                       (if (= :void (:type body))
                         "" ;; no return
                         (str (indent) "return " (get result :c) ";\n"))
