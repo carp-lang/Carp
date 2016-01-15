@@ -30,6 +30,12 @@
   (let [both (concat xs ys)]
     (set-internal both '())))
 
+
+;; For an arg to be managed it has to be of the correct type and not be a variable lookup
+(defn manage-arg? (arg)
+  (and (manage? arg)
+       (not (symbol? (:value arg)))))
+
 (defn calculate-lifetimes-internal (data)
   (let [ast (:ast data)
         vars (:vars data)]
@@ -49,7 +55,8 @@
            ;;            data)
 
            :app (let [tail (:tail ast)
-                      new-vars (concat (filter manage? (map convert-arg-node tail)) vars)
+                      _ (println (str "Tail:\n" tail))
+                      new-vars (concat (map convert-arg-node (filter manage? tail)) vars)
                       ;;_ (println (str "new-vars: " new-vars))
                       ]
                   {:ast ast
@@ -60,7 +67,7 @@
                         data-left (calculate-lifetimes-internal {:ast left :vars vars})
                         data-right (calculate-lifetimes-internal {:ast right :vars vars})
                         new-vars (union (:vars data-left) (:vars data-right))]
-                    {:ast ast ;; <- TODO: fix
+                    {:ast ast ;; <- TODO: fix, should visit the left and right ast and assoc them in
                      :vars new-vars})
 
            _ data)))

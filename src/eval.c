@@ -322,6 +322,9 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	error = obj_new_string("Failed to lookup keyword '");
 	obj_string_mut_append(error, obj_to_string(function)->s);
 	obj_string_mut_append(error, "'");
+	obj_string_mut_append(error, " in \n");
+	obj_string_mut_append(error, obj_to_string(args[0])->s);
+	obj_string_mut_append(error, "\n");
       }
     }
   }
