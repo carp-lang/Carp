@@ -637,7 +637,6 @@ void eval_internal(Obj *env, Obj *o) {
 
 Obj *eval(Obj *env, Obj *form) {
   error = NULL;
-  //stack_pos = 0;
   function_trace_pos = 0;
   eval_internal(env, form);
   Obj *result = stack_pop();
