@@ -7,7 +7,11 @@
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - make "shared.h" be included by using <> instead, add it to include path automatically
-  
+
+# Lisp Core Libs
+  - Tests for the union function
+  - Tests for the dictionary equality
+
 # Dynamic Runtime
   - call boot.carp file if it exists in ~/.carp or the folder where you run the carp command
   - meta data on Objs: Line nr, line pos, source file,
@@ -22,7 +26,6 @@
   - lambdas should be able to have their signature set/get
   - profile the evaluator
   - namespaces
-  - equality for dictionaries
 
 # Maybes
   - polymorphic math operators?
