@@ -69,7 +69,10 @@
 ;; (def glcon (gencon glast))
 ;; (def glasta (annotate-ast glast))
 
-(defn bake-main ()
+(defn bake-gl-exe ()
   (do (bake draw-rect)
-      (bake* app '(draw-rect))))
+      (bake* app '(draw-rect))
+      (reset! exe true)
+      (bake* main '(app))
+      (reset! exe false)))
 

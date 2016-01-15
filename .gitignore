@@ -4,3 +4,4 @@
 /out/*.c
 /out/*.so
 /src/*.o
+/out/exe

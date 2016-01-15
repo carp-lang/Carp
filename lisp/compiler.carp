@@ -66,6 +66,7 @@
   "-framework OpenGL -framework Cocoa -framework IOKit")
 
 (def out-dir "./")
+(def exe false)
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal (builder func-name func-code dependencies)
@@ -87,7 +88,9 @@
                (save-function-prototypes)
                (save c-file-name c-program-string)
                (let [clang-command (str "clang "
-                                        (str "-shared -o " out-dir c-func-name ".so ")
+                                        (if exe
+                                          (str "-o " out-dir "exe ")
+                                          (str "-shared -o " out-dir c-func-name ".so "))
                                         c-file-name " "
                                         (include-paths)  " "
                                         (lib-paths) " "
@@ -97,12 +100,15 @@
 		     (def cmd clang-command)
 		     (system clang-command)))
                (unload-if-necessary func-name)
-               (def out-lib (load-dylib (str out-dir c-func-name ".so")))
-               (register out-lib c-func-name arg-types return-type)
-               (add-func! func-name proto out-lib)
-	       (let [f (eval (read func-name))]
-                 (do (def s (pretty-signature (signature f)))
-                     f)))
+               (if exe
+                 :exe-done
+                 (do
+                   (def out-lib (load-dylib (str out-dir c-func-name ".so")))
+                   (register out-lib c-func-name arg-types return-type)
+                   (add-func! func-name proto out-lib)
+                   (let [f (eval (read func-name))]
+                     (do (def s (pretty-signature (signature f)))
+                         f)))))
              _ (error "Must bake function with type (:arrow ...)")))))
 
 ;; Bake a function in the current environment, just give it's symbol
