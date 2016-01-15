@@ -169,9 +169,11 @@
 
 
 
-
-(defn own-string ()
+(defn own-string-1 ()
   (strlen "hej"))
+
+(defn own-string (s1)
+  (+ 100 (strlen s1)))
 
 (def own-ast (lambda-to-ast (code own-string)))
 (def own-con (gencon own-ast))

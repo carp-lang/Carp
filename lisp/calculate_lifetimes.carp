@@ -14,6 +14,22 @@
 (defn manage? (descriptor)
   (= (:type descriptor) :string))
 
+(defn cons-unique (x xs)
+  (if (contains? xs x)
+    xs
+    (cons x xs)))
+
+(defn set-internal (xs result)
+  (match xs
+         () result
+         (x & xs) (set-internal xs (cons-unique x result))
+         (x) (cons-unique x result)
+         ))
+
+(defn union (xs ys)
+  (let [both (concat xs ys)]
+    (set-internal both '())))
+
 (defn calculate-lifetimes-internal (data)
   (let [ast (:ast data)
         vars (:vars data)]
@@ -22,9 +38,8 @@
            :function (let [arg-nodes (:args ast)
                            variables (filter manage? (map convert-param-node arg-nodes))
                            data-after (calculate-lifetimes-internal {:ast (:body ast)
-                                                                     :vars variables})
-                           final-free-list (:vars data-after)]
-                       {:ast (assoc ast :free final-free-list)
+                                                                     :vars variables})]
+                       {:ast (assoc ast :free (:vars data-after))
                         :vars '()})
 
            ;; :literal (if (heap-allocated? ast)
@@ -39,6 +54,14 @@
                       ]
                   {:ast ast
                    :vars new-vars})
+
+           :binop (let [left (:a ast)
+                        right (:b ast)
+                        data-left (calculate-lifetimes-internal {:ast left :vars vars})
+                        data-right (calculate-lifetimes-internal {:ast right :vars vars})
+                        new-vars (union (:vars data-left) (:vars data-right))]
+                    {:ast ast ;; <- TODO: fix
+                     :vars new-vars})
 
            _ data)))
 

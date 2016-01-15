@@ -1,5 +1,6 @@
 #include "obj.h"
 #include "obj_string.h"
+#include "env.h"
 
 #define LOG_ALLOCS 0
 
@@ -254,8 +255,59 @@ bool obj_eq(Obj *a, Obj *b) {
   }
   else if(a->tag == 'E') {
     if(!obj_eq(a->parent, b->parent)) { return false; }
-    printf("Can't compare dicts just yet...\n");
-    return false;
+    //printf("WARNING! Can't reliably compare dicts.\n");
+
+    {
+      Obj *pa = a->bindings;    
+      while(pa && pa->cdr) {
+	Obj *pair = pa->car;
+	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
+	Obj *binding = env_lookup_binding(b, pair->car);
+	if(binding) {
+	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
+	  bool eq = obj_eq(pair->cdr, binding->cdr);
+	  if(!binding->car) {
+	    //printf("binding->car was NULL\n");
+	    return false;
+	  }
+	  else if(!eq) {
+	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
+	    return false;
+	  }
+	}
+	else {
+	  return false;
+	}
+	pa = pa->cdr;
+      }
+    }
+
+    {
+      Obj *pb = b->bindings;    
+      while(pb && pb->cdr) {
+	Obj *pair = pb->car;
+	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
+	Obj *binding = env_lookup_binding(a, pair->car);
+	if(binding) {
+	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
+	  bool eq = obj_eq(pair->cdr, binding->cdr);
+	  if(!binding->car) {
+	    //printf("binding->car was NULL\n");
+	    return false;
+	  }
+	  else if(!eq) {
+	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
+	    return false;
+	  }
+	}
+	else {
+	  return false;
+	}
+	pb = pb->cdr;
+      }
+    }
+    
+    return true;
   }
   else {
     char buffer[512];
