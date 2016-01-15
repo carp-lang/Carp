@@ -3,5 +3,6 @@
 /gl-constants/gl_constants.o
 /out/*.c
 /out/*.so
+/out/*.h
 /src/*.o
 /out/exe
