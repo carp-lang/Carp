@@ -72,7 +72,5 @@
 (defn bake-gl-exe ()
   (do (bake draw-rect)
       (bake* app '(draw-rect))
-      (reset! exe true)
-      (bake* main '(app))
-      (reset! exe false)))
+      (bake-exe* main '(app))))
 

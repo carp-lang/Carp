@@ -66,16 +66,16 @@
   "-framework OpenGL -framework Cocoa -framework IOKit")
 
 (def out-dir "./")
-(def exe false)
 
 ;; Takes a function name and the list representation of the lambda
-(defn bake-internal (builder func-name func-code dependencies)
+(defn bake-internal (builder func-name func-code dependencies exe)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
         ast-annotated (annotate-ast ast-named)
         builder-with-headers (builder-add-headers builder header-files)
-        builder-with-functions (builder-visit-ast builder-with-headers ast-annotated func-name)
-        c-program-string (builder-merge-to-c builder-with-functions)
+        builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
+        builder-final (if (and exe (not (= func-name "main"))) (builder-add-main-function builder-fns func-name) builder-fns)
+        c-program-string (builder-merge-to-c builder-final)
         proto (get-function-prototype ast-annotated func-name)
         c-file-name (str out-dir func-name ".c")
         c-func-name (c-ify-name func-name)]
@@ -113,10 +113,16 @@
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '()))
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '() false))
+
+(defmacro bake-exe (func-symbol)
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '() true))
 
 (defmacro bake* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies))
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies false))
+
+(defmacro bake-exe* (func-symbol dependencies)
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies true))
 
 (defn clean ()
   (do

@@ -11,6 +11,9 @@
           builder
           files))
 
+(defn builder-add-main-function (builder func-name)
+  (builder-add builder :functions (str "int main() { " func-name "(); }")))
+
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
   (let [funcs (get builder :functions)
