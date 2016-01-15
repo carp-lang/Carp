@@ -4,7 +4,7 @@
         gl-constants (load-dylib (str carp-dir "gl-constants/gl_constants.so"))]
     (do
       (reset! header-files (cons "<GLFW/glfw3.h>" header-files))
-      (reset! header-files (cons "\"../gl-constants/gl_constants.h\"" header-files))
+      (reset! header-files (cons (str "\"" carp-dir "gl-constants/gl_constants.h\"") header-files))
       
       (register glfw "glfwInit" '() :bool)
       (register glfw "glfwCreateWindow" '(:int :int :string (:ptr :GLFWmonitor) (:ptr :GLFWwindow)) '(:ptr :GLFWwindow))
@@ -52,10 +52,10 @@
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
               (do
-                (glClearColor 0.0f 0.95f 0.75f 1.0f)
+                (glClearColor 0.6f 0.85f 0.85f 1.0f)
                 (glClear gl-color-buffer-bit)
-                (glColor3f 1.0f 1.0f 1.0f)
-                (draw-rect 0f 0f 0.2f 0.4f)              
+                (glColor3f 1.0f 0.9f 0.2f)
+                (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
             (glfwTerminate))))
