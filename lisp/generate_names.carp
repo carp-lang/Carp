@@ -8,7 +8,7 @@
 
 (defn generate-names (ast)
   (do
-    ;;(println (str "genname for " (:node ast)))
+    ;;(println (str "\ngenerate-names:\n" (:node ast)))
     (match (:node ast)
 
            :function (let [ast1 (assoc ast :body (generate-names (:body ast)))]
@@ -18,22 +18,25 @@
                      if-expr-name (str "if_expr_" (gen-name))
                      ast1 (assoc ast :if-result-name if-result-name)
                      ast2 (assoc ast1 :if-expr-name if-expr-name)
-                     ast3 (assoc ast2 :a (generate-names (:a ast)))
-                     ast4 (assoc ast3 :b (generate-names (:b ast)))]
-                 ast4)
+                     ast3 (assoc ast2 :expr (generate-names (:expr ast)))
+                     ast4 (assoc ast3 :a (generate-names (:a ast)))
+                     ast5 (assoc ast4 :b (generate-names (:b ast)))]
+                 ast5)
 
            :while (let [while-expr-name (str "while_expr_" (gen-name))
                         ast1 (assoc ast :while-expr-name while-expr-name)
-                        ast2 (assoc ast1 :body (generate-names (:body ast)))]
-                    ast2)
+                        ast2 (assoc ast1 :body (generate-names (:body ast)))
+                        ast3 (assoc ast2 :expr (generate-names (:expr ast)))]
+                    ast3)
            
            :let (let [let-result-name (str "let_result_" (gen-name))
                       ast1 (assoc ast :bindings (map generate-names (:bindings ast)))
-                      ast2 (assoc ast :body (generate-names (:body ast)))
+                      ast2 (assoc ast1 :body (generate-names (:body ast)))
                       ast3 (assoc ast2 :let-result-name let-result-name)]
                   ast3)
            
-           :binding ast ;; (let [] (log "binding:\n" ast))
+           :binding (let [named-value (generate-names (:value ast))]
+                      (assoc ast :value named-value))
            
            :app (let [head (:head ast)
                       func-name (:value head)
@@ -55,9 +58,13 @@
                         ast2 (assoc ast1 :b (generate-names (:b ast)))]
                     ast2)
                   
-           :do ast
+           :do (let [named-forms (map generate-names (:forms ast))
+                     ast1 (assoc ast :forms named-forms)]
+                 ast1)
            
            :literal ast
+
+           :null ast
            
            _ (error (str "Can't generate name for node " ast))
            

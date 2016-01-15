@@ -112,3 +112,8 @@
 (defmacro bake* (func-symbol dependencies)
   (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies))
 
+(defn clean ()
+  (do
+    (system "rm functions.h")
+    (system "rm *.so")
+    (system "rm *.c")))
