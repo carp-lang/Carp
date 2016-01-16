@@ -128,4 +128,5 @@ Obj *type_macro;
 Obj *type_void;
 Obj *type_float;
 Obj *type_ptr;
+Obj *type_ref;
 

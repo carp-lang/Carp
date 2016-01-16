@@ -48,6 +48,7 @@
     (match t
            :? "unknown"
            (:arrow _ _) "arrow"
+           (:ref r) (type-build r)
            (:ptr p) (str (name p) "*")
            x (name x))))
 

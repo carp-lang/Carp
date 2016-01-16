@@ -70,6 +70,9 @@ void env_new_global() {
   lisp_NULL = obj_new_ptr(NULL);
   define("NULL", lisp_NULL);
 
+  type_ref = obj_new_keyword("ref");
+  define("type_ref", type_ref);
+
   type_int = obj_new_keyword("int");
   define("type-int", type_int); // without this it will get GC'd!
 

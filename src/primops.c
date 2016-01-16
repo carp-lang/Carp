@@ -1022,6 +1022,13 @@ Obj *p_code(Obj** args, int arg_count) {
 }
 
 ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
+  
+  // Is it a ref type? (borrowed)
+  if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(type_obj->car, type_ref)) {
+    type_obj = type_obj->cdr->car; // the second element of the list
+    //printf("Found ref type, inner type is: %s\n", obj_to_string(type_obj)->s);
+  }
+  
   if(obj_eq(type_obj, type_string)) {
     return &ffi_type_pointer;
   }

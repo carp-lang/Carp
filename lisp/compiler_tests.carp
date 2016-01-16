@@ -169,7 +169,7 @@
 
 (register-builtin "ls" () :string)
 (register-builtin "eat_string" '(:string) :void)
-;;(register-builtin "strlen" '((:ref :string)) :int)
+(register-builtin "strlen" '((:ref :string)) :int)
 
 (defn own-string-1 ()
   (strlen "hej"))
