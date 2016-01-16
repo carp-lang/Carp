@@ -81,7 +81,9 @@
 
            :literal (let [val (:value form)]
                      (if (string? val)
-                       {:c (str "strdup(" (prn val) ")")}
+                       (do
+                         (str-append! c (str (indent) (type-build (:type form)) " " (:lit-name form) " = strdup(" (prn val) ");\n"))
+                         {:c (:lit-name form)})
                        {:c (prn val)}))
            
            :lookup (let [val (:value form)]

@@ -62,7 +62,7 @@
                      ast1 (assoc ast :forms named-forms)]
                  ast1)
            
-           :literal ast
+           :literal (assoc ast :lit-name (str "lit_" (gen-name)))
 
            :lookup ast
 

@@ -172,11 +172,14 @@
 (defn own-string-1 ()
   (strlen "hej"))
 
-(defn own-string (s1)
+(defn own-string-2 (s1)
   (+ 100 (strlen s1)))
+
+(defn own-string ()
+  "hej")
 
 (def own-ast (lambda-to-ast (code own-string)))
 (def own-con (gencon own-ast))
 (def own-asta (annotate-ast own-ast))
-;; (bake own-string)
+(bake own-string)
 
