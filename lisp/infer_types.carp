@@ -61,12 +61,12 @@
                       new-constraints (concat tail-constrs func-constrs (cons ret-constr arg-constrs))]
                   (concat new-constraints constraints))
 
-           :literal (let [val (:value ast)]
-                      (if (symbol? val) ;; if it's a symbol it's a lookup
-                        (cons {:a (get ast :type)
-                               :b (get-type-of-symbol type-env val)
-                               :doc (str "lit-constr, lookup " val)} constraints)
-                        constraints)) ;; other literals don't need constraints, just return unchanged constraints
+           :literal constraints ;; literals don't need constraints
+
+           :lookup (let [val (:value ast)]
+                     (cons {:a (get ast :type)
+                            :b (get-type-of-symbol type-env val)
+                            :doc (str "lookup " val)} constraints))
 
            :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
 		        x1 (generate-constraints-internal x0 (get ast :b) type-env)
@@ -258,7 +258,9 @@
                               :head (assign-types (:head ast) substs))
                        :tail (map (fn (x) (assign-types x substs)) (:tail ast))))
 
-         :literal (assoc ast :type (get-type substs (:type ast)))
+         :literal ast
+         
+         :lookup (assoc ast :type (get-type substs (:type ast)))
 
          :arg (assoc ast :type (get-type substs (:type ast)))
 

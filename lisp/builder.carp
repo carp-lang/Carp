@@ -78,13 +78,14 @@
            :binop (let [result-a (visit-form c (get form :a) false)
                         result-b (visit-form c (get form :b) false)]
                     {:c (str (if toplevel "" "(") (:c result-a) " " (:op form) " " (:c result-b) (if toplevel "" ")"))})
-           
+
            :literal (let [val (:value form)]
-                      (if (symbol? val)
-                        {:c (c-ify-name (name val))}
-                        (if (string? val)
-                          {:c (str "strdup(" (prn val) ")")}
-                          {:c (prn val)})))
+                     (if (string? val)
+                       {:c (str "strdup(" (prn val) ")")}
+                       {:c (prn val)}))
+           
+           :lookup (let [val (:value form)]
+                      {:c (c-ify-name (name val))})
 
            :if (let [if-expr (visit-form c (get form :expr) true)
                      n (get form :if-result-name)

@@ -64,6 +64,8 @@
            
            :literal ast
 
+           :lookup ast
+
            :null ast
            
            _ (error (str "Can't generate name for node " ast))

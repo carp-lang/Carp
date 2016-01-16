@@ -23,11 +23,6 @@
           :type (gen-typevar)})
        args))
 
-(defn type-from-literal (lit)
-  (match (type lit)
-         :symbol (gen-typevar) ;; symbol means variable lookup, and we don't know the type of that variable
-         x x))
-
 (defn binop? (form)
   (match form
          (x & _) (contains? '(+ - * / <) x)
@@ -88,6 +83,15 @@
    :expr (form-to-ast expr)
    :body (form-to-ast body)})
 
+(defn literal-or-lookup-to-ast (expr)
+  (if (symbol? expr)
+    {:node :lookup
+     :type (gen-typevar)
+     :value expr}
+    {:node :literal
+     :type (type expr)
+     :value expr}))
+
 (defn form-to-ast (form)
   (match form
          ('if expr a b) (if-to-ast expr a b)
@@ -100,9 +104,7 @@
          'false {:node :literal :type :bool :value 0}
          x (if (= :list (type x))
              (list-to-ast x)
-             {:node :literal
-              :type (type-from-literal x)
-              :value x})))
+             (literal-or-lookup-to-ast x))))
 
 (defn body-to-ast (body)
   (form-to-ast body))
