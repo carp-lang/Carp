@@ -6,10 +6,8 @@
   - compile a whole file to a single dylib
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
-  - make "shared.h" be included by using <> instead, add it to include path automatically
 
 # Lisp Core Libs
-  - Tests for the union function
   - Tests for the dictionary equality
 
 # Dynamic Runtime

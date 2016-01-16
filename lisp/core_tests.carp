@@ -1,4 +1,16 @@
 
+(defn test-dict-eq ()
+  (do
+    (let [d1 {:x 10 :y 20}
+          d2 {:x 10}
+          d3 {:y 20 :x 10}]
+      (do
+        (assert-eq d1 d3)
+        (assert-eq false (= d1 d2))
+        (assert-eq false (= d1 {}))
+        (assert-eq d3 (assoc d2 :y 20))
+        (assert-eq false (= d1 (assoc d3 :z 30)))))))
+
 (defn test-set ()
   (do
     (let [s1 (set '())]
