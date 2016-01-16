@@ -7,29 +7,11 @@
   {:name (:arg-name a)
    :type (:type a)})
 
-
 ;; (defn literal-variables (literal-ast)
 ;;   ())
 
 (defn manage? (descriptor)
   (= (:type descriptor) :string))
-
-(defn cons-unique (x xs)
-  (if (contains? xs x)
-    xs
-    (cons x xs)))
-
-(defn set-internal (xs result)
-  (match xs
-         () result
-         (x & xs) (set-internal xs (cons-unique x result))
-         (x) (cons-unique x result)
-         ))
-
-(defn union (xs ys)
-  (let [both (concat xs ys)]
-    (set-internal both '())))
-
 
 ;; For an arg to be managed it has to be of the correct type and not be a variable lookup
 (defn manage-arg? (arg)

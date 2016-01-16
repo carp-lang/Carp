@@ -1,4 +1,36 @@
 
+(defn test-set ()
+  (do
+    (let [s1 (set '())]
+      (do
+        (assert-eq 0 (count s1))))
+    
+    (let [s1 (set '(1 2 3 2 3 2 1 3 3 2))]
+      (do
+        (assert-eq 3 (count s1))
+        (assert-eq true (contains? s1 1))
+        (assert-eq true (contains? s1 2))
+        (assert-eq true (contains? s1 3))))))
+
+(defn test-union ()
+  (do
+    (let [u1 (union '() '(5 5 5))]
+      (do
+        (assert-eq 1 (count u1))
+        (assert-eq true (contains? u1 5))))
+
+    (let [u1 (union '(5 5 5) '())]
+      (do
+        (assert-eq 1 (count u1))
+        (assert-eq true (contains? u1 5))))
+    
+    (let [u1 (union '(1 3) '(2 2 3 2 3 3))]
+      (do
+        (assert-eq 3 (count u1))
+        (assert-eq true (contains? u1 1))
+        (assert-eq true (contains? u1 2))
+        (assert-eq true (contains? u1 3))))))
+
 (defn test-negative-numbers ()
   (do
     (assert-eq (- 10) -10)
@@ -285,6 +317,8 @@
     (test-all-predicate)
     (test-str-replace)
     (test-negative-numbers)
+    (test-set)
+    (test-union)
     ))
 
 (run-core-tests)

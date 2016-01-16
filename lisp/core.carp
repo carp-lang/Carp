@@ -147,6 +147,24 @@
 (defn all? (pred xs)
   (= (count xs) (count (filter pred xs))))
 
+(defn cons-unique (x xs)
+  (if (contains? xs x)
+    xs
+    (cons x xs)))
+
+(defn set-internal (xs ys)
+  (match xs
+         () ys
+         (x & xs) (set-internal xs (cons-unique x ys))
+         (x) (cons-unique x ys)))
+
+(defn set (xs)
+  (set-internal xs '()))
+
+(defn union (xs ys)
+  (let [both (concat xs ys)]
+    (set both)))
+
 (register-builtin "srand" '(:int) :void)
 (register-builtin "rand" '() :int)
 (register-builtin "strlen" '(:string) :int)
