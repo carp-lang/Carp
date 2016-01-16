@@ -1,4 +1,5 @@
 # Compiler
+  - A form for variable lookup
   - Track dependencies between functions
   - Change :a and :b in binop and if to :left and :right
   - Compilation of generic functions
@@ -8,14 +9,15 @@
   - speed up some passes by mutating a single variable instead of copying immutable versions around
 
 # Lisp Core Libs
-  - Tests for the dictionary equality
+  - "->" and "->>"
+  - shuffle
+  - conversions between a list of pairs and dictionaries
 
 # Dynamic Runtime
   - call boot.carp file if it exists in ~/.carp or the folder where you run the carp command
   - meta data on Objs: Line nr, line pos, source file,
   - warn if a let statement has more than one body form (implicit do)
   - add array as its own tag for Obj, [] syntax, etc
-  - split c program into several files: Runtime, Reader, Printer, Evaluator, Primops, Obj, Gc
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
   - primops should have signatures
   - remove globals to enable several instances of the runner in parallel
@@ -28,5 +30,5 @@
 # Maybes
   - polymorphic math operators?
   - matching/destructuring in let statements and function arguments too?
-  - reading of dotted pairs
+  - reading of dotted pairs?
 
