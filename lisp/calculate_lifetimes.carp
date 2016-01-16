@@ -7,26 +7,26 @@
   {:name (:arg-name a)
    :type (:type a)})
 
-;; (defn literal-variables (literal-ast)
-;;   ())
-
 (defn manage? (descriptor)
   (= (:type descriptor) :string))
 
-;; For an arg to be managed it has to be of the correct type and not be a variable lookup
-(defn manage-arg? (arg)
-  (and (manage? arg)
-       (not (symbol? (:value arg)))))
-
 (defn calculate-lifetimes-internal (data)
-  (let [ast (:ast data)
-        vars (:vars data)]
-    (match (:node ast)
+  (do
+    ;;(println (str "CALC:\n" data))
+    (let [ast (:ast data)
+          vars (:vars data)]
+      (match (:node ast)
 
-           :function {:ast (assoc ast :free '())
-                      :vars '()}
-           
-           _ data)))
+             :function (let [parameter-nodes (:args ast)
+                             new-variables (filter manage? (map convert-param-node parameter-nodes))
+                             data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables})]
+                         {:ast (assoc ast :free (:vars data-after))
+                          :vars '()})
+
+             :literal {:ast ast
+                       :vars (cons {:name (:lit-name ast) :type (:type ast)} vars)}
+             
+             _ data))))
 
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast
