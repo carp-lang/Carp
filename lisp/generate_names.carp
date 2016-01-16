@@ -16,7 +16,7 @@
            
            :if (let [if-result-name (str "if_result_" (gen-name))
                      if-expr-name (str "if_expr_" (gen-name))
-                     ast1 (assoc ast :if-result-name if-result-name)
+                     ast1 (assoc ast :result-name if-result-name)
                      ast2 (assoc ast1 :if-expr-name if-expr-name)
                      ast3 (assoc ast2 :expr (generate-names (:expr ast)))
                      ast4 (assoc ast3 :a (generate-names (:a ast)))
@@ -32,7 +32,7 @@
            :let (let [let-result-name (str "let_result_" (gen-name))
                       ast1 (assoc ast :bindings (map generate-names (:bindings ast)))
                       ast2 (assoc ast1 :body (generate-names (:body ast)))
-                      ast3 (assoc ast2 :let-result-name let-result-name)]
+                      ast3 (assoc ast2 :result-name let-result-name)]
                   ast3)
            
            :binding (let [named-value (generate-names (:value ast))]
@@ -48,7 +48,7 @@
                       
                       ast1 (assoc ast :head (generate-names (:head ast)))
                       ast2 (assoc ast1 :tail (map (fn (node) (generate-names node)) (:tail ast1)))
-                      ast3 (assoc ast2 :app-result-name app-result-name)
+                      ast3 (assoc ast2 :result-name app-result-name)
                       
                       ast4 (assoc ast3 :tail (map2 (fn (arg arg-name) (assoc arg :arg-name arg-name)) (:tail ast3) arg-names))
                       ]
@@ -62,7 +62,7 @@
                      ast1 (assoc ast :forms named-forms)]
                  ast1)
            
-           :literal (assoc ast :lit-name (str "lit_" (gen-name)))
+           :literal (assoc ast :result-name (str "lit_" (gen-name)))
 
            :lookup ast
 

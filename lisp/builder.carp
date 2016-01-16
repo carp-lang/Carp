@@ -80,15 +80,15 @@
            :literal (let [val (:value form)]
                      (if (string? val)
                        (do
-                         (str-append! c (str (indent) (type-build (:type form)) " " (:lit-name form) " = strdup(" (prn val) ");\n"))
-                         {:c (:lit-name form)})
+                         (str-append! c (str (indent) (type-build (:type form)) " " (:result-name form) " = strdup(" (prn val) ");\n"))
+                         {:c (:result-name form)})
                        {:c (prn val)}))
            
            :lookup (let [val (:value form)]
                       {:c (c-ify-name (name val))})
 
            :if (let [if-expr (visit-form c (get form :expr) true)
-                     n (get form :if-result-name)
+                     n (get form :result-name)
                      ifexpr (get form :if-expr-name)]
                  (do (str-append! c (str (indent) (type-build (get-in form '(:expr :type))) " " ifexpr " = " (get if-expr :c) ";\n"))
                      (if (= :void (:type form))
@@ -121,7 +121,7 @@
            :app (let [head (get form :head)
                       func-name (get head :value)
                       c-func-name (c-ify-name (str func-name))
-                      n (:app-result-name form)
+                      n (:result-name form)
                       arg-results (visit-args c (get form :tail))
                       arg-vars (map (fn (x) (get x :c)) arg-results)]
                   (do (if (= :void (:type form))
@@ -133,7 +133,7 @@
                      results (map (fn (x) (visit-form c x toplevel)) forms)]
                  {:c (:c (last results))})
 
-           :let (let [n (:let-result-name form)]
+           :let (let [n (:result-name form)]
                   (do (if (= :void (:type form))
                         () ;; nothing
                         (str-append! c (str (indent) (type-build (:type form)) " " n ";\n")))

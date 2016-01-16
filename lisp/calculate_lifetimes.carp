@@ -10,6 +10,14 @@
 (defn manage? (descriptor)
   (= (:type descriptor) :string))
 
+(defn dont-free-result-variable (ast vars)
+  (let [result-var-name (get-maybe ast :result-name)]
+    (do
+      (println (str "result-var-name: " result-var-name))
+      (if (= nil result-var-name)
+        vars
+        (remove (fn (v) (= (:name v) result-var-name)) vars)))))
+
 (defn calculate-lifetimes-internal (data)
   (do
     ;;(println (str "CALC:\n" data))
@@ -19,12 +27,14 @@
 
              :function (let [parameter-nodes (:args ast)
                              new-variables (filter manage? (map convert-param-node parameter-nodes))
-                             data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables})]
-                         {:ast (assoc ast :free (:vars data-after))
+                             data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables})
+                             vars-after (:vars data-after)
+                             vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)]
+                         {:ast (assoc ast :free vars-with-return-value-removed)
                           :vars '()})
 
              :literal {:ast ast
-                       :vars (cons {:name (:lit-name ast) :type (:type ast)} vars)}
+                       :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
              
              _ data))))
 

@@ -143,6 +143,9 @@
 (defn all? (pred xs)
   (= (count xs) (count (filter pred xs))))
 
+(defn remove (pred xs)
+  (filter (fn (x) (not (pred x))) xs))
+
 (defn cons-unique (x xs)
   (if (contains? xs x)
     xs
