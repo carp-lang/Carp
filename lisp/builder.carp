@@ -34,9 +34,7 @@
   (swap! indent-level dec))
 
 (defn free-variables (free-list)
-  (str
-    (join "\n" (map (fn (variable) (str (indent) "free(" (:name variable) ");")) free-list))
-    "\n"))
+  (join "" (map (fn (variable) (str (indent) "free(" (:name variable) ");\n")) free-list)))
 
 (defn c-ify-name (lisp-name)
   (let [x0 (str-replace lisp-name "-" "_")
