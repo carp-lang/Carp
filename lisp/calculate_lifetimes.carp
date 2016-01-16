@@ -41,37 +41,44 @@
         vars (:vars data)]
     (match (:node ast)
 
-           :function (let [arg-nodes (:args ast)
-                           variables (filter manage? (map convert-param-node arg-nodes))
-                           data-after (calculate-lifetimes-internal {:ast (:body ast)
-                                                                     :vars variables})]
-                       {:ast (assoc ast :free (:vars data-after))
-                        :vars '()})
-
-           ;; :literal (if (heap-allocated? ast)
-           ;;            (let [new-vars (cons (:literal-name ast) vars)]
-           ;;              {:ast ast
-           ;;               :vars new-vars})
-           ;;            data)
-
-           :app (let [tail (:tail ast)
-                      _ (println (str "Tail:\n" tail))
-                      new-vars (concat (map convert-arg-node (filter manage? tail)) vars)
-                      ;;_ (println (str "new-vars: " new-vars))
-                      ]
-                  {:ast ast
-                   :vars new-vars})
-
-           :binop (let [left (:a ast)
-                        right (:b ast)
-                        data-left (calculate-lifetimes-internal {:ast left :vars vars})
-                        data-right (calculate-lifetimes-internal {:ast right :vars vars})
-                        new-vars (union (:vars data-left) (:vars data-right))]
-                    {:ast ast ;; <- TODO: fix, should visit the left and right ast and assoc them in
-                     :vars new-vars})
-
+           :function {:ast (assoc ast :free '())
+                      :vars '()}
+           
            _ data)))
 
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast
                                        :vars '()})))
+
+
+
+
+
+;; :function (let [arg-nodes (:args ast)
+;;                            variables (filter manage? (map convert-param-node arg-nodes))
+;;                            data-after (calculate-lifetimes-internal {:ast (:body ast)
+;;                                                                      :vars variables})]
+;;                        {:ast (assoc ast :free (:vars data-after))
+;;                         :vars '()})
+
+;;            ;; :literal (if (heap-allocated? ast)
+;;            ;;            (let [new-vars (cons (:literal-name ast) vars)]
+;;            ;;              {:ast ast
+;;            ;;               :vars new-vars})
+;;            ;;            data)
+
+;;            :app (let [tail (:tail ast)
+;;                       ;;_ (println (str "Tail:\n" tail))
+;;                       new-vars (concat (map convert-arg-node (filter manage? tail)) vars)
+;;                       ;;_ (println (str "new-vars: " new-vars))
+;;                       ]
+;;                   {:ast ast
+;;                    :vars new-vars})
+
+;;            :binop (let [left (:a ast)
+;;                         right (:b ast)
+;;                         data-left (calculate-lifetimes-internal {:ast left :vars vars})
+;;                         data-right (calculate-lifetimes-internal {:ast right :vars vars})
+;;                         new-vars (union (:vars data-left) (:vars data-right))]
+;;                     {:ast ast ;; <- TODO: fix, should visit the left and right ast and assoc them in
+;;                      :vars new-vars})
