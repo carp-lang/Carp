@@ -51,4 +51,12 @@ void fake2(string *s) {
   
 }
 
+char *ls() {
+  return strdup("C:\\");
+}
+
+void eat_string(char *s) {
+  free(s);
+}
+
 #endif

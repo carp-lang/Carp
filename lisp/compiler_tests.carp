@@ -167,7 +167,9 @@
   (+ (* 2 x) (+ 1 x)))
 
 
-
+(register-builtin "ls" () :string)
+(register-builtin "eat_string" '(:string) :void)
+;;(register-builtin "strlen" '((:ref :string)) :int)
 
 (defn own-string-1 ()
   (strlen "hej"))
@@ -175,11 +177,23 @@
 (defn own-string-2 (s1)
   (+ 100 (strlen s1)))
 
-(defn own-string ()
+(defn own-string-3 ()
   "hej")
 
-(def own-ast (lambda-to-ast (code own-string)))
-(def own-con (gencon own-ast))
-(def own-asta (annotate-ast own-ast))
-(bake own-string)
+(defn own-string-4 (s)
+  (eat-string s))
+
+(defn own-string-5 (s)
+  (strlen s))
+
+;;(bake own-string-1)
+;;(bake own-string-2)
+;;(bake own-string-3)
+;;(bake own-string-4)
+(bake own-string-5)
+
+;; (def own-ast (lambda-to-ast (code own-string-1)))
+;; (def own-con (gencon own-ast))
+;; (def own-asta (annotate-ast own-ast))
+
 

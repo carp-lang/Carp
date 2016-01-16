@@ -1,10 +1,10 @@
 
 (defn convert-param-node (a)
-  {:name (:name a)
+  {:name (str (:name a))
    :type (:type a)})
 
 (defn convert-arg-node (a)
-  {:name (:arg-name a)
+  {:name (str (:arg-name a))
    :type (:type a)})
 
 (defn manage? (descriptor)
@@ -13,10 +13,15 @@
 (defn dont-free-result-variable (ast vars)
   (let [result-var-name (get-maybe ast :result-name)]
     (do
-      (println (str "result-var-name: " result-var-name))
+      ;;(println (str "result-var-name: " result-var-name))
       (if (= nil result-var-name)
         vars
         (remove (fn (v) (= (:name v) result-var-name)) vars)))))
+
+(defn remove-vars-with-names (vars names)
+  (do
+    ;;(println (str "remove vars from " vars " with names " names))
+    (remove (fn (v) (contains? names (:name v))) vars)))
 
 (defn calculate-lifetimes-internal (data)
   (do
@@ -35,6 +40,15 @@
 
              :literal {:ast ast
                        :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
+
+             :app (let [tail (:tail ast)
+                        arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))
+                        ;;_ (println (str "arg names: " arg-names))
+                        vars-after (remove-vars-with-names vars arg-names)]
+                    (do
+                      ;;(println (str "APP\n" arg-names "\nVARS AFTER\n" (remove-vars-with-names vars arg-names)))
+                      {:ast ast
+                       :vars vars-after}))
              
              _ data))))
 
