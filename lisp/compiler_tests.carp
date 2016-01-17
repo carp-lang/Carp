@@ -190,7 +190,7 @@
 ;;(bake own-string-2)
 ;;(bake own-string-3)
 ;;(bake own-string-4)
-(bake own-string-5)
+;;(bake own-string-5)
 
 ;; (def own-ast (lambda-to-ast (code own-string-1)))
 ;; (def own-con (gencon own-ast))

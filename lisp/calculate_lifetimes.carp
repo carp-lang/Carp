@@ -7,8 +7,13 @@
   {:name (str (:arg-name a))
    :type (:type a)})
 
+(defn managed-type? (t)
+  (match t
+         (:ref x) (managed-type? x)
+         _ (= t :string)))
+
 (defn manage? (descriptor)
-  (= (:type descriptor) :string))
+  (managed-type? (:type descriptor)))
 
 (defn dont-free-result-variable (ast vars)
   (let [result-var-name (get-maybe ast :result-name)]
@@ -18,10 +23,19 @@
         vars
         (remove (fn (v) (= (:name v) result-var-name)) vars)))))
 
+(defn ref? (v)
+  (do
+    ;;(println (str "ref? " v))
+    (match v
+           (:ref _) true
+           _ false)))
+
 (defn remove-vars-with-names (vars names)
   (do
     ;;(println (str "remove vars from " vars " with names " names))
-    (remove (fn (v) (contains? names (:name v))) vars)))
+    (remove (fn (v) (and
+                     (not (ref? (:type v)))
+                     (contains? names (:name v)))) vars)))
 
 (defn calculate-lifetimes-internal (data)
   (do
@@ -32,6 +46,7 @@
 
              :function (let [parameter-nodes (:args ast)
                              new-variables (filter manage? (map convert-param-node parameter-nodes))
+                             ;;_ (println (str ":function new-variables: " new-variables))
                              data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables})
                              vars-after (:vars data-after)
                              vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)]
@@ -43,7 +58,7 @@
 
              :app (let [tail (:tail ast)
                         arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))
-                        ;;_ (println (str "arg names: " arg-names))
+                        ;;_ (println (str "vars: " vars "\narg names: " arg-names))
                         vars-after (remove-vars-with-names vars arg-names)]
                     (do
                       ;;(println (str "APP\n" arg-names "\nVARS AFTER\n" (remove-vars-with-names vars arg-names)))
