@@ -294,6 +294,12 @@
     (assert-eq "(fn (x) (list 1 2 x 4 5))" (str self-destruct-2))
     (reset! print-lambda-body before)))
 
+(defn test-dict-set-in-array ()
+  (do
+    (let [xs '(1 2 3)]
+      (do (dict-set-in! xs '(1) "hejsan")
+          (assert-eq '(1 "hejsan" 3) xs)))))
+
 (defn run-core-tests ()
   (do
     (test-keyword-in-list-in-match)

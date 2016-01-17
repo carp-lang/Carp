@@ -92,7 +92,7 @@
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
-     :value expr}
+     :value expr} ;; change name to name ..?
     {:node :literal
      :type (type expr)
      :value expr}))

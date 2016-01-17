@@ -37,9 +37,35 @@
                      (not (ref? (:type v)))
                      (contains? names (:name v)))) vars)))
 
+(defn remove-var-with-name (vars name)
+  (do
+    ;;(println (str "remove var from " vars " with names " name))
+    (remove (fn (v) (and
+                     (not (ref? (:type v)))
+                     (= name (:name v)))) vars)))
+
+;; Used for reducin over the args in a function application
+(defn calc-lifetime-for-arg (data arg-ast)
+  (do
+    ;; (println "CALCARG. data:\n")
+    ;; (println data)
+    ;; (println "arg-ast:\n")
+    ;; (println arg-ast)
+    (let [ast (:ast data)
+          vars (:vars data)
+          pos (:pos data)
+          new-data (calculate-lifetimes-internal {:ast arg-ast :vars vars})
+          new-arg-ast (:ast new-data)
+          new-vars (:vars new-data)
+          ;;_ (println (str "AST: " ast))
+          new-app-data {:ast (assoc-in ast (list :tail pos) new-arg-ast)
+                        :vars new-vars
+                        :pos (inc pos)}]
+      new-app-data)))
+
 (defn calculate-lifetimes-internal (data)
   (do
-    (println (str "CALC:\n" data))
+    ;;(println (str "CALC:\n" data))
     (let [ast (:ast data)
           vars (:vars data)]
       (match (:node ast)
@@ -59,16 +85,25 @@
              :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars})]
                     data-after)
 
+             :lookup (let [vars-after (remove-var-with-name vars (str (:value ast)))]
+                       {:ast ast
+                        :vars vars-after})
+
              :app (let [tail (:tail ast)
-                        arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))
-                        ;;_ (println (str "vars: " vars "\narg names: " arg-names))
-                        vars-after (remove-vars-with-names vars arg-names)]
+                        init-data (assoc data :pos 0)
+                        data-after (reduce calc-lifetime-for-arg init-data tail)
+                        vars-after (:vars data-after)
+                        ast-after (:ast data-after)]
                     (do
-                      ;;(println (str "APP\n" arg-names "\nVARS AFTER\n" (remove-vars-with-names vars arg-names)))
-                      {:ast ast
+                      ;;(println (str "APP VARS AFTER\n" vars-after))
+                      {:ast ast-after
                        :vars vars-after}))
              
              _ data))))
+
+
+;; arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))
+;;                         ;;_ (println (str "vars: " vars "\narg names: " arg-names))
 
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast

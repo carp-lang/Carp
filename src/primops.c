@@ -457,21 +457,45 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
 
 Obj *p_dict_set_bang(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'dict-set!'\n"); return nil; }
-  if(args[0]->tag != 'E') {
+  if(args[0]->tag == 'E') {
+    Obj *pair = env_lookup_binding(args[0], args[1]);
+    if(pair && pair->car && pair->cdr) {
+      pair->cdr = args[2];
+    }
+    else {
+      //printf("Pair not found, will add new key.\n");
+      Obj *new_pair = obj_new_cons(args[1], args[2]);
+      Obj *new_cons = obj_new_cons(new_pair, args[0]->bindings);
+      args[0]->bindings = new_cons;
+    }
+    return args[0];
+  }
+  else if(args[0]->tag == 'C') {
+    if(args[1]->tag != 'I') {
+      error = obj_new_string("dict-set! requires arg 1 to be an integer\n");
+      return nil;
+    }
+    int i = 0;
+    int n = args[1]->i;
+    Obj *p = args[0];
+    while(p && p->car) {
+      if(i == n) {
+	p->car = args[2];
+	return nil;
+      }
+      p = p->cdr;
+      i++;
+    }
+    error = obj_new_string("Index ");
+    obj_string_mut_append(error, obj_to_string(obj_new_int(i))->s);
+    obj_string_mut_append(error, " out of bounds in");
+    obj_string_mut_append(error, obj_to_string(args[0])->s);
+    return nil;
+  }
+  else {
     printf("'dict-set!' requires arg 0 to be a dictionary: %s\n", obj_to_string(args[0])->s);
     return nil;
   }
-  Obj *pair = env_lookup_binding(args[0], args[1]);
-  if(pair && pair->car && pair->cdr) {
-    pair->cdr = args[2];
-  }
-  else {
-    //printf("Pair not found, will add new key.\n");
-    Obj *new_pair = obj_new_cons(args[1], args[2]);
-    Obj *new_cons = obj_new_cons(new_pair, args[0]->bindings);
-    args[0]->bindings = new_cons;
-  }
-  return args[0];
 }
 
 Obj *p_dict_remove_bang(Obj** args, int arg_count) {
