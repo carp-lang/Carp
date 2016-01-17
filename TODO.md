@@ -7,6 +7,7 @@
   - compile a whole file to a single dylib
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
+  - Clean up unifier, remove unify-fn and only use two functions there instead of three
 
 # Lisp Core Libs
   - "->" and "->>"

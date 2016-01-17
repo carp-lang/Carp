@@ -39,7 +39,7 @@
 
 (defn calculate-lifetimes-internal (data)
   (do
-    ;;(println (str "CALC:\n" data))
+    (println (str "CALC:\n" data))
     (let [ast (:ast data)
           vars (:vars data)]
       (match (:node ast)
@@ -55,6 +55,9 @@
 
              :literal {:ast ast
                        :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
+
+             :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars})]
+                    data-after)
 
              :app (let [tail (:tail ast)
                         arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))

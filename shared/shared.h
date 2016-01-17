@@ -59,4 +59,8 @@ void eat_string(char *s) {
   free(s);
 }
 
+/* char *str_ref(char *s) { */
+/*   return s; */
+/* } */
+
 #endif

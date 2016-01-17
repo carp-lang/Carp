@@ -86,7 +86,10 @@
                        {:c (prn val)}))
            
            :lookup (let [val (:value form)]
-                      {:c (c-ify-name (name val))})
+                     {:c (c-ify-name (name val))})
+
+           :ref (let [expr (:expr form)]
+                  (visit-form c expr toplevel))
 
            :if (let [if-expr (visit-form c (get form :expr) true)
                      n (get form :result-name)

@@ -64,6 +64,11 @@
            
            :literal (assoc ast :result-name (str "lit_" (gen-name)))
 
+           :ref (let [named-expr (generate-names (:expr ast))
+                      ast1 (assoc ast :expr named-expr)
+                      ast2 (assoc ast1 :result-name (str "ref_" (gen-name)))]
+                  ast2)
+
            :lookup ast
 
            :null ast

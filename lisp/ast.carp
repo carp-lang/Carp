@@ -83,6 +83,11 @@
    :expr (form-to-ast expr)
    :body (form-to-ast body)})
 
+(defn ref-to-ast (expr)
+  {:node :ref
+   :type (list :ref (gen-typevar))
+   :expr (form-to-ast expr)})
+
 (defn literal-or-lookup-to-ast (expr)
   (if (symbol? expr)
     {:node :lookup
@@ -98,6 +103,7 @@
          ('do & forms) (do-to-ast forms)
          ('let bindings body) (let-to-ast bindings body)
          ('while expr body) (while-to-ast expr body)
+         ('ref expr) (ref-to-ast expr)
 	 ('include-c-code s) {:node :c-code :code s :type (gen-typevar)}
          'NULL {:node :null :type (gen-typevar)}
          'true {:node :literal :type :bool :value 1}

@@ -63,6 +63,14 @@
 
            :literal constraints ;; literals don't need constraints
 
+           :ref (let [expr (:expr ast)
+                      x0 (generate-constraints-internal constraints expr type-env)
+                      inner-type (match (:type ast)
+                                        (:ref t) t
+                                        _ (error "Not a ref type"))
+                      expr-constr {:a inner-type :b (:type expr)}]
+                  (cons expr-constr x0))
+
            :lookup (let [val (:value ast)]
                      (cons {:a (get ast :type)
                             :b (get-type-of-symbol type-env val)
@@ -174,7 +182,7 @@
               (let [replacement (lookup substs b)]
                 (do
                   (when log-substs (println (str "Replacement: " replacement)))
-                  (if (unify existing replacement)
+                  (if (unify substs existing replacement)
                     (do (when log-substs (println "OK, replacement is the same."))
                         substs)
                     (if (typevar? replacement)
@@ -190,9 +198,9 @@
 
 ;; \nSubstitutions:\n" substs
 
-(defn unify (a b)
+(defn unify (substs a b)
   (if (and (list? a) (list? b))
-    (all? true? (map2 unify a b))
+    (solve-list substs a b) ;; Used to be: (all? true? (map2 unify a b))
     (if (= :any a)
       true
       (if (= :any b)
@@ -263,6 +271,8 @@
          :lookup (assoc ast :type (get-type substs (:type ast)))
 
          :arg (assoc ast :type (get-type substs (:type ast)))
+
+         :ref (assoc ast :type (get-type substs (:type ast)))
 
          :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
                       x1 (assoc x0 :a (assign-types (:a ast) substs))

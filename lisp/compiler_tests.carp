@@ -171,10 +171,15 @@
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "strlen" '((:ref :string)) :int)
 
-(defn own-string-1 ()
-  (strlen "hej"))
+;(register-builtin "str_ref" '(:string) '(:ref :string))
 
-(defn own-string-2 (s1)
+(defn own-string-1 ()
+  (strlen (ref "hej")))
+
+(defn own-string-2 ()
+  (eat-string "hej"))
+
+(defn own-string-X (s1)
   (+ 100 (strlen s1)))
 
 (defn own-string-3 ()
