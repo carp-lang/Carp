@@ -225,6 +225,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       if(p && p->cdr) {
 	Obj *type_obj = p->car;
 
+	// Handle ref types by unwrapping them: (:ref x) -> x
 	if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(type_obj->car, type_ref)) {
 	  type_obj = type_obj->cdr->car; // the second element of the list
 	}
