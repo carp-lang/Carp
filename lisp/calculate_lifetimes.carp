@@ -3,13 +3,9 @@
   {:name (str (:name a))
    :type (:type a)})
 
-(defn convert-arg-node (a)
-  {:name (str (:arg-name a))
-   :type (:type a)})
-
 (defn managed-type? (t)
   (match t
-         (:ref x) (managed-type? x)
+         (:ref x) false ;; (managed-type? x)
          _ (= t :string)))
 
 (defn manage? (descriptor)
@@ -24,27 +20,16 @@
         (remove (fn (v) (= (:name v) result-var-name)) vars)))))
 
 (defn ref? (v)
-  (do
-    ;;(println (str "ref? " v))
-    (match v
-           (:ref _) true
-           _ false)))
-
-(defn remove-vars-with-names (vars names)
-  (do
-    ;;(println (str "remove vars from " vars " with names " names))
-    (remove (fn (v) (and
-                     (not (ref? (:type v)))
-                     (contains? names (:name v)))) vars)))
+  (match v
+         (:ref _) true
+         _ false))
 
 (defn remove-var-with-name (vars name)
-  (do
-    ;;(println (str "remove var from " vars " with names " name))
-    (remove (fn (v) (and
-                     (not (ref? (:type v)))
-                     (= name (:name v)))) vars)))
+  (remove (fn (v) (and
+                   (not (ref? (:type v)))
+                   (= name (:name v)))) vars))
 
-;; Used for reducin over the args in a function application
+;; Used for reducing over the args in a function application
 (defn calc-lifetime-for-arg (data arg-ast)
   (do
     ;; (println "CALCARG. data:\n")
@@ -103,43 +88,7 @@
              
              _ data))))
 
-
-;; arg-names (map (fn (a) (str (:value a))) (filter (fn (a) (= (:node a) :lookup)) tail))
-;;                         ;;_ (println (str "vars: " vars "\narg names: " arg-names))
-
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast
                                        :vars '()})))
 
-
-
-
-
-;; :function (let [arg-nodes (:args ast)
-;;                            variables (filter manage? (map convert-param-node arg-nodes))
-;;                            data-after (calculate-lifetimes-internal {:ast (:body ast)
-;;                                                                      :vars variables})]
-;;                        {:ast (assoc ast :free (:vars data-after))
-;;                         :vars '()})
-
-;;            ;; :literal (if (heap-allocated? ast)
-;;            ;;            (let [new-vars (cons (:literal-name ast) vars)]
-;;            ;;              {:ast ast
-;;            ;;               :vars new-vars})
-;;            ;;            data)
-
-;;            :app (let [tail (:tail ast)
-;;                       ;;_ (println (str "Tail:\n" tail))
-;;                       new-vars (concat (map convert-arg-node (filter manage? tail)) vars)
-;;                       ;;_ (println (str "new-vars: " new-vars))
-;;                       ]
-;;                   {:ast ast
-;;                    :vars new-vars})
-
-;;            :binop (let [left (:a ast)
-;;                         right (:b ast)
-;;                         data-left (calculate-lifetimes-internal {:ast left :vars vars})
-;;                         data-right (calculate-lifetimes-internal {:ast right :vars vars})
-;;                         new-vars (union (:vars data-left) (:vars data-right))]
-;;                     {:ast ast ;; <- TODO: fix, should visit the left and right ast and assoc them in
-;;                      :vars new-vars})

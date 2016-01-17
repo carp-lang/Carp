@@ -194,14 +194,14 @@
 (defn own-string-6 (s)
   (strlen (ref s)))
 
-;;(bake own-string-1)
-;;(bake own-string-2)
-;;(bake own-string-3)
-;;(bake own-string-4)
-;;(bake own-string-5)
+(bake own-string-1)
+(bake own-string-2)
+(bake own-string-3)
+(bake own-string-4)
+(bake own-string-5)
 
-;; (def own-ast (lambda-to-ast (code own-string-1)))
-;; (def own-con (gencon own-ast))
-;; (def own-asta (annotate-ast own-ast))
+(def own-ast (lambda-to-ast (code own-string-6)))
+(def own-con (gencon own-ast))
+(def own-asta (annotate-ast own-ast))
 
 
