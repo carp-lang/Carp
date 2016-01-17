@@ -1,4 +1,5 @@
 # Compiler
+  - Add asserts to the constraint solving tests
   - A form for variable lookup
   - Track dependencies between functions
   - Change :a and :b in binop and if to :left and :right

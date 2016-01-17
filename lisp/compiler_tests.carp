@@ -32,10 +32,17 @@
     (do (println "\nCon5:\n" (solve-constraints constraints))
         (println "\nCon5 reversed:\n" (solve-constraints (reverse constraints))))))
 
+(defn test-constraint-solving-6 ()
+  (let [constraints (list {:a '(:ref "t0") :b "t1"}
+                          {:a "t1" :b '(:ref :blaha)})]
+    (do (println (str "\nCon6:\n" (solve-constraints constraints)))
+        (println (str "\nCon6 reversed:\n" (solve-constraints (reverse constraints)))))))
+
 ;; (test-constraint-solving-2)
 ;; (test-constraint-solving-3)
 ;; (test-constraint-solving-4)
 ;; (test-constraint-solving-5)
+;; (test-constraint-solving-6)
 
 (defn fib (n)
   (if (< n 2)
@@ -194,13 +201,16 @@
 (defn own-string-6 (s)
   (strlen (ref s)))
 
+(defn own-string-7 (s)
+  (ref s))
+
 (bake own-string-1)
 (bake own-string-2)
 (bake own-string-3)
 (bake own-string-4)
 (bake own-string-5)
 
-(def own-ast (lambda-to-ast (code own-string-6)))
+(def own-ast (lambda-to-ast (code own-string-7)))
 (def own-con (gencon own-ast))
 (def own-asta (annotate-ast own-ast))
 

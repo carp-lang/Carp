@@ -68,7 +68,7 @@
                       inner-type (match (:type ast)
                                         (:ref t) t
                                         _ (error "Not a ref type"))
-                      expr-constr {:a inner-type :b (:type expr)}]
+                      expr-constr {:a inner-type :b (:type expr) :doc "ref-constr"}]
                   (cons expr-constr x0))
 
            :lookup (let [val (:value ast)]
