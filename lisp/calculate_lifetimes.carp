@@ -54,7 +54,9 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          new-data (calculate-lifetimes-internal {:ast arg-ast :vars vars})
+          new-data (if (and (= :literal (:node arg-ast)) (not (ref? arg-ast)))
+                     {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
+                     (calculate-lifetimes-internal {:ast arg-ast :vars vars}))
           new-arg-ast (:ast new-data)
           new-vars (:vars new-data)
           ;;_ (println (str "AST: " ast))

@@ -191,6 +191,9 @@
 (defn own-string-5 (s)
   (strlen s))
 
+(defn own-string-6 (s)
+  (strlen (ref s)))
+
 ;;(bake own-string-1)
 ;;(bake own-string-2)
 ;;(bake own-string-3)
