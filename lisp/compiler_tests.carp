@@ -42,7 +42,9 @@
 ;; (test-constraint-solving-3)
 ;; (test-constraint-solving-4)
 ;; (test-constraint-solving-5)
-;; (test-constraint-solving-6)
+ (test-constraint-solving-6)
+
+
 
 (defn fib (n)
   (if (< n 2)
