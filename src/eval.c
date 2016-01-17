@@ -221,22 +221,28 @@ void apply(Obj *function, Obj **args, int arg_count) {
     void *values[arg_count];
 
     Obj *p = function->arg_types;
-    for(int i = 0; i < arg_count; i++) {
+    for(int i = 0; i < arg_count; i++) {      
       if(p && p->cdr) {
+	Obj *type_obj = p->car;
+
+	if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(type_obj->car, type_ref)) {
+	  type_obj = type_obj->cdr->car; // the second element of the list
+	}
+	
 	assert(p->car);
-	if(obj_eq(p->car, type_int)) {
+	if(obj_eq(type_obj, type_int)) {
 	  assert_or_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->i;
 	}
-	else if(obj_eq(p->car, type_float)) {
+	else if(obj_eq(type_obj, type_float)) {
 	  assert_or_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->f32;
 	}
-	else if(obj_eq(p->car, type_string)) {
+	else if(obj_eq(type_obj, type_string)) {
 	  assert_or_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->s;
 	}
-	else if(p->car->tag == 'C' && obj_eq(p->car->car, obj_new_keyword("ptr"))) { // TODO: replace with a shared keyword to avoid allocs
+	else if(type_obj->tag == 'C' && obj_eq(type_obj->car, obj_new_keyword("ptr"))) { // TODO: replace with a shared keyword to avoid allocs
 	  assert_or_set_error(args[i]->tag == 'Q', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->void_ptr;
 	}
