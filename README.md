@@ -104,7 +104,7 @@ The most important thing in Carp is to work with arrays of data. Here's an examp
   (reduce + 0 (map inc (filter even? nums))))
 ```
 
-All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed!
+All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in Rust parlance) makes sure that the same data structure isn't used in several places.
 
 ### Data Literals
 ```clojure
