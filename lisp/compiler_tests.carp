@@ -362,8 +362,40 @@
 (def own-asta-10 (annotate-ast own-ast-10))
 (let [free (:free own-asta-10)]
   (do (assert-eq '(:arrow ((:ref :string)) :string) (:type own-asta-10))
-      ;;(assert-eq 1 (count free))
-      ;;(assert-eq :string (:type (nth free 0)))
+      (assert-eq 0 (count free))
       (bake own-if-10)
       (assert-eq (own-if-10 "hej") "short")
       (assert-eq (own-if-10 "hejsansvejsan") "long")))
+
+
+(defn own-if-11 (s)
+  (if (< (strlen (ref s)) 10) "short" "long"))
+
+(def own-ast-11 (lambda-to-ast (code own-if-11)))
+(def own-con-11 (gencon own-ast-11))
+(def own-asta-11 (annotate-ast own-ast-11))
+(let [free (:free own-asta-11)]
+  (do (assert-eq '(:arrow (:string) :string) (:type own-asta-11))
+      (assert-eq 1 (count free))
+      (assert-eq "s" (:name (first free)))
+      (assert-eq :string (:type (first free)))
+      (bake own-if-11)
+      (assert-eq (own-if-11 "hej") "short")
+      (assert-eq (own-if-11 "hejsansvejsan") "long")))
+
+
+(defn own-if-12 (s)
+  (if (< (strlen (ref s)) 10) s "too long"))
+
+(def own-ast-12 (lambda-to-ast (code own-if-12)))
+(def own-con-12 (gencon own-ast-12))
+(def own-asta-12 (annotate-ast own-ast-12))
+(let [free (:free own-asta-12)]
+  (do (assert-eq '(:arrow (:string) :string) (:type own-asta-12))
+      ;; (assert-eq 0 (count free))
+      ;; (assert-eq "s" (:name (first free)))
+      ;; (assert-eq :string (:type (first free)))
+      (bake own-if-12)
+      (assert-eq (own-if-12 "hej") "hej")
+      (assert-eq (own-if-12 "hejsansvejsan") "too long")))
+
