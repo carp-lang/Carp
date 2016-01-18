@@ -60,8 +60,7 @@ Clone this repo, then run ```make``` in its root. Add the 'bin' directory to you
 
 ```export PATH=$PATH:~/Carp/bin/```
 
-Right now I've only built this on OSX 10.10. More platforms are coming though, the project is written in C99.
-There are a few dependencies that has to be installed:
+Right now I've only built this on OSX 10.10. More platforms are coming though, the project is written in C99 so I hope it's not TOO much work. There are a few dependencies that has to be installed:
  * libffi
  * glfw3
  * rlwrap
