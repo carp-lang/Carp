@@ -61,7 +61,7 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          extended-vars (cons {:name (:name binding-ast) :type (:type binding-ast)} vars)
+          extended-vars (cons {:name (str (:name binding-ast)) :type (:type binding-ast)} vars)
 
           new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
           new-arg-ast (:ast new-data)
@@ -218,7 +218,7 @@
                    ast-after-body (assoc ast-after-bindings :body (:vars data-after-body))
 
                    new-vars-after-body (remove (fn (v) (contains? vars v)) vars-after-body)
-                   _ (println (str "new-vars-after-body:\n" new-vars-after-body))
+                   ;;_ (println (str "new-vars-after-body:\n" new-vars-after-body))
                    
                    final-ast (assoc ast :free new-vars-after-body)
                    final-vars (let [ast-type (:type ast)]

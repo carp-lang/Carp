@@ -461,7 +461,58 @@
   (do (bake own-let-16)
       (assert-eq '(:arrow (:string) :int) (:type own-asta-16))
       (assert-eq 1 (count free)) ; free s
-      ;(assert-eq 1 (count free-let))
-      ;(assert-eq "a" (:name (first free-let)))
-      (assert-eq (own-let-16 "x") 1)
-      ))
+      (assert-eq 1 (count free-let))
+      (assert-eq "a" (:name (first free-let)))
+      (assert-eq (own-let-16 "x") 1)))
+
+
+
+(defn own-let-17 ()
+  (let [a "hello"]
+    a))
+
+(def own-ast-17 (lambda-to-ast (code own-let-17)))
+(def own-con-17 (gencon own-ast-17))
+(def own-asta-17 (annotate-ast own-ast-17))
+(let [free (:free own-asta-17)
+      free-let (get-in own-asta-17 '(:body :free))
+      ]
+  (do (bake own-let-17)
+      (assert-eq '(:arrow () :string) (:type own-asta-17))
+      (assert-eq 0 (count free))
+      (assert-eq (own-let-17) "hello")))
+
+
+
+(defn own-let-18 ()
+  (let [a "hello"]
+    (strlen a)))
+
+(def own-ast-18 (lambda-to-ast (code own-let-18)))
+(def own-con-18 (gencon own-ast-18))
+(def own-asta-18 (annotate-ast own-ast-18))
+(let [free (:free own-asta-18)
+      free-let (get-in own-asta-18 '(:body :free))
+      ]
+  (do (bake own-let-18)
+      (assert-eq '(:arrow () :int) (:type own-asta-18))
+      (assert-eq 0 (count free))
+      (assert-eq 1 (count free-let))
+      (assert-eq "a" (:name (first free-let)))
+      (assert-eq (own-let-18) 5)))
+
+
+
+(defn own-let-19 ()
+  (let [a "hello"]
+    (eat-string a)))
+
+(def own-ast-19 (lambda-to-ast (code own-let-19)))
+(def own-con-19 (gencon own-ast-19))
+(def own-asta-19 (annotate-ast own-ast-19))
+(let [free (:free own-asta-19)
+      free-let (get-in own-asta-19 '(:body :free))]
+  (do (bake own-let-19)
+      (assert-eq '(:arrow () :void) (:type own-asta-19))
+      (assert-eq 0 (count free))
+      (assert-eq 0 (count free-let))))
