@@ -145,8 +145,9 @@
 
 (defn test-swap ()
   (let [x 10]
-    (swap! x inc)
-    (assert-eq 11 x)))
+    (do
+      (swap! x inc)
+      (assert-eq 11 x))))
 
 (defn test-str-append ()
   (let [greeting "hej"]
