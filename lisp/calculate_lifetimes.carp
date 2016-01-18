@@ -25,9 +25,7 @@
          _ false))
 
 (defn remove-var-with-name (vars name)
-  (remove (fn (v) (and
-                   (not (ref? (:type v)))
-                   (= name (:name v)))) vars))
+  (remove (fn (v) (= name (:name v))) vars))
 
 ;; Used for reducing over the args in a function application
 (defn calc-lifetime-for-arg (data arg-ast)
@@ -39,7 +37,7 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          new-data (if (and (= :literal (:node arg-ast)) (not (ref? arg-ast)))
+          new-data (if (and (= :literal (:node arg-ast)) (not (ref? (:type arg-ast))))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
                      (calculate-lifetimes-internal {:ast arg-ast :vars vars}))
           new-arg-ast (:ast new-data)
@@ -72,7 +70,12 @@
              :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars})]
                     data-after)
 
-             :lookup (let [vars-after (remove-var-with-name vars (str (:value ast)))]
+             :lookup (let [;;_ (println (str "lookup: " ast))
+                           vars-after (if (ref? (:type ast))
+                                        vars
+                                        (remove-var-with-name vars (str (:value ast))))
+                           ;;_ (when (not (= vars vars-after)) (println (str "vars " vars ", after in lookup of " (:value ast) ": " vars-after)))
+                           ]
                        {:ast ast
                         :vars vars-after})
 

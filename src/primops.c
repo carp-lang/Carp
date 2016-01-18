@@ -683,7 +683,11 @@ Obj *p_map2(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'map2'\n"); return nil; }
   if(!is_callable(args[0])) { printf("'map2' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
   if(args[1]->tag != 'C') { printf("'map2' requires arg 1 to be a list\n"); return nil; }
-  if(args[2]->tag != 'C') { printf("'map2' requires arg 2 to be a list\n"); return nil; }
+  if(args[2]->tag != 'C') {
+    error = obj_new_string("'map2' requires arg 2 to be a list: ");
+    obj_string_mut_append(error, obj_to_string(args[2])->s);
+    return nil;
+  }
   Obj *f = args[0];
   Obj *p = args[1];
   Obj *p2 = args[2];

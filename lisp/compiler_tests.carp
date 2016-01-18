@@ -64,181 +64,198 @@
                            "t1" (list :ref :int)})
       (assert-eq solution solution-backwards))))
 
+(defn test-constraint-solving-6 ()
+  (let [;;_ (println "\n- Constraint solving 6 -")
+        constraints (list {:a "t0" :b "t0"}
+                          {:a "t0" :b "t1"}
+                          {:a "t1" :b :float}
+                          {:a "t1" :b "t1"})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :float
+                           "t1" :float})
+      (assert-eq solution solution-backwards))))
+
 (test-constraint-solving-1)
 (test-constraint-solving-2)
 (test-constraint-solving-3)
 (test-constraint-solving-4)
 (test-constraint-solving-5)
-
-
-;; (defn fib (n)
-;;   (if (< n 2)
-;;     1
-;;     (+ (fib (- n 2)) (fib (- n 1)))))
-
-;; (defn test-fib ()
-;;   (do
-;;     (bake fib)
-;;     (assert-eq (fib 6) 13)
-;;     (assert-eq (type fib) :foreign)
-;;     :fib-is-ok))
+(test-constraint-solving-6)
 
 
 
-;; (defn foo (x)
-;;   (+ (- (fib x) 100) 7))
+(defn fib (n)
+  (if (< n 2)
+    1
+    (+ (fib (- n 2)) (fib (- n 1)))))
 
-;; (defn test-foo ()
-;;   (do (bake* foo '(fib))
-;;       (assert-eq (foo 6) -80)
-;;       (assert-eq (type foo) :foreign)
-;;       :foo-is-ok))
-
-
-
-;; (defn hypo (x y)
-;;   (sqrtf (+ (* x x) (* y y))))
-
-;; (defn test-hypo ()
-;;   (do (bake hypo)
-;;       (assert-approx-eq (hypo 3.0 4.0) 5.0)
-;;       (assert-eq (type hypo) :foreign)
-;;       :hypo-is-ok))
+(defn test-fib ()
+  (do
+    (bake fib)
+    (assert-eq (fib 6) 13)
+    (assert-eq (type fib) :foreign)
+    :fib-is-ok))
 
 
 
-;; (test-fib)
-;; (test-foo)
-;; (test-hypo)
+(defn foo (x)
+  (+ (- (fib x) 100) 7))
+
+(defn test-foo ()
+  (do (bake* foo '(fib))
+      (assert-eq (foo 6) -80)
+      (assert-eq (type foo) :foreign)
+      :foo-is-ok))
 
 
 
-;; (defn f (s)
-;;   (strlen s))
+(defn hypo (x y)
+  (sqrtf (+ (* x x) (* y y))))
 
-;; (defn g (x s)
-;;   (* x (f s)))
-
-;; (defn h (x)
-;;   (if "blorg" "Hej" x))
-
-;; (def fast (lambda-to-ast (code f)))
-;; (def fcon (gencon fast))
-;; (def fasta (annotate-ast fast))
-
-;; (def hast (lambda-to-ast (code h)))
-;; (def hcon (gencon hast))
-;; (def hasta (annotate-ast hast))
-
-;; (defn fuck ()
-;;   (+ "hej" 23))
-
-;; (def fuckast (lambda-to-ast (code fuck)))
-;; (def fuckcon (gencon fuckast))
-;; ;;(def fuckasta (annotate-ast fuckast))
-
-;; (defn mix (x y z)
-;;   (if (< (strlen z) 3) (* (itof y) x) x))
-
-;; ;; (def mixast (lambda-to-ast (code mix)))
-;; ;; (def mixcon (gencon mixast))
-;; ;; (def mixasta (annotate-ast mixast))
-
-;; (defn monad ()
-;;   (do (strlen "hej")
-;;       (strlen "svej")
-;;       (strlen "yay")))
-
-;; (def monast (lambda-to-ast (code monad)))
-;; (def moncon (gencon monast))
-;; (def monasta (annotate-ast monast))
+(defn test-hypo ()
+  (do (bake hypo)
+      (assert-approx-eq (hypo 3.0 4.0) 5.0)
+      (assert-eq (type hypo) :foreign)
+      :hypo-is-ok))
 
 
 
-;; (defn test-loading ()
-;;   (do
-;;     (save "out/out.c" "int f() { return 100; }")
-;;     (system "clang -shared -o out/f.so out/out.c")
-;;     (def flib (load-dylib "out/f.so"))
-;;     (register flib "f" () :int)
-;;     (assert-eq 100 (f))
+(test-fib)
+(test-foo)
+(test-hypo)
+
+
+
+(defn f (s)
+  (strlen s))
+
+(defn g (x s)
+  (* x (f s)))
+
+(defn h (x)
+  (if "blorg" "Hej" x))
+
+(def fast (lambda-to-ast (code f)))
+(def fcon (gencon fast))
+(def fasta (annotate-ast fast))
+
+(def hast (lambda-to-ast (code h)))
+(def hcon (gencon hast))
+(def hasta (annotate-ast hast))
+
+(defn fuck ()
+  (+ "hej" 23))
+
+(def fuckast (lambda-to-ast (code fuck)))
+(def fuckcon (gencon fuckast))
+;;(def fuckasta (annotate-ast fuckast))
+
+(defn mix (x y z)
+  (if (< (strlen z) 3) (* (itof y) x) x))
+
+;; (def mixast (lambda-to-ast (code mix)))
+;; (def mixcon (gencon mixast))
+;; (def mixasta (annotate-ast mixast))
+
+(defn monad ()
+  (do (strlen "hej")
+      (strlen "svej")
+      (strlen "yay")))
+
+(def monast (lambda-to-ast (code monad)))
+(def moncon (gencon monast))
+(def monasta (annotate-ast monast))
+
+
+
+(defn test-loading ()
+  (do
+    (save "out/out.c" "int f() { return 100; }")
+    (system "clang -shared -o out/f.so out/out.c")
+    (def flib (load-dylib "out/f.so"))
+    (register flib "f" () :int)
+    (assert-eq 100 (f))
     
-;;     (save "out/out.c" "int g() { return 150; }")
-;;     (system "clang -shared -o out/g.so out/out.c")
-;;     (def glib (load-dylib "out/g.so"))
-;;     (register glib "g" () :int)
-;;     (assert-eq 150 (g))
+    (save "out/out.c" "int g() { return 150; }")
+    (system "clang -shared -o out/g.so out/out.c")
+    (def glib (load-dylib "out/g.so"))
+    (register glib "g" () :int)
+    (assert-eq 150 (g))
     
-;;     (unload-dylib flib)
+    (unload-dylib flib)
     
-;;     (save "out/out.c" "int f() { return 200; }")
-;;     (system "clang -shared -o out/f.so out/out.c")
-;;     (def flib (load-dylib "out/f.so"))
-;;     (register flib "f" () :int)
-;;     (assert-eq 200 (f))
-;;     ))
+    (save "out/out.c" "int f() { return 200; }")
+    (system "clang -shared -o out/f.so out/out.c")
+    (def flib (load-dylib "out/f.so"))
+    (register flib "f" () :int)
+    (assert-eq 200 (f))
+    ))
 
-;; ;; This does NOT work!
-;; (defn shadow (x)
-;;   (let [x (* x 3)]
-;;     x))
-;; ;; (def shadowast (lambda-to-ast (code shadow)))
-;; ;; (def shadowcon (gencon shadowast))
-;; ;; (def shadowasta (annotate-ast shadowast))
-
-
-;; (defn own1 ()
-;;   (let [s "yeah"]
-;;     (strlen s)))
-
-;; (defn own2 ()
-;;   (if true 10 20))
-
-;; (defn own3 ()
-;;   (while true (println "hello")))
-
-;; (defn own4 (x)
-;;   (+ (* 2 x) (+ 1 x)))
+;; This does NOT work!
+(defn shadow (x)
+  (let [x (* x 3)]
+    x))
+;; (def shadowast (lambda-to-ast (code shadow)))
+;; (def shadowcon (gencon shadowast))
+;; (def shadowasta (annotate-ast shadowast))
 
 
-;; (register-builtin "ls" () :string)
-;; (register-builtin "eat_string" '(:string) :void)
-;; (register-builtin "strlen" '((:ref :string)) :int)
+(defn own1 ()
+  (let [s "yeah"]
+    (strlen s)))
 
-;; ;(register-builtin "str_ref" '(:string) '(:ref :string))
+(defn own2 ()
+  (if true 10 20))
 
-;; (defn own-string-1 ()
-;;   (strlen (ref "hej")))
+(defn own3 ()
+  (while true (println "hello")))
 
-;; (defn own-string-2 ()
-;;   (eat-string "hej"))
+(defn own4 (x)
+  (+ (* 2 x) (+ 1 x)))
 
-;; (defn own-string-X (s1)
-;;   (+ 100 (strlen s1)))
 
-;; (defn own-string-3 ()
-;;   "hej")
+(register-builtin "ls" () :string)
+(register-builtin "eat_string" '(:string) :void)
+(register-builtin "strlen" '((:ref :string)) :int)
 
-;; (defn own-string-4 (s)
-;;   (eat-string s))
+;(register-builtin "str_ref" '(:string) '(:ref :string))
 
-;; (defn own-string-5 (s)
-;;   (strlen s))
+(defn own-string-1 ()
+  (strlen (ref "hej")))
 
-;; (defn own-string-6 (s)
-;;   (strlen (ref s)))
+(defn own-string-2 ()
+  (eat-string "hej"))
 
-;; (defn own-string-7 (s)
-;;   (ref s))
+(defn own-string-X (s1)
+  (+ 100 (strlen s1)))
+
+(defn own-string-3 ()
+  "hej")
+
+(defn own-string-4 (s)
+  (eat-string s))
+
+(defn own-string-5 (s)
+  (strlen s))
+
+(defn own-string-6 (s)
+  (strlen (ref s)))
+
+;; This one is weird:
+(defn own-string-7 (s)
+  (ref s))
+
+(def own-ast (lambda-to-ast (code own-string-1)))
+(def own-con (gencon own-ast))
+(def own-asta (annotate-ast own-ast))
 
 ;; (bake own-string-1)
 ;; (bake own-string-2)
 ;; (bake own-string-3)
 ;; (bake own-string-4)
 ;; (bake own-string-5)
-
-;; (def own-ast (lambda-to-ast (code own-string-7)))
-;; (def own-con (gencon own-ast))
-;; (def own-asta (annotate-ast own-ast))
-
+;; (bake own-string-6)
 

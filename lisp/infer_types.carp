@@ -216,12 +216,15 @@
                 substs-replaced-from-right))
           (do (when log-substs (println (str "Existing binding: " existing)))
               (if (list? existing)
-                (let [_ (when log-substs (println "The existing binding is a list"))
-                      new-substs (reduce (fn (s m2) (extend-substitutions substs (:e m2) (:l m2)))
-                                         substs
-                                         (map2 (fn (e l) {:e e :l l}) existing value-lookup))
-                      _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
-                  new-substs)
+                (if (list? value-lookup)
+                  (let [_ (when log-substs (println "The existing binding is a list"))
+                        new-substs (reduce (fn (s m2) (extend-substitutions substs (:e m2) (:l m2)))
+                                           substs
+                                           (map2 (fn (e l) {:e e :l l}) existing value-lookup))
+                        _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
+                    new-substs)
+                  (do
+                    substs))
                 (if (typevar? existing)
                   (do (when log-substs (println "The existing binding is a typevar, will replace from right"))
                       (replace-subst-from-right substs existing value-lookup))
@@ -308,7 +311,9 @@
 
          :arg (assoc ast :type (get-type substs (:type ast)))
 
-         :ref (assoc ast :type (get-type substs (:type ast)))
+         :ref (let [x0 (assoc ast :type (get-type substs (:type ast)))
+                    x1 (assoc x0 :expr (assign-types (:expr x0) substs))]
+                x1)
 
          :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
                       x1 (assoc x0 :a (assign-types (:a ast) substs))
