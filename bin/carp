@@ -3,4 +3,8 @@
 # Get the dir of this script (which is in the bin folder)
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-CARP_DIR=$DIR/../ rlwrap $DIR/carp-repl
+WRAPPER=rlwrap
+#WRAPPER=lldb
+#WRAPPER=valgrind
+
+CARP_DIR=$DIR/../ $WRAPPER $DIR/carp-repl

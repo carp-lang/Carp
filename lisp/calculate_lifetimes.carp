@@ -69,7 +69,7 @@
                      :vars '()})
 
         :literal (let [vars-after (cons {:name (:result-name ast) :type (:type ast)} vars)
-                       _ (println (str "vars-after literal " (:value ast) ": " vars-after))
+                       ;;_ (println (str "vars-after literal " (:value ast) ": " vars-after))
                        ]
                    {:ast ast
                     :vars vars-after})

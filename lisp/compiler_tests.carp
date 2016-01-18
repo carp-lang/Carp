@@ -322,8 +322,8 @@
       (assert-eq :string (:type (nth free 0)))
       (assert-eq :string (:type (nth free 1)))
       (assert-eq :string (:type (nth free 2)))
-      ;;(bake own-string-8)
-      ;;(assert-eq (own-string-8 "a" "b") "ba!")
+      (bake own-string-8)
+      (assert-eq (own-string-8 "a" "b") "ba!")
       ))
 
 

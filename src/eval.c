@@ -223,6 +223,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     Obj *p = function->arg_types;
     for(int i = 0; i < arg_count; i++) {      
       if(p && p->cdr) {
+	assert(p->car);
 	Obj *type_obj = p->car;
 
 	// Handle ref types by unwrapping them: (:ref x) -> x
@@ -230,7 +231,8 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  type_obj = type_obj->cdr->car; // the second element of the list
 	}
 	
-	assert(p->car);
+	args[i]->given_to_ffi = true; // This makes the GC ignore this value when deleting internal C-data, like inside a string
+	
 	if(obj_eq(type_obj, type_int)) {
 	  assert_or_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->i;

@@ -90,7 +90,7 @@
                (let [clang-command (str "clang "
                                         (if exe
                                           (str "-o " out-dir "exe ")
-                                          (str "-shared -o " out-dir c-func-name ".so "))
+                                          (str "-shared -g -o " out-dir c-func-name ".so "))
                                         c-file-name " "
                                         (include-paths)  " "
                                         (lib-paths) " "

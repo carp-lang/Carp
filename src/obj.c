@@ -11,6 +11,7 @@ Obj *obj_new(char tag) {
   Obj *o = malloc(sizeof(Obj));
   o->prev = obj_latest;
   o->alive = false;
+  o->given_to_ffi = false;
   o->tag = tag;
   obj_latest = o;
   obj_total++;

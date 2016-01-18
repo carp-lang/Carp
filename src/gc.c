@@ -33,7 +33,10 @@ void obj_mark_alive(Obj *o) {
 }
 
 void free_internal_data(Obj *dead) {
-  if(dead->tag == 'F') {
+  if(dead->given_to_ffi) {
+    // ignore this object
+  }
+  else if(dead->tag == 'F') {
     free(dead->cif);
   }
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {

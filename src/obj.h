@@ -70,6 +70,7 @@ typedef struct Obj {
   // GC
   struct Obj *prev;
   char alive;
+  char given_to_ffi;
   // Type tag (see table above)
   char tag;
 } Obj;
