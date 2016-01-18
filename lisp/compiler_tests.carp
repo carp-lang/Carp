@@ -287,3 +287,44 @@
 ;; (bake own-string-5)
 ;; (bake own-string-6)
 
+
+
+
+(register-builtin "str_append" '((:ref :string) (:ref :string)) :string)
+
+(defn own-string-7 (s1 s2)
+  (str-append (ref s2) (str-append (ref s1) (ref s2))))
+
+(def own-ast-7 (lambda-to-ast (code own-string-7)))
+(def own-con-7 (gencon own-ast-7))
+(def own-asta-7 (annotate-ast own-ast-7))
+(let [free (:free own-asta-7)]
+  (do (assert-eq '(:arrow (:string :string) :string) (:type own-asta-7))
+      (assert-eq 2 (count free))
+      (assert-eq :string (:type (nth free 0)))
+      (assert-eq :string (:type (nth free 1)))
+      (assert-eq "s1" (:name (nth free 0)))
+      (assert-eq "s2" (:name (nth free 1)))
+      (bake own-string-7)
+      (assert-eq (own-string-7 "a" "b") "bab")))
+
+
+
+(defn own-string-8 (s1 s2)
+  (str-append (ref s2) (str-append (ref s1) "!")))
+
+(def own-ast-8 (lambda-to-ast (code own-string-8)))
+(def own-con-8 (gencon own-ast-8))
+(def own-asta-8 (annotate-ast own-ast-8))
+(let [free (:free own-asta-8)]
+  (do (assert-eq '(:arrow (:string :string) :string) (:type own-asta-8))
+      (assert-eq 3 (count free))
+      (assert-eq :string (:type (nth free 0)))
+      (assert-eq :string (:type (nth free 1)))
+      (assert-eq :string (:type (nth free 2)))
+      ;;(bake own-string-8)
+      ;;(assert-eq (own-string-8 "a" "b") "ba!")
+      ))
+
+
+

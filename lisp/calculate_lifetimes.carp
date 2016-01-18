@@ -28,7 +28,7 @@
   (remove (fn (v) (= name (:name v))) vars))
 
 ;; Used for reducing over the args in a function application
-(defn calc-lifetime-for-arg (data arg-ast)
+(defn calc-lifetime-for-arg (data parameter-types arg-ast)
   (do
     ;; (println "CALCARG. data:\n")
     ;; (println data)
@@ -37,7 +37,8 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          is-ref (ref? (:type arg-ast))
+          parameter-type (nth parameter-types pos)
+          is-ref (ref? parameter-type)
           new-data (if (and (= :literal (:node arg-ast)) (not is-ref))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
                      (calculate-lifetimes-internal {:ast arg-ast
@@ -67,8 +68,11 @@
                     {:ast (assoc ast :free vars-with-return-value-removed)
                      :vars '()})
 
-        :literal {:ast ast
-                  :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
+        :literal (let [vars-after (cons {:name (:result-name ast) :type (:type ast)} vars)
+                       _ (println (str "vars-after literal " (:value ast) ": " vars-after))
+                       ]
+                   {:ast ast
+                    :vars vars-after})
 
         :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)]
                data-after)
@@ -84,7 +88,8 @@
 
         :app (let [tail (:tail ast)
                    init-data (assoc data :pos 0)
-                   data-after (reduce calc-lifetime-for-arg init-data tail)
+                   parameter-types (get-in ast '(:head :type 1))
+                   data-after (reduce (fn (d a) (calc-lifetime-for-arg d parameter-types a)) init-data tail)
                    vars-after (:vars data-after)
                    ast-after (:ast data-after)]
                (do
