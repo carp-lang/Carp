@@ -160,4 +160,4 @@ Omit the name tag to create a data constructor with the same name as the type:
 (register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
 ```
 
-(C) Erik Svedäng 2015 - 2016
+© Erik Svedäng 2015 - 2016
