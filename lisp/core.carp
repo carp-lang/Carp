@@ -179,3 +179,4 @@
 (register-builtin "sleep" '(:int) :void)
 (register-builtin "nullQMARK" '((:ptr :any)) :bool)
 (register-builtin "not" '(:bool) :bool)
+(register-builtin "str_append" '((:ref :string) (:ref :string)) :string)

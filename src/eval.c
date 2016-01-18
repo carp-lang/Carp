@@ -490,6 +490,10 @@ void eval_list(Obj *env, Obj *o) {
       stack_push(lisp_true);
     }
   }
+  else if(HEAD_EQ("ref")) {
+    assert_or_set_error(o->cdr, "Too few args to 'ref': ", o);
+    eval_internal(env, o->cdr->car);
+  }
   else {
     shadow_stack_push(o);
     

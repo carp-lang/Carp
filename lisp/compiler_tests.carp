@@ -290,7 +290,7 @@
 
 
 
-(register-builtin "str_append" '((:ref :string) (:ref :string)) :string)
+
 
 (defn own-string-7 (s1 s2)
   (str-append (ref s2) (str-append (ref s1) (ref s2))))

@@ -16,6 +16,8 @@
   - conversions between a list of pairs and dictionaries
 
 # Dynamic Runtime
+  - only run tests if CARP_DEV is defined
+  - register/register-builtin should use the lisp name, not the C name 
   - call boot.carp file if it exists in ~/.carp or the folder where you run the carp command
   - meta data on Objs: Line nr, line pos, source file,
   - warn if a let statement has more than one body form (implicit do)

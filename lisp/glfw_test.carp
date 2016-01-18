@@ -74,3 +74,4 @@
       (bake* app '(draw-rect))
       (bake-exe* main '(app))))
 
+(bake-gl-exe)
