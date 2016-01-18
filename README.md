@@ -39,14 +39,14 @@ To build this example, load the 'glfw_test.lisp' file like this:
 Then execute ```(bake-gl-exe)``` to build an executable, or just ```(app)``` to run the program directly from the REPL.
 
 ## The Compiler
-The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` (first making sure it's in your $PATH, see installation instructions below) which starts the REPL. Everything you want to do to your program can be controlled from here.
+The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (implemented in C). To work on a Carp program you run ```carp``` (first making sure it's in your $PATH, see installation instructions below) which starts the REPL. Everything you want to do to your program can be controlled from here.
 
 For example, to compile a function named 'fib' you enter the following:
 ```clojure
 λ> (bake fib)
 ```
 
-This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, ast and type signature are bound to the three variables 'c', 'ast' and 's', respectively.
+This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, ast and type signature are bound to the three variables 'c', 'ast' and 's', respectively. Inspecting their contents will teach you more about the innards of the Carp language, for sure!
 
 From the REPL you can also inspect your the state of variables, extend the compiler, script the build process of your project, or statically analyze its code. All these operations should be really quick to execute and easy to remember so you can focus on developing your program.
 
@@ -60,7 +60,7 @@ Clone this repo, then run ```make``` in its root. Add the 'bin' directory to you
 
 ```export PATH=$PATH:~/Carp/bin/```
 
-Right now I've only built this on OSX 10.10. More platforms are coming though, the project is written in C99 so I hope it's not TOO much work. There are a few dependencies that has to be installed:
+Carp is currently only tested on OSX 10.10. More platforms are coming though, the project is written in C99 so I hope it's not TOO much work. There are a few dependencies that have to be installed:
  * libffi
  * glfw3
  * rlwrap
