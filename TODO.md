@@ -15,7 +15,6 @@
 
 # Dynamic Runtime
   - register/register-builtin should use the lisp name, not the C name 
-  - call user.carp file if it exists in ~/.carp or project.car if it's in the folder where you run the carp command
   - meta data on Objs: Line nr, line pos, source file,
   - add array as its own tag for Obj, [] syntax, etc
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj

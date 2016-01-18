@@ -51,10 +51,6 @@ void fake2(string *s) {
   
 }
 
-char *ls() {
-  return strdup("C:\\");
-}
-
 void eat_string(char *s) {
   free(s);
 }
@@ -65,6 +61,11 @@ char *str_append(char *s1, char *s2) {
   strcat(new_str, s1);
   strcat(new_str, s2);
   return new_str;
+}
+
+bool file_existsQMARK(char *filename) {
+  FILE *f = fopen(filename, "r");
+  return f != NULL;
 }
 
 #endif

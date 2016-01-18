@@ -210,7 +210,6 @@
 
 
 
-(register-builtin "ls" () :string)
 (register-builtin "eat_string" '(:string) :void)
 
 (defn own-string-1 ()

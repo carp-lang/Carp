@@ -164,6 +164,10 @@
   (let [both (concat xs ys)]
     (set both)))
 
+(defn ls () (system "ls"))
+(defn pwd () (system "pwd"))
+(defn user () (getenv "USER"))
+
 (register-builtin "srand" '(:int) :void)
 (register-builtin "rand" '() :int)
 (register-builtin "sinf" '(:float) :float)
@@ -180,3 +184,5 @@
 (register-builtin "not" '(:bool) :bool)
 (register-builtin "strlen" '((:ref :string)) :int)
 (register-builtin "str_append" '((:ref :string) (:ref :string)) :string)
+(register-builtin "file_existsQMARK" '((:ref :string)) :bool)
+
