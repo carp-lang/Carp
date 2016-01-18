@@ -1,8 +1,14 @@
 # Compiler
   - Compilation of generic functions
+  - Compiling arrays
+  - Prevent uses of a variable when it has been sent to another function
+  - Avoid problems with name shadowing when freeing a local variable
+  - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Track dependencies between functions
   - Change :a and :b in binop and if to :left and :right
   - lambdas / lambda lifting
+  - defstruct
+  - deftype
   - compile a whole file to a single dylib
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
@@ -17,6 +23,7 @@
 
 # Dynamic Runtime
   - add array as its own tag for Obj, [] syntax, etc
+  - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - meta data on Objs: Line nr, line pos, source file,
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
