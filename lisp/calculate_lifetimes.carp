@@ -5,8 +5,8 @@
 
 (defn managed-type? (t)
   (match t
-         (:ref x) false ;; (managed-type? x)
-         _ (= t :string)))
+    (:ref x) false ;; (managed-type? x)
+    _ (= t :string)))
 
 (defn manage? (descriptor)
   (managed-type? (:type descriptor)))
@@ -21,8 +21,8 @@
 
 (defn ref? (v)
   (match v
-         (:ref _) true
-         _ false))
+    (:ref _) true
+    _ false))
 
 (defn remove-var-with-name (vars name)
   (remove (fn (v) (= name (:name v))) vars))
@@ -37,9 +37,12 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          new-data (if (and (= :literal (:node arg-ast)) (not (ref? (:type arg-ast))))
+          is-ref (ref? (:type arg-ast))
+          new-data (if (and (= :literal (:node arg-ast)) (not is-ref))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
-                     (calculate-lifetimes-internal {:ast arg-ast :vars vars}))
+                     (calculate-lifetimes-internal {:ast arg-ast
+                                                    :vars vars}
+                                                   is-ref))
           new-arg-ast (:ast new-data)
           new-vars (:vars new-data)
           ;;_ (println (str "AST: " ast))
@@ -48,50 +51,51 @@
                         :pos (inc pos)}]
       new-app-data)))
 
-(defn calculate-lifetimes-internal (data)
+(defn calculate-lifetimes-internal (data in-ref)
   (do
     ;;(println (str "CALC:\n" data))
     (let [ast (:ast data)
           vars (:vars data)]
       (match (:node ast)
 
-             :function (let [parameter-nodes (:args ast)
-                             new-variables (filter manage? (map convert-param-node parameter-nodes))
-                             ;;_ (println (str ":function new-variables: " new-variables))
-                             data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables})
-                             vars-after (:vars data-after)
-                             vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)]
-                         {:ast (assoc ast :free vars-with-return-value-removed)
-                          :vars '()})
-
-             :literal {:ast ast
-                       :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
-
-             :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars})]
-                    data-after)
-
-             :lookup (let [;;_ (println (str "lookup: " ast))
-                           vars-after (if (ref? (:type ast))
-                                        vars
-                                        (remove-var-with-name vars (str (:value ast))))
-                           ;;_ (when (not (= vars vars-after)) (println (str "vars " vars ", after in lookup of " (:value ast) ": " vars-after)))
-                           ]
-                       {:ast ast
-                        :vars vars-after})
-
-             :app (let [tail (:tail ast)
-                        init-data (assoc data :pos 0)
-                        data-after (reduce calc-lifetime-for-arg init-data tail)
+        :function (let [parameter-nodes (:args ast)
+                        new-variables (filter manage? (map convert-param-node parameter-nodes))
+                        ;;_ (println (str ":function new-variables: " new-variables))
+                        data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables} in-ref)
                         vars-after (:vars data-after)
-                        ast-after (:ast data-after)]
-                    (do
-                      ;;(println (str "APP VARS AFTER\n" vars-after))
-                      {:ast ast-after
-                       :vars vars-after}))
-             
-             _ data))))
+                        vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)]
+                    {:ast (assoc ast :free vars-with-return-value-removed)
+                     :vars '()})
+
+        :literal {:ast ast
+                  :vars (cons {:name (:result-name ast) :type (:type ast)} vars)}
+
+        :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)]
+               data-after)
+
+        :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast))
+                      vars-after (if in-ref ;;(ref? (:type ast))
+                                   vars
+                                   (remove-var-with-name vars (str (:value ast))))
+                      ;;_ (when (not (= vars vars-after)) (println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after)))
+                      ]
+                  {:ast ast
+                   :vars vars-after})
+
+        :app (let [tail (:tail ast)
+                   init-data (assoc data :pos 0)
+                   data-after (reduce calc-lifetime-for-arg init-data tail)
+                   vars-after (:vars data-after)
+                   ast-after (:ast data-after)]
+               (do
+                 ;;(println (str "APP VARS AFTER\n" vars-after))
+                 {:ast ast-after
+                  :vars vars-after}))
+        
+        _ data))))
 
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast
-                                       :vars '()})))
+                                       :vars '()}
+                                      false)))
 

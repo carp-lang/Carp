@@ -203,54 +203,82 @@
 ;; (def shadowasta (annotate-ast shadowast))
 
 
-(defn own1 ()
-  (let [s "yeah"]
-    (strlen s)))
-
-(defn own2 ()
-  (if true 10 20))
-
-(defn own3 ()
-  (while true (println "hello")))
-
-(defn own4 (x)
-  (+ (* 2 x) (+ 1 x)))
-
 
 (register-builtin "ls" () :string)
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "strlen" '((:ref :string)) :int)
 
-;(register-builtin "str_ref" '(:string) '(:ref :string))
-
 (defn own-string-1 ()
   (strlen (ref "hej")))
 
-(defn own-string-2 ()
-  (eat-string "hej"))
-
-(defn own-string-X (s1)
-  (+ 100 (strlen s1)))
-
-(defn own-string-3 ()
-  "hej")
-
-(defn own-string-4 (s)
-  (eat-string s))
-
-(defn own-string-5 (s)
-  (strlen s))
-
-(defn own-string-6 (s)
-  (strlen (ref s)))
 
 ;; This one is weird:
 (defn own-string-7 (s)
   (ref s))
 
-(def own-ast (lambda-to-ast (code own-string-1)))
-(def own-con (gencon own-ast))
-(def own-asta (annotate-ast own-ast))
+(def own-ast-1 (lambda-to-ast (code own-string-1)))
+(def own-con-1 (gencon own-ast-1))
+(def own-asta-1 (annotate-ast own-ast-1))
+(let [free (:free own-asta-1)]
+  (do (assert-eq 1 (count free))
+      (assert-eq :string (:type (nth free 0)))))
+
+
+(defn own-string-2 ()
+  (eat-string "hej"))
+
+(def own-ast-2 (lambda-to-ast (code own-string-2)))
+(def own-con-2 (gencon own-ast-2))
+(def own-asta-2 (annotate-ast own-ast-2))
+(let [free (:free own-asta-2)]
+  (do (assert-eq 0 (count free))
+      (assert-eq '(:arrow () :void) (:type own-asta-2))))
+
+
+(defn own-string-3 ()
+  "hej")
+
+(def own-ast-3 (lambda-to-ast (code own-string-3)))
+(def own-con-3 (gencon own-ast-3))
+(def own-asta-3 (annotate-ast own-ast-3))
+(let [free (:free own-asta-3)]
+  (do (assert-eq 0 (count free))
+      (assert-eq '(:arrow () :string) (:type own-asta-3))))
+
+
+(defn own-string-4 (s)
+  (eat-string s))
+
+(def own-ast-4 (lambda-to-ast (code own-string-4)))
+(def own-con-4 (gencon own-ast-4))
+(def own-asta-4 (annotate-ast own-ast-4))
+(let [free (:free own-asta-4)]
+  (do (assert-eq 0 (count free))
+      (assert-eq '(:arrow (:string) :void) (:type own-asta-4))))
+
+
+(defn own-string-5 (s)
+  (strlen s))
+
+(def own-ast-5 (lambda-to-ast (code own-string-5)))
+(def own-con-5 (gencon own-ast-5))
+(def own-asta-5 (annotate-ast own-ast-5))
+(let [free (:free own-asta-5)]
+  (do (assert-eq 0 (count free))
+      (assert-eq '(:arrow ((:ref :string)) :int) (:type own-asta-5))))
+
+
+(defn own-string-6 (sr)
+  (strlen (ref sr)))
+
+(def own-ast-6 (lambda-to-ast (code own-string-6)))
+(def own-con-6 (gencon own-ast-6))
+(def own-asta-6 (annotate-ast own-ast-6))
+(let [free (:free own-asta-6)]
+  (do (assert-eq 1 (count free))
+      (assert-eq :string (:type (nth free 0)))
+      (assert-eq '(:arrow (:string) :int) (:type own-asta-6))))
+
 
 ;; (bake own-string-1)
 ;; (bake own-string-2)
