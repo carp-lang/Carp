@@ -1,6 +1,7 @@
 # Compiler
   - Compilation of generic functions
   - Compiling arrays
+  - Let string literal be of type ref so they don't need to be deleted?
   - Prevent uses of a variable when it has been sent to another function
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
