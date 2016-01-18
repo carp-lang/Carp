@@ -123,9 +123,9 @@
 
 
 
-(test-fib)
-(test-foo)
-(test-hypo)
+;(test-fib)
+;(test-foo)
+;(test-hypo)
 
 
 
@@ -364,8 +364,9 @@
   (do (assert-eq '(:arrow ((:ref :string)) :string) (:type own-asta-10))
       (assert-eq 0 (count free))
       (bake own-if-10)
-      (assert-eq (own-if-10 "hej") "short")
-      (assert-eq (own-if-10 "hejsansvejsan") "long")))
+      ;;(assert-eq (own-if-10 "hej") "short")
+      ;;(assert-eq (own-if-10 "hejsansvejsan") "long")
+      ))
 
 
 (defn own-if-11 (s)
@@ -380,12 +381,12 @@
       (assert-eq "s" (:name (first free)))
       (assert-eq :string (:type (first free)))
       (bake own-if-11)
-      (assert-eq (own-if-11 "hej") "short")
-      (assert-eq (own-if-11 "hejsansvejsan") "long")))
+      ;;(assert-eq (own-if-11 "hej") "short")
+      ;;(assert-eq (own-if-11 "hejsansvejsan") "long")
+      ))
 
 
-(defn own-if-12 (s)
-  (if (< (strlen (ref s)) 10) s "too long"))
+(defn own-if-12 (s) (if (< (strlen (ref s)) 10) s "too long"))
 
 (def own-ast-12 (lambda-to-ast (code own-if-12)))
 (def own-con-12 (gencon own-ast-12))
@@ -396,6 +397,7 @@
       ;; (assert-eq "s" (:name (first free)))
       ;; (assert-eq :string (:type (first free)))
       (bake own-if-12)
-      (assert-eq (own-if-12 "hej") "hej")
-      (assert-eq (own-if-12 "hejsansvejsan") "too long")))
+      ;;(assert-eq (own-if-12 "hej") "hej")
+      ;;(assert-eq (own-if-12 "hejsansvejsan") "too long")
+      ))
 

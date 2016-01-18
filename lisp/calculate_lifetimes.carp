@@ -46,15 +46,19 @@
                                                    is-ref))
           new-arg-ast (:ast new-data)
           new-vars (:vars new-data)
-          ;;_ (println (str "AST: " ast))
-          new-app-data {:ast (assoc-in ast (list :tail pos) new-arg-ast)
+
+          ;;_ (println (str "new-arg-ast:\n" new-arg-ast))
+          
+          new-ast (assoc-in ast (list :tail pos) new-arg-ast)
+          ;;_ (println (str "pos " pos " AST: " ast " => " new-ast))
+          new-app-data {:ast new-ast
                         :vars new-vars
                         :pos (inc pos)}]
       new-app-data)))
 
 (defn calculate-lifetimes-internal (data in-ref)
   (do
-    ;;(println (str "CALC:\n" data))
+    ;;(println (str "CALC:\n" (:node (:ast data))))
     (let [ast (:ast data)
           vars (:vars data)]
       (match (:node ast)
@@ -62,10 +66,21 @@
         :function (let [parameter-nodes (:args ast)
                         new-variables (filter manage? (map convert-param-node parameter-nodes))
                         ;;_ (println (str ":function new-variables: " new-variables))
-                        data-after (calculate-lifetimes-internal {:ast (:body ast) :vars new-variables} in-ref)
+                        pre-body (:body ast)
+                        ;;_ (println (str "\npre-body:\n" pre-body))
+                        data-after (calculate-lifetimes-internal {:ast pre-body :vars new-variables} in-ref)
                         vars-after (:vars data-after)
-                        vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)]
-                    {:ast (assoc ast :free vars-with-return-value-removed)
+                        vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)
+                        new-body (:ast data-after)
+
+                        ;;_ (println (str "\nnew-body:\n" new-body))
+                        ;;_ (println (str "\nast before:\n" ast))
+                        ast-after (assoc ast :body new-body)
+                        ;;_ (println (str "\nast after:\n" ast-after))
+                        ast-final (assoc ast-after :free vars-with-return-value-removed)
+                        ;;_ (println (str "\nast final:\n" ast-final))
+                        ]
+                    {:ast ast-final
                      :vars '()})
 
         :literal (let [vars-after (cons {:name (:result-name ast) :type (:type ast)} vars)
@@ -75,16 +90,20 @@
                     :vars vars-after})
 
         :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)]
-               data-after)
+               {:ast (assoc ast :expr (:ast data-after))
+                :vars (:vars data-after)})
 
         :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast))
                       vars-after (if in-ref ;;(ref? (:type ast))
                                    vars
                                    (remove-var-with-name vars (str (:value ast))))
                       ;;_ (when (not (= vars vars-after)) (println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after)))
+                      final-ast {:ast ast
+                                 :vars vars-after}
+
+                      ;;_ (println (str "final-ast:\n" final-ast))
                       ]
-                  {:ast ast
-                   :vars vars-after})
+                  final-ast)
 
         :app (let [tail (:tail ast)
                    init-data (assoc data :pos 0)
@@ -97,6 +116,30 @@
                  ;;(println (str "APP VARS AFTER\n" vars-after))
                  {:ast ast-after
                   :vars vars-after-with-ret-val}))
+
+        :if (let [;;_ (println (str "if-ast:\n" ast))
+                  data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
+
+                  vars-after-expr (:vars data-after-expr)
+                  data-after-left (calculate-lifetimes-internal {:ast (:a ast) :vars vars-after-expr} in-ref)
+                  data-after-right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-expr} in-ref)
+                  ;;_ (println (str "data-after-left:\n" data-after-left "\ndata-after-right:\n" data-after-right))
+                  vars-after-left (:vars data-after-left)
+                  vars-after-right (:vars data-after-right)
+                  
+                  ast-after-expr (assoc ast :expr (:ast data-after-expr))
+                  ast0 (assoc ast-after-expr :a (:ast data-after-left))
+                  ast1 (assoc ast0 :b (:ast data-after-right))
+                  ast2 (assoc ast1 :free-left '())
+                  ast3 (assoc ast2 :free-right '())
+
+                  ast-after-all ast3
+
+                  vars-after-all vars
+                  ]
+              {:ast ast-after-all
+               :vars vars-after-all}
+              )
         
         _ data))))
 

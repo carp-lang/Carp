@@ -106,6 +106,7 @@
                      (indent-in!)
                      (let [result-a (visit-form c (get form :a) true)]
                        (do
+                         (str-append! c (free-variables (:free-left form)))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-a :c) ";\n")))
@@ -115,6 +116,7 @@
                      (indent-in!) ;; false-block-begins
                      (let [result-b (visit-form c (get form :b) true)]
                        (do
+                         (str-append! c (free-variables (:free-right form)))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-b :c) ";\n")))

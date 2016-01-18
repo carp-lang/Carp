@@ -149,7 +149,7 @@ Obj *obj_copy(Obj *o) {
   }
   else if(o->tag == 'E') {
     //printf("Making a copy of the env: %s\n", obj_to_string(o)->s);
-    Obj *new_env = obj_new_environment(o->parent);
+    Obj *new_env = obj_new_environment(NULL);
     new_env->bindings = obj_copy(o->bindings);
     return new_env;
   }

@@ -1,6 +1,6 @@
 #include "obj_string.h"
 
-bool setting_print_lambda_body = true;
+bool setting_print_lambda_body = false;
 
 void obj_string_mut_append(Obj *string_obj, const char *s2) {
   assert(string_obj);
