@@ -14,10 +14,46 @@ The key features of Carp are the following:
 * No hidden performance penalties – allocation and copying is explicit
 * Very good integration with exisiting C code
 
-## Installation
+## Quick OpenGL Example
+```clojure
+(defn app ()
+  (if (glfwInit)
+    (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
+      (if (null? window)
+        (panic "No window.")
+        (do (println "Window OK.")
+            (glfwMakeContextCurrent window)
+            (while (not (glfwWindowShouldClose window))
+              (do
+                (glClearColor 0.6f 0.85f 0.85f 1.0f)
+                (glClear gl-color-buffer-bit)
+                (glColor3f 1.0f 0.9f 0.2f)
+                (draw-rect -0.5f -0.5f 1.0f 1.0f)              
+                (glfwSwapBuffers window)
+                (glfwPollEvents)))
+            (glfwTerminate))))
+    (panic "Failed to initialize glfw.")))
+```
+
+To build this example, load the 'glfw_test.lisp' file and then execute ```(bake-gl-exe)```.
+
+## The Compiler
+Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
+
+For example, to compile a function named 'fib' you enter the following:
+```clojure
+λ> (bake fib)
+```
+
+This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, ast and type signature are bound to the three variables 'c', 'ast' and 's', respectively.
+
+From the REPL you can also inspect your the state of your program, extend the compiler, script the build process of your project or statically analyze its code.
+
+### Installation
 Clone this repo, then run ```make``` in its root. Add the 'bin' directory to your path to enable calling the ```carp``` command:
 
 ```export PATH=$PATH:~/Carp/bin/```
+
 
 ## The Language
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
@@ -40,7 +76,7 @@ int fib(int n) {
 }
 ```
 
-The most important thing in Carp is to work with arrays of data. Here's how that looks:
+The most important thing in Carp is to work with arrays of data. Here's an example of how that looks:
 
 ```clojure
 (defn weird-sum (nums)
@@ -71,7 +107,14 @@ true ; bool
 (set! variable value)
 ```
 
-### Algebraic Data Types
+### Structs (not implemented)
+```clojure
+(defstruct Vector2 [x :float, y :float])
+
+(def my-pos (Vector2 102.2f 210.3f))
+```
+
+### Algebraic Data Types (not implemented)
 ```clojure
 (defdata Color 
   RGB [r :float, g :float, b :float]
@@ -93,15 +136,5 @@ Omit the name tag to create a data constructor with the same name as the type:
 (def blah (load-dylib "./libs/blah.so"))
 (register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
 ```
-
-## The Compiler
-Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
-
-For example, to compile the function defined above you would enter the following:
-```clojure
-λ> (bake fib)
-```
-
-This results in the compiler analyzing the code form for 'fib' and compiling it to some very fast binary code, immediately loading this back into the REPL so that it can be called from there.
 
 (C) Erik Svedäng 2015 - 2016
