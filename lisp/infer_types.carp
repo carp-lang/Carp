@@ -168,7 +168,7 @@
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do
-    (println (str "maybe-replace-binding   key: " key ", value: " value ", replace: " replace-this ", with: " with-this))
+    ;;(println (str "maybe-replace-binding   key: " key ", value: " value ", replace: " replace-this ", with: " with-this))
     (if (list? value)
       {:key key :value (replace-in-list value replace-this with-this)}
       (if (= replace-this value)
@@ -176,13 +176,15 @@
         {:key key :value value}))))
 
 (defn replace-subst-from-right (substs existing b)
-  (reduce (fn (new-substs pair) (assoc new-substs (:key pair) (:value pair)))
-          {}
-          (map2 (fn (k v)
-                  (maybe-replace-binding k v existing b))
-                (keys substs)
-                (values substs))))
-
+  (do
+    ;;(println (str "replace-substs-from-right " substs existing b))
+    (reduce (fn (new-substs pair) (assoc new-substs (:key pair) (:value pair)))
+            {}
+            (map2 (fn (k v)
+                    (maybe-replace-binding k v existing b))
+                  (keys substs)
+                  (values substs)))))
+  
 (defn typevar? (x) (string? x))
 
 (defn types-exactly-eq? (a b)
@@ -194,7 +196,7 @@
         true
         (= a b)))))
 
-(def log-substs true)
+(def log-substs false)
 
 (defn extend-substitutions (substs tvar value)
   (do
@@ -207,9 +209,10 @@
         (if (= nil existing)
           (do (when log-substs (println (str "No existing binding, will set " tvar " to " value-lookup)))
               (let [new-substs (assoc substs tvar value-lookup)
-                    _ (println (str "new-substs:\n" new-substs))
+                    ;;_ (println (str "new-substs:\n" new-substs))
                     substs-replaced-from-right (replace-subst-from-right new-substs tvar value-lookup)
-                    _ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))]
+                    ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
+                    ]
                 substs-replaced-from-right))
           (do (when log-substs (println (str "Existing binding: " existing)))
               (if (list? existing)
@@ -228,8 +231,19 @@
                             substs)
                         (do (when log-substs (println "Current binding do not match new value"))
                             substs))))))))
-      (do (when log-substs (str "Ignoring " tvar " since it's not a tvar."))
-          substs))))
+      (if (list? tvar)
+        (let [value-lookup (lookup substs value)]
+          (if (list? value-lookup)
+            (do
+              ;;(println (str "Both tvar and value-lookup are lists: " tvar ", " value-lookup))
+              (reduce (fn (s m2) (let [s1 (extend-substitutions s (:t m2) (:v m2))]
+                                   (extend-substitutions s1 (:v m2) (:t m2))))
+                      substs (map2 (fn (t v) {:t t :v v}) tvar value-lookup)))
+            (do
+              ;;(println (str "value lookup must be a list when tvar is a list: " tvar))
+              substs)))
+        (do (when log-substs (println (str "Ignoring " tvar " since it's not a tvar or list.")))
+            substs)))))
 
 (defn solve-list (substs a-list b-list)
   (match (list a-list b-list)

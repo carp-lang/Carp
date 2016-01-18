@@ -53,11 +53,11 @@
       (assert-eq solution solution-backwards))))
 
 (defn test-constraint-solving-5 ()
-  (let [_ (println "\n- Constraint solving 5 -")
+  (let [;;_ (println "\n- Constraint solving 5 -")
         constraints (list {:a (list :ref "t0") :b "t1"}
                           {:a "t1" :b (list :ref :int)})
         solution (solve-constraints constraints)
-        _ (println "\n- Backwards -")
+        ;;_ (println "\n- Backwards -")
         solution-backwards (solve-constraints (reverse constraints))]
     (do
       (assert-eq solution {"t0" :int
