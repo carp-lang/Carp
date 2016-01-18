@@ -7,7 +7,7 @@
 
 (defmacro assert-eq (a b)
   (list 'if-not (list '= a b)
-	(list 'error (list 'str "assert-eq fail: " (str a) " => " a " - VS - " (str b) " => " b))
+	(list 'error (list 'str "assert-eq fail:\n" (str a) " => " a "\n - VS - \n" (str b) " => " b))
 	nil))
 
 (defmacro defn (name args body)
@@ -166,7 +166,6 @@
 
 (register-builtin "srand" '(:int) :void)
 (register-builtin "rand" '() :int)
-(register-builtin "strlen" '(:string) :int)
 (register-builtin "sinf" '(:float) :float)
 (register-builtin "cosf" '(:float) :float)
 (register-builtin "sqrtf" '(:float) :float)
@@ -179,4 +178,5 @@
 (register-builtin "sleep" '(:int) :void)
 (register-builtin "nullQMARK" '((:ptr :any)) :bool)
 (register-builtin "not" '(:bool) :bool)
+(register-builtin "strlen" '((:ref :string)) :int)
 (register-builtin "str_append" '((:ref :string) (:ref :string)) :string)

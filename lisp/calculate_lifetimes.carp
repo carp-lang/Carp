@@ -91,11 +91,12 @@
                    parameter-types (get-in ast '(:head :type 1))
                    data-after (reduce (fn (d a) (calc-lifetime-for-arg d parameter-types a)) init-data tail)
                    vars-after (:vars data-after)
+                   vars-after-with-ret-val (cons {:name (:result-name ast) :type (get-in ast '(:head :type 2))} vars-after)
                    ast-after (:ast data-after)]
                (do
                  ;;(println (str "APP VARS AFTER\n" vars-after))
                  {:ast ast-after
-                  :vars vars-after}))
+                  :vars vars-after-with-ret-val}))
         
         _ data))))
 

@@ -204,17 +204,17 @@
 
 
 
+;; This one is weird:
+(defn own-string-weird (s)
+  (ref s))
+
+
+
 (register-builtin "ls" () :string)
 (register-builtin "eat_string" '(:string) :void)
-(register-builtin "strlen" '((:ref :string)) :int)
 
 (defn own-string-1 ()
   (strlen (ref "hej")))
-
-
-;; This one is weird:
-(defn own-string-7 (s)
-  (ref s))
 
 (def own-ast-1 (lambda-to-ast (code own-string-1)))
 (def own-con-1 (gencon own-ast-1))
@@ -300,11 +300,7 @@
 (def own-asta-7 (annotate-ast own-ast-7))
 (let [free (:free own-asta-7)]
   (do (assert-eq '(:arrow (:string :string) :string) (:type own-asta-7))
-      (assert-eq 2 (count free))
-      (assert-eq :string (:type (nth free 0)))
-      (assert-eq :string (:type (nth free 1)))
-      (assert-eq "s1" (:name (nth free 0)))
-      (assert-eq "s2" (:name (nth free 1)))
+      (assert-eq 3 (count free))
       (bake own-string-7)
       (assert-eq (own-string-7 "a" "b") "bab")))
 
@@ -318,13 +314,41 @@
 (def own-asta-8 (annotate-ast own-ast-8))
 (let [free (:free own-asta-8)]
   (do (assert-eq '(:arrow (:string :string) :string) (:type own-asta-8))
-      (assert-eq 3 (count free))
+      (assert-eq 4 (count free))
       (assert-eq :string (:type (nth free 0)))
       (assert-eq :string (:type (nth free 1)))
       (assert-eq :string (:type (nth free 2)))
+      (assert-eq :string (:type (nth free 3)))
       (bake own-string-8)
-      (assert-eq (own-string-8 "a" "b") "ba!")
-      ))
+      (assert-eq (own-string-8 "a" "b") "ba!")))
 
 
+(defn own-string-9 (s x)
+  (str-append (itos (* x x)) s))
+
+(def own-ast-9 (lambda-to-ast (code own-string-9)))
+(def own-con-9 (gencon own-ast-9))
+(def own-asta-9 (annotate-ast own-ast-9))
+(let [free (:free own-asta-9)]
+  (do (assert-eq '(:arrow ((:ref :string) :int) :string) (:type own-asta-9))
+      (assert-eq 1 (count free))
+      (assert-eq :string (:type (nth free 0)))
+      (bake own-string-9)
+      (assert-eq (own-string-9 "hello" 3) "9hello")))
+
+
+(defn own-string-9b (s)
+  (strlen (own-string-9 (ref s) 5)))
+
+(def own-ast-9b (lambda-to-ast (code own-string-9b)))
+(def own-con-9b (gencon own-ast-9b))
+(def own-asta-9b (annotate-ast own-ast-9b))
+(let [free (:free own-asta-9b)]
+  (do (assert-eq '(:arrow (:string) :int) (:type own-asta-9b))
+      (assert-eq 2 (count free))
+      (assert-eq :string (:type (nth free 0)))
+      (assert-eq :string (:type (nth free 1)))
+      (assert-eq "s" (:name (nth free 1)))
+      (bake* own-string-9b '(own-string-9))
+      (assert-eq (own-string-9b "yeah") 6)))
 
