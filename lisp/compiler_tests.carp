@@ -123,9 +123,9 @@
 
 
 
-;(test-fib)
-;(test-foo)
-;(test-hypo)
+(test-fib)
+(test-foo)
+(test-hypo)
 
 
 
