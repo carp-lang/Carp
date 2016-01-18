@@ -38,7 +38,7 @@ The key features of Carp are the following:
 To build this example, load the 'glfw_test.lisp' file and then execute ```(bake-gl-exe)```.
 
 ## The Compiler
-Carp is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
+The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
 
 For example, to compile a function named 'fib' you enter the following:
 ```clojure
