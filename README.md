@@ -1,5 +1,7 @@
 # Carp
 
+[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 <img src="https://github.com/eriksvedang/Carp/blob/master/img/temp_logo2.jpg" alt="Logo" align="right" />
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't try it out just yet!</i>
