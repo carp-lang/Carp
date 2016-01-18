@@ -445,3 +445,23 @@
       (assert-eq (own-binop-15 "what") "34")
       (assert-eq (own-binop-15 "") "30")
       (assert-eq (own-binop-15 "whats the deal?") "315")))
+
+
+
+(defn own-let-16 (s)
+  (let [a "hello"]
+    (strlen (ref s))))
+
+(def own-ast-16 (lambda-to-ast (code own-let-16)))
+(def own-con-16 (gencon own-ast-16))
+(def own-asta-16 (annotate-ast own-ast-16))
+(let [free (:free own-asta-16)
+      free-let (get-in own-asta-16 '(:body :free))
+      ]
+  (do (bake own-let-16)
+      (assert-eq '(:arrow (:string) :int) (:type own-asta-16))
+      (assert-eq 1 (count free)) ; free s
+      ;(assert-eq 1 (count free-let))
+      ;(assert-eq "a" (:name (first free-let)))
+      (assert-eq (own-let-16 "x") 1)
+      ))
