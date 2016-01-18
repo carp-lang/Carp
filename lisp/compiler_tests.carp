@@ -516,3 +516,27 @@
       (assert-eq '(:arrow () :void) (:type own-asta-19))
       (assert-eq 0 (count free))
       (assert-eq 0 (count free-let))))
+
+
+
+(defn own-while-20 (b)
+  (while b
+    (strlen "hej")))
+
+(def own-ast-20 (lambda-to-ast (code own-while-20)))
+(def own-con-20 (gencon own-ast-20))
+(def own-asta-20 (annotate-ast own-ast-20))
+(let [free (:free own-asta-20)
+      free-while (get-in own-asta-20 '(:body :free))]
+  (do (bake own-while-20)
+      (assert-eq '(:arrow (:bool) :void) (:type own-asta-20))
+      (assert-eq 0 (count free))
+      (assert-eq 1 (count free-while))
+      (assert-eq :string (:type (first free-while)))
+      ))
+
+
+
+(defn a-while ()
+  (while true
+    (println "what!")))

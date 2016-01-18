@@ -237,6 +237,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  assert_or_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->i;
 	}
+	else if(obj_eq(type_obj, type_bool)) {
+	  assert_or_set_error(args[i]->tag == 'Y', "Invalid type of arg: ", args[i]);
+	  bool b = is_true(args[i]);
+	  values[i] = &b;
+	}
 	else if(obj_eq(type_obj, type_float)) {
 	  assert_or_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
 	  values[i] = &args[i]->f32;

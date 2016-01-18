@@ -229,7 +229,27 @@
                {:ast final-ast
                 :vars final-vars})
 
-        ;; do, while
+        :while (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
+                     ;;_ (println (str "data-after-expr:\n" data-after-expr))
+
+                     vars-after-expr (:vars data-after-expr)
+                     ast-after-expr (assoc ast :expr (:ast data-after-expr))
+                     
+                     data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-expr) :vars vars-after-expr} in-ref)
+                     ;;_ (println (str "data-after-body:\n" data-after-body))
+                     ast-after-body (:ast data-after-body)
+                     vars-after-body (:vars data-after-body)
+
+                     new-ast-after-body (assoc ast-after-expr :body ast-after-body)
+                     new-vars-after-body (remove (fn (v) (contains? vars v)) vars-after-body)
+                     
+                     final-ast (assoc new-ast-after-body :free new-vars-after-body)
+                     final-vars vars ;; TODO: return value from while-form?
+                     ]
+                 {:ast final-ast
+                  :vars final-vars})        
+
+        ;; do
         
         _ data))))
 
