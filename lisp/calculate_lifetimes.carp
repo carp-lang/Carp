@@ -124,18 +124,30 @@
                   data-after-left (calculate-lifetimes-internal {:ast (:a ast) :vars vars-after-expr} in-ref)
                   data-after-right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-expr} in-ref)
                   ;;_ (println (str "data-after-left:\n" data-after-left "\ndata-after-right:\n" data-after-right))
+
                   vars-after-left (:vars data-after-left)
                   vars-after-right (:vars data-after-right)
+
+                  ;;_ (println (str "vars-after-left:\n" vars-after-left "\nvars-after-right:\n" vars-after-right))
+
+                  vars-after-all (intersection vars-after-left vars-after-right)
+                  vars-removed (filter (fn (v) (contains? vars-after-expr v)) vars-after-expr) ;; vars "eaten" by either the left or right branch
+
+                  ;;_ (println (str "vars removed:\n" vars-removed))
+                  
+                  free-left (remove (fn (v) (contains? vars-after-right v)) vars-removed)
+                  free-right (remove (fn (v) (contains? vars-after-left v)) vars-removed)
+
+                  ;;_ (println (str "free-left:\n" free-left "\nfree-right:\n" free-right))
                   
                   ast-after-expr (assoc ast :expr (:ast data-after-expr))
                   ast0 (assoc ast-after-expr :a (:ast data-after-left))
                   ast1 (assoc ast0 :b (:ast data-after-right))
-                  ast2 (assoc ast1 :free-left '())
-                  ast3 (assoc ast2 :free-right '())
+                  ast2 (assoc ast1 :free-left  free-left)
+                  ast3 (assoc ast2 :free-right free-right)
 
                   ast-after-all ast3
 
-                  vars-after-all vars
                   ]
               {:ast ast-after-all
                :vars vars-after-all}

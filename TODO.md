@@ -12,6 +12,7 @@
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
+  - tests for 'intersection'
 
 # Dynamic Runtime
   - add array as its own tag for Obj, [] syntax, etc

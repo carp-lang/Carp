@@ -15,8 +15,8 @@
 
 (defn assert-approx-eq (target x)
   (do
-      (assert-eq true (< x (+ target 0.1)))
-      (assert-eq true (< (- target 0.1) x))))
+    (assert-eq true (< x (+ target 0.1)))
+    (assert-eq true (< (- target 0.1) x))))
 
 (defn id (x) x)
 
@@ -52,9 +52,9 @@
 
 (defn join (separator xs)
   (match (count xs)
-         0 ""
-         1 (str (first xs))
-         _ (str (first xs) separator (join separator (rest xs)))))
+    0 ""
+    1 (str (first xs))
+    _ (str (first xs) separator (join separator (rest xs)))))
 
 (defn replicate (thing times)
   (if (< times 1)
@@ -68,9 +68,9 @@
 
 (defmacro time (form)
   (list 'let (list 't1 (list 'now))
-    (list 'do
-	(list 'let (list 'result form)
-	  (list 'println (list 'str "Evaluating form took " (list '- (list 'now) 't1) "ms. Result = " 'result))))))
+        (list 'do
+              (list 'let (list 'result form)
+                    (list 'println (list 'str "Evaluating form took " (list '- (list 'now) 't1) "ms. Result = " 'result))))))
 
 (defmacro swap! (sym f)
   (list 'reset! sym (list f sym)))
@@ -80,15 +80,15 @@
 
 (defn contains? (items item)
   (match items
-         () false
-         (x & xs) (if (= x item)
-                    true
-                    (contains? xs item))))
+    () false
+    (x & xs) (if (= x item)
+               true
+               (contains? xs item))))
 
 (defn log (message value)
   (do
     (println (str message value))
-      value))
+    value))
 
 (defn nil? (x) (= nil x))
 
@@ -116,9 +116,9 @@
 
 (defn reverse (l)
   (match l
-	 () ()
-	 (x) (list x)
-	 (x & xs) (cons-last (reverse xs) x)))
+    () ()
+    (x) (list x)
+    (x & xs) (cons-last (reverse xs) x)))
 
 (defn has-key? (dict key)
   (not (= () (get-maybe dict key))))
@@ -128,9 +128,9 @@
 
 (defn last (xs)
   (match xs
-	 () (error "Can't call last on empty list.")
-	 (x) x
-	 _ (last (rest xs))))
+    () (error "Can't call last on empty list.")
+    (x) x
+    _ (last (rest xs))))
 
 (defn mapcat (f xs)
   (apply concat (map f xs)))
@@ -153,9 +153,9 @@
 
 (defn set-internal (xs ys)
   (match xs
-         () ys
-         (x & xs) (set-internal xs (cons-unique x ys))
-         (x) (cons-unique x ys)))
+    () ys
+    (x & xs) (set-internal xs (cons-unique x ys))
+    (x) (cons-unique x ys)))
 
 (defn set (xs)
   (set-internal xs '()))
@@ -163,6 +163,13 @@
 (defn union (xs ys)
   (let [both (concat xs ys)]
     (set both)))
+
+(defn intersection (xs ys)
+  (match xs
+    () ()
+    (x & xs) (if (contains? ys x)
+               (cons x (intersection xs ys))
+               (intersection xs ys))))
 
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
