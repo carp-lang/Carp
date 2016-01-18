@@ -34,7 +34,9 @@ The key features of Carp are the following:
     (panic "Failed to initialize glfw.")))
 ```
 
-To build this example, load the 'glfw_test.lisp' file and then execute ```(bake-gl-exe)``` to build an executable, or just ```(app)``` to run the program directly from the REPL.
+To build this example, load the 'glfw_test.lisp' file like this:
+```(load-lisp (str carp-dir "lisp/glfw_test.carp"))```
+Then execute ```(bake-gl-exe)``` to build an executable, or just ```(app)``` to run the program directly from the REPL.
 
 ## The Compiler
 The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (which in turn is implemented in C). To work on a Carp program you run ```carp``` which starts the REPL. Everything you want to do to your program can be controlled from here.
@@ -47,6 +49,10 @@ For example, to compile a function named 'fib' you enter the following:
 This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, ast and type signature are bound to the three variables 'c', 'ast' and 's', respectively.
 
 From the REPL you can also inspect your the state of variables, extend the compiler, script the build process of your project, or statically analyze code. All these operations should be really quick to execute and easy to remember so you can focus on developing your program.
+
+To run the test suite, invoke ```carp``` like this instead:
+
+```$ CARP_DEV=1 carp```
 
 ### Installation
 
@@ -61,6 +67,15 @@ There are a few dependencies that has to be installed:
  * rlwrap
  
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
+
+### Compiler Variables
+* ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is "".
+* ```carp-dir``` The root folder of the Carp compiler, should be the same folder as this README.md file.
+
+### Special Files
+If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started.
+
+If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded).
 
 ## The Language
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
