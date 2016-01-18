@@ -178,8 +178,9 @@
 
                   ]
               {:ast ast-after-all
-               :vars vars-after-all}
-              )
+               :vars vars-after-all})
+
+        ;; do, let, while
         
         _ data))))
 
