@@ -72,9 +72,9 @@ Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, 
 * ```carp-dir``` The root folder of the Carp compiler, should be the same folder as this README.md file.
 
 ### Special Files
-If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started.
+If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
 
-If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded).
+If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded). This files is intended for setting up the build process of this particular project, for example by loading the correct source files, configuring the compiler variables, etc.
 
 ## The Language
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
