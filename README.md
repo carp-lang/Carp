@@ -14,7 +14,7 @@ The key features of Carp are the following:
 * No hidden performance penalties – allocation and copying is explicit
 * Very good integration with exisiting C code
 
-![Gitter Discussion Forum for Carp](https://gitter.im/eriksvedang/Carp)
+[Gitter Discussion Forum for Carp](https://gitter.im/eriksvedang/Carp)
 
 ## Quick OpenGL/GLFW Example
 ```clojure
