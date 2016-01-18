@@ -377,6 +377,7 @@ void eval_list(Obj *env, Obj *o) {
       p = p->cdr->cdr;
     }
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
+    assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", o);
     eval_internal(let_env, o->cdr->cdr->car);
     shadow_stack_pop(); // let_env
   }
@@ -418,6 +419,10 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(nil);
   }
   else if(HEAD_EQ("if")) {
+    assert_or_set_error(o->cdr->car, "Too few body forms in 'if' form: ", o);
+    assert_or_set_error(o->cdr->cdr->car, "Too few body forms in 'if' form: ", o);
+    assert_or_set_error(o->cdr->cdr->cdr->car, "Too few body forms in 'if' form: ", o);
+    assert_or_set_error(o->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'if' form (use explicit 'do').", o);
     eval_internal(env, o->cdr->car);
     if(error) {
       return;
