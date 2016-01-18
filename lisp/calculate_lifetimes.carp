@@ -121,12 +121,24 @@
                   data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
 
                   vars-after-expr (:vars data-after-expr)
-                  data-after-left (calculate-lifetimes-internal {:ast (:a ast) :vars vars-after-expr} in-ref)
+                  data-after-left  (calculate-lifetimes-internal {:ast (:a ast) :vars vars-after-expr} in-ref)
                   data-after-right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-expr} in-ref)
                   ;;_ (println (str "data-after-left:\n" data-after-left "\ndata-after-right:\n" data-after-right))
 
-                  vars-after-left (:vars data-after-left)
-                  vars-after-right (:vars data-after-right)
+                  vars-after-left  (let [result-name (get-maybe (:a ast) :result-name)
+                                         vs (:vars data-after-left)]
+                                     (if (nil? result-name)
+                                       vs
+                                       (remove-var-with-name vs result-name)))
+                  
+                  vars-after-right (let [result-name (get-maybe (:b ast) :result-name)
+                                         vs (:vars data-after-right)]
+                                     (if (nil? result-name)
+                                       vs
+                                       (remove-var-with-name vs result-name)))
+
+                  new-vars-left  (remove (fn (v) (contains? vars-after-expr v)) vars-after-left) ;; the NEW vars after visiting this branch
+                  new-vars-right (remove (fn (v) (contains? vars-after-expr v)) vars-after-right)
 
                   ;;_ (println (str "vars-after-left:\n" vars-after-left "\nvars-after-right:\n" vars-after-right))
 
@@ -135,8 +147,10 @@
 
                   ;;_ (println (str "vars removed:\n" vars-removed))
                   
-                  free-left (remove (fn (v) (contains? vars-after-right v)) vars-removed)
-                  free-right (remove (fn (v) (contains? vars-after-left v)) vars-removed)
+                  free-left  (concat new-vars-left
+                                     (remove (fn (v) (contains? vars-after-right v)) vars-removed))
+                  free-right (concat new-vars-right
+                                     (remove (fn (v) (contains? vars-after-left  v)) vars-removed))
 
                   ;;_ (println (str "free-left:\n" free-left "\nfree-right:\n" free-right))
                   
