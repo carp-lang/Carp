@@ -351,3 +351,19 @@
       (bake* own-string-9b '(own-string-9))
       (assert-eq (own-string-9b "yeah") 6)))
 
+
+
+
+(defn own-if-10 (s)
+  (if (< (strlen s) 10) "short" "long"))
+
+(def own-ast-10 (lambda-to-ast (code own-if-10)))
+(def own-con-10 (gencon own-ast-10))
+(def own-asta-10 (annotate-ast own-ast-10))
+(let [free (:free own-asta-10)]
+  (do (assert-eq '(:arrow ((:ref :string)) :string) (:type own-asta-10))
+      ;;(assert-eq 1 (count free))
+      ;;(assert-eq :string (:type (nth free 0)))
+      (bake own-if-10)
+      (assert-eq (own-if-10 "hej") "short")
+      (assert-eq (own-if-10 "hejsansvejsan") "long")))

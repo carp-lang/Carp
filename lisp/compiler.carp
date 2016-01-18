@@ -128,4 +128,5 @@
   (do
     (system "rm functions.h")
     (system "rm *.so")
-    (system "rm *.c")))
+    (system "rm *.c")
+    (system "rm -r *.dSYM")))
