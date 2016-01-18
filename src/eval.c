@@ -243,6 +243,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	}
 	else if(obj_eq(type_obj, type_string)) {
 	  assert_or_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
+	  args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
 	  values[i] = &args[i]->s;
 	}
 	else if(type_obj->tag == 'C' && obj_eq(type_obj->car, obj_new_keyword("ptr"))) { // TODO: replace with a shared keyword to avoid allocs

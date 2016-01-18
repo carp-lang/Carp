@@ -429,3 +429,19 @@
       (bake own-binop-14)
       (assert-eq 2 (count free))
       (assert-eq (own-binop-14) 7)))
+
+
+
+(defn own-binop-15 (s)
+  (str-append (itos (strlen "say")) (itos (strlen (ref s)))))
+
+(def own-ast-15 (lambda-to-ast (code own-binop-15)))
+(def own-con-15 (gencon own-ast-15))
+(def own-asta-15 (annotate-ast own-ast-15))
+(let [free (:free own-asta-15)]
+  (do (assert-eq '(:arrow (:string) :string) (:type own-asta-15))
+      (bake own-binop-15)
+      (assert-eq 4 (count free)) ;; free "say", two itos results, and s
+      (assert-eq (own-binop-15 "what") "34")
+      (assert-eq (own-binop-15 "") "30")
+      (assert-eq (own-binop-15 "whats the deal?") "315")))

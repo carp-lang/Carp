@@ -83,7 +83,7 @@ void gc(Obj *env) {
   for(int i = 0; i < shadow_stack_pos; i++) {
     obj_mark_alive(shadow_stack[i]);
   }
-  gc_sweep();
+  //gc_sweep();
 }
 
 void gc_all() {

@@ -9,6 +9,7 @@
   - Clean up unifier even more
 
 # Lisp Core Libs
+  - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
