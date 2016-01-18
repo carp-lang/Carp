@@ -362,8 +362,8 @@
 (def own-asta-10 (annotate-ast own-ast-10))
 (let [free (:free own-asta-10)]
   (do (assert-eq '(:arrow ((:ref :string)) :string) (:type own-asta-10))
-      (assert-eq 0 (count free))
       (bake own-if-10)
+      (assert-eq 0 (count free))
       (assert-eq (own-if-10 "hej") "short")
       (assert-eq (own-if-10 "hejsansvejsan") "long")))
 
@@ -376,10 +376,10 @@
 (def own-asta-11 (annotate-ast own-ast-11))
 (let [free (:free own-asta-11)]
   (do (assert-eq '(:arrow (:string) :string) (:type own-asta-11))
+      (bake own-if-11)
       (assert-eq 1 (count free))
       (assert-eq "s" (:name (first free)))
       (assert-eq :string (:type (first free)))
-      (bake own-if-11)
       (assert-eq (own-if-11 "hej") "short")
       (assert-eq (own-if-11 "hejsansvejsan") "long")))
 
@@ -415,3 +415,17 @@
       (assert-eq 2 (count free-right))
       (assert-eq (own-if-13 10) "a!")
       (assert-eq (own-if-13 11) "b!")))
+
+
+
+(defn own-binop-14 ()
+  (+ (strlen "say") (strlen "what")))
+
+(def own-ast-14 (lambda-to-ast (code own-binop-14)))
+(def own-con-14 (gencon own-ast-14))
+(def own-asta-14 (annotate-ast own-ast-14))
+(let [free (:free own-asta-14)]
+  (do (assert-eq '(:arrow () :int) (:type own-asta-14))
+      (bake own-binop-14)
+      (assert-eq 2 (count free))
+      (assert-eq (own-binop-14) 7)))

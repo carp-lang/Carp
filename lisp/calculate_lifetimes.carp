@@ -83,7 +83,9 @@
                     {:ast ast-final
                      :vars '()})
 
-        :literal (let [vars-after (cons {:name (:result-name ast) :type (:type ast)} vars)
+        :literal (let [vars-after (if (managed-type? (:type ast))
+                                    (cons {:name (:result-name ast) :type (:type ast)} vars)
+                                    vars)
                        ;;_ (println (str "vars-after literal " (:value ast) ": " vars-after))
                        ]
                    {:ast ast
@@ -105,12 +107,24 @@
                       ]
                   final-ast)
 
+        :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :vars vars} in-ref)
+                     vars-after-left (:vars left)
+                     right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-left} in-ref)
+                     vars-after-right (:vars right)
+                     ast0 (assoc ast :a (:ast left))
+                     ast1 (assoc ast0 :b (:ast right))]
+                 {:ast ast1
+                  :vars vars-after-right})
+
         :app (let [tail (:tail ast)
                    init-data (assoc data :pos 0)
                    parameter-types (get-in ast '(:head :type 1))
                    data-after (reduce (fn (d a) (calc-lifetime-for-arg d parameter-types a)) init-data tail)
                    vars-after (:vars data-after)
-                   vars-after-with-ret-val (cons {:name (:result-name ast) :type (get-in ast '(:head :type 2))} vars-after)
+                   ret-type (get-in ast '(:head :type 2))
+                   vars-after-with-ret-val (if (managed-type? ret-type)
+                                             (cons {:name (:result-name ast) :type ret-type} vars-after)
+                                             vars-after)
                    ast-after (:ast data-after)]
                (do
                  ;;(println (str "APP VARS AFTER\n" vars-after))
