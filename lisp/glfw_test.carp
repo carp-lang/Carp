@@ -72,3 +72,4 @@
 ;(def app-asta (annotate-ast app-ast))
 
 ;;(bake-gl-exe)
+;;(bake* gl-demo '(draw-rect))
