@@ -66,6 +66,7 @@
   "-framework OpenGL -framework Cocoa -framework IOKit")
 
 (def out-dir "./")
+(def echo-signature-after-bake false)
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal (builder func-name func-code external-deps exe)
@@ -109,6 +110,7 @@
                    (add-func! func-name proto out-lib)
                    (let [f (eval (read func-name))]
                      (do (def s (pretty-signature (signature f)))
+                         (when echo-signature-after-bake (println (str func-name " : " s)))
                          f)))))
              _ (error "Must bake function with type (:arrow ...)")))))
 
