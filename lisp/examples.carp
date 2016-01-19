@@ -32,3 +32,9 @@
 (defn slimmer (x s)
   (+ x (* (strlen s) (- x 1))))
 
+(defn say-hi (text)
+  (while true
+    (if (< (strlen text) 10)
+      (println "Too short!")
+      (println text))))
+

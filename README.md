@@ -80,19 +80,31 @@ If a file called ```project.carp``` is placed in the folder where you invoke the
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
 
 ```clojure
-(defn fib (n)
-  (if (< n 2)
-    1
-    (+ (fib (- n 2)) (fib (- n 1)))))
+(defn say-hi (text)
+  (while true
+    (if (< (strlen text) 10)
+      (println "Too short!")
+      (println text))))
 ```
 
-This compiles to the equivalent of the following C program:
+This compiles to a somewhat noisy (working on it!) C program:
 ```C
-int fib(int n) {
-  if(n < 2) {
-    return 1;
-  } else {
-    return fib(n - 2) + fib(n - 1);
+void say_hi(string text) {
+  bool lit_332 = 1;
+  bool while_expr_321 = lit_332;
+  while(while_expr_321) {
+    int strlen_result_324 = strlen(text);
+    int lit_326 = 10;
+    bool if_expr_323 = strlen_result_324 < lit_326;
+    if(if_expr_323) {
+      string lit_329 = strdup("Too short!");
+      println(lit_329);
+      free(lit_329);
+    } else {
+      println(text);
+    }
+    bool lit_332 = 1;
+    while_expr_321 = lit_332;
   }
 }
 ```
