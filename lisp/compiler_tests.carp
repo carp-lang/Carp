@@ -623,3 +623,24 @@
       (assert-eq '(:arrow (:string) :int) (:type own-asta-23))
       (assert-eq 1 (count free))
       (assert-eq (own-do-23 "hej") 123)))
+
+
+
+(defn own-free-problem-25 ()
+  (if true
+    (let [x "hej"]
+      (if (< 3 5) ;; got some problem with if here
+        "yeah"
+        "nope"))
+    "gah"))
+
+(def own-ast-25 (lambda-to-ast (code own-free-problem-25)))
+(def own-con-25 (gencon own-ast-25))
+(def own-asta-25 (annotate-ast own-ast-25))
+(let [free (:free own-asta-25)]
+  (do (bake own-free-problem-25)
+      (assert-eq '(:arrow (:string) :int) (:type own-asta-25))
+      (assert-eq 0 (count free))
+      (assert-eq (own-do-23) "yeah")))
+
+

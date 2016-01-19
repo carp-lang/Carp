@@ -65,15 +65,15 @@
   (do (app)
       0))
 
-(def app-ast (lambda-to-ast (code app)))
-;; (def glcon (gencon glast))
-;; (def glasta (annotate-ast glast))
-
 (defn bake-gl-exe ()
   (do (bake draw-rect)
       (bake* app '(draw-rect))
       (bake-exe* main '(app))))
 
-;;(bake-gl-exe)
 
-(bake draw-rect)
+;;(bake draw-rect)
+
+(def app-ast (lambda-to-ast (code app)))
+(def app-asta (annotate-ast app-ast))
+
+;;(bake-gl-exe)
