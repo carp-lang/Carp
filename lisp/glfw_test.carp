@@ -43,7 +43,7 @@
       (glVertex3f x y 0.0f)
       (glEnd)))
 
-(defn app ()
+(defn gl-demo ()
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
       (if (null? window)
@@ -61,9 +61,9 @@
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 
-(defn bake-gl-exe ()
+(defn bake-gl-demo-exe ()
   (do (bake draw-rect)
-      (bake* app '(draw-rect))))
+      (bake-exe* gl-demo '(draw-rect))))
 
 
 ;;(bake draw-rect)
