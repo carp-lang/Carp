@@ -36,9 +36,7 @@ The key features of Carp are the following:
     (panic "Failed to initialize glfw.")))
 ```
 
-To build this example, load the 'glfw_test.lisp' file like this:
-```(load-lisp (str carp-dir "lisp/glfw_test.carp"))```
-Then execute ```(bake-gl-exe)``` to build an executable, or just ```(app)``` to run the program directly from the REPL.
+To build this example, load the gl bindings with ```(load-gl)```, then execute ```(bake-gl-exe)``` to build an executable, or just ```(app)``` to run the program directly from the REPL.
 
 ## The Compiler
 The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (implemented in C). To work on a Carp program you run ```carp``` (first making sure it's in your $PATH, see installation instructions below) which starts the REPL. Everything you want to do to your program can be controlled from here.
@@ -161,4 +159,11 @@ Omit the name tag to create a data constructor with the same name as the type:
 (register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
 ```
 
+## License
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 © Erik Svedäng 2015 - 2016
+

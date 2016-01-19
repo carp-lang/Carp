@@ -8,11 +8,14 @@
 
 (load-lisp (str carp-dir "lisp/compiler.carp"))
 
+(defn load-gl ()
+  (load-lisp (str carp-dir "lisp/glfw_test.carp")))
+
 (when carp-dev
   (do
     (load-lisp (str carp-dir "lisp/compiler_tests.carp"))
     (load-lisp (str carp-dir "lisp/examples.carp"))
-    (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
+    (load-gl)))
 
 (let [user-boot-file (str (getenv "HOME") "/.carp/user.carp")]
   (when (file-exists? user-boot-file)
