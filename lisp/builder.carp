@@ -1,3 +1,5 @@
+(def slim-code-generation true)
+
 ;; Creates a C code builder which allows for out-of-order generation of C from the AST
 (defn new-builder ()
   {:headers ()
@@ -52,16 +54,31 @@
            (:ptr p) (str (name p) "*")
            x (name x))))
 
-(defn visit-arg (c arg)
+(defn visit-arg-explicit (c arg)
   (let [result (visit-form c arg true)]
     (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))))
 
-(defn visit-args (c args)
+(defn visit-args-explicit (c args)
   (let []
     (do
       ;;(println "visit args:" args)
-      (map (fn (arg) (visit-arg c arg)) args)
+      (map (fn (arg) (visit-arg-explicit c arg)) args)
       (map (fn (arg) {:c (:arg-name arg)}) args))))
+
+;; New version of visit arg that generates slimmer code (no intermediate arg variables)
+(defn visit-arg-slim (c arg)
+  (let [result (visit-form c arg true)]
+    (let [result-name (get-maybe arg :result-name)]
+      (if (nil? result-name)
+        (do (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))
+            {:c (:arg-name arg)})
+        {:c result-name}))))
+
+(defn visit-args-slim (c args)
+  (let []
+    (do
+      ;(println (str "visit args slim:\n" args))
+      (map (fn (arg) (visit-arg-slim c arg)) args))))
 
 (defn visit-bindings (c bindings)
   ;;(println bindings)
@@ -78,18 +95,24 @@
                         result-b (visit-form c (get form :b) false)]
                     {:c (str (if toplevel "" "(") (:c result-a) " " (:op form) " " (:c result-b) (if toplevel "" ")"))})
 
-           :literal (let [val (:value form)]
-                     (if (string? val)
-                       (do
-                         (str-append! c (str (indent) (type-build (:type form)) " " (:result-name form) " = strdup(" (prn val) ");\n"))
-                         {:c (:result-name form)})
-                       {:c (prn val)}))
+           :literal (let [val (:value form)
+                          result-name (get-maybe form :result-name)]
+                      (if (nil? result-name)
+                        {:c (prn val)}
+                        (do
+                          (str-append! c (str (indent) (type-build (:type form)) " " (:result-name form) " = "
+                                              (if (string? val)
+                                                (str "strdup(" (prn val) ")")
+                                                (prn val))
+                                              ";\n"))
+                          {:c (:result-name form)})))
            
            :lookup (let [val (:value form)]
                      {:c (c-ify-name (name val))})
 
-           :ref (let [expr (:expr form)]
-                  (visit-form c expr toplevel))
+           :ref (let [expr (:expr form)
+                      result (visit-form c expr toplevel)]
+                  result)
 
            :if (let [if-expr (visit-form c (get form :expr) true)
                      n (get form :result-name)
@@ -128,8 +151,8 @@
                       func-name (get head :value)
                       c-func-name (c-ify-name (str func-name))
                       n (:result-name form)
-                      arg-results (visit-args c (get form :tail))
-                      arg-vars (map (fn (x) (get x :c)) arg-results)]
+                      arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c (get form :tail))
+                      arg-vars (map :c arg-results)]
                   (do (if (= :void (:type form))
                         (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
                         (str-append! c (str (indent) (type-build (:type form)) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n")))

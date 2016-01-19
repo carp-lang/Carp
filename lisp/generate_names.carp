@@ -6,6 +6,9 @@
   (do (swap! name-counter inc)
       (str "" name-counter)))
 
+(defn inline-literal? (lit-type)
+  (contains? '(:int :float :bool) lit-type))
+
 (defn generate-names (ast)
   (do
     ;;(println (str "\ngenerate-names:\n" (:node ast)))
@@ -66,8 +69,9 @@
 
            :ref (let [named-expr (generate-names (:expr ast))
                       ast1 (assoc ast :expr named-expr)
-                      ast2 (assoc ast1 :result-name (str "ref_" (gen-name)))]
-                  ast2)
+                      ;;ast2 (assoc ast1 :result-name (str "ref_" (gen-name)))
+                      ]
+                  ast1)
 
            :lookup ast
 

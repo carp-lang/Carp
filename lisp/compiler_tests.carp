@@ -344,11 +344,11 @@
 (def own-asta-9b (annotate-ast own-ast-9b))
 (let [free (:free own-asta-9b)]
   (do (assert-eq '(:arrow (:string) :int) (:type own-asta-9b))
+      (bake* own-string-9b '(own-string-9))
       (assert-eq 2 (count free))
       (assert-eq :string (:type (nth free 0)))
       (assert-eq :string (:type (nth free 1)))
       (assert-eq "s" (:name (nth free 1)))
-      (bake* own-string-9b '(own-string-9))
       (assert-eq (own-string-9b "yeah") 6)))
 
 
