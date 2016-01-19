@@ -135,7 +135,7 @@
   (* x (f s)))
 
 (defn h (x)
-  (if "blorg" "Hej" x))
+  (if false "Hej" x))
 
 (def fast (lambda-to-ast (code f)))
 (def fcon (gencon fast))
@@ -150,7 +150,7 @@
 
 (def fail-1-ast (lambda-to-ast (code fail-1)))
 (def fail-1-con (gencon fail-1-ast))
-;;(def fail-asta (annotate-ast fail-ast))
+;;(def fail-1-asta (annotate-ast fail-1-ast))
 
 (defn mix (x y z)
   (if (< (strlen z) 3) (* (itof y) x) x))
@@ -160,9 +160,9 @@
 ;; (def mixasta (annotate-ast mixast))
 
 (defn monad ()
-  (do (strlen "hej")
-      (strlen "svej")
-      (strlen "yay")))
+  (do (strlen (ref "hej"))
+      (strlen (ref "svej"))
+      (strlen (ref "yay"))))
 
 (def monast (lambda-to-ast (code monad)))
 (def moncon (gencon monast))
@@ -288,7 +288,7 @@
 
 
 (defn own-string-7 (s1 s2)
-  (str-append (ref s2) (str-append (ref s1) (ref s2))))
+  (str-append (ref s2) (ref (str-append (ref s1) (ref s2)))))
 
 (def own-ast-7 (lambda-to-ast (code own-string-7)))
 (def own-con-7 (gencon own-ast-7))
@@ -301,7 +301,7 @@
 
 
 (defn own-string-8 (s1 s2)
-  (str-append (ref s2) (str-append (ref s1) "!")))
+  (str-append (ref s2) (ref (str-append (ref s1) (ref "!")))))
 
 (def own-ast-8 (lambda-to-ast (code own-string-8)))
 (def own-con-8 (gencon own-ast-8))
@@ -318,7 +318,7 @@
 
 
 (defn own-string-9 (s x)
-  (str-append (itos (* x x)) s))
+  (str-append (ref (itos (* x x))) s))
 
 (def own-ast-9 (lambda-to-ast (code own-string-9)))
 (def own-con-9 (gencon own-ast-9))
@@ -332,7 +332,7 @@
 
 
 (defn own-string-9b (s)
-  (strlen (own-string-9 (ref s) 5)))
+  (strlen (ref (own-string-9 (ref s) 5))))
 
 (def own-ast-9b (lambda-to-ast (code own-string-9b)))
 (def own-con-9b (gencon own-ast-9b))
@@ -393,7 +393,7 @@
 
 
 (defn own-if-13 (x)
-  (if (= x 10) (str-append "a" "!") (str-append "b" "!")))
+  (if (= x 10) (str-append (ref "a") (ref "!")) (str-append (ref "b") (ref "!"))))
 
 (def own-ast-13 (lambda-to-ast (code own-if-13)))
 (def own-con-13 (gencon own-ast-13))
@@ -411,7 +411,7 @@
 
 
 (defn own-if-13b (s)
-  (if (< (strlen (ref s)) 10) (str-append "a" "!") (str-append "b" "!")))
+  (if (< (strlen (ref s)) 10) (str-append (ref "a") (ref "!")) (str-append (ref "b") (ref "!"))))
 
 (def own-ast-13b (lambda-to-ast (code own-if-13b)))
 (def own-con-13b (gencon own-ast-13b))
@@ -429,7 +429,7 @@
 
 
 (defn own-binop-14 ()
-  (+ (strlen "say") (strlen "what")))
+  (+ (strlen (ref "say")) (strlen (ref "what"))))
 
 (def own-ast-14 (lambda-to-ast (code own-binop-14)))
 (def own-con-14 (gencon own-ast-14))
@@ -442,7 +442,7 @@
 
 
 (defn own-binop-15 (s)
-  (str-append (itos (strlen "say")) (itos (strlen (ref s)))))
+  (str-append (ref (itos (strlen (ref "say")))) (ref (itos (strlen (ref s))))))
 
 (def own-ast-15 (lambda-to-ast (code own-binop-15)))
 (def own-con-15 (gencon own-ast-15))
@@ -492,7 +492,7 @@
 
 (defn own-let-18 ()
   (let [a "hello"]
-    (strlen a)))
+    (strlen (ref a))))
 
 (def own-ast-18 (lambda-to-ast (code own-let-18)))
 (def own-con-18 (gencon own-ast-18))
@@ -525,7 +525,7 @@
 
 (defn own-while-20 (b)
   (while b
-    (strlen "hej")))
+    (strlen (ref "hej"))))
 
 (def own-ast-20 (lambda-to-ast (code own-while-20)))
 (def own-con-20 (gencon own-ast-20))
@@ -542,7 +542,7 @@
 
 (defn own-while-21 (s)
   (while (< (strlen (ref s)) 10)
-    (print "x")))
+    (print (ref "x"))))
 
 (def own-ast-21 (lambda-to-ast (code own-while-21)))
 (def own-con-21 (gencon own-ast-21))

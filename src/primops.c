@@ -42,7 +42,7 @@ Obj *save_file(const char *filename, const char *contents) {
   if(f) {
     fprintf(f, "%s", contents);
     fclose(f);
-    return obj_new_keyword("done");
+    return nil;
   } else {
     set_error_and_return("Failed to save file: ", obj_new_string((char*)filename));
   }
@@ -378,7 +378,7 @@ Obj *p_system(Obj** args, int arg_count) {
   if(arg_count != 1) { printf("Wrong argument count to 'system'\n"); return nil; }
   if(args[0]->tag != 'S') { printf("'system' takes a string as its argument\n"); return nil; }
   system(args[0]->s);
-  return obj_new_keyword("done");
+  return nil;
 }
 
 Obj *p_get(Obj** args, int arg_count) {
