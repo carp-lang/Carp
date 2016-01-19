@@ -138,10 +138,21 @@
            _ constraints
            )))
 
+;; This function will generate a list with two kinds of constraints: type-constraints and func-deps
+;;
+;; 1. Type constraints have three keys called :a, :b & :doc.
+;;    The a and b keys hold types that should get unified.
+;;    The doc key is just a string telling you in what form the constraint was generated.
+;;
+;; 2. Func deps only have one key (:func-dep) and it holds the symbol
+;;    refering to a particular function that this function is dependant on
+;;    It could be better to generate the func deps in a separate step before generating
+;;    the constraints, keeping things more separated, but this works too.
 (defn generate-constraints (ast)
   (let [constraints '()]
     (generate-constraints-internal constraints ast {})))
 
+;; A shorter name:
 (def gencon generate-constraints)
 
 
@@ -157,14 +168,12 @@
             val)) ; found the actual type
       )))
 
-
-;; Replacement function for replacing "from the right" in an associative map2
+;; Replacement function for replacing "from the right" in an associative map
 ;; Example usage:
 ;; (replace-subst-from-right {:a :b, :c :d} :d :e)
 ;; =>
 ;; {:c :e, 
 ;;  :a :b}
-
 (defn replace-in-list (l replace-this with-this)
   (do
     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
