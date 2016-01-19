@@ -64,7 +64,7 @@
           extended-vars (cons {:name (str (:name binding-ast)) :type (:type binding-ast)} vars)
 
           new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
-          new-arg-ast (:ast new-data)
+          new-binding-ast (assoc binding-ast :value (:ast new-data))
           new-vars (:vars new-data)
 
           new-vars-after-handover (let [result-name (get-maybe (:value binding-ast) :result-name)]
@@ -72,7 +72,8 @@
                                        new-vars
                                        (remove-var-with-name new-vars result-name)))
 
-          new-ast (assoc-in ast (list :bindings pos) new-arg-ast)
+          new-ast (assoc-in ast (list :bindings pos) new-binding-ast)
+          ;;_ (println (str "pos " pos " AST: " ast " => " new-ast))
           
           new-app-data {:ast new-ast
                         :vars new-vars-after-handover
@@ -227,19 +228,25 @@
                    ;;_ (println (str "data-after-bindings:\n" data-after-bindings))
 
                    vars-after-bindings (:vars data-after-bindings)                   
-                   ast-after-bindings (assoc ast :bindings (:ast data-after-bindings))
+                   ast-after-bindings (:ast data-after-bindings)
+
+                   ;; _ (println (str "ast:\n" ast))
+                   ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
 
                    data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-bindings)
                                                                   :vars vars-after-bindings}
                                                                  in-ref)
 
                    vars-after-body (:vars data-after-body)
-                   ast-after-body (assoc ast-after-bindings :body (:vars data-after-body))
+                   ast-after-body (assoc ast-after-bindings :body (:ast data-after-body))
+
+                   ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
+                   ;; _ (println (str "ast-after-body:\n" ast-after-body))
 
                    new-vars-after-body (remove (fn (v) (contains? vars v)) vars-after-body)
                    ;;_ (println (str "new-vars-after-body:\n" new-vars-after-body))
                    
-                   final-ast (assoc ast :free new-vars-after-body)
+                   final-ast (assoc ast-after-body :free new-vars-after-body)
                    final-vars (let [ast-type (:type ast)]
                                 (if (managed-type? ast-type)
                                   (cons {:name (:result-name ast) :type ast-type} vars)

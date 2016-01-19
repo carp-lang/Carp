@@ -466,7 +466,7 @@
 
 
 (defn own-let-16 (s)
-  (let [a "hello"]
+  (let [a "hello16"]
     (strlen (ref s))))
 
 (def own-ast-16 (lambda-to-ast (code own-let-16)))
@@ -639,8 +639,9 @@
 (def own-asta-25 (annotate-ast own-ast-25))
 (let [free (:free own-asta-25)]
   (do (bake own-free-problem-25)
-      (assert-eq '(:arrow (:string) :int) (:type own-asta-25))
+      (assert-eq '(:arrow () :string) (:type own-asta-25))
       (assert-eq 0 (count free))
-      (assert-eq (own-do-23) "yeah")))
+      (assert-eq 1 (count (get-in own-asta-25 '(:body :a :free)))) ;; free x
+      (assert-eq (own-free-problem-25) "yeah")))
 
 

@@ -390,9 +390,9 @@ Obj *p_get(Obj** args, int arg_count) {
     } else {
       Obj *s = obj_new_string("Can't get key '");
       obj_string_mut_append(s, obj_to_string(args[1])->s);
-      obj_string_mut_append(s, "' in dict '");
+      obj_string_mut_append(s, "' in dict:\n");
       obj_string_mut_append(s, obj_to_string(args[0])->s);
-      obj_string_mut_append(s, "'");
+      obj_string_mut_append(s, "");
       error = s;
       return nil;
     }
