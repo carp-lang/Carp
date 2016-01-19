@@ -572,4 +572,37 @@
 (let [free (:free own-asta-22)]
   (do (bake own-do-22)
       (assert-eq '(:arrow (:string) :string) (:type own-asta-22))
-      (assert-eq 0 (count free))))
+      (assert-eq 0 (count free))
+      (assert-eq (own-do-22 "hej") "hej")))
+
+
+
+(defn own-do-23 (s)
+  (do
+    (eat-string s)
+    123))
+
+(def own-ast-23 (lambda-to-ast (code own-do-23)))
+(def own-con-23 (gencon own-ast-23))
+(def own-asta-23 (annotate-ast own-ast-23))
+(let [free (:free own-asta-23)]
+  (do (bake own-do-23)
+      (assert-eq '(:arrow (:string) :int) (:type own-asta-23))
+      (assert-eq 0 (count free))
+      (assert-eq (own-do-23 "hej") 123)))
+
+
+(defn own-do-24 (s)
+  (do
+    "Set me free!"
+    (eat-string s)
+    123))
+
+(def own-ast-24 (lambda-to-ast (code own-do-24)))
+(def own-con-24 (gencon own-ast-24))
+(def own-asta-24 (annotate-ast own-ast-24))
+(let [free (:free own-asta-24)]
+  (do (bake own-do-24)
+      (assert-eq '(:arrow (:string) :int) (:type own-asta-23))
+      (assert-eq 1 (count free))
+      (assert-eq (own-do-23 "hej") 123)))
