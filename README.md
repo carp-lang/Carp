@@ -127,7 +127,8 @@ true ; bool
 (if expression true-branch false-branch)
 (while expression body)
 (for (i 0 100, j 0 100) body)
-(set! variable value)
+(ref x) ;; Turns an owned value into an unowned one
+(reset! variable value)
 ```
 
 ### Structs (not implemented)

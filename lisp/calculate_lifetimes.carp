@@ -79,6 +79,25 @@
                         :pos (inc pos)}]
       new-app-data)))
 
+(defn calc-lifetime-for-do-form (data form-ast)
+  (do
+    (let [ast (:ast data)
+          vars (:vars data)
+          pos (:pos data)
+
+          data-after-visited-form (calculate-lifetimes-internal {:ast form-ast
+                                                                 :vars vars} false)
+          
+          vars-after-visited-form (:vars data-after-visited-form)
+          form-ast-after-visited-form  (:ast  data-after-visited-form)
+
+          new-ast (assoc-in ast (list :forms pos) form-ast-after-visited-form)
+          
+          new-app-data {:ast new-ast
+                        :vars vars-after-visited-form
+                        :pos (inc pos)}]
+      new-app-data)))
+
 (defn calculate-lifetimes-internal (data in-ref)
   (do
     ;;(println (str "CALC:\n" (:node (:ast data))))
@@ -249,7 +268,11 @@
                  {:ast final-ast
                   :vars final-vars})        
 
-        ;; do
+        :do (let [init-data (assoc data :pos 0)
+                  data-after-forms (reduce calc-lifetime-for-do-form init-data (:forms ast))
+                  final-ast (:ast data-after-forms)]
+              {:ast final-ast
+               :vars (:vars data-after-forms)})
         
         _ data))))
 

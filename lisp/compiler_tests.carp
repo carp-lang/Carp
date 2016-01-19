@@ -542,6 +542,7 @@
     (println "what!")))
 
 
+
 (defn own-while-21 (s)
   (while (< (strlen (ref s)) 10)
     (print "x")))
@@ -554,5 +555,21 @@
   (do (bake own-while-21)
       (assert-eq '(:arrow (:string) :void) (:type own-asta-21))
       (assert-eq 1 (count free))
-      (assert-eq 1 (count free-while))
-      ))
+      (assert-eq 1 (count free-while))))
+
+
+
+
+(defn own-do-22 (s)
+  (do
+    (strlen (ref s))
+    (strlen (ref s))
+    s))
+
+(def own-ast-22 (lambda-to-ast (code own-do-22)))
+(def own-con-22 (gencon own-ast-22))
+(def own-asta-22 (annotate-ast own-ast-22))
+(let [free (:free own-asta-22)]
+  (do (bake own-do-22)
+      (assert-eq '(:arrow (:string) :string) (:type own-asta-22))
+      (assert-eq 0 (count free))))

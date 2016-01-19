@@ -136,6 +136,7 @@
                       {:c n}))
 
            :do (let [forms (:forms form)
+                     ;_ (println (str "forms:\n" forms))
                      results (map (fn (x) (visit-form c x toplevel)) forms)]
                  {:c (:c (last results))})
 

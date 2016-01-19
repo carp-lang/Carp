@@ -14,6 +14,8 @@
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Clean up unifier even more
+  - option for turning off memory management / lifetime checker
+  - Change type of functions from (:arrow ...) to (:fn ...)
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
