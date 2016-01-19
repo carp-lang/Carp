@@ -29,7 +29,7 @@ The key features of Carp are the following:
                 (glClearColor 0.6f 0.85f 0.85f 1.0f)
                 (glClear gl-color-buffer-bit)
                 (glColor3f 1.0f 0.9f 0.2f)
-                (draw-rect -0.5f -0.5f 1.0f 1.0f)              
+                (draw-rect -0.5f -0.5f 1.0f 1.0f)
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
             (glfwTerminate))))
