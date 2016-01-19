@@ -417,6 +417,23 @@
       (assert-eq (own-if-13 11) "b!")))
 
 
+(defn own-if-13b (s)
+  (if (< (strlen (ref s)) 10) (str-append "a" "!") (str-append "b" "!")))
+
+(def own-ast-13b (lambda-to-ast (code own-if-13b)))
+(def own-con-13b (gencon own-ast-13b))
+(def own-asta-13b (annotate-ast own-ast-13b))
+(let [free (:free own-asta-13b)
+      free-left (get-in own-asta-13b '(:body :free-left))
+      free-right (get-in own-asta-13b '(:body :free-right))]
+  (do (assert-eq '(:arrow (:string) :string) (:type own-asta-13b))
+      (bake own-if-13b)
+      (assert-eq 1 (count free))
+      (assert-eq 2 (count free-left))
+      (assert-eq 2 (count free-right))
+      (assert-eq (own-if-13b "short") "a!")
+      (assert-eq (own-if-13b "loooooooooooooong") "b!")))
+
 
 (defn own-binop-14 ()
   (+ (strlen "say") (strlen "what")))

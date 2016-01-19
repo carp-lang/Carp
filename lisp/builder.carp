@@ -75,15 +75,16 @@
 
 ;; New version of visit arg that generates slimmer code (no intermediate arg variables)
 (defn visit-arg-slim (c arg)
-  (do (println (str "visit-arg-slim:\n" arg))
-      (if (or (inlined-lookup? arg) (inlined-literal? arg))
-        {:c (c-ify-name (str (:value arg)))}
-        (let [result (visit-form c arg true)]
-          (let [result-name (get-maybe arg :result-name)]
-            (if (nil? result-name)
-              (do (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))
-                  {:c (:arg-name arg)})
-              {:c result-name}))))))
+  (do
+    ;(println (str "visit-arg-slim:\n" arg))
+    (if (or (inlined-lookup? arg) (inlined-literal? arg))
+      {:c (c-ify-name (str (:value arg)))}
+      (let [result (visit-form c arg true)
+            result-name (get-maybe arg :result-name)]
+        (if (nil? result-name)
+          (do (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))
+              {:c (:arg-name arg)})
+          {:c result-name})))))
 
 (defn visit-args-slim (c args)
   (let []
