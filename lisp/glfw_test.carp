@@ -61,11 +61,6 @@
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 
-(defn bake-gl-demo-exe ()
-  (do (bake draw-rect)
-      (bake-exe* gl-demo '(draw-rect))))
-
-
 ;;(bake draw-rect)
 
 ;(def app-ast (lambda-to-ast (code app)))

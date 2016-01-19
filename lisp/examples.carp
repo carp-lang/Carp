@@ -38,3 +38,8 @@
       (println "Too short!")
       (println text))))
 
+(defn a-while ()
+  (while true
+    (println "what!")))
+
+

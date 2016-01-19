@@ -36,7 +36,7 @@ The key features of Carp are the following:
     (panic "Failed to initialize glfw.")))
 ```
 
-To build this example, load the gl bindings with ```(load-gl)```, then execute ```(bake-gl-demo-exe)``` to build an executable, or just ```(gl-demo)``` to run the program directly from the REPL.
+To build this example, load the gl bindings with ```(load-gl)```, then execute ```(bake-exe gl-demo)``` to build an executable, or just ```(gl-demo)``` to run the program directly from the REPL.
 
 ## The Compiler
 The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (implemented in C). To work on a Carp program you run ```carp``` (first making sure it's in your $PATH, see installation instructions below) which starts the REPL. Everything you want to do to your program can be controlled from here.

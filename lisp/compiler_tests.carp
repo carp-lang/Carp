@@ -1,3 +1,4 @@
+;; CONSTRAINTS
 
 (defn test-replace-in-list ()
   (assert-eq (replace-in-list '(10 20 30) 20 "hej") '(10 "hej" 30)))
@@ -86,6 +87,7 @@
 (test-constraint-solving-6)
 
 
+;; BAKING
 
 (defn fib (n)
   (if (< n 2)
@@ -99,6 +101,7 @@
     (assert-eq (type fib) :foreign)
     :fib-is-ok))
 
+(test-fib)
 
 
 (defn foo (x)
@@ -110,6 +113,7 @@
       (assert-eq (type foo) :foreign)
       :foo-is-ok))
 
+(test-foo)
 
 
 (defn hypo (x y)
@@ -121,12 +125,7 @@
       (assert-eq (type hypo) :foreign)
       :hypo-is-ok))
 
-
-
-(test-fib)
-(test-foo)
 (test-hypo)
-
 
 
 (defn f (s)
@@ -146,12 +145,12 @@
 (def hcon (gencon hast))
 (def hasta (annotate-ast hast))
 
-(defn fuck ()
+(defn fail-1 ()
   (+ "hej" 23))
 
-(def fuckast (lambda-to-ast (code fuck)))
-(def fuckcon (gencon fuckast))
-;;(def fuckasta (annotate-ast fuckast))
+(def fail-1-ast (lambda-to-ast (code fail-1)))
+(def fail-1-con (gencon fail-1-ast))
+;;(def fail-asta (annotate-ast fail-ast))
 
 (defn mix (x y z)
   (if (< (strlen z) 3) (* (itof y) x) x))
@@ -204,10 +203,11 @@
 
 
 
+;; OWNERSHIP
+
 ;; This one is weird:
 (defn own-string-weird (s)
   (ref s))
-
 
 
 (register-builtin "eat_string" '(:string) :void)
@@ -279,16 +279,12 @@
       (assert-eq '(:arrow (:string) :int) (:type own-asta-6))))
 
 
-;; (bake own-string-1)
-;; (bake own-string-2)
-;; (bake own-string-3)
-;; (bake own-string-4)
-;; (bake own-string-5)
-;; (bake own-string-6)
-
-
-
-
+(bake own-string-1)
+(bake own-string-2)
+(bake own-string-3)
+(bake own-string-4)
+(bake own-string-5)
+(bake own-string-6)
 
 
 (defn own-string-7 (s1 s2)
@@ -302,7 +298,6 @@
       (assert-eq 3 (count free))
       (bake own-string-7)
       (assert-eq (own-string-7 "a" "b") "bab")))
-
 
 
 (defn own-string-8 (s1 s2)
@@ -350,8 +345,6 @@
       (assert-eq :string (:type (nth free 1)))
       (assert-eq "s" (:name (nth free 1)))
       (assert-eq (own-string-9b "yeah") 6)))
-
-
 
 
 (defn own-if-10 (s)
@@ -448,7 +441,6 @@
       (assert-eq (own-binop-14) 7)))
 
 
-
 (defn own-binop-15 (s)
   (str-append (itos (strlen "say")) (itos (strlen (ref s)))))
 
@@ -462,7 +454,6 @@
       (assert-eq (own-binop-15 "what") "34")
       (assert-eq (own-binop-15 "") "30")
       (assert-eq (own-binop-15 "whats the deal?") "315")))
-
 
 
 (defn own-let-16 (s)
@@ -483,7 +474,6 @@
       (assert-eq (own-let-16 "x") 1)))
 
 
-
 (defn own-let-17 ()
   (let [a "hello"]
     a))
@@ -498,7 +488,6 @@
       (assert-eq '(:arrow () :string) (:type own-asta-17))
       (assert-eq 0 (count free))
       (assert-eq (own-let-17) "hello")))
-
 
 
 (defn own-let-18 ()
@@ -519,7 +508,6 @@
       (assert-eq (own-let-18) 5)))
 
 
-
 (defn own-let-19 ()
   (let [a "hello"]
     (eat-string a)))
@@ -533,7 +521,6 @@
       (assert-eq '(:arrow () :void) (:type own-asta-19))
       (assert-eq 0 (count free))
       (assert-eq 0 (count free-let))))
-
 
 
 (defn own-while-20 (b)
@@ -551,13 +538,6 @@
       (assert-eq 1 (count free-while))
       (assert-eq :string (:type (first free-while)))
       ))
-
-
-
-(defn a-while ()
-  (while true
-    (println "what!")))
-
 
 
 (defn own-while-21 (s)
@@ -643,5 +623,23 @@
       (assert-eq 0 (count free))
       (assert-eq 1 (count (get-in own-asta-25 '(:body :a :free)))) ;; free x
       (assert-eq (own-free-problem-25) "yeah")))
+
+
+
+;; Auto chain bake
+
+(defn f1 () 100)
+(defn f2 () 200)
+(defn f3 () (+ (f1) (f2)))
+;(bake f3)
+
+
+;; GENERICS
+
+(def id-ast (lambda-to-ast (code id)))
+(def id-con (gencon id-ast))
+(def id-asta (annotate-ast id-ast))
+
+
 
 

@@ -68,7 +68,7 @@
 (def out-dir "./")
 
 ;; Takes a function name and the list representation of the lambda
-(defn bake-internal (builder func-name func-code dependencies exe)
+(defn bake-internal (builder func-name func-code external-deps exe)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
         ast-annotated (annotate-ast ast-named)
@@ -78,7 +78,8 @@
         c-program-string (builder-merge-to-c builder-final)
         proto (get-function-prototype ast-annotated func-name)
         c-file-name (str out-dir func-name ".c")
-        c-func-name (c-ify-name func-name)]
+        c-func-name (c-ify-name func-name)
+        total-dependencies (concat (:func-deps ast-annotated) external-deps)]
     (do
       (def ast ast-annotated)
       (def c c-program-string)
@@ -95,7 +96,7 @@
                                         (include-paths)  " "
                                         (lib-paths) " "
 					(framework-paths) " "
-                                        (link-libs dependencies))]
+                                        (link-libs total-dependencies))]
                  (do ;;(println clang-command)
 		     (def cmd clang-command)
 		     (system clang-command)))
