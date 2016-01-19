@@ -16,9 +16,9 @@ The key features of Carp are the following:
 * No hidden performance penalties – allocation and copying is explicit
 * Very good integration with exisiting C code
 
-## Quick OpenGL/GLFW Example
+## A Small OpenGL/GLFW Example
 ```clojure
-(defn app ()
+(defn gl-demo ()
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
       (if (null? window)
