@@ -75,3 +75,5 @@
       (bake-exe* main '(app))))
 
 ;;(bake-gl-exe)
+
+(bake draw-rect)
