@@ -106,6 +106,8 @@ The most important thing in Carp is to work with arrays of data. Here's an examp
 
 All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in Rust parlance) makes sure that the same data structure isn't used in several places.
 
+To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the (compiled) function. The type signature can be found with ```(signature ...)```. If the value is a simple type like :string, :Vector3, or similar, it means that the memory ownership gets handed over. If it's a ref signature, meaning that it's a list starting with :ref (i.e. '(:ref :string)'), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's probably useful to send your data structures to C as refs, keeping the memory management inside the Carp section of the program.
+
 ### Data Literals
 ```clojure
 100 ; int
@@ -114,6 +116,13 @@ true ; bool
 "hello" ; string
 'e' ; char
 [1 2 3] ; array
+```
+
+### Dynamic-only Data Literals
+```clojure
+foo ; symbol
+:string ; keyword
+{:a 10 :b 20} ; dictionary
 ```
 
 ### Special Forms
