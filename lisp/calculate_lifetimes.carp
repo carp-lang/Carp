@@ -1,11 +1,12 @@
 
 (defn convert-param-node (a)
   {:name (str (:name a))
-   :type (:type a)})
+   :type (:type a)
+   :doc "parameter"})
 
 (defn managed-type? (t)
   (match t
-    (:ref x) false ;; (managed-type? x)
+    (:ref x) false
     _ (= t :string)))
 
 (defn manage? (descriptor)
@@ -69,7 +70,10 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
-          extended-vars (cons {:name (str (:name binding-ast)) :type (:type binding-ast)} vars)
+          extended-vars (let [t (:type binding-ast)]
+                          (if (managed-type? t)
+                            (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
+                            vars))
 
           new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
           new-binding-ast (assoc binding-ast :value (:ast new-data))
@@ -135,7 +139,7 @@
                      :vars '()})
 
         :literal (let [vars-after (if (managed-type? (:type ast))
-                                    (cons {:name (:result-name ast) :type (:type ast)} vars)
+                                    (cons {:name (:result-name ast) :type (:type ast) :doc "literal"} vars)
                                     vars)
                        ;;_ (println (str "vars-after literal " (:value ast) ": " vars-after))
                        ]
@@ -257,7 +261,7 @@
                    final-ast (assoc ast-after-body :free new-vars-after-body)
                    final-vars (let [ast-type (:type ast)]
                                 (if (managed-type? ast-type)
-                                  (cons {:name (:result-name ast) :type ast-type} vars)
+                                  (cons {:name (:result-name ast) :type ast-type :doc "let ret val"} vars)
                                   vars))
                    ]
                {:ast final-ast
