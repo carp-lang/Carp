@@ -42,4 +42,8 @@
   (while true
     (println "what!")))
 
-
+(defn say-what (text)
+  (let [manage-me (string-copy text)]
+    (if (< (strlen text) 10)
+      (string-copy "Too short")
+      manage-me)))

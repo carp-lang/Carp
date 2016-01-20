@@ -88,7 +88,7 @@ Carp borrows its looks from Clojure but the runtime semantics are much closer to
       (println text))))
 ```
 
-This compiles to a somewhat noisy (working on it!) C program:
+This compiles to the following C program:
 ```C
 void say_hi(string text) {
   bool while_expr_601 = 1;
@@ -104,6 +104,41 @@ void say_hi(string text) {
   }
 }
 ```
+
+If-statements are kind of tricky in regards to memory management:
+```clojure
+(defn say-what (text)
+  (let [manage-me (string-copy text)]
+    (if (< (strlen text) 10)
+      (string-copy "Too short")
+      manage-me)))
+```
+
+The 'manage-me' variable is the return value in the second branch, but should get freed if "Too short" is returned.
+The output is a somewhat noisy (working on it!) C program:
+```C
+string say_what(string text) {
+  string let_result_601;
+  {
+    string string_copy_result_602 = string_copy(text);
+    string manage_me = string_copy_result_602;
+    int strlen_result_606 = strlen(text);
+    bool if_expr_605 = strlen_result_606 < 10;
+    string if_result_604;
+    if(if_expr_605) {
+      string string_copy_result_609 = string_copy("Too short");
+      free(manage_me);
+      if_result_604 = string_copy_result_609;
+    } else {
+      if_result_604 = manage_me;
+    }
+    let_result_601 = if_result_604;
+  }
+  string say_what_result_612 = let_result_601;
+  return say_what_result_612;
+}
+```
+
 
 The most important thing in Carp is to work with arrays of data. Here's an example of how that looks:
 

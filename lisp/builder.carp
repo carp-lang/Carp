@@ -36,7 +36,7 @@
   (swap! indent-level dec))
 
 (defn free-variables (free-list)
-  (join "" (map (fn (variable) (str (indent) "free(" (:name variable) ");\n")) free-list)))
+  (join "" (map (fn (variable) (str (indent) "free(" (c-ify-name (:name variable)) ");\n")) free-list)))
 
 (defn c-ify-name (lisp-name)
   (let [x0 (str-replace lisp-name "-" "_")
@@ -97,7 +97,7 @@
 (defn visit-bindings (c bindings)
   ;;(println bindings)
   (map (fn (b) (let [value-result (visit-form c (:value b) false)]
-                 (str-append! c (str (indent) (type-build (:type b)) " " (:name b) " = " (:c value-result) ";\n"))))
+                 (str-append! c (str (indent) (type-build (:type b)) " " (c-ify-name (str (:name b))) " = " (:c value-result) ";\n"))))
        bindings))
 
 (defn visit-form (c form toplevel)
