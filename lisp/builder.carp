@@ -68,7 +68,7 @@
 
 (defn inlined-literal? (ast)
   (and (= :literal (:node ast))
-       (contains? '(:int :float :bool) (:type ast))))
+       (contains? '(:int :float :bool (:ref :string)) (:type ast))))
 
 (defn inlined-lookup? (ast)
   (= :lookup (:node ast)))
@@ -111,7 +111,7 @@
 
            :literal (let [val (:value form)
                           result-name (get-maybe form :result-name)]
-                      (if (nil? result-name)
+                      (if (or (inlined-literal? form) (nil? result-name))
                         {:c (prn val)}
                         (do
                           (str-append! c (str (indent)
@@ -165,11 +165,15 @@
                       c-func-name (c-ify-name (str func-name))
                       n (:result-name form)
                       arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c (get form :tail))
-                      arg-vars (map :c arg-results)]
-                  (do (if (= :void (:type form))
-                        (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
-                        (str-append! c (str (indent) (type-build (:type form)) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n")))
-                      {:c n}))
+                      arg-vars (map :c arg-results)
+                      t (:type form)]
+                  (do (if (= :void t)
+                        (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
+                            {:c n})
+                        (if false ;; not done here...
+                          {:c (str c-func-name "(" (join ", " arg-vars) ")")}
+                          (do (str-append! c (str (indent) (type-build t) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n"))
+                              {:c n})))))
 
            :do (let [forms (:forms form)
                      ;_ (println (str "forms:\n" forms))
@@ -227,16 +231,21 @@
         body (get ast :body)
         c (copy "") ;; mutable string holding the resulting C code for the function
         result (visit-form c body true)
+        result-var-name (str (c-ify-name func-name) "_result_" (gen-name))
+        ret-type (get-in ast '(:type 2))
         ]
     (do
       ;;(println "visit-function: \n" ast)
       (let [code (str (type-build return-type) " " (c-ify-name func-name)
                       "(" (arg-list-build args) ") {\n"
                       c
+                      (if (= :void ret-type)
+                        ""
+                        (str (indent) (type-build ret-type) " " result-var-name " = " (get result :c) ";\n")) ;; TODO: evaluate if this extra step is needed
                       (free-variables (:free ast))
                       (if (= :void (:type body))
                         "" ;; no return
-                        (str (indent) "return " (get result :c) ";\n"))
+                        (str (indent) "return " result-var-name ";\n"))
                       "}")]
         (builder-add builder :functions code)))))
 
