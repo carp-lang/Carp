@@ -88,7 +88,6 @@
 
 
 ;; BAKING
-
 (defn fib (n)
   (if (< n 2)
     1
@@ -674,7 +673,7 @@
     (test-own-25)
 
 
-    )) ; end of ownership tests
+    )) ;; end of ownership tests
 
 (run-ownership-tests)
 
