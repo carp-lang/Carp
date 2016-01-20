@@ -97,7 +97,7 @@ string string_array_get(string_array array, int pos) {
 }
 
 string_array string_array_set(string_array array, int pos, string new_value) {
-  array[pos] = new_value;
+  array[pos] = strdup(new_value);
   return array;
 }
 

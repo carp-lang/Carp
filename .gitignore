@@ -6,3 +6,4 @@
 /out/*.h
 /src/*.o
 /out/exe
+a.out

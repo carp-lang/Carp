@@ -1,8 +1,8 @@
 
 (register-builtin "string_array_new" '(:int) ':string-array)
-(register-builtin "string_array_count" '(:string-array) :int)
+(register-builtin "string_array_count" '((:ref :string-array)) :int)
 (register-builtin "string_array_get" '((:ref :string-array) :int) '(:ref :string))
-(register-builtin "string_array_set" '(:string-array :int :string) ':string-array)
+(register-builtin "string_array_set" '(:string-array :int (:ref :string)) ':string-array)
 
 (def s (string-array-new 3))
 (def s1 (string-array-set s 0 "yeah"))
@@ -20,13 +20,24 @@
         (println "]"))))
 
 (defn sf1 ()
-  (let [a (string-array-new 2)
-        ;;a0 (string-array-set a  0 "Hello, ")
-        ;;a1 (string-array-set a0 1 "world!")
-        ]
-    (str-append (string-array-get (ref a) 0) (string-array-get (ref a) 1))))
+  (let [a0 (string-array-new 2)]
+    (let [a1 (string-array-set a0 0 "Hello, ")]
+      (str-append (string-array-get (ref a1) 0) "YEAH"))))
+
+(defn sf2 ()
+  (let [a0 (string-array-new 2)]
+    (let [a1 (string-array-set a0 0 "Hello, ")]
+      (let [a2 (string-array-set a1 1 "world!")]
+        (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
 
 (defn test-string-array-1 ()
-  (bake sf1))
-;(test-string-array-1)
+  (do 
+    (bake sf1)
+    (assert-eq "Hello, YEAH" (sf1))))
+(test-string-array-1)
 
+(defn test-string-array-2 ()
+  (do
+    (bake sf2)
+    (assert-eq "Hello, world!" (sf2))))
+(test-string-array-2)

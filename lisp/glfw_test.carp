@@ -45,10 +45,10 @@
 
 (defn gl-demo ()
   (if (glfwInit)
-    (let [window (glfwCreateWindow 640 480 (ref "Yeah!") NULL NULL)]
+    (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
       (if (null? window)
-        (panic (ref "No window."))
-        (do (println (ref "Window OK."))
+        (panic "No window.")
+        (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
               (do
@@ -59,7 +59,7 @@
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
             (glfwTerminate))))
-    (panic (ref "Failed to initialize glfw."))))
+    (panic "Failed to initialize glfw.")))
 
 ;;(bake draw-rect)
 

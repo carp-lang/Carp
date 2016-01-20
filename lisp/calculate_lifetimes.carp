@@ -82,6 +82,7 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
+
           extended-vars (let [t (:type binding-ast)]
                           (do
                             ;;(println (str "is " (:name binding-ast) " : " t " a managed type? " (managed-type? t)))
@@ -89,7 +90,7 @@
                               (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
                               vars)))
 
-          ;;_ (println (str "extended-vars: " extended-vars))
+          ;;_ (println (str "\nextended-vars: " extended-vars))
           
           new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
           new-binding-ast (assoc binding-ast :value (:ast new-data))
@@ -174,7 +175,12 @@
                       vars-after (if in-ref ;;(ref? (:type ast))
                                    vars
                                    (remove-var-with-name vars (str (:value ast))))
-                      ;;_ (when (not (= vars vars-after)) (println (str "Lookup ate '" (:value ast) "'."))); Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after)))
+                      
+                      ;; _ (when (not (= vars vars-after))
+                      ;;     (do (println (str "\nLookup ate '" (:value ast) "':\n" ast))
+                      ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
+                      ;;         ))
+                      
                       final-ast {:ast ast
                                  :vars vars-after}
 
@@ -256,7 +262,7 @@
               {:ast ast-after-all
                :vars vars-after-all})
 
-        :let (let [;;_ (println (str "vars before body:\n" vars))
+        :let (let [;;_ (println (str "\nLET vars in body " (get-maybe ast :result-name) ":\n" vars))
 
                    init-data (assoc data :pos 0)
                    data-after-bindings (reduce calc-lifetime-for-let-binding init-data (:bindings ast))
@@ -265,23 +271,41 @@
                    vars-after-bindings (:vars data-after-bindings)                   
                    ast-after-bindings (:ast data-after-bindings)
 
-                   ;;_ (println (str "\nlet vars-after-bindings:\n" vars-after-bindings))
-                   ;; _ (println (str "ast:\n" ast))
+                   not-eaten-by-bindings (filter (fn (v) (contains? vars-after-bindings v)) vars)
+                   eaten-by-bindings (remove (fn (v) (contains? not-eaten-by-bindings v)) vars)
+                   ;;_ (println (str "\nLET eaten by bindings in " (get-maybe ast :result-name) ":\n" eaten-by-bindings))
+
+                   ;;_ (println (str "\nlet vars-after-bindings (before body):\n" vars-after-bindings))
                    ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
 
+                   ;;_ (println (str "\nLET will visit body of " (get-maybe ast :result-name) ", Current vars:\n" vars-after-bindings))
+                   
                    data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-bindings)
                                                                   :vars vars-after-bindings}
                                                                  in-ref)
 
                    vars-after-body (:vars data-after-body)
+                   ;;_ (println (str "\nLET back from visiting body of " (get-maybe ast :result-name) ", Current vars:\n" vars-after-body))
+                   
                    ast-after-body (assoc ast-after-bindings :body (:ast data-after-body))
 
                    ;;_ (println (str "\nlet vars-after-body:\n" vars-after-body))
                    ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
                    ;; _ (println (str "ast-after-body:\n" ast-after-body))
 
+                   ;;_ (println (str "\ndata-after-body:\n" data-after-body))
+
+                   vars-after-body-minus-eaten (let [eaten (get-maybe data-after-body :eaten)]
+                                                     (if (nil? eaten)
+                                                       vars-after-body
+                                                       (do
+                                                         ;;(println (str "Will eat:\n" eaten))
+                                                         (remove (fn (v) (contains? eaten v)) vars-after-body))
+                                                       ))
+                   ;;_ (println (str "\nLET minus eaten " (get-maybe ast :result-name) ", Current vars:\n" vars-after-body-minus-eaten))
+
                    ;; only remove the variables that were not already there before entering let form:
-                   vars-after-body-and-return-1 (remove (fn (v) (contains? vars v)) vars-after-body)
+                   vars-after-body-and-return-1 (remove (fn (v) (contains? vars v)) vars-after-body-minus-eaten)
                    ;;_ (println (str "\nlet vars-after-body-and-return-1:\n" vars-after-body-and-return-1))
                    
                    vars-after-body-and-return-2 (let [result-name (get-maybe (:body ast-after-body) :result-name)]
@@ -297,7 +321,8 @@
                                   vars))
                    ]
                {:ast final-ast
-                :vars final-vars})
+                :vars final-vars
+                :eaten eaten-by-bindings})
 
         :while (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
                      ;;_ (println (str "data-after-expr:\n" data-after-expr))
