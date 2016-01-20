@@ -1,7 +1,6 @@
 # Compiler
   - Compilation of generic functions
   - Compiling arrays
-  - Let string literal be of type ref so they don't need to be deleted?
   - Prevent uses of a variable when it has been sent to another function
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
@@ -14,17 +13,19 @@
   - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Clean up unifier even more
-  - option for turning off memory management / lifetime checker
+  - Option for turning off lifetime checker
   - Change type of functions from (:arrow ...) to (:fn ...)
 
 # Lisp Core Libs
-  - Show error when registering non-existing C function
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
   - tests for 'intersection'
 
+# Bugs
+  - Didn't show error when registering non-existing C function?!
+  
 # Dynamic Runtime
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions

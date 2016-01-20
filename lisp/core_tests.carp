@@ -24,6 +24,26 @@
         (assert-eq true (contains? s1 2))
         (assert-eq true (contains? s1 3))))))
 
+(defn test-intersection ()
+  (do
+    (let [s1 '(1 2 3 4 5)
+          s2 '()
+          s3 '(5)
+          s4 '(10 20)
+          s5 '(6 2 7 3)]
+      (do
+        (assert-eq 0 (count (intersection s1 s2)))
+
+        (assert-eq 1 (count (intersection s1 s3)))
+        (assert-eq true (contains? (intersection s1 s3) 5))
+
+        (assert-eq 0 (count (intersection s1 s4)))
+
+        (assert-eq 2 (count (intersection s1 s5)))
+        (assert-eq true (contains? (intersection s1 s5) 2))
+        (assert-eq true (contains? (intersection s1 s5) 3)) ))))
+
+
 (defn test-union ()
   (do
     (let [u1 (union '() '(5 5 5))]
@@ -338,6 +358,7 @@
     (test-negative-numbers)
     (test-set)
     (test-union)
+    (test-intersection)
     ))
 
 (run-core-tests)
