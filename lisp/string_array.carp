@@ -30,6 +30,13 @@
       (let [a2 (string-array-set a1 1 "world!")]
         (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
 
+(defn sf3 ()
+  (let [a0 (string-array-new 2)]
+    (let [a1 (string-array-set a0 0 "Hello, ")]
+      (do (string-array-new 10)
+          (let [a2 (string-array-set a1 1 "world!")]
+            (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1)))))))
+
 (defn test-string-array-1 ()
   (do 
     (bake sf1)
@@ -41,3 +48,10 @@
     (bake sf2)
     (assert-eq "Hello, world!" (sf2))))
 (test-string-array-2)
+
+(defn test-string-array-3 ()
+  (do
+    (bake sf3)
+    ;;(assert-eq "Hello, world!" (sf3))
+    ))
+;;(test-string-array-3)
