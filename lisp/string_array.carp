@@ -52,6 +52,6 @@
 (defn test-string-array-3 ()
   (do
     (bake sf3)
-    ;;(assert-eq "Hello, world!" (sf3))
+    (assert-eq "Hello, world!" (sf3))
     ))
-;;(test-string-array-3)
+(test-string-array-3)

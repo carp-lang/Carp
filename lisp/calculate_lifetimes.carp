@@ -352,7 +352,7 @@
                   data-after-forms (reduce calc-lifetime-for-do-form init-data (:forms ast))
                   final-ast (:ast data-after-forms)
                   final-eaten (get-maybe data-after-forms :eaten)
-                  _ (println (str "do final-eaten: " final-eaten))
+                  ;;_ (println (str "do final-eaten: " final-eaten))
                   vars-after-forms (:vars data-after-forms)
                   final-vars (let [result-name (get-maybe (last (:forms final-ast)) :result-name)]
                                (if (nil? result-name)
