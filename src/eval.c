@@ -431,6 +431,8 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else if(HEAD_EQ("while")) {
+    assert_or_set_error(o->cdr->car, "Too few body forms in 'while' form: ", o);
+    assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'while' form (use explicit 'do').", o);
     eval_internal(env, o->cdr->car);
     if(error) {
       return;

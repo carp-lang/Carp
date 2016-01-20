@@ -1,4 +1,5 @@
 # Compiler
+  - Handle when a let binding refers to an earlier let binding
   - Compilation of generic functions
   - Compiling arrays
   - Prevent uses of a variable when it has been sent to another function
@@ -26,14 +27,13 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
-  - a way of checking for panics
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - meta data on Objs: Line nr, line pos, source file,
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
-  - primops should have signatures, right?
   - remove globals to enable several instances of the runner in parallel
+  - primops should have signatures, right?
   - nicer pretty printing of lists of lists
   - better error handling and input validation for primops, clean up the C macros
   - lambdas should be able to have their signature set/get
