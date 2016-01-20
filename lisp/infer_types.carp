@@ -30,113 +30,113 @@
     ;;(println "gen constrs: \n" ast)
     (match (get ast :node)
 
-           :function (let [extended-type-env (type-env-extend type-env (get ast :args))
-                           extended-type-env-2 (let [fn-name (get-maybe ast :name)]
-                                                 (if (string? fn-name)
-                                                   (assoc extended-type-env fn-name :self)
-                                                   extended-type-env))
-                           new-constraints (generate-constraints-internal constraints (:body ast) extended-type-env-2)
-                           func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the arrow type
-                                            :b (get-in ast '(:body :type))
-                                            :doc (str "func-ret-constr")}
-                           func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})
-                                                  (map :type (:args ast))
-                                                  (get-in ast '(:type 1)))]
-                       (concat func-arg-constrs (cons func-ret-constr new-constraints)))
+      :function (let [extended-type-env (type-env-extend type-env (get ast :args))
+                      extended-type-env-2 (let [fn-name (get-maybe ast :name)]
+                                            (if (string? fn-name)
+                                              (assoc extended-type-env fn-name :self)
+                                              extended-type-env))
+                      new-constraints (generate-constraints-internal constraints (:body ast) extended-type-env-2)
+                      func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the arrow type
+                                       :b (get-in ast '(:body :type))
+                                       :doc (str "func-ret-constr")}
+                      func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})
+                                             (map :type (:args ast))
+                                             (get-in ast '(:type 1)))]
+                  (concat func-arg-constrs (cons func-ret-constr new-constraints)))
 
-           :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
-                      arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
-                      func-constrs (let [app-f-sym (get-in ast '(:head :value))
-                                         app-f-name (str app-f-sym)
-                                         app-f (eval app-f-sym)]
-                                    (if (foreign? app-f)
-                                      (list {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
-                                      (if (is-self-recursive? type-env app-f-name)
-                                        () ;; no constraints needed when the function is calling itself
-                                        (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
-                                            (let [non-baked (eval (read app-f-name))
-                                                  ;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
-                                                  exe false]
-                                              (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
-                                            (when log-chaining (println (str "Baking done, will resume job.")))
-                                            (let [sym-for-baked-func (read app-f-name)]
-                                              (list {:a (get-in ast '(:head :type))
-                                                     :b (signature (eval sym-for-baked-func))
-                                                     :doc "freshly baked func-app"}
-                                                    {:func-dep sym-for-baked-func}))))))
-                      tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
-                                           '() (:tail ast))
-                      new-constraints (concat tail-constrs func-constrs (cons ret-constr arg-constrs))]
-                  (concat new-constraints constraints))
+      :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
+                 arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
+                 func-constrs (let [app-f-sym (get-in ast '(:head :value))
+                                    app-f-name (str app-f-sym)
+                                    app-f (eval app-f-sym)]
+                                (if (foreign? app-f)
+                                  (list {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
+                                  (if (is-self-recursive? type-env app-f-name)
+                                    () ;; no constraints needed when the function is calling itself
+                                    (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
+                                        (let [non-baked (eval (read app-f-name))
+                                              ;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
+                                              exe false]
+                                          (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
+                                        (when log-chaining (println (str "Baking done, will resume job.")))
+                                        (let [sym-for-baked-func (read app-f-name)]
+                                          (list {:a (get-in ast '(:head :type))
+                                                 :b (signature (eval sym-for-baked-func))
+                                                 :doc "freshly baked func-app"}
+                                                {:func-dep sym-for-baked-func}))))))
+                 tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
+                                      '() (:tail ast))
+                 new-constraints (concat tail-constrs func-constrs (cons ret-constr arg-constrs))]
+             (concat new-constraints constraints))
 
-           :literal constraints ;; literals don't need constraints
+      :literal constraints ;; literals don't need constraints
 
-           :ref (let [expr (:expr ast)
-                      x0 (generate-constraints-internal constraints expr type-env)
-                      inner-type (match (:type ast)
-                                        (:ref t) t
-                                        _ (error "Not a ref type"))
-                      expr-constr {:a inner-type :b (:type expr) :doc "ref-constr"}]
-                  (cons expr-constr x0))
+      :ref (let [expr (:expr ast)
+                 x0 (generate-constraints-internal constraints expr type-env)
+                 inner-type (match (:type ast)
+                              (:ref t) t
+                              _ (error "Not a ref type"))
+                 expr-constr {:a inner-type :b (:type expr) :doc "ref-constr"}]
+             (cons expr-constr x0))
 
-           :lookup (let [val (:value ast)]
-                     (cons {:a (get ast :type)
-                            :b (get-type-of-symbol type-env val)
-                            :doc (str "lookup " val)} constraints))
+      :lookup (let [val (:value ast)]
+                (cons {:a (get ast :type)
+                       :b (get-type-of-symbol type-env val)
+                       :doc (str "lookup " val)} constraints))
 
-           :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
-		        x1 (generate-constraints-internal x0 (get ast :b) type-env)
-		        ;;tvar (gen-typevar)
-                        ;;left-arg-constr {:a tvar :b (get-in ast '(:a :type)) :doc "left-arg-constr"}
-                        ;;right-arg-constr {:a tvar :b (get-in ast '(:b :type)) :doc "right-arg-constr"}
-			;;ret-constr {:a tvar :b (:type ast)}
-                        same-arg-type-constr {:a (get-in ast '(:a :type)) :b (get-in ast '(:b :type)) :doc "same-arg-type-constr"}
-                        maybe-constr (if (math-op? (:op ast))
-                                       (list {:a (get-in ast '(:a :type)) :b (:type ast)})
-                                       ())
-			]
-                    ;;(concat x1 (list left-arg-constr right-arg-constr ret-constr)))
-                    (concat maybe-constr (cons same-arg-type-constr x1)))
+      :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
+                   x1 (generate-constraints-internal x0 (get ast :b) type-env)
+                   ;;tvar (gen-typevar)
+                   ;;left-arg-constr {:a tvar :b (get-in ast '(:a :type)) :doc "left-arg-constr"}
+                   ;;right-arg-constr {:a tvar :b (get-in ast '(:b :type)) :doc "right-arg-constr"}
+                   ;;ret-constr {:a tvar :b (:type ast)}
+                   same-arg-type-constr {:a (get-in ast '(:a :type)) :b (get-in ast '(:b :type)) :doc "same-arg-type-constr"}
+                   maybe-constr (if (math-op? (:op ast))
+                                  (list {:a (get-in ast '(:a :type)) :b (:type ast)})
+                                  ())
+                   ]
+               ;;(concat x1 (list left-arg-constr right-arg-constr ret-constr)))
+               (concat maybe-constr (cons same-arg-type-constr x1)))
 
-           :if (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
-                     x1 (generate-constraints-internal x0 (get ast :b) type-env)
-                     x2 (generate-constraints-internal x1 (get ast :expr) type-env)
-                     left-result-constr {:a (get-in ast '(:a :type)) :b (:type ast)}
-                     right-result-constr {:a (get-in ast '(:b :type)) :b (:type ast)}
-                     expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
-                 (concat x2 (list
-                             expr-must-be-bool
-                             left-result-constr
-                             right-result-constr)))
+      :if (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
+                x1 (generate-constraints-internal x0 (get ast :b) type-env)
+                x2 (generate-constraints-internal x1 (get ast :expr) type-env)
+                left-result-constr {:a (get-in ast '(:a :type)) :b (:type ast)}
+                right-result-constr {:a (get-in ast '(:b :type)) :b (:type ast)}
+                expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
+            (concat x2 (list
+                        expr-must-be-bool
+                        left-result-constr
+                        right-result-constr)))
 
-           :do (let [x0 (reduce (fn (constrs form) (generate-constraints-internal constrs form type-env))
-                                constraints (:forms ast))
-                     ;;_ (log "count: " (count x0))
-                     n (count (:forms ast))
-                     ret-constr {:a (:type ast) :b (get-in ast (list :forms (- n 1) :type)) :doc "do-ret-constr"}]
-                 (cons ret-constr x0))
+      :do (let [x0 (reduce (fn (constrs form) (generate-constraints-internal constrs form type-env))
+                           constraints (:forms ast))
+                ;;_ (log "count: " (count x0))
+                n (count (:forms ast))
+                ret-constr {:a (:type ast) :b (get-in ast (list :forms (- n 1) :type)) :doc "do-ret-constr"}]
+            (cons ret-constr x0))
 
-           :let (let [bindings (:bindings ast)
-                      extended-type-env (reduce (fn (e b) (assoc e (:name b) (get-in b '(:value :type)))) type-env bindings)
-                      ;;_ (println "Extended type env: " extended-type-env)
-                      let-constr {:a (:type ast) :b (get-in ast '(:body :type)) :doc "let-constr"}
-                      bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding) :b (get-in binding '(:value :type))}
-                                                                  value-constrs (generate-constraints-internal constraints (:value binding) type-env)]
-                                                              (cons bind-constr value-constrs)))
-                                              bindings)
-                      body-constrs (generate-constraints-internal constraints (:body ast) extended-type-env)]
-                  (cons let-constr (concat bindings-constr body-constrs)))
+      :let (let [bindings (:bindings ast)
+                 extended-type-env (reduce (fn (e b) (assoc e (:name b) (get-in b '(:value :type)))) type-env bindings)
+                 ;;_ (println "Extended type env: " extended-type-env)
+                 let-constr {:a (:type ast) :b (get-in ast '(:body :type)) :doc "let-constr"}
+                 bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding) :b (get-in binding '(:value :type))}
+                                                             value-constrs (generate-constraints-internal constraints (:value binding) type-env)]
+                                                         (cons bind-constr value-constrs)))
+                                         bindings)
+                 body-constrs (generate-constraints-internal constraints (:body ast) extended-type-env)]
+             (cons let-constr (concat bindings-constr body-constrs)))
 
-           :while (let [x0 (generate-constraints-internal constraints (get ast :body) type-env)
-                        x1 (generate-constraints-internal x0 (get ast :expr) type-env)
-                        body-result-constr {:a (get-in ast '(:body :type)) :b (:type ast)}
-                        expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
-                    (concat x1 (list expr-must-be-bool )))
+      :while (let [x0 (generate-constraints-internal constraints (get ast :body) type-env)
+                   x1 (generate-constraints-internal x0 (get ast :expr) type-env)
+                   body-result-constr {:a (get-in ast '(:body :type)) :b (:type ast)}
+                   expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
+               (concat x1 (list expr-must-be-bool )))
 
-           :null constraints
-           
-           _ constraints
-           )))
+      :null constraints
+      
+      _ constraints
+      )))
 
 ;; This function will generate a list with two kinds of constraints: type-constraints and func-deps
 ;;
@@ -162,10 +162,10 @@
     (if (= () val)
       b
       (if (= b val)
-          val
-          (if (= :string (type val))
-            (lookup substs val) ; keep looking
-            val)) ; found the actual type
+        val
+        (if (= :string (type val))
+          (lookup substs val) ; keep looking
+          val)) ; found the actual type
       )))
 
 ;; Replacement function for replacing "from the right" in an associative map
@@ -178,10 +178,10 @@
   (do
     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
     (match l
-           () ()
-           (x & xs) (if (= x replace-this)
-                      (cons with-this (replace-in-list xs replace-this with-this))
-                      (cons x (replace-in-list xs replace-this with-this))))))
+      () ()
+      (x & xs) (if (= x replace-this)
+                 (cons with-this (replace-in-list xs replace-this with-this))
+                 (cons x (replace-in-list xs replace-this with-this))))))
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do
@@ -201,7 +201,7 @@
                     (maybe-replace-binding k v existing b))
                   (keys substs)
                   (values substs)))))
-  
+
 (defn typevar? (x) (string? x))
 
 (defn types-exactly-eq? (a b)
@@ -272,9 +272,9 @@
 
 (defn solve-list (substs a-list b-list)
   (match (list a-list b-list)
-         (() ()) substs
-         ((a & as) (b & bs)) (solve (solve substs a b) as bs)
-         _ (error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))))
+    (() ()) substs
+    ((a & as) (b & bs)) (solve (solve substs a b) as bs)
+    _ (error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))))
 
 (defn solve (substs a b)
   (if (and (list? a) (list? b))
@@ -317,56 +317,56 @@
 
 (defn assign-types (ast substs)
   (match (:node ast)
-         :function (let [a (assoc ast :type (get-type substs (:type ast)))
-                         b (assoc a :body (assign-types (:body ast) substs))
-                         c (assoc b :args (assign-types-to-list (:args ast) substs))]
-                     c)
+    :function (let [a (assoc ast :type (get-type substs (:type ast)))
+                    b (assoc a :body (assign-types (:body ast) substs))
+                    c (assoc b :args (assign-types-to-list (:args ast) substs))]
+                c)
 
-         :app (let [app-ret-type (get-type substs (:type ast))]
-                (assoc (assoc (assoc ast :type app-ret-type)
-                              :head (assign-types (:head ast) substs))
-                       :tail (map (fn (x) (assign-types x substs)) (:tail ast))))
+    :app (let [app-ret-type (get-type substs (:type ast))]
+           (assoc (assoc (assoc ast :type app-ret-type)
+                         :head (assign-types (:head ast) substs))
+                  :tail (map (fn (x) (assign-types x substs)) (:tail ast))))
 
-         :literal ast
-         
-         :lookup (assoc ast :type (get-type substs (:type ast)))
+    :literal ast
+    
+    :lookup (assoc ast :type (get-type substs (:type ast)))
 
-         :arg (assoc ast :type (get-type substs (:type ast)))
+    :arg (assoc ast :type (get-type substs (:type ast)))
 
-         :ref (let [x0 (assoc ast :type (get-type substs (:type ast)))
-                    x1 (assoc x0 :expr (assign-types (:expr x0) substs))]
-                x1)
+    :ref (let [x0 (assoc ast :type (get-type substs (:type ast)))
+               x1 (assoc x0 :expr (assign-types (:expr x0) substs))]
+           x1)
 
-         :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
-                      x1 (assoc x0 :a (assign-types (:a ast) substs))
-                      x2 (assoc x1 :b (assign-types (:b ast) substs))]
-                  x2)
+    :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
+                 x1 (assoc x0 :a (assign-types (:a ast) substs))
+                 x2 (assoc x1 :b (assign-types (:b ast) substs))]
+             x2)
 
-         :if (let [x0 (assoc ast :type (get-type substs (:type ast)))
-                   x1 (assoc x0 :a (assign-types (:a ast) substs))
-                   x2 (assoc x1 :b (assign-types (:b ast) substs))
-                   x3 (assoc x2 :expr (assign-types (:expr ast) substs))]
-               x3)
+    :if (let [x0 (assoc ast :type (get-type substs (:type ast)))
+              x1 (assoc x0 :a (assign-types (:a ast) substs))
+              x2 (assoc x1 :b (assign-types (:b ast) substs))
+              x3 (assoc x2 :expr (assign-types (:expr ast) substs))]
+          x3)
 
-         :do (let [x0 (assoc ast :forms (map (fn (x) (assign-types x substs)) (:forms ast)))
-                   x1 (assoc x0 :type (get-type substs (:type ast)))]
-               x1)
+    :do (let [x0 (assoc ast :forms (map (fn (x) (assign-types x substs)) (:forms ast)))
+              x1 (assoc x0 :type (get-type substs (:type ast)))]
+          x1)
 
-         :let (let [x0 (assoc ast :bindings (map (fn (b) (assign-types-to-binding b substs)) (:bindings ast)))
-                    x1 (assoc x0 :body (assign-types (:body x0) substs))
-                    x2 (assoc x1 :type (get-type substs (:type ast)))]
-                x2)
-         
-         :while (let [x0 (assoc ast :type (get-type substs (:type ast)))
-                      x1 (assoc x0 :body (assign-types (:body ast) substs))
-                      x2 (assoc x1 :expr (assign-types (:expr ast) substs))]
-               x2)
+    :let (let [x0 (assoc ast :bindings (map (fn (b) (assign-types-to-binding b substs)) (:bindings ast)))
+               x1 (assoc x0 :body (assign-types (:body x0) substs))
+               x2 (assoc x1 :type (get-type substs (:type ast)))]
+           x2)
+    
+    :while (let [x0 (assoc ast :type (get-type substs (:type ast)))
+                 x1 (assoc x0 :body (assign-types (:body ast) substs))
+                 x2 (assoc x1 :expr (assign-types (:expr ast) substs))]
+             x2)
 
-         :null ast
+    :null ast
 
-	 :c-code (assoc ast :type (get-type substs (:type ast)))
+    :c-code (assoc ast :type (get-type substs (:type ast)))
 
-         _ (error (str "Can't assign types to ast node " ast))))
+    _ (error (str "Can't assign types to ast node " ast))))
 
 ;; x1 (assoc-in x0 '(:body :type) (get-type substs (get-in x0 '(:body :type))))
 

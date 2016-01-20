@@ -98,9 +98,9 @@
           ;;_ (println (str "\nnew-vars:\n" new-vars))
 
           new-vars-after-handover (let [result-name (get-maybe (:value binding-ast) :result-name)]
-                                     (if (nil? result-name)
-                                       new-vars
-                                       (remove-var-with-name new-vars result-name)))
+                                    (if (nil? result-name)
+                                      new-vars
+                                      (remove-var-with-name new-vars result-name)))
 
           ;;_ (println (str "\nnew-vars-after-handover:\n" new-vars-after-handover))
 
