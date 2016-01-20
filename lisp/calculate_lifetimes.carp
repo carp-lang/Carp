@@ -30,10 +30,10 @@
 ;; Used for reducing over the args in a function application
 (defn calc-lifetime-for-arg (data parameter-types arg-ast)
   (do
-    ;; (println "CALCARG. data:\n")
-    ;; (println data)
-    ;; (println "arg-ast:\n")
-    ;; (println arg-ast)
+    ;;(println "CALCARG. data:\n")
+    ;;(println (str data "\n"))
+    ;;(println "arg-ast:\n")
+    ;;(println arg-ast)
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
@@ -47,12 +47,20 @@
           new-arg-ast (:ast new-data)
           new-vars (:vars new-data)
 
+          new-vars-eaten-result (let [result-name (get-maybe new-arg-ast :result-name)]
+                                  (if (nil? result-name)
+                                    new-vars
+                                    (remove-var-with-name new-vars result-name)))
+
+          ;;_ (println (str "new-vars:\n" new-vars-eaten-result "\n"))
           ;;_ (println (str "new-arg-ast:\n" new-arg-ast))
           
           new-ast (assoc-in ast (list :tail pos) new-arg-ast)
+
           ;;_ (println (str "pos " pos " AST: " ast " => " new-ast))
+          
           new-app-data {:ast new-ast
-                        :vars new-vars
+                        :vars new-vars-eaten-result
                         :pos (inc pos)}]
       new-app-data)))
 
@@ -166,7 +174,7 @@
                    vars-after (:vars data-after)
                    ret-type (get-in ast '(:head :type 2))
                    vars-after-with-ret-val (if (managed-type? ret-type)
-                                             (cons {:name (:result-name ast) :type ret-type} vars-after)
+                                             (cons {:name (:result-name ast) :type ret-type :doc "app ret val"} vars-after)
                                              vars-after)
                    ast-after (:ast data-after)]
                (do

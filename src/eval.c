@@ -270,8 +270,14 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
 
     Obj *obj_result = NULL;
+
+    // Handle refs:
+    Obj *return_type = function->return_type;
+    if(return_type->tag == 'C' && return_type->car && return_type->cdr && return_type->cdr->car && obj_eq(return_type->car, type_ref)) {
+      return_type = return_type->cdr->car; // the second element of the list
+    }
     
-    if(obj_eq(function->return_type, type_string)) {
+    if(obj_eq(return_type, type_string)) {
       //printf("Returning string.\n");
       char *c = NULL;
       ffi_call(function->cif, function->funptr, &c, values);
@@ -284,31 +290,31 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	obj_result = obj_new_string(c);
       }
     }
-    else if(obj_eq(function->return_type, type_int)) { 
+    else if(obj_eq(return_type, type_int)) { 
       //printf("Returning int.\n");
       int result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_int(result);
     }
-    else if(obj_eq(function->return_type, type_bool)) { 
+    else if(obj_eq(return_type, type_bool)) { 
       //printf("Returning bool.\n");
       int result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = result ? lisp_true : lisp_false;
     }
-    else if(obj_eq(function->return_type, type_float)) { 
+    else if(obj_eq(return_type, type_float)) { 
       //printf("Returning float.\n");
       float result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_float(result);
     }
-    else if(obj_eq(function->return_type, type_void)) { 
+    else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");
       int result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
-    else if(function->return_type->tag == 'C' && obj_eq(function->return_type->car, type_ptr)) {
+    else if(return_type->tag == 'C' && obj_eq(function->return_type->car, type_ptr)) {
       void *result;
       ffi_call(function->cif, function->funptr, &result, values);
       //printf("Creating new void* with value: %p\n", result);

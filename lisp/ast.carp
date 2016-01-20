@@ -92,9 +92,9 @@
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
-     :value expr} ;; change name to name ..?
+     :value expr} ;; change key to :name ..?
     {:node :literal
-     :type (type expr)
+     :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
      :value expr}))
 
 (defn form-to-ast (form)

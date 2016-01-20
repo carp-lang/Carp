@@ -18,6 +18,7 @@
   - Change type of functions from (:arrow ...) to (:fn ...)
 
 # Lisp Core Libs
+  - Show error when registering non-existing C function
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
   - -> and ->>
   - shuffle

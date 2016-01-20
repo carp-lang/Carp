@@ -114,11 +114,10 @@
                       (if (nil? result-name)
                         {:c (prn val)}
                         (do
-                          (str-append! c (str (indent) (type-build (:type form)) " " (:result-name form) " = "
-                                              (if (string? val)
-                                                (str "strdup(" (prn val) ")")
-                                                (prn val))
-                                              ";\n"))
+                          (str-append! c (str (indent)
+                                              (type-build (:type form)) " "
+                                              (:result-name form) " = "
+                                              (prn val) ";\n"))
                           {:c (:result-name form)})))
            
            :lookup (let [val (:value form)]
@@ -231,7 +230,7 @@
         ]
     (do
       ;;(println "visit-function: \n" ast)
-      (let [code (str (name return-type) " " (c-ify-name func-name)
+      (let [code (str (type-build return-type) " " (c-ify-name func-name)
                       "(" (arg-list-build args) ") {\n"
                       c
                       (free-variables (:free ast))
@@ -245,7 +244,7 @@
   (let [t (get ast :type)
         return-type (nth t 2)
         args (get ast :args)]
-    (str (name return-type) " " func-name "(" (arg-list-build args) ");")))
+    (str (type-build return-type) " " func-name "(" (arg-list-build args) ");")))
 
 (defn builder-visit-ast (builder ast func-name)
   (match (get ast :node)

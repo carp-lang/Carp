@@ -54,6 +54,7 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
   Obj *paramp = function->params;
   for(int i = 0; i < arg_count; i++) {
     if(paramp && !paramp->car) {
+      //obj_print_cout(paramp);
       set_error("Too many arguments to function: ", function);
     }
     env_extend(calling_env, paramp->car, args[i]);
