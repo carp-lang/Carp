@@ -4,10 +4,16 @@
    :type (:type a)
    :doc "parameter"})
 
+(defn primitive-type? (t)
+  (contains? '(:int :float :bool) t))
+
+(defn void-type? (t)
+  (= :void t))
+
 (defn managed-type? (t)
   (match t
     (:ref x) false
-    _ (= t :string)))
+    _ (not (or (void-type? t) (primitive-type? t)))))
 
 (defn manage? (descriptor)
   (managed-type? (:type descriptor)))
@@ -40,6 +46,9 @@
           pos (:pos data)
           parameter-type (nth parameter-types pos)
           is-ref (ref? parameter-type)
+
+          ;;_ (println (str "\n " (:arg-name arg-ast) " vars:\n" vars "\n"))
+          
           new-data (if (and (= :literal (:node arg-ast)) (not is-ref))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
                      (calculate-lifetimes-internal {:ast arg-ast
@@ -48,12 +57,15 @@
           new-arg-ast (:ast new-data)
           new-vars (:vars new-data)
 
+          ;;_ (println (str "\nnew-vars:\n" new-vars "\n"))
+
           new-vars-eaten-result (let [result-name (get-maybe new-arg-ast :result-name)]
                                   (if (nil? result-name)
                                     new-vars
                                     (remove-var-with-name new-vars result-name)))
 
-          ;;_ (println (str "new-vars:\n" new-vars-eaten-result "\n"))
+          ;;_ (println (str "\nnew-vars-eaten-result:\n" new-vars-eaten-result "\n"))
+          
           ;;_ (println (str "new-arg-ast:\n" new-arg-ast))
           
           new-ast (assoc-in ast (list :tail pos) new-arg-ast)
@@ -71,21 +83,29 @@
           vars (:vars data)
           pos (:pos data)
           extended-vars (let [t (:type binding-ast)]
-                          (if (managed-type? t)
-                            (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
-                            vars))
+                          (do
+                            ;;(println (str "is " (:name binding-ast) " : " t " a managed type? " (managed-type? t)))
+                            (if (managed-type? t)
+                              (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
+                              vars)))
 
+          ;;_ (println (str "extended-vars: " extended-vars))
+          
           new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
           new-binding-ast (assoc binding-ast :value (:ast new-data))
           new-vars (:vars new-data)
+
+          ;;_ (println (str "\nnew-vars:\n" new-vars))
 
           new-vars-after-handover (let [result-name (get-maybe (:value binding-ast) :result-name)]
                                      (if (nil? result-name)
                                        new-vars
                                        (remove-var-with-name new-vars result-name)))
 
+          ;;_ (println (str "\nnew-vars-after-handover:\n" new-vars-after-handover))
+
           new-ast (assoc-in ast (list :bindings pos) new-binding-ast)
-          ;;_ (println (str "pos " pos " AST: " ast " => " new-ast))
+          ;;_ (println (str "pos " pos " AST: " ast "\n => \n" new-ast))
           
           new-app-data {:ast new-ast
                         :vars new-vars-after-handover
@@ -113,7 +133,7 @@
 
 (defn calculate-lifetimes-internal (data in-ref)
   (do
-    ;;(println (str "CALC:\n" (:node (:ast data))))
+    ;;(println (str "CALC: " (:node (:ast data))))
     (let [ast (:ast data)
           vars (:vars data)]
       (match (:node ast)
@@ -154,7 +174,7 @@
                       vars-after (if in-ref ;;(ref? (:type ast))
                                    vars
                                    (remove-var-with-name vars (str (:value ast))))
-                      ;;_ (when (not (= vars vars-after)) (println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after)))
+                      ;;_ (when (not (= vars vars-after)) (println (str "Lookup ate '" (:value ast) "'."))); Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after)))
                       final-ast {:ast ast
                                  :vars vars-after}
 
@@ -171,7 +191,8 @@
                  {:ast ast1
                   :vars vars-after-right})
 
-        :app (let [tail (:tail ast)
+        :app (let [;;_ (println (str "APP VARS BEFORE\n" vars))
+                   tail (:tail ast)
                    init-data (assoc data :pos 0)
                    parameter-types (get-in ast '(:head :type 1))
                    data-after (reduce (fn (d a) (calc-lifetime-for-arg d parameter-types a)) init-data tail)
@@ -235,13 +256,16 @@
               {:ast ast-after-all
                :vars vars-after-all})
 
-        :let (let [init-data (assoc data :pos 0)
+        :let (let [;;_ (println (str "vars before body:\n" vars))
+
+                   init-data (assoc data :pos 0)
                    data-after-bindings (reduce calc-lifetime-for-let-binding init-data (:bindings ast))
                    ;;_ (println (str "data-after-bindings:\n" data-after-bindings))
 
                    vars-after-bindings (:vars data-after-bindings)                   
                    ast-after-bindings (:ast data-after-bindings)
 
+                   ;;_ (println (str "\nlet vars-after-bindings:\n" vars-after-bindings))
                    ;; _ (println (str "ast:\n" ast))
                    ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
 
@@ -252,13 +276,21 @@
                    vars-after-body (:vars data-after-body)
                    ast-after-body (assoc ast-after-bindings :body (:ast data-after-body))
 
+                   ;;_ (println (str "\nlet vars-after-body:\n" vars-after-body))
                    ;; _ (println (str "ast-after-bindings:\n" ast-after-bindings))
                    ;; _ (println (str "ast-after-body:\n" ast-after-body))
 
-                   new-vars-after-body (remove (fn (v) (contains? vars v)) vars-after-body)
-                   ;;_ (println (str "new-vars-after-body:\n" new-vars-after-body))
+                   ;; only remove the variables that were not already there before entering let form:
+                   vars-after-body-and-return-1 (remove (fn (v) (contains? vars v)) vars-after-body)
+                   ;;_ (println (str "\nlet vars-after-body-and-return-1:\n" vars-after-body-and-return-1))
                    
-                   final-ast (assoc ast-after-body :free new-vars-after-body)
+                   vars-after-body-and-return-2 (let [result-name (get-maybe (:body ast-after-body) :result-name)]
+                                                  (if (nil? result-name)
+                                                    vars-after-body-and-return-1
+                                                    (remove-var-with-name vars-after-body-and-return-1 result-name)))
+                   ;;_ (println (str "\nlet vars-after-body-and-return-2:\n" vars-after-body-and-return-2))
+                   
+                   final-ast (assoc ast-after-body :free vars-after-body-and-return-2)
                    final-vars (let [ast-type (:type ast)]
                                 (if (managed-type? ast-type)
                                   (cons {:name (:result-name ast) :type ast-type :doc "let ret val"} vars)
@@ -279,9 +311,9 @@
                      vars-after-body (:vars data-after-body)
 
                      new-ast-after-body (assoc ast-after-expr :body ast-after-body)
-                     new-vars-after-body (remove (fn (v) (contains? vars v)) vars-after-body)
+                     vars-after-body-and-return (remove (fn (v) (contains? vars v)) vars-after-body)
                      
-                     final-ast (assoc new-ast-after-body :free new-vars-after-body)
+                     final-ast (assoc new-ast-after-body :free vars-after-body-and-return)
                      final-vars vars ;; TODO: return value from while-form?
                      ]
                  {:ast final-ast
