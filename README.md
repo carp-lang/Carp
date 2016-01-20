@@ -91,21 +91,16 @@ Carp borrows its looks from Clojure but the runtime semantics are much closer to
 This compiles to a somewhat noisy (working on it!) C program:
 ```C
 void say_hi(string text) {
-  bool lit_332 = 1;
-  bool while_expr_321 = lit_332;
-  while(while_expr_321) {
-    int strlen_result_324 = strlen(text);
-    int lit_326 = 10;
-    bool if_expr_323 = strlen_result_324 < lit_326;
-    if(if_expr_323) {
-      string lit_329 = strdup("Too short!");
-      println(lit_329);
-      free(lit_329);
+  bool while_expr_601 = 1;
+  while(while_expr_601) {
+    int strlen_result_604 = strlen(text);
+    bool if_expr_603 = strlen_result_604 < 10;
+    if(if_expr_603) {
+      println("Too short!");
     } else {
       println(text);
     }
-    bool lit_332 = 1;
-    while_expr_321 = lit_332;
+    while_expr_601 = 1;
   }
 }
 ```
