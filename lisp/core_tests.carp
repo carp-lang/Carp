@@ -1,4 +1,9 @@
 
+(defn test-catch-error ()
+  (do
+    (assert-eq nil (catch-error ((fn () "no error"))))
+    (assert-eq (catch-error ((fn () (error "error!")))) "error!")))
+
 (defn test-dict-eq ()
   (do
     (let [d1 {:x 10 :y 20}
@@ -359,6 +364,7 @@
     (test-set)
     (test-union)
     (test-intersection)
+    (test-catch-error)
     ))
 
 (run-core-tests)

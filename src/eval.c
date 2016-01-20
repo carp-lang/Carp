@@ -526,6 +526,26 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr, "Too few args to 'ref': ", o);
     eval_internal(env, o->cdr->car);
   }
+  else if(HEAD_EQ("catch-error")) {
+    assert_or_set_error(o->cdr, "Too few args to 'catch-error': ", o);
+    int shadow_stack_size_save = shadow_stack_pos;
+    eval_internal(env, o->cdr->car);
+
+    while(shadow_stack_pos > shadow_stack_size_save) {
+      shadow_stack_pop();
+    }
+    
+    if(error) {      
+      stack_push(error);
+      error = NULL;
+      return;
+    }
+    else {
+      stack_pop();
+      stack_push(nil);
+      return;
+    }
+  }
   else {
     shadow_stack_push(o);
     

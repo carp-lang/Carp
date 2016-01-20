@@ -21,12 +21,12 @@
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
-  - tests for 'intersection'
 
 # Bugs
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
+  - a way of checking for panics
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
