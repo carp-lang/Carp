@@ -672,12 +672,17 @@
 (test-own-25)
 
 
-;; Auto chain bake
 
-(defn f1 () 100)
-(defn f2 () 200)
-(defn f3 () (+ (f1) (f2)))
-(bake f3)
+;; Auto chain bake
+(defn test-auto-chain-bake ()
+  (do
+    (defn f1 () 100)
+    (defn f2 () 200)
+    (defn f3 () (+ (f1) (f2)))
+    (bake f3)
+    (assert-eq (f3) 300)))
+(test-auto-chain-bake)
+
 
 
 ;; GENERICS
