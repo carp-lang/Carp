@@ -1,8 +1,8 @@
 
-(register-builtin "string_array_new" '(:int) '(:ptr :string))
-(register-builtin "string_array_count" '((:ptr :string)) :int)
-(register-builtin "string_array_get" '((:ptr :string) :int) '(:ref :string))
-(register-builtin "string_array_set" '((:ptr :string) :int :string) '(:ptr :string))
+(register-builtin "string_array_new" '(:int) ':string-array)
+(register-builtin "string_array_count" '(:string-array) :int)
+(register-builtin "string_array_get" '(:string-array :int) '(:ref :string))
+(register-builtin "string_array_set" '(:string-array :int :string) ':string-array)
 
 (def s (string-array-new 3))
 (def s1 (string-array-set s 0 "yeah"))

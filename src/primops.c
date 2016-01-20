@@ -1076,9 +1076,10 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
     return &ffi_type_pointer;
   }
   else {
-    error = obj_new_string("Unhandled return type for foreign function: ");
-    obj_string_mut_append(error, obj_to_string(type_obj)->s);
-    return NULL;
+    return &ffi_type_pointer; // Assume it's a user defined type
+    /* error = obj_new_string("Unhandled return type for foreign function: "); */
+    /* obj_string_mut_append(error, obj_to_string(type_obj)->s); */
+    /* return NULL; */
   }
 }
 

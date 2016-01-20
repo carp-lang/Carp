@@ -72,17 +72,19 @@ bool file_existsQMARK(char *filename) {
   return f != NULL;
 }
 
-string *string_array_new(int size) {
-  string *a = calloc(size + 1, sizeof(string));
+typedef string* string_array;
+
+string_array string_array_new(int size) {
+  string_array a = calloc(size + 1, sizeof(string));
   for(int i = 0; i < size; i++) {
     a[i] = strdup("");
   }
   return a;
 }
 
-int string_array_count(string *array) {
+int string_array_count(string_array array) {
   int i = 0;
-  string *p = array;
+  string_array p = array;
   while(*p) {
     i++;
     p++;
@@ -90,11 +92,11 @@ int string_array_count(string *array) {
   return i;
 }
 
-string string_array_get(string *array, int pos) {
+string string_array_get(string_array array, int pos) {
   return array[pos];
 }
 
-string *string_array_set(string *array, int pos, string new_value) {
+string_array string_array_set(string_array array, int pos, string new_value) {
   array[pos] = new_value;
   return array;
 }

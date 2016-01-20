@@ -27,6 +27,7 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
+  - no need to handle (:ptr ...) as a special case?
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 

@@ -52,7 +52,7 @@
            (:arrow _ _) "arrow"
            (:ref r) (type-build r)
            (:ptr p) (str (c-ify-name (name p)) "*")
-           x (name x))))
+           x (c-ify-name (name x)))))
 
 (defn visit-arg-explicit (c arg)
   (let [result (visit-form c arg true)]

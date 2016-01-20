@@ -256,7 +256,8 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  values[i] = &args[i]->void_ptr;
 	}
 	else {
-	  set_error("Can't call foreign function with argument of type ", p->car);
+	  values[i] = &args[i]->void_ptr;
+	  //set_error("Can't call foreign function with argument of type ", p->car);
 	}
 	p = p->cdr;
       }
@@ -283,6 +284,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &c, values);
 
       if(c == NULL) {
+	// TODO: have an error here instead?
 	//printf("c is null");
 	obj_result = obj_new_string("");
       }
@@ -321,7 +323,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
       obj_result = obj_new_ptr(result);
     }
     else {
-      set_error("Returning what? ", function->return_type);
+      //set_error("Returning what? ", function->return_type);
+      // Assume it's a user defined type:
+      void *result;
+      ffi_call(function->cif, function->funptr, &result, values);
+      obj_result = obj_new_ptr(result);
     }
 
     assert(obj_result);
