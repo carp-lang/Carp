@@ -121,7 +121,7 @@
                  ;;_ (println "Extended type env: " extended-type-env)
                  let-constr {:a (:type ast) :b (get-in ast '(:body :type)) :doc "let-constr"}
                  bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding) :b (get-in binding '(:value :type))}
-                                                             value-constrs (generate-constraints-internal constraints (:value binding) type-env)]
+                                                             value-constrs (generate-constraints-internal constraints (:value binding) extended-type-env)]
                                                          (cons bind-constr value-constrs)))
                                          bindings)
                  body-constrs (generate-constraints-internal constraints (:body ast) extended-type-env)]

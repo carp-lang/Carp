@@ -22,9 +22,9 @@
         (println "]"))))
 
 (defn sf1 ()
-  (let [a0 (string-array-new 2)]
-    (let [a1 (string-array-set a0 0 "Hello, ")]
-      (str-append (string-array-get (ref a1) 0) "YEAH"))))
+  (let [a0 (string-array-new 2)
+        a1 (string-array-set a0 0 "Hello, ")]    
+    (str-append (string-array-get (ref a1) 0) "YEAH")))
 
 (defn sf2 ()
   (let [a0 (string-array-new 2)]
@@ -33,11 +33,11 @@
         (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
 
 (defn sf3 ()
-  (let [a0 (string-array-new 2)]
-    (let [a1 (string-array-set a0 0 "Hello, ")]
-      (do (string-array-new 10)
-          (let [a2 (string-array-set a1 1 "world!")]
-            (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1)))))))
+  (let [a0 (string-array-new 2)
+        a1 (string-array-set a0 0 "Hello, ")]
+    (do (string-array-new 10)
+        (let [a2 (string-array-set a1 1 "world!")]
+          (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
 
 (defn test-string-array-1 ()
   (do 
@@ -109,10 +109,10 @@
 
 
 (defn sf7 ()
-  (let [a0 (string-array-new 2)]
-    (let [a1 (string-array-set a0 0 "a")]
-      (let [a2 (string-array-set a0 1 "b")] ;; Referencing a0 again, even though it was given away above!
-        a2))))
+  (let [a0 (string-array-new 2)
+        a1 (string-array-set a0 0 "a")
+        a2 (string-array-set a0 1 "b")] ;; Referencing a0 again, even though it was given away above!
+    a2))
 
 (defn test-string-array-7 ()
   (not (nil? (catch-error (bake sf7)))))
@@ -128,7 +128,15 @@
     (bake string-array-last)
     (let [s0 (string-array-new 10)
           s1 (string-array-set s0 9 "yo")]
-      (do ;;(string-array-print s1)
-          (assert-eq "yo" (string-array-last s1))))
-    ))
+      (do (assert-eq "yo" (string-array-last s1))))))
 (test-string-array-last)
+
+
+
+(defn recursive-let ()
+  (let [;; The other definition order should get caught by compiler, not clang:
+        y "whaaaaaaat"
+        x (str-append "hej" (ref (itos (strlen y))))
+        ]
+    x))
+

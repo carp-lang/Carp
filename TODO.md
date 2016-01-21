@@ -1,5 +1,4 @@
 # Compiler
-  - Handle when a let binding refers to an earlier let binding
   - Compilation of generic functions
   - Compiling arrays
   - Avoid problems with name shadowing when freeing a local variable
@@ -15,6 +14,7 @@
   - Clean up unifier even more
   - Option for turning off lifetime checker
   - Change type of functions from (:arrow ...) to (:fn ...)
+  - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
