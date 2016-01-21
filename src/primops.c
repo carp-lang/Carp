@@ -651,7 +651,10 @@ bool is_callable(Obj *obj) {
 
 Obj *p_map(Obj** args, int arg_count) {
   //printf("map start\n");
-  if(arg_count != 2) { printf("Wrong argument count to 'map'\n"); return nil; }
+  if(arg_count != 2) {
+    error = obj_new_string("Wrong argument count to 'map'.");
+    return nil;
+  }
   if(!is_callable(args[0])) { printf("'map' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
   if(args[1]->tag != 'C') { printf("'map' requires arg 1 to be a list\n"); return nil; }
   Obj *f = args[0];

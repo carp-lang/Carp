@@ -1,70 +1,73 @@
 ;; These names are used for temp variables when emitting the C-code.
 
-(def name-counter 0)
+(defn gen-var-name (var-name-counters base-name)
+  (let [maybe-counter (get-maybe var-name-counters base-name)]
+    (do (when (nil? maybe-counter)
+          (dict-set! var-name-counters base-name 0))
+        (let [counter (get var-name-counters base-name)]
+          (do (dict-set! var-name-counters base-name (inc counter))
+              (str "_" base-name "_" counter))))))  
 
-(defn gen-name ()
-  (do (swap! name-counter inc)
-      (str "" name-counter)))
-
-(defn generate-names (ast)
+(defn generate-names (var-name-counters ast)
   (do
     ;;(println (str "\ngenerate-names:\n" (:node ast)))
     (match (:node ast)
 
-      :function (let [ast1 (assoc ast :body (generate-names (:body ast)))]
-                  ast1)
+      :function (let [ast1 (assoc ast :body (generate-names var-name-counters (:body ast)))
+                      ast2 (assoc ast1 :result-name (gen-var-name var-name-counters "final_result"))]
+                  ast2)
       
-      :if (let [if-result-name (str "if_result_" (gen-name))
-                if-expr-name (str "if_expr_" (gen-name))
+      :if (let [if-result-name (gen-var-name var-name-counters "if_result")
+                if-expr-name (gen-var-name var-name-counters "expr")
                 ast1 (assoc ast :result-name if-result-name)
                 ast2 (assoc ast1 :if-expr-name if-expr-name)
-                ast3 (assoc ast2 :expr (generate-names (:expr ast)))
-                ast4 (assoc ast3 :a (generate-names (:a ast)))
-                ast5 (assoc ast4 :b (generate-names (:b ast)))]
+                ast3 (assoc ast2 :expr (generate-names var-name-counters (:expr ast)))
+                ast4 (assoc ast3 :a (generate-names var-name-counters (:a ast)))
+                ast5 (assoc ast4 :b (generate-names var-name-counters (:b ast)))]
             ast5)
 
-      :while (let [while-expr-name (str "while_expr_" (gen-name))
+      :while (let [while-expr-name (gen-var-name var-name-counters "expr")
                    ast1 (assoc ast :while-expr-name while-expr-name)
-                   ast2 (assoc ast1 :body (generate-names (:body ast)))
-                   ast3 (assoc ast2 :expr (generate-names (:expr ast)))]
+                   ast2 (assoc ast1 :body (generate-names var-name-counters (:body ast)))
+                   ast3 (assoc ast2 :expr (generate-names var-name-counters (:expr ast)))]
                ast3)
       
-      :let (let [let-result-name (str "let_result_" (gen-name))
-                 ast1 (assoc ast :bindings (map generate-names (:bindings ast)))
-                 ast2 (assoc ast1 :body (generate-names (:body ast)))
+      :let (let [let-result-name (gen-var-name var-name-counters "let_result")
+                 ast1 (assoc ast :bindings (map (fn (x) (generate-names var-name-counters x)) (:bindings ast)))
+                 ast2 (assoc ast1 :body (generate-names var-name-counters (:body ast)))
                  ast3 (assoc ast2 :result-name let-result-name)]
              ast3)
       
-      :binding (let [named-value (generate-names (:value ast))]
+      :binding (let [named-value (generate-names var-name-counters (:value ast))]
                  (assoc ast :value named-value))
       
       :app (let [head (:head ast)
                  func-name (:value head)
                  c-func-name (c-ify-name (str func-name))
-                 app-result-name (str c-func-name "_result_" (gen-name))
+                 app-result-name (gen-var-name var-name-counters (str "result"))
 
                  args (:tail ast)
-                 arg-names (repeatedly (fn () (str "arg_" (gen-name))) (count args))
+                 arg-names (repeatedly (fn () (gen-var-name var-name-counters "arg")) (count args))
                  
-                 ast1 (assoc ast :head (generate-names (:head ast)))
-                 ast2 (assoc ast1 :tail (map (fn (node) (generate-names node)) (:tail ast1)))
+                 ast1 (assoc ast :head (generate-names var-name-counters (:head ast)))
+                 ast2 (assoc ast1 :tail (map (fn (node) (generate-names var-name-counters node)) (:tail ast1)))
                  ast3 (assoc ast2 :result-name app-result-name)
                  
                  ast4 (assoc ast3 :tail (map2 (fn (arg arg-name) (assoc arg :arg-name arg-name)) (:tail ast3) arg-names))
                  ]
              ast4)
 
-      :binop (let [ast1 (assoc ast :a (generate-names (:a ast)))
-                   ast2 (assoc ast1 :b (generate-names (:b ast)))]
+      :binop (let [ast1 (assoc ast  :a (generate-names var-name-counters (:a ast)))
+                   ast2 (assoc ast1 :b (generate-names var-name-counters (:b ast)))]
                ast2)
       
-      :do (let [named-forms (map generate-names (:forms ast))
+      :do (let [named-forms (map (fn (x) (generate-names var-name-counters x)) (:forms ast))
                 ast1 (assoc ast :forms named-forms)]
             ast1)
       
-      :literal (assoc ast :result-name (str "lit_" (gen-name)))
+      :literal (assoc ast :result-name (gen-var-name var-name-counters "lit"))
 
-      :ref (let [named-expr (generate-names (:expr ast))
+      :ref (let [named-expr (generate-names var-name-counters (:expr ast))
                  ast1 (assoc ast :expr named-expr)
                  ;;ast2 (assoc ast1 :result-name (str "ref_" (gen-name)))
                  ]

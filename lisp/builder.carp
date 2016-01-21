@@ -231,7 +231,7 @@
         body (get ast :body)
         c (copy "") ;; mutable string holding the resulting C code for the function
         result (visit-form c body true)
-        result-var-name (str (c-ify-name func-name) "_result_" (gen-name))
+        result-var-name (:result-name ast)
         ret-type (get-in ast '(:type 2))
         ]
     (do

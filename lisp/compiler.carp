@@ -20,7 +20,7 @@
 
 (defn annotate-ast (ast)
   (let [ast-typed (infer-types ast)
-        ast-named (generate-names ast-typed)
+        ast-named (generate-names (copy {}) ast-typed)
         ast-lifetimes (calculate-lifetimes ast-named)]
     ast-lifetimes))
 
