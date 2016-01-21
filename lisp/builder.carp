@@ -127,15 +127,15 @@
                       result (visit-form c expr toplevel)]
                   result)
 
-           :if (let [if-expr (visit-form c (get form :expr) true)
-                     n (get form :result-name)
-                     ifexpr (get form :if-expr-name)]
-                 (do (str-append! c (str (indent) (type-build (get-in form '(:expr :type))) " " ifexpr " = " (get if-expr :c) ";\n"))
-                     (if (= :void (:type form))
+           :if (let [n (get form :result-name)
+                     if-expr (visit-form c (get form :expr) true)]
+                 (do (if (= :void (:type form))
                        () ;; no result variable needed
                        (str-append! c (str (indent) (type-build (:type form)) " " n ";\n")))
                      
-                     (str-append! c (str (indent) "if(" ifexpr ")"))
+                     (str-append! c (str (indent) "if("))
+                     (str-append! c (:c if-expr))
+                     (str-append! c (str ")"))
                      
                      ;; true-block begins
                      (str-append! c " {\n")

@@ -18,13 +18,11 @@
                   ast2)
       
       :if (let [if-result-name (gen-var-name var-name-counters "if_result")
-                if-expr-name (gen-var-name var-name-counters "expr")
                 ast1 (assoc ast :result-name if-result-name)
-                ast2 (assoc ast1 :if-expr-name if-expr-name)
-                ast3 (assoc ast2 :expr (generate-names var-name-counters (:expr ast)))
-                ast4 (assoc ast3 :a (generate-names var-name-counters (:a ast)))
-                ast5 (assoc ast4 :b (generate-names var-name-counters (:b ast)))]
-            ast5)
+                ast2 (assoc ast1 :expr (generate-names var-name-counters (:expr ast)))
+                ast3 (assoc ast2 :a (generate-names var-name-counters (:a ast)))
+                ast4 (assoc ast3 :b (generate-names var-name-counters (:b ast)))]
+            ast4)
 
       :while (let [while-expr-name (gen-var-name var-name-counters "expr")
                    ast1 (assoc ast :while-expr-name while-expr-name)
