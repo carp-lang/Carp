@@ -105,4 +105,7 @@ string_array string_array_set(string_array array, int pos, string new_value) {
   return array;
 }
 
+int inc(x) { return x + 1; }
+int dec(x) { return x - 1; }
+
 #endif

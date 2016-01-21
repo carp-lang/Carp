@@ -55,6 +55,16 @@ Obj *stack_pop() {
   return o;
 }
 
+void shadow_stack_print() {
+  printf("----- SHADOW STACK -----\n");
+  for(int i = 0; i < stack_pos - 1; i++) {
+    printf("%d\t", i);
+    obj_print_cout(shadow_stack[i]);
+    printf("\n");
+  }
+  printf("-----  END  -----\n\n");
+}
+
 void shadow_stack_push(Obj *o) {
   if(LOG_SHADOW_STACK) {
     printf("Pushing to shadow stack: %p ", o);
@@ -63,6 +73,7 @@ void shadow_stack_push(Obj *o) {
   }
   if(shadow_stack_pos >= STACK_SIZE) {
     printf("Shadow stack overflow.");
+    shadow_stack_print();
     exit(1);
   }
   shadow_stack[shadow_stack_pos++] = o;
@@ -80,16 +91,6 @@ Obj *shadow_stack_pop() {
     printf("\n");
   }
   return o;
-}
-
-void shadow_stack_print() {
-  printf("----- SHADOW STACK -----\n");
-  for(int i = 0; i < stack_pos - 1; i++) {
-    printf("%d\t", i);
-    obj_print_cout(shadow_stack[i]);
-    printf("\n");
-  }
-  printf("-----  END  -----\n\n");
 }
 
 void function_trace_print() {

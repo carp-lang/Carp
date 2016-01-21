@@ -71,6 +71,9 @@
                  ]
              ast1)
 
+      :reset (let [named-expr (generate-names var-name-counters (:expr ast))]
+               (assoc ast :expr named-expr))
+
       :lookup ast
 
       :null ast

@@ -14,11 +14,14 @@
         i 0]
     (do (print "[")
         (while (< i count)
-          (do (print "\"")
-              (print (string-array-get a i))
-              (print "\"")
-              (when (not (= i (dec count))) (print " "))
-              (reset! i (inc i))))
+           (do (print "'")
+               (print (string-array-get a i))
+               (print "'")
+               (if (not (= i (dec count)))
+                 (print " ")
+                 (print ""))
+               (reset! i (inc i))
+               ))
         (println "]"))))
 
 (defn sf1 ()
@@ -144,4 +147,8 @@
 
 
 
+(defn double-var-error (i j)
+  (not (= i (inc j))))
 
+(defn double-var-error-2 (j)
+  (not (not j)))

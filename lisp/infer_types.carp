@@ -79,6 +79,14 @@
                  expr-constr {:a inner-type :b (:type expr) :doc "ref-constr"}]
              (cons expr-constr x0))
 
+      :reset (let [expr (:expr ast)
+                   symbol (:symbol ast)
+                   x0 (generate-constraints-internal constraints expr type-env)
+                   expr-constr {:a (get-type-of-symbol type-env symbol)
+                                :b (:type expr)
+                                :doc "reset!-constr"}]
+             (cons expr-constr x0))
+
       :lookup (let [val (:value ast)]
                 (cons {:a (get ast :type)
                        :b (get-type-of-symbol type-env val)
@@ -336,6 +344,9 @@
     :ref (let [x0 (assoc ast :type (get-type substs (:type ast)))
                x1 (assoc x0 :expr (assign-types (:expr x0) substs))]
            x1)
+
+    :reset (let [x0 (assoc ast :expr (assign-types (:expr ast) substs))]
+             x0)
 
     :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
                  x1 (assoc x0 :a (assign-types (:a ast) substs))

@@ -86,9 +86,6 @@
       :lookup (do ;;(println (str "Arg " arg-name " is lookup."))
                   {:c (c-ify-name (str (:value arg)))})
 
-      :binop (do ;;(println (str "Arg " arg-name " is binop."))
-                 (visit-form c arg true))
-
       :literal (do ;;(println (str "Arg " arg-name " is literal."))
                    {:c (prn (:value arg))})
 
@@ -137,6 +134,12 @@
            :ref (let [expr (:expr form)
                       result (visit-form c expr toplevel)]
                   result)
+
+           :reset (let [expr (:expr form)
+                        symbol (:symbol form)
+                        result (visit-form c expr toplevel)]
+                    (do (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
+                        {:c ""}))
 
            :if (let [n (get form :result-name)
                      if-expr (visit-form c (get form :expr) true)]

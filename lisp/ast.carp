@@ -88,6 +88,14 @@
    :type (list :ref (gen-typevar))
    :expr (form-to-ast expr)})
 
+(defn reset-to-ast (symbol expr)
+  (if (symbol? symbol)
+    {:node :reset
+     :type :void
+     :symbol symbol
+     :expr (form-to-ast expr)}
+    (error (str "Non-symbol '" symbol "' found in reset! form."))))
+
 (defn literal-or-lookup-to-ast (expr)
   (if (symbol? expr)
     {:node :lookup
@@ -112,6 +120,9 @@
 
     ('ref expr) (ref-to-ast expr)
     ('ref & _) (error (str "'ref' needs exactly one inner form, an expression. Compiler got:\n" form))
+
+    ('reset! symbol expr) (reset-to-ast symbol expr)
+    ('reset! & _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
     
     ('include-c-code s) {:node :c-code :code s :type (gen-typevar)}
     'NULL {:node :null :type (gen-typevar)}

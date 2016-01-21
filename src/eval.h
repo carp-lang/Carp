@@ -5,7 +5,7 @@
 
 #define LOG_GC_POINTS 0
 
-#define STACK_SIZE 512
+#define STACK_SIZE 1024
 Obj *stack[STACK_SIZE];
 int stack_pos;
 
