@@ -118,24 +118,24 @@ The 'manage-me' variable is the return value in the second branch, but should ge
 The output is a somewhat noisy (working on it!) C program:
 ```C
 string say_what(string text) {
-  string let_result_601;
+  string _let_result_0;
   {
-    string string_copy_result_602 = string_copy(text);
-    string manage_me = string_copy_result_602;
-    int strlen_result_606 = strlen(text);
-    bool if_expr_605 = strlen_result_606 < 10;
-    string if_result_604;
-    if(if_expr_605) {
-      string string_copy_result_609 = string_copy("Too short");
+    string _result_0 = string_copy(text);
+    string manage_me = _result_0;
+    int _result_1 = strlen(text);
+    bool _expr_0 = _result_1 < 10;
+    string _if_result_0;
+    if(_expr_0) {
+      string _result_2 = string_copy("Too short");
       free(manage_me);
-      if_result_604 = string_copy_result_609;
+      _if_result_0 = _result_2;
     } else {
-      if_result_604 = manage_me;
+      _if_result_0 = manage_me;
     }
-    let_result_601 = if_result_604;
+    _let_result_0 = _if_result_0;
   }
-  string say_what_result_612 = let_result_601;
-  return say_what_result_612;
+  string _final_result_0 = _let_result_0;
+  return _final_result_0;
 }
 ```
 
