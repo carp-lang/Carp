@@ -14,7 +14,9 @@
         i 0]
     (do (print "[")
         (while (< i count)
-          (do (print (string-array-get a i))
+          (do (print "\"")
+              (print (string-array-get a i))
+              (print "\"")
               (when (not (= i (dec count))) (print " "))
               (reset! i (inc i))))
         (println "]"))))
@@ -106,6 +108,15 @@
 (test-string-array-6)
 
 
+(defn sf7 ()
+  (let [a0 (string-array-new 2)]
+    (let [a1 (string-array-set a0 0 "a")]
+      (let [a2 (string-array-set a0 1 "b")] ;; Referencing a0 again, even though it was given away above!
+        a2))))
+
+(defn test-string-array-7 ()
+  (not (nil? (catch-error (bake sf7)))))
+(test-string-array-7)
 
 
 (defn string-array-last (xs)

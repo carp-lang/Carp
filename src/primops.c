@@ -882,6 +882,9 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'Q') {
     return type_ptr;
   }
+  else if(args[0]->tag == 'M') {
+    return type_macro;
+  }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
     //error = obj_new_string("Unknown type.");

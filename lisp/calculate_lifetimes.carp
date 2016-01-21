@@ -176,21 +176,22 @@
                 :vars (:vars data-after)})
 
         :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast))
-                      vars-after (if in-ref ;;(ref? (:type ast))
-                                   vars
-                                   (remove-var-with-name vars (str (:value ast))))
-                      
-                      ;; _ (when (not (= vars vars-after))
-                      ;;     (do (println (str "\nLookup ate '" (:value ast) "':\n" ast))
-                      ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
-                      ;;         ))
-                      
-                      final-ast {:ast ast
-                                 :vars vars-after}
-
-                      ;;_ (println (str "final-ast:\n" final-ast))
-                      ]
-                  final-ast)
+                      var-name (str (:value ast))
+                      given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
+                  (if (and (managed-type? (:type ast)) given-away)
+                    (error (str "The variable '" var-name "' has already been given away to another function, it can't be used here."))
+                    (let [vars-after (if in-ref
+                                       vars
+                                       (remove-var-with-name vars var-name))
+                          ;; _ (when (not (= vars vars-after))
+                          ;;     (do (println (str "\nLookup ate '" (:value ast) "':\n" ast))
+                          ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
+                          ;;         ))
+                          final-ast {:ast ast
+                                     :vars vars-after}
+                          ;;_ (println (str "final-ast:\n" final-ast))
+                          ]
+                      final-ast)))
 
         :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :vars vars} in-ref)
                      vars-after-left (:vars left)

@@ -132,4 +132,4 @@
                               :type (gen-arrowtype (count args))
                               :args (arg-list-to-ast args)
                               :body (body-to-ast body)}
-             _ :failed-to-match-lambda-form)))
+             _ (error (str "Failed to match lambda form: " form)))))

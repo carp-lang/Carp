@@ -2,7 +2,6 @@
   - Handle when a let binding refers to an earlier let binding
   - Compilation of generic functions
   - Compiling arrays
-  - Prevent uses of a variable when it has been sent to another function
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Track dependencies between functions
