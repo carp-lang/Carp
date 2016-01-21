@@ -212,9 +212,6 @@
 (defn run-ownership-tests ()
   (do 
 
-    (register-builtin "eat_string" '(:string) :void)
-    (register-builtin "string_copy" '((:ref :string)) :string)
-
     (defn own-string-1 ()
       (strlen (ref (string-copy "hej"))))
 
