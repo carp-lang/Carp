@@ -53,17 +53,27 @@
                                   (list {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
                                   (if (is-self-recursive? type-env app-f-name)
                                     () ;; no constraints needed when the function is calling itself
-                                    (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
-                                        (let [non-baked (eval (read app-f-name))
-                                              ;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
-                                              exe false]
-                                          (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
-                                        (when log-chaining (println (str "Baking done, will resume job.")))
-                                        (let [sym-for-baked-func (read app-f-name)]
-                                          (list {:a (get-in ast '(:head :type))
-                                                 :b (signature (eval sym-for-baked-func))
-                                                 :doc "freshly baked func-app"}
-                                                {:func-dep sym-for-baked-func}))))))
+                                    (let [non-baked (eval (read app-f-name))]
+                                      (if (macro? non-baked)
+                                        (do (error (str "Found macro: " non-baked))
+                                            ;; (let [macro-forms (code non-baked)
+                                            ;;       m (eval (list 'fn (nth macro-forms 1) (nth macro-forms 2)))
+                                            ;;       _ (println (str "m: " m ", type: " (type m)))
+                                            ;;       called-macro (apply m '(true 10 20))
+                                            ;;       ;;expanded-macro (form-to-ast (code called-macro))
+                                            ;;       ]
+                                            ;;   (println (str "Expanded:\n" called-macro "\n\n")))
+                                            '())
+                                        (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
+                                            (let [;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
+                                                  exe false]
+                                              (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
+                                            (when log-chaining (println (str "Baking done, will resume job.")))
+                                            (let [sym-for-baked-func (read app-f-name)]
+                                              (list {:a (get-in ast '(:head :type))
+                                                     :b (signature (eval sym-for-baked-func))
+                                                     :doc "freshly baked func-app"}
+                                                    {:func-dep sym-for-baked-func}))))))))
                  tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
                  new-constraints (concat tail-constrs func-constrs (cons ret-constr arg-constrs))]

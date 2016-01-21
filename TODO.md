@@ -12,6 +12,8 @@
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Clean up unifier even more
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
+  - :result-name not needed in literals
+  - add proper no-op :node for ()
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
@@ -24,6 +26,8 @@
   
 # Dynamic Runtime
   - no need to handle (:ptr ...) as a special case?
+  - nil matches anything in a match statement?!
+  - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 

@@ -44,11 +44,26 @@
                             :type :bool
                             :op '==
                             :a (form-to-ast left)
-                            :b (form-to-ast right)} 
-           _ {:node :app
-              :type (gen-typevar)
-              :head (assoc (form-to-ast (first l)) :type (gen-fn-type (count (rest l))))
-              :tail (map form-to-ast (rest l))})))
+                            :b (form-to-ast right)}
+           (x & xs) (if (and (symbol? x) (macro? (eval x)))
+                      (expand-macro l)
+                      {:node :app
+                       :type (gen-typevar)
+                       :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
+                       :tail (map form-to-ast xs)})
+           nil {:node :literal :type :any :value ""})))
+
+(defn expand-macro (form)
+  (do ;;(println (str "expand:\n" form))
+      (let [macro (code (eval (first form)))
+            m (eval (list 'fn (nth macro 1) (nth macro 2))) ;; convert macro to lambda... this is a strange way to do it
+            ;;_ (println (str "m: " m ", type: " (type m)))
+            called-macro (apply m (rest form))
+            ;;called-macro-forms (eval called-macro)
+            expanded-ast (form-to-ast called-macro)
+            ]
+        ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
+        expanded-ast)))
 
 (defn if-to-ast (expr a b)
   {:node :if
@@ -107,6 +122,7 @@
 
 (defn form-to-ast (form)
   (match form
+    
     ('if expr a b) (if-to-ast expr a b)
     ('if & _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
 
@@ -130,7 +146,8 @@
     'false {:node :literal :type :bool :value 0}
     x (if (= :list (type x))
         (list-to-ast x)
-        (literal-or-lookup-to-ast x))))
+        (literal-or-lookup-to-ast x))
+    ))
 
 (defn body-to-ast (body)
   (form-to-ast body))

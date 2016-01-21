@@ -17,12 +17,12 @@
            (do (print "'")
                (print (string-array-get a i))
                (print "'")
-               (if (not (= i (dec count)))
-                 (print " ")
-                 (print ""))
+               (when (not (= i (dec count)))
+                 (print " "))
                (reset! i (inc i))
                ))
         (println "]"))))
+(bake string-array-print)
 
 (defn sf1 ()
   (let [a0 (string-array-new 2)
@@ -143,5 +143,18 @@
     x))
 (bake recursive-let)
 
+(defn fill-array [a pos value]
+  (let [count (string-array-count (ref a))]
+    (if (< pos count)
+      (fill-array (string-array-set a pos value) (+ pos 1) value)
+      a)))
 
+(defn fill-array-2 [a pos value]
+  (if (< pos (string-array-count (ref a)))
+    (let [b (fill-array (string-array-set a pos value) (+ pos 1) value)]
+      b)
+    a))
+
+(defn string-array-new-init (n init)
+  (fill-array (string-array-new n) 0 init))
 

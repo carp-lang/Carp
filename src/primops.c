@@ -828,10 +828,12 @@ Obj *p_apply(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("'apply' takes two arguments.\n"); return nil; }
   if(args[0]->tag != 'P' && args[0]->tag != 'L') {
     printf("'apply' requires arg 0 to be a function or lambda: %s (%c)\n", obj_to_string(args[0])->s, args[0]->tag);
+    error = obj_new_string("");
     return nil;
   }
   if(args[1]->tag != 'C') {
     printf("'apply' requires arg 1 to be a list: %s (%c)\n", obj_to_string(args[0])->s, args[0]->tag);
+    error = obj_new_string("");
     return nil;
   }
   Obj *p = args[1];

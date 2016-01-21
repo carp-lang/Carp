@@ -1,4 +1,17 @@
 
+;; COMPILE TIME MACROS
+
+(defn macro-1 ()
+  (if-not true
+    10
+    20))
+(defn test-macro-1 ()
+  (do (bake macro-1)
+      (assert-eq (macro-1) 20)))
+(test-macro-1)
+
+
+
 ;; CONSTRAINTS
 
 (defn test-replace-in-list ()
