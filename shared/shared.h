@@ -16,6 +16,10 @@ typedef char* string;
 int intsqrt(int x) { return sqrt(x); }
 float itof(int x) { return (float)x; }
 
+int max(int x, int y) {
+  return x > y ? x : y;
+}
+
 string itos(int x) {
   char *s = malloc(sizeof(char) * 32);
   snprintf(s, 32, "%d", x);

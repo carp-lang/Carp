@@ -43,7 +43,7 @@
   (do 
     (bake sf1)
     (assert-eq "Hello, YEAH" (sf1))))
-(test-string-array-1)
+;;(test-string-array-1)
 
 (defn test-string-array-2 ()
   (do
@@ -139,4 +139,9 @@
         x (str-append "hej" (ref (itos (strlen y))))
         ]
     x))
+
+
+
+
+
 

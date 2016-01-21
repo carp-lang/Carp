@@ -73,20 +73,32 @@
 (defn inlined-lookup? (ast)
   (= :lookup (:node ast)))
 
+(defn inlined-binop? (ast)
+  (= :binop (:node ast)))
+
 ;; New version of visit arg that generates slimmer code (no intermediate arg variables)
 (defn visit-arg-slim (c arg)
-  (do
-    ;(println (str "visit-arg-slim:\n" arg))
-    (if (inlined-lookup? arg) 
-      {:c (c-ify-name (str (:value arg)))}
-      (if (inlined-literal? arg)
-        {:c (prn (:value arg))}
-        (let [result (visit-form c arg true)
-              result-name (get-maybe arg :result-name)]
+  (let [arg-name (:arg-name arg)
+        arg-type (:type arg)
+        result (visit-form c arg true)]
+    (match (:node arg)
+
+      :lookup (do ;;(println (str "Arg " arg-name " is lookup."))
+                  {:c (c-ify-name (str (:value arg)))})
+
+      :binop (do ;;(println (str "Arg " arg-name " is binop."))
+                 (visit-form c arg true))
+
+      :literal (do ;;(println (str "Arg " arg-name " is literal."))
+                   {:c (prn (:value arg))})
+
+      _ (let [result-name (get-maybe arg :result-name)]
           (if (nil? result-name)
-            (do (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))
+            (do (str-append! c (str (indent) (type-build arg-type) " " arg-name " = " (:c result) ";\n"))
                 {:c (:arg-name arg)})
-            {:c result-name}))))))
+            {:c result-name}))
+
+      )))
 
 (defn visit-args-slim (c args)
   (let []
@@ -94,8 +106,7 @@
       ;(println (str "visit args slim:\n" args))
       (map (fn (arg) (visit-arg-slim c arg)) args))))
 
-(defn visit-bindings (c bindings)
-  ;;(println bindings)
+(defn visit-let-bindings (c bindings)
   (map (fn (b) (let [value-result (visit-form c (:value b) false)]
                  (str-append! c (str (indent) (type-build (:type b)) " " (c-ify-name (str (:name b))) " = " (:c value-result) ";\n"))))
        bindings))
@@ -164,16 +175,18 @@
                       func-name (get head :value)
                       c-func-name (c-ify-name (str func-name))
                       n (:result-name form)
+                      ;;_ (println (str "c before call to " func-name ":\n" c))
                       arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c (get form :tail))
+                      ;;_ (println (str "c after call to " func-name ":\n" c))
                       arg-vars (map :c arg-results)
                       t (:type form)]
-                  (do (if (= :void t)
-                        (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
-                            {:c n})
-                        (if false ;; not done here...
-                          {:c (str c-func-name "(" (join ", " arg-vars) ")")}
-                          (do (str-append! c (str (indent) (type-build t) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n"))
-                              {:c n})))))
+                  (if (= :void t)
+                    (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
+                        {:c n})
+                    ;;{:c (str c-func-name "(" (join ", " arg-vars) ")")}
+                    (do (str-append! c (str (indent) (type-build t) " " n " = " c-func-name "(" (join ", " arg-vars) ");\n"))
+                        {:c n})
+                    ))
 
            :do (let [forms (:forms form)
                      ;_ (println (str "forms:\n" forms))
@@ -187,7 +200,7 @@
                       (str-append! c (str (indent) "{\n"))
                       (indent-in!)
                       (let [body (:body form)
-                            _ (visit-bindings c (:bindings form))
+                            _ (visit-let-bindings c (:bindings form))
                             result (visit-form c body false)]
                         (do (str-append! c (free-variables (:free form)))
                             (if (= :void (:type form))

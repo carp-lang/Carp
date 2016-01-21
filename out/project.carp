@@ -1,3 +1,4 @@
 ;;(println (str "dev = " carp-dev))
 (when (not carp-dev)
-  (load-lisp (str carp-dir "lisp/string_array.carp")))
+  (do (load-lisp (str carp-dir "lisp/string_array.carp"))
+      (load-lisp (str carp-dir "lisp/glfw_test.carp"))))

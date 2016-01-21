@@ -68,3 +68,11 @@
 
 ;;(bake-gl-exe)
 ;;(bake* gl-demo '(draw-rect))
+
+
+
+
+(defn tiny ()
+  (max (+ 2 3) (* 7 2)))
+
+

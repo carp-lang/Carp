@@ -177,6 +177,7 @@
 
 (register-builtin "srand" '(:int) :void)
 (register-builtin "rand" '() :int)
+(register-builtin "max" '(:int :int) :int)
 (register-builtin "sinf" '(:float) :float)
 (register-builtin "cosf" '(:float) :float)
 (register-builtin "sqrtf" '(:float) :float)
