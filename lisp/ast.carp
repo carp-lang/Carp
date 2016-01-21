@@ -58,9 +58,10 @@
       (let [macro (code (eval (first form)))
             m (eval (list 'fn (nth macro 1) (nth macro 2))) ;; convert macro to lambda... this is a strange way to do it
             ;;_ (println (str "m: " m ", type: " (type m)))
-            called-macro (apply m (rest form))
+            called-macro (apply m (map eval (rest form)))
             ;;called-macro-forms (eval called-macro)
             expanded-ast (form-to-ast called-macro)
+            ;;_ (println (str "expanded-ast: " expanded-ast))
             ]
         ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
         expanded-ast)))
