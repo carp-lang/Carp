@@ -754,7 +754,7 @@ Obj *p_signature(Obj** args, int arg_count) {
   if(args[0]->tag != 'F') { error = obj_new_string("'signature' requires arg 0 to be a foreign function."); return nil; }
   Obj *a = obj_copy(args[0]->arg_types);
   Obj *b = args[0]->return_type;
-  Obj *sig = obj_list(obj_new_keyword("arrow"), a, b);
+  Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
   return sig;
 }
 

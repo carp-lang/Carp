@@ -7,7 +7,7 @@
 ;; Anatomy of a type
 ;; Before the type is known it is set to a typevar which is a string of the form "t0", "t1", etc
 ;; Types can be just a keyword like :int / :string
-;; Complex types are lists, like the :arrow type (:arrow (:int :int) :string) which corresponds to (Int, Int) -> String
+;; Complex types are lists, like the :fn type (:fn (:int :int) :string) which corresponds to (Int, Int) -> String
 
 (def typevar-counter 0)
 
@@ -28,8 +28,8 @@
          (x & _) (contains? '(+ - * / <) x)
          _ false))
 
-(defn gen-arrowtype (arg-count)
-  (list :arrow (repeatedly gen-typevar arg-count) (gen-typevar)))
+(defn gen-fn-type (arg-count)
+  (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
 (defn list-to-ast (l)
   (if (binop? l)
@@ -47,7 +47,7 @@
                             :b (form-to-ast right)} 
            _ {:node :app
               :type (gen-typevar)
-              :head (assoc (form-to-ast (first l)) :type (gen-arrowtype (count (rest l))))
+              :head (assoc (form-to-ast (first l)) :type (gen-fn-type (count (rest l))))
               :tail (map form-to-ast (rest l))})))
 
 (defn if-to-ast (expr a b)
@@ -129,7 +129,7 @@
   (do (assert-eq :list (type form))
       (match form
              ('fn args body) {:node :function
-                              :type (gen-arrowtype (count args))
+                              :type (gen-fn-type (count args))
                               :args (arg-list-to-ast args)
                               :body (body-to-ast body)}
              _ (error (str "Failed to match lambda form: " form)))))

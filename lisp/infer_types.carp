@@ -36,7 +36,7 @@
                                               (assoc extended-type-env fn-name :self)
                                               extended-type-env))
                       new-constraints (generate-constraints-internal constraints (:body ast) extended-type-env-2)
-                      func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the arrow type
+                      func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the fn type
                                        :b (get-in ast '(:body :type))
                                        :doc (str "func-ret-constr")}
                       func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})

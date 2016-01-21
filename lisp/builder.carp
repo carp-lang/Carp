@@ -49,7 +49,7 @@
     "typevar"
     (match t
            :? "unknown"
-           (:arrow _ _) "arrow"
+           (:fn _ _) "fn"
            (:ref r) (type-build r)
            (:ptr p) (str (c-ify-name (name p)) "*")
            x (c-ify-name (name x)))))

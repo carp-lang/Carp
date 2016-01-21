@@ -9,11 +9,8 @@
   - defstruct
   - deftype
   - compile a whole file to a single dylib
-  - nicer names for compiler generated variables
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Clean up unifier even more
-  - Option for turning off lifetime checker
-  - Change type of functions from (:arrow ...) to (:fn ...)
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
 
 # Lisp Core Libs

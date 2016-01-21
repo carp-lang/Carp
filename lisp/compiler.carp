@@ -85,7 +85,7 @@
       (def ast ast-annotated)
       (def c c-program-string)
       (match (get ast-annotated :type)
-             (:arrow arg-types return-type)
+             (:fn arg-types return-type)
              (do
                (save-function-prototypes)
                (save c-file-name c-program-string)
@@ -112,7 +112,7 @@
                      (do (def s (pretty-signature (signature f)))
                          (when echo-signature-after-bake (println (str func-name " : " s)))
                          f)))))
-             _ (error "Must bake function with type (:arrow ...)")))))
+             _ (error "Must bake function with type (:fn ...)")))))
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
