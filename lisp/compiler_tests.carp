@@ -1,16 +1,4 @@
 
-
-(defn reset-1 ()
-  (let [x 0]
-    (do (reset! x 123)
-        x)))
-(defn test-reset-1 ()
-  (do (bake reset-1)
-      (assert-eq (reset-1) 123)))
-(test-reset-1)
-
-
-
 ;; CONSTRAINTS
 
 (defn test-replace-in-list ()
@@ -709,5 +697,12 @@
 
 
 ;; RESET
-
+(defn reset-1 ()
+  (let [x 0]
+    (do (reset! x 123)
+        x)))
+(defn test-reset-1 ()
+  (do (bake reset-1)
+      (assert-eq (reset-1) 123)))
+(test-reset-1)
 

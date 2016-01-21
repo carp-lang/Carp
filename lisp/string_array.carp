@@ -46,7 +46,7 @@
   (do 
     (bake sf1)
     (assert-eq "Hello, YEAH" (sf1))))
-;;(test-string-array-1)
+(test-string-array-1)
 
 (defn test-string-array-2 ()
   (do
@@ -135,20 +135,13 @@
 (test-string-array-last)
 
 
-
 (defn recursive-let ()
   (let [;; The other definition order should get caught by compiler, not clang:
         y "whaaaaaaat"
         x (str-append "hej" (ref (itos (strlen y))))
         ]
     x))
+(bake recursive-let)
 
 
 
-
-
-(defn double-var-error (i j)
-  (not (= i (inc j))))
-
-(defn double-var-error-2 (j)
-  (not (not j)))
