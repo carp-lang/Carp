@@ -123,9 +123,8 @@ string say_what(string text) {
     string _result_0 = string_copy(text);
     string manage_me = _result_0;
     int _result_1 = strlen(text);
-    bool _expr_0 = _result_1 < 10;
     string _if_result_0;
-    if(_expr_0) {
+    if(_result_1 < 10) {
       string _result_2 = string_copy("Too short");
       free(manage_me);
       _if_result_0 = _result_2;
@@ -138,7 +137,6 @@ string say_what(string text) {
   return _final_result_0;
 }
 ```
-
 
 The most important thing in Carp is to work with arrays of data. Here's an example of how that looks:
 
