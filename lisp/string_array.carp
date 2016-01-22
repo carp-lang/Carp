@@ -22,7 +22,10 @@
                (reset! i (inc i))
                ))
         (println "]"))))
-;;(bake string-array-print)
+(bake string-array-print)
+
+(defmacro IF (x a b) (if x a b))
+(defn test-if () (IF true (println "a") (println "b")))
 
 (defn sf1 ()
   (let [a0 (string-array-new 2)
