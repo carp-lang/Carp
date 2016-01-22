@@ -465,7 +465,7 @@
             free-left (get-in own-asta-13b '(:body :free-left))
             free-right (get-in own-asta-13b '(:body :free-right))]
         (do (assert-eq '(:fn (:string) :string) (:type own-asta-13b))
-            ;;(bake own-if-13b)
+            (bake own-if-13b)
             (assert-eq 1 (count free))
             (assert-eq 2 (count free-left))
             (assert-eq 2 (count free-right))

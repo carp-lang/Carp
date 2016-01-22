@@ -270,6 +270,11 @@
                   
                   vars-after-all (remove (fn (v) (contains? all-freed v)) vars-after-expr)
 
+                  if-ret-type (:type ast)
+                  vars-after-all-with-ret-val (if (managed-type? if-ret-type)
+                                                (cons {:name (:result-name ast) :type if-ret-type :doc "if ret val"} vars-after-all)
+                                                vars-after-all)
+
                   eaten-left  (get-maybe data-after-left  :eaten)
                   eaten-right (get-maybe data-after-right :eaten)
                   ;;_ (println (str "eaten-left:\n" eaten-left "\neaten-right:\n" eaten-right))
@@ -285,7 +290,7 @@
 
                   ]
               {:ast ast-after-all
-               :vars vars-after-all
+               :vars vars-after-all-with-ret-val
                :eaten eaten})
 
         :let (let [;;_ (println (str "\nLET vars in body " (get-maybe ast :result-name) ":\n" vars))
