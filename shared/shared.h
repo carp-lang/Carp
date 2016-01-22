@@ -97,7 +97,7 @@ int string_array_count(string_array array) {
 }
 
 string string_array_get(string_array array, int pos) {
-  return array[pos];
+  return strdup(array[pos]);
 }
 
 string_array string_array_set(string_array array, int pos, string new_value) {

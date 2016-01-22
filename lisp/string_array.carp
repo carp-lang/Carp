@@ -1,7 +1,7 @@
 
 (register-builtin "string_array_new" '(:int) ':string-array)
 (register-builtin "string_array_count" '((:ref :string-array)) :int)
-(register-builtin "string_array_get" '((:ref :string-array) :int) '(:ref :string))
+(register-builtin "string_array_get" '((:ref :string-array) :int) :string)
 (register-builtin "string_array_set" '(:string-array :int (:ref :string)) ':string-array)
 
 (def s (string-array-new 3))
@@ -15,7 +15,7 @@
     (do (print "[")
         (while (< i count)
            (do (print "'")
-               (print (string-array-get a i))
+               (print (ref (string-array-get a i)))
                (print "'")
                (when (not (= i (dec count)))
                  (print " "))
@@ -30,20 +30,21 @@
 (defn sf1 ()
   (let [a0 (string-array-new 2)
         a1 (string-array-set a0 0 "Hello, ")]    
-    (str-append (string-array-get (ref a1) 0) "YEAH")))
+    (str-append (ref (string-array-get (ref a1) 0)) "YEAH")))
 
 (defn sf2 ()
   (let [a0 (string-array-new 2)]
     (let [a1 (string-array-set a0 0 "Hello, ")]
       (let [a2 (string-array-set a1 1 "world!")]
-        (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
+        (str-append (ref (string-array-get (ref a2) 0)) (ref (string-array-get (ref a2) 1)))))))
 
 (defn sf3 ()
   (let [a0 (string-array-new 2)
         a1 (string-array-set a0 0 "Hello, ")]
     (do (string-array-new 10)
         (let [a2 (string-array-set a1 1 "world!")]
-          (str-append (string-array-get (ref a2) 0) (string-array-get (ref a2) 1))))))
+          (str-append (ref (string-array-get (ref a2) 0))
+                      (ref (string-array-get (ref a2) 1)))))))
 
 (defn test-string-array-1 ()
   (do 
@@ -101,9 +102,9 @@
 (defn sf6 (b)
   (let [a (string-array-set (string-array-new 6) 0 "bleh")]
     (if b
-      "whut"
+      (string-copy "whut")
       (let [extra (string-array-set (string-array-new 6) 0 "yeah")]
-        "sup"))))
+        (string-copy "sup")))))
 
 (defn test-string-array-6 ()
   (do
