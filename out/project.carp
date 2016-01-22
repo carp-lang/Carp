@@ -33,8 +33,17 @@
                  (string-copy "aaa")
                  (string-copy "bbb")))))
 
+(defn freeing-6 (s)
+  (let [managed (string-copy s)
+        answer (string-copy "Four letter word")]
+    (if (let [l (strlen (ref managed))]
+          (= l 4))
+      answer
+      managed)))
+
 ;(bake freeing-1)
 ;; (bake freeing-2)
 ;; (bake freeing-3)
 ;;(bake freeing-4)
-(bake freeing-5)
+;;(bake freeing-5)
+(bake freeing-6)

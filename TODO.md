@@ -1,6 +1,7 @@
 # Compiler
   - Compilation of generic functions
   - Compiling arrays
+  - Should not be possible to return a ref from a function!
   - Free return values for ALL the forms in a do statement
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
