@@ -1,4 +1,40 @@
 ;;(println (str "dev = " carp-dev))
-(when (not carp-dev)
-  (do (load-lisp (str carp-dir "lisp/string_array.carp"))
-      (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
+
+;; (when (not carp-dev)
+;;   (do (load-lisp (str carp-dir "lisp/string_array.carp"))
+;;       (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
+
+(defn freeing-1 (b)
+  (let [a (string-copy "a")]
+    (if b
+      a
+      a)))
+
+(defn freeing-2 (b)
+  (let [a (string-copy "a")]
+    (if b
+      (do (eat-string a) (string-copy ""))
+      a)))
+
+(defn freeing-3 (b)
+  (let [a (string-copy "a")]
+    (if b
+      (string-copy "yeah")
+      a)))
+
+(defn freeing-4 (s)
+  (eat-string
+   (if (< (strlen (ref s)) 10)
+     (string-copy "aaa")
+     (string-copy "bbb"))))
+
+(defn freeing-5 (s)
+  (strlen (ref (if (< (strlen (ref s)) 10)
+                 (string-copy "aaa")
+                 (string-copy "bbb")))))
+
+;(bake freeing-1)
+;; (bake freeing-2)
+;; (bake freeing-3)
+;;(bake freeing-4)
+(bake freeing-5)

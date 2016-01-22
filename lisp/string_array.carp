@@ -22,7 +22,7 @@
                (reset! i (inc i))
                ))
         (println "]"))))
-(bake string-array-print)
+;;(bake string-array-print)
 
 (defn sf1 ()
   (let [a0 (string-array-new 2)

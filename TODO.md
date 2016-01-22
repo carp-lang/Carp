@@ -1,6 +1,7 @@
 # Compiler
   - Compilation of generic functions
   - Compiling arrays
+  - Free return values for ALL the forms in a do statement
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Track dependencies between functions
@@ -26,6 +27,7 @@
   
 # Dynamic Runtime
   - no need to handle (:ptr ...) as a special case?
+  - pop normal stack back to previous state when catching errors
   - nil matches anything in a match statement?!
   - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc

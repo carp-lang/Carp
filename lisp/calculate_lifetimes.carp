@@ -188,7 +188,8 @@
                           ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
                           ;;         ))
                           final-ast {:ast ast
-                                     :vars vars-after}
+                                     :vars vars-after
+                                     :eaten (list var-name)}
                           ;;_ (println (str "final-ast:\n" final-ast))
                           ]
                       final-ast)))
@@ -238,22 +239,41 @@
                                        vs
                                        (remove-var-with-name vs result-name)))
 
+                  ;;_ (println (str "\nvars-after-left:\n" vars-after-left "\nvars-after-right:\n" vars-after-right))
+
                   new-vars-left  (remove (fn (v) (contains? vars-after-expr v)) vars-after-left) ;; the NEW vars after visiting this branch
                   new-vars-right (remove (fn (v) (contains? vars-after-expr v)) vars-after-right)
+                  ;;_ (println (str "new-vars-left:\n" new-vars-left "\nnew-vars-right:\n" new-vars-right))
 
-                  ;;_ (println (str "vars-after-left:\n" vars-after-left "\nvars-after-right:\n" vars-after-right))
+                  ;; not-eaten-in-either-branch (intersection vars-after-left vars-after-right)
+                  ;; _ (println (str "\nnot-eaten-in-either-branch:\n" not-eaten-in-either-branch))
 
-                  vars-after-all (intersection vars-after-left vars-after-right)
-                  vars-removed (filter (fn (v) (contains? vars-after-expr v)) vars-after-expr) ;; vars "eaten" by either the left or right branch
+                  ;;_ (println (str "\nvars-after-expr:\n" vars-after-expr))
 
-                  ;;_ (println (str "vars removed:\n" vars-removed))
+                  all-vars (union vars-after-left vars-after-right)
+                  ;;_ (println (str "\nall-vars:\n" all-vars))
+
+                  ;; eaten-in-either-branch (remove (fn (v) (contains? vars-after-expr v)) not-eaten-in-either-branch)
+                  ;; _ (println (str "\neaten-in-either-branch:\n" eaten-in-either-branch))
+
+                  eaten-in-either-branch (filter (fn (v) (or (not (contains? vars-after-left v))
+                                                             (not (contains? vars-after-right v))))
+                                                 all-vars)
+                  ;;_ (println (str "\neaten-in-either-branch:\n" eaten-in-either-branch))
                   
-                  free-left  (concat new-vars-left
-                                     (remove (fn (v) (contains? vars-after-right v)) vars-removed))
-                  free-right (concat new-vars-right
-                                     (remove (fn (v) (contains? vars-after-left  v)) vars-removed))
+                  free-left  (intersection eaten-in-either-branch vars-after-left)  ;; (remove (fn (v) (contains? vars-after-expr v)) vars-after-left) 
+                  free-right (intersection eaten-in-either-branch vars-after-right) ;; (remove (fn (v) (contains? vars-after-expr v)) vars-after-right)
+                  ;;_ (println (str "\nfree-left:\n" free-left "\nfree-right:\n" free-right))
 
-                  ;;_ (println (str "free-left:\n" free-left "\nfree-right:\n" free-right))
+                  all-freed (union free-left free-right)
+                  ;;_ (println (str "\nall-freed:\n" all-freed))
+                  
+                  vars-after-all (remove (fn (v) (contains? all-freed v)) vars-after-expr)
+
+                  eaten-left  (get-maybe data-after-left  :eaten)
+                  eaten-right (get-maybe data-after-right :eaten)
+                  ;;_ (println (str "eaten-left:\n" eaten-left "\neaten-right:\n" eaten-right))
+                  eaten (union eaten-left eaten-right)
                   
                   ast-after-expr (assoc ast :expr (:ast data-after-expr))
                   ast0 (assoc ast-after-expr :a (:ast data-after-left))
@@ -265,7 +285,8 @@
 
                   ]
               {:ast ast-after-all
-               :vars vars-after-all})
+               :vars vars-after-all
+               :eaten eaten})
 
         :let (let [;;_ (println (str "\nLET vars in body " (get-maybe ast :result-name) ":\n" vars))
 
@@ -277,7 +298,7 @@
                    ast-after-bindings (:ast data-after-bindings)
 
                    not-eaten-by-bindings (filter (fn (v) (contains? vars-after-bindings v)) vars)
-                   eaten-by-bindings (remove (fn (v) (contains? not-eaten-by-bindings v)) vars)
+                   eaten-by-bindings (map :name (remove (fn (v) (contains? not-eaten-by-bindings v)) vars))
                    ;;_ (println (str "\nLET eaten by bindings in " (get-maybe ast :result-name) ":\n" eaten-by-bindings))
 
                    ;;_ (println (str "\nlet vars-after-bindings (before body):\n" vars-after-bindings))
@@ -305,7 +326,7 @@
                                                        vars-after-body
                                                        (do
                                                          ;;(println (str "Will eat:\n" eaten))
-                                                         (remove (fn (v) (contains? eaten v)) vars-after-body))
+                                                         (remove (fn (v) (contains? eaten (:name v))) vars-after-body))
                                                        ))
                    ;;_ (println (str "\nLET minus eaten " (get-maybe ast :result-name) ", Current vars:\n" vars-after-body-minus-eaten))
 
