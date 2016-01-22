@@ -538,12 +538,12 @@ void eval_list(Obj *env, Obj *o) {
   else if(HEAD_EQ("catch-error")) {
     assert_or_set_error(o->cdr, "Too few args to 'catch-error': ", o);
     int shadow_stack_size_save = shadow_stack_pos;
+    int stack_size_save = stack_pos;
     eval_internal(env, o->cdr->car);
 
-    while(shadow_stack_pos > shadow_stack_size_save) {
-      shadow_stack_pop();
-    }
-    
+    shadow_stack_pos = shadow_stack_size_save;
+    stack_pos = stack_size_save + 1;
+
     if(error) {      
       stack_push(error);
       error = NULL;

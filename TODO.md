@@ -1,8 +1,6 @@
 # Compiler
   - Compilation of generic functions
   - Compiling arrays
-  - Should not be possible to return a ref from a function!
-  - Free return values for ALL the forms in a do statement
   - Avoid problems with name shadowing when freeing a local variable
   - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Track dependencies between functions
@@ -13,6 +11,7 @@
   - compile a whole file to a single dylib
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Clean up unifier even more
+  - Clean up lifetime checker code
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - :result-name not needed in literals
   - add proper no-op :node for ()
@@ -28,7 +27,6 @@
   
 # Dynamic Runtime
   - no need to handle (:ptr ...) as a special case?
-  - pop normal stack back to previous state when catching errors
   - nil matches anything in a match statement?!
   - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc
