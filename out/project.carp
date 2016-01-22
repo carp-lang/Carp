@@ -14,5 +14,11 @@
 ;;         (string-copy "sfsdfsd"))))
 
 
+(defn z ()
+  (for (aaa 0 10)
+    (println (ref (itos aaa)))))
 
-
+(defn zz ()
+  (for (a 0 4
+        b 0 3)
+    (println (ref (itos (* a b))))))
