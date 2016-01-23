@@ -174,7 +174,6 @@ foo ; symbol
 (do expr1 expr2 ...)
 (if expression true-branch false-branch)
 (while expression body)
-(for (i 0 100, j 0 100) body)
 (ref x) ;; Turns an owned value into an unowned one
 (reset! variable value)
 ```

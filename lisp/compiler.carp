@@ -24,6 +24,10 @@
         ast-lifetimes (calculate-lifetimes ast-named)]
     ast-lifetimes))
 
+(defn check-for-ref-return (ast)
+  (let [t (:type ast)]
+    (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))
+
 (def header-files (list "\"functions.h\"" "\"shared.h\""))
 
 (def baked-funcs {})
@@ -73,6 +77,7 @@
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
         ast-annotated (annotate-ast ast-named)
+        _ (check-for-ref-return ast-annotated)
         builder-with-headers (builder-add-headers builder header-files)
         builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
         builder-final (if (and exe (not (= func-name "main"))) (builder-add-main-function builder-fns (c-ify-name func-name)) builder-fns)
