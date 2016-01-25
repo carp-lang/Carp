@@ -173,12 +173,12 @@
 
 (defmacro for (b body)
   (match b
-         (sym start limit) (list 'let (list sym start)
-                                 (list 'while (list '< sym limit)
-                                       (list 'do
-                                             (list 'reset! sym (list '+ sym 1))
-                                             body)))
-         _ (error "Failed to match bindings in for loop.")))
+    (sym start limit) (list 'let (list sym start)
+                            (list 'while (list '< sym limit)
+                                  (list 'do
+                                        body
+                                        (list 'reset! sym (list '+ sym 1)))))
+    _ (error "Failed to match bindings in for loop.")))
 
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))

@@ -1,4 +1,5 @@
 # Compiler
+  - Handle Function pointers as values
   - Compilation of generic functions
   - Compiling arrays
   - Avoid problems with name shadowing when freeing a local variable
@@ -21,13 +22,14 @@
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
+  - for macro with several bindings
 
 # Bugs
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
   - no need to handle (:ptr ...) as a special case?
-  - nil matches anything in a match statement?!
+  - nil matches anything (or any list?) in a match statement?!
   - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions

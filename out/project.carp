@@ -1,8 +1,8 @@
 ;;(println (str "dev = " carp-dev))
 
-(when (not carp-dev)
-  (do (load-lisp (str carp-dir "lisp/string_array.carp"))
-      (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
+;; (when (not carp-dev)
+;;   (do (load-lisp (str carp-dir "lisp/string_array.carp"))
+;;       (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
 
 ;; (defn z ()
 ;;   (let [m (string-copy "blah")]
@@ -15,8 +15,9 @@
 
 
 (defn z ()
-  (for (aaa 0 10)
-    (println (ref (itos aaa)))))
+  (for (a 0 4)
+    (for (b 1 5)
+      (println (ref (itos (* a b)))))))
 
 (defn zz ()
   (for (a 0 4

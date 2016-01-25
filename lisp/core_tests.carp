@@ -1,4 +1,10 @@
 
+(defn test-for-macro ()
+  (let [sum 0]
+    (do (for (i 0 5)
+          (reset! sum (+ sum i)))
+        (assert-eq 10 sum))))
+
 (defn test-catch-error ()
   (do
     (assert-eq nil (catch-error ((fn () "no error"))))
@@ -365,6 +371,7 @@
     (test-union)
     (test-intersection)
     (test-catch-error)
+    (test-for-macro)
     ))
 
 (run-core-tests)
