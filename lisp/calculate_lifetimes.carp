@@ -181,7 +181,7 @@
                       given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
                   (if (and (managed-type? (:type ast)) given-away)
                     (let [globally-defined (def? sym)]
-                      (if globally-defined
+                      (if false ;; globally-defined
                         data
                         (error (str "The variable '" var-name "' has already been given away to another function, it can't be used here."))))
                     (let [vars-after (if in-ref
