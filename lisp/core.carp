@@ -66,11 +66,16 @@
     '()
     (cons (f) (repeatedly f (- times 1)))))
 
+(def total-time 0)
+
 (defmacro time (form)
   (list 'let (list 't1 (list 'now))
-        (list 'do
-              (list 'let (list 'result form)
-                    (list 'println (list 'str "Evaluating form took " (list '- (list 'now) 't1) "ms. Result = " 'result))))))
+        (list 'let (list 'result form
+                         't (list '- (list 'now) 't1))
+              (list 'do
+                    (list 'println (list 'str "Evaluating form took " 't "ms."))
+                    (list 'reset! 'total-time (list '+ 'total-time 't))
+                    'result))))
 
 (defmacro swap! (sym f)
   (list 'reset! sym (list f sym)))
