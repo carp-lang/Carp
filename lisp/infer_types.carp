@@ -15,10 +15,19 @@
 
 (defn get-type-of-symbol (type-env sym)
   (let [lookup (get-maybe type-env sym)]
-    (if (= () lookup)
-      (let [global-lookup (eval sym)]
-        (type global-lookup))
-      lookup)))
+    (if (nil? lookup)
+      (let [global-lookup (eval sym)
+            t (type global-lookup)]
+        (match t
+          :lambda (do (println (str "Found non-baked symbol '" sym "', will bake it."))
+                      (bake-internal (new-builder) (str sym) (code global-lookup) '() false)
+                      (let [new-lookup (eval sym)
+                            ;;_ (println (str "new-lookup: " new-lookup " : " (type new-lookup)))
+                            sig (signature new-lookup)]
+                        {:type sig :constr (list {:func-dep sym})}))
+          :foreign {:type (signature global-lookup) :constr (list {:func-dep sym})}
+          _ {:type t :constr '()}))
+      {:type lookup :constr '()})))
 
 (defn math-op? (op)
   (contains? '(+ - * /) op))
@@ -49,10 +58,11 @@
                  func-constrs (let [app-f-sym (get-in ast '(:head :value))
                                     app-f-name (str app-f-sym)
                                     app-f (eval app-f-sym)]
-                                (if (foreign? app-f)
-                                  (list {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
-                                  (if (is-self-recursive? type-env app-f-name)
-                                    () ;; no constraints needed when the function is calling itself
+                                (if (is-self-recursive? type-env app-f-name)
+                                  () ;; no constraints needed when the function is calling itself
+                                  (if (foreign? app-f)
+                                    (list ;;{:func-dep app-f-sym}
+                                          {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
                                     (let [non-baked (eval (read app-f-name))]
                                       (if (macro? non-baked)
                                         (do (error (str "Found macro: " non-baked))
@@ -92,15 +102,22 @@
       :reset (let [expr (:expr ast)
                    symbol (:symbol ast)
                    x0 (generate-constraints-internal constraints expr type-env)
-                   expr-constr {:a (get-type-of-symbol type-env symbol)
+                   type-and-constr (get-type-of-symbol type-env symbol)
+                   expr-constr {:a (:type type-and-constr)
                                 :b (:type expr)
                                 :doc "reset!-constr"}]
              (cons expr-constr x0))
 
-      :lookup (let [val (:value ast)]
-                (cons {:a (get ast :type)
-                       :b (get-type-of-symbol type-env val)
-                       :doc (str "lookup " val)} constraints))
+      :lookup (let [val (:value ast)
+                    type-and-constr (get-type-of-symbol type-env val)
+                    func-dep (:constr type-and-constr)
+                    ;;_ (println (str "func-dep: " func-dep))
+                    ]
+                (concat
+                 func-dep
+                 (cons {:a (get ast :type)
+                        :b (:type type-and-constr)
+                        :doc (str "lookup " val)} constraints)))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
                    x1 (generate-constraints-internal x0 (get ast :b) type-env)

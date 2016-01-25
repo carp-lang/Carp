@@ -85,8 +85,9 @@
         proto (get-function-prototype ast-annotated func-name)
         c-file-name (str out-dir func-name ".c")
         c-func-name (c-ify-name func-name)
-        total-dependencies (concat (:func-deps ast-annotated) external-deps)]
+        total-dependencies (set (concat (:func-deps ast-annotated) external-deps))]
     (do
+      ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (def ast ast-annotated)
       (def c c-program-string)
       (match (get ast-annotated :type)

@@ -2,7 +2,8 @@
 (register-builtin "string_array_new" '(:int) ':string-array)
 (register-builtin "string_array_count" '((:ref :string-array)) :int)
 (register-builtin "string_array_get" '((:ref :string-array) :int) :string)
-(register-builtin "string_array_set" '(:string-array :int (:ref :string)) ':string-array)
+(register-builtin "string_array_set" '(:string-array :int (:ref :string)) :string-array)
+(register-builtin "string_array_map" '((:fn (:string) :string) :string-array) :string-array)
 
 (def s (string-array-new 3))
 (def s1 (string-array-set s 0 "yeah"))
@@ -22,7 +23,7 @@
                (reset! i (inc i))
                ))
         (println "]"))))
-(bake string-array-print)
+;;(bake string-array-print)
 
 (defmacro IF (x a b) (if x a b))
 (defn test-if () (IF true (println "a") (println "b")))
@@ -162,3 +163,26 @@
 (defn string-array-new-init (n init)
   (fill-array (string-array-new n) 0 init))
 
+(defn exclaim (s)
+  (str-append (ref s) "!"))
+
+;;(bake exclaim)
+
+;;(def sa1 )
+
+(defn test-smap ()
+  (string-array-print (ref (string-array-map exclaim (string-array-new 5)))))
+
+(defn test-smap-2 (f)
+  (string-array-print (ref (string-array-map f (string-array-new 5)))))
+
+;; (def smap-ast (lambda-to-ast (code test-smap)))
+;; (def smap-con (gencon smap-ast))
+;; (def smap-asta (annotate-ast smap-ast))
+
+;;(def sa2 )
+
+;;(bake* test-smap '(string-array-print))
+;;(bake* test-smap-2 '(string-array-print))
+
+;; (test-smap-2 exclaim)

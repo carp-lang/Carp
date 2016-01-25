@@ -176,10 +176,14 @@
                 :vars (:vars data-after)})
 
         :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast))
-                      var-name (str (:value ast))
+                      sym (:value ast)
+                      var-name (str sym)
                       given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
                   (if (and (managed-type? (:type ast)) given-away)
-                    (error (str "The variable '" var-name "' has already been given away to another function, it can't be used here."))
+                    (let [globally-defined (def? sym)]
+                      (if globally-defined
+                        data
+                        (error (str "The variable '" var-name "' has already been given away to another function, it can't be used here."))))
                     (let [vars-after (if in-ref
                                        vars
                                        (remove-var-with-name vars var-name))
@@ -187,12 +191,12 @@
                           ;;     (do (println (str "\nLookup ate '" (:value ast) "':\n" ast))
                           ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
                           ;;         ))
-                          final-ast {:ast ast
+                          final-data {:ast ast
                                      :vars vars-after
                                      :eaten (list var-name)}
                           ;;_ (println (str "final-ast:\n" final-ast))
                           ]
-                      final-ast)))
+                      final-data)))
 
         :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :vars vars} in-ref)
                      vars-after-left (:vars left)

@@ -28,6 +28,8 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
+  - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup
+  - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - no need to handle (:ptr ...) as a special case?
   - nil matches anything (or any list?) in a match statement?!
   - read crashes when given data of the wrong type, should check for string type

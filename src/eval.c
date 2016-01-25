@@ -257,8 +257,17 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  values[i] = &args[i]->void_ptr;
 	}
 	else {
-	  values[i] = &args[i]->void_ptr;
-	  //set_error("Can't call foreign function with argument of type ", p->car);
+	  //printf("Calling function with parameter of type %s. Argument is of type %c.\n", obj_to_string(p->car)->s, args[i]->tag);
+	  if(args[i]->tag == 'Q') {
+	    values[i] = &args[i]->void_ptr;
+	  }
+	  else if(args[i]->tag == 'F') {
+	    values[i] = &args[i]->funptr;
+	  }
+	  else {
+	    printf("INVALID ARG TYPE: %c\n", args[i]->tag);
+	    set_error("Can't send argument of invalid type to foreign function taking parameter of type ", p->car);
+	  }
 	}
 	p = p->cdr;
       }

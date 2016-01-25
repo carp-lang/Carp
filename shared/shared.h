@@ -105,6 +105,22 @@ string_array string_array_set(string_array array, int pos, string new_value) {
   return array;
 }
 
+typedef string (*string_to_string_fn)(string);
+
+string_array string_array_map(string_to_string_fn f, string_array array) {
+  string_array p = array;
+  while(*p) {
+    string old_string = *p;
+    printf("old: %s\n", old_string);
+    string new_string = f(old_string);
+    printf("new: %s\n", new_string);
+    /* //free(p); */
+    *p = new_string;
+    p++;
+  }
+  return array;
+}
+
 int inc(x) { return x + 1; }
 int dec(x) { return x - 1; }
 
