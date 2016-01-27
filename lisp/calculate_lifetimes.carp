@@ -179,7 +179,7 @@
                       sym (:value ast)
                       var-name (str sym)
                       given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
-                  (if (and (managed-type? (:type ast)) given-away)
+                  (if false ;; (and (managed-type? (:type ast)) given-away)
                     (let [globally-defined (def? sym)]
                       (if false ;; globally-defined
                         data
