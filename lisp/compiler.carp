@@ -17,11 +17,14 @@
 (load-lisp (str carp-dir "lisp/generate_names.carp"))
 (load-lisp (str carp-dir "lisp/calculate_lifetimes.carp"))
 (load-lisp (str carp-dir "lisp/builder.carp"))
+(load-lisp (str carp-dir "lisp/func_deps.carp"))
 
 (defn annotate-ast (ast)
-  (let [ast-typed (infer-types ast)
+  (let [ast-func-deps (find-func-deps ast)
+        ast-typed (infer-types ast-func-deps)
         ast-named (generate-names (copy {}) ast-typed)
-        ast-lifetimes (calculate-lifetimes ast-named)]
+        ast-lifetimes ast-named ;; NO LIFETIMES FOR NOW (calculate-lifetimes ast-named)
+        ]
     ast-lifetimes))
 
 (defn check-for-ref-return (ast)
@@ -72,6 +75,10 @@
 (def out-dir "./")
 (def echo-signature-after-bake false)
 
+(defn remove-non-user-defined-deps (func-deps)
+  (let [func-names (keys baked-funcs)]
+    (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
+
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal (builder func-name func-code external-deps exe)
   (let [ast (lambda-to-ast func-code)
@@ -85,7 +92,7 @@
         proto (get-function-prototype ast-annotated func-name)
         c-file-name (str out-dir func-name ".c")
         c-func-name (c-ify-name func-name)
-        total-dependencies (set (concat (:func-deps ast-annotated) external-deps))]
+        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
     (do
       ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (def ast ast-annotated)

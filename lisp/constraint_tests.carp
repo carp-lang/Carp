@@ -1,0 +1,87 @@
+;; CONSTRAINTS
+
+(defn test-replace-in-list ()
+  (assert-eq (replace-in-list '(10 20 30) 20 "hej") '(10 "hej" 30)))
+
+(test-replace-in-list)
+
+(defn test-replace-from-right ()
+  (do
+    (assert-eq (replace-subst-from-right {:a :b :c :d} :b :e) {:a :e :c :d})
+    (assert-eq (replace-subst-from-right {:a :b :c :b} :b :e) {:a :e :c :e})
+    (assert-eq (replace-subst-from-right {:a (list :b :b) :c :d} :b :f) {:a (list :f :f) :c :d})))
+
+(test-replace-from-right)
+
+(defn test-constraint-solving-1 ()
+  (let [;;_ (println "\n- Constraint solving 1 -")
+        constraints (list {:a :int :b "t0"})
+        solution (solve-constraints constraints)
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :int})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-2 ()
+  (let [;;_ (println "\n- Constraint solving 2 -")
+        constraints (list {:a :int :b "t0"}
+                          {:a "t1" :b "t0"})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :int "t1" :int})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-3 ()
+  (let [;;_ (println "\n- Constraint solving 3 -")
+        constraints (list {:a (list :bool :float) :b (list "t0" "t1")})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :bool "t1" :float})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-4 ()
+  (let [;;_ (println "\n- Constraint solving 4 -")
+        constraints (list {:a (list :ref "t0") :b (list :ref :string)})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :string})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-5 ()
+  (let [;;_ (println "\n- Constraint solving 5 -")
+        constraints (list {:a (list :ref "t0") :b "t1"}
+                          {:a "t1" :b (list :ref :int)})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :int
+                           "t1" (list :ref :int)})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-6 ()
+  (let [;;_ (println "\n- Constraint solving 6 -")
+        constraints (list {:a "t0" :b "t0"}
+                          {:a "t0" :b "t1"}
+                          {:a "t1" :b :float}
+                          {:a "t1" :b "t1"})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :float
+                           "t1" :float})
+      (assert-eq solution solution-backwards))))
+
+(test-constraint-solving-1)
+(test-constraint-solving-2)
+(test-constraint-solving-3)
+(test-constraint-solving-4)
+(test-constraint-solving-5)
+(test-constraint-solving-6)

@@ -1,0 +1,5 @@
+;; GENERICS
+
+(def id-ast (lambda-to-ast (code id)))
+(def id-con (gencon id-ast))
+(def id-asta (annotate-ast id-ast))

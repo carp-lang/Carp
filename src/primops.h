@@ -58,6 +58,6 @@ Obj *p_keys(Obj** args, int arg_count);
 Obj *p_values(Obj** args, int arg_count);
 Obj *p_signature(Obj** args, int arg_count);
 Obj *p_eval(Obj** args, int arg_count);
-Obj *p_and(Obj** args, int arg_count);
+Obj *p_builtin_p(Obj** args, int arg_count);
 
-Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj);
+Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);

@@ -168,17 +168,17 @@ void env_new_global() {
   register_primop("values", p_values);
   register_primop("signature", p_signature);
   register_primop("eval", p_eval);
-  register_primop("and", p_and);
+  register_primop("builtin?", p_builtin_p);
   //register_primop("nullp", p_null_predicate);
   
   Obj *abs_args = obj_list(type_int);
-  register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int);
+  register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);
 
   Obj *exit_args = obj_list(type_int);
-  register_ffi_internal("exit", (VoidFn)exit, exit_args, type_void);
+  register_ffi_internal("exit", (VoidFn)exit, exit_args, type_void, true);
 
   Obj *getenv_args = obj_list(type_string);
-  register_ffi_internal("getenv", (VoidFn)getenv, getenv_args, type_string);
+  register_ffi_internal("getenv", (VoidFn)getenv, getenv_args, type_string, true);
   
   //printf("Global env: %s\n", obj_to_string(env)->s);
 }

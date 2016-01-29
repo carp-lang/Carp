@@ -439,6 +439,21 @@ void eval_list(Obj *env, Obj *o) {
     }
     stack_push(lisp_false);
   }
+  else if(HEAD_EQ("and")) {
+    Obj *p = o->cdr;
+    while(p) {
+      if(p->car) {
+	eval_internal(env, p->car);
+	if(error) { return; }
+	if(!is_true(stack_pop())) {
+	  stack_push(lisp_false);
+	  return;
+	}
+      }
+      p = p->cdr;
+    }
+    stack_push(lisp_true);
+  }
   else if(HEAD_EQ("quote")) {
     if(o->cdr == nil) {
       stack_push(nil);

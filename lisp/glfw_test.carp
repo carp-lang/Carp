@@ -61,13 +61,13 @@
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 
-;;(bake draw-rect)
+(bake draw-rect)
 
 ;(def app-ast (lambda-to-ast (code app)))
 ;(def app-asta (annotate-ast app-ast))
 
 ;;(bake-gl-exe)
-;;(bake* gl-demo '(draw-rect))
+(bake* gl-demo '(draw-rect))
 
 
 

@@ -28,6 +28,7 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
+  - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - no need to handle (:ptr ...) as a special case?

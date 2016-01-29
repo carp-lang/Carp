@@ -768,15 +768,6 @@ Obj *p_null_predicate(Obj** args, int arg_count) {
   }
 }
 
-Obj *p_and(Obj** args, int arg_count) {
-  for(int i = 0; i < arg_count; i++) {
-    if(!is_true(args[i])) {
-      return lisp_false;
-    }
-  }
-  return lisp_true;
-}
-
 Obj *p_filter(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'filter'\n"); return nil; }
   if(!is_callable(args[0])) { printf("'filter' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
@@ -1100,7 +1091,7 @@ char *lispify(char *name) {
   return s2;
 }
 
-Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj) {
+Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin) {
 
   if(!funptr) {
     printf("funptr for %s is NULL\n", name);
@@ -1151,7 +1142,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
 
   //printf("Registration of '%s' OK.\n", name);
   
-  Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj);
+  Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj, builtin);
 
   char *lispified_name = lispify(name);
   //printf("Registering %s\n", lispified_name);
@@ -1204,7 +1195,7 @@ Obj *p_register(Obj** args, int arg_count) {
     return nil;
   }
   
-  return register_ffi_internal(name, f, args[2], args[3]);
+  return register_ffi_internal(name, f, args[2], args[3], false);
 }
 
 Obj *p_register_variable(Obj** args, int arg_count) {
@@ -1243,6 +1234,22 @@ Obj *p_register_builtin(Obj** args, int arg_count) {
     return nil;
   }
   
-  return register_ffi_internal(name, f, args[1], args[2]);
+  return register_ffi_internal(name, f, args[1], args[2], true);
+}
+
+Obj *p_builtin_p(Obj** args, int arg_count) {
+  if(arg_count != 1 || args[0]->tag != 'F') {
+    printf("Arg to builtin? must be foreign function:\n");
+    obj_print_cout(args[0]);
+    printf("Arg count: %d\n", arg_count);
+    error = obj_new_string("Invalid argument to builtin?");
+    return nil;
+  }
+  if(args[0]->builtin) {
+    return lisp_true;
+  }
+  else {
+    return lisp_false;
+  }
 }
 

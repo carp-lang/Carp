@@ -1,0 +1,110 @@
+;; (let [non-baked (eval (read app-f-name))]
+;;   (if (macro? non-baked)
+;;     (do (error (str "Found macro: " non-baked))
+;;         ;; (let [macro-forms (code non-baked)
+;;         ;;       m (eval (list 'fn (nth macro-forms 1) (nth macro-forms 2)))
+;;         ;;       _ (println (str "m: " m ", type: " (type m)))
+;;         ;;       called-macro (apply m '(true 10 20))
+;;         ;;       ;;expanded-macro (form-to-ast (code called-macro))
+;;         ;;       ]
+;;         ;;   (println (str "Expanded:\n" called-macro "\n\n")))
+;;         '())
+;;     (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
+;;         (let [;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
+;;               exe false]
+;;           (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
+;;         (when log-chaining (println (str "Baking done, will resume job.")))
+;;         (let [sym-for-baked-func (read app-f-name)]
+;;           (list {:a (get-in ast '(:head :type))
+;;                  :b (signature (eval sym-for-baked-func))
+;;                  :doc "freshly baked func-app"}
+;;                 {:func-dep sym-for-baked-func})))))
+
+;; (bake-internal (new-builder) (str sym) (code global-lookup) '() false)
+;; (let [new-lookup (eval sym)
+;;       ;;_ (println (str "new-lookup: " new-lookup " : " (type new-lookup)))
+;;       sig (signature new-lookup)]
+;;   {:type sig :constr (list {:func-dep sym})}))
+
+
+;; vars-in-scope is a list of symbols
+;; deps is a list of symbols refering to the functions that has to be baked for this function to work
+
+(defn global? (vars-in-scope symbol)
+  (not (contains? vars-in-scope symbol)))
+
+(defn find-func-deps (ast)
+  (let [deps (copy '())
+        func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
+
+        find-deps-in-list (fn  (asts vars-in-scope)
+                            (reduce (fn (result a) (cons-last result (find-func-deps-internal a vars-in-scope))) '() asts))
+
+        find-func-deps-internal (fn (ast vars-in-scope)
+                                  (do ;;(println (str "visit: " (:node ast)))
+                                      (match (:node ast)
+
+                                        :lookup (let [symbol (:value ast)
+                                                      symbol-name (str symbol)
+                                                      is-global-lookup (global? vars-in-scope symbol)
+                                                      self-recursive (= func-name symbol-name)
+                                                      ]
+                                                  (do
+                                                    (when (and is-global-lookup (not self-recursive))
+                                                      (let [evaled (eval symbol)
+                                                            is-primop (primop? evaled)
+                                                            is-lambda (lambda? evaled)]
+                                                        (do
+                                                          (when is-lambda ;; Bake, then add to deps
+                                                            (do
+                                                              (bake-internal (new-builder) (str symbol) (code evaled) '() false)
+                                                              (reset! deps (cons symbol deps))))
+                                                          (when (and (foreign? evaled) (not (builtin? evaled))) ;; No need to bake, but add to deps
+                                                            (reset! deps (cons symbol deps)))
+                                                          )))
+                                                    
+                                                    (assoc ast :global-lookup is-global-lookup)))
+
+                                        :reset (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+
+                                        :app (let [ast0 (update-in ast '(:head) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                   ast1 (update-in ast0 '(:tail) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                               ast1)
+                                        
+                                        :function (let [args (:args ast)
+                                                        new-vars (union (map :name args) vars-in-scope)
+                                                        ;;_ (println (str "new-vars: " new-vars))
+                                                        ]
+                                                    (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
+
+                                        :if (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                  ast1 (update-in ast0 '(:a) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                  ast2 (update-in ast1 '(:b) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                              ast2)
+
+                                        :while (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                              ast1)
+
+                                        :binop (let [ast0 (update-in ast  '(:a) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:b) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                                 ast1)
+
+                                        :literal ast
+
+                                        :do (let [new-ast (update-in ast '(:forms) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                              new-ast)
+
+                                        :let (let [bindings (:bindings ast)
+                                                   new-vars (union (map :name bindings) vars-in-scope)] ;; TODO: visit every expression in bindings
+                                               (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
+
+                                        :ref (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+
+                                        x (error (str "find-func-deps can't handle node: " x))
+                                        
+                                        )))
+        
+        new-ast (find-func-deps-internal ast '())]
+    (assoc new-ast :func-deps deps)))
+

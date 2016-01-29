@@ -156,7 +156,7 @@
                      (indent-in!)
                      (let [result-a (visit-form c (get form :a) true)]
                        (do
-                         (str-append! c (free-variables (:free-left form)))
+                         (str-append! c (free-variables (get-maybe form :free-left)))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-a :c) ";\n")))
@@ -166,7 +166,7 @@
                      (indent-in!) ;; false-block-begins
                      (let [result-b (visit-form c (get form :b) true)]
                        (do
-                         (str-append! c (free-variables (:free-right form)))
+                         (str-append! c (free-variables (get-maybe form :free-right)))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-b :c) ";\n")))
@@ -205,7 +205,7 @@
                       (let [body (:body form)
                             _ (visit-let-bindings c (:bindings form))
                             result (visit-form c body false)]
-                        (do (str-append! c (free-variables (:free form)))
+                        (do (str-append! c (free-variables (get-maybe form :free)))
                             (if (= :void (:type form))
                               ()
                               (str-append! c (str (indent) n " = " (:c result) ";\n")))))
@@ -222,7 +222,7 @@
                           (visit-form c body false))
                         (let [while-expr-again (visit-form c (get form :expr) true)]
                           (do
-                            (str-append! c (free-variables (:free form)))
+                            (str-append! c (free-variables (get-maybe form :free)))
                             (str-append! c (str (indent) while-expr-name " = " (get while-expr-again :c) ";\n"))
                             ))
                         (indent-out!)
@@ -258,7 +258,7 @@
                       (if (= :void ret-type)
                         ""
                         (str (indent) (type-build ret-type) " " result-var-name " = " (get result :c) ";\n")) ;; TODO: evaluate if this extra step is needed
-                      (free-variables (:free ast))
+                      (free-variables (get-maybe ast :free))
                       (if (= :void (:type body))
                         "" ;; no return
                         (str (indent) "return " result-var-name ";\n"))
