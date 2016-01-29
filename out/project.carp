@@ -1,8 +1,11 @@
 (reset! echo-signature-after-bake true)
 
 (when (not carp-dev)
-  (do (load-lisp (str carp-dir "lisp/string_array.carp"))
-      (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
+  (do
+    ;;(load-lisp (str carp-dir "lisp/string_array.carp"))
+    ;;(load-lisp (str carp-dir "lisp/glfw_test.carp"))
+    nil
+    ))
 
 (defn f ()
   (let [a (string-copy "a")
@@ -13,4 +16,17 @@
       (eat-string a)
       )))
 
+(defn g (s)
+  (println (ref s)))
 
+
+;; This function takes the ast of a function and extracts the information needed for ownership, making it easier to write tests
+(defn own-analyze (ast)
+  (match (:node ast)
+    :function {:node :function :free (:free ast) :body (own-analyze (:body ast))}
+    :app {:node :app :head (own-analyze (:head ast)) :tail (map own-analyze (:tail ast))}
+    x {:node x}
+    ))
+
+(defn ownership-analyze (lambda)
+  (own-analyze (annotate-ast (lambda-to-ast (code lambda)))))

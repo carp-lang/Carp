@@ -23,7 +23,7 @@
   (let [ast-func-deps (find-func-deps ast)
         ast-typed (infer-types ast-func-deps)
         ast-named (generate-names (copy {}) ast-typed)
-        ast-lifetimes ast-named ;; NO LIFETIMES FOR NOW (calculate-lifetimes ast-named)
+        ast-lifetimes (calculate-lifetimes ast-named)
         ]
     ast-lifetimes))
 

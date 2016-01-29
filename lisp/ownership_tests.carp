@@ -1,8 +1,17 @@
 ;; OWNERSHIP
 
-;; This one is weird:
-(defn own-string-weird (s)
-  (ref s))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defn run-ownership-tests ()
@@ -513,4 +522,17 @@
 
     )) ;; end of ownership tests
 
-(run-ownership-tests)
+;;(run-ownership-tests)
+
+
+
+
+
+
+
+
+
+
+;; This one is weird:
+(defn own-string-weird (s)
+  (ref s))
