@@ -63,7 +63,7 @@ char *string_copy(char *s) {
   return strdup(s);
 }
 
-char *str_append(char *s1, char *s2) {
+char *string_append(char *s1, char *s2) {
   char *new_str = malloc(strlen(s1) + strlen(s2) + 1);
   new_str[0] = '\0';
   strcat(new_str, s1);

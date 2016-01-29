@@ -1,4 +1,21 @@
 
+(defn clean-free-list (free-list)
+  (map (fn (n) {:name (:name n) :type (:type n)}) free-list))
+
+(defn ownership-analyze-internal (ast)
+  (match (:node ast)
+    :function {:node :function :free (clean-free-list (:free ast)) :body (ownership-analyze-internal (:body ast))}
+    :let {:node :let :free (clean-free-list (:free ast)) :body (ownership-analyze-internal (:body ast))}
+    ;;:app {:node :app :head (ownership-analyze-internal (:head ast)) :tail (map ownership-analyze-internal (:tail ast))}
+    x nil ;;{:node x}
+    ))
+
+;; This function takes an uncompiled function and extracts the information needed for ownership, making it easier to write tests
+(defn ownership-analyze (lambda)
+  (ownership-analyze-internal (annotate-ast (lambda-to-ast (code lambda)))))
+
+
+
 (defn convert-param-node (a)
   {:name (str (:name a))
    :type (:type a)

@@ -28,7 +28,7 @@
 (defn sf1 ()
   (let [a0 (string-array-new 2)
         a1 (string-array-set a0 0 "Hello, ")]    
-    (str-append (ref (string-array-get (ref a1) 0)) "YEAH")))
+    (string-append (ref (string-array-get (ref a1) 0)) "YEAH")))
 
 (defn test-string-array-1 ()
   (do 
@@ -41,7 +41,7 @@
   (let [a0 (string-array-new 2)]
     (let [a1 (string-array-set a0 0 "Hello, ")]
       (let [a2 (string-array-set a1 1 "world!")]
-        (str-append (ref (string-array-get (ref a2) 0)) (ref (string-array-get (ref a2) 1)))))))
+        (string-append (ref (string-array-get (ref a2) 0)) (ref (string-array-get (ref a2) 1)))))))
 
 (defn test-string-array-2 ()
   (do
@@ -55,7 +55,7 @@
         a1 (string-array-set a0 0 "Hello, ")]
     (do (string-array-new 10)
         (let [a2 (string-array-set a1 1 "world!")]
-          (str-append (ref (string-array-get (ref a2) 0))
+          (string-append (ref (string-array-get (ref a2) 0))
                       (ref (string-array-get (ref a2) 1)))))))
 
 (defn test-string-array-3 ()
@@ -154,7 +154,7 @@
   (fill-array (string-array-new n) 0 init))
 
 (defn exclaim (s)
-  (str-append (ref s) "!"))
+  (string-append (ref s) "!"))
 
 (defn test-smap ()
   (string-array-print (ref (string-array-map exclaim (string-array-new 5)))))

@@ -176,7 +176,7 @@
 (defn recursive-let ()
   (let [;; The other definition order should get caught by compiler, not clang:
         y "whaaaaaaat"
-        x (str-append "hej" (ref (itos (strlen y))))
+        x (string-append "hej" (ref (itos (strlen y))))
         ]
     x))
 (bake recursive-let)

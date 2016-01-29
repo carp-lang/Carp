@@ -207,7 +207,7 @@
 (register-builtin "nullQMARK" '((:ptr :any)) :bool)
 (register-builtin "not" '(:bool) :bool)
 (register-builtin "strlen" '((:ref :string)) :int)
-(register-builtin "str_append" '((:ref :string) (:ref :string)) :string)
+(register-builtin "string_append" '((:ref :string) (:ref :string)) :string)
 (register-builtin "file_existsQMARK" '((:ref :string)) :bool)
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "string_copy" '((:ref :string)) :string)
