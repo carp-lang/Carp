@@ -52,21 +52,22 @@
                                                       is-global-lookup (global? vars-in-scope symbol)
                                                       self-recursive (= func-name symbol-name)
                                                       ]
-                                                  (do
-                                                    (when (and is-global-lookup (not self-recursive))
-                                                      (let [evaled (eval symbol)
-                                                            is-primop (primop? evaled)
-                                                            is-lambda (lambda? evaled)]
-                                                        (do
-                                                          (when is-lambda ;; Bake, then add to deps
-                                                            (do
-                                                              (bake-internal (new-builder) (str symbol) (code evaled) '() false)
-                                                              (reset! deps (cons symbol deps))))
-                                                          (when (and (foreign? evaled) (not (builtin? evaled))) ;; No need to bake, but add to deps
-                                                            (reset! deps (cons symbol deps)))
-                                                          )))
-                                                    
-                                                    (assoc ast :global-lookup is-global-lookup)))
+                                                  (if self-recursive
+                                                    (assoc ast :self-recursive true)
+                                                    (do
+                                                      (when is-global-lookup
+                                                        (let [evaled (eval symbol)
+                                                              is-primop (primop? evaled)
+                                                              is-lambda (lambda? evaled)]
+                                                          (do
+                                                            (when is-lambda ;; Bake, then add to deps
+                                                              (do
+                                                                (bake-internal (new-builder) (str symbol) (code evaled) '() false)
+                                                                (reset! deps (cons symbol deps))))
+                                                            (when (and (foreign? evaled) (not (builtin? evaled))) ;; No need to bake, but add to deps
+                                                              (reset! deps (cons symbol deps)))
+                                                            )))                                                      
+                                                      (assoc ast :global-lookup is-global-lookup))))
 
                                         :reset (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
 

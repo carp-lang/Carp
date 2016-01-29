@@ -20,6 +20,7 @@
             t (type global-lookup)]
         (match t
           :lambda (error (str "Found non-baked symbol '" sym "'."))
+          :macro (error (str "Found non-expanded macro '" sym "'."))
           :foreign (signature global-lookup)
           _ t))
       lookup)))
@@ -50,17 +51,14 @@
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
                  arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
-                 func-constrs (let [app-f-sym (get-in ast '(:head :value))
-                                    app-f-name (str app-f-sym)
-                                    app-f (eval app-f-sym)]
-                                (if (is-self-recursive? type-env app-f-name)
-                                  () ;; no constraints needed when the function is calling itself
-                                  (if (foreign? app-f)
-                                    (list {:a (get-in ast '(:head :type)) :b (signature app-f) :doc "func-app"})
-                                    (error (str "Found call to non-baked function: '" app-f-name "'")))))
+                 ;; func-constrs (let [app-f-sym (get-in ast '(:head :value))
+                 ;;                    app-f-name (str app-f-sym)
+                 ;;                    app-f (eval app-f-sym)]
+                 ;;                )
+                 head-constrs (generate-constraints-internal '() (:head ast) type-env)
                  tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
-                 new-constraints (concat tail-constrs func-constrs (cons ret-constr arg-constrs))]
+                 new-constraints (concat tail-constrs head-constrs (cons ret-constr arg-constrs))]
              (concat new-constraints constraints))
 
       :literal constraints ;; literals don't need constraints
@@ -82,13 +80,15 @@
                                 :doc "reset!-constr"}]
              (cons expr-constr x0))
 
-      :lookup (let [val (:value ast)
+      :lookup (if (has-key? ast :self-recursive)
+                constraints
+                (let [val (:value ast)
                     t (get-type-of-symbol type-env val)
                     ;;_ (println (str "type of lookup '" val "': " t))
-                    ]
-                (cons {:a (:type ast)
-                       :b t
-                       :doc (str "lookup " val)} constraints))
+                      ]
+                  (cons {:a (:type ast)
+                         :b t
+                         :doc (str "lookup " val)} constraints)))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
                    x1 (generate-constraints-internal x0 (get ast :b) type-env)
