@@ -124,15 +124,25 @@
 
 
 ;; Auto chain bake
-(defn test-auto-chain-bake ()
+(defn test-auto-chain-bake-1 ()
   (do
     (defn f1 () 100)
     (defn f2 () 200)
     (defn f3 () (+ (f1) (f2)))
     (bake f3)
     (assert-eq (f3) 300)))
-(test-auto-chain-bake)
+(test-auto-chain-bake-1)
 
+
+(defn test-auto-chain-bake-2 ()
+  (do
+    (defn f4 () 100)
+    (defn f5 (x) (+ x 1))
+    (defn f6 () (let [z (f5 (f4))]
+                   z))
+    (bake f6)
+    (assert-eq (f6) 101)))
+(test-auto-chain-bake-2)
 
 
 ;; COMPILE TIME MACROS

@@ -37,8 +37,11 @@
   (let [deps (copy '())
         func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
 
-        find-deps-in-list (fn  (asts vars-in-scope)
+        find-deps-in-list (fn (asts vars-in-scope)
                             (reduce (fn (result a) (cons-last result (find-func-deps-internal a vars-in-scope))) '() asts))
+
+        find-deps-in-bindings (fn (bindings vars-in-scope)
+                                (reduce (fn (result binding) (cons-last result (update-in binding '(:value) (fn (bv) (find-func-deps-internal bv vars-in-scope))))) '() bindings))
 
         find-func-deps-internal (fn (ast vars-in-scope)
                                   (do ;;(println (str "visit: " (:node ast)))
@@ -95,11 +98,17 @@
                                         :do (let [new-ast (update-in ast '(:forms) (fn (a) (find-deps-in-list a vars-in-scope)))]
                                               new-ast)
 
-                                        :let (let [bindings (:bindings ast)
-                                                   new-vars (union (map :name bindings) vars-in-scope)] ;; TODO: visit every expression in bindings
-                                               (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
+                                        :let (let [;;_ (println (str "ast:\n" ast))
+                                                   bindings (:bindings ast)
+                                                   new-vars (union (map :name bindings) vars-in-scope)
+                                                   ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))
+                                                   ;;_ (println (str "ast0:\n" ast0))
+                                                   ]
+                                               (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a new-vars))))
 
                                         :ref (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+
+                                        :null ast
 
                                         x (error (str "find-func-deps can't handle node: " x))
                                         
