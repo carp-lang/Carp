@@ -23,21 +23,32 @@
                (reset! i (inc i))
                ))
         (println "]"))))
-;;(bake string-array-print)
-
-(defmacro IF (x a b) (if x a b))
-(defn test-if () (IF true (println "a") (println "b")))
+(bake string-array-print)
 
 (defn sf1 ()
   (let [a0 (string-array-new 2)
         a1 (string-array-set a0 0 "Hello, ")]    
     (str-append (ref (string-array-get (ref a1) 0)) "YEAH")))
 
+(defn test-string-array-1 ()
+  (do 
+    (bake sf1)
+    (assert-eq "Hello, YEAH" (sf1))))
+(test-string-array-1)
+
+
 (defn sf2 ()
   (let [a0 (string-array-new 2)]
     (let [a1 (string-array-set a0 0 "Hello, ")]
       (let [a2 (string-array-set a1 1 "world!")]
         (str-append (ref (string-array-get (ref a2) 0)) (ref (string-array-get (ref a2) 1)))))))
+
+(defn test-string-array-2 ()
+  (do
+    (bake sf2)
+    (assert-eq "Hello, world!" (sf2))))
+(test-string-array-2)
+
 
 (defn sf3 ()
   (let [a0 (string-array-new 2)
@@ -46,18 +57,6 @@
         (let [a2 (string-array-set a1 1 "world!")]
           (str-append (ref (string-array-get (ref a2) 0))
                       (ref (string-array-get (ref a2) 1)))))))
-
-(defn test-string-array-1 ()
-  (do 
-    (bake sf1)
-    (assert-eq "Hello, YEAH" (sf1))))
-(test-string-array-1)
-
-(defn test-string-array-2 ()
-  (do
-    (bake sf2)
-    (assert-eq "Hello, world!" (sf2))))
-(test-string-array-2)
 
 (defn test-string-array-3 ()
   (do
@@ -97,7 +96,6 @@
     (sf5 false)
     ))
 (test-string-array-5)
-
 
 
 (defn sf6 (b)
@@ -140,14 +138,6 @@
 (test-string-array-last)
 
 
-(defn recursive-let ()
-  (let [;; The other definition order should get caught by compiler, not clang:
-        y "whaaaaaaat"
-        x (str-append "hej" (ref (itos (strlen y))))
-        ]
-    x))
-(bake recursive-let)
-
 (defn fill-array [a pos value]
   (let [count (string-array-count (ref a))]
     (if (< pos count)
@@ -165,10 +155,6 @@
 
 (defn exclaim (s)
   (str-append (ref s) "!"))
-
-;;(bake exclaim)
-
-;;(def sa1 )
 
 (defn test-smap ()
   (string-array-print (ref (string-array-map exclaim (string-array-new 5)))))

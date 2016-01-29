@@ -170,3 +170,13 @@
 (def reset-1-deps (find-func-deps reset-1-ast))
 (def reset-1-con (gencon reset-1-ast))
 (def reset-1-asta (annotate-ast reset-1-ast))
+
+
+;; LET BINDINGS
+(defn recursive-let ()
+  (let [;; The other definition order should get caught by compiler, not clang:
+        y "whaaaaaaat"
+        x (str-append "hej" (ref (itos (strlen y))))
+        ]
+    x))
+(bake recursive-let)

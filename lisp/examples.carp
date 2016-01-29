@@ -8,6 +8,9 @@
 (defn fiz (x)
   (* 3.3 x))
 
+(defn tiny ()
+  (max (+ 2 3) (* 7 2)))
+
 (defn three (x)
   (if (= x 3)
     (println "Three!!!")
@@ -47,3 +50,4 @@
     (if (< (strlen text) 10)
       (string-copy "Too short")
       manage-me)))
+

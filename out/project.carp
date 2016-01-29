@@ -1,32 +1,8 @@
-
 (reset! echo-signature-after-bake true)
-
-;;(println (str "dev = " carp-dev))
 
 (when (not carp-dev)
   (do (load-lisp (str carp-dir "lisp/string_array.carp"))
       (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
-
-;; (defn z ()
-;;   (let [m (string-copy "blah")]
-;;     (if (do (string-copy "adasdasd")
-;;               (string-copy "adasdasd")
-;;               (string-copy "adasdasd")
-;;               false)
-;;         m
-;;         (string-copy "sfsdfsd"))))
-
-
-(defn z ()
-  (for (a 0 4)
-    (for (b 1 5)
-      (println (ref (itos (* a b)))))))
-
-(defn zz ()
-  (for (a 0 4
-        b 0 3)
-    (println (ref (itos (* a b))))))
-
 
 (defn f ()
   (let [a (string-copy "a")
@@ -36,4 +12,5 @@
       (string-copy (ref a))
       (eat-string a)
       )))
+
 
