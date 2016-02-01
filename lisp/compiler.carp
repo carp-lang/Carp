@@ -27,6 +27,9 @@
         ]
     ast-lifetimes))
 
+(defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
+(defn sig (lambda) (:type (ann lambda)))
+
 (defn check-for-ref-return (ast)
   (let [t (:type ast)]
     (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))

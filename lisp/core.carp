@@ -7,7 +7,7 @@
 
 (defmacro assert-eq (a b)
   (list 'if-not (list '= a b)
-	(list 'error (list 'str "assert-eq fail:\n" (str a) " => " a "\n - VS - \n" (str b) " => " b))
+	(list 'error (list 'str "assert-eq fail:\n" (str a) " \n=>\n " a "\n\n - VS - \n\n" (str b) " \n=>\n " b))
 	nil))
 
 (defmacro defn (name args body)

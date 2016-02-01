@@ -1,14 +1,118 @@
 ;; OWNERSHIP
 
 
+(defn own-1 (s)
+  (eat-string s))
+
+(defn test-own-1 ()
+  (do
+    (assert-eq '(:fn (:string) :void)
+               (sig own-1))
+    (assert-eq {:node :function, 
+                :free (), 
+                :body ()}
+               (ownership-analyze own-1))))
+
+(test-own-1)
 
 
 
+(defn own-2 (s)
+  (string-copy s))
+
+(defn test-own-2 ()
+  (do
+    (assert-eq '(:fn ((:ref :string)) :string)
+               (sig own-2))
+    (assert-eq {:node :function, 
+                :free '(), 
+                :body ()}
+               (ownership-analyze own-2))))
+
+(test-own-2)
 
 
 
+(defn own-3 ()
+  (string-copy (ref (string-copy "CARP"))))
+
+(defn test-own-3 ()
+  (do
+    (assert-eq '(:fn () :string)
+               (sig own-3))
+    (assert-eq {:node :function, 
+                :free '({:name "_result_1" :type :string}),
+                :body ()}
+               (ownership-analyze own-3))))
+
+(test-own-3)
 
 
+
+(defn own-4 ()
+  (let [s (string-copy "CARP1")]
+    (string-copy "CARP2")))
+
+(defn test-own-4 ()
+  (do
+    (assert-eq '(:fn () :string)
+               (sig own-4))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let, 
+                        :free ({:name "s", 
+                                :type :string}), 
+                        :body ()}}
+               (ownership-analyze own-4))))
+
+(test-own-4)
+
+
+
+(defn own-5 ()
+  (let [s1 (string-copy "CARP1")
+        s2 (string-copy (ref s1))]
+    0))
+
+(defn test-own-5 ()
+  (do
+    (assert-eq '(:fn () :int)
+               (sig own-5))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let, 
+                        :free ({:name "s2", 
+                                :type :string}
+                               {:name "s1", 
+                                :type :string}), 
+                        :body ()}}
+               (ownership-analyze own-5))))
+
+(test-own-5)
+
+
+
+(defn own-6 ()
+  (let [s1 (string-copy "CARP")]
+    (let [s2 (string-copy (ref s1))]
+      0)))
+
+(defn test-own-6 ()
+  (do
+    (assert-eq '(:fn () :int)
+               (sig own-6))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let, 
+                        :free ({:name "s1", 
+                                :type :string}), 
+                        :body {:node :let, 
+                               :free ({:name "s2", 
+                                       :type :string}), 
+                               :body ()}}}
+               (ownership-analyze own-6))))
+
+(test-own-6)
 
 
 
@@ -523,13 +627,6 @@
     )) ;; end of ownership tests
 
 ;;(run-ownership-tests)
-
-
-
-
-
-
-
 
 
 
