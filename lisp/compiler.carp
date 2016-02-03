@@ -11,6 +11,7 @@
 ;; 6. Make the C generator spit out beautiful C for the AST node
 ;; 7. Profit!
 
+(load-lisp (str carp-dir "lisp/error_codes.carp"))
 (load-lisp (str carp-dir "lisp/compiler_helpers.carp"))
 (load-lisp (str carp-dir "lisp/ast.carp"))
 (load-lisp (str carp-dir "lisp/infer_types.carp"))

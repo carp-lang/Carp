@@ -116,6 +116,39 @@
 
 
 
+(defn own-7 ()
+  (let [s1 (string-copy "CARP")]
+    (do
+      (eat-string s1)
+      (eat-string s1))))
+
+(defn test-own-7 ()
+  (assert-error error-given-away (ownership-analyze own-7)))
+
+(test-own-7)
+
+
+
+(defn own-1000 ()
+  (let [a (string-copy "a")
+        ;b (ref a)
+        ]
+    (do
+      (string-copy (ref a))
+      (eat-string a)
+      )))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defn run-ownership-tests ()

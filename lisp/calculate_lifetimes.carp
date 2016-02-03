@@ -196,11 +196,10 @@
                       sym (:value ast)
                       var-name (str sym)
                       given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
-                  (if false ;; (and (managed-type? (:type ast)) given-away)
-                    (let [globally-defined (def? sym)]
-                      (if false ;; globally-defined
+                  (if (and (managed-type? (:type ast)) given-away)
+                    (if (:global-lookup ast)
                         data
-                        (error (str "The variable '" var-name "' has already been given away to another function, it can't be used here."))))
+                        (error {:error error-given-away :message (str "The variable '" var-name "' has already been given away to another function, it can't be used here.")}))
                     (let [vars-after (if in-ref
                                        vars
                                        (remove-var-with-name vars var-name))
