@@ -6,6 +6,11 @@
   (match (:node ast)
     :function {:node :function :free (clean-free-list (:free ast)) :body (ownership-analyze-internal (:body ast))}
     :let {:node :let :free (clean-free-list (:free ast)) :body (ownership-analyze-internal (:body ast))}
+    :if {:node :if
+         :free-left (clean-free-list (:free-left ast))
+         :free-right (clean-free-list (:free-right ast))
+         :body-left (ownership-analyze-internal (:a ast))
+         :body-right (ownership-analyze-internal (:b ast))}
     ;;:app {:node :app :head (ownership-analyze-internal (:head ast)) :tail (map ownership-analyze-internal (:tail ast))}
     x nil ;;{:node x}
     ))

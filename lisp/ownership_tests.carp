@@ -129,6 +129,122 @@
 
 
 
+(defn own-8 ()
+  (let [s (string-copy "CARP1")]
+    (if true
+      s
+      (string-copy "CARP2"))))
+
+(defn test-own-8 ()
+  (do
+    (assert-eq '(:fn () :string)
+               (sig own-8))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body {:node :if, 
+                               :free-left (), 
+                               :free-right ({:name "s"
+                                             :type :string})
+                               :body-left ()
+                               :body-right ()}}}
+               (ownership-analyze own-8))))
+
+(test-own-8)
+
+
+
+
+(defn own-9 ()
+  (let [s (string-copy "CARP1")]
+    (if true
+      s
+      s)))
+
+(defn test-own-9 ()
+  (do
+    (assert-eq '(:fn () :string)
+               (sig own-9))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body {:node :if, 
+                               :free-left (), 
+                               :free-right ()
+                               :body-left ()
+                               :body-right ()}}}
+               (ownership-analyze own-9))))
+
+(test-own-9)
+
+
+
+
+(defn own-10 ()
+  (let [s (string-copy "CARP1")]
+    (if true
+      10
+      20)))
+
+(defn test-own-10 ()
+  (do
+    (assert-eq '(:fn () :int)
+               (sig own-10))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ({:name "s"
+                                :type :string})
+                        :body {:node :if, 
+                               :free-left (), 
+                               :free-right ()
+                               :body-left ()
+                               :body-right ()}}}
+               (ownership-analyze own-10))))
+
+(test-own-10)
+
+
+(defn own-11 ()
+  (let [s1 (string-copy "CARP1")
+        s2 (string-copy "CARP2")]
+    (if true
+      s1
+      s2)))
+
+(defn test-own-11 ()
+  (do
+    (assert-eq '(:fn () :string)
+               (sig own-11))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body {:node :if, 
+                               :free-left ({:name "s2"
+                                            :type :string}),
+                               :free-right ({:name "s1"
+                                             :type :string})
+                               :body-left ()
+                               :body-right ()}}}
+               (ownership-analyze own-11))))
+
+(test-own-11)
+
+
+;; (defn own-8 [s]
+;;   (let [count (strlen (ref a))]
+;;     (if (< pos count)
+;;       (fill-array (string-array-set a pos value) (+ pos 1) value)
+;;       a)))
+
+
+
+
+
+
 (defn own-1000 ()
   (let [a (string-copy "a")
         ;b (ref a)
