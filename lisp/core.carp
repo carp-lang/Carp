@@ -13,10 +13,10 @@
 (defmacro assert-error (error-code form)
   (list 'let (list 'result (list 'catch-error form))
         (list 'if (list 'nil? 'result)
-              (list 'error (list 'str "No error! " (str form)))
+              (list 'error (list 'str "No error!\n" (str form) "\n=>\n" 'result))
               (list 'if-not (list '= error-code (list :error 'result))
-                    (list 'error (list 'str "assert-error fail:\n" (str form) " \n=>\n " form "\n Error: ???"))
-                    nil))))
+                    (list 'error (list 'str "assert-error failed, expected error code " error-code " but got " (list :error 'result)))
+                    :OK))))
 
 (defmacro defn (name args body)
   (list 'def name (list 'fn args body)))
