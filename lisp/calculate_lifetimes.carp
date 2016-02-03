@@ -165,13 +165,21 @@
           vars (:vars data)]
       (match (:node ast)
 
-        :function (let [parameter-nodes (:args ast)
+        :function (let [;;_ (println (str "\nfunction vars-before: " vars))
+
+                        parameter-nodes (:args ast)
                         new-variables (filter manage? (map convert-param-node parameter-nodes))
-                        ;;_ (println (str ":function new-variables: " new-variables))
+
+                        ;;_ (println (str "\nfunction new-variables: " new-variables))
+                        
                         pre-body (:body ast)
                         ;;_ (println (str "\npre-body:\n" pre-body))
+                        
                         data-after (calculate-lifetimes-internal {:ast pre-body :vars new-variables} in-ref)
                         vars-after (:vars data-after)
+
+                        ;;_ (println (str "\nfunction vars-after:\n" vars-after "\n"))
+                        
                         vars-with-return-value-removed (dont-free-result-variable (:body ast) vars-after)
                         new-body (:ast data-after)
 
@@ -318,7 +326,8 @@
                :vars vars-after-all-with-ret-val
                :eaten eaten})
 
-        :let (let [;;_ (println (str "\nLET vars in body " (get-maybe ast :result-name) ":\n" vars))
+        :let (let [
+                   ;;_ (println (str "\nlet vars before " (get-maybe ast :result-name) ":\n" vars))
 
                    init-data (assoc data :pos 0)
                    data-after-bindings (reduce calc-lifetime-for-let-binding init-data (:bindings ast))
@@ -351,14 +360,14 @@
 
                    ;;_ (println (str "\ndata-after-body:\n" data-after-body))
 
-                   vars-after-body-minus-eaten (let [eaten (get-maybe data-after-body :eaten)]
-                                                     (if (nil? eaten)
-                                                       vars-after-body
-                                                       (do
-                                                         ;;(println (str "Will eat:\n" eaten))
-                                                         (remove (fn (v) (contains? eaten (:name v))) vars-after-body))
-                                                       ))
-                   ;;_ (println (str "\nLET minus eaten " (get-maybe ast :result-name) ", Current vars:\n" vars-after-body-minus-eaten))
+                   eaten (get-maybe data-after-body :eaten)
+                   vars-after-body-minus-eaten (if (nil? eaten)
+                                                 vars-after-body
+                                                 (do
+                                                   ;;(println (str "Will eat:\n" eaten))
+                                                   (remove (fn (v) (contains? eaten (:name v))) vars-after-body)))
+                   
+                   ;;_ (println (str "\nlet vars minus eaten " (get-maybe ast :result-name) ", Current vars:\n" vars-after-body-minus-eaten))
 
                    ;; only remove the variables that were not already there before entering let form:
                    vars-after-body-and-return-1 (remove (fn (v) (contains? vars v)) vars-after-body-minus-eaten)
@@ -371,10 +380,17 @@
                    ;;_ (println (str "\nlet vars-after-body-and-return-2:\n" vars-after-body-and-return-2))
                    
                    final-ast (assoc ast-after-body :free vars-after-body-and-return-2)
+
+                   original-vars-still-alive (intersection vars vars-after-body)
+                   
                    final-vars (let [ast-type (:type ast)]
                                 (if (managed-type? ast-type)
-                                  (cons {:name (:result-name ast) :type ast-type :doc "let ret val"} vars)
-                                  vars))
+                                  (cons {:name (:result-name ast) :type ast-type :doc "let ret val"} original-vars-still-alive)
+                                  original-vars-still-alive))
+
+                   ;;_ (println (str "\nlet final-vars:\n" final-vars))
+
+                   ;;_ (println (str "\nlet eaten-by-bindings: " eaten-by-bindings))
                    ]
                {:ast final-ast
                 :vars final-vars
