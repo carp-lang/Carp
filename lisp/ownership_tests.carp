@@ -207,6 +207,7 @@
 (test-own-10)
 
 
+
 (defn own-11 ()
   (let [s1 (string-copy "CARP1")
         s2 (string-copy "CARP2")]
@@ -234,11 +235,31 @@
 (test-own-11)
 
 
-;; (defn own-8 [s]
-;;   (let [count (strlen (ref a))]
-;;     (if (< pos count)
-;;       (fill-array (string-array-set a pos value) (+ pos 1) value)
-;;       a)))
+
+(defn own-12 (s1)
+  (let []
+    (if true
+      (itos (strlen (ref s1)))
+      s1)))
+
+(defn test-own-12 ()
+  (do
+    (assert-eq '(:fn (:string) :string)
+               (sig own-12))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body {:node :if, 
+                               :free-left ({:name "s1"
+                                            :type :string}),
+                               :free-right ()
+                               :body-left ()
+                               :body-right ()}}}
+               (ownership-analyze own-12))))
+
+(test-own-12)
+
 
 
 
