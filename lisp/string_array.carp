@@ -147,20 +147,24 @@
 
 (defn test-fill-array ()
   (do
-    (assert-eq '(:fn (:string-array :int :string) :void)
-               (sig fill-array))
-    (assert-eq '{:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body {:node if
-                               :free-left '({:name a
-                                             :type :string-array})
-                               :free-right '()
-                               :body ()}}}
-               (ownership-analyze fill-array))))
+    (def fill-ast (lambda-to-ast (code fill-array)))
+    (def fill-asta (annotate-ast (assoc fill-ast :name "fill-array")))
+    (def fill-sig (:type fill-asta))
+    (assert-eq '(:fn (:string-array :int (:ref :string)) :string-array)
+               fill-sig)
+    ;; (assert-eq '{:node :function, 
+    ;;              :free (), 
+    ;;              :body {:node :let
+    ;;                     :free ()
+    ;;                     :body {:node if
+    ;;                            :free-left '({:name a
+    ;;                                          :type :string-array})
+    ;;                            :free-right '()
+    ;;                            :body ()}}}
+    ;;            (ownership-analyze fill-array))
+    ))
 
-;;(test-fill-array)
+(test-fill-array)
 
 
 

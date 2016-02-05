@@ -83,8 +83,9 @@
       :lookup (if (has-key? ast :self-recursive)
                 constraints
                 (let [val (:value ast)
-                    t (get-type-of-symbol type-env val)
-                    ;;_ (println (str "type of lookup '" val "': " t))
+                      ;;_ (println (str "not self-recursive: \n" ast))
+                      t (get-type-of-symbol type-env val)
+                      ;;_ (println (str "type of lookup '" val "': " t))
                       ]
                   (cons {:a (:type ast)
                          :b t

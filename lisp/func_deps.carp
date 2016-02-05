@@ -22,6 +22,7 @@
                                         :lookup (let [symbol (:value ast)
                                                       symbol-name (str symbol)
                                                       is-global-lookup (global? vars-in-scope symbol)
+                                                      ;;_ (println (str "Comparing " func-name " with " symbol-name))
                                                       self-recursive (= func-name symbol-name)
                                                       ]
                                                   (if self-recursive
