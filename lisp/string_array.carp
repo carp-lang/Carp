@@ -138,29 +138,55 @@
 (test-string-array-last)
 
 
+
 (defn fill-array [a pos value]
   (let [count (string-array-count (ref a))]
     (if (< pos count)
       (fill-array (string-array-set a pos value) (+ pos 1) value)
       a)))
 
-(defn fill-array-2 [a pos value]
-  (if (< pos (string-array-count (ref a)))
-    (let [b (fill-array (string-array-set a pos value) (+ pos 1) value)]
-      b)
-    a))
+(defn test-fill-array ()
+  (do
+    (assert-eq '(:fn (:string-array :int :string) :void)
+               (sig fill-array))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body {:node if
+                               :free-left '({:name a
+                                             :type :string-array})
+                               :free-right '()
+                               :body ()}}}
+               (ownership-analyze fill-array))))
 
-(defn string-array-new-init (n init)
-  (fill-array (string-array-new n) 0 init))
+;;(test-fill-array)
 
-(defn exclaim (s)
-  (string-append (ref s) "!"))
 
-(defn test-smap ()
-  (string-array-print (ref (string-array-map exclaim (string-array-new 5)))))
 
-(defn test-smap-2 (f)
-  (string-array-print (ref (string-array-map f (string-array-new 5)))))
+;; (defn fill-array-2 [a pos value]
+;;   (if (< pos (string-array-count (ref a)))
+;;     (let [b (fill-array (string-array-set a pos value) (+ pos 1) value)]
+;;       b)
+;;     a))
+
+
+
+;; (defn string-array-new-init (n init)
+;;   (fill-array (string-array-new n) 0 init))
+
+;; (defn exclaim (s)
+;;   (string-append (ref s) "!"))
+
+;; (defn test-smap ()
+;;   (string-array-print (ref (string-array-map exclaim (string-array-new-init 5 "yo")))))
+
+;; (defn test-smap-2 (f)
+;;   (string-array-print (ref (string-array-map f (string-array-new-init 5 "what")))))
+
+
+
+;;(bake-exe test-smap)
 
 ;; (def smap-ast (lambda-to-ast (code test-smap)))
 ;; (def smap-con (gencon smap-ast))

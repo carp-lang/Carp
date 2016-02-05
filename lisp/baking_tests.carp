@@ -118,7 +118,7 @@
 (defn deps-1 () (non-baked 3))
 
 (def deps-1-ast (lambda-to-ast (code deps-1)))
-(def deps-1-deps (find-func-deps deps-1-ast))
+(def deps-1-deps (find-func-deps deps-1-ast true))
 (def deps-1-con (gencon deps-1-ast))
 (def deps-1-asta (annotate-ast deps-1-ast))
 
@@ -167,7 +167,7 @@
 
 
 (def reset-1-ast (lambda-to-ast (code reset-1)))
-(def reset-1-deps (find-func-deps reset-1-ast))
+(def reset-1-deps (find-func-deps reset-1-ast false))
 (def reset-1-con (gencon reset-1-ast))
 (def reset-1-asta (annotate-ast reset-1-ast))
 

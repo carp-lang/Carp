@@ -21,7 +21,10 @@
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 
 (defn annotate-ast (ast)
-  (let [ast-func-deps (find-func-deps ast)
+  (annotate-ast-internal ast false))
+
+(defn annotate-ast-internal (ast bake-deps)
+  (let [ast-func-deps (find-func-deps ast bake-deps)
         ast-typed (infer-types ast-func-deps)
         ast-named (generate-names (copy {}) ast-typed)
         ast-lifetimes (calculate-lifetimes ast-named)
@@ -87,7 +90,7 @@
 (defn bake-internal (builder func-name func-code external-deps exe)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
-        ast-annotated (annotate-ast ast-named)
+        ast-annotated (annotate-ast-internal ast-named true)
         _ (check-for-ref-return ast-annotated)
         builder-with-headers (builder-add-headers builder header-files)
         builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)

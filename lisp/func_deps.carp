@@ -1,31 +1,3 @@
-;; (let [non-baked (eval (read app-f-name))]
-;;   (if (macro? non-baked)
-;;     (do (error (str "Found macro: " non-baked))
-;;         ;; (let [macro-forms (code non-baked)
-;;         ;;       m (eval (list 'fn (nth macro-forms 1) (nth macro-forms 2)))
-;;         ;;       _ (println (str "m: " m ", type: " (type m)))
-;;         ;;       called-macro (apply m '(true 10 20))
-;;         ;;       ;;expanded-macro (form-to-ast (code called-macro))
-;;         ;;       ]
-;;         ;;   (println (str "Expanded:\n" called-macro "\n\n")))
-;;         '())
-;;     (do (when log-chaining (println (str "Calling non-baked function: " app-f-name "\nWill bake it now!")))
-;;         (let [;;_ (println (str "non-baked: " non-baked " of type " (type non-baked)))
-;;               exe false]
-;;           (bake-internal (new-builder) app-f-name (code non-baked) '() exe))
-;;         (when log-chaining (println (str "Baking done, will resume job.")))
-;;         (let [sym-for-baked-func (read app-f-name)]
-;;           (list {:a (get-in ast '(:head :type))
-;;                  :b (signature (eval sym-for-baked-func))
-;;                  :doc "freshly baked func-app"}
-;;                 {:func-dep sym-for-baked-func})))))
-
-;; (bake-internal (new-builder) (str sym) (code global-lookup) '() false)
-;; (let [new-lookup (eval sym)
-;;       ;;_ (println (str "new-lookup: " new-lookup " : " (type new-lookup)))
-;;       sig (signature new-lookup)]
-;;   {:type sig :constr (list {:func-dep sym})}))
-
 
 ;; vars-in-scope is a list of symbols
 ;; deps is a list of symbols refering to the functions that has to be baked for this function to work
@@ -33,7 +5,7 @@
 (defn global? (vars-in-scope symbol)
   (not (contains? vars-in-scope symbol)))
 
-(defn find-func-deps (ast)
+(defn find-func-deps (ast bake-deps)
   (let [deps (copy '())
         func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
 
@@ -60,7 +32,7 @@
                                                               is-primop (primop? evaled)
                                                               is-lambda (lambda? evaled)]
                                                           (do
-                                                            (when is-lambda ;; Bake, then add to deps
+                                                            (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
                                                                 (bake-internal (new-builder) (str symbol) (code evaled) '() false)
                                                                 (reset! deps (cons symbol deps))))
