@@ -262,18 +262,39 @@
 
 
 
-
-
-
-
-(defn own-1000 ()
-  (let [a (string-copy "a")
-        ;b (ref a)
-        ]
+(defn own-13 ()
+  (let [s (string-copy "CARP")
+        r (ref s)]
     (do
-      (string-copy (ref a))
-      (eat-string a)
-      )))
+      (strlen r)
+      (eat-string s))))
+
+(defn test-own-13 ()
+  (do
+    (assert-eq '(:fn () :void)
+               (sig own-13))
+    (assert-eq '{:node :function, 
+                 :free (), 
+                 :body {:node :let
+                        :free ()
+                        :body ()}}
+               (ownership-analyze own-13))))
+
+(test-own-13)
+
+
+
+(defn own-14 ()
+  (let [s (string-copy "CARP")
+        r (ref s)]
+    (do
+      (eat-string s)
+      (strlen r))))
+
+(defn test-own-14 ()
+  (assert-error error-given-away (ownership-analyze own-14)))
+
+;;(test-own-14)
 
 
 

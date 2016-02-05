@@ -201,11 +201,11 @@
                    {:ast ast
                     :vars vars-after})
 
-        :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)]
+        :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} true)]
                {:ast (assoc ast :expr (:ast data-after))
                 :vars (:vars data-after)})
 
-        :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast))
+        :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast ", vars: " vars))
                       sym (:value ast)
                       var-name (str sym)
                       given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
