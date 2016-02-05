@@ -107,7 +107,12 @@
                                                    ]
                                                (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a new-vars))))
 
-                                        :ref (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                        :ref (let [ast0 (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                               ast0)
+
+                                        ;; (if (= :lookup (get-in ast0 '(:expr :node)))
+                                        ;;          (assoc ast0 :ref-dep (str (get-in ast0 '(:expr :value)))) ;; this ref is depending on another variable
+                                        ;;          ast0)
 
                                         :null ast
 

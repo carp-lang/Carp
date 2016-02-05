@@ -294,7 +294,7 @@
 (defn test-own-14 ()
   (assert-error error-given-away (ownership-analyze own-14)))
 
-;;(test-own-14)
+(test-own-14)
 
 
 

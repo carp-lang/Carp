@@ -66,6 +66,7 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
+          env (:env data)
           parameter-type (nth parameter-types pos)
           is-ref (ref? parameter-type)
 
@@ -74,6 +75,7 @@
           new-data (if (and (= :literal (:node arg-ast)) (not is-ref))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
                      (calculate-lifetimes-internal {:ast arg-ast
+                                                    :env env
                                                     :vars vars}
                                                    is-ref))
           new-arg-ast (:ast new-data)
@@ -96,25 +98,35 @@
           
           new-app-data {:ast new-ast
                         :vars new-vars-eaten-result
+                        :env env
                         :pos (inc pos)}]
       new-app-data)))
+
+(defn managed-ref-type? (t)
+  (match t
+    (:ref inner-t) (managed-type? inner-t)
+    _ false))
 
 (defn calc-lifetime-for-let-binding (data binding-ast)
   (do
     (let [ast (:ast data)
           vars (:vars data)
+          env (:env data)
           pos (:pos data)
+          t (:type binding-ast)
 
-          extended-vars (let [t (:type binding-ast)]
-                          (do
-                            ;;(println (str "is " (:name binding-ast) " : " t " a managed type? " (managed-type? t)))
-                            (if (managed-type? t)
-                              (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
-                              vars)))
+          extended-vars (if (managed-type? t)
+                          (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
+                          vars)
+
+          new-env (if (and (managed-ref-type? t) (= :ref (get-in binding-ast '(:value :node))) (= :lookup (get-in binding-ast '(:value :expr :node))))
+                    (assoc env (str (:name binding-ast)) (str (get-in binding-ast '(:value :expr :value))))
+                    env)
+          ;;_ (println (str "new-env: " new-env))
 
           ;;_ (println (str "\nextended-vars: " extended-vars))
           
-          new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :vars extended-vars} false)
+          new-data (calculate-lifetimes-internal {:ast (:value binding-ast) :env env :vars extended-vars} false)
           new-binding-ast (assoc binding-ast :value (:ast new-data))
           new-vars (:vars new-data)
 
@@ -132,6 +144,7 @@
           
           new-app-data {:ast new-ast
                         :vars new-vars-after-handover
+                        :env new-env
                         :pos (inc pos)}]
       new-app-data)))
 
@@ -140,10 +153,12 @@
     (let [ast (:ast data)
           vars (:vars data)
           pos (:pos data)
+          env (:env data)
           eaten (get-maybe data :eaten)
 
           data-after-visited-form (calculate-lifetimes-internal {:ast form-ast
                                                                  :vars vars
+                                                                 :env env 
                                                                  :eaten eaten} false)
           
           vars-after-visited-form (:vars data-after-visited-form)
@@ -155,6 +170,7 @@
           new-app-data {:ast new-ast
                         :vars vars-after-visited-form
                         :pos (inc pos)
+                        :env env
                         :eaten new-eaten}]
       new-app-data)))
 
@@ -162,6 +178,7 @@
   (do
     ;;(println (str "CALC: " (:node (:ast data))))
     (let [ast (:ast data)
+          env (:env data)
           vars (:vars data)]
       (match (:node ast)
 
@@ -175,7 +192,7 @@
                         pre-body (:body ast)
                         ;;_ (println (str "\npre-body:\n" pre-body))
                         
-                        data-after (calculate-lifetimes-internal {:ast pre-body :vars new-variables} in-ref)
+                        data-after (calculate-lifetimes-internal {:ast pre-body :env env :vars new-variables} in-ref)
                         vars-after (:vars data-after)
 
                         ;;_ (println (str "\nfunction vars-after:\n" vars-after "\n"))
@@ -191,6 +208,7 @@
                         ;;_ (println (str "\nast final:\n" ast-final))
                         ]
                     {:ast ast-final
+                     :env env
                      :vars '()})
 
         :literal (let [vars-after (if (managed-type? (:type ast))
@@ -199,20 +217,32 @@
                        ;;_ (println (str "vars-after literal " (:value ast) ": " vars-after))
                        ]
                    {:ast ast
+                    :env env
                     :vars vars-after})
 
-        :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} true)]
+        :ref (let [data-after (calculate-lifetimes-internal {:ast (:expr ast) :env env :vars vars} true)]
                {:ast (assoc ast :expr (:ast data-after))
+                :env (:env data-after)
                 :vars (:vars data-after)})
 
-        :lookup (let [;;_ (println (str "in-ref: " in-ref ", lookup: " ast ", vars: " vars))
+        :lookup (let [;;_ (println (str "\nin-ref: " in-ref ", lookup: \n" ast "\nvars: \n" vars "\nenv:\n" env))
                       sym (:value ast)
                       var-name (str sym)
-                      given-away (= 0 (count (filter (fn (v) (= var-name (:name v))) vars)))]
-                  (if (and (managed-type? (:type ast)) given-away)
+                      t (:type ast)
+                      ref-lookup (get-maybe env var-name)
+                      ;;_ (println (str "ref-lookup: " ref-lookup))
+                      is-ref-lookup (not (nil? ref-lookup))
+                      ;;_ (println (str "is-ref-lookup: " is-ref-lookup))
+                      derefed-var-name (if is-ref-lookup
+                                         ref-lookup
+                                         var-name)
+                      ;;_ (println (str "derefed-var-name: " derefed-var-name))
+                      given-away (= 0 (count (filter (fn (v) (= derefed-var-name (:name v))) vars)))]
+                  
+                  (if (and (or is-ref-lookup (managed-type? t)) given-away)
                     (if (:global-lookup ast)
-                        data
-                        (error {:error error-given-away :message (str "The variable '" var-name "' has already been given away to another function, it can't be used here.")}))
+                      data
+                      (error {:error error-given-away :message (str "The variable '" var-name "' has already been given away to another function, it can't be used here.")}))
                     (let [vars-after (if in-ref
                                        vars
                                        (remove-var-with-name vars var-name))
@@ -221,19 +251,21 @@
                           ;;         ;;(println (str "Vars before:\n" vars "\nVars after:\n" (:value ast) ": " vars-after))
                           ;;         ))
                           final-data {:ast ast
-                                     :vars vars-after
-                                     :eaten (list var-name)}
+                                      :vars vars-after
+                                      :env env
+                                      :eaten (list var-name)}
                           ;;_ (println (str "final-ast:\n" final-ast))
                           ]
                       final-data)))
 
-        :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :vars vars} in-ref)
+        :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :env env :vars vars} in-ref)
                      vars-after-left (:vars left)
-                     right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-left} in-ref)
+                     right (calculate-lifetimes-internal {:ast (:b ast) :env env :vars vars-after-left} in-ref)
                      vars-after-right (:vars right)
                      ast0 (assoc ast :a (:ast left))
                      ast1 (assoc ast0 :b (:ast right))]
                  {:ast ast1
+                  :env env
                   :vars vars-after-right})
 
         :app (let [;;_ (println (str "APP VARS BEFORE\n" vars))
@@ -250,14 +282,15 @@
                (do
                  ;;(println (str "APP VARS AFTER\n" vars-after))
                  {:ast ast-after
+                  :env env
                   :vars vars-after-with-ret-val}))
 
         :if (let [;;_ (println (str "if-ast:\n" ast))
-                  data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
+                  data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :env env :vars vars} in-ref)
 
                   vars-after-expr (:vars data-after-expr)
-                  data-after-left  (calculate-lifetimes-internal {:ast (:a ast) :vars vars-after-expr} in-ref)
-                  data-after-right (calculate-lifetimes-internal {:ast (:b ast) :vars vars-after-expr} in-ref)
+                  data-after-left  (calculate-lifetimes-internal {:ast (:a ast) :env env :vars vars-after-expr} in-ref)
+                  data-after-right (calculate-lifetimes-internal {:ast (:b ast) :env env :vars vars-after-expr} in-ref)
                   ;;_ (println (str "data-after-left:\n" data-after-left "\ndata-after-right:\n" data-after-right))
 
                   vars-after-left  (let [result-name (get-maybe (:a ast) :result-name)
@@ -324,6 +357,7 @@
                   ]
               {:ast ast-after-all
                :vars vars-after-all-with-ret-val
+               :env env
                :eaten eaten})
 
         :let (let [
@@ -335,6 +369,9 @@
 
                    vars-after-bindings (:vars data-after-bindings)                   
                    ast-after-bindings (:ast data-after-bindings)
+                   env-after-bindings (:env data-after-bindings)
+
+                   ;;_ (println (str "env-after-bindings:\n" env-after-bindings))
 
                    not-eaten-by-bindings (filter (fn (v) (contains? vars-after-bindings v)) vars)
                    eaten-by-bindings (map :name (remove (fn (v) (contains? not-eaten-by-bindings v)) vars))
@@ -346,6 +383,7 @@
                    ;;_ (println (str "\nLET will visit body of " (get-maybe ast :result-name) ", Current vars:\n" vars-after-bindings))
                    
                    data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-bindings)
+                                                                  :env env-after-bindings
                                                                   :vars vars-after-bindings}
                                                                  in-ref)
 
@@ -394,15 +432,16 @@
                    ]
                {:ast final-ast
                 :vars final-vars
+                :env env-after-bindings
                 :eaten eaten-by-bindings})
 
-        :while (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :vars vars} in-ref)
+        :while (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :env env :vars vars} in-ref)
                      ;;_ (println (str "data-after-expr:\n" data-after-expr))
 
                      vars-after-expr (:vars data-after-expr)
                      ast-after-expr (assoc ast :expr (:ast data-after-expr))
                      
-                     data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-expr) :vars vars-after-expr} in-ref)
+                     data-after-body (calculate-lifetimes-internal {:ast (:body ast-after-expr) :env env :vars vars-after-expr} in-ref)
                      ;;_ (println (str "data-after-body:\n" data-after-body))
                      ast-after-body (:ast data-after-body)
                      vars-after-body (:vars data-after-body)
@@ -414,6 +453,7 @@
                      final-vars vars ;; TODO: return value from while-form?
                      ]
                  {:ast final-ast
+                  :env env
                   :vars final-vars})        
 
         :do (let [init-data (assoc data :pos 0)
@@ -429,12 +469,14 @@
                   ]
               {:ast final-ast
                :vars final-vars
+               :env env
                :eaten final-eaten})
         
         _ data))))
 
 (defn calculate-lifetimes (ast)
   (:ast (calculate-lifetimes-internal {:ast ast
+                                       :env {}
                                        :vars '()}
                                       false)))
 
