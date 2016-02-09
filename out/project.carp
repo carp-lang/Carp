@@ -7,19 +7,4 @@
     nil
     ))
 
-(defn f ()
-  (let [a (string-copy "a")
-        ;b (ref a)
-        ]
-    (do
-      (string-copy (ref a))
-      (eat-string a)
-      )))
-
-(defn g (s)
-  (println (ref s)))
-
-(defn h (s)
-  (let [t (string-copy "hej")]
-    (string-append s (ref t))))
 

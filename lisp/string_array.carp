@@ -137,76 +137,22 @@
       (do (assert-eq "yo" (string-array-last s1))))))
 (test-string-array-last)
 
-
-
 (defn fill-array [a pos value]
   (let [count (string-array-count (ref a))]
     (if (< pos count)
       (fill-array (string-array-set a pos value) (+ pos 1) value)
       a)))
 
-(defn fill-array-strip-2 [a]
-  (string-array-set a 0 "hej"))
+(defn string-array-new-init (n init)
+  (fill-array (string-array-new n) 0 init))
 
-(defn fill-array-strip [a]
-  (if true
-    (string-array-set a 0 "hej")
-    a))
+(defn exclaim (s)
+  (string-append (ref s) "!"))
 
-(defn test-fill-array ()
-  (do
-    (def fill-ast (lambda-to-ast (code fill-array)))
-    (def fill-asta (annotate-ast (assoc fill-ast :name "fill-array")))
-    (def fill-sig (:type fill-asta))
-    (assert-eq '(:fn (:string-array :int (:ref :string)) :string-array)
-               fill-sig)
-    ;; (assert-eq '{:node :function, 
-    ;;              :free (), 
-    ;;              :body {:node :let
-    ;;                     :free ()
-    ;;                     :body {:node if
-    ;;                            :free-left '({:name a
-    ;;                                          :type :string-array})
-    ;;                            :free-right '()
-    ;;                            :body ()}}}
-    ;;            (ownership-analyze fill-array))
-    ))
+(bake exclaim)
 
-;;(test-fill-array)
-;;(bake fill-array)
+(defn test-smap ()
+  (string-array-print (ref (string-array-map exclaim (string-array-new-init 5 "yo")))))
 
-
-;; (defn fill-array-2 [a pos value]
-;;   (if (< pos (string-array-count (ref a)))
-;;     (let [b (fill-array (string-array-set a pos value) (+ pos 1) value)]
-;;       b)
-;;     a))
-
-
-
-;; (defn string-array-new-init (n init)
-;;   (fill-array (string-array-new n) 0 init))
-
-;; (defn exclaim (s)
-;;   (string-append (ref s) "!"))
-
-;; (defn test-smap ()
-;;   (string-array-print (ref (string-array-map exclaim (string-array-new-init 5 "yo")))))
-
-;; (defn test-smap-2 (f)
-;;   (string-array-print (ref (string-array-map f (string-array-new-init 5 "what")))))
-
-
-
-;;(bake-exe test-smap)
-
-;; (def smap-ast (lambda-to-ast (code test-smap)))
-;; (def smap-con (gencon smap-ast))
-;; (def smap-asta (annotate-ast smap-ast))
-
-;;(def sa2 )
-
-;;(bake* test-smap '(string-array-print))
-;;(bake* test-smap-2 '(string-array-print))
-
-;; (test-smap-2 exclaim)
+(defn test-smap-2 ()
+  (string-array-print (ref (string-array-new-init 5 "yo"))))
