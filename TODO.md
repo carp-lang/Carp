@@ -1,4 +1,5 @@
 # Compiler
+  - Ownership in while loops
   - Handle Function pointers as values
   - Compilation of generic functions
   - Compiling arrays
