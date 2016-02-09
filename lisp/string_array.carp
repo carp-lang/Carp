@@ -145,6 +145,11 @@
       (fill-array (string-array-set a pos value) (+ pos 1) value)
       a)))
 
+(defn fill-array-strip [a]
+  (if true
+    (fill-array (string-array-set a 0 "hej") 0 "hej")
+    a))
+
 (defn test-fill-array ()
   (do
     (def fill-ast (lambda-to-ast (code fill-array)))
@@ -164,8 +169,8 @@
     ;;            (ownership-analyze fill-array))
     ))
 
-(test-fill-array)
-
+;;(test-fill-array)
+;;(bake fill-array)
 
 
 ;; (defn fill-array-2 [a pos value]

@@ -260,6 +260,12 @@
 
 (test-own-12)
 
+;; (defn fill-array [a pos value]
+;;   (let [count (string-array-count (ref a))]
+;;     (if (< pos count)
+;;       (fill-array (string-array-set a pos value) (+ pos 1) value)
+;;       a)))
+
 
 
 (defn own-13 ()

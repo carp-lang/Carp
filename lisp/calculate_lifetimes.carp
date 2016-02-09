@@ -354,6 +354,8 @@
 
                   ast-after-all ast3
 
+                  _ (println (str "vars-after-all-with-ret-val:\n" vars-after-all-with-ret-val))
+
                   ]
               {:ast ast-after-all
                :vars vars-after-all-with-ret-val
