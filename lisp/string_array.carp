@@ -145,9 +145,12 @@
       (fill-array (string-array-set a pos value) (+ pos 1) value)
       a)))
 
+(defn fill-array-strip-2 [a]
+  (string-array-set a 0 "hej"))
+
 (defn fill-array-strip [a]
   (if true
-    (fill-array (string-array-set a 0 "hej") 0 "hej")
+    (string-array-set a 0 "hej")
     a))
 
 (defn test-fill-array ()
