@@ -1,11 +1,12 @@
 # Compiler
   - Ownership in while loops
-  - Handle Function pointers as values
+  - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
+  - Handle Function pointers as values (add tests)
   - Compilation of generic functions
   - Compiling arrays
-  - Avoid problems with name shadowing when freeing a local variable
+  - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Handle global variables referenced inside functions, in regards to the lifetime checker
-  - Track dependencies between functions
+  - Track dependencies between functions to enable automatic recompilation when a function changes
   - Change :a and :b in binop and if to :left and :right
   - lambdas / lambda lifting
   - defstruct
@@ -30,10 +31,10 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
-  - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for
-  - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup
+  - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
+  - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for. Is this variable even needed?
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
-  - no need to handle (:ptr ...) as a special case?
+  - no need to handle (:ptr ...) as a special case? Remove from compiler and lisp core.
   - nil matches anything (or any list?) in a match statement?!
   - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc
