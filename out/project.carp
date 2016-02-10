@@ -13,7 +13,7 @@
       (println ".")
       (sleep 1))))
 
-(def x 50)
+(def x '(1 2 3))
 
 ;;(meta-set! x :dangerous 10)
 

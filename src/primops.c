@@ -455,20 +455,6 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
   }
 }
 
-Obj *obj_dict_set(Obj *dict, Obj *key, Obj *value) {
-  Obj *pair = env_lookup_binding(dict, key);
-  if(pair && pair->car && pair->cdr) {
-    pair->cdr = value;
-  }
-  else {
-    //printf("Pair not found, will add new key.\n");
-    Obj *new_pair = obj_new_cons(key, value);
-    Obj *new_cons = obj_new_cons(new_pair, dict->bindings);
-    dict->bindings = new_cons;
-  }
-  return dict;
-}
-
 Obj *p_dict_set_bang(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'dict-set!'\n"); return nil; }
   if(args[0]->tag == 'E') {
