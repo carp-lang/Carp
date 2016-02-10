@@ -7,4 +7,9 @@
     nil
     ))
 
+(defn loop ()
+  (while true
+    (do
+      (println ".")
+      (sleep 1))))
 

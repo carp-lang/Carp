@@ -219,3 +219,4 @@
 (register-builtin "file_existsQMARK" '((:ref :string)) :bool)
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "string_copy" '((:ref :string)) :string)
+(register-builtin "async" '((:fn () :void)) :void)

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <unistd.h>
 
 typedef int unknown;
 typedef void* typevar;
@@ -120,5 +122,12 @@ string_array string_array_map(string_to_string_fn f, string_array array) {
 
 int inc(x) { return x + 1; }
 int dec(x) { return x - 1; }
+
+void async(void *f) {
+  printf("Async starting.\n");
+  pthread_t pth;
+  pthread_create(&pth, NULL, f, "Async");
+  printf("Async done.\n");
+}
 
 #endif

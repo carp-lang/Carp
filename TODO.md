@@ -25,13 +25,14 @@
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
-  - for macro with several bindings
+  - 'for' macro with multiple bindings (i, j, etc...)
 
 # Bugs
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
+  - meta data on Objs: Line nr, line pos, source file,
   - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for. Is this variable even needed?
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - no need to handle (:ptr ...) as a special case? Remove from compiler and lisp core.
@@ -40,7 +41,6 @@
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
-  - meta data on Objs: Line nr, line pos, source file,
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
   - remove globals to enable several instances of the runner in parallel
   - primops should have signatures, right?
