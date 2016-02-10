@@ -68,6 +68,7 @@ typedef struct Obj {
     // Float
     float f32;
   };
+  struct Obj *meta;
   // GC
   struct Obj *prev;
   char alive;

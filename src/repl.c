@@ -170,6 +170,8 @@ void env_new_global() {
   register_primop("eval", p_eval);
   register_primop("builtin?", p_builtin_p);
   //register_primop("nullp", p_null_predicate);
+  register_primop("meta-set!", p_meta_set_BANG);
+  register_primop("meta-get", p_meta_get);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);

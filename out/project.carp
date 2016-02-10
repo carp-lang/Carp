@@ -13,3 +13,7 @@
       (println ".")
       (sleep 1))))
 
+(def x 50)
+
+;;(meta-set! x :dangerous 10)
+
