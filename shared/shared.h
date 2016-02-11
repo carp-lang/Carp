@@ -155,4 +155,10 @@ string file_path_component(string s) {
   return substring(s, i + 1);
 }
 
+string get_input() {
+  char in[1024];
+  fgets(in, 1024, stdin);
+  return strdup(in);
+}
+
 #endif

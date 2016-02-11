@@ -226,3 +226,4 @@
 (register-builtin "last_index_of" '(:string :char) :int)
 (register-builtin "substring" '(:string :int) :string)
 (register-builtin "file_path_component" '(:string) :string)
+(register-builtin "get_input" '() :string)

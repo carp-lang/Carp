@@ -60,3 +60,15 @@
 (defn soon ()
   (crash-soon))
 
+
+
+(defn repl ()
+  (while true
+    (do (print "repl> ")
+        (let [in (get-input)]
+          (println (str (eval (read in))))))))
+
+(defn repl-test ()
+  (repl))
+
+
