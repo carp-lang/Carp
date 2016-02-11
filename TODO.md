@@ -28,6 +28,7 @@
   - 'for' macro with multiple bindings (i, j, etc...)
 
 # Bugs
+  - Crashing when printing ffi function!
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime

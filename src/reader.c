@@ -58,8 +58,8 @@ void set_line_info(Obj *o) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(read_line_nr));
-  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(read_line_pos));
+  //obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(read_line_nr));
+  //obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(read_line_pos));
 }
 
 Obj *read_internal(Obj *env, char *s) {
