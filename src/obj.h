@@ -26,6 +26,7 @@ typedef void (*VoidFn)(void);
    W = Double (not implemented yet)
    A = Array (not implemented yet)
    Q = Void pointer
+   B = Char
 */
 
 typedef struct Obj {
@@ -67,6 +68,8 @@ typedef struct Obj {
     void *void_ptr;
     // Float
     float f32;
+    // Char
+    char b;
   };
   struct Obj *meta;
   // GC
@@ -92,6 +95,7 @@ Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_o
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
+Obj *obj_new_char(char b);
 
 Obj *obj_copy(Obj *o);
 
@@ -134,4 +138,4 @@ Obj *type_void;
 Obj *type_float;
 Obj *type_ptr;
 Obj *type_ref;
-
+Obj *type_char;

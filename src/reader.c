@@ -135,6 +135,12 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     read_pos++;
     return ampersand;
   }
+  else if(CURRENT == '\\') {
+    read_pos++;
+    char b = CURRENT;
+    read_pos++;
+    return obj_new_char(b);
+  }
   else if(isdigit(CURRENT) || (CURRENT == '-' && isdigit(s[read_pos + 1]))) {
     int negator = 1;
     if(CURRENT == '-') {

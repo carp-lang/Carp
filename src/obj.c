@@ -128,6 +128,12 @@ Obj *obj_new_environment(Obj *parent) {
   return o;
 }
 
+Obj *obj_new_char(char b) {
+  Obj *o = obj_new('B');
+  o->b = b;
+  return o;
+}
+
 Obj *obj_copy(Obj *o) {
   assert(o);
   if(o->tag == 'C') {

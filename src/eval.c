@@ -94,11 +94,11 @@ Obj *shadow_stack_pop() {
 }
 
 void function_trace_print() {
-  printf(" ------------------------------------------------\n");
+  printf(" --------------------------------------------------------\n");
   for(int i = function_trace_pos - 1; i >= 0; i--) {
     printf("%3d  %s\n", i, function_trace[i]);
   }
-  printf(" ------------------------------------------------\n");
+  printf(" --------------------------------------------------------\n");
 }
 
 bool obj_match(Obj *env, Obj *attempt, Obj *value);
@@ -241,6 +241,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	else if(obj_eq(type_obj, type_bool)) {
 	  assert_or_set_error(args[i]->tag == 'Y', "Invalid type of arg: ", args[i]);
 	  bool b = is_true(args[i]);
+	  values[i] = &b;
+	}
+	else if(obj_eq(type_obj, type_char)) {
+	  assert_or_set_error(args[i]->tag == 'B', "Invalid type of arg: ", args[i]);
+	  char b = args[i]->b;
 	  values[i] = &b;
 	}
 	else if(obj_eq(type_obj, type_float)) {
@@ -675,7 +680,7 @@ void eval_list(Obj *env, Obj *o) {
 	  }
 	}
 	
-	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-20s %s %d:%d", func_name, file, line, pos);
+	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-30s %s %d:%d", func_name, file, line, pos);
       }
       else {
 	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", "no meta data"); // obj_to_string(o)->s);
