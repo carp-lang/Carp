@@ -13,6 +13,7 @@ Obj *obj_new(char tag) {
   o->alive = false;
   o->given_to_ffi = false;
   o->tag = tag;
+  o->meta = NULL;
   obj_latest = o;
   obj_total++;
   if(LOG_ALLOCS) {
