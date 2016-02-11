@@ -1,6 +1,6 @@
 #include "gc.h"
 
-#define LOG_GC_KILL_COUNT 1
+#define LOG_GC_KILL_COUNT 0
 #define LOG_FREE 0
 
 void obj_mark_alive(Obj *o) {
@@ -11,6 +11,7 @@ void obj_mark_alive(Obj *o) {
   //printf("marking %p alive: ", o); obj_print_cout(o); printf("\n");
   
   o->alive = true;
+  obj_mark_alive(o->meta);
   
   if(o->tag == 'C') {
     obj_mark_alive(o->car);
@@ -83,7 +84,7 @@ void gc(Obj *env) {
   for(int i = 0; i < shadow_stack_pos; i++) {
     obj_mark_alive(shadow_stack[i]);
   }
-  //gc_sweep();
+  gc_sweep();
 }
 
 void gc_all() {

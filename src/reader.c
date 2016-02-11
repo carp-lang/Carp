@@ -54,12 +54,12 @@ void print_read_pos() {
   printf("Line: %d, pos: %d.\n", read_line_nr, read_line_pos);
 }
 
-void set_line_info(Obj *o) {
+void set_line_info(Obj *o, int line, int pos) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(read_line_nr));
-  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(read_line_pos));
+  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(line));
+  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
 }
 
 Obj *read_internal(Obj *env, char *s) {
@@ -73,7 +73,7 @@ Obj *read_internal(Obj *env, char *s) {
   }
   else if(CURRENT == '(' || CURRENT == '[') {
     Obj *list = obj_new_cons(NULL, NULL);
-    set_line_info(list);
+    set_line_info(list, read_line_nr, read_line_pos);
     Obj *prev = list;
     read_pos++;
     while(1) {
@@ -174,6 +174,7 @@ Obj *read_internal(Obj *env, char *s) {
     return cons1;
   }
   else if(is_ok_in_symbol(CURRENT, true)) {
+    int line, pos = read_line_nr, read_line_pos;
     char name[512];
     int i = 0;
     while(is_ok_in_symbol(CURRENT, false)) {
@@ -182,7 +183,7 @@ Obj *read_internal(Obj *env, char *s) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    set_line_info(symbol);
+    set_line_info(symbol, line, pos);
     return symbol;
   }
   else if(CURRENT == ':') {
