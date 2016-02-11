@@ -319,6 +319,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = result ? lisp_true : lisp_false;
     }
+    else if(obj_eq(return_type, type_char)) { 
+      char result;
+      ffi_call(function->cif, function->funptr, &result, values);
+      obj_result = obj_new_char(result);
+    }
     else if(obj_eq(return_type, type_float)) { 
       //printf("Returning float.\n");
       float result;

@@ -161,7 +161,9 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
   }
   else if(o->tag == 'B') {
     char s[2] = { o->b, '\0' };
-    obj_string_mut_append(total, "\\");
+    if(prn) {
+      obj_string_mut_append(total, "\\");
+    }
     obj_string_mut_append(total, s);
   }
   else {
