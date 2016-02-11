@@ -132,4 +132,27 @@ void async(void *f) {
   printf("Async done.\n");
 }
 
+int last_index_of(string s, char c) {
+  int len = strlen(s);
+  for(int i = len - 1; i >= 0; i--) {
+    if(s[i] == c) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+string substring(string s, int index) {
+  if(index >= strlen(s)) {
+    panic("substring out of bounds");
+  }
+  const char *sub = s + index;
+  return strdup(sub);
+}
+
+string file_path_component(string s) {
+  int i = last_index_of(s, '/');
+  return substring(s, i + 1);
+}
+
 #endif

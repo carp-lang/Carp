@@ -33,6 +33,7 @@
   - Didn't show error when registering non-existing C function?!
   
 # Dynamic Runtime
+  - Add char type
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
   - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for. Is this variable even needed?
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')

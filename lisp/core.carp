@@ -223,3 +223,6 @@
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "string_copy" '((:ref :string)) :string)
 (register-builtin "async" '((:fn () :void)) :void)
+(register-builtin "last_index_of" '(:string :char) :int)
+(register-builtin "substring" '(:string :int) :string)
+(register-builtin "file_path_component" '(:string) :string)

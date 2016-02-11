@@ -94,11 +94,11 @@ Obj *shadow_stack_pop() {
 }
 
 void function_trace_print() {
-  printf("     -----------------\n");
+  printf(" ------------------------------------------------\n");
   for(int i = function_trace_pos - 1; i >= 0; i--) {
     printf("%3d  %s\n", i, function_trace[i]);
   }
-  printf("     -----------------\n");
+  printf(" ------------------------------------------------\n");
 }
 
 bool obj_match(Obj *env, Obj *attempt, Obj *value);
@@ -664,8 +664,18 @@ void eval_list(Obj *env, Obj *o) {
 	}
 	int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
 	int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
-	char *file = env_lookup(o->meta, obj_new_keyword("file"))->s;
-	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-20s %-60s %d:%d", func_name, file, line, pos);
+	char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
+	char *file = file_path;
+
+	int len = strlen(file_path);
+	for(int i = len - 1; i >= 0; i--) {
+	  if(file_path[i] == '/') {
+	    file = strdup(file_path + i + 1);
+	    break;
+	  }
+	}
+	
+	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-20s %s %d:%d", func_name, file, line, pos);
       }
       else {
 	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", "no meta data"); // obj_to_string(o)->s);
