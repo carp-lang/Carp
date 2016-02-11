@@ -180,3 +180,25 @@
         ]
     x))
 (bake recursive-let)
+
+
+
+;; FUNCTION POINTERS
+
+(defn call-twice (f)
+  (do (f) (f)))
+
+(def twice-ast (lambda-to-ast (code call-twice)))
+(def twice-deps (find-func-deps twice-ast false))
+(def twice-con (gencon twice-ast))
+(def twice-asta (annotate-ast twice-ast))
+
+(defn call-me ()
+  (println "CARP!"))
+
+(defn test-call-twice ()
+  (do (bake call-twice)
+      (bake call-me)
+      (call-twice call-me)))
+
+;; (test-call-twice)

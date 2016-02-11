@@ -1,4 +1,5 @@
 # Compiler
+  - Add void constraints for (do ...) statements 
   - Ownership in while loops
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Handle Function pointers as values (add tests)
@@ -33,7 +34,6 @@
   
 # Dynamic Runtime
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
-  - meta data on Objs: Line nr, line pos, source file,
   - change name of 'builtin' bool in Obj to 'userspace' or something that better signifies what it's for. Is this variable even needed?
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - no need to handle (:ptr ...) as a special case? Remove from compiler and lisp core.
