@@ -64,3 +64,5 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count);
 Obj *p_meta_get(Obj** args, int arg_count);
 
 Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
+
+ffi_cif *create_cif(Obj *args, int arg_count, Obj *return_type_obj, char *func_name);

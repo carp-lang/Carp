@@ -161,4 +161,16 @@ string get_input() {
   return strdup(in);
 }
 
+void call(void *f()) {
+  f();
+}
+
+void call1(void *f(int)) {
+  f(1);
+}
+
+void calls(void *f(char*)) {
+  f("hejsan");
+}
+
 #endif

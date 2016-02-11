@@ -8,16 +8,6 @@
     nil
     ))
 
-(def s ".")
-
-(defn loop ()
-  (do
-    (async repl)
-    (while true
-      (do
-        (println s)
-        (sleep 1)))))
-
 (def x '(1 2 3))
 
 ;;(meta-set! x :dangerous 10)

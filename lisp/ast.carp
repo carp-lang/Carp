@@ -45,7 +45,7 @@
                             :op '==
                             :a (form-to-ast left)
                             :b (form-to-ast right)}
-           (x & xs) (if (and (symbol? x) (macro? (eval x)))
+           (x & xs) (if (and (symbol? x) (def? x) (macro? (eval x)))
                       (expand-macro l)
                       {:node :app
                        :type (gen-typevar)

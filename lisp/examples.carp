@@ -68,7 +68,15 @@
         (let [in (get-input)]
           (println (str (eval (read in))))))))
 
-(defn repl-test ()
-  (repl))
+(def s ".")
+
+(defn loop ()
+  (do
+    (async repl)
+    (while true
+      (do
+        (println s)
+        (sleep 1)))))
 
 
+;; (call (fn () (println "CARP!!!")))

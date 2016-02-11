@@ -1055,12 +1055,12 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
     type_obj = type_obj->cdr->car; // the second element of the list
     //printf("Found ref type, inner type is: %s\n", obj_to_string(type_obj)->s);
   }
-  
+
   if(obj_eq(type_obj, type_string)) {
     return &ffi_type_pointer;
   }
   else if(obj_eq(type_obj, type_int)) {
-    return &ffi_type_uint;
+    return &ffi_type_sint;
   }
   else if(obj_eq(type_obj, type_float)) {
     return &ffi_type_float;
@@ -1094,6 +1094,55 @@ char *lispify(char *name) {
   return s2;
 }
 
+ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
+  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type) * (arg_count + 1));
+
+  Obj *p = args;
+  for(int i = 0; i < arg_count; i++) {
+    ffi_type *arg_type = lisp_type_to_ffi_type(p->car);
+    if(!arg_type) {
+      char buffer[512];
+      snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, func_name, obj_to_string(p->car)->s);
+      eval_error = obj_new_string(strdup(buffer));
+      return NULL;
+    }
+    arg_types_c_array[i] = arg_type;
+    p = p->cdr;
+  }
+  arg_types_c_array[arg_count] = NULL; // ends with a NULL so we don't need to store arg_count
+  return arg_types_c_array;
+}
+
+ffi_cif *create_cif(Obj *args, int arg_count, Obj *return_type_obj, char *func_name) {
+  ffi_type **arg_types_c_array = make_arg_type_array(args, arg_count, func_name);
+
+  if(!arg_types_c_array) {
+    return NULL;
+  }
+  
+  ffi_type *return_type = lisp_type_to_ffi_type(return_type_obj);
+
+  if(!return_type) {
+    return NULL;
+  }
+
+  //printf("Registering %s with %d args\n", func_name, arg_count);
+
+  ffi_cif *cif = malloc(sizeof(ffi_cif));
+  int init_result = ffi_prep_cif(cif,
+				 FFI_DEFAULT_ABI,
+				 arg_count,
+				 return_type,
+				 arg_types_c_array);
+  
+  if (init_result != FFI_OK) {
+    printf("Registration of foreign function %s failed.\n", func_name);
+    return NULL;
+  }
+
+  return cif;
+}
+
 Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin) {
 
   if(!funptr) {
@@ -1109,37 +1158,8 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
   }
   //printf("Arg count for %s: %d\n", name, arg_count);
   
-  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type) * (arg_count + 1));
-
-  p = args;
-  for(int i = 0; i < arg_count; i++) {
-    ffi_type *arg_type = lisp_type_to_ffi_type(p->car);
-    if(!arg_type) {
-      char buffer[512];
-      snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, name, obj_to_string(p->car)->s);
-      eval_error = obj_new_string(strdup(buffer));
-      return nil;
-    }
-    arg_types_c_array[i] = arg_type;
-    p = p->cdr;
-  }
-  arg_types_c_array[arg_count] = NULL; // ends with a NULL so we don't need to store arg_count
-
-  ffi_type *return_type = lisp_type_to_ffi_type(return_type_obj);
-
-  if(!return_type) {
-    return nil;
-  }
-
-  ffi_cif *cif = malloc(sizeof(ffi_cif));
-  int init_result = ffi_prep_cif(cif,
-				 FFI_DEFAULT_ABI,
-				 arg_count,
-				 return_type,
-				 arg_types_c_array);
-  
-  if (init_result != FFI_OK) {
-    printf("Registration of foreign function %s failed.\n", name);
+  ffi_cif *cif = create_cif(args, arg_count, return_type_obj, name);
+  if(!cif) {
     return nil;
   }
 
