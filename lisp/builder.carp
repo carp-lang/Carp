@@ -76,6 +76,12 @@
 (defn inlined-binop? (ast)
   (= :binop (:node ast)))
 
+;; Print Objs in a way that the C compiler accepts
+(defn c-prn (x)
+  (match (type x)
+    :char (str "'" x "'") ;; chars are written like this in Carp: \e but like this: 'e' in C.
+    _ (prn x)))
+
 ;; New version of visit arg that generates slimmer code (no intermediate arg variables)
 (defn visit-arg-slim (c arg)
   (let [arg-name (:arg-name arg)
@@ -87,7 +93,7 @@
                   {:c (c-ify-name (str (:value arg)))})
 
       :literal (do ;;(println (str "Arg " arg-name " is literal."))
-                   {:c (prn (:value arg))})
+                   {:c (c-prn (:value arg))})
 
       _ (let [result-name (get-maybe arg :result-name)]
           (if (nil? result-name)
@@ -120,12 +126,12 @@
            :literal (let [val (:value form)
                           result-name (get-maybe form :result-name)]
                       (if (or (inlined-literal? form) (nil? result-name))
-                        {:c (prn val)}
+                        {:c (c-prn val)}
                         (do
                           (str-append! c (str (indent)
                                               (type-build (:type form)) " "
                                               (:result-name form) " = "
-                                              (prn val) ";\n"))
+                                              (c-prn val) ";\n"))
                           {:c (:result-name form)})))
            
            :lookup (let [val (:value form)]

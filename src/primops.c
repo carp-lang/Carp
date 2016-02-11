@@ -878,6 +878,9 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'M') {
     return type_macro;
   }
+  else if(args[0]->tag == 'B') {
+    return type_char;
+  }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
     //eval_error = obj_new_string("Unknown type.");
@@ -1067,6 +1070,9 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
   }
   else if(obj_eq(type_obj, type_bool)) {
     return &ffi_type_uint;
+  }
+  else if(obj_eq(type_obj, type_char)) {
+    return &ffi_type_schar;
   }
   else if(type_obj->tag == 'C' && obj_eq(type_obj->car, type_ptr)) {
     return &ffi_type_pointer;

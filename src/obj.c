@@ -194,6 +194,9 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'M') {
     return o;
   }
+  else if(o->tag == 'B') {
+    return obj_new_char(o->b);
+  }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
     assert(false);
