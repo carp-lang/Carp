@@ -227,6 +227,8 @@
 (register-builtin "substring" '(:string :int) :string)
 (register-builtin "file_path_component" '(:string) :string)
 (register-builtin "get_input" '() :string)
+
 (register-builtin "call" '((:fn () :void)) :void)
 (register-builtin "call1" '((:fn (:int) :void)) :void)
 (register-builtin "calls" '((:fn (:string) :void)) :void)
+(register-builtin "printret" '((:fn () :int)) :void)

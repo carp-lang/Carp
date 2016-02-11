@@ -220,7 +220,7 @@ void call_lambda_from_ffi(ffi_cif *cif, unsigned int *ret, void* args[], Obj *o)
   }
   
   apply(o, obj_args, cif->nargs);
-  //apply(o, NULL, 0);
+  *ret = stack_pop()->i;
 }
 
 void apply(Obj *function, Obj **args, int arg_count) {

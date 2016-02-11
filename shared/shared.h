@@ -173,4 +173,9 @@ void calls(void *f(char*)) {
   f("hejsan");
 }
 
+void printret(int (*f)()) {
+  int x = f();
+  printf("ret = %d\n", x);
+}
+
 #endif
