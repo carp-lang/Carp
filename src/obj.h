@@ -115,7 +115,7 @@ Obj *nil;
 Obj *lisp_false;
 Obj *lisp_true;
 Obj *lisp_quote;
-Obj *error;
+Obj *eval_error;
 Obj *ampersand;
 Obj *lisp_NULL;
 

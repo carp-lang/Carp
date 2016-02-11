@@ -41,6 +41,8 @@ void panic(string msg) {
   exit(1);
 }
 
+
+
 void print(string msg) {
   printf("%s", msg);
 }

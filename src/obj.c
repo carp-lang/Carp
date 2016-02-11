@@ -315,7 +315,7 @@ bool obj_eq(Obj *a, Obj *b) {
   else {
     char buffer[512];
     snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-    error = obj_new_string(strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return false;
   }
 }

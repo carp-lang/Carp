@@ -213,6 +213,7 @@
 (register-builtin "printf" '((:ref :string)) :void)
 (register-builtin "print" '((:ref :string)) :void)
 (register-builtin "println" '((:ref :string)) :void)
+;;(register-builtin "error" '((:ref :string)) :void)
 (register-builtin "sleep" '(:int) :void)
 (register-builtin "nullQMARK" '(:any) :bool)
 (register-builtin "not" '(:bool) :bool)

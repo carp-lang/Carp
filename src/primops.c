@@ -92,7 +92,7 @@ Obj *p_add(Obj** args, int arg_count) {
     return obj_new_float(sum);
   }
   else {
-    error = obj_new_string("Can't add non-numbers together.");
+    eval_error = obj_new_string("Can't add non-numbers together.");
     return nil;
   }
 }
@@ -117,7 +117,7 @@ Obj *p_sub(Obj** args, int arg_count) {
     return obj_new_float(sum);
   }
   else {
-    error = obj_new_string("Can't subtract non-numbers.");
+    eval_error = obj_new_string("Can't subtract non-numbers.");
     return nil;
   }
 }
@@ -142,7 +142,7 @@ Obj *p_mul(Obj** args, int arg_count) {
     return obj_new_float(prod);
   }
   else {
-    error = obj_new_string("Can't multiply non-numbers.");
+    eval_error = obj_new_string("Can't multiply non-numbers.");
     return nil;
   }
 }
@@ -167,7 +167,7 @@ Obj *p_div(Obj** args, int arg_count) {
     return obj_new_float(prod);
   }
   else {
-    error = obj_new_string("Can't divide non-numbers.");
+    eval_error = obj_new_string("Can't divide non-numbers.");
     return nil;
   }
 }
@@ -222,15 +222,15 @@ Obj *p_str(Obj** args, int arg_count) {
 
 Obj *p_str_append_bang(Obj** args, int arg_count) {
   if(arg_count != 2) {
-    error = obj_new_string("'str-append!' takes exactly two arguments");
+    eval_error = obj_new_string("'str-append!' takes exactly two arguments");
     return nil;
   }
   if(args[0]->tag != 'S') {
-    error = obj_new_string("'str-append!' arg0 invalid");
+    eval_error = obj_new_string("'str-append!' arg0 invalid");
     return nil;
   }
   if(args[1]->tag != 'S') {
-    error = obj_new_string("'str-append!' arg1 invalid");
+    eval_error = obj_new_string("'str-append!' arg1 invalid");
     return nil;
   }
   Obj *s = args[0];
@@ -319,20 +319,20 @@ end_repl_str:
 
 Obj *p_str_replace(Obj** args, int arg_count) {
   if(arg_count != 3) {
-    error = obj_new_string("'str-replace' takes exactly three arguments");
+    eval_error = obj_new_string("'str-replace' takes exactly three arguments");
     return nil;
   }
   if(args[0]->tag != 'S') {
-    error = obj_new_string("'str-replace' arg0 invalid: ");
-    obj_string_mut_append(error, obj_to_string(args[0])->s);
+    eval_error = obj_new_string("'str-replace' arg0 invalid: ");
+    obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
     return nil;
   }
   if(args[1]->tag != 'S') {
-    error = obj_new_string("'str-replace' arg1 invalid");
+    eval_error = obj_new_string("'str-replace' arg1 invalid");
     return nil;
   }
   if(args[2]->tag != 'S') {
-    error = obj_new_string("'str-replace' arg2 invalid");
+    eval_error = obj_new_string("'str-replace' arg2 invalid");
     return nil;
   }
 
@@ -345,7 +345,7 @@ Obj *p_str_replace(Obj** args, int arg_count) {
 
 Obj *p_copy(Obj** args, int arg_count) {
   if(arg_count != 1) {
-    error = obj_new_string("'copy' takes exactly one argument");
+    eval_error = obj_new_string("'copy' takes exactly one argument");
     return nil;
   }
   Obj *a = args[0];
@@ -400,13 +400,13 @@ Obj *p_get(Obj** args, int arg_count) {
       obj_string_mut_append(s, "' in dict:\n");
       obj_string_mut_append(s, obj_to_string(args[0])->s);
       obj_string_mut_append(s, "");
-      error = s;
+      eval_error = s;
       return nil;
     }
   }
   else if(args[0]->tag == 'C') {
     if(args[1]->tag != 'I') {
-      error = obj_new_string("get requires arg 1 to be an integer\n");
+      eval_error = obj_new_string("get requires arg 1 to be an integer\n");
       return nil;
     }
     int i = 0;
@@ -419,15 +419,15 @@ Obj *p_get(Obj** args, int arg_count) {
       p = p->cdr;
       i++;
     }
-    error = obj_new_string("Index ");
-    obj_string_mut_append(error, obj_to_string(obj_new_int(i))->s);
-    obj_string_mut_append(error, " out of bounds in");
-    obj_string_mut_append(error, obj_to_string(args[0])->s);
+    eval_error = obj_new_string("Index ");
+    obj_string_mut_append(eval_error, obj_to_string(obj_new_int(i))->s);
+    obj_string_mut_append(eval_error, " out of bounds in");
+    obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
     return nil;
   }
   else {
-    error = obj_new_string("'get' requires arg 0 to be a dictionary or list: ");
-    obj_string_mut_append(error, obj_to_string(args[0])->s);
+    eval_error = obj_new_string("'get' requires arg 0 to be a dictionary or list: ");
+    obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
     return nil;
   }
 }
@@ -469,7 +469,7 @@ Obj *p_dict_set_bang(Obj** args, int arg_count) {
   }
   else if(args[0]->tag == 'C') {
     if(args[1]->tag != 'I') {
-      error = obj_new_string("dict-set! requires arg 1 to be an integer\n");
+      eval_error = obj_new_string("dict-set! requires arg 1 to be an integer\n");
       return nil;
     }
     int i = 0;
@@ -483,10 +483,10 @@ Obj *p_dict_set_bang(Obj** args, int arg_count) {
       p = p->cdr;
       i++;
     }
-    error = obj_new_string("Index ");
-    obj_string_mut_append(error, obj_to_string(obj_new_int(i))->s);
-    obj_string_mut_append(error, " out of bounds in");
-    obj_string_mut_append(error, obj_to_string(args[0])->s);
+    eval_error = obj_new_string("Index ");
+    obj_string_mut_append(eval_error, obj_to_string(obj_new_int(i))->s);
+    obj_string_mut_append(eval_error, " out of bounds in");
+    obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
     return nil;
   }
   else {
@@ -539,7 +539,7 @@ Obj *p_rest(Obj** args, int arg_count) {
   if(args[0]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'rest' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s);
-    error = obj_new_string(strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return nil;
   }
   if(args[0]->cdr == NULL) {
@@ -554,7 +554,7 @@ Obj *p_cons(Obj** args, int arg_count) {
   if(args[1]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(args[0])->s);
-    error = obj_new_string(strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return nil;
   }
   Obj *new_cons = obj_new_cons(args[0], args[1]);
@@ -580,7 +580,7 @@ Obj *p_concat(Obj** args, int arg_count) {
   }
   
   for(int i = 0; i < arg_count; i++) {
-    if(args[0]->tag != 'C') { error = obj_new_string("'concat' requires all args to be lists\n"); return nil; }
+    if(args[0]->tag != 'C') { eval_error = obj_new_string("'concat' requires all args to be lists\n"); return nil; }
   }
 
   int i = 0;
@@ -649,7 +649,7 @@ bool is_callable(Obj *obj) {
 Obj *p_map(Obj** args, int arg_count) {
   //printf("map start\n");
   if(arg_count != 2) {
-    error = obj_new_string("Wrong argument count to 'map'.");
+    eval_error = obj_new_string("Wrong argument count to 'map'.");
     return nil;
   }
   if(!is_callable(args[0])) { printf("'map' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
@@ -684,8 +684,8 @@ Obj *p_map2(Obj** args, int arg_count) {
   if(!is_callable(args[0])) { printf("'map2' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
   if(args[1]->tag != 'C') { printf("'map2' requires arg 1 to be a list\n"); return nil; }
   if(args[2]->tag != 'C') {
-    error = obj_new_string("'map2' requires arg 2 to be a list: ");
-    obj_string_mut_append(error, obj_to_string(args[2])->s);
+    eval_error = obj_new_string("'map2' requires arg 2 to be a list: ");
+    obj_string_mut_append(eval_error, obj_to_string(args[2])->s);
     return nil;
   }
   Obj *f = args[0];
@@ -747,8 +747,8 @@ Obj *p_values(Obj** args, int arg_count) {
 }
 
 Obj *p_signature(Obj** args, int arg_count) {
-  if(arg_count != 1) { error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
-  if(args[0]->tag != 'F') { error = obj_new_string("'signature' requires arg 0 to be a foreign function."); return nil; }
+  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
+  if(args[0]->tag != 'F') { eval_error = obj_new_string("'signature' requires arg 0 to be a foreign function."); return nil; }
   Obj *a = obj_copy(args[0]->arg_types);
   Obj *b = args[0]->return_type;
   Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
@@ -756,8 +756,8 @@ Obj *p_signature(Obj** args, int arg_count) {
 }
 
 Obj *p_null_predicate(Obj** args, int arg_count) {
-  if(arg_count != 1) { error = obj_new_string("Wrong argument count to 'null?'"); return nil; }
-  if(args[0]->tag != 'Q') { error = obj_new_string("Argument to 'null?' must be void pointer."); return nil; }
+  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'null?'"); return nil; }
+  if(args[0]->tag != 'Q') { eval_error = obj_new_string("Argument to 'null?' must be void pointer."); return nil; }
   if(args[0]->void_ptr == NULL) {
     return lisp_true;
   } else {
@@ -816,12 +816,12 @@ Obj *p_apply(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("'apply' takes two arguments.\n"); return nil; }
   if(args[0]->tag != 'P' && args[0]->tag != 'L') {
     printf("'apply' requires arg 0 to be a function or lambda: %s (%c)\n", obj_to_string(args[0])->s, args[0]->tag);
-    error = obj_new_string("");
+    eval_error = obj_new_string("");
     return nil;
   }
   if(args[1]->tag != 'C') {
     printf("'apply' requires arg 1 to be a list: %s (%c)\n", obj_to_string(args[0])->s, args[0]->tag);
-    error = obj_new_string("");
+    eval_error = obj_new_string("");
     return nil;
   }
   Obj *p = args[1];
@@ -880,7 +880,7 @@ Obj *p_type(Obj** args, int arg_count) {
   }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
-    //error = obj_new_string("Unknown type.");
+    //eval_error = obj_new_string("Unknown type.");
     return nil;
   }
 }
@@ -904,7 +904,7 @@ Obj *p_lt(Obj** args, int arg_count) {
     return lisp_true;
   }
   else {
-    error = obj_new_string("Can't call < on non-numbers.");
+    eval_error = obj_new_string("Can't call < on non-numbers.");
     return lisp_false;
   }
 }
@@ -923,13 +923,13 @@ Obj *p_now(Obj** args, int arg_count) {
 
 Obj *p_name(Obj** args, int arg_count) {
   if(arg_count != 1) {
-    error = obj_new_string("Wrong arg count to 'name'.");
+    eval_error = obj_new_string("Wrong arg count to 'name'.");
     return nil;
   }
   if(args[0]->tag != 'S' && args[0]->tag != 'Y' && args[0]->tag != 'K') {
     Obj *s = obj_new_string("Argument to 'name' must be string, keyword or symbol: ");
     obj_string_mut_append(s, obj_to_string(args[0])->s);
-    error = s;
+    eval_error = s;
     return nil;
   }
   return obj_new_string(args[0]->s);
@@ -937,21 +937,21 @@ Obj *p_name(Obj** args, int arg_count) {
 
 Obj *p_symbol(Obj** args, int arg_count) {
   if(arg_count != 1) {
-    error = obj_new_string("Wrong arg count to 'symbol'.");
+    eval_error = obj_new_string("Wrong arg count to 'symbol'.");
     return nil;
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'symbol' must be string: ");
     obj_string_mut_append(s, obj_to_string(args[0])->s);
-    error = s;
+    eval_error = s;
     return nil;
   }
   return obj_new_symbol(args[0]->s);
 }
 
 Obj *p_error(Obj** args, int arg_count) {
-  if(arg_count != 1) { error = obj_new_string("Wrong argument count to 'error'\n"); return nil; }
-  error = args[0];
+  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'error'\n"); return nil; }
+  eval_error = args[0];
   return nil;
 }
 
@@ -968,7 +968,7 @@ Obj *p_load_lisp(Obj** args, int arg_count) {
     Obj *form = forms;
     while(form && form->car) {
       eval_internal(global_env, form->car);
-      if(error) { return nil; }
+      if(eval_error) { return nil; }
       Obj *result = stack_pop();
       form = form->cdr;
     }
@@ -1007,7 +1007,7 @@ Obj *p_unload_dylib(Obj** args, int arg_count) {
   //printf("dlclose %p\n", handle);
   int result = dlclose(handle);
   if(result) {
-    error = obj_new_string(dlerror());
+    eval_error = obj_new_string(dlerror());
     return nil;
   }
   else {
@@ -1028,7 +1028,7 @@ Obj *p_read_many(Obj** args, int arg_count) {
 }
 
 Obj *p_eval(Obj** args, int arg_count) {
-  if(arg_count != 1) { error = obj_new_string("Wrong argument count to 'eval'"); return nil; }
+  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'eval'"); return nil; }
   eval_internal(global_env, args[0]);
   Obj *result = stack_pop();
   return result;
@@ -1111,7 +1111,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
     if(!arg_type) {
       char buffer[512];
       snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, name, obj_to_string(p->car)->s);
-      error = obj_new_string(strdup(buffer));
+      eval_error = obj_new_string(strdup(buffer));
       return nil;
     }
     arg_types_c_array[i] = arg_type;
@@ -1163,7 +1163,7 @@ Obj *register_ffi_variable_internal(char *name, void *varptr, Obj *var_type_obj)
     new_variable_value = obj_new_int(*i);
   }
   else {
-    error = obj_new_string("Invalid variable type.");
+    eval_error = obj_new_string("Invalid variable type.");
     return nil;
   }
 
@@ -1239,7 +1239,7 @@ Obj *p_builtin_p(Obj** args, int arg_count) {
     printf("Arg to builtin? must be foreign function:\n");
     obj_print_cout(args[0]);
     printf("Arg count: %d\n", arg_count);
-    error = obj_new_string("Invalid argument to builtin?");
+    eval_error = obj_new_string("Invalid argument to builtin?");
     return nil;
   }
   if(args[0]->builtin) {
@@ -1252,7 +1252,7 @@ Obj *p_builtin_p(Obj** args, int arg_count) {
 
 Obj *p_meta_set_BANG(Obj** args, int arg_count) {
   if(arg_count != 3) {
-    error = obj_new_string("Invalid argument to meta-set!");
+    eval_error = obj_new_string("Invalid argument to meta-set!");
     return nil;
   }
   Obj *o = args[0];
@@ -1265,7 +1265,7 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count) {
 
 Obj *p_meta_get(Obj** args, int arg_count) {
   if(arg_count != 2) {
-    error = obj_new_string("Invalid argument to meta-get");
+    eval_error = obj_new_string("Invalid argument to meta-get");
     return nil;
   }
   Obj *o = args[0];

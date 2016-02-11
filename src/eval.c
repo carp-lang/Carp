@@ -38,7 +38,7 @@ void stack_push(Obj *o) {
 }
 
 Obj *stack_pop() {
-  if(error) {
+  if(eval_error) {
     return nil;
   }
   if(stack_pos <= 0) {
@@ -211,7 +211,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     assert(function);
 
     if(!function->funptr) {
-      error = obj_new_string("Can't call foregin function, it's funptr is NULL. May be a stub function with just a signature?");
+      eval_error = obj_new_string("Can't call foregin function, it's funptr is NULL. May be a stub function with just a signature?");
       return;
     }
     
@@ -345,23 +345,23 @@ void apply(Obj *function, Obj **args, int arg_count) {
   }
   else if(function->tag == 'K') {
     if(arg_count != 1) {
-      error = obj_new_string("Args to keyword lookup must be a single arg.");
+      eval_error = obj_new_string("Args to keyword lookup must be a single arg.");
     }
     else if(args[0]->tag != 'E') {
-      error = obj_new_string("Arg 0 to keyword lookup must be a dictionary: ");
-      obj_string_mut_append(error, obj_to_string(args[0])->s);
+      eval_error = obj_new_string("Arg 0 to keyword lookup must be a dictionary: ");
+      obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
     }
     else {
       Obj *value = env_lookup(args[0], function);
       if(value) {
 	stack_push(value);
       } else {
-	error = obj_new_string("Failed to lookup keyword '");
-	obj_string_mut_append(error, obj_to_string(function)->s);
-	obj_string_mut_append(error, "'");
-	obj_string_mut_append(error, " in \n");
-	obj_string_mut_append(error, obj_to_string(args[0])->s);
-	obj_string_mut_append(error, "\n");
+	eval_error = obj_new_string("Failed to lookup keyword '");
+	obj_string_mut_append(eval_error, obj_to_string(function)->s);
+	obj_string_mut_append(eval_error, "'");
+	obj_string_mut_append(eval_error, " in \n");
+	obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
+	obj_string_mut_append(eval_error, "\n");
       }
     }
   }
@@ -382,7 +382,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *p = o->cdr;
     while(p && p->car) {
       eval_internal(env, p->car);
-      if(error) { return; }
+      if(eval_error) { return; }
       p = p->cdr;
       if(p && p->car) {
 	stack_pop(); // remove result from form that is not last
@@ -400,7 +400,7 @@ void eval_list(Obj *env, Obj *o) {
       }
       assert_or_set_error(p->car->tag == 'Y', "Must bind to symbol in let form: ", p->car);
       eval_internal(let_env, p->cdr->car);
-      if(error) { return; }
+      if(eval_error) { return; }
       env_extend(let_env, p->car, stack_pop());
       p = p->cdr->cdr;
     }
@@ -414,7 +414,7 @@ void eval_list(Obj *env, Obj *o) {
     while(p) {
       if(p->car) {
 	eval_internal(env, p->car);
-	if(error) { return; }
+	if(eval_error) { return; }
 	if(is_true(stack_pop())) {
 	  stack_push(lisp_false);
 	  return;
@@ -429,7 +429,7 @@ void eval_list(Obj *env, Obj *o) {
     while(p) {
       if(p->car) {
 	eval_internal(env, p->car);
-	if(error) { return; }
+	if(eval_error) { return; }
 	if(is_true(stack_pop())) {
 	  stack_push(lisp_true);
 	  return;
@@ -444,7 +444,7 @@ void eval_list(Obj *env, Obj *o) {
     while(p) {
       if(p->car) {
 	eval_internal(env, p->car);
-	if(error) { return; }
+	if(eval_error) { return; }
 	if(!is_true(stack_pop())) {
 	  stack_push(lisp_false);
 	  return;
@@ -465,14 +465,14 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->car, "Too few body forms in 'while' form: ", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'while' form (use explicit 'do').", o);
     eval_internal(env, o->cdr->car);
-    if(error) {
+    if(eval_error) {
       return;
     }
     while(is_true(stack_pop())) {
       eval_internal(env, o->cdr->cdr->car);
       stack_pop();
       eval_internal(env, o->cdr->car);
-      if(error) {
+      if(eval_error) {
 	return;
       }
     }
@@ -484,7 +484,7 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->cdr->cdr->car, "Too few body forms in 'if' form: ", o);
     assert_or_set_error(o->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'if' form (use explicit 'do').", o);
     eval_internal(env, o->cdr->car);
-    if(error) {
+    if(eval_error) {
       return;
     }
     else if(is_true(stack_pop())) {
@@ -496,7 +496,7 @@ void eval_list(Obj *env, Obj *o) {
   }
   else if(HEAD_EQ("match")) {
     eval_internal(env, o->cdr->car);
-    if(error) { return; }
+    if(eval_error) { return; }
     Obj *value = stack_pop();
     Obj *p = o->cdr->cdr;   
     match(env, value, p);
@@ -510,7 +510,7 @@ void eval_list(Obj *env, Obj *o) {
       return;
     }
     eval_internal(env, o->cdr->cdr->car);
-    if(error) { return; }
+    if(eval_error) { return; }
     pair->cdr = stack_pop();
     stack_push(pair->cdr);
   }
@@ -541,7 +541,7 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->car->tag == 'Y', "Can't assign to non-symbol: ", o);
     Obj *key = o->cdr->car;
     eval_internal(env, o->cdr->cdr->car); // eval the second arg to 'def', the value to assign
-    if(error) { return; } // don't define it if there was an error
+    if(eval_error) { return; } // don't define it if there was an error
     Obj *val = stack_pop();
     global_env_extend(key, val);
     //printf("def %s to %s\n", obj_to_string(key)->s, obj_to_string(val)->s);
@@ -568,9 +568,9 @@ void eval_list(Obj *env, Obj *o) {
     shadow_stack_pos = shadow_stack_size_save;
     stack_pos = stack_size_save + 1;
 
-    if(error) {      
-      stack_push(error);
-      error = NULL;
+    if(eval_error) {      
+      stack_push(eval_error);
+      eval_error = NULL;
       return;
     }
     else {
@@ -584,7 +584,7 @@ void eval_list(Obj *env, Obj *o) {
     
     // Lambda, primop or macro   
     eval_internal(env, o->car);
-    if(error) { return; }
+    if(eval_error) { return; }
     
     Obj *function = stack_pop();
     assert_or_set_error(function, "Can't call NULL.", o);
@@ -595,7 +595,7 @@ void eval_list(Obj *env, Obj *o) {
     int count = 0;
     
     while(p && p->car) {
-      if(error) {
+      if(eval_error) {
 	shadow_stack_pop();
 	return;
       }
@@ -610,7 +610,7 @@ void eval_list(Obj *env, Obj *o) {
       p = p->cdr;
     }
 
-    if(error) {
+    if(eval_error) {
       shadow_stack_pop();
       return;
     }
@@ -628,7 +628,7 @@ void eval_list(Obj *env, Obj *o) {
       env_extend_with_args(calling_env, function, count, args);
       shadow_stack_push(calling_env);
       eval_internal(calling_env, function->body);
-      if(error) { return; }
+      if(eval_error) { return; }
       Obj *expanded = stack_pop();
       if(SHOW_MACRO_EXPANSION) {
 	printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
@@ -676,12 +676,12 @@ void eval_list(Obj *env, Obj *o) {
       apply(function, args, count);
       //printf("apply end\n");
       
-      if(!error) {
+      if(!eval_error) {
 	function_trace_pos--;
       }
     }
 
-    if(!error) {
+    if(!eval_error) {
       //printf("time to pop!\n");
       for(int i = 0; i < count; i++) {
 	shadow_stack_pop();
@@ -700,7 +700,7 @@ void eval_list(Obj *env, Obj *o) {
 }
 
 void eval_internal(Obj *env, Obj *o) {
-  if(error) { return; }
+  if(eval_error) { return; }
 
   //shadow_stack_print();
   if(LOG_EVAL) {
@@ -744,7 +744,7 @@ void eval_internal(Obj *env, Obj *o) {
     if(!result) {
       char buffer[256];
       snprintf(buffer, 256, "Can't find '%s' in environment.", obj_to_string(o)->s);
-      error = obj_new_string(buffer);
+      eval_error = obj_new_string(buffer);
       stack_push(nil);
     } else {
       stack_push(result);
@@ -756,7 +756,7 @@ void eval_internal(Obj *env, Obj *o) {
 }
 
 Obj *eval(Obj *env, Obj *form) {
-  error = NULL;
+  eval_error = NULL;
   function_trace_pos = 0;
   eval_internal(env, form);
   Obj *result = stack_pop();
@@ -769,10 +769,10 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
   stack_push(forms);
   while(form && form->car) {
     Obj *result = eval(env, form->car);
-    if(error) {
-      printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(error)->s);
+    if(eval_error) {
+      printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(eval_error)->s);
       function_trace_print();
-      error = NULL;
+      eval_error = NULL;
       if(LOG_GC_POINTS) {
         printf("Running GC after error occured:\n");
       }
