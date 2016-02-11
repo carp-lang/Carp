@@ -54,15 +54,16 @@ void print_read_pos() {
   printf("Line: %d, pos: %d.\n", read_line_nr, read_line_pos);
 }
 
-void set_line_info(Obj *o, int line, int pos) {
+void set_line_info(Obj *o, int line, int pos, Obj *filename) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
   obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(line));
   obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
+  obj_dict_set(o->meta, obj_new_keyword("file"), filename);
 }
 
-Obj *read_internal(Obj *env, char *s) {
+Obj *read_internal(Obj *env, char *s, Obj *filename) {
   skip_whitespace(s);
 
   if(CURRENT == ')' || CURRENT == ']') {
@@ -73,7 +74,7 @@ Obj *read_internal(Obj *env, char *s) {
   }
   else if(CURRENT == '(' || CURRENT == '[') {
     Obj *list = obj_new_cons(NULL, NULL);
-    set_line_info(list, read_line_nr, read_line_pos);
+    set_line_info(list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
     read_pos++;
     while(1) {
@@ -87,7 +88,7 @@ Obj *read_internal(Obj *env, char *s) {
 	read_pos++;
 	break;
       }
-      Obj *o = read_internal(env, s);
+      Obj *o = read_internal(env, s, filename);
       Obj *new = obj_new_cons(NULL, NULL);
       prev->car = o;
       prev->cdr = new;
@@ -110,7 +111,7 @@ Obj *read_internal(Obj *env, char *s) {
 	read_pos++;
 	break;
       }
-      Obj *key = read_internal(env, s);
+      Obj *key = read_internal(env, s, filename);
 
       if(CURRENT == '}') {
 	printf("Uneven number of forms in dictionary.\n");
@@ -118,7 +119,7 @@ Obj *read_internal(Obj *env, char *s) {
 	return nil;
       }
       
-      Obj *value = read_internal(env, s);
+      Obj *value = read_internal(env, s, filename);
       
       Obj *new = obj_new_cons(NULL, NULL);
       Obj *pair = obj_new_cons(key, value);
@@ -168,7 +169,7 @@ Obj *read_internal(Obj *env, char *s) {
   }
   else if(CURRENT == '\'') {
     read_pos++;
-    Obj *sym = read_internal(env, s);
+    Obj *sym = read_internal(env, s, filename);
     Obj *cons2 = obj_new_cons(sym, nil);
     Obj *cons1 = obj_new_cons(lisp_quote, cons2);
     return cons1;
@@ -183,7 +184,7 @@ Obj *read_internal(Obj *env, char *s) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    set_line_info(symbol, line, pos);
+    set_line_info(symbol, line, pos, filename);
     return symbol;
   }
   else if(CURRENT == ':') {
@@ -243,14 +244,14 @@ Obj *read_internal(Obj *env, char *s) {
   }
 }
 
-Obj *read_string(Obj *env, char *s) {
+Obj *read_string(Obj *env, char *s, Obj *filename) {
   read_line_nr = 1;
   read_line_pos = 0;
   read_pos = 0;
   Obj *top_forms = NULL;
   Obj *prev = NULL;
   while(s[read_pos] != '\0') {
-    Obj *o = read_internal(env, s);
+    Obj *o = read_internal(env, s, filename);
     Obj *cons = obj_new_cons(NULL, NULL);
     cons->car = o;
     if(!top_forms) {

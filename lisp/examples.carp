@@ -51,4 +51,11 @@
       (string-copy "Too short")
       manage-me)))
 
+(defn crash ()
+  (error "bam!"))
 
+(defn crash-soon ()
+  (crash))
+
+(defn soon ()
+  (crash-soon))

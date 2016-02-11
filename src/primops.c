@@ -9,6 +9,13 @@
 #include "eval.h"
 #include "reader.h"
 
+void register_primop(char *name, Primop primop) {
+  Obj *o = obj_new_primop(primop);
+  env_extend(global_env, obj_new_symbol(name), o);
+  o->meta = obj_new_environment(NULL);
+  obj_dict_set(o->meta, obj_new_keyword("name"), obj_new_string(name));
+}
+
 Obj *open_file(const char *filename) {
   assert(filename);
   
@@ -956,7 +963,7 @@ Obj *p_load_lisp(Obj** args, int arg_count) {
   Obj *file_string = open_file(args[0]->s);
   shadow_stack_push(file_string);
   if(file_string->tag == 'S') {
-    Obj *forms = read_string(global_env, file_string->s);
+    Obj *forms = read_string(global_env, file_string->s, args[0]);
     shadow_stack_push(forms);
     Obj *form = forms;
     while(form && form->car) {
@@ -1011,12 +1018,12 @@ Obj *p_unload_dylib(Obj** args, int arg_count) {
 Obj *p_read(Obj** args, int arg_count) {
   //assert_or_return_nil(args[0], "No argument to 'read'.", args[0]);
   //assert_or_return_nil(args[0]->tag == 'S', "'read' must take a string as an argument.", args[0]);
-  Obj *forms = read_string(global_env, args[0]->s);
+  Obj *forms = read_string(global_env, args[0]->s, obj_new_string("p_read"));
   return forms->car;
 }
 
 Obj *p_read_many(Obj** args, int arg_count) {
-  Obj *forms = read_string(global_env, args[0]->s);
+  Obj *forms = read_string(global_env, args[0]->s, obj_new_string("p_read_many"));
   return forms;
 }
 

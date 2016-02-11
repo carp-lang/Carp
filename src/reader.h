@@ -2,4 +2,4 @@
 
 #include "obj.h"
 
-Obj *read_string(Obj *env, char *s);
+Obj *read_string(Obj *env, char *s, Obj *filename);

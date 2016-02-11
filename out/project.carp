@@ -4,6 +4,7 @@
   (do
     ;;(load-lisp (str carp-dir "lisp/string_array.carp"))
     ;;(load-lisp (str carp-dir "lisp/glfw_test.carp"))
+    (load-lisp (str carp-dir "lisp/examples.carp"))
     nil
     ))
 

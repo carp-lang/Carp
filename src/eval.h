@@ -24,6 +24,6 @@ void apply(Obj *function, Obj **args, int arg_count);
 
 Obj *eval(Obj *env, Obj *form);
 void eval_internal(Obj *env, Obj *o);
-void eval_text(Obj *env, char *text, bool print);
+void eval_text(Obj *env, char *text, bool print, Obj *filename);
 
 

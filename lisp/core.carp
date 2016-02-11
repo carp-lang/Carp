@@ -19,7 +19,9 @@
                     :OK))))
 
 (defmacro defn (name args body)
-  (list 'def name (list 'fn args body)))
+  (list 'do
+        (list 'def name (list 'fn args body))
+        (list 'meta-set! name :name (str name))))
 
 (defn assert-approx-eq (target x)
   (do

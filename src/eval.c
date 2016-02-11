@@ -649,8 +649,27 @@ void eval_list(Obj *env, Obj *o) {
       if(LOG_FUNC_APPLICATION) {
 	printf("evaluating form %s\n", obj_to_string(o)->s);
       }
-      
-      snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", obj_to_string(o)->s);
+
+      if(o->meta) {
+	//printf("%s\n", obj_to_string(o->meta)->s);
+	char *func_name = "";
+	Obj *func_name_data = NULL;
+	if(function && function->meta) {
+	  func_name_data = env_lookup(function->meta, obj_new_keyword("name"));
+	}
+	if(func_name_data) {
+	  func_name = obj_to_string_not_prn(func_name_data)->s;
+	} else {
+	  func_name = obj_to_string(function)->s;
+	}
+	int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
+	int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
+	char *file = env_lookup(o->meta, obj_new_keyword("file"))->s;
+	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-20s %-60s %d:%d", func_name, file, line, pos);
+      }
+      else {
+	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", "no meta data"); // obj_to_string(o)->s);
+      }
       function_trace_pos++;
 
       //printf("apply start: "); obj_print_cout(function); printf("\n");
@@ -744,8 +763,8 @@ Obj *eval(Obj *env, Obj *form) {
   return result;
 }
 
-void eval_text(Obj *env, char *text, bool print) {
-  Obj *forms = read_string(env, text);
+void eval_text(Obj *env, char *text, bool print, Obj *filename) {
+  Obj *forms = read_string(env, text, filename);
   Obj *form = forms;
   stack_push(forms);
   while(form && form->car) {

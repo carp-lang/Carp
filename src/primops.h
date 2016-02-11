@@ -3,7 +3,8 @@
 #include "obj.h"
 
 #define define(name, value) env_extend(global_env, obj_new_symbol(name), value);
-#define register_primop(name, primop) env_extend(global_env, obj_new_symbol(name), obj_new_primop(primop));
+
+void register_primop(char *name, Primop primop);
 
 Obj *p_open_file(Obj** args, int arg_count);
 Obj *p_save_file(Obj** args, int arg_count);

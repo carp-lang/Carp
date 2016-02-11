@@ -25,7 +25,7 @@ void repl(Obj *env) {
     if(strcmp(input, "q\n") == 0) {
       break;
     }
-    eval_text(env, input, true);
+    eval_text(env, input, true, obj_new_string("repl"));
     pop_stacks_to_zero();
     printf("\n");
     //assert(stack_pos == 0);
