@@ -29,6 +29,7 @@
   
   
 # Dynamic Runtime
+  - map/filter/reduce etc should work with arrays too
   - make line numbers and position be actually correct
   - add one stack frame to the printout that's actually at the location of the error, if possible
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
