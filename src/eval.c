@@ -696,7 +696,7 @@ void eval_list(Obj *env, Obj *o) {
 	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-30s %s %d:%d", func_name, file, line, pos);
       }
       else {
-	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%s", "no meta data"); // obj_to_string(o)->s);
+	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "No meta data."); //"%s", obj_to_string(function)->s);
       }
       function_trace_pos++;
 

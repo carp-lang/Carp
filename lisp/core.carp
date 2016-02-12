@@ -1,5 +1,8 @@
 
-(def defmacro (macro (name args body) (list 'def name (list 'macro args body))))
+(def defmacro (macro (name args body)
+                     (list 'do
+                           (list 'def name (list 'macro args body))
+                           (list 'meta-set! name :name (str name)))))
 
 (defmacro when (expr a) (list 'if expr a nil))
 (defmacro if-not (expr a b) (list 'if (list 'not expr) a b))
