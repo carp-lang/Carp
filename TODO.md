@@ -35,7 +35,6 @@
 # Dynamic Runtime
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
-  - read crashes when given data of the wrong type, should check for string type
   - add array as its own tag for Obj, [] syntax, etc
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 

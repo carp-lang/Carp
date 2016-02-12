@@ -1019,13 +1019,27 @@ Obj *p_unload_dylib(Obj** args, int arg_count) {
 }
 
 Obj *p_read(Obj** args, int arg_count) {
-  //assert_or_return_nil(args[0], "No argument to 'read'.", args[0]);
-  //assert_or_return_nil(args[0]->tag == 'S', "'read' must take a string as an argument.", args[0]);
+  if (arg_count != 1) {
+    set_error_and_return("'read' takes one argument: ", args[0]);
+    return nil;
+  }
+  if (args[0]->tag != 'S') {
+    set_error_and_return("'read' takes a string as argument: ", args[0]);
+    return nil;
+  }
   Obj *forms = read_string(global_env, args[0]->s, obj_new_string("p_read"));
   return forms->car;
 }
 
 Obj *p_read_many(Obj** args, int arg_count) {
+  if (arg_count != 1) {
+    set_error_and_return("'read-many' takes one argument: ", args[0]);
+    return nil;
+  }
+  if (args[0]->tag != 'S') {
+    set_error_and_return("'read-many' takes a string as argument: ", args[0]);
+    return nil;
+  }
   Obj *forms = read_string(global_env, args[0]->s, obj_new_string("p_read_many"));
   return forms;
 }
