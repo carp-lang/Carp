@@ -54,15 +54,6 @@ void print_read_pos() {
   printf("Line: %d, pos: %d.\n", read_line_nr, read_line_pos);
 }
 
-void set_line_info(Obj *o, int line, int pos, Obj *filename) {
-  if(!o->meta) {
-    o->meta = obj_new_environment(NULL);
-  }
-  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(line));
-  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
-  obj_dict_set(o->meta, obj_new_keyword("file"), filename);
-}
-
 Obj *read_internal(Obj *env, char *s, Obj *filename) {
   skip_whitespace(s);
 
@@ -74,7 +65,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
   }
   else if(CURRENT == '(' || CURRENT == '[') {
     Obj *list = obj_new_cons(NULL, NULL);
-    set_line_info(list, read_line_nr, read_line_pos, filename);
+    obj_set_line_info(list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
     read_pos++;
     while(1) {
@@ -190,7 +181,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    set_line_info(symbol, line, pos, filename);
+    obj_set_line_info(symbol, line, pos, filename);
     return symbol;
   }
   else if(CURRENT == ':') {

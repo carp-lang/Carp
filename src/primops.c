@@ -1167,6 +1167,9 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
   
   Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj, builtin);
 
+  if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
+  obj_dict_set(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
+
   char *lispified_name = lispify(name);
   //printf("Registering %s\n", lispified_name);
   

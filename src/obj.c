@@ -415,3 +415,11 @@ Obj *obj_dict_set(Obj *dict, Obj *key, Obj *value) {
   return dict;
 }
 
+void obj_set_line_info(Obj *o, int line, int pos, Obj *filename) {
+  if(!o->meta) {
+    o->meta = obj_new_environment(NULL);
+  }
+  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(line));
+  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
+  obj_dict_set(o->meta, obj_new_keyword("file"), filename);
+}
