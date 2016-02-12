@@ -20,8 +20,8 @@
       :if (let [if-result-name (gen-var-name var-name-counters "if_result")
                 ast1 (assoc ast :result-name if-result-name)
                 ast2 (assoc ast1 :expr (generate-names var-name-counters (:expr ast)))
-                ast3 (assoc ast2 :a (generate-names var-name-counters (:a ast)))
-                ast4 (assoc ast3 :b (generate-names var-name-counters (:b ast)))]
+                ast3 (assoc ast2 :if-true (generate-names var-name-counters (:if-true ast)))
+                ast4 (assoc ast3 :if-false (generate-names var-name-counters (:if-false ast)))]
             ast4)
 
       :while (let [while-expr-name (gen-var-name var-name-counters "expr")
@@ -55,8 +55,8 @@
                  ]
              ast4)
 
-      :binop (let [ast1 (assoc ast  :a (generate-names var-name-counters (:a ast)))
-                   ast2 (assoc ast1 :b (generate-names var-name-counters (:b ast)))]
+      :binop (let [ast1 (assoc ast  :left (generate-names var-name-counters (:left ast)))
+                   ast2 (assoc ast1 :right (generate-names var-name-counters (:right ast)))]
                ast2)
       
       :do (let [named-forms (map (fn (x) (generate-names var-name-counters x)) (:forms ast))

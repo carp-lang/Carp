@@ -55,16 +55,16 @@
                                                     (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
 
                                         :if (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                  ast1 (update-in ast0 '(:a) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                  ast2 (update-in ast1 '(:b) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                                  ast1 (update-in ast0 '(:if-true) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                  ast2 (update-in ast1 '(:if-false) (fn (a) (find-func-deps-internal a vars-in-scope)))]
                                               ast2)
 
                                         :while (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
                                                      ast1 (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a vars-in-scope)))]
                                               ast1)
 
-                                        :binop (let [ast0 (update-in ast  '(:a) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                     ast1 (update-in ast0 '(:b) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                        :binop (let [ast0 (update-in ast  '(:left) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:right) (fn (a) (find-func-deps-internal a vars-in-scope)))]
                                                  ast1)
 
                                         :literal ast

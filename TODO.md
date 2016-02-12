@@ -7,8 +7,7 @@
   - Compiling arrays
   - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
-  - Track dependencies between functions to enable automatic recompilation when a function changes
-  - Change :a and :b in binop and if to :left and :right
+  - Track dependencies between functions to enable automatic recompilation when a function changes 
   - lambdas / lambda lifting
   - defstruct
   - deftype
@@ -17,6 +16,7 @@
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - add proper no-op :node for ()
   - self recuring function doens't check argument count/types in the actual call to itself
+  - rewrite a bunch of functions in the compiler passes using pipe operator and update-in
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations...)

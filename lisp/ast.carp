@@ -34,17 +34,17 @@
 (defn list-to-ast (l)
   (if (binop? l)
     (match l
-           (op a b) {:node :binop
+           (op left right) {:node :binop
                      :type (gen-typevar)
                      :op op
-                     :a (form-to-ast a)
-                     :b (form-to-ast b)})
+                     :left (form-to-ast left)
+                     :right (form-to-ast right)})
     (match l
            ('= left right) {:node :binop
                             :type :bool
                             :op '==
-                            :a (form-to-ast left)
-                            :b (form-to-ast right)}
+                            :left (form-to-ast left)
+                            :right (form-to-ast right)}
            (x & xs) (if (and (symbol? x) (def? x) (macro? (eval x)))
                       (expand-macro l)
                       {:node :app
@@ -68,12 +68,12 @@
         ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
         expanded-ast)))
 
-(defn if-to-ast (expr a b)
+(defn if-to-ast (expr if-true if-false)
   {:node :if
    :type (gen-typevar)
    :expr (form-to-ast expr)
-   :a (form-to-ast a)
-   :b (form-to-ast b)})
+   :if-true (form-to-ast if-true)
+   :if-false (form-to-ast if-false)})
 
 (defn do-to-ast (forms)
   {:node :do
