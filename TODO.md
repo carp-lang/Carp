@@ -52,6 +52,7 @@
   - lambdas should be able to have their signature set/get
   - profile the evaluator
   - namespaces
+  - create pretty printed stack when needed, not always when calling functions
 
 # Maybes
   - polymorphic math operators?
