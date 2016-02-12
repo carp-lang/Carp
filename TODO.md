@@ -19,7 +19,7 @@
   - rewrite a bunch of functions in the compiler passes using pipe operator and update-in
 
 # Lisp Core Libs
-  - assert-eq shows wrong result when the assertion fails? (in ffi situations...)
+  - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
   - -> and ->>
   - shuffle
   - conversions between a list of pairs and dictionaries
