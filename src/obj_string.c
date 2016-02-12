@@ -1,4 +1,5 @@
 #include "obj_string.h"
+#include "env.h"
 
 bool setting_print_lambda_body = true;
 
@@ -120,6 +121,13 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     static char temp[256];
     snprintf(temp, 256, "%p", o->primop);
     obj_string_mut_append(total, temp);
+    if(o->meta) {
+      Obj *name = env_lookup(o->meta, obj_new_keyword("name"));
+      if(name) {
+	obj_string_mut_append(total, ":");
+	obj_string_mut_append(total, obj_to_string_not_prn(name)->s);
+      }
+    }
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'D') {
@@ -141,6 +149,16 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     static char temp[256];
     snprintf(temp, 256, "%p", o->funptr);
     obj_string_mut_append(total, temp);
+    if(o->meta) {
+      Obj *name = env_lookup(o->meta, obj_new_keyword("name"));
+      if(name) {
+	obj_string_mut_append(total, ":");
+	obj_string_mut_append(total, obj_to_string_not_prn(name)->s);
+      }
+    }
+    else {
+      
+    }
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'L') {
