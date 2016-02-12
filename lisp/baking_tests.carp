@@ -15,7 +15,7 @@
 (test-fib)
 
 
-(defn foo (x)
+(defn foo [x]
   (+ (- (fib x) 100) 7))
 
 (defn test-foo ()
@@ -27,7 +27,7 @@
 (test-foo)
 
 
-(defn hypo (x y)
+(defn hypo [x y]
   (sqrtf (+ (* x x) (* y y))))
 
 (defn test-hypo ()
@@ -39,7 +39,7 @@
 (test-hypo)
 
 
-(defn f (s)
+(defn f [s]
   (strlen s))
 
 (defn g (x s)

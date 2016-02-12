@@ -117,6 +117,7 @@
 (defn env? (x) (= :env (type x)))
 (def dict? env?)
 (defn list? (x) (= :list (type x)))
+(defn array? (x) (= :array (type x)))
 (defn macro? (x) (= :macro (type x)))
 (defn lambda? (x) (= :lambda (type x)))
 (defn foreign? (x) (= :foreign (type x)))

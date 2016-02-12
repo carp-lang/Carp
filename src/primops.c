@@ -614,8 +614,8 @@ Obj *p_concat(Obj** args, int arg_count) {
 
 Obj *p_nth(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'nth'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'nth' requires arg 0 to be a list\n"); return nil; }
-  if(args[1]->tag != 'I') { printf("'nth' requires arg 1 to be an integer\n"); return nil; }
+  if(args[0]->tag != 'C') { set_error_return_nil("'nth' requires arg 0 to be a list\n", nil); }
+  if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
   int i = 0;
   int n = args[1]->i;
   Obj *p = args[0];
@@ -631,15 +631,22 @@ Obj *p_nth(Obj** args, int arg_count) {
 }
 
 Obj *p_count(Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'count'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'count' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s); return nil; }
-  int i = 0;
-  Obj *p = args[0];
-  while(p && p->car) {
-    p = p->cdr;
-    i++;
+  if(arg_count != 1) { set_error_return_nil("Wrong argument count to 'count'. ", nil); }
+  if(args[0]->tag == 'C') {
+    int i = 0;
+    Obj *p = args[0];
+    while(p && p->car) {
+      p = p->cdr;
+      i++;
+    }
+    return obj_new_int(i);
   }
-  return obj_new_int(i);
+  else if(args[0]->tag == 'A') {
+    return obj_new_int(args[0]->count);
+  }
+  else {
+    set_error_return_nil("'count' requires arg 0 to be a list: ", args[0]);
+  }
 }
 
 bool is_callable(Obj *obj) {
@@ -652,31 +659,49 @@ Obj *p_map(Obj** args, int arg_count) {
     eval_error = obj_new_string("Wrong argument count to 'map'.");
     return nil;
   }
-  if(!is_callable(args[0])) { printf("'map' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
-  if(args[1]->tag != 'C') { printf("'map' requires arg 1 to be a list\n"); return nil; }
-  Obj *f = args[0];
-  Obj *p = args[1];
-  Obj *list = obj_new_cons(NULL, NULL);
-  shadow_stack_push(list);
-  Obj *prev = list;
-  int shadow_count = 0;
-  while(p && p->car) {
-    Obj *arg[1] = { p->car };
-    apply(f, arg, 1);
-    prev->car = stack_pop();
-    Obj *new = obj_new_cons(NULL, NULL);
-    shadow_stack_push(new);
-    shadow_count++;
-    prev->cdr = new;
-    prev = new;
-    p = p->cdr;
+  if(!is_callable(args[0])) {  set_error_return_nil("'map' requires arg 0 to be a function or lambda: \n", args[0]); }
+  if(args[1]->tag == 'C') {
+    Obj *f = args[0];
+    Obj *p = args[1];
+    Obj *list = obj_new_cons(NULL, NULL);
+    shadow_stack_push(list);
+    Obj *prev = list;
+    int shadow_count = 0;
+    while(p && p->car) {
+      Obj *arg[1] = { p->car };
+      apply(f, arg, 1);
+      prev->car = stack_pop();
+      Obj *new = obj_new_cons(NULL, NULL);
+      shadow_stack_push(new);
+      shadow_count++;
+      prev->cdr = new;
+      prev = new;
+      p = p->cdr;
+    }
+    for(int i = 0; i < shadow_count; i++) {
+      shadow_stack_pop();
+    }
+    shadow_stack_pop(); // list
+    //printf("map end\n");
+    return list;
   }
-  for(int i = 0; i < shadow_count; i++) {
-    shadow_stack_pop();
+  else if(args[1]->tag == 'A') {
+    Obj *f = args[0];
+    Obj *a = args[1];
+    Obj *new_a = obj_new_array(a->count);
+    shadow_stack_push(new_a);
+    for(int i = 0; i < a->count; i++) {
+      Obj *arg[1] = { a->array[i] };
+      apply(f, arg, 1);
+      new_a->array[i] = stack_pop();
+    }
+    shadow_stack_pop(); // new_a
+    //printf("map end\n");
+    return new_a;
   }
-  shadow_stack_pop(); // list
-  //printf("map end\n");
-  return list;
+  else {
+    set_error_return_nil("'map' requires arg 1 to be a list or array: ", args[1]);
+  }
 }
 
 Obj *p_map2(Obj** args, int arg_count) {
@@ -1305,4 +1330,18 @@ Obj *p_meta_get(Obj** args, int arg_count) {
   else {
     return nil;
   }
+}
+
+Obj *p_array_to_list(Obj** args, int arg_count) {
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-to-list must take array as argument: ", args[0]);
+  Obj *list = obj_new_cons(NULL, NULL);
+  Obj *prev = list;
+  for(int i = 0; i < a->count; i++) {
+    Obj *new = obj_new_cons(NULL, NULL);
+    prev->car = a->array[i];
+    prev->cdr = new;
+    prev = new;
+  }
+  return list;
 }
