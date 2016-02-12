@@ -143,6 +143,7 @@ bool obj_match(Obj *env, Obj *attempt, Obj *value) {
     return obj_eq(quoted_attempt, value);
   }
   else if(attempt->tag == 'Y' && strcmp(attempt->s, "nil") == 0) {
+    // Using 'nil' on the left side of a match will bind the right side to that symbol, which is NOT what you want!
     return obj_eq(value, nil);
   }
   else if(attempt->tag == 'Y') {
