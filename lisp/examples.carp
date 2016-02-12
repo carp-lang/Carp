@@ -25,9 +25,6 @@
   (while true
     (println "eternal")))
 
-(register-builtin "fake" '() '(:ptr :int))
-(register-builtin "fake2" '((:ptr :string)) :void)
-
 (defn nullf ()
   (let [x (fake)]
     (null? x)))

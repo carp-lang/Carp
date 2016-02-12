@@ -258,10 +258,6 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
 	  values[i] = &args[i]->s;
 	}
-	else if(type_obj->tag == 'C' && obj_eq(type_obj->car, obj_new_keyword("ptr"))) { // TODO: replace with a shared keyword to avoid allocs
-	  assert_or_set_error(args[i]->tag == 'Q', "Invalid type of arg: ", args[i]);
-	  values[i] = &args[i]->void_ptr;
-	}
 	else {
 	  //printf("Calling function with parameter of type %s. Argument is of type %c.\n", obj_to_string(p->car)->s, args[i]->tag);
 	  if(args[i]->tag == 'Q') {

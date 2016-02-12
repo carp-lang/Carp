@@ -7,7 +7,7 @@
       (reset! header-files (cons (str "\"" carp-dir "gl-constants/gl_constants.h\"") header-files))
       
       (register glfw "glfwInit" '() :bool)
-      (register glfw "glfwCreateWindow" '(:int :int (:ref :string) (:ptr :GLFWmonitor) (:ptr :GLFWwindow)) '(:ref :GLFWwindow*))
+      (register glfw "glfwCreateWindow" '(:int :int (:ref :string) :GLFWmonitor :GLFWwindow) '(:ref :GLFWwindow*))
       (register glfw "glfwMakeContextCurrent" '((:ref :GLFWwindow*)) :void)
       (register glfw "glfwTerminate" '() :void)
       (register glfw "glfwPollEvents" '() :void)
