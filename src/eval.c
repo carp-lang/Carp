@@ -575,6 +575,16 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr, "Lambda form too short (no parameter list or body).", o);
     assert_or_set_error(o->cdr->car, "No parameter list in lambda.", o);
     Obj *params = o->cdr->car;
+    if(params->tag == 'C') {
+      /* int line, pos = 0; */
+      /* char *file_path = ""; */
+      /* if(o->meta) { */
+      /* 	line = env_lookup(o->meta, obj_new_keyword("line"))->i; */
+      /* 	pos = env_lookup(o->meta, obj_new_keyword("pos"))->i; */
+      /* 	file_path = env_lookup(o->meta, obj_new_keyword("file"))->s; */
+      /* } */
+      printf("NOTE: Please use [] in lambda parameter list now, () is deprecated.\n"); // %s, %d:%d\n", file_path, line, pos);
+    }
     assert_or_set_error(o->cdr->cdr, "Lambda form too short (no body).", o);
     assert_or_set_error(o->cdr->cdr->car, "No body in lambda: ", o);
     Obj *body = o->cdr->cdr->car;

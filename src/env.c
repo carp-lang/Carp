@@ -52,16 +52,29 @@ void env_extend(Obj *env, Obj *key, Obj *value) {
 
 void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args) {
   Obj *paramp = function->params;
-  for(int i = 0; i < arg_count; i++) {
-    if(paramp && !paramp->car) {
-      //obj_print_cout(paramp);
+  if(paramp->tag == 'C') {
+    for(int i = 0; i < arg_count; i++) {
+      if(paramp && !paramp->car) {
+	//obj_print_cout(paramp);
+	set_error("Too many arguments to function: ", function);
+      }
+      env_extend(calling_env, paramp->car, args[i]);
+      paramp = paramp->cdr;
+    }
+    if(paramp && paramp->cdr) {
+      set_error("Too few arguments to function: ", function);
+    }
+  }
+  else if(paramp->tag == 'A') {
+    if(arg_count < paramp->count) {
+      set_error("Too few arguments to function: ", function);
+    }
+    else if(arg_count > paramp->count) {
       set_error("Too many arguments to function: ", function);
     }
-    env_extend(calling_env, paramp->car, args[i]);
-    paramp = paramp->cdr;
-  }
-  if(paramp && paramp->cdr) {
-    set_error("Too few arguments to function: ", function);
+    for(int i = 0; i < arg_count; i++) {
+      env_extend(calling_env, paramp->array[i], args[i]);
+    }
   }
 }
 

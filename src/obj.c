@@ -92,7 +92,7 @@ Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_o
 
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(params);
-  assert(params->tag == 'C');
+  assert(params->tag == 'C' || params->tag == 'A');
   assert(body);
   assert(env);
   assert(env->tag == 'E');
