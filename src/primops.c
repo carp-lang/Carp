@@ -1165,7 +1165,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
 
   //printf("Registration of '%s' OK.\n", name);
   
-  Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj, builtin);
+  Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj);
 
   if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
   obj_dict_set(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
@@ -1261,22 +1261,6 @@ Obj *p_register_builtin(Obj** args, int arg_count) {
   }
   
   return register_ffi_internal(name, f, args[1], args[2], true);
-}
-
-Obj *p_builtin_p(Obj** args, int arg_count) {
-  if(arg_count != 1 || args[0]->tag != 'F') {
-    printf("Arg to builtin? must be foreign function:\n");
-    obj_print_cout(args[0]);
-    printf("Arg count: %d\n", arg_count);
-    eval_error = obj_new_string("Invalid argument to builtin?");
-    return nil;
-  }
-  if(args[0]->builtin) {
-    return lisp_true;
-  }
-  else {
-    return lisp_false;
-  }
 }
 
 Obj *p_meta_set_BANG(Obj** args, int arg_count) {

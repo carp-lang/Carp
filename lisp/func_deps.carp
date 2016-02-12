@@ -37,7 +37,7 @@
                                                               (do
                                                                 (bake-internal (new-builder) (str symbol) (code evaled) '() false)
                                                                 (reset! deps (cons symbol deps))))
-                                                            (when (and (foreign? evaled) (not (builtin? evaled))) ;; No need to bake, but add to deps
+                                                            (when (and (foreign? evaled))
                                                               (reset! deps (cons symbol deps)))
                                                             )))                                                      
                                                       (assoc ast :global-lookup is-global-lookup))))
