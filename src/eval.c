@@ -128,17 +128,22 @@ bool obj_match_lists(Obj *env, Obj *attempt, Obj *value) {
     return false;
   }
   else {
+    //printf("Found end of list, it's a match.\n");
     return true;
   }
 }
 
 bool obj_match(Obj *env, Obj *attempt, Obj *value) {
-
+  //printf("Matching %s with %s\n", obj_to_string(attempt)->s, obj_to_string(value)->s);
+  
   if(attempt->tag == 'C' && obj_eq(attempt->car, lisp_quote) && attempt->cdr && attempt->cdr->car) {
     // Dubious HACK to enable matching on quoted things...
     // Don't want to extend environment in this case!
     Obj *quoted_attempt = attempt->cdr->car;
     return obj_eq(quoted_attempt, value);
+  }
+  else if(attempt->tag == 'Y' && strcmp(attempt->s, "nil") == 0) {
+    return obj_eq(value, nil);
   }
   else if(attempt->tag == 'Y') {
     //printf("Binding %s to value %s in match.\n", obj_to_string(attempt)->s, obj_to_string(value)->s);

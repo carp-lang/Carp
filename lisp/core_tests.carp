@@ -147,6 +147,14 @@
                     _ :also-error)
              :correct))
 
+(defn test-match-with-nil ()
+  (assert-eq (match '(1 2 3)
+               () :b
+               '(1 2 7) :c
+               '(1 2 3) :d
+               _ :e)
+             :d))
+
 (defn test-assoc ()
   (let [m {:a 10}]
     (do
@@ -372,6 +380,7 @@
     (test-intersection)
     (test-catch-error)
     (test-for-macro)
+    (test-match-with-nil) 
     ))
 
 (run-core-tests)
