@@ -881,6 +881,9 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'B') {
     return type_char;
   }
+  else if(args[0]->tag == 'A') {
+    return type_array;
+  }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
     //eval_error = obj_new_string("Unknown type.");

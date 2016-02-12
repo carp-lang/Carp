@@ -12,7 +12,7 @@
 (def typevar-counter 0)
 
 (defn gen-typevar ()
-  (let (typevar (str "t" typevar-counter))
+  (let [typevar (str "t" typevar-counter)]
     (do (swap! typevar-counter inc)
         typevar)))
 
@@ -82,12 +82,12 @@
 
 (defn bindings-to-ast (bindings)
   (match bindings
-         (name value & rest-bindings) (cons {:node :binding
-                                             :type (gen-typevar)
-                                             :name name
-                                             :value (form-to-ast value)}
-                                            (bindings-to-ast rest-bindings))
-         _ ()))
+    [name value & rest-bindings] (cons {:node :binding
+                                        :type (gen-typevar)
+                                        :name name
+                                        :value (form-to-ast value)}
+                                       (bindings-to-ast rest-bindings))
+    _ ()))
 
 (defn let-to-ast (bindings body)
   {:node :let

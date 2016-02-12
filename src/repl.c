@@ -118,6 +118,9 @@ void env_new_global() {
   type_char = obj_new_keyword("char");
   define("type-char", type_char);
 
+  type_array = obj_new_keyword("array");
+  define("type-array", type_array);
+
   register_primop("open", p_open_file);
   register_primop("save", p_save_file);
   register_primop("+", p_add);

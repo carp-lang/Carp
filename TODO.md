@@ -29,8 +29,10 @@
   
   
 # Dynamic Runtime
+  - make line numbers and position be actually correct
+  - add one stack frame to the printout that's actually at the location of the error, if possible
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
-  - add array as its own tag for Obj, [] syntax, etc
+  - print lambdas/ffi with their name if it is set
   - use [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj

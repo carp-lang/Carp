@@ -57,6 +57,16 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, ")");
     x++;
   }
+  else if(o->tag == 'A') {
+    obj_string_mut_append(total, "[");
+    for(int i = 0; i < o->count; i++) {
+      obj_to_string_internal(total, o->array[i], true, x);
+      if(i < o->count - 1) {
+	obj_string_mut_append(total, " ");
+      }
+    }
+    obj_string_mut_append(total, "]");
+  }
   else if(o->tag == 'E') {
     obj_string_mut_append(total, "{");
     x++;

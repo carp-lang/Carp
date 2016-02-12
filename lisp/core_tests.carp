@@ -340,6 +340,13 @@
       (do (dict-set-in! xs '(1) "hejsan")
           (assert-eq '(1 "hejsan" 3) xs)))))
 
+(defn test-match-array ()
+  (assert-eq (match [3 4 5]
+               (x y z) :fail
+               [a b c] (* a (+ b c))
+               _ :also-fail)
+             27))
+
 (defn run-core-tests ()
   (do
     (test-keyword-in-list-in-match)
@@ -380,7 +387,8 @@
     (test-intersection)
     (test-catch-error)
     (test-for-macro)
-    (test-match-with-nil) 
+    (test-match-with-nil)
+    (test-match-array)
     ))
 
 (run-core-tests)

@@ -133,6 +133,13 @@ Obj *obj_new_char(char b) {
   return o;
 }
 
+Obj *obj_new_array(int count) {
+  Obj *o = obj_new('A');
+  o->array = malloc(sizeof(Obj*) * count);
+  o->count = count;
+  return o;
+}
+
 Obj *obj_copy(Obj *o) {
   assert(o);
   if(o->tag == 'C') {
@@ -153,6 +160,13 @@ Obj *obj_copy(Obj *o) {
       }
     }
     return list;
+  }
+  else if(o->tag == 'A') {
+    Obj *copy = obj_new_array(o->count);
+    for(int i = 0; i < o->count; i++) {
+      copy->array[i] = obj_copy(o->array[i]);
+    }
+    return copy;
   }
   else if(o->tag == 'E') {
     //printf("Making a copy of the env: %s\n", obj_to_string(o)->s);
@@ -262,6 +276,19 @@ bool obj_eq(Obj *a, Obj *b) {
       else {
 	return false;
       }
+    }
+  }
+  else if(a->tag == 'A') {
+    if(a->count != b->count) {
+      return false;
+    }
+    else {
+      for(int i = 0; i < a->count; i++) {
+	if(!obj_eq(a->array[i], b->array[i])) {
+	  return false;
+	}
+      }
+      return true;
     }
   }
   else if(a->tag == 'E') {
