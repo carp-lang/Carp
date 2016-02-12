@@ -30,7 +30,6 @@
   
 # Dynamic Runtime
   - make line numbers and position be actually correct
-  - use only one name for env/dict, consolidate the functions manipulating them to one file
   - add one stack frame to the printout that's actually at the location of the error, if possible
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
   - use [] in parameter list for function definitions

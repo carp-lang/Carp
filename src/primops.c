@@ -13,7 +13,7 @@ void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
   env_extend(global_env, obj_new_symbol(name), o);
   o->meta = obj_new_environment(NULL);
-  obj_dict_set(o->meta, obj_new_keyword("name"), obj_new_string(name));
+  env_assoc(o->meta, obj_new_keyword("name"), obj_new_string(name));
 }
 
 Obj *open_file(const char *filename) {
@@ -465,7 +465,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
 Obj *p_dict_set_bang(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'dict-set!'\n"); return nil; }
   if(args[0]->tag == 'E') {
-    return obj_dict_set(args[0], args[1], args[2]);
+    return env_assoc(args[0], args[1], args[2]);
   }
   else if(args[0]->tag == 'C') {
     if(args[1]->tag != 'I') {
@@ -1185,7 +1185,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
   Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj);
 
   if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
-  obj_dict_set(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
+  env_assoc(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
 
   char *lispified_name = lispify(name);
   //printf("Registering %s\n", lispified_name);
@@ -1289,7 +1289,7 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  obj_dict_set(o->meta, args[1], args[2]);
+  env_assoc(o->meta, args[1], args[2]);
   return nil;
 }
 

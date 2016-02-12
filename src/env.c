@@ -74,3 +74,17 @@ void global_env_extend(Obj *key, Obj *val) {
     env_extend(global_env, key, val);
   }
 }
+
+Obj *env_assoc(Obj *env, Obj *key, Obj *value) {
+  Obj *pair = env_lookup_binding(env, key);
+  if(pair && pair->car && pair->cdr) {
+    pair->cdr = value;
+  }
+  else {
+    //printf("Pair not found, will add new key.\n");
+    Obj *new_pair = obj_new_cons(key, value);
+    Obj *new_cons = obj_new_cons(new_pair, env->bindings);
+    env->bindings = new_cons;
+  }
+  return env;
+}

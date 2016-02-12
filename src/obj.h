@@ -106,7 +106,6 @@ Obj *obj_copy(Obj *o);
 Obj *obj_list_internal(Obj *objs[]);
 #define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});
 
-Obj *obj_dict_set(Obj *dict, Obj *key, Obj *value);
 void obj_set_line_info(Obj *o, int line, int pos, Obj *filename);
 
 bool obj_eq(Obj *a, Obj *b);
