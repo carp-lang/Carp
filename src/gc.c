@@ -48,6 +48,9 @@ void free_internal_data(Obj *dead) {
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {
     free(dead->s);
   }
+  else if(dead->tag == 'A') {
+    free(dead->array);
+  }
 }
 
 void gc_sweep() {
