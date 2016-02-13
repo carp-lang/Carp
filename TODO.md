@@ -30,6 +30,7 @@
   
 # Dynamic Runtime
   - make line numbers and position be actually correct
+  - quasiquoting and splicing for easier macro writing
   - add one stack frame to the printout that's actually at the location of the error, if possible
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
   - use [] in parameter list for function definitions
