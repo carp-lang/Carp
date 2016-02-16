@@ -63,6 +63,10 @@ void eat_string(char *s) {
   free(s);
 }
 
+void eat_void(void *nothing) {
+  // nothing!
+}
+
 char *string_copy(char *s) {
   return strdup(s);
 }
