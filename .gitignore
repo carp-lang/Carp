@@ -7,3 +7,6 @@
 /src/*.o
 /out/exe
 a.out
+/bin/Debug/
+/bin/Release/
+/build/
