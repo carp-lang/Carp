@@ -136,6 +136,20 @@ void async(void *f) {
   printf("Async done.\n");
 }
 
+void spawn(void (*f)()) {
+  printf("FORK start.\n");
+  int pid = fork();
+  if(pid == 0) {
+    printf("In parent\n");
+    f();
+    printf("FORK done.\n");
+    exit(0);
+  }
+  else {
+    printf("In child\n");
+  }
+}
+
 int last_index_of(string s, char c) {
   int len = strlen(s);
   for(int i = len - 1; i >= 0; i--) {

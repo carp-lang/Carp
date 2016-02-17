@@ -43,6 +43,9 @@
       (glVertex3f x y 0.0f)
       (glEnd)))
 
+(defn red ()
+  0.6)
+
 (defn gl-demo ()
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
@@ -52,20 +55,20 @@
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
               (do
-                (glClearColor 0.6f 0.85f 0.85f 1.0f)
+                (glClearColor (red) 0.85f 0.85f 1.0f)
                 (glClear gl-color-buffer-bit)
-                (glColor3f 1.0f 0.9f 0.2f)
+                (glColor3f 1.0 0.9f 0.2f)
                 (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 
-(bake draw-rect)
+;;(bake draw-rect)
 
 ;(def app-ast (lambda-to-ast (code app)))
 ;(def app-asta (annotate-ast app-ast))
 
 ;;(bake-gl-exe)
-(bake* gl-demo '(draw-rect))
+;;(bake* gl-demo '(draw-rect))
 

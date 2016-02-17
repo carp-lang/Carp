@@ -9,6 +9,8 @@
 #include "eval.h"
 #include "reader.h"
 
+#include <unistd.h>
+
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
   env_extend(global_env, obj_new_symbol(name), o);
@@ -1394,4 +1396,19 @@ Obj *p_array_to_list(Obj** args, int arg_count) {
     prev = new;
   }
   return list;
+}
+
+Obj *p_spork(Obj** args, int arg_count) {
+  printf("SPORK start.\n");
+  int pid = fork();
+  if(pid == 0) {
+    printf("In parent\n");
+    apply(args[0], NULL, 0);
+    printf("SPORK done.\n");
+    exit(0);
+  }
+  else {
+    printf("In child\n");
+  }
+  return nil;
 }
