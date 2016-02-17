@@ -118,8 +118,8 @@
     ;;(println (str "\nvisit-form:\n" form))
     (match (get form :node)
 
-           :binop (let [result-a (visit-form c (get form :a) false)
-                        result-b (visit-form c (get form :b) false)]
+           :binop (let [result-a (visit-form c (get form :left) false)
+                        result-b (visit-form c (get form :right) false)]
                     {:c (str (if toplevel "" "(") (:c result-a) " " (:op form) " " (:c result-b) (if toplevel "" ")"))})
 
            :literal (let [val (:value form)
@@ -159,7 +159,7 @@
                      ;; true-block begins
                      (str-append! c " {\n")
                      (indent-in!)
-                     (let [result-a (visit-form c (get form :a) true)]
+                     (let [result-a (visit-form c (:if-true form) true)]
                        (do
                          (str-append! c (free-variables (get-maybe form :free-left)))
                          (if (= :void (:type form))
@@ -169,7 +169,7 @@
                          (str-append! c (str (indent) "} else {\n"))))
                      
                      (indent-in!) ;; false-block-begins
-                     (let [result-b (visit-form c (get form :b) true)]
+                     (let [result-b (visit-form c (:if-false form) true)]
                        (do
                          (str-append! c (free-variables (get-maybe form :free-right)))
                          (if (= :void (:type form))

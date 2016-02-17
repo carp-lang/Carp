@@ -9,8 +9,8 @@
     :if {:node :if
          :free-left (clean-free-list (:free-left ast))
          :free-right (clean-free-list (:free-right ast))
-         :body-left (ownership-analyze-internal (:a ast))
-         :body-right (ownership-analyze-internal (:b ast))}
+         :body-left (ownership-analyze-internal (:if-true ast))
+         :body-right (ownership-analyze-internal (:if-false ast))}
     ;;:app {:node :app :head (ownership-analyze-internal (:head ast)) :tail (map ownership-analyze-internal (:tail ast))}
     x nil ;;{:node x}
     ))
@@ -258,12 +258,12 @@
                           ]
                       final-data)))
 
-        :binop (let [left (calculate-lifetimes-internal {:ast (:a ast) :env env :vars vars} in-ref)
+        :binop (let [left (calculate-lifetimes-internal {:ast (:left ast) :env env :vars vars} in-ref)
                      vars-after-left (:vars left)
-                     right (calculate-lifetimes-internal {:ast (:b ast) :env env :vars vars-after-left} in-ref)
+                     right (calculate-lifetimes-internal {:ast (:right ast) :env env :vars vars-after-left} in-ref)
                      vars-after-right (:vars right)
-                     ast0 (assoc ast :a (:ast left))
-                     ast1 (assoc ast0 :b (:ast right))]
+                     ast0 (assoc ast :left (:ast left))
+                     ast1 (assoc ast0 :right (:ast right))]
                  {:ast ast1
                   :env env
                   :vars vars-after-right})
@@ -293,17 +293,17 @@
                   vars-after-expr (:vars data-after-expr)
                   ;;_ (println (str "\nvars-after-expr:\n" vars-after-expr))
                   
-                  data-after-left  (calculate-lifetimes-internal {:ast (:a ast) :env env :vars vars-after-expr} in-ref)
-                  data-after-right (calculate-lifetimes-internal {:ast (:b ast) :env env :vars vars-after-expr} in-ref)
+                  data-after-left  (calculate-lifetimes-internal {:ast (:if-true ast) :env env :vars vars-after-expr} in-ref)
+                  data-after-right (calculate-lifetimes-internal {:ast (:if-false ast) :env env :vars vars-after-expr} in-ref)
                   ;;_ (println (str "data-after-left:\n" data-after-left "\ndata-after-right:\n" data-after-right))
 
-                  vars-after-left  (let [result-name (get-maybe (:a ast) :result-name)
+                  vars-after-left  (let [result-name (get-maybe (:if-true ast) :result-name)
                                          vs (:vars data-after-left)]
                                      (if (nil? result-name)
                                        vs
                                        (remove-var-with-name vs result-name)))
                   
-                  vars-after-right (let [result-name (get-maybe (:b ast) :result-name)
+                  vars-after-right (let [result-name (get-maybe (:if-false ast) :result-name)
                                          vs (:vars data-after-right)]
                                      (if (nil? result-name)
                                        vs
@@ -346,8 +346,8 @@
                   ;;_ (println (str "\neaten:\n" eaten))
                   
                   ast-after-expr (assoc ast :expr (:ast data-after-expr))
-                  ast0 (assoc ast-after-expr :a (:ast data-after-left))
-                  ast1 (assoc ast0 :b (:ast data-after-right))
+                  ast0 (assoc ast-after-expr :if-true (:ast data-after-left))
+                  ast1 (assoc ast0 :if-false (:ast data-after-right))
                   ast2 (assoc ast1 :free-left  free-left)
                   ast3 (assoc ast2 :free-right free-right)
 

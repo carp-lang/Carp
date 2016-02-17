@@ -118,6 +118,9 @@ void env_new_global() {
   type_char = obj_new_keyword("char");
   define("type-char", type_char);
 
+  type_array = obj_new_keyword("array");
+  define("type-array", type_array);
+
   register_primop("open", p_open_file);
   register_primop("save", p_save_file);
   register_primop("+", p_add);
@@ -173,6 +176,7 @@ void env_new_global() {
   register_primop("eval", p_eval);
   register_primop("meta-set!", p_meta_set_BANG);
   register_primop("meta-get", p_meta_get);
+  register_primop("array-to-list", p_array_to_list);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);

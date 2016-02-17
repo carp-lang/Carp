@@ -10,7 +10,7 @@
 #define LOG_SHADOW_STACK 0
 #define SHOW_MACRO_EXPANSION 0
 #define LOG_FUNC_APPLICATION 0
-#define GC_COLLECT_AFTER_EACH_FORM 1
+#define GC_COLLECT_AFTER_EACH_FORM 0
 
 #define STACK_TRACE_LEN 256
 char function_trace[STACK_SIZE][STACK_TRACE_LEN];
@@ -133,6 +133,43 @@ bool obj_match_lists(Obj *env, Obj *attempt, Obj *value) {
   }
 }
 
+bool obj_match_arrays(Obj *env, Obj *attempt, Obj *value) {
+  //printf("Matching arrays %s with %s\n", obj_to_string(attempt)->s, obj_to_string(value)->s);
+  int i;
+  for(i = 0; i < attempt->count; i++) {
+    Obj *o = attempt->array[i];
+    if(obj_eq(o, ampersand) && ((i + 1) < attempt->count)) {
+      int rest_count = value->count - i;
+      //printf("rest_count: %d\n", rest_count);
+      Obj *rest = obj_new_array(rest_count);
+      for(int j = 0; j < rest_count; j++) {
+	rest->array[j] = value->array[i + j]; // copy the rest of the objects to a smaller array
+      }
+      //printf("rest: %s\n", obj_to_string(rest)->s);
+      Obj *symbol_after_ampersand = attempt->array[i + 1];
+      //printf("symbol_after_ampersand: %s\n", obj_to_string(symbol_after_ampersand)->s);
+      bool matched_rest = obj_match(env, symbol_after_ampersand, rest);
+      //printf("%s\n", matched_rest ? "match" : "no match");
+      return matched_rest;
+    }
+    else if(i >= value->count) {
+      return false;
+    }
+    bool result = obj_match(env, o, value->array[i]);
+    if(!result) {
+      return false;
+    }
+  }
+  if(i < value->count) {
+    //printf("The value list is too long.\n");
+    return false;
+  }
+  else {
+    //printf("Found end of list, it's a match.\n");
+    return true;
+  }
+}
+
 bool obj_match(Obj *env, Obj *attempt, Obj *value) {
   //printf("Matching %s with %s\n", obj_to_string(attempt)->s, obj_to_string(value)->s);
   
@@ -153,6 +190,9 @@ bool obj_match(Obj *env, Obj *attempt, Obj *value) {
   }
   else if(attempt->tag == 'C' && value->tag == 'C') {
     return obj_match_lists(env, attempt, value);
+  }
+  else if(attempt->tag == 'A' && value->tag == 'A') {
+    return obj_match_arrays(env, attempt, value);
   }
   else if(obj_eq(attempt, value)) {
     return true;
@@ -409,16 +449,17 @@ void eval_list(Obj *env, Obj *o) {
     Obj *let_env = obj_new_environment(env);
     shadow_stack_push(let_env);
     Obj *p = o->cdr->car;
-    assert_or_set_error(o->cdr->car, "No bindings in 'let' form.", o);
-    while(p && p->car) {
-      if(!p->cdr) {
-	set_error("Uneven nr of forms in let: ", o);
+    assert_or_set_error(o->cdr->car, "No bindings in 'let' form: ", o);
+    assert_or_set_error(o->cdr->car->tag == 'A', "Bindings in 'let' form must be an array: ", o);
+    Obj *a = o->cdr->car;
+    for(int i = 0; i < a->count; i += 2) {
+      if(i + 1 == a->count) {
+	set_error("Uneven nr of forms in let: ", o); // TODO: add error code for this kind of error, return error map instead
       }
-      assert_or_set_error(p->car->tag == 'Y', "Must bind to symbol in let form: ", p->car);
-      eval_internal(let_env, p->cdr->car);
+      assert_or_set_error(a->array[i]->tag == 'Y', "Must bind to symbol in let form: ", p->car);
+      eval_internal(let_env, a->array[i + 1]);
       if(eval_error) { return; }
-      env_extend(let_env, p->car, stack_pop());
-      p = p->cdr->cdr;
+      env_extend(let_env, a->array[i], stack_pop());
     }
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", o);
@@ -534,6 +575,11 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr, "Lambda form too short (no parameter list or body).", o);
     assert_or_set_error(o->cdr->car, "No parameter list in lambda.", o);
     Obj *params = o->cdr->car;
+    if(params->tag == 'C') {
+      static int depcount = 0;
+      depcount++;
+      //printf("NOTE: Please use [] in lambda parameter list now, () is deprecated. %d\n", depcount); // %s, %d:%d\n", file_path, line, pos);
+    }
     assert_or_set_error(o->cdr->cdr, "Lambda form too short (no body).", o);
     assert_or_set_error(o->cdr->cdr->car, "No body in lambda: ", o);
     Obj *body = o->cdr->cdr->car;
@@ -766,6 +812,16 @@ void eval_internal(Obj *env, Obj *o) {
     }
     stack_push(new_env);
     shadow_stack_pop(); // new_env
+  }
+  else if(o->tag == 'A') {
+    Obj *new_array = obj_new_array(o->count);
+    shadow_stack_push(new_array);
+    for(int i = 0; i < o->count; i++) {
+      eval_internal(env, o->array[i]);
+      new_array->array[i] = stack_pop();
+    }
+    stack_push(new_array);
+    shadow_stack_pop(); // new_array
   }
   else if(o->tag == 'Y') {
     Obj *result = env_lookup(env, o);

@@ -14,7 +14,7 @@
 	nil))
 
 (defmacro assert-error (error-code form)
-  (list 'let (list 'result (list 'catch-error form))
+  (list 'let ['result (list 'catch-error form)]
         (list 'if (list 'nil? 'result)
               (list 'error (list 'str "No error!\n" (str form) "\n=>\n" 'result))
               (list 'if-not (list '= error-code (list :error 'result))
@@ -47,7 +47,7 @@
   (dict-set-in! dict key-path (f (get-in dict key-path))))
 
 (defn update-in (dict key-path f)
-  (let (new (copy dict))
+  (let [new (copy dict)]
     (do (update-in! new key-path f)
 	new)))
 
@@ -117,6 +117,7 @@
 (defn env? (x) (= :env (type x)))
 (def dict? env?)
 (defn list? (x) (= :list (type x)))
+(defn array? (x) (= :array (type x)))
 (defn macro? (x) (= :macro (type x)))
 (defn lambda? (x) (= :lambda (type x)))
 (defn foreign? (x) (= :foreign (type x)))
@@ -191,7 +192,7 @@
 
 (defmacro for (b body)
   (match b
-    (sym start limit) (list 'let (list sym start)
+    (sym start limit) (list 'let [sym start]
                             (list 'while (list '< sym limit)
                                   (list 'do
                                         body

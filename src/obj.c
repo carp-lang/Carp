@@ -92,7 +92,7 @@ Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_o
 
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(params);
-  assert(params->tag == 'C');
+  assert(params->tag == 'C' || params->tag == 'A');
   assert(body);
   assert(env);
   assert(env->tag == 'E');
@@ -133,6 +133,13 @@ Obj *obj_new_char(char b) {
   return o;
 }
 
+Obj *obj_new_array(int count) {
+  Obj *o = obj_new('A');
+  o->array = malloc(sizeof(Obj*) * count);
+  o->count = count;
+  return o;
+}
+
 Obj *obj_copy(Obj *o) {
   assert(o);
   if(o->tag == 'C') {
@@ -153,6 +160,13 @@ Obj *obj_copy(Obj *o) {
       }
     }
     return list;
+  }
+  else if(o->tag == 'A') {
+    Obj *copy = obj_new_array(o->count);
+    for(int i = 0; i < o->count; i++) {
+      copy->array[i] = obj_copy(o->array[i]);
+    }
+    return copy;
   }
   else if(o->tag == 'E') {
     //printf("Making a copy of the env: %s\n", obj_to_string(o)->s);
@@ -262,6 +276,19 @@ bool obj_eq(Obj *a, Obj *b) {
       else {
 	return false;
       }
+    }
+  }
+  else if(a->tag == 'A') {
+    if(a->count != b->count) {
+      return false;
+    }
+    else {
+      for(int i = 0; i < a->count; i++) {
+	if(!obj_eq(a->array[i], b->array[i])) {
+	  return false;
+	}
+      }
+      return true;
     }
   }
   else if(a->tag == 'E') {
@@ -400,25 +427,11 @@ void obj_print_cout(Obj *o) {
   }
 }
 
-Obj *obj_dict_set(Obj *dict, Obj *key, Obj *value) {
-  Obj *pair = env_lookup_binding(dict, key);
-  if(pair && pair->car && pair->cdr) {
-    pair->cdr = value;
-  }
-  else {
-    //printf("Pair not found, will add new key.\n");
-    Obj *new_pair = obj_new_cons(key, value);
-    Obj *new_cons = obj_new_cons(new_pair, dict->bindings);
-    dict->bindings = new_cons;
-  }
-  return dict;
-}
-
 void obj_set_line_info(Obj *o, int line, int pos, Obj *filename) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  obj_dict_set(o->meta, obj_new_keyword("line"), obj_new_int(line));
-  obj_dict_set(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
-  obj_dict_set(o->meta, obj_new_keyword("file"), filename);
+  env_assoc(o->meta, obj_new_keyword("line"), obj_new_int(line));
+  env_assoc(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
+  env_assoc(o->meta, obj_new_keyword("file"), filename);
 }

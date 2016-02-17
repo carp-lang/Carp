@@ -63,7 +63,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     print_read_pos();
     return nil;
   }
-  else if(CURRENT == '(' || CURRENT == '[') {
+  else if(CURRENT == '(') {
     Obj *list = obj_new_cons(NULL, NULL);
     obj_set_line_info(list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
@@ -86,6 +86,37 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       prev = new;
     }
     return list;
+  }
+  else if(CURRENT == '[') {
+    const int max_count = 512;
+    Obj *temp[max_count];
+    int count = 0;
+
+    read_pos++;
+    while(1) {
+      skip_whitespace(s);
+      if(CURRENT == '\0') {
+	printf("Missing ']' at the end of array.\n");
+	print_read_pos();
+	return nil;
+      }
+      if(CURRENT == ']') {
+	read_pos++;
+	break;
+      }
+      Obj *o = read_internal(env, s, filename);
+      temp[count] = o;
+      count++;
+      if(count >= max_count) {
+	eval_error = obj_new_string("Can't read more than 512 values in literal. Please talk to the creator of this language about this.");
+      }
+    }
+
+    Obj *new_array = obj_new_array(count);
+    for(int i = 0; i <  count; i++) {
+      new_array->array[i] = temp[i];
+    }
+    return new_array;
   }
   else if(CURRENT == '{') {
     Obj *list = obj_new_cons(NULL, NULL);

@@ -13,7 +13,7 @@ void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
   env_extend(global_env, obj_new_symbol(name), o);
   o->meta = obj_new_environment(NULL);
-  obj_dict_set(o->meta, obj_new_keyword("name"), obj_new_string(name));
+  env_assoc(o->meta, obj_new_keyword("name"), obj_new_string(name));
 }
 
 Obj *open_file(const char *filename) {
@@ -465,7 +465,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
 Obj *p_dict_set_bang(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'dict-set!'\n"); return nil; }
   if(args[0]->tag == 'E') {
-    return obj_dict_set(args[0], args[1], args[2]);
+    return env_assoc(args[0], args[1], args[2]);
   }
   else if(args[0]->tag == 'C') {
     if(args[1]->tag != 'I') {
@@ -525,10 +525,14 @@ Obj *p_dict_remove_bang(Obj** args, int arg_count) {
 }
 
 Obj *p_first(Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'first'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'first' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s); return nil; }
+  if(arg_count != 1) {
+    set_error_return_nil("Wrong argument count to 'first'. ", nil);
+  }
+  if(args[0]->tag != 'C') {
+    set_error_return_nil("'first' requires arg 0 to be a list: ", args[0]);
+  }
   if(args[0]->car == NULL) {
-    printf("Can't take first element of empty list.\n");
+    set_error_return_nil("Can't take first element of empty list. ", nil);
     return nil;
   }
   return args[0]->car;
@@ -543,7 +547,7 @@ Obj *p_rest(Obj** args, int arg_count) {
     return nil;
   }
   if(args[0]->cdr == NULL) {
-    printf("Can't take rest of empty list.\n");
+    set_error_return_nil("Can't take rest of empty list. ", nil);
     return nil;
   }
   return args[0]->cdr;
@@ -614,8 +618,8 @@ Obj *p_concat(Obj** args, int arg_count) {
 
 Obj *p_nth(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'nth'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'nth' requires arg 0 to be a list\n"); return nil; }
-  if(args[1]->tag != 'I') { printf("'nth' requires arg 1 to be an integer\n"); return nil; }
+  if(args[0]->tag != 'C') { set_error_return_nil("'nth' requires arg 0 to be a list\n", nil); }
+  if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
   int i = 0;
   int n = args[1]->i;
   Obj *p = args[0];
@@ -631,15 +635,22 @@ Obj *p_nth(Obj** args, int arg_count) {
 }
 
 Obj *p_count(Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'count'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'count' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s); return nil; }
-  int i = 0;
-  Obj *p = args[0];
-  while(p && p->car) {
-    p = p->cdr;
-    i++;
+  if(arg_count != 1) { set_error_return_nil("Wrong argument count to 'count'. ", nil); }
+  if(args[0]->tag == 'C') {
+    int i = 0;
+    Obj *p = args[0];
+    while(p && p->car) {
+      p = p->cdr;
+      i++;
+    }
+    return obj_new_int(i);
   }
-  return obj_new_int(i);
+  else if(args[0]->tag == 'A') {
+    return obj_new_int(args[0]->count);
+  }
+  else {
+    set_error_return_nil("'count' requires arg 0 to be a list: ", args[0]);
+  }
 }
 
 bool is_callable(Obj *obj) {
@@ -647,42 +658,64 @@ bool is_callable(Obj *obj) {
 }
 
 Obj *p_map(Obj** args, int arg_count) {
-  //printf("map start\n");
   if(arg_count != 2) {
     eval_error = obj_new_string("Wrong argument count to 'map'.");
     return nil;
   }
-  if(!is_callable(args[0])) { printf("'map' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
-  if(args[1]->tag != 'C') { printf("'map' requires arg 1 to be a list\n"); return nil; }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'map' requires arg 0 to be a function or lambda: \n", args[0]);
+  }
   Obj *f = args[0];
-  Obj *p = args[1];
-  Obj *list = obj_new_cons(NULL, NULL);
-  shadow_stack_push(list);
-  Obj *prev = list;
-  int shadow_count = 0;
-  while(p && p->car) {
-    Obj *arg[1] = { p->car };
-    apply(f, arg, 1);
-    prev->car = stack_pop();
-    Obj *new = obj_new_cons(NULL, NULL);
-    shadow_stack_push(new);
-    shadow_count++;
-    prev->cdr = new;
-    prev = new;
-    p = p->cdr;
+  if(args[1]->tag == 'C') {
+    Obj *p = args[1];
+    Obj *list = obj_new_cons(NULL, NULL);
+    shadow_stack_push(list);
+    Obj *prev = list;
+    int shadow_count = 0;
+    while(p && p->car) {
+      Obj *arg[1] = { p->car };
+      apply(f, arg, 1);
+      prev->car = stack_pop();
+      Obj *new = obj_new_cons(NULL, NULL);
+      shadow_stack_push(new);
+      shadow_count++;
+      prev->cdr = new;
+      prev = new;
+      p = p->cdr;
+    }
+    for(int i = 0; i < shadow_count; i++) {
+      shadow_stack_pop();
+    }
+    shadow_stack_pop(); // list
+    return list;
   }
-  for(int i = 0; i < shadow_count; i++) {
-    shadow_stack_pop();
+  else if(args[1]->tag == 'A') {
+    Obj *a = args[1];
+    Obj *new_a = obj_new_array(a->count);
+    shadow_stack_push(new_a);
+    for(int i = 0; i < a->count; i++) {
+      Obj *arg[1] = { a->array[i] };
+      apply(f, arg, 1);
+      new_a->array[i] = stack_pop();
+    }
+    shadow_stack_pop(); // new_a
+    return new_a;
   }
-  shadow_stack_pop(); // list
-  //printf("map end\n");
-  return list;
+  else {
+    set_error_return_nil("'map' requires arg 1 to be a list or array: ", args[1]);
+  }
 }
 
 Obj *p_map2(Obj** args, int arg_count) {
-  if(arg_count != 3) { printf("Wrong argument count to 'map2'\n"); return nil; }
-  if(!is_callable(args[0])) { printf("'map2' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
-  if(args[1]->tag != 'C') { printf("'map2' requires arg 1 to be a list\n"); return nil; }
+  if(arg_count != 3) {
+    set_error_return_nil("Wrong argument count to 'map2'. ", nil);
+  }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'map2' requires arg 0 to be a function or lambda: ", args[0]);
+  }
+  if(args[1]->tag != 'C') {
+    set_error_return_nil("'map2' requires arg 1 to be a list: ", args[1]);
+  }
   if(args[2]->tag != 'C') {
     eval_error = obj_new_string("'map2' requires arg 2 to be a list: ");
     obj_string_mut_append(eval_error, obj_to_string(args[2])->s);
@@ -766,50 +799,92 @@ Obj *p_null_predicate(Obj** args, int arg_count) {
 }
 
 Obj *p_filter(Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'filter'\n"); return nil; }
-  if(!is_callable(args[0])) { printf("'filter' requires arg 0 to be a function or lambda: %s\n", obj_to_string(args[0])->s); return nil; }
-  if(args[1]->tag != 'C') { printf("'filter' requires arg 1 to be a list\n"); return nil; }
+  if(arg_count != 2) {
+    set_error_return_nil("Wrong argument count to 'filter'.", nil);
+  }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'filter' requires arg 0 to be a function or lambda: ", args[0]);
+  }
   Obj *f = args[0];
-  Obj *p = args[1];
-  Obj *list = obj_new_cons(NULL, NULL);
-  shadow_stack_push(list);
-  Obj *prev = list;
-  int shadow_count = 0;
-  while(p && p->car) {
-    Obj *arg[1] = { p->car };
-    apply(f, arg, 1);
-    Obj *result = stack_pop();
-    if(is_true(result)) {
-      Obj *new = obj_new_cons(NULL, NULL);
-      shadow_stack_push(new);
-      shadow_count++;
-      prev->car = p->car;
-      prev->cdr = new;
-      prev = new;
+  if(args[1]->tag == 'C') {
+    Obj *p = args[1];
+    Obj *list = obj_new_cons(NULL, NULL);
+    shadow_stack_push(list);
+    Obj *prev = list;
+    int shadow_count = 0;
+    while(p && p->car) {
+      Obj *arg[1] = { p->car };
+      apply(f, arg, 1);
+      Obj *result = stack_pop();
+      if(is_true(result)) {
+	Obj *new = obj_new_cons(NULL, NULL);
+	shadow_stack_push(new);
+	shadow_count++;
+	prev->car = p->car;
+	prev->cdr = new;
+	prev = new;
+      }
+      p = p->cdr;
     }
-    p = p->cdr;
+    for(int i = 0; i < shadow_count; i++) {
+      shadow_stack_pop();
+    }
+    shadow_stack_pop(); // list
+    return list;
   }
-  for(int i = 0; i < shadow_count; i++) {
-    shadow_stack_pop();
+  else if(args[1]->tag == 'A') {
+    Obj *a = args[1];
+    Obj *temp[a->count]; // stack allocated array of varying length
+    int count = 0;
+    for(int i = 0; i < a->count; i++) {
+      Obj *arg[1] = { a->array[i] };
+      apply(f, arg, 1);
+      Obj *result = stack_pop();
+      if(is_true(result)) {
+	temp[count] = a->array[i];
+	count++;
+      }
+    }
+    Obj *a_new = obj_new_array(count);
+    for(int i = 0; i < count; i++) {
+      a_new->array[i] = temp[i];
+    }
+    return a_new;
   }
-  shadow_stack_pop(); // list
-  return list;
+  else {
+    set_error_return_nil("'filter' requires arg 1 to be a list or array: ", args[1]);
+  }
 }
 
 Obj *p_reduce(Obj** args, int arg_count) {
   if(arg_count != 3) { printf("Wrong argument count to 'reduce'\n"); return nil; }
-  if(!is_callable(args[0])) { printf("'reduce' requires arg 0 to be a function or lambda: %s (%c)\n", obj_to_string(args[0])->s, args[0]->tag); return nil; }
-  if(args[2]->tag != 'C') { printf("'reduce' requires arg 2 to be a list\n"); return nil; }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'reduce' requires arg 0 to be a function or lambda: %s (%c)\n", args[0]);
+  }
   Obj *f = args[0];
   Obj *total = args[1];
-  Obj *p = args[2]; 
-  while(p && p->car) {
-    Obj *args[2] = { total, p->car };
-    apply(f, args, 2);
-    total = stack_pop();
-    p = p->cdr;
+  if(args[2]->tag == 'C') {
+    Obj *p = args[2]; 
+    while(p && p->car) {
+      Obj *args[2] = { total, p->car };
+      apply(f, args, 2);
+      total = stack_pop();
+      p = p->cdr;
+    }
+    return total;
   }
-  return total;
+  else if(args[2]->tag == 'A') {
+    Obj *a = args[2];
+    for(int i = 0; i < a->count; i++) {
+      Obj *args[2] = { total, a->array[i] };
+      apply(f, args, 2);
+      total = stack_pop();
+    }
+    return total;
+  }
+  else {
+    set_error_return_nil("'reduce' requires arg 2 to be a list or array: ", args[2]);
+  }
 }
 
 Obj *p_apply(Obj** args, int arg_count) {
@@ -880,6 +955,9 @@ Obj *p_type(Obj** args, int arg_count) {
   }
   else if(args[0]->tag == 'B') {
     return type_char;
+  }
+  else if(args[0]->tag == 'A') {
+    return type_array;
   }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
@@ -1182,7 +1260,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
   Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj);
 
   if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
-  obj_dict_set(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
+  env_assoc(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
 
   char *lispified_name = lispify(name);
   //printf("Registering %s\n", lispified_name);
@@ -1286,7 +1364,7 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  obj_dict_set(o->meta, args[1], args[2]);
+  env_assoc(o->meta, args[1], args[2]);
   return nil;
 }
 
@@ -1302,4 +1380,18 @@ Obj *p_meta_get(Obj** args, int arg_count) {
   else {
     return nil;
   }
+}
+
+Obj *p_array_to_list(Obj** args, int arg_count) {
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-to-list must take array as argument: ", args[0]);
+  Obj *list = obj_new_cons(NULL, NULL);
+  Obj *prev = list;
+  for(int i = 0; i < a->count; i++) {
+    Obj *new = obj_new_cons(NULL, NULL);
+    prev->car = a->array[i];
+    prev->cdr = new;
+    prev = new;
+  }
+  return list;
 }

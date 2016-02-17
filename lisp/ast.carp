@@ -11,40 +11,40 @@
 
 (def typevar-counter 0)
 
-(defn gen-typevar ()
-  (let (typevar (str "t" typevar-counter))
+(defn gen-typevar []
+  (let [typevar (str "t" typevar-counter)]
     (do (swap! typevar-counter inc)
         typevar)))
 
-(defn arg-list-to-ast (args)
+(defn arg-list-to-ast [args]
   (map (fn (arg)
          {:node :arg
           :name arg
           :type (gen-typevar)})
        args))
 
-(defn binop? (form)
+(defn binop? [form]
   (match form
          (x & _) (contains? '(+ - * / <) x)
          _ false))
 
-(defn gen-fn-type (arg-count)
+(defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
-(defn list-to-ast (l)
+(defn list-to-ast [l]
   (if (binop? l)
     (match l
-           (op a b) {:node :binop
+           (op left right) {:node :binop
                      :type (gen-typevar)
                      :op op
-                     :a (form-to-ast a)
-                     :b (form-to-ast b)})
+                     :left (form-to-ast left)
+                     :right (form-to-ast right)})
     (match l
            ('= left right) {:node :binop
                             :type :bool
                             :op '==
-                            :a (form-to-ast left)
-                            :b (form-to-ast right)}
+                            :left (form-to-ast left)
+                            :right (form-to-ast right)}
            (x & xs) (if (and (symbol? x) (def? x) (macro? (eval x)))
                       (expand-macro l)
                       {:node :app
@@ -53,7 +53,7 @@
                        :tail (map form-to-ast xs)})
            nil {:node :literal :type :any :value ""})))
 
-(defn expand-macro (form)
+(defn expand-macro [form]
   (do ;;(println (str "expand:\n" form))
       (let [macro (code (eval (first form)))
             mlam (eval (list 'fn (nth macro 1) (nth macro 2))) ;; convert macro to lambda... this is a strange way to do it
@@ -68,45 +68,45 @@
         ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
         expanded-ast)))
 
-(defn if-to-ast (expr a b)
+(defn if-to-ast [expr if-true if-false]
   {:node :if
    :type (gen-typevar)
    :expr (form-to-ast expr)
-   :a (form-to-ast a)
-   :b (form-to-ast b)})
+   :if-true (form-to-ast if-true)
+   :if-false (form-to-ast if-false)})
 
-(defn do-to-ast (forms)
+(defn do-to-ast [forms]
   {:node :do
    :type (gen-typevar)
    :forms (map form-to-ast forms)})
 
-(defn bindings-to-ast (bindings)
+(defn bindings-to-ast [bindings]
   (match bindings
-         (name value & rest-bindings) (cons {:node :binding
-                                             :type (gen-typevar)
-                                             :name name
-                                             :value (form-to-ast value)}
-                                            (bindings-to-ast rest-bindings))
-         _ ()))
+    [name value & rest-bindings] (cons {:node :binding
+                                        :type (gen-typevar)
+                                        :name name
+                                        :value (form-to-ast value)}
+                                       (bindings-to-ast rest-bindings))
+    _ ()))
 
-(defn let-to-ast (bindings body)
+(defn let-to-ast [bindings body]
   {:node :let
    :type (gen-typevar)
    :bindings (bindings-to-ast bindings)
    :body (form-to-ast body)})
 
-(defn while-to-ast (expr body)
+(defn while-to-ast [expr body]
   {:node :while
    :type :void
    :expr (form-to-ast expr)
    :body (form-to-ast body)})
 
-(defn ref-to-ast (expr)
+(defn ref-to-ast [expr]
   {:node :ref
    :type (list :ref (gen-typevar))
    :expr (form-to-ast expr)})
 
-(defn reset-to-ast (symbol expr)
+(defn reset-to-ast [symbol expr]
   (if (symbol? symbol)
     {:node :reset
      :type :void
@@ -114,7 +114,7 @@
      :expr (form-to-ast expr)}
     (error (str "Non-symbol '" symbol "' found in reset! form."))))
 
-(defn literal-or-lookup-to-ast (expr)
+(defn literal-or-lookup-to-ast [expr]
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
@@ -123,7 +123,7 @@
      :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
      :value expr}))
 
-(defn form-to-ast (form)
+(defn form-to-ast [form]
   (match form
     
     ('if expr a b) (if-to-ast expr a b)
@@ -152,15 +152,15 @@
         (literal-or-lookup-to-ast x))
     ))
 
-(defn body-to-ast (body)
+(defn body-to-ast [body]
   (form-to-ast body))
 
 ;; Takes a list representation of a lambda and creates an AST from it
-(defn lambda-to-ast (form)
+(defn lambda-to-ast [form]
   (do (assert-eq :list (type form))
       (match form
              ('fn args body) {:node :function
                               :type (gen-fn-type (count args))
-                              :args (arg-list-to-ast args)
+                              :args (arg-list-to-ast (if (array? args) (array-to-list args) args))
                               :body (body-to-ast body)}
              _ (error (str "Failed to match lambda form: " form)))))

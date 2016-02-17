@@ -24,7 +24,7 @@ typedef void (*VoidFn)(void);
    D = Dylib
    V = Float
    W = Double (not implemented yet)
-   A = Array (not implemented yet)
+   A = Array
    Q = Void pointer
    B = Char
 */
@@ -61,6 +61,10 @@ typedef struct Obj {
       struct Obj *arg_types;
       struct Obj *return_type;
     };
+    struct {
+      struct Obj **array;
+      int count;
+    };
     // Dylib
     void *dylib;
     // Void pointer
@@ -95,13 +99,13 @@ Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
 Obj *obj_new_char(char b);
+Obj *obj_new_array(int count);
 
 Obj *obj_copy(Obj *o);
 
 Obj *obj_list_internal(Obj *objs[]);
 #define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});
 
-Obj *obj_dict_set(Obj *dict, Obj *key, Obj *value);
 void obj_set_line_info(Obj *o, int line, int pos, Obj *filename);
 
 bool obj_eq(Obj *a, Obj *b);
@@ -139,3 +143,4 @@ Obj *type_float;
 Obj *type_ptr;
 Obj *type_ref;
 Obj *type_char;
+Obj *type_array;

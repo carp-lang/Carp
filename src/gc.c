@@ -17,6 +17,11 @@ void obj_mark_alive(Obj *o) {
     obj_mark_alive(o->car);
     obj_mark_alive(o->cdr);
   }
+  else if(o->tag == 'A') {
+    for(int i = 0; i < o->count; i++) {
+      obj_mark_alive(o->array[i]);
+    }
+  }
   else if(o->tag == 'L' || o->tag == 'M') {
     obj_mark_alive(o->params);
     obj_mark_alive(o->body);
@@ -42,6 +47,9 @@ void free_internal_data(Obj *dead) {
   }
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {
     free(dead->s);
+  }
+  else if(dead->tag == 'A') {
+    free(dead->array);
   }
 }
 

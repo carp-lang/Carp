@@ -91,25 +91,25 @@
                          :b t
                          :doc (str "lookup " val)} constraints)))
 
-      :binop (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
-                   x1 (generate-constraints-internal x0 (get ast :b) type-env)
+      :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
+                   x1 (generate-constraints-internal x0 (get ast :right) type-env)
                    ;;tvar (gen-typevar)
                    ;;left-arg-constr {:a tvar :b (get-in ast '(:a :type)) :doc "left-arg-constr"}
                    ;;right-arg-constr {:a tvar :b (get-in ast '(:b :type)) :doc "right-arg-constr"}
                    ;;ret-constr {:a tvar :b (:type ast)}
-                   same-arg-type-constr {:a (get-in ast '(:a :type)) :b (get-in ast '(:b :type)) :doc "same-arg-type-constr"}
+                   same-arg-type-constr {:a (get-in ast '(:left :type)) :b (get-in ast '(:right :type)) :doc "same-arg-type-constr"}
                    maybe-constr (if (math-op? (:op ast))
-                                  (list {:a (get-in ast '(:a :type)) :b (:type ast)})
+                                  (list {:a (get-in ast '(:left :type)) :b (:type ast)})
                                   ())
                    ]
                ;;(concat x1 (list left-arg-constr right-arg-constr ret-constr)))
                (concat maybe-constr (cons same-arg-type-constr x1)))
 
-      :if (let [x0 (generate-constraints-internal constraints (get ast :a) type-env)
-                x1 (generate-constraints-internal x0 (get ast :b) type-env)
+      :if (let [x0 (generate-constraints-internal constraints (get ast :if-true) type-env)
+                x1 (generate-constraints-internal x0 (get ast :if-false) type-env)
                 x2 (generate-constraints-internal x1 (get ast :expr) type-env)
-                left-result-constr {:a (get-in ast '(:a :type)) :b (:type ast)}
-                right-result-constr {:a (get-in ast '(:b :type)) :b (:type ast)}
+                left-result-constr {:a (get-in ast '(:if-true :type)) :b (:type ast)}
+                right-result-constr {:a (get-in ast '(:if-false :type)) :b (:type ast)}
                 expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
             (concat x2 (list
                         expr-must-be-bool
@@ -348,13 +348,13 @@
              x0)
 
     :binop (let [x0 (assoc ast :type (get-type substs (:type ast)))
-                 x1 (assoc x0 :a (assign-types (:a ast) substs))
-                 x2 (assoc x1 :b (assign-types (:b ast) substs))]
+                 x1 (assoc x0 :left (assign-types (:left ast) substs))
+                 x2 (assoc x1 :right (assign-types (:right ast) substs))]
              x2)
 
     :if (let [x0 (assoc ast :type (get-type substs (:type ast)))
-              x1 (assoc x0 :a (assign-types (:a ast) substs))
-              x2 (assoc x1 :b (assign-types (:b ast) substs))
+              x1 (assoc x0 :if-true (assign-types (:if-true ast) substs))
+              x2 (assoc x1 :if-false (assign-types (:if-false ast) substs))
               x3 (assoc x2 :expr (assign-types (:expr ast) substs))]
           x3)
 
