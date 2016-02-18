@@ -69,7 +69,7 @@ Carp is currently only tested on OSX 10.10. More platforms are coming soon. Ther
  * glfw3
  * rlwrap
  
-Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avoid generating a dylib that might interfere with other installations of the library
+Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avoid generating a dylib that might interfere with other installations of it (like one installed with brew).
 
 You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
 
