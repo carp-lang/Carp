@@ -58,7 +58,7 @@ To start the Carp compiler in development mode (which will run its test suite), 
 
 ### Installation
 
-Clone this repo, then use cmake to generate the project files that you desire. A tip is to put the cmake output into a separate directory called 'build' or similar. Then build the project and make sure the resulting executable is put into the 'bin' directory (cmake should arrange that automatically).
+Clone this repo, then use cmake to generate the project files that you desire. A tip is to put the cmake output into a separate directory called 'build' or similar. Then build the project and make sure the resulting executable is put into the 'bin' directory (cmake should arrange that automatically). An example of how to do all of this for Xcode is in the file 'xcode.sh' in the root of the project.
 
 Add the 'bin' directory to your path to enable calling the ```carp``` command. To do this, add the following to your .bashrc / .zshrc / whatever:
 
