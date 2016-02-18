@@ -13,17 +13,17 @@ set(LIBFFI_INCLUDE_PATH
   PATH
   "libffi include directory")
 
-set(LIBFFI_LIBRARY
-  "${PROJECT_SOURCE_DIR}/../libffi/x86_64-apple-darwin15.3.0/.libs/libffi.a"
+set(LIBFFI_LIBRARY_PATH
+  "${PROJECT_SOURCE_DIR}/../libffi/x86_64-apple-darwin15.3.0/.libs"
   CACHE
-  FILEPATH
-  "libffi library")
+  PATH
+  "libffi library directory")
 
 set(SOURCE_DIR src)
 include(globfiles.cmake)
 
 include_directories(${LIBFFI_INCLUDE_PATH})
-link_directories(${LIBFFI_LIBRARY})
+link_directories(${LIBFFI_LIBRARY_PATH})
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_h} ${${PROJECT_NAME}_c})
 
