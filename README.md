@@ -58,7 +58,9 @@ To start the Carp compiler in development mode (which will run its test suite), 
 
 ### Installation
 
-Clone this repo, then run ```make``` in its root. Add the 'bin' directory to your path to enable calling the ```carp``` command. To do this, add the following to your .bashrc / .zshrc / whatever:
+Clone this repo, then use cmake to generate the project files that you desire. A tip is to put the cmake output into a separate directory called 'build' or similar. Then build the project and make sure the resulting executable is put into the 'bin' directory (cmake should arrange that automatically).
+
+Add the 'bin' directory to your path to enable calling the ```carp``` command. To do this, add the following to your .bashrc / .zshrc / whatever:
 
 ```export PATH=$PATH:~/Carp/bin/```
 
@@ -66,7 +68,9 @@ Carp is currently only tested on OSX 10.10. More platforms are coming soon. Ther
  * libffi
  * glfw3
  * rlwrap
- 
+
+You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
+
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
 
 ### Compiler Variables
@@ -209,6 +213,11 @@ Omit the name tag to create a data constructor with the same name as the type:
 (def blah (load-dylib "./libs/blah.so"))
 (register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
 ```
+
+### Contributions
+Here are list of contributors to Carp:
+ * Erik Svedäng
+ * Markus Gustavsson
 
 ## License
 
