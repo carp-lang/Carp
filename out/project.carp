@@ -10,5 +10,7 @@
 
 (def x '(1 2 3))
 
+(defn id [x] x)
+
 ;;(meta-set! x :dangerous 10)
 

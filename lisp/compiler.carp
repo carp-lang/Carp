@@ -89,53 +89,71 @@
   (let [func-names (keys baked-funcs)]
     (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
 
-;; Takes a function name and the list representation of the lambda
-(defn bake-internal (builder func-name func-code external-deps exe)
+(defn func-to-annotated-ast (func-name func-code)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
         ast-annotated (annotate-ast-internal ast-named true)
-        _ (check-for-ref-return ast-annotated)
-        builder-with-headers (builder-add-headers builder header-files)
-        builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
-        builder-final (if (and exe (not (= func-name "main"))) (builder-add-main-function builder-fns (c-ify-name func-name)) builder-fns)
-        c-program-string (builder-merge-to-c builder-final)
-        proto (get-function-prototype ast-annotated func-name)
-        c-file-name (str out-dir func-name ".c")
-        c-func-name (c-ify-name func-name)
-        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
-    (do
-      ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
-      (def ast ast-annotated)
-      (def c c-program-string)
-      (match (get ast-annotated :type)
-             (:fn arg-types return-type)
-             (do
-               (save-function-prototypes)
-               (save c-file-name c-program-string)
-               (let [clang-command (str "clang "
-                                        (if exe
-                                          (str "-o " out-dir "exe ")
-                                          (str "-shared -g -o " out-dir c-func-name ".so "))
-                                        c-file-name " "
-                                        (include-paths)  " "
-                                        (lib-paths) " "
-					(framework-paths) " "
-                                        (link-libs total-dependencies))]
-                 (do ;;(println clang-command)
-		     (def cmd clang-command)
-		     (system clang-command)))
-               (unload-if-necessary func-name)
-               (if exe
-                 :exe-done
-                 (do
-                   (def out-lib (load-dylib (str out-dir c-func-name ".so")))
-                   (register out-lib c-func-name arg-types return-type)
-                   (add-func! func-name proto out-lib)
-                   (let [f (eval (read func-name))]
-                     (do (def s (pretty-signature (signature f)))
-                         (when echo-signature-after-bake (println (str func-name " : " s)))
-                         f)))))
-             _ (error "Must bake function with type (:fn ...)")))))
+        _ (check-for-ref-return ast-annotated)]
+    ast-annotated))
+
+(defn generic-type? [t]
+  (match (type t)
+    :string true
+    :keyword false
+    :list (map generic-type? t)
+    x (error (str "Invalid type in 'generic-type?': " (prn x)))))
+
+(defn generic-function? [ast]
+  (match (:type ast)
+    (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
+    x (error (str "Can't match " x " in generic-function?"))))
+
+;; Takes a function name and the list representation of the lambda
+(defn bake-internal (builder func-name func-code external-deps exe)
+  (let [ast-annotated (func-to-annotated-ast func-name func-code)]
+    (if (generic-function? ast-annotated)
+      (println (str "Won't bake generic function: " func-name))
+      (let [builder-with-headers (builder-add-headers builder header-files)
+            builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
+            builder-final (if (and exe (not (= func-name "main"))) (builder-add-main-function builder-fns (c-ify-name func-name)) builder-fns)
+            c-program-string (builder-merge-to-c builder-final)
+            proto (get-function-prototype ast-annotated func-name)
+            c-file-name (str out-dir func-name ".c")
+            c-func-name (c-ify-name func-name)
+            total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
+        (do
+          ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+          (def ast ast-annotated)
+          (def c c-program-string)
+          (match (get ast-annotated :type)
+            (:fn arg-types return-type)
+            (do
+              (save-function-prototypes)
+              (save c-file-name c-program-string)
+              (let [clang-command (str "clang "
+                                       (if exe
+                                         (str "-o " out-dir "exe ")
+                                         (str "-shared -g -o " out-dir c-func-name ".so "))
+                                       c-file-name " "
+                                       (include-paths)  " "
+                                       (lib-paths) " "
+                                       (framework-paths) " "
+                                       (link-libs total-dependencies))]
+                (do ;;(println clang-command)
+                  (def cmd clang-command)
+                  (system clang-command)))
+              (unload-if-necessary func-name)
+              (if exe
+                :exe-done
+                (do
+                  (def out-lib (load-dylib (str out-dir c-func-name ".so")))
+                  (register out-lib c-func-name arg-types return-type)
+                  (add-func! func-name proto out-lib)
+                  (let [f (eval (read func-name))]
+                    (do (def s (pretty-signature (signature f)))
+                        (when echo-signature-after-bake (println (str func-name " : " s)))
+                        f)))))
+            _ (error "Must bake function with type (:fn ...)")))))))
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
