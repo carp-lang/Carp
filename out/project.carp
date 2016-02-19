@@ -12,5 +12,8 @@
 
 (defn id [x] x)
 
+(defn id-test []
+  (id 123))
+
 ;;(meta-set! x :dangerous 10)
 

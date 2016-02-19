@@ -48,7 +48,7 @@
 (defn add-func! (func-name func-proto func-dylib)
   (swap! baked-funcs (fn (fs) (assoc fs func-name {:func-name func-name
                                              :func-proto func-proto
-                                             :func-dylib func-dylib}))))
+                                                   :func-dylib func-dylib}))))
 
 ;; Takes the name of a function and unloads it if it is in the list of baked functions
 (defn unload-if-necessary (func-name)
@@ -129,6 +129,7 @@
             c-func-name (c-ify-name func-name)
             total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
         (do
+          ;;(println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
           ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
           (def ast ast-annotated)
           (def c c-program-string)
