@@ -112,10 +112,17 @@
 (defn bake-internal (builder func-name func-code external-deps exe)
   (let [ast-annotated (func-to-annotated-ast func-name func-code)]
     (if (generic-function? ast-annotated)
-      (println (str "Won't bake generic function: " func-name))
+      (do
+        (println (str "Found generic function: " func-name))
+        (let [func-def (eval (symbol func-name))]
+          (do
+            (meta-set! func-def :generic true)
+            (meta-set! func-def :signature (:type ast-annotated)))))
       (let [builder-with-headers (builder-add-headers builder header-files)
             builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
-            builder-final (if (and exe (not (= func-name "main"))) (builder-add-main-function builder-fns (c-ify-name func-name)) builder-fns)
+            builder-final (if (and exe (not (= func-name "main")))
+                            (builder-add-main-function builder-fns (c-ify-name func-name))
+                            builder-fns)
             c-program-string (builder-merge-to-c builder-final)
             proto (get-function-prototype ast-annotated func-name)
             c-file-name (str out-dir func-name ".c")
