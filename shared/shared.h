@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <pthread.h>
-#include <unistd.h>
+//#include <pthread.h>
+//#include <unistd.h>
+#include "../src/platform.h"
 
 typedef int unknown;
 typedef void* typevar;
@@ -18,9 +19,11 @@ typedef char* string;
 int intsqrt(int x) { return sqrt(x); }
 float itof(int x) { return (float)x; }
 
+#ifndef max
 int max(int x, int y) {
   return x > y ? x : y;
 }
+#endif
 
 string itos(int x) {
   char *s = malloc(sizeof(char) * 32);
@@ -131,23 +134,9 @@ int dec(x) { return x - 1; }
 
 void async(void *f) {
   printf("Async starting.\n");
-  pthread_t pth;
-  pthread_create(&pth, NULL, f, "Async");
+  carp_thread_t th = carp_thread_create(f, "Async");
+  carp_thread_destroy(th);
   printf("Async done.\n");
-}
-
-void spawn(void (*f)()) {
-  printf("FORK start.\n");
-  int pid = fork();
-  if(pid == 0) {
-    printf("In parent\n");
-    f();
-    printf("FORK done.\n");
-    exit(0);
-  }
-  else {
-    printf("In child\n");
-  }
 }
 
 int last_index_of(string s, char c) {

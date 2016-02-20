@@ -1,15 +1,20 @@
 #include "primops.h"
 
+#ifdef WIN32
+#include <time.h>
+#else
 #include <sys/time.h>
-#include <dlfcn.h>
+#endif
+//#include <dlfcn.h>
 
 #include "assertions.h"
 #include "obj_string.h"
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
+#include "platform.h"
 
-#include <unistd.h>
+//#include <unistd.h>
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
@@ -836,7 +841,7 @@ Obj *p_filter(Obj** args, int arg_count) {
   }
   else if(args[1]->tag == 'A') {
     Obj *a = args[1];
-    Obj *temp[a->count]; // stack allocated array of varying length
+    Obj **temp = malloc(sizeof(Obj*) * a->count);
     int count = 0;
     for(int i = 0; i < a->count; i++) {
       Obj *arg[1] = { a->array[i] };
@@ -851,6 +856,7 @@ Obj *p_filter(Obj** args, int arg_count) {
     for(int i = 0; i < count; i++) {
       a_new->array[i] = temp[i];
     }
+	free(temp);
     return a_new;
   }
   else {
@@ -907,13 +913,14 @@ Obj *p_apply(Obj** args, int arg_count) {
     apply_arg_count++;
     p = p->cdr;
   }
-  Obj *apply_args[apply_arg_count];
+  Obj **apply_args = malloc(sizeof(Obj*) * apply_arg_count);
   Obj *q = args[1];
   for(int i = 0; i < apply_arg_count; i++) {
     apply_args[i] = q->car;
     q = q->cdr;
   }
   apply(args[0], apply_args, apply_arg_count);
+  free(apply_args);
   return stack_pop();
 }
 
@@ -992,16 +999,18 @@ Obj *p_lt(Obj** args, int arg_count) {
   }
 }
 
+/*
 int current_timestamp() {
     struct timeval te;
     gettimeofday(&te, NULL); // get current time
     long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // calculate milliseconds
     return milliseconds;
 }
+*/
 
 Obj *p_now(Obj** args, int arg_count) {
   if(arg_count != 0) { printf("Wrong argument count to 'now'\n"); return nil; }
-  return obj_new_int(current_timestamp());
+  return obj_new_int(carp_millitime());
 }
 
 Obj *p_name(Obj** args, int arg_count) {
@@ -1063,7 +1072,7 @@ Obj *p_load_lisp(Obj** args, int arg_count) {
 
 Obj *p_load_dylib(Obj** args, int arg_count) {
   char *filename = args[0]->s;
-  void *handle = dlopen (filename, RTLD_LAZY);
+  carp_library_t handle = carp_load_library(filename);
   if (!handle) {
     set_error_and_return("Failed to open dylib: ", args[0]);
     return nil;
@@ -1347,7 +1356,7 @@ Obj *p_register_builtin(Obj** args, int arg_count) {
     return nil;
   }
   char *name = args[0]->s;
-  VoidFn f = dlsym(RTLD_DEFAULT, name);
+  VoidFn f = carp_find_function(name);
 
   if(!f) {
     printf("Failed to load dynamic C function with name '%s' from executable.\n", name);
@@ -1396,19 +1405,4 @@ Obj *p_array_to_list(Obj** args, int arg_count) {
     prev = new;
   }
   return list;
-}
-
-Obj *p_spork(Obj** args, int arg_count) {
-  printf("SPORK start.\n");
-  int pid = fork();
-  if(pid == 0) {
-    printf("In parent\n");
-    apply(args[0], NULL, 0);
-    printf("SPORK done.\n");
-    exit(0);
-  }
-  else {
-    printf("In child\n");
-  }
-  return nil;
 }

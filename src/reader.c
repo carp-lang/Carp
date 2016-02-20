@@ -88,8 +88,9 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return list;
   }
   else if(CURRENT == '[') {
-    const int max_count = 512;
-    Obj *temp[max_count];
+    //const int max_count = 512; // MSVC thinks that this is not a constant. What the ...
+#define MAX_COUNT 512
+    Obj *temp[MAX_COUNT];
     int count = 0;
 
     read_pos++;
@@ -107,7 +108,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       Obj *o = read_internal(env, s, filename);
       temp[count] = o;
       count++;
-      if(count >= max_count) {
+      if(count >= MAX_COUNT) {
 	eval_error = obj_new_string("Can't read more than 512 values in literal. Please talk to the creator of this language about this.");
       }
     }
