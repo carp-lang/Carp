@@ -115,7 +115,7 @@ Obj *p_sub(Obj** args, int arg_count) {
   }
   else if(args[0]->tag == 'V') {
     if(arg_count == 1) {
-      return obj_new_int(-args[0]->f32);
+      return obj_new_int((int)-args[0]->f32);
     }
     float sum = args[0]->f32;
     for(int i = 1; i < arg_count; i++) {
@@ -550,7 +550,7 @@ Obj *p_rest(Obj** args, int arg_count) {
   if(args[0]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'rest' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s);
-    eval_error = obj_new_string(strdup(buffer));
+    eval_error = obj_new_string(_strdup(buffer));
     return nil;
   }
   if(args[0]->cdr == NULL) {
@@ -565,7 +565,7 @@ Obj *p_cons(Obj** args, int arg_count) {
   if(args[1]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(args[0])->s);
-    eval_error = obj_new_string(strdup(buffer));
+    eval_error = obj_new_string(_strdup(buffer));
     return nil;
   }
   Obj *new_cons = obj_new_cons(args[0], args[1]);
@@ -1077,8 +1077,8 @@ Obj *p_load_dylib(Obj** args, int arg_count) {
     set_error_and_return("Failed to open dylib: ", args[0]);
     return nil;
   }
-  char *load_error;
-  if ((load_error = dlerror()) != NULL)  {
+  const char *load_error;
+  if ((load_error = carp_get_load_library_error()) != NULL)  {
     set_error_and_return("Failed to load dylib: ", args[0]);
   }
   //printf("dlopen %p\n", handle);
@@ -1092,14 +1092,14 @@ Obj *p_unload_dylib(Obj** args, int arg_count) {
     set_error_and_return("unload-dylib takes a dylib as argument: ", args[0]);
     return nil;
   }
-  void *handle = args[0]->dylib;
+  carp_library_t handle = args[0]->dylib;
   if(!handle) {
     return obj_new_symbol("no handle to unload");
   }
   //printf("dlclose %p\n", handle);
-  int result = dlclose(handle);
+  int result = carp_unload_library(handle);
   if(result) {
-    eval_error = obj_new_string(dlerror());
+    eval_error = obj_new_string(carp_get_load_library_error());
     return nil;
   }
   else {
@@ -1206,7 +1206,7 @@ ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
     if(!arg_type) {
       char buffer[512];
       snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, func_name, obj_to_string(p->car)->s);
-      eval_error = obj_new_string(strdup(buffer));
+      eval_error = obj_new_string(_strdup(buffer));
       return NULL;
     }
     arg_types_c_array[i] = arg_type;
@@ -1314,10 +1314,10 @@ Obj *p_register(Obj** args, int arg_count) {
     printf("Args %c %c %c %c\n", args[0]->tag, args[1]->tag, args[2]->tag, args[3]->tag);
     return nil;
   }
-  void *handle = args[0]->dylib;
+  carp_library_t handle = args[0]->dylib;
   char *name = args[1]->s;
   
-  VoidFn f = dlsym(handle, name);
+  VoidFn f = carp_find_symbol(handle, name);
 
   if(!f) {
     printf("Failed to load dynamic C function with name '%s' from %s\n", name, obj_to_string(args[0])->s);
@@ -1335,10 +1335,10 @@ Obj *p_register_variable(Obj** args, int arg_count) {
     return nil;
   }
   
-  void *handle = args[0]->dylib;
+  carp_library_t handle = args[0]->dylib;
   char *name = args[1]->s;
   
-  void *variable = dlsym(handle, name);
+  void *variable = carp_find_symbol(handle, name);
 
   if(!variable) {
     printf("Failed to load dynamic C variable with name '%s' from %s\n", name, obj_to_string(args[0])->s);
@@ -1356,7 +1356,7 @@ Obj *p_register_builtin(Obj** args, int arg_count) {
     return nil;
   }
   char *name = args[0]->s;
-  VoidFn f = carp_find_function(name);
+  VoidFn f = carp_find_symbol(NULL, name);
 
   if(!f) {
     printf("Failed to load dynamic C function with name '%s' from executable.\n", name);

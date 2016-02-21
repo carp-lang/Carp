@@ -39,8 +39,12 @@ typedef struct carp_library* carp_library_t;
 
 carp_library_t carp_load_library(const char* name);
 
-void carp_unload_library(carp_library_t lib);
+int carp_unload_library(carp_library_t lib);
 
-void* carp_find_function(const char* name);
+/* Pass NULL to search all loaded libraries */
+void* carp_find_symbol(carp_library_t lib, const char* name);
 
-const char* carp_get_load_library_error();
+/* On Windows, this function just gets the last error for the calling thread
+   so to get any error from a failed library loading, this needs to be called
+   immediately after the load call  */
+char* carp_get_load_library_error();

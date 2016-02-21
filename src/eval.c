@@ -302,7 +302,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	}
 	else if(obj_eq(type_obj, type_string)) {
 	  assert_or_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
-	  args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
+	  args[i]->s = _strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
 	  values[i] = &args[i]->s;
 	}
 	else {
@@ -734,10 +734,10 @@ void eval_list(Obj *env, Obj *o) {
 	char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
 	char *file = file_path;
 
-	int len = strlen(file_path);
+	int len = (int)strlen(file_path);
 	for(int i = len - 1; i >= 0; i--) {
 	  if(file_path[i] == '/') {
-	    file = strdup(file_path + i + 1);
+	    file = _strdup(file_path + i + 1);
 	    break;
 	  }
 	}

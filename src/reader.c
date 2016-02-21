@@ -189,7 +189,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     scratch[i] = '\0';
     if(is_floating) {
-      float x = atof(scratch) * negator;
+      float x = (float)atof(scratch) * negator;
       return obj_new_float(x);
     } else {
       int num = atoi(scratch) * negator;

@@ -33,14 +33,13 @@ static void add_module_to_list(module_list_t lst, HMODULE module) {
 	lst->module = module;
 }
 
-static void free_module_and_remove_from_list(module_list_t lst, HMODULE module) {
+static void remove_module_from_list(module_list_t lst, HMODULE module) {
 	while (lst->module != module) {
 		if (lst->next == NULL) {
 			return; // not found
 		}
 		lst = lst->next;
 	}
-	FreeLibrary(lst->module);
 	lst->module = INVALID_HANDLE_VALUE;
 }
 
@@ -116,18 +115,25 @@ carp_library_t carp_load_library(const char* name) {
 	if (module == NULL) {
 		return NULL;
 	}
+	SetLastError(0);
 	add_module_to_list(loaded_modules, module);
 	carp_library_t lib = malloc(sizeof(struct carp_library));
 	lib->module = module;
 	return lib;
 }
 
-void carp_unload_library(carp_library_t lib) {
-	free_module_and_remove_from_list(loaded_modules, lib->module);
+int carp_unload_library(carp_library_t lib) {
+	remove_module_from_list(loaded_modules, lib->module);
+	BOOL result = FreeLibrary(lib->module);
 	free(lib);
+	return (int)result;
 }
 
-void* carp_find_function(const char* name) {
+void * carp_find_symbol(carp_library_t lib, const char * name) {
+	if (lib != NULL) {
+		assert(lib->module != INVALID_HANDLE_VALUE);
+		return GetProcAddress(lib->module, name);
+	}
 	void* addr = GetProcAddress(main_module, name);
 	if (addr != NULL) {
 		return addr;
@@ -145,7 +151,22 @@ void* carp_find_function(const char* name) {
 	return NULL;
 }
 
-const char* carp_get_load_library_error() {
+static char error_buf[2048];
 
+char* carp_get_load_library_error() {
+	DWORD error = GetLastError();
+	if (error == 0) {
+		return NULL;
+	}
+	assert(sizeof(TCHAR) == 1); // If wide chars are used, we have to convert to utf8
+	FormatMessage(
+		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+		NULL,
+		error,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPSTR)&error_buf,
+		sizeof(error_buf) - 1,
+		NULL);
+	return error_buf;
 }
 
