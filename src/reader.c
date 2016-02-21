@@ -204,7 +204,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return cons1;
   }
   else if(is_ok_in_symbol(CURRENT, true)) {
-    int line, pos = read_line_nr, read_line_pos;
+	int line = read_line_nr, pos = read_line_pos;
     char name[512];
     int i = 0;
     while(is_ok_in_symbol(CURRENT, false)) {
