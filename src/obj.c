@@ -212,6 +212,7 @@ Obj *obj_copy(Obj *o) {
   }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
+	return NULL;
     assert(false);
   }
 }

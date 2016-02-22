@@ -6,8 +6,8 @@ bool setting_print_lambda_body = true;
 void obj_string_mut_append(Obj *string_obj, const char *s2) {
   assert(string_obj);
   assert(string_obj->tag == 'S');
-  int string_obj_len = strlen(string_obj->s);
-  int s2_len = strlen(s2);
+  int string_obj_len = (int)strlen(string_obj->s);
+  int s2_len = (int)strlen(s2);
   int total_length = (string_obj_len + s2_len);
   char *s3 = realloc(string_obj->s, sizeof(char) * (total_length + 1));
   s3[total_length] = '\0';
@@ -76,7 +76,7 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
       char *key_s = obj_to_string(p->car->car)->s;
       obj_string_mut_append(total, key_s);
       obj_string_mut_append(total, " ");
-      obj_to_string_internal(total, p->car->cdr, true, x + strlen(key_s) + 1);
+      obj_to_string_internal(total, p->car->cdr, true, x + (int)strlen(key_s) + 1);
       p = p->cdr;
       if(p && p->car && p->car->car) {
 	obj_string_mut_append(total, ", \n");

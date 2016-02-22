@@ -266,7 +266,8 @@ void apply(Obj *function, Obj **args, int arg_count) {
     assert(function->arg_types);
     assert(function->return_type);
      
-    void *values[arg_count];
+    void **values = malloc(sizeof(void*) * arg_count);
+	assert(values);
 
     Obj *p = function->arg_types;
     for(int i = 0; i < arg_count; i++) {      
@@ -395,6 +396,8 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_ptr(result);
     }
+
+	free(values);
 
     assert(obj_result);
     stack_push(obj_result);
@@ -680,7 +683,7 @@ void eval_list(Obj *env, Obj *o) {
     }
 
     //printf("Popping args!\n");
-    Obj *args[count];
+    Obj **args = malloc(sizeof(Obj*) * count);
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop();
       args[count - i - 1] = arg;
@@ -692,7 +695,7 @@ void eval_list(Obj *env, Obj *o) {
       env_extend_with_args(calling_env, function, count, args);
       shadow_stack_push(calling_env);
       eval_internal(calling_env, function->body);
-      if(eval_error) { return; }
+	  if (eval_error) { free(args); return; }
       Obj *expanded = stack_pop();
       if(SHOW_MACRO_EXPANSION) {
 	printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
@@ -731,7 +734,7 @@ void eval_list(Obj *env, Obj *o) {
 	char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
 	char *file = file_path;
 
-	int len = strlen(file_path);
+	int len = (int)strlen(file_path);
 	for(int i = len - 1; i >= 0; i--) {
 	  if(file_path[i] == '/') {
 	    file = strdup(file_path + i + 1);
@@ -770,6 +773,8 @@ void eval_list(Obj *env, Obj *o) {
 	assert(false);
       }
     }
+
+	free(args);
   }
 }
 
