@@ -37,6 +37,7 @@
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
   - remove globals to enable several instances of the runner in parallel
   - nicer pretty printing of lists of lists
+  - don't leak values returned from calling ffi functions at the repl (but how..?)
   - namespaces
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - create pretty printed stack when needed, not always when calling functions
@@ -55,3 +56,6 @@
   - lambdas should be able to have their signature set/get?
   - not possible to write an 'eat-void' function: (register-builtin "eat_void" '(:void) :void), need a proper unit type for that
 
+# Niceties
+  - Built in tutorial for the language
+  - Built in manual
