@@ -5,16 +5,13 @@
 #else
 #include <sys/time.h>
 #endif
-//#include <dlfcn.h>
 
 #include "assertions.h"
 #include "obj_string.h"
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
-#include "platform.h"
-
-//#include <unistd.h>
+#include "../shared/platform.h"
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);

@@ -8,7 +8,7 @@
 #include <stdbool.h>
 //#include <pthread.h>
 //#include <unistd.h>
-#include "../src/platform.h"
+#include "platform.h"
 
 typedef int unknown;
 typedef void* typevar;
