@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef WIN32
+/* For correct linking against static libffi */
+#define FFI_BUILDING
+#endif
 #include <ffi.h>
 #include <stdio.h>
 #include <stdlib.h>
