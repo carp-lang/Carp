@@ -103,6 +103,9 @@
                true
                (contains? xs item))))
 
+(defn any (pred xs)
+  (contains? (map pred xs) true))
+
 (defn log (message value)
   (do
     (println (str message value))

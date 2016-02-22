@@ -21,8 +21,8 @@ void repl(Obj *env) {
       gc(env);
     }
     printf("\e[36mλ>\e[0m ");
-    fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);
-    if(strcmp(input, "q\n") == 0) {
+    void *eof = fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);
+    if(eof == NULL) {
       break;
     }
     eval_text(env, input, true, obj_new_string("repl"));

@@ -19,7 +19,11 @@
       (let [global-lookup (eval sym)
             t (type global-lookup)]
         (match t
-          :lambda (error (str "Found non-baked symbol '" sym "'."))
+          :lambda (if (meta-get global-lookup :generic)
+                    (let [signature (meta-get global-lookup :signature)]
+                      (do (println (str "'" sym "' is generic with signature " signature))
+                          signature))
+                    (error (str "Found non-baked symbol '" sym "'.")))
           :macro (error (str "Found non-expanded macro '" sym "'."))
           :foreign (signature global-lookup)
           _ t))
