@@ -550,7 +550,7 @@ Obj *p_rest(Obj** args, int arg_count) {
   if(args[0]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'rest' requires arg 0 to be a list: %s\n", obj_to_string(args[0])->s);
-    eval_error = obj_new_string(_strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return nil;
   }
   if(args[0]->cdr == NULL) {
@@ -565,7 +565,7 @@ Obj *p_cons(Obj** args, int arg_count) {
   if(args[1]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(args[0])->s);
-    eval_error = obj_new_string(_strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return nil;
   }
   Obj *new_cons = obj_new_cons(args[0], args[1]);
@@ -1206,7 +1206,7 @@ ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
     if(!arg_type) {
       char buffer[512];
       snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, func_name, obj_to_string(p->car)->s);
-      eval_error = obj_new_string(_strdup(buffer));
+      eval_error = obj_new_string(strdup(buffer));
       return NULL;
     }
     arg_types_c_array[i] = arg_type;

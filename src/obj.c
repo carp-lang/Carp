@@ -43,19 +43,19 @@ Obj *obj_new_float(float x) {
 
 Obj *obj_new_string(char *s) {
   Obj *o = obj_new('S');
-  o->s =_strdup(s);
+  o->s = strdup(s);
   return o;
 }
 
 Obj *obj_new_symbol(char *s) {
   Obj *o = obj_new('Y');
-  o->s =_strdup(s);
+  o->s = strdup(s);
   return o;
 }
 
 Obj *obj_new_keyword(char *s) {
   Obj *o = obj_new('K');
-  o->s =_strdup(s);
+  o->s = strdup(s);
   return o;
 }
 
@@ -184,13 +184,13 @@ Obj *obj_copy(Obj *o) {
     return obj_new_float(o->f32);
   }
   else if(o->tag == 'S') {
-    return obj_new_string(_strdup(o->s));
+    return obj_new_string(strdup(o->s));
   }
   else if(o->tag == 'Y') {
-    return obj_new_symbol(_strdup(o->s));
+    return obj_new_symbol(strdup(o->s));
   }
   else if(o->tag == 'K') {
-    return obj_new_keyword(_strdup(o->s));
+    return obj_new_keyword(strdup(o->s));
   }
   else if(o->tag == 'P') {
     return obj_new_primop(o->primop);
@@ -351,7 +351,7 @@ bool obj_eq(Obj *a, Obj *b) {
   else {
     char buffer[512];
     snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-    eval_error = obj_new_string(_strdup(buffer));
+    eval_error = obj_new_string(strdup(buffer));
     return false;
   }
 }

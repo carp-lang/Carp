@@ -71,7 +71,7 @@ void eat_void(void *nothing) {
 }
 
 char *string_copy(char *s) {
-  return _strdup(s);
+  return strdup(s);
 }
 
 char *string_append(char *s1, char *s2) {
@@ -92,7 +92,7 @@ typedef string* string_array;
 string_array string_array_new(int size) {
   string_array a = calloc(size + 1, sizeof(string));
   for(int i = 0; i < size; i++) {
-    a[i] = _strdup("");
+    a[i] = strdup("");
   }
   return a;
 }
@@ -108,11 +108,11 @@ int string_array_count(string_array array) {
 }
 
 string string_array_get(string_array array, int pos) {
-  return _strdup(array[pos]);
+  return strdup(array[pos]);
 }
 
 string_array string_array_set(string_array array, int pos, string new_value) {
-  array[pos] = _strdup(new_value);
+  array[pos] = strdup(new_value);
   return array;
 }
 
@@ -154,7 +154,7 @@ string substring(string s, int index) {
     panic("substring out of bounds");
   }
   const char *sub = s + index;
-  return _strdup(sub);
+  return strdup(sub);
 }
 
 string file_path_component(string s) {
@@ -165,7 +165,7 @@ string file_path_component(string s) {
 string get_input() {
   char in[1024];
   fgets(in, 1024, stdin);
-  return _strdup(in);
+  return strdup(in);
 }
 
 void call(void *f()) {
