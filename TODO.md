@@ -45,6 +45,7 @@
   - better error handling and input validation for primops, clean up the C macros
   - Fix problem with "No meta data." for some calls in stack trace
   - Reader syntax for refs: &
+  - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
 
 # Maybes
   - Add void constraints for (do ...) statements ?
