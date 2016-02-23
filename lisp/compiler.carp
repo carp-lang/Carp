@@ -40,7 +40,7 @@
 (defn sig (lambda) (:type (ann lambda)))
 
 (defn generic-suffix (signature)
-  (c-ify-name (join "-" (map name (nth signature 1)))))
+  (join "-" (map name (nth signature 1))))
 
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))
@@ -155,11 +155,12 @@
   (let [ast-annotated (func-to-annotated-ast func-name func-code nil)]
     (if (generic-function? ast-annotated)
       (do
-        ;;(println (str "bake-internal found generic function: " func-name))
+        ;;(println (str "bake found generic function: " func-name))
         (let [func-def (eval (symbol func-name))]
           (do
             (meta-set! func-def :generic true)
-            (meta-set! func-def :signature (:type ast-annotated)))))
+            (meta-set! func-def :signature (:type ast-annotated))
+            :generic)))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
 (defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]

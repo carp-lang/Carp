@@ -22,3 +22,6 @@
 
 ;;(meta-set! x :dangerous 10)
 
+(defn whatever [a b]
+  100)
+
