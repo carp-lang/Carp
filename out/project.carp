@@ -15,5 +15,10 @@
 (defn id-test []
   (id 123))
 
+(def iast (lambda-to-ast (code id-test)))
+
+;; (def icon (gencon iast)) <-- KRASCH!
+;; (def iasta (annotate-ast iast))
+
 ;;(meta-set! x :dangerous 10)
 

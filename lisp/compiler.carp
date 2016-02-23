@@ -21,21 +21,63 @@
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 
 (defn annotate-ast (ast)
-  (annotate-ast-internal ast false))
+  (annotate-ast-internal ast false nil))
 
-(defn annotate-ast-internal (ast bake-deps)
+(defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
   (let [ast-func-deps (find-func-deps ast bake-deps)
-        ast-typed (infer-types ast-func-deps)
+        ast-typed (infer-types ast-func-deps func-signature-if-generic)
         ast-named (generate-names (copy {}) ast-typed)
         ast-lifetimes (calculate-lifetimes ast-named)
+        ast-generics (visit-generic-funcs ast-lifetimes)
+        ;;_ (println (str "ast:\n" ast-generics))
         ]
-    ast-lifetimes))
+    ast-generics))
 
 ;; WARNING: These two helper functions don't know the name of the functions
 ;; so they will mess upp self-recursive functions since they will think that
 ;; they are refering to other functions and bake those:
 (defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
 (defn sig (lambda) (:type (ann lambda)))
+
+(defn generic-suffix (signature)
+  (c-ify-name (join "-" (map name (nth signature 1)))))
+
+(defn visit-generic-funcs [ast]
+  (let [deps (copy (:func-deps ast))
+
+        visit-generic-funcs-internal (fn [ast]
+                                       (match (:node ast)
+                                         :function (update-in ast '(:body) (fn (a) (visit-generic-funcs-internal a)))
+                                         :app (let [t (:type ast)
+                                                    head (:head ast)
+                                                    tail (:tail ast)
+                                                    ast0 (update-in ast '(:head) (fn (a) (visit-generic-funcs-internal head)))
+                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal tail)))]
+                                                ast1)
+                                         :lookup (let [t (:type ast)]
+                                                   (do
+                                                     ;;(println (str (:value ast) " : " t))
+                                                     (if (:global-lookup ast) ;; TODO: shouldn't have to be a global lookup..?
+                                                       (let [lookup-sym (:value ast)
+                                                             ;;_ (println (str "Will eval " ast))
+                                                             global-lookup (eval lookup-sym)
+                                                             lookup-t (type global-lookup)
+                                                             ;;_ (println (str "lookup-t: " lookup-t))
+                                                             ]
+                                                         (if (and (lambda? global-lookup) (meta-get lookup-t :generic))
+                                                           (let [generic-name (str lookup-sym "--" (generic-suffix t))]
+                                                             (do
+                                                               ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
+                                                               (bake-generic-func-internal (new-builder) generic-name (code global-lookup) '() false t)
+                                                               (reset! deps (cons (symbol generic-name) deps))
+                                                               (let [ast0 (assoc-in ast '(:value) (symbol generic-name)) ;; make it call another function...
+                                                                     ]
+                                                                 ast0))) 
+                                                             ast))
+                                                       ast)))
+                                         _ ast))]
+    (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
+
 
 (defn check-for-ref-return (ast)
   (let [t (:type ast)]
@@ -89,10 +131,10 @@
   (let [func-names (keys baked-funcs)]
     (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
 
-(defn func-to-annotated-ast (func-name func-code)
+(defn func-to-annotated-ast (func-name func-code func-signature-if-generic)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
-        ast-annotated (annotate-ast-internal ast-named true)
+        ast-annotated (annotate-ast-internal ast-named true func-signature-if-generic)
         _ (check-for-ref-return ast-annotated)]
     ast-annotated))
 
@@ -100,7 +142,7 @@
   (match (type t)
     :string true
     :keyword false
-    :list (map generic-type? t)
+    :list (any true? (map generic-type? t))
     x (error (str "Invalid type in 'generic-type?': " (prn x)))))
 
 (defn generic-function? [ast]
@@ -109,59 +151,69 @@
     x (error (str "Can't match " x " in generic-function?"))))
 
 ;; Takes a function name and the list representation of the lambda
-(defn bake-internal (builder func-name func-code external-deps exe)
-  (let [ast-annotated (func-to-annotated-ast func-name func-code)]
+(defn bake-internal [builder func-name func-code external-deps exe]
+  (let [ast-annotated (func-to-annotated-ast func-name func-code nil)]
     (if (generic-function? ast-annotated)
       (do
-        (println (str "Found generic function: " func-name))
+        ;;(println (str "bake-internal found generic function: " func-name))
         (let [func-def (eval (symbol func-name))]
           (do
             (meta-set! func-def :generic true)
             (meta-set! func-def :signature (:type ast-annotated)))))
-      (let [builder-with-headers (builder-add-headers builder header-files)
-            builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
-            builder-final (if (and exe (not (= func-name "main")))
-                            (builder-add-main-function builder-fns (c-ify-name func-name))
-                            builder-fns)
-            c-program-string (builder-merge-to-c builder-final)
-            proto (get-function-prototype ast-annotated func-name)
-            c-file-name (str out-dir func-name ".c")
-            c-func-name (c-ify-name func-name)
-            total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
+      (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
+
+(defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
+  (let [ast-annotated (func-to-annotated-ast func-name func-code func-signature)]
+    (if (generic-function? ast-annotated)
+      (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
+      (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
+
+;; Do the part that is common between baking normal functions and generic functions
+(defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
+  (let [builder-with-headers (builder-add-headers builder header-files)
+        builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
+        builder-final (if (and exe (not (= func-name "main")))
+                        (builder-add-main-function builder-fns (c-ify-name func-name))
+                        builder-fns)
+        c-program-string (builder-merge-to-c builder-final)
+        proto (get-function-prototype ast-annotated func-name)
+        c-file-name (str out-dir func-name ".c")
+        c-func-name (c-ify-name func-name)
+        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
+    (do
+      ;;(println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (match (get ast-annotated :type)
+        (:fn arg-types return-type)
         (do
-          ;;(println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
-          ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
-          (def ast ast-annotated)
-          (def c c-program-string)
-          (match (get ast-annotated :type)
-            (:fn arg-types return-type)
+          (save-function-prototypes)
+          (save c-file-name c-program-string)
+          (let [clang-command (str "clang "
+                                   (if exe
+                                     (str "-o " out-dir "exe ")
+                                     (str "-shared -g -o " out-dir c-func-name ".so "))
+                                   c-file-name " "
+                                   (include-paths)  " "
+                                   (lib-paths) " "
+                                   (framework-paths) " "
+                                   (link-libs total-dependencies))]
+            (do ;;(println clang-command)
+              (def cmd clang-command)
+              (system clang-command)))
+          (unload-if-necessary func-name)
+          (if exe
+            :exe-done
             (do
-              (save-function-prototypes)
-              (save c-file-name c-program-string)
-              (let [clang-command (str "clang "
-                                       (if exe
-                                         (str "-o " out-dir "exe ")
-                                         (str "-shared -g -o " out-dir c-func-name ".so "))
-                                       c-file-name " "
-                                       (include-paths)  " "
-                                       (lib-paths) " "
-                                       (framework-paths) " "
-                                       (link-libs total-dependencies))]
-                (do ;;(println clang-command)
-                  (def cmd clang-command)
-                  (system clang-command)))
-              (unload-if-necessary func-name)
-              (if exe
-                :exe-done
-                (do
-                  (def out-lib (load-dylib (str out-dir c-func-name ".so")))
-                  (register out-lib c-func-name arg-types return-type)
-                  (add-func! func-name proto out-lib)
-                  (let [f (eval (read func-name))]
-                    (do (def s (pretty-signature (signature f)))
-                        (when echo-signature-after-bake (println (str func-name " : " s)))
-                        f)))))
-            _ (error "Must bake function with type (:fn ...)")))))))
+              (def out-lib (load-dylib (str out-dir c-func-name ".so")))
+              (register out-lib c-func-name arg-types return-type)
+              (add-func! func-name proto out-lib)
+              (let [f (eval (read func-name))]
+                (do (def s (pretty-signature (signature f)))
+                    (when echo-signature-after-bake (println (str func-name " : " s)))
+                    f)))))
+        _ (error "Must bake function with type (:fn ...)")))))
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)

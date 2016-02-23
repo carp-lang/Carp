@@ -106,6 +106,9 @@
 (defn any (pred xs)
   (contains? (map pred xs) true))
 
+(defn true? (x) (if x true false))
+(defn false? (x) (if x false true))
+
 (defn log (message value)
   (do
     (println (str message value))
