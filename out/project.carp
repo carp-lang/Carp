@@ -25,3 +25,11 @@
 (defn whatever [a b]
   100)
 
+(defn test-whatever-1 []
+  (whatever 1 2))
+
+(defn test-whatever-2 []
+  (whatever "hej" "svejs"))
+
+;; (bake test-whatever-1)
+

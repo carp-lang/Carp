@@ -19,6 +19,7 @@
 (load-lisp (str carp-dir "lisp/calculate_lifetimes.carp"))
 (load-lisp (str carp-dir "lisp/builder.carp"))
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
+(load-lisp (str carp-dir "lisp/generics.carp"))
 
 (defn annotate-ast (ast)
   (annotate-ast-internal ast false nil))
@@ -38,46 +39,6 @@
 ;; they are refering to other functions and bake those:
 (defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
 (defn sig (lambda) (:type (ann lambda)))
-
-(defn generic-suffix (signature)
-  (join "-" (map name (nth signature 1))))
-
-(defn visit-generic-funcs [ast]
-  (let [deps (copy (:func-deps ast))
-
-        visit-generic-funcs-internal (fn [ast]
-                                       (match (:node ast)
-                                         :function (update-in ast '(:body) (fn (a) (visit-generic-funcs-internal a)))
-                                         :app (let [t (:type ast)
-                                                    head (:head ast)
-                                                    tail (:tail ast)
-                                                    ast0 (update-in ast '(:head) (fn (a) (visit-generic-funcs-internal head)))
-                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal tail)))]
-                                                ast1)
-                                         :lookup (let [t (:type ast)]
-                                                   (do
-                                                     ;;(println (str (:value ast) " : " t))
-                                                     (if (:global-lookup ast) ;; TODO: shouldn't have to be a global lookup..?
-                                                       (let [lookup-sym (:value ast)
-                                                             ;;_ (println (str "Will eval " ast))
-                                                             global-lookup (eval lookup-sym)
-                                                             lookup-t (type global-lookup)
-                                                             ;;_ (println (str "lookup-t: " lookup-t))
-                                                             ]
-                                                         (if (and (lambda? global-lookup) (meta-get lookup-t :generic))
-                                                           (let [generic-name (str lookup-sym "--" (generic-suffix t))]
-                                                             (do
-                                                               ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                                               (bake-generic-func-internal (new-builder) generic-name (code global-lookup) '() false t)
-                                                               (reset! deps (cons (symbol generic-name) deps))
-                                                               (let [ast0 (assoc-in ast '(:value) (symbol generic-name)) ;; make it call another function...
-                                                                     ]
-                                                                 ast0))) 
-                                                             ast))
-                                                       ast)))
-                                         _ ast))]
-    (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
-
 
 (defn check-for-ref-return (ast)
   (let [t (:type ast)]
