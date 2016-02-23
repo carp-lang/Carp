@@ -75,7 +75,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	print_read_pos();
 	return nil;
       }
-      if(CURRENT == ')' || CURRENT == ']') {
+      if(CURRENT == ')') {
 	read_pos++;
 	break;
       }
