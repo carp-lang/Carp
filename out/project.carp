@@ -36,3 +36,8 @@
 
 (defstruct Vec2 [x :float y :float])
 
+(def v (Vec2 3.0 4.0))
+
+(def x (#x v))
+(def y (#y v))
+

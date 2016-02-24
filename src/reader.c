@@ -14,7 +14,7 @@ bool is_ok_in_symbol(char c, bool initial) {
     return true;
   }
   else if(c == '!' || c == '?' || c == '<' || c == '>' || c == '=' || c == '%' || 
-	  c == '+' || c == '*' || c == '/' || c == '-' || c == '_') {
+	  c == '+' || c == '*' || c == '/' || c == '-' || c == '_' || c == '#') {
     return true;
   }
   else if(isalpha(c) || isdigit(c)) {

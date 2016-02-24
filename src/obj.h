@@ -139,6 +139,7 @@ Obj *lisp_true;
 Obj *lisp_quote;
 Obj *eval_error;
 Obj *ampersand;
+Obj *hash;
 Obj *lisp_NULL;
 
 Obj *type_int;

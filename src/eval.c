@@ -427,10 +427,60 @@ void apply(Obj *function, Obj **args, int arg_count) {
   else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct")), lisp_true)) {
     char *name = env_lookup(function, obj_new_keyword("name"))->s;
     int size = env_lookup(function, obj_new_keyword("size"))->i;
-    printf("Will create a %s of size %d.\n", name, size);
+    int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
+    Obj *offsets_obj = env_lookup(function, obj_new_keyword("offsets"));
+    assert_or_set_error(offsets_obj->tag == 'A', "offsets must be an array: ", function);
+    Obj **offsets = offsets_obj->array;    
+    //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
     void *p = malloc(sizeof(size));
     Obj *new_struct = obj_new_ptr(p);
+    assert_or_set_error(!(arg_count < member_count), "Too few args to struct constructor: ", obj_new_string(name));
+    assert_or_set_error(!(arg_count > member_count), "Too many args to struct constructor: ", obj_new_string(name));
+    for(int i = 0; i < arg_count; i++) {
+      int offset = offsets[i]->i;
+      float *fp = new_struct->void_ptr + offset;
+      float f = args[i]->f32;
+      //printf("Setting member %d at offset %d to %f.\n", i, offset, f);
+      *fp = f;
+    }
     stack_push(new_struct);
+  }
+  else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct-lookup")), lisp_true)) {
+    if(arg_count != 1) {
+      eval_error = obj_new_string("Invalid arg count to struct member lookup: ");
+      char buffer[32];
+      snprintf(buffer, 32, "%d", arg_count);
+      obj_string_mut_append(eval_error, buffer);
+      return;
+    }
+
+    /* Obj *struct_description = env_lookup(function, obj_new_keyword("struct-ref")); */
+    /* assert_or_set_error(struct_description->tag == 'E', "struct-lookup doesn't have a struct-ref: ", function); */
+    /* printf("%s\n", obj_to_string(struct_description)->s); */
+
+    Obj *offset_obj = env_lookup(function, obj_new_keyword("member-offset"));
+    assert_or_set_error(offset_obj->tag == 'I', "struct-lookup has invalid member-offset: ", function);
+    int offset = offset_obj->i;
+
+    //printf("Looking up member at offset %d.\n", offset);
+
+    Obj *member_type = env_lookup(function, obj_new_keyword("member-type"));
+    Obj *target_struct = args[0];
+
+    Obj *lookup = nil;
+    void *location = target_struct->void_ptr + offset;
+    
+    if(obj_eq(member_type, type_float)) {
+      float *fp = location;
+      float x = *fp;
+      lookup = obj_new_float(x);
+    }
+    else {
+      eval_error = obj_new_string("Unsupported type in member lookup.");
+      return;
+    }
+
+    stack_push(lookup);
   }
   else {
     set_error("Can't call non-function: ", function);
@@ -580,8 +630,10 @@ void eval_list(Obj *env, Obj *o) {
     
     Obj *offsets = obj_new_array(member_count);
     int offset = 0;
+    bool generic = false;
     for(int i = 0; i < member_count; i++) {
       Obj *member_name = types->array[i * 2];
+      assert_or_set_error(member_name->tag == 'Y', "Struct member name must be symbol: ", member_name);
       Obj *member_type = types->array[i * 2 + 1];
       offsets->array[i] = obj_new_int(offset);
       int size = 0;
@@ -589,11 +641,27 @@ void eval_list(Obj *env, Obj *o) {
       else if(obj_eq(member_type, type_int)) { size = sizeof(int); }
       else if(obj_eq(member_type, type_char)) { size = sizeof(char); }
       else { size = sizeof(void*); }
+
+      char fixed_member_name[256];
+      fixed_member_name[0] = '#';
+      snprintf(fixed_member_name + 1, 255, "%s", member_name->s);
+
+      Obj *struct_member_lookup = obj_new_environment(NULL);
+      env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true);
+      env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description
+      env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset));
+      env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name);
+      env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type);
+      
+      env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup);
+
       offset += size;
     }
 
     env_extend(struct_description, obj_new_keyword("offsets"), offsets);
+    env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count));
     env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset));
+    env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false);
     env_extend(struct_description, obj_new_keyword("struct"), lisp_true);
 
     env_extend(env, obj_new_symbol(name), struct_description);
