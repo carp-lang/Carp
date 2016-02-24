@@ -15,22 +15,32 @@
 typedef void (*VoidFn)(void);
 
 /* Type tags
+   A = Array
+   B = Char
    C = Cons cell
-   I = Integer
-   S = String
-   K = Keyword (:keyword)
-   Y = Symbol
-   L = Lambda
-   E = Environment
-   P = Primop / raw C function pointer
-   M = Macro
-   F = libffi function
    D = Dylib
+   E = Environment
+   F = libffi function
+   G
+   H
+   I = Integer
+   J
+   K = Keyword (:keyword)
+   L = Lambda
+   M = Macro
+   N
+   O
+   P = Primop / raw C function pointer
+   Q = Void pointer
+   R 
+   S = String
+   T
+   U
    V = Float
    W = Double (not implemented yet)
-   A = Array
-   Q = Void pointer
-   B = Char
+   X
+   Y = Symbol
+   Z
 */
 
 typedef struct Obj {

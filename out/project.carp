@@ -33,3 +33,6 @@
 
 ;; (bake test-whatever-1)
 
+
+(defstruct Vec2 [x :float y :float])
+

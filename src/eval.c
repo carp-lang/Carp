@@ -424,6 +424,14 @@ void apply(Obj *function, Obj **args, int arg_count) {
       }
     }
   }
+  else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct")), lisp_true)) {
+    char *name = env_lookup(function, obj_new_keyword("name"))->s;
+    int size = env_lookup(function, obj_new_keyword("size"))->i;
+    printf("Will create a %s of size %d.\n", name, size);
+    void *p = malloc(sizeof(size));
+    Obj *new_struct = obj_new_ptr(p);
+    stack_push(new_struct);
+  }
   else {
     set_error("Can't call non-function: ", function);
   }
@@ -583,8 +591,12 @@ void eval_list(Obj *env, Obj *o) {
       else { size = sizeof(void*); }
       offset += size;
     }
-    
+
     env_extend(struct_description, obj_new_keyword("offsets"), offsets);
+    env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset));
+    env_extend(struct_description, obj_new_keyword("struct"), lisp_true);
+
+    env_extend(env, obj_new_symbol(name), struct_description);
     
     stack_push(struct_description);
   }
