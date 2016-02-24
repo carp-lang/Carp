@@ -41,6 +41,12 @@
 (def x (#x v))
 (def y (#y v))
 
+;; pretend that the FauxVec2 type in shared.h is the same as Vec2 (they have the same memory layout):
+(register-builtin "position" '() :Vec2)
+
+(defn print-vec2 [m]
+  (println (str (#x m) ", " (#y m))))
+
 (defstruct Mix [a :int b :float c :int])
 
 (def m (Mix 10 3.2 20))

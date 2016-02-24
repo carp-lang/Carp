@@ -185,4 +185,16 @@ void printret(int (*f)()) {
   printf("ret = %d\n", x);
 }
 
+typedef struct {
+  float x;
+  float y;
+} FauxVec2;
+
+FauxVec2 *position() {
+  FauxVec2 *v2 = malloc(sizeof(FauxVec2));
+  v2->x = 100.0f;
+  v2->y = 200.0f;
+  return v2;
+}
+
 #endif
