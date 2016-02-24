@@ -197,4 +197,15 @@ FauxVec2 *position() {
   return v2;
 }
 
+
+typedef struct {
+  int count;
+  void *data;
+} Array;
+
+Array *array_new_internal(int count) {
+  return NULL;
+}
+
+
 #endif

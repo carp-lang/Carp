@@ -62,3 +62,13 @@
     (print-mix (#mix-a m2))
     (print-mix (#mix-b m2))))
 
+
+
+
+(defn letpoly []
+  (let [x (id (string-copy "hej"))
+        y (id 120)]
+    (+ (strlen x) y)))
+
+
+

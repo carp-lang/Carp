@@ -4,17 +4,17 @@
   - Handle Function pointers as values, must typedef the correct function type
   - Compilation of generic functions
   - Compiling arrays
+  - Make let-polymorphism work
   - Handle global variables referenced inside functions, in regards to the lifetime checker
-  - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Track dependencies between functions to enable automatic recompilation when a function changes 
   - lambdas / lambda lifting
-  - defstruct
   - compile a whole file to a single dylib
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - self recuring function doens't check argument count/types in the actual call to itself
   - use C style name for the emitted source file during compilation
   - rewrite a bunch of functions in the compiler passes using pipe operator and update-in
+  - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype
 
 # Lisp Core Libs
