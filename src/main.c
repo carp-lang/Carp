@@ -3,6 +3,7 @@
 #include "../shared/shared.h"
 
 int main() {
+  //printf("%ld %ld %ld", sizeof(float), sizeof(int), sizeof(void*));
   carp_platform_init();
   obj_total_max = 100000;
   stack_pos = 0;

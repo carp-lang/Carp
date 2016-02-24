@@ -554,6 +554,40 @@ void eval_list(Obj *env, Obj *o) {
       eval_internal(env, o->cdr->cdr->cdr->car);
     }
   }
+  else if(HEAD_EQ("defstruct")) {
+    assert_or_set_error(o->cdr->car, "Too few forms in 'defstruct' form: ", o);
+    assert_or_set_error(o->cdr->cdr->car, "Too few forms in 'defstruct' form: ", o);
+    assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many forms in 'defstruct' form: ", o);
+
+    assert_or_set_error(o->cdr->car->tag == 'Y', "First argument to 'defstruct' form must be a symbol (it's the name of the struct): ", o);
+    assert_or_set_error(o->cdr->cdr->car->tag == 'A', "Second argument to 'defstruct' form must be an array (with the members, i.e. [x :float, y :float]): ", o);
+
+    char *name = o->cdr->car->s;
+    Obj *types = o->cdr->cdr->car;
+
+    Obj *struct_description = obj_new_environment(NULL);
+    env_extend(struct_description, obj_new_keyword("name"), obj_new_string(name));
+
+    int member_count = types->count / 2;
+    
+    Obj *offsets = obj_new_array(member_count);
+    int offset = 0;
+    for(int i = 0; i < member_count; i++) {
+      Obj *member_name = types->array[i * 2];
+      Obj *member_type = types->array[i * 2 + 1];
+      offsets->array[i] = obj_new_int(offset);
+      int size = 0;
+      if(obj_eq(member_type, type_float)) { size = sizeof(float); }
+      else if(obj_eq(member_type, type_int)) { size = sizeof(int); }
+      else if(obj_eq(member_type, type_char)) { size = sizeof(char); }
+      else { size = sizeof(void*); }
+      offset += size;
+    }
+    
+    env_extend(struct_description, obj_new_keyword("offsets"), offsets);
+    
+    stack_push(struct_description);
+  }
   else if(HEAD_EQ("match")) {
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }
