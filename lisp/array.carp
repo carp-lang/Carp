@@ -1,0 +1,15 @@
+
+;; The generic, built in array.
+
+
+(defmacro total-size [count]
+  (* count 4))
+
+
+(register-builtin "array-new-internal" '(:int) (gen-typevar))
+
+(defn single-item-array [item]
+  (let [a (array-new-internal 1)]
+    ))
+
+
