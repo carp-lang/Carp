@@ -428,20 +428,49 @@ void apply(Obj *function, Obj **args, int arg_count) {
     char *name = env_lookup(function, obj_new_keyword("name"))->s;
     int size = env_lookup(function, obj_new_keyword("size"))->i;
     int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
-    Obj *offsets_obj = env_lookup(function, obj_new_keyword("offsets"));
+
+    Obj *offsets_obj = env_lookup(function, obj_new_keyword("member-offsets"));
     assert_or_set_error(offsets_obj->tag == 'A', "offsets must be an array: ", function);
-    Obj **offsets = offsets_obj->array;    
+    Obj **offsets = offsets_obj->array;
+
+    Obj *member_types_obj = env_lookup(function, obj_new_keyword("member-types"));
+    assert_or_set_error(member_types_obj->tag == 'A', "member-types must be an array: ", function);
+    Obj **member_types = member_types_obj->array;
+    
     //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
     void *p = malloc(sizeof(size));
     Obj *new_struct = obj_new_ptr(p);
     assert_or_set_error(!(arg_count < member_count), "Too few args to struct constructor: ", obj_new_string(name));
     assert_or_set_error(!(arg_count > member_count), "Too many args to struct constructor: ", obj_new_string(name));
     for(int i = 0; i < arg_count; i++) {
+      Obj *member_type = member_types[i];
       int offset = offsets[i]->i;
-      float *fp = new_struct->void_ptr + offset;
-      float f = args[i]->f32;
-      //printf("Setting member %d at offset %d to %f.\n", i, offset, f);
-      *fp = f;
+      if(args[i]->tag == 'V') {
+	assert_or_set_error(obj_eq(member_type, type_float), "Can't assign float to a member of type ", obj_to_string(member_type));
+	float *fp = new_struct->void_ptr + offset;
+	float f = args[i]->f32;
+	//printf("Setting member %d at offset %d to %f.\n", i, offset, f);
+	*fp = f;
+      }
+      else if(args[i]->tag == 'I') {
+	assert_or_set_error(obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
+	int *xp = new_struct->void_ptr + offset;
+	int x = args[i]->i;
+	*xp = x;
+      }
+      else if(args[i]->tag == 'Q') {
+	void **vp = new_struct->void_ptr + offset;
+	*vp = args[i]->void_ptr;
+      }
+      else {
+	eval_error = obj_new_string("Can't set member ");
+	//obj_string_mut_append(eval_error, );
+        obj_string_mut_append(eval_error, " of struct ");
+	obj_string_mut_append(eval_error, name);
+	obj_string_mut_append(eval_error, " to ");
+	obj_string_mut_append(eval_error, obj_to_string(args[i])->s);
+	return;
+      }
     }
     stack_push(new_struct);
   }
@@ -475,9 +504,15 @@ void apply(Obj *function, Obj **args, int arg_count) {
       float x = *fp;
       lookup = obj_new_float(x);
     }
+    else if(obj_eq(member_type, type_int)) {
+      int *xp = location;
+      int x = *xp;
+      lookup = obj_new_int(x);
+    }
     else {
-      eval_error = obj_new_string("Unsupported type in member lookup.");
-      return;
+      void **pp = location;
+      void *p = *pp;
+      lookup = obj_new_ptr(p);
     }
 
     stack_push(lookup);
@@ -627,7 +662,8 @@ void eval_list(Obj *env, Obj *o) {
     env_extend(struct_description, obj_new_keyword("name"), obj_new_string(name));
 
     int member_count = types->count / 2;
-    
+
+    Obj *member_types = obj_new_array(member_count);    
     Obj *offsets = obj_new_array(member_count);
     int offset = 0;
     bool generic = false;
@@ -635,6 +671,7 @@ void eval_list(Obj *env, Obj *o) {
       Obj *member_name = types->array[i * 2];
       assert_or_set_error(member_name->tag == 'Y', "Struct member name must be symbol: ", member_name);
       Obj *member_type = types->array[i * 2 + 1];
+      member_types->array[i] = member_type;
       offsets->array[i] = obj_new_int(offset);
       int size = 0;
       if(obj_eq(member_type, type_float)) { size = sizeof(float); }
@@ -658,8 +695,9 @@ void eval_list(Obj *env, Obj *o) {
       offset += size;
     }
 
-    env_extend(struct_description, obj_new_keyword("offsets"), offsets);
+    env_extend(struct_description, obj_new_keyword("member-offsets"), offsets);
     env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count));
+    env_extend(struct_description, obj_new_keyword("member-types"), member_types);
     env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset));
     env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false);
     env_extend(struct_description, obj_new_keyword("struct"), lisp_true);

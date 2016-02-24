@@ -41,3 +41,18 @@
 (def x (#x v))
 (def y (#y v))
 
+(defstruct Mix [a :int b :float c :int])
+
+(def m (Mix 10 3.2 20))
+
+(defn print-mix [m]
+  (println (str "Mix: " (#a m) ", " (#b m) ", " (#c m))))
+
+(defstruct Mix2 [mix-a :Mix mix-b :Mix])
+(def m2 (Mix2 (Mix 1 2.0 3) (Mix 4 5.0 6)))
+
+(defn test-mix2 []
+  (do
+    (print-mix (#mix-a m2))
+    (print-mix (#mix-b m2))))
+
