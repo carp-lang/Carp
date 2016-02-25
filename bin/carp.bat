@@ -8,6 +8,8 @@ REM WRAPPER=rlwrap
 REM WRAPPER=lldb
 REM WRAPPER=valgrind
 
+SET CARP_EXE=Debug\carp-repl
+
 SET CARP_DIR=%DIR%..\
 
-%WRAPPER% "%DIR%carp-repl"
+%WRAPPER% "%DIR%%CARP_EXE%"
