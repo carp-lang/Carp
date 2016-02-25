@@ -50,8 +50,6 @@ EXPORT void panic(string msg) {
   exit(1);
 }
 
-
-
 EXPORT void print(string msg) {
   printf("%s", msg);
 }
@@ -90,7 +88,11 @@ EXPORT char *string_append(char *s1, char *s2) {
 
 EXPORT bool file_existsQMARK(char *filename) {
   FILE *f = fopen(filename, "r");
-  return f != NULL;
+  bool result = f != NULL;
+  if(result) {
+    fclose(f);
+  }
+  return result;
 }
 
 typedef string* string_array;
