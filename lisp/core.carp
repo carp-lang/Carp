@@ -243,3 +243,8 @@
 (register-builtin "call1" '((:fn (:int) :void)) :void)
 (register-builtin "calls" '((:fn (:string) :void)) :void)
 (register-builtin "printret" '((:fn () :int)) :void)
+
+
+;; Set type signatures for primops
+(meta-set! nth :signature '(:fn ((:array "T") :int) "T"))
+

@@ -47,11 +47,15 @@
 (def header-files (list "\"functions.h\"" "\"shared.h\""))
 
 (def baked-funcs {})
+(def baked-primops ())
 
 (defn add-func! (func-name func-proto func-dylib)
   (swap! baked-funcs (fn (fs) (assoc fs func-name {:func-name func-name
-                                             :func-proto func-proto
+                                                   :func-proto func-proto
                                                    :func-dylib func-dylib}))))
+
+;; (defn add-baked-primop! [func-name]
+;;   (reset! baked-primops (cons func-name baked-primops)))
 
 (def log-unloading-of-dylibs false)
 
@@ -73,7 +77,7 @@
   (save (str out-dir "functions.h")
         (str
          "#include <shared.h>\n"
-         (join "\n" (map c-ify-name (map :func-proto (values baked-funcs)))))))
+         (join "\n" (map :func-proto (values baked-funcs))))))
 
 (defn link-libs (dependencies)
   (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) ".so")) dependencies)))
@@ -132,6 +136,20 @@
       (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
+(defn run-clang [c-func-name c-file-name total-dependencies exe]
+  (let [clang-command (str "clang "
+                           (if exe
+                             (str "-o " out-dir "exe ")
+                             (str "-shared -g -o " out-dir c-func-name ".so "))
+                           c-file-name " "
+                           (include-paths)  " "
+                           (lib-paths) " "
+                           (framework-paths) " "
+                           (link-libs total-dependencies))]
+    (do ;;(println clang-command)
+      (def cmd clang-command)
+      (system clang-command))))
+
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
   (let [builder-with-headers (builder-add-headers builder header-files)
@@ -141,12 +159,13 @@
                         builder-fns)
         c-program-string (builder-merge-to-c builder-final)
         proto (get-function-prototype ast-annotated func-name)
-        c-file-name (str out-dir func-name ".c")
         c-func-name (c-ify-name func-name)
+        c-file-name (str out-dir c-func-name ".c")
         total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
     (do
-      ;;(println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
-      ;;(println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+      ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
+      ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (def ast ast-annotated)
       (def c c-program-string)
       (match (get ast-annotated :type)
@@ -154,25 +173,14 @@
         (do
           (save-function-prototypes)
           (save c-file-name c-program-string)
-          (let [clang-command (str "clang "
-                                   (if exe
-                                     (str "-o " out-dir "exe ")
-                                     (str "-shared -g -o " out-dir c-func-name ".so "))
-                                   c-file-name " "
-                                   (include-paths)  " "
-                                   (lib-paths) " "
-                                   (framework-paths) " "
-                                   (link-libs total-dependencies))]
-            (do ;;(println clang-command)
-              (def cmd clang-command)
-              (system clang-command)))
+          (run-clang c-func-name c-file-name total-dependencies exe)
           (unload-if-necessary func-name)
           (if exe
             :exe-done
             (do
               (def out-lib (load-dylib (str out-dir c-func-name ".so")))
               (register out-lib c-func-name arg-types return-type)
-              (add-func! func-name proto out-lib)
+              (add-func! c-func-name proto out-lib)
               (let [f (eval (read func-name))]
                 (do (def s (pretty-signature (signature f)))
                     (when echo-signature-after-bake (println (str func-name " : " s)))

@@ -3,15 +3,60 @@
   (match t
          (:fn args ret) (str "FUNC" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
          (:ref r) (str "REF" (pretty-signature r) "")
+         (:array a) (str "ARR" (pretty-signature a) "")
          x (if (keyword? t) (name t)
-               (error (str "Invalid type signature: " t)))))
+               (error (str "generic-safe-name can't handle type signature: " t)))))
 
 
 (defn generic-suffix (signature)
-  (join "-" (map generic-safe-name (nth signature 1))))
+  (str (join "-" (map generic-safe-name (nth signature 1)))
+       "-"
+       (generic-safe-name (nth signature 2))))
+
+(defn generic-name [base-name signature]
+  (str base-name "--" (generic-suffix signature)))
 
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))
+
+        visit-lookup (fn [ast]
+                       (let [t (:type ast)]
+                         (do
+                           ;;(println (str (:value ast) " : " t))
+                           (if (and (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
+                             (let [lookup-sym (:value ast)
+                                   ;;_ (println (str "Will eval " ast))
+                                   global-lookup (eval lookup-sym)
+                                   lookup-t (type global-lookup)
+                                   ;;_ (println (str "lookup-t: " lookup-t))
+                                   is-generic (meta-get lookup-t :generic)
+                                   ]
+                               (if (and (lambda? global-lookup) is-generic)
+                                 (let [n (generic-name lookup-sym t)]
+                                   (do
+                                     ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
+                                     (bake-generic-func-internal (new-builder)
+                                                                 n
+                                                                 (code global-lookup)
+                                                                 '()
+                                                                 false
+                                                                 t)
+                                     (reset! deps (cons (symbol n) deps))
+                                     (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
+                                       ast0)))
+                                 (if (and (primop? global-lookup) is-generic)
+                                   (let [n (generic-name lookup-sym t)]
+                                     (do
+                                       ;; (println (str "Found a generic primop to bake: " lookup-sym))
+                                       ;; (println (str "Final name will be " n))
+                                       (bake-generic-primop (new-builder)
+                                                            n
+                                                            (str lookup-sym)
+                                                            t)
+                                       ;;(reset! deps (cons (symbol n) deps))
+                                       (assoc-in ast '(:value) (symbol n))))
+                                   ast)))
+                             ast))))
 
         visit-generic-funcs-internal (fn [ast]
                                        (match (:node ast)
@@ -19,27 +64,7 @@
                                          :app (let [ast0 (update-in ast '(:head) visit-generic-funcs-internal) ;; todo: use a here
                                                     ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
                                                 ast1)
-                                         :lookup (let [t (:type ast)]
-                                                   (do
-                                                     ;;(println (str (:value ast) " : " t))
-                                                     (if (and (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
-                                                       (let [lookup-sym (:value ast)
-                                                             ;;_ (println (str "Will eval " ast))
-                                                             global-lookup (eval lookup-sym)
-                                                             lookup-t (type global-lookup)
-                                                             ;;_ (println (str "lookup-t: " lookup-t))
-                                                             ]
-                                                         (if (and (lambda? global-lookup) (meta-get lookup-t :generic))
-                                                           (let [generic-name (str lookup-sym "--" (generic-suffix t))]
-                                                             (do
-                                                               ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                                               (bake-generic-func-internal (new-builder) generic-name (code global-lookup) '() false t)
-                                                               (reset! deps (cons (symbol generic-name) deps))
-                                                               (let [ast0 (assoc-in ast '(:value) (symbol generic-name)) ;; make it call another function...
-                                                                     ]
-                                                                 ast0))) 
-                                                             ast))
-                                                       ast)))
+                                         :lookup (visit-lookup ast)
 
                                          :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
                                                    ast1 (update-in ast0 '(:if-true) visit-generic-funcs-internal)
@@ -75,4 +100,22 @@
     (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
 
 
+(defn bake-generic-primop [builder func-name primop-name signature]
+  (let [c-func-name (c-ify-name func-name)
+        c-file-name (str out-dir c-func-name ".c")
+        c-code (build-generic-primop c-func-name primop-name signature)
+        arg-types (nth signature 1)
+        return-type (nth signature 2)]
+    (do
+      ;;(println (str "C-code for " func-name ":\n" c-code))
+      (add-func! c-func-name c-code nil)
+      ;;(println (str "Baked generic primop " func-name))
+      )))
 
+(defn build-generic-primop [c-func-name primop-name signature]
+  (match primop-name
+    "nth" (match signature
+            (:fn ((:array t) :int) t) (str (type-build t) " " c-func-name
+                                           "(Array *a, int index) { return ((" (type-build t) "*)(a->data))[index]; }")
+            _ (error "Invalid type for call to 'nth'"))
+    x (error (str "Can't build generic primop for '" x "'"))))
