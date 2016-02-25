@@ -82,6 +82,22 @@
 (defn test-int-array []
   (+ 100 (nth (array-of-size 3) 0)))
 
+(defn small-array []
+  (let [a (array-of-size 3)
+        b (array-set a 0 10)
+        c (array-set b 1 20)
+        d (array-set c 2 30)]
+    d))
+
+(defn print-small-array []
+  (let [a (small-array)]
+    (do (print "[")
+        (print (itos (nth a 0)))
+        (print ", ")
+        (print (itos (nth a 1)))
+        (print ", ")
+        (print (itos (nth a 2)))
+        (println "]"))))
 
 (defn array-literal []
   [10 20 30])

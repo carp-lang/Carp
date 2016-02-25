@@ -1,9 +1,9 @@
 
 (defn generic-safe-name (t)
   (match t
-         (:fn args ret) (str "FUNC" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
-         (:ref r) (str "REF" (pretty-signature r) "")
-         (:Array a) (str "ARR" (pretty-signature a) "")
+         (:fn args ret) (str "Fn" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
+         (:ref r) (str "Ref" (pretty-signature r) "")
+         (:Array a) (str "Array" (pretty-signature a) "")
          x (if (keyword? t) (name t)
                (error (str "generic-safe-name can't handle type signature: " t)))))
 
@@ -127,4 +127,11 @@
                                                    " return a;"
                                                    "; }")
                       _ (error "Invalid type for call to 'array-of-size'"))
+    "array-set" (match signature
+                  (:fn ((:Array t) :int t) (:Array t)) (str (type-build '(:Array t)) " " c-func-name
+                                                            "(Array *a, int index, " (type-build t) " value) {"
+                                                            " ((" (type-build t) "*)(a->data))[index] = value;"
+                                                            " return a;"
+                                                            " }")
+                  _ (error "Invalid type for call to 'array-set'"))
     x (error (str "Can't build generic primop for '" x "'"))))

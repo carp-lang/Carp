@@ -622,20 +622,34 @@ Obj *p_concat(Obj** args, int arg_count) {
 
 Obj *p_nth(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'nth'\n"); return nil; }
-  if(args[0]->tag != 'C') { set_error_return_nil("'nth' requires arg 0 to be a list\n", nil); }
   if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
-  int i = 0;
-  int n = args[1]->i;
-  Obj *p = args[0];
-  while(p && p->car) {
-    if(i == n) {
-      return p->car;
+  if(args[0]->tag == 'C') {
+    int i = 0;
+    int n = args[1]->i;
+    Obj *p = args[0];
+    while(p && p->car) {
+      if(i == n) {
+	return p->car;
+      }
+      p = p->cdr;
+      i++;
     }
-    p = p->cdr;
-    i++;
+    printf("Index %d out of bounds in %s\n", n, obj_to_string(args[0])->s);
+    return nil;
   }
-  printf("Index %d out of bounds in %s\n", n, obj_to_string(args[0])->s);
-  return nil;
+  else if(args[0]->tag == 'A') {
+    Obj *a = args[0];
+    int index = args[1]->i;
+    if(index < 0 || index >= a->count) {
+      set_error_return_nil("Index out of bounds in ", a);
+    }
+    else {
+      return a->array[index];
+    }
+  }
+  else {
+    set_error_return_nil("'nth' requires arg 0 to be a list or array\n", args[0]);
+  }
 }
 
 Obj *p_count(Obj** args, int arg_count) {
@@ -1426,6 +1440,33 @@ Obj *p_array_to_list(Obj** args, int arg_count) {
 /* } */
 
 Obj *p_array_of_size(Obj** args, int arg_count) {
-  Obj *new_array = obj_new_array(args[0]->i);
+  int array_count = args[0]->i;
+  Obj *new_array = obj_new_array(array_count);
+  for(int i = 0; i < array_count; i++) {
+    new_array->array[i] = nil;
+  }
+  return new_array;
+}
+
+Obj *p_array_set_BANG(Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "array-set! must take 3 arguments: ", args[0]);
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-set! must take an array as first arg: ", args[0]);
+  Obj *i = args[1];
+  assert_or_set_error_return_nil(i->tag == 'I', "array-set! must take an int as second arg: ", args[1]);
+  Obj *o = args[2];
+  a->array[i->i] = o;
+  return nil;
+}
+
+Obj *p_array_set(Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "array-set must take 3 arguments: ", args[0]);
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-set must take an array as first arg: ", args[0]);
+  Obj *i = args[1];
+  assert_or_set_error_return_nil(i->tag == 'I', "array-set must take an int as second arg: ", args[1]);
+  Obj *o = args[2];
+  Obj *new_array = obj_copy(a);
+  new_array->array[i->i] = o;
   return new_array;
 }

@@ -127,6 +127,8 @@
           (do
             (meta-set! func-def :generic true)
             (meta-set! func-def :signature (:type ast-annotated))
+            (def ast ast-annotated)
+            (def s (pretty-signature (:type ast-annotated)))
             :generic)))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 

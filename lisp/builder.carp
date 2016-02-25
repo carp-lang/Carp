@@ -46,6 +46,7 @@
 
 (defn type-build (t)
   (if (string? t)
+    ;;(error (str "Can't build type from unresolved typevar '" t "'"))
     "typevar"
     (match t
            :? "unknown"
