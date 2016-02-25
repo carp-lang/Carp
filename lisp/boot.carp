@@ -1,6 +1,11 @@
 (def carp-dir (getenv "CARP_DIR"))
 (def carp-dev (not (= "" (getenv "CARP_DEV"))))
 
+(if (= carp-dir "")
+  (do (println "Environment variable 'CARP_DIR' is not set, did you run 'carp-repl' directly? Please use the carp shell script instead.")
+      (exit -1))
+  nil)
+
 (load-lisp (str carp-dir "lisp/core.carp"))
 
 (when carp-dev
