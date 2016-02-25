@@ -26,7 +26,7 @@ bool is_ok_in_symbol(char c, bool initial) {
 }
 
 bool is_whitespace(char c) {
-  return c == ' ' || c == '\t' || c == '\n' || c == ',';
+  return c == ' ' || c == '\r' || c == '\t' || c == '\n' || c == ',';
 }
 
 void hit_new_line() {
