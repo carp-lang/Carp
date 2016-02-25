@@ -5,4 +5,4 @@ typedef void(*carp_thread_routine)(void* arg);
 
 typedef struct carp_library* carp_library_t;
 
-
+void carp_sleep(int millis);

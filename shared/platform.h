@@ -89,6 +89,10 @@ char* carp_get_load_library_error() {
     return dlerror();
 }
 
+void carp_sleep(int millis) {
+#error implement me?
+}
+
 #endif
 
 #if defined(WIN32) 
@@ -107,6 +111,7 @@ typedef struct module_list {
 
 LARGE_INTEGER carp_perf_freq;
 HMODULE carp_main_module = INVALID_HANDLE_VALUE;
+HMODULE carp_msvcrt_module = INVALID_HANDLE_VALUE;
 module_list_t carp_loaded_modules = NULL;
 
 module_list_t new_module_list_node() {
@@ -152,12 +157,15 @@ void free_all_modules_and_destroy_module_list(module_list_t lst) {
 void carp_platform_init() {
 	QueryPerformanceFrequency(&carp_perf_freq);
 	carp_main_module = GetModuleHandle(NULL);
+	carp_msvcrt_module = LoadLibrary("msvcrt.dll");
 	carp_loaded_modules = new_module_list_node();
+	add_module_to_list(carp_loaded_modules, carp_msvcrt_module);
 }
 
 void carp_platform_shutdown() {
-	carp_main_module = INVALID_HANDLE_VALUE;
 	free_all_modules_and_destroy_module_list(carp_loaded_modules);
+	carp_main_module = INVALID_HANDLE_VALUE;
+	carp_msvcrt_module = INVALID_HANDLE_VALUE;
 	carp_loaded_modules = NULL;
 }
 
@@ -267,6 +275,10 @@ char* carp_get_load_library_error() {
 		sizeof(error_buf) - 1,
 		NULL);
 	return error_buf;
+}
+
+void carp_sleep(int millis) {
+	Sleep(millis);
 }
 
 #endif
