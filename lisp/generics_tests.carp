@@ -43,3 +43,15 @@
       (assert-eq (signature generic-call-3) (list :fn '(:bool) :bool))))
 
 (test-generic-call-3)
+
+
+
+(defn generic-call-4 []
+  (let [pi (id 3.14)]
+    pi))
+
+(defn test-generic-call-4 []
+  (do (bake generic-call-4)
+      (assert-eq (signature generic-call-4) (list :fn '() :float))))
+
+(test-generic-call-4)

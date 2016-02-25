@@ -57,9 +57,22 @@
 
                                          :ref ast
 
-                                         :let ast
+                                         :let (let [ast0 (update-in ast '(:bindings)
+                                                                    (fn [forms] (map visit-generic-funcs-internal forms)))]
+                                                (update-in ast0 '(:body) visit-generic-funcs-internal))
+
+                                         :binding (update-in ast '(:value) visit-generic-funcs-internal)
+
+                                         :while (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                      ast1 (update-in ast0 '(:body) visit-generic-funcs-internal)]
+                                                  ast1)
+
+                                         :null ast
 
                                          :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
                                          
                                          x (error (str "visit-generic can't handle node type " x))))]
     (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
+
+
+
