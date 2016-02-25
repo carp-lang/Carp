@@ -4,8 +4,9 @@
          (:fn args ret) (str "Fn_" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
          (:ref r) (str "RefTo_" (pretty-signature r) "")
          (:Array a) (str "ArrayOf_" (pretty-signature a) "")
-         x (if (keyword? t) (name t)
-               (error (str "generic-safe-name can't handle type signature: " t)))))
+         x (if (keyword? t)
+             (name t)
+             (error (str "generic-safe-name can't handle type signature: " t)))))
 
 
 (defn generic-suffix (signature)
@@ -80,7 +81,7 @@
 
                                          :literal ast
 
-                                         :ref ast
+                                         :ref (update-in ast '(:expr) visit-generic-funcs-internal)
 
                                          :let (let [ast0 (update-in ast '(:bindings)
                                                                     (fn [forms] (map visit-generic-funcs-internal forms)))]
@@ -115,7 +116,7 @@
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
     "nth" (match signature
-            (:fn ((:Array t) :int) t) (str (type-build t) " " c-func-name
+            (:fn ((:ref (:Array t)) :int) t) (str (type-build t) " " c-func-name
                                            "(Array *a, int index) { return ((" (type-build t) "*)(a->data))[index]; }")
             _ (error "Invalid type for call to 'nth'"))
     "array-of-size" (match signature

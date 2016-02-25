@@ -41,8 +41,9 @@
 (defn c-ify-name (lisp-name)
   (let [x0 (str-replace lisp-name "-" "_")
         x1 (str-replace x0 "?" "QMARK")
-        x2 (str-replace x1 "!" "BANG")]
-    x2))
+        x2 (str-replace x1 "!" "BANG")
+        x3 (str-replace x2 "*" "PTR")]
+    x3))
 
 (defn type-build (t)
   (if (string? t)

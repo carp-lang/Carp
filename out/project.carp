@@ -128,17 +128,24 @@
 ;; (def small-2-asta (annotate-ast small-2-ast))
 
 
+
 (defn print-small-array []
   (let [a (small-array)]
     (do (print "[")
-        (print (ref (itos (nth a 0))))
+        (print (ref (itos (nth (ref a) 0))))
         (print ", ")
-        (print (ref (itos (nth a 1))))
+        (print (ref (itos (nth (ref a) 1))))
         (print ", ")
-        (print (ref (itos (nth a 2))))
+        (print (ref (itos (nth (ref a) 2))))
         (println "]"))))
 
-(def ps-ast (lambda-to-ast (code print-small-array)))
-(def ps-con (gencon ps-ast))
-(def ps-sol (solve-constraints ps-con))
-(def ps-asta (annotate-ast ps-ast))
+;; (defn print-small-array []
+;;   (let [a (small-array)]
+;;     (print (ref (itos (nth (ref a) 0))))
+;;         ))
+
+;; (bake small-array)
+;; (def ps-ast (lambda-to-ast (code print-small-array)))
+;; (def ps-con (gencon ps-ast))
+;; (def ps-sol (solve-constraints ps-con))
+;;(def ps-asta (annotate-ast ps-ast))

@@ -95,9 +95,11 @@
                       t (get-type-of-symbol type-env val)
                       ;;_ (println (str "type of lookup '" val "': " t))
                       ]
-                  (cons {:a (:type ast)
-                         :b t
-                         :doc (str "lookup " val)} constraints)))
+                  (if (nil? t)
+                    (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
+                    (cons {:a (:type ast)
+                           :b t
+                           :doc (str "lookup " val)} constraints))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
                    x1 (generate-constraints-internal x0 (get ast :right) type-env)
