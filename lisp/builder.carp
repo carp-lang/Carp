@@ -275,7 +275,7 @@
   (let [t (get ast :type)
         return-type (nth t 2)
         args (get ast :args)]
-    (str (type-build return-type) " " func-name "(" (arg-list-build args) ");")))
+    (str (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
 
 (defn builder-visit-ast (builder ast func-name)
   (match (get ast :node)

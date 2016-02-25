@@ -180,7 +180,7 @@
             (do
               (def out-lib (load-dylib (str out-dir c-func-name ".so")))
               (register out-lib c-func-name arg-types return-type)
-              (add-func! c-func-name proto out-lib)
+              (add-func! func-name proto out-lib)
               (let [f (eval (read func-name))]
                 (do (def s (pretty-signature (signature f)))
                     (when echo-signature-after-bake (println (str func-name " : " s)))
