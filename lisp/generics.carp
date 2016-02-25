@@ -118,4 +118,13 @@
             (:fn ((:array t) :int) t) (str (type-build t) " " c-func-name
                                            "(Array *a, int index) { return ((" (type-build t) "*)(a->data))[index]; }")
             _ (error "Invalid type for call to 'nth'"))
+    "array-of-size" (match signature
+                      (:fn (:int) (:array t)) (str (type-build '(:array t)) " " c-func-name
+                                                   "(int count) {"
+                                                   " Array *a = malloc(sizeof(Array));"
+                                                   " a->count = count;"
+                                                   " a->data = calloc(count, sizeof(" (type-build t) "));"
+                                                   " return a;"
+                                                   "; }")
+                      _ (error "Invalid type for call to 'array-of-size'"))
     x (error (str "Can't build generic primop for '" x "'"))))

@@ -202,9 +202,5 @@ typedef struct {
   void *data;
 } Array;
 
-float nth__ARRfloat_int_float_BLEH(Array *a, int index) {
-  //float *casted = a->data;
-  return ((float*)(a->data))[index];
-}
 
 #endif

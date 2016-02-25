@@ -77,3 +77,7 @@
 
 (defn test-get-a-float []
   (do (bake get-a-float)))
+
+
+(defn test-int-array []
+  (+ 100 (nth (array-of-size 3) 0)))
