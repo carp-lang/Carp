@@ -128,6 +128,7 @@
                            constraints (:forms ast))
                 ;;_ (log "count: " (count x0))
                 n (count (:forms ast))
+                _ (when (= 0 n) (error (str "do-form must have at least one statement.")))
                 ret-constr {:a (:type ast) :b (get-in ast (list :forms (- n 1) :type)) :doc "do-ret-constr"}]
             (cons ret-constr x0))
 

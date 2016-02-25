@@ -51,7 +51,7 @@
            :? "unknown"
            (:fn _ _) "void*"
            (:ref r) (type-build r)
-           (:array a) "Array*"
+           (:Array a) "Array*"
            x (c-ify-name (name x)))))
 
 (defn visit-arg-explicit (c arg)

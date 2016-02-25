@@ -246,6 +246,6 @@
 
 
 ;; Set type signatures for primops
-(meta-set! nth :signature '(:fn ((:array "T") :int) "T"))
-(meta-set! array-of-size :signature '(:fn (:int) (:array "T")))
+(meta-set! nth :signature '(:fn ((:Array "T") :int) "T"))
+(meta-set! array-of-size :signature '(:fn (:int) (:Array "T")))
 

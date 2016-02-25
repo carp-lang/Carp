@@ -209,7 +209,6 @@ void env_new_global() {
   register_primop("meta-set!", p_meta_set_BANG);
   register_primop("meta-get", p_meta_get);
   register_primop("array-to-list", p_array_to_list);
-  register_primop("array", p_array);
   register_primop("array-of-size", p_array_of_size);
   
   Obj *abs_args = obj_list(type_int);

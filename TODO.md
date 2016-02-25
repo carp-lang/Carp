@@ -16,6 +16,8 @@
   - rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype
+  - clean up the awful 'list-to-ast' function
+  - add case macro
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)

@@ -3,7 +3,7 @@
   (match t
          (:fn args ret) (str "FUNC" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
          (:ref r) (str "REF" (pretty-signature r) "")
-         (:array a) (str "ARR" (pretty-signature a) "")
+         (:Array a) (str "ARR" (pretty-signature a) "")
          x (if (keyword? t) (name t)
                (error (str "generic-safe-name can't handle type signature: " t)))))
 
@@ -115,11 +115,11 @@
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
     "nth" (match signature
-            (:fn ((:array t) :int) t) (str (type-build t) " " c-func-name
+            (:fn ((:Array t) :int) t) (str (type-build t) " " c-func-name
                                            "(Array *a, int index) { return ((" (type-build t) "*)(a->data))[index]; }")
             _ (error "Invalid type for call to 'nth'"))
     "array-of-size" (match signature
-                      (:fn (:int) (:array t)) (str (type-build '(:array t)) " " c-func-name
+                      (:fn (:int) (:Array t)) (str (type-build '(:Array t)) " " c-func-name
                                                    "(int count) {"
                                                    " Array *a = malloc(sizeof(Array));"
                                                    " a->count = count;"

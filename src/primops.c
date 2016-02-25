@@ -1417,13 +1417,13 @@ Obj *p_array_to_list(Obj** args, int arg_count) {
   return list;
 }
 
-Obj *p_array(Obj** args, int arg_count) {
-  Obj *new_array = obj_new_array(arg_count);
-  for(int i = 0; i < arg_count; i++) {
-    new_array->array[i] = args[i];
-  }
-  return new_array;
-}
+/* Obj *p_array(Obj** args, int arg_count) { */
+/*   Obj *new_array = obj_new_array(arg_count); */
+/*   for(int i = 0; i < arg_count; i++) { */
+/*     new_array->array[i] = args[i]; */
+/*   } */
+/*   return new_array; */
+/* } */
 
 Obj *p_array_of_size(Obj** args, int arg_count) {
   Obj *new_array = obj_new_array(args[0]->i);
