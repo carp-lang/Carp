@@ -10,8 +10,6 @@
 #include <sys/time.h>
 #include <dlfcn.h>
 
-#ifdef CARP_MAIN
-
 /* Init/shutdown */
 
 void carp_platform_init() {
@@ -19,8 +17,6 @@ void carp_platform_init() {
 
 void carp_platform_shutdown() {
 }
-
-#else // CARP_MAIN
 
 /* --- Threads --- */
 
@@ -93,11 +89,9 @@ char* carp_get_load_library_error() {
     return dlerror();
 }
 
-#endif // CARP_MAIN
-
 #endif // __APPLE__
 
-#if defined(WIN32) 
+#ifdef WIN32
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>

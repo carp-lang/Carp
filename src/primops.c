@@ -11,7 +11,7 @@
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
-#include "../shared/platform.h"
+#include "../shared/types.h"
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
