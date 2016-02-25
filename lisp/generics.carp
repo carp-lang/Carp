@@ -15,17 +15,14 @@
 
         visit-generic-funcs-internal (fn [ast]
                                        (match (:node ast)
-                                         :function (update-in ast '(:body) (fn (a) (visit-generic-funcs-internal a)))
-                                         :app (let [t (:type ast)
-                                                    head (:head ast)
-                                                    tail (:tail ast)
-                                                    ast0 (update-in ast '(:head) (fn (a) (visit-generic-funcs-internal head)))
-                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal tail)))]
+                                         :function (update-in ast '(:body) visit-generic-funcs-internal)
+                                         :app (let [ast0 (update-in ast '(:head) visit-generic-funcs-internal) ;; todo: use a here
+                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
                                                 ast1)
                                          :lookup (let [t (:type ast)]
                                                    (do
                                                      ;;(println (str (:value ast) " : " t))
-                                                     (if (:global-lookup ast) ;; TODO: shouldn't have to be a global lookup..?
+                                                     (if (and (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
                                                        (let [lookup-sym (:value ast)
                                                              ;;_ (println (str "Will eval " ast))
                                                              global-lookup (eval lookup-sym)
@@ -43,5 +40,26 @@
                                                                  ast0))) 
                                                              ast))
                                                        ast)))
-                                         _ ast))]
+
+                                         :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                   ast1 (update-in ast0 '(:if-true) visit-generic-funcs-internal)
+                                                   ast2 (update-in ast1 '(:if-false) visit-generic-funcs-internal)]
+                                               ast2)
+
+                                         :binop (let [ast0 (update-in ast '(:left) visit-generic-funcs-internal)
+                                                      ast1 (update-in ast0 '(:right) visit-generic-funcs-internal)]
+                                                  ast1)
+
+                                         :reset (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)]
+                                                  ast0)
+
+                                         :literal ast
+
+                                         :ref ast
+
+                                         :let ast
+
+                                         :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
+                                         
+                                         x (error (str "visit-generic can't handle node type " x))))]
     (assoc (visit-generic-funcs-internal ast) :func-deps deps)))

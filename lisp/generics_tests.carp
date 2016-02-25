@@ -3,3 +3,43 @@
 (def id-ast (lambda-to-ast (code id)))
 (def id-con (gencon id-ast))
 (def id-asta (annotate-ast id-ast))
+
+(defn test-generic-id []
+  (do (bake id)
+      (assert-eq true (meta-get id :generic))))
+
+(test-generic-id)
+
+
+
+(defn generic-call-1 []
+  (if (id true) 10 20))
+
+(defn test-generic-call-1 []
+  (do (bake generic-call-1)
+      (assert-eq (signature generic-call-1) (list :fn () :int))))
+
+(test-generic-call-1)
+
+
+
+(defn generic-call-2 [x]
+  (+ (id 10) (id x)))
+
+(defn test-generic-call-2 []
+  (do (bake generic-call-2)
+      (assert-eq (signature generic-call-2) (list :fn '(:int) :int))))
+
+(test-generic-call-2)
+
+
+
+(defn generic-call-3 [x]
+  (do (reset! x (id true))
+      x))
+
+(defn test-generic-call-3 []
+  (do (bake generic-call-3)
+      (assert-eq (signature generic-call-3) (list :fn '(:bool) :bool))))
+
+(test-generic-call-3)

@@ -115,6 +115,7 @@
     value))
 
 (defn nil? (x) (= nil x))
+(defn not-nil? (x) (not (= nil x)))
 
 (defn int? (x) (= :int (type x)))
 (defn string? (x) (= :string (type x)))
