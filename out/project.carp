@@ -152,3 +152,19 @@
 
 (defn test-array-literal []
   nil)
+
+
+
+
+(defn array-literal-2 []
+  [10.1 20.7 30.2])
+
+
+
+(defn mk-vec2 []
+  (Vec2 1.0 2.0))
+
+;; (defn array-literal-3 []
+;;   [(Vec2 1.0 2.0)
+;;    (Vec2 3.0 1.0)
+;;    (Vec2 6.0 4.0)])

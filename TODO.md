@@ -1,4 +1,5 @@
 # Compiler 
+  - Want to be able to bake struct constructors!
   - Ownership in while loops
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Handle Function pointers as values, must typedef the correct function type
