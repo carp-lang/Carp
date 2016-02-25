@@ -31,11 +31,16 @@
 (defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
+(defn nest [a index]
+  (match a
+    [] 'array
+    [x & xs] (list 'array-set (nest xs (inc index)) index x)))
+
 (defn array-to-ast [a]
   (let [a-count (count a)
+        nested-calls (nest a 0)
         array-setup-ast (form-to-ast (list 'let ['array (list 'array-of-size a-count)]
-                                        
-                                        'array))]
+                                           nested-calls))]
     (do
       ;;(println (str "array-setup-ast:\n" array-setup-ast))
       array-setup-ast)))

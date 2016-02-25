@@ -82,18 +82,6 @@
 (defn test-int-array []
   (+ 100 (nth (array-of-size 3) 0)))
 
-(defn array-literal []
-  [10 20 30])
-
-;;(def last (lambda-to-ast (code array-literal)))
-;;(def lcon (gencon last))
-;;(def tlast (infer-types last nil))
-;;(def lasta (annotate-ast last))
-
-(defn test-array-literal []
-  nil)
-
-
 
 
 
@@ -149,3 +137,18 @@
 ;; (def ps-con (gencon ps-ast))
 ;; (def ps-sol (solve-constraints ps-con))
 ;;(def ps-asta (annotate-ast ps-ast))
+
+
+
+
+
+(defn array-literal []
+  [10 20 30])
+
+(def last (lambda-to-ast (code array-literal)))
+(def lcon (gencon last))
+(def tlast (infer-types last nil))
+(def lasta (annotate-ast last))
+
+(defn test-array-literal []
+  nil)
