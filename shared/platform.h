@@ -2,13 +2,15 @@
 
 #include "types.h"
 
-#if defined(__APPLE__)
+#ifdef __APPLE__
 
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <dlfcn.h>
+
+#ifdef CARP_MAIN
 
 /* Init/shutdown */
 
@@ -17,6 +19,8 @@ void carp_platform_init() {
 
 void carp_platform_shutdown() {
 }
+
+#else // CARP_MAIN
 
 /* --- Threads --- */
 
@@ -89,11 +93,9 @@ char* carp_get_load_library_error() {
     return dlerror();
 }
 
-void carp_sleep(int millis) {
-#error implement me?
-}
+#endif // CARP_MAIN
 
-#endif
+#endif // __APPLE__
 
 #if defined(WIN32) 
 

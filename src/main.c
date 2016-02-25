@@ -1,6 +1,6 @@
 #include "repl.h"
 #include "eval.h"
-#define NO_PLATFORM
+#define CARP_MAIN
 #include "../shared/shared.h"
 
 int main() {

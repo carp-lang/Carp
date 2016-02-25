@@ -7,9 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "types.h"
-#ifndef NO_PLATFORM
 #include "platform.h"
-#endif
 
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)
@@ -28,10 +26,10 @@ EXPORT float itof(int x) { return (float)x; }
 
 #ifdef max
 #undef max
+#endif
 EXPORT int max(int x, int y) {
   return x > y ? x : y;
 }
-#endif
 
 EXPORT string itos(int x) {
   char *s = malloc(sizeof(char) * 32);
