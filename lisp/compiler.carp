@@ -38,7 +38,7 @@
 ;; so they will mess upp self-recursive functions since they will think that
 ;; they are refering to other functions and bake those:
 (defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
-(defn sig (lambda) (:type (ann lambda)))
+(defn sign (lambda) (:type (ann lambda)))
 
 (defn check-for-ref-return (ast)
   (let [t (:type ast)]

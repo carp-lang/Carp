@@ -7,7 +7,7 @@
 (defn test-own-1 ()
   (do
     (assert-eq '(:fn (:string) :void)
-               (sig own-1))
+               (sign own-1))
     (assert-eq {:node :function, 
                 :free (), 
                 :body ()}
@@ -23,7 +23,7 @@
 (defn test-own-2 ()
   (do
     (assert-eq '(:fn ((:ref :string)) :string)
-               (sig own-2))
+               (sign own-2))
     (assert-eq {:node :function, 
                 :free '(), 
                 :body ()}
@@ -39,7 +39,7 @@
 (defn test-own-3 ()
   (do
     (assert-eq '(:fn () :string)
-               (sig own-3))
+               (sign own-3))
     (assert-eq {:node :function, 
                 :free '({:name "_result_1" :type :string}),
                 :body ()}
@@ -56,7 +56,7 @@
 (defn test-own-4 ()
   (do
     (assert-eq '(:fn () :string)
-               (sig own-4))
+               (sign own-4))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let, 
@@ -77,7 +77,7 @@
 (defn test-own-5 ()
   (do
     (assert-eq '(:fn () :int)
-               (sig own-5))
+               (sign own-5))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let, 
@@ -100,7 +100,7 @@
 (defn test-own-6 ()
   (do
     (assert-eq '(:fn () :int)
-               (sig own-6))
+               (sign own-6))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let, 
@@ -138,7 +138,7 @@
 (defn test-own-8 ()
   (do
     (assert-eq '(:fn () :string)
-               (sig own-8))
+               (sign own-8))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -165,7 +165,7 @@
 (defn test-own-9 ()
   (do
     (assert-eq '(:fn () :string)
-               (sig own-9))
+               (sign own-9))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -191,7 +191,7 @@
 (defn test-own-10 ()
   (do
     (assert-eq '(:fn () :int)
-               (sig own-10))
+               (sign own-10))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -218,7 +218,7 @@
 (defn test-own-11 ()
   (do
     (assert-eq '(:fn () :string)
-               (sig own-11))
+               (sign own-11))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -245,7 +245,7 @@
 (defn test-own-12 ()
   (do
     (assert-eq '(:fn (:string) :string)
-               (sig own-12))
+               (sign own-12))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -273,7 +273,7 @@
 (defn test-own-13 ()
   (do
     (assert-eq '(:fn () :void)
-               (sig own-13))
+               (sign own-13))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :let
@@ -308,7 +308,7 @@
 (defn test-own-15 ()
   (do
     (assert-eq '(:fn (:string) :string)
-               (sig own-15))
+               (sign own-15))
     (assert-eq '{:node :function, 
                  :free (), 
                  :body {:node :if, 

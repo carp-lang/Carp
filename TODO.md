@@ -17,7 +17,6 @@
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype
   - clean up the awful 'list-to-ast' function
-  - add case macro
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
@@ -48,6 +47,7 @@
   - Fix problem with "No meta data." for some calls in stack trace
   - Reader syntax for refs: &
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
+  - add 'case'/'cond' macro
 
 # Maybes
   - Add void constraints for (do ...) statements ?
@@ -58,6 +58,7 @@
   - primops should have signatures, right?
   - lambdas should be able to have their signature set/get?
   - not possible to write an 'eat-void' function: (register-builtin "eat_void" '(:void) :void), need a proper unit type for that
+  - :when clauses in match?
 
 # Niceties
   - Built in tutorial for the language
