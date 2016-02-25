@@ -142,3 +142,25 @@
 
 
 
+
+
+
+(defn test-constraint-solving-9 ()
+  (let [;;_ (println "\n- Constraint solving 8 -")
+        constraints (list 
+                     {:a "t3" :b :int}
+                     {:a '(:fn (:Array "t3")) :b '(:fn "t2")}
+                     )
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        ;;solution-backwards (solve-constraints (reverse constraints))
+        ]
+    (do
+      (assert-eq solution {
+                           "t2" '(:Array :int)
+                           "t3" :int})
+      ;;(assert-eq solution solution-backwards)
+      )))
+
+
+;; (test-constraint-solving-9)

@@ -82,9 +82,9 @@
 (def total-time 0)
 
 (defmacro time (form)
-  (list 'let (list 't1 (list 'now))
-        (list 'let (list 'result form
-                         't (list '- (list 'now) 't1))
+  (list 'let ['t1 (list 'now)]
+        (list 'let ['result form
+                    't (list '- (list 'now) 't1)]
               (list 'do
                     (list 'println (list 'str "Evaluating form took " 't "ms."))
                     (list 'reset! 'total-time (list '+ 'total-time 't))

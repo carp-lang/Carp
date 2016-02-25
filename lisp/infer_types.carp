@@ -174,14 +174,16 @@
 
 
 (defn lookup (substs b)
-  (let [val (get-maybe substs b)]
-    (if (= () val)
-      b
-      (if (= b val)
-        val
-        (if (= :string (type val))
-          (lookup substs val) ; keep looking
-          val)) ; found the actual type
+  (if (list? b)
+    (map (fn [x] (lookup substs x)) b)
+    (let [val (get-maybe substs b)]
+      (if (= () val)
+        b
+        (if (= b val)
+          val
+          (if (= :string (type val))
+            (lookup substs val) ; keep looking
+            val))) ; found the actual type
       )))
 
 ;; Replacement function for replacing "from the right" in an associative map
@@ -242,12 +244,13 @@
       (if (typevar? lhs)
         (let [existing (get-maybe substs lhs)]
           (if (= nil existing)
-            (do (when log-substs (println (str "No existing binding, will set " lhs " to " value-lookup)))
-                (let [new-substs (assoc substs lhs value-lookup)
-                      ;;_ (println (str "new-substs:\n" new-substs))
-                      substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
-                      ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
-                      ]
+            (let [new-substs (assoc substs lhs value-lookup)
+                  ;;_ (println (str "new-substs:\n" new-substs))
+                  substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
+                  ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
+                  ]
+              (do (when log-substs (println (str "No existing binding, set " lhs " to " value-lookup
+                                                 ", substs-replaced-from-right:\n" substs-replaced-from-right)))
                   substs-replaced-from-right))
             (do (when log-substs (println (str "Existing binding: " existing)))
                 (if (list? existing)
