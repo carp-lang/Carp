@@ -1410,7 +1410,12 @@ Obj *p_meta_get(Obj** args, int arg_count) {
   }
   Obj *o = args[0];
   if(o->meta) {
-    return env_lookup(o->meta, args[1]);
+    Obj *lookup = env_lookup(o->meta, args[1]);
+    if(lookup) {
+      return lookup;
+    } else {
+      return nil;
+    }
   }
   else {
     return nil;

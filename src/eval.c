@@ -25,6 +25,7 @@ void stack_print() {
 }
 
 void stack_push(Obj *o) {
+  assert(o);
   if(LOG_STACK) {
     printf("Pushing %s\n", obj_to_string(o)->s);
   }
