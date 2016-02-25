@@ -785,11 +785,24 @@ Obj *p_values(Obj** args, int arg_count) {
 
 Obj *p_signature(Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
-  if(args[0]->tag != 'F') { eval_error = obj_new_string("'signature' requires arg 0 to be a foreign function."); return nil; }
-  Obj *a = obj_copy(args[0]->arg_types);
-  Obj *b = args[0]->return_type;
-  Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
-  return sig;
+  if(args[0]->tag == 'F') {
+    Obj *a = obj_copy(args[0]->arg_types);
+    Obj *b = args[0]->return_type;
+    Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
+    return sig;
+  }
+  else if(args[0]->tag == 'P' || args[0]->tag == 'L') {
+    Obj *sig = env_lookup(args[0]->meta, obj_new_keyword("signature"));
+    if(sig) {
+      return sig;
+    }
+    else {
+      return nil;
+    }
+  }
+  else {
+    eval_error = obj_new_string("'signature' requires arg 0 to be some kind of function."); return nil;
+  }
 }
 
 Obj *p_null_predicate(Obj** args, int arg_count) {

@@ -72,3 +72,8 @@
 
 
 
+(defn get-a-float [xs]
+  (* 2.0f (nth xs 0)))
+
+(defn test-get-a-float []
+  (do (bake get-a-float)))

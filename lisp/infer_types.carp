@@ -26,6 +26,10 @@
                     (error (str "Found non-baked symbol '" symbol "'.")))
           :macro (error (str "Found non-expanded macro '" symbol "'."))
           :foreign (signature global-lookup)
+          :primop (let [s (signature global-lookup)]
+                    (if (nil? s)
+                      (error (str "No signature set for primop " symbol))
+                      s))
           _ t))
       lookup)))
 
