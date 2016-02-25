@@ -1,5 +1,6 @@
 #include "repl.h"
 #include "eval.h"
+#define NO_PLATFORM
 #include "../shared/shared.h"
 
 int main() {
