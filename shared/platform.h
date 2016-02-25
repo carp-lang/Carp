@@ -159,7 +159,6 @@ static void carp_platform_init() {
 }
 
 static void carp_platform_shutdown() {
-	CloseHandle(main_module);
 	main_module = INVALID_HANDLE_VALUE;
 	free_all_modules_and_destroy_module_list(loaded_modules);
 	loaded_modules = NULL;
