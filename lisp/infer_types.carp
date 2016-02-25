@@ -197,7 +197,9 @@
       () ()
       (x & xs) (if (= x replace-this)
                  (cons with-this (replace-in-list xs replace-this with-this))
-                 (cons x (replace-in-list xs replace-this with-this))))))
+                 (if (list? x)
+                   (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
+                   (cons x (replace-in-list xs replace-this with-this)))))))
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do

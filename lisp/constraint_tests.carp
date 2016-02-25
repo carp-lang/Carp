@@ -79,9 +79,49 @@
                            "t1" :float})
       (assert-eq solution solution-backwards))))
 
+(defn test-constraint-solving-7 ()
+  (let [;;_ (println "\n- Constraint solving 7 -")
+        constraints (list {:a "t0" :b "t1"}
+                          {:a '(:Array "t1") :b '(:Array "t2")}
+                          {:a "t2" :b :int})
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"t0" :int
+                           "t1" :int
+                           "t2" :int})
+      (assert-eq solution solution-backwards))))
+
+(defn test-constraint-solving-8 ()
+  (let [;;_ (println "\n- Constraint solving 8 -")
+        constraints (list 
+                          {:a '(:fn (:Array "t3")) :b "t2"}
+                          {:a '(:fn (:Array "t1")) :b "t2"}
+                          {:a "t3" :b :int}
+                          )
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {
+                           "t1" :int
+                           "t2" '(:fn (:Array :int))
+                           "t3" :int})
+      (assert-eq solution solution-backwards))))
+
+(defn test-subst-in-nested-list []
+  (assert-eq
+   {"a" '(:foo (:goo :int))}
+   (replace-subst-from-right {"a" '(:foo (:goo "b"))} "b" :int)))
+
+(test-subst-in-nested-list)
+
 (test-constraint-solving-1)
 (test-constraint-solving-2)
 (test-constraint-solving-3)
 (test-constraint-solving-4)
 (test-constraint-solving-5)
 (test-constraint-solving-6)
+(test-constraint-solving-7)
+(test-constraint-solving-8)
