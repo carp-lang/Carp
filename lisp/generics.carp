@@ -147,7 +147,7 @@
                                                     inner-signature (list :fn (list t) :string)
                                                     inner-str-call (c-ify-name (generic-name (symbol "str") inner-signature))
                                                     _ (bake-generic-primop-auto "str" inner-signature)
-                                                    _ (println (str "inner-str-call: " inner-str-call))
+                                                    ;;_ (println (str "inner-str-call: " inner-str-call))
                                                     c (str proto
                                                            "{"
                                                            " char buffer[1024];\n"
