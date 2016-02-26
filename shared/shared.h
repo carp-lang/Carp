@@ -199,4 +199,42 @@ EXPORT void sleep(int millis) {
 }
 #endif
 
+typedef struct {
+  float x;
+  float y;
+} FauxVec2;
+
+FauxVec2 *position() {
+  FauxVec2 *v2 = malloc(sizeof(FauxVec2));
+  v2->x = 100.0f;
+  v2->y = 200.0f;
+  return v2;
+}
+
+typedef struct {
+  int count;
+  void *data;
+} Array;
+
+
+string str__RefTo_ArrayOf_int_stringsfdfsf(Array *a) {
+  char buffer[1024];
+  int pos = 0;
+  int count = a->count;
+  buffer[pos++] = '[';
+  for(int i = 0; i < count; i++) {
+    int **casted_data = a->data;
+    int *element = casted_data[i];
+    //str__int_string(*element);
+    if(i < count - 1) {
+      buffer[pos++] = ',';
+      buffer[pos++] = ' ';
+    }
+  }
+  buffer[pos++] = ']';
+  buffer[pos++] = '\0';
+  return strdup(buffer);
+}
+
+
 #endif

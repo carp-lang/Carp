@@ -2,5 +2,9 @@
   (match t
          (:fn args ret) (str "(" (join ", " (map pretty-signature args)) ") -> " (pretty-signature ret))
          (:ref r) (str "&" (pretty-signature r) "")
-         x (if (keyword? t) (name t)
-               (error (str "Invalid type signature: " t)))))
+         (:Array a) (str "Array " (pretty-signature a))
+         x (if (keyword? t)
+             (name t)
+             (if (string? t)
+               t
+               (error (str "Can't prettify type signature: " t))))))

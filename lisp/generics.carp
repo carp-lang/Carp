@@ -1,0 +1,230 @@
+
+(defn generic-safe-name (t)
+  (match t
+         (:fn args ret) (str "Fn_" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
+         (:ref r) (str "RefTo-" (generic-safe-name r) "")
+         (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
+         x (if (keyword? t)
+             (name t)
+             (error (str "generic-safe-name can't handle type signature: " t)))))
+
+
+(defn generic-suffix (signature)
+  (str (join "-" (map generic-safe-name (nth signature 1)))
+       "-"
+       (generic-safe-name (nth signature 2))))
+
+(defn generic-name [base-name signature]
+  (str base-name "--" (generic-suffix signature)))
+
+(defn visit-generic-funcs [ast]
+  (let [deps (copy (:func-deps ast))
+
+        visit-lookup (fn [ast]
+                       (let [t (:type ast)]
+                         (do
+                           ;;(println (str (:value ast) " : " t))
+                           (if (and (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
+                             (let [lookup-sym (:value ast)
+                                   ;;_ (println (str "Will eval " ast))
+                                   global-lookup (eval lookup-sym)
+                                   lookup-t (type global-lookup)
+                                   ;;_ (println (str "lookup-t: " lookup-t))
+                                   is-generic (meta-get lookup-t :generic)
+                                   ]
+                               (if (and (lambda? global-lookup) is-generic)
+                                 (let [n (generic-name lookup-sym t)]
+                                   (do
+                                     ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
+                                     (bake-generic-func-internal (new-builder)
+                                                                 n
+                                                                 (code global-lookup)
+                                                                 '()
+                                                                 false
+                                                                 t)
+                                     (reset! deps (cons (symbol n) deps))
+                                     (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
+                                       ast0)))
+                                 (if (and (primop? global-lookup) is-generic)
+                                   (let [n (generic-name lookup-sym t)]
+                                     (do
+                                       ;; (println (str "Found a generic primop to bake: " lookup-sym))
+                                       ;; (println (str "Final name will be " n))
+                                       (bake-generic-primop (new-builder)
+                                                            n
+                                                            (str lookup-sym)
+                                                            t)
+                                       (reset! deps (cons (symbol n) deps))
+                                       (assoc-in ast '(:value) (symbol n))))
+                                   ast)))
+                             ast))))
+
+        visit-generic-funcs-internal (fn [ast]
+                                       (match (:node ast)
+                                         :function (update-in ast '(:body) visit-generic-funcs-internal)
+                                         :app (let [ast0 (update-in ast '(:head) visit-generic-funcs-internal) ;; todo: use a here
+                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
+                                                ast1)
+                                         :lookup (visit-lookup ast)
+
+                                         :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                   ast1 (update-in ast0 '(:if-true) visit-generic-funcs-internal)
+                                                   ast2 (update-in ast1 '(:if-false) visit-generic-funcs-internal)]
+                                               ast2)
+
+                                         :binop (let [ast0 (update-in ast '(:left) visit-generic-funcs-internal)
+                                                      ast1 (update-in ast0 '(:right) visit-generic-funcs-internal)]
+                                                  ast1)
+
+                                         :reset (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)]
+                                                  ast0)
+
+                                         :literal ast
+
+                                         :ref (update-in ast '(:expr) visit-generic-funcs-internal)
+
+                                         :let (let [ast0 (update-in ast '(:bindings)
+                                                                    (fn [forms] (map visit-generic-funcs-internal forms)))]
+                                                (update-in ast0 '(:body) visit-generic-funcs-internal))
+
+                                         :binding (update-in ast '(:value) visit-generic-funcs-internal)
+
+                                         :while (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                      ast1 (update-in ast0 '(:body) visit-generic-funcs-internal)]
+                                                  ast1)
+
+                                         :null ast
+
+                                         :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
+                                         
+                                         x (error (str "visit-generic can't handle node type " x))))]
+    (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
+
+
+;; The easy version of bake-generic-primop, used to ensure that a certain instance of a generic function exists
+;; For example, to ensure that 'nth' (a primop) exists for float arrays, call this function like this:
+;;  (bake-generic-primop-auto "nth" '(:fn ((:ref (:Array :float)) :int) :float))
+;; This will generate the function nth--RefTo-ArrayOf-float-int-float of type (&Array float, int) -> float
+(defn bake-generic-primop-auto [primop-name signature]
+  (let [builder (new-builder)
+        func-name (generic-name (symbol primop-name) signature)]
+    (bake-generic-primop builder func-name primop-name signature)))
+
+
+;; Used by the visit-generic-func algorithm to generate and register baked version of generic primops
+(defn bake-generic-primop [builder func-name primop-name signature]
+  (let [c-func-name (c-ify-name func-name)
+        c-file-name (str out-dir c-func-name ".c")]
+    (if (func-baked? func-name)
+      (do
+        ;;(println (str "Ignoring already baked generic primop: " func-name))
+        nil)
+      (let [result (build-generic-primop c-func-name primop-name signature)
+            c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" (:c result))
+            proto (str (:proto result) ";")
+            deps (:deps result)
+            ]
+        (do
+          (def c c-program-string)
+          ;; (println (str "Baking generic primop " func-name))
+          ;; (println (str "Prototype for " func-name ":\n" proto))
+          ;; (println (str "C-code for " func-name ":\n" c-program-string))
+          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))))))
+
+
+(defn build-generic-primop [c-func-name primop-name signature]
+  (match primop-name
+
+    "" (match signature
+            (:fn () )
+            (let [proto (str)
+                  c (str)]
+              {:proto proto :c c :deps ()})
+            _ (error "Invalid type for call to ''"))
+    
+    "str" (match signature
+            (:fn ((:ref (:Array t))) :string) (let [proto (str "string " c-func-name "(Array *a)")
+                                                    inner-signature (list :fn (list t) :string)
+                                                    inner-str-call (c-ify-name (generic-name (symbol "str") inner-signature))
+                                                    _ (bake-generic-primop-auto "str" inner-signature)
+                                                    ;;_ (println (str "inner-str-call: " inner-str-call))
+                                                    c (str proto
+                                                           "{"
+                                                           " char buffer[1024];\n"
+                                                           " int pos = 0;\n"
+                                                           " int count = a->count;\n"
+                                                           " buffer[pos++] = '[';\n"
+                                                           " " (type-build t) " *casted_data = a->data;\n"
+                                                           " for(int i = 0; i < count; i++) {\n"
+                                                           ;;"   printf(\"%d \", casted_data[i]);\n"
+                                                           "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
+                                                           "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
+                                                           "   pos += strlen(inner_str);\n"
+                                                           "   if(i < count - 1) {"
+                                                           "     buffer[pos++] = ',';\n"
+                                                           "     buffer[pos++] = ' ';\n"
+                                                           "   }"
+                                                           " }"
+                                                           " buffer[pos++] = ']';\n"
+                                                           " buffer[pos++] = '\\0';\n"
+                                                           " return strdup(buffer);\n"
+                                                           "}")]
+                                                {:proto proto :c c :deps (list inner-str-call)})
+            
+            (:fn (:int) :string) (let [proto (str "string " c-func-name "(int x)")
+                                       c (str proto " { return itos(x); }")]
+                                   {:proto proto :c c :deps ()})
+
+            (:fn (:float) :string) (let [proto (str "string " c-func-name "(float x)")
+                                         c (str proto " { "
+                                                " char output[50];"
+                                                " snprintf(output, 50, \"%f\", x);"
+                                                " return strdup(output);"
+                                                "}")]
+                                     {:proto proto :c c :deps ()})
+
+            (:fn (:string) :string) (let [proto (str "string " c-func-name "(string s)")
+                                          c (str proto " { "
+                                                 " int len = strlen(s);"
+                                                 " int new_len = len + 3;"
+                                                 " char *new_s = malloc(sizeof(char) * new_len);"
+                                                 " memcpy(new_s + 1, s, len); "
+                                                 " new_s[0] = '\"';"
+                                                 " new_s[new_len - 2] = '\"';"
+                                                 " new_s[new_len - 1] = '\\0';"
+                                                 " return new_s;"
+                                                 "}")]
+                                   {:proto proto :c c :deps ()})
+            
+            x (error (str "Invalid type for call to 'str': " x)))
+    
+    "nth" (match signature
+            (:fn ((:ref (:Array t)) :int) t)
+            (let [proto (str (type-build t) " " c-func-name "(Array *a, int index)")
+                  c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
+              {:proto proto :c c :deps ()})
+            _ (error "Invalid type for call to 'nth'"))
+
+    
+    "array-of-size" (match signature
+                      (:fn (:int) (:Array t))
+                      (let [proto (str (type-build '(:Array t)) " " c-func-name "(int count)")
+                            c (str proto
+                                   "{ Array *a = malloc(sizeof(Array));"
+                                   " a->count = count;"
+                                   " a->data = calloc(count, sizeof(" (type-build t) "));"
+                                   " return a;"
+                                   " }")]
+                        {:proto proto :c c :deps ()})
+                      _ (error "Invalid type for call to 'array-of-size'"))
+
+    
+    "array-set" (match signature
+                  (:fn ((:Array t) :int t) (:Array t))
+                  (let [proto (str (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
+                        c (str proto " { ((" (type-build t) "*)(a->data))[index] = value; return a; }")]
+                    {:proto proto :c c :deps ()})
+                  _ (error "Invalid type for call to 'array-set'"))
+
+
+    x (error (str "Can't build generic primop for '" x "'"))))

@@ -12,6 +12,27 @@ char input[MAX_INPUT_BUFFER_SIZE];
 
 #define GC_COLLECT_BEFORE_REPL_INPUT 0
 
+int paren_balance(char *s) {
+  int balance = 0;
+  bool ignore = false;
+  for(int i = 0; s[i] != '\0'; i++) {
+    char c = s[i];
+    if(!ignore) {
+      if(c == '(') balance++;
+      if(c == ')') balance--;
+      if(c == '[') balance++;
+      if(c == ']') balance--;
+      if(c == '{') balance++;
+      if(c == '}') balance--;
+      if(c == '"') ignore = true;
+    }
+    else {
+      if(c == '"') ignore = false;
+    }
+  }
+  return balance;
+}
+
 void repl(Obj *env) {
   while(1) {
     if(GC_COLLECT_BEFORE_REPL_INPUT) {
@@ -21,13 +42,24 @@ void repl(Obj *env) {
       gc(env);
     }
     printf("\e[36mλ>\e[0m ");
-    void *eof = fgets(input, MAX_INPUT_BUFFER_SIZE, stdin);
+    int read_offset = 0;
+    
+  read_more:;
+    void *eof = fgets(input + read_offset, MAX_INPUT_BUFFER_SIZE - read_offset, stdin);
     if(eof == NULL) {
       break;
     }
-    eval_text(env, input, true, obj_new_string("repl"));
-    pop_stacks_to_zero();
-    printf("\n");
+    if(paren_balance(input) <= 0) {
+      eval_text(env, input, true, obj_new_string("repl"));
+      pop_stacks_to_zero();
+      printf("\n");
+    }
+    else {
+      //printf("Unbalanced, waiting for ending parenthesis.\n");
+      printf("\e[36m_>\e[0m ");
+      read_offset = strlen(input);
+      goto read_more;
+    }
     //assert(stack_pos == 0);
     //stack_print();
   }
@@ -177,6 +209,9 @@ void env_new_global() {
   register_primop("meta-set!", p_meta_set_BANG);
   register_primop("meta-get", p_meta_get);
   register_primop("array-to-list", p_array_to_list);
+  register_primop("array-of-size", p_array_of_size);
+  register_primop("array-set!", p_array_set_BANG);
+  register_primop("array-set", p_array_set);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);

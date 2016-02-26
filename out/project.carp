@@ -2,18 +2,33 @@
 
 (when (not carp-dev)
   (do
-    ;;(load-lisp (str carp-dir "lisp/string_array.carp"))
     ;;(load-lisp (str carp-dir "lisp/glfw_test.carp"))
     (load-lisp (str carp-dir "lisp/examples.carp"))
     nil
     ))
 
-(def x '(1 2 3))
+(defn call-id []
+  (id 10))
 
-(defn id [x] x)
+;;(bake call-id)
 
-(defn id-test []
-  (id 123))
+(defn call-nth [x]
+  (+ 1 (nth x 0)))
 
-;;(meta-set! x :dangerous 10)
+;;(bake call-nth)
 
+(defn aha []
+  [1 2 3 4 5])
+;;(bake aha)
+;;(def a (aha))
+
+(defn star []
+  (str (ref [7 3 4])))
+
+;;(bake star)
+
+
+(defn starr []
+  [100 200 300])
+
+(bake starr)

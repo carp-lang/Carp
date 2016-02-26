@@ -622,20 +622,34 @@ Obj *p_concat(Obj** args, int arg_count) {
 
 Obj *p_nth(Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'nth'\n"); return nil; }
-  if(args[0]->tag != 'C') { set_error_return_nil("'nth' requires arg 0 to be a list\n", nil); }
   if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
-  int i = 0;
-  int n = args[1]->i;
-  Obj *p = args[0];
-  while(p && p->car) {
-    if(i == n) {
-      return p->car;
+  if(args[0]->tag == 'C') {
+    int i = 0;
+    int n = args[1]->i;
+    Obj *p = args[0];
+    while(p && p->car) {
+      if(i == n) {
+	return p->car;
+      }
+      p = p->cdr;
+      i++;
     }
-    p = p->cdr;
-    i++;
+    printf("Index %d out of bounds in %s\n", n, obj_to_string(args[0])->s);
+    return nil;
   }
-  printf("Index %d out of bounds in %s\n", n, obj_to_string(args[0])->s);
-  return nil;
+  else if(args[0]->tag == 'A') {
+    Obj *a = args[0];
+    int index = args[1]->i;
+    if(index < 0 || index >= a->count) {
+      set_error_return_nil("Index out of bounds in ", a);
+    }
+    else {
+      return a->array[index];
+    }
+  }
+  else {
+    set_error_return_nil("'nth' requires arg 0 to be a list or array\n", args[0]);
+  }
 }
 
 Obj *p_count(Obj** args, int arg_count) {
@@ -785,11 +799,24 @@ Obj *p_values(Obj** args, int arg_count) {
 
 Obj *p_signature(Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
-  if(args[0]->tag != 'F') { eval_error = obj_new_string("'signature' requires arg 0 to be a foreign function."); return nil; }
-  Obj *a = obj_copy(args[0]->arg_types);
-  Obj *b = args[0]->return_type;
-  Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
-  return sig;
+  if(args[0]->tag == 'F') {
+    Obj *a = obj_copy(args[0]->arg_types);
+    Obj *b = args[0]->return_type;
+    Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
+    return sig;
+  }
+  else if(args[0]->tag == 'P' || args[0]->tag == 'L') {
+    Obj *sig = env_lookup(args[0]->meta, obj_new_keyword("signature"));
+    if(sig) {
+      return sig;
+    }
+    else {
+      return nil;
+    }
+  }
+  else {
+    eval_error = obj_new_string("'signature' requires arg 0 to be some kind of function."); return nil;
+  }
 }
 
 Obj *p_null_predicate(Obj** args, int arg_count) {
@@ -1174,9 +1201,6 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
   else if(obj_eq(type_obj, type_char)) {
     return &ffi_type_schar;
   }
-  else if(type_obj->tag == 'C' && obj_eq(type_obj->car, type_ptr)) {
-    return &ffi_type_pointer;
-  }
   else {
     return &ffi_type_pointer; // Assume it's a user defined type
     /* error = obj_new_string("Unhandled return type for foreign function: "); */
@@ -1383,7 +1407,12 @@ Obj *p_meta_get(Obj** args, int arg_count) {
   }
   Obj *o = args[0];
   if(o->meta) {
-    return env_lookup(o->meta, args[1]);
+    Obj *lookup = env_lookup(o->meta, args[1]);
+    if(lookup) {
+      return lookup;
+    } else {
+      return nil;
+    }
   }
   else {
     return nil;
@@ -1402,4 +1431,44 @@ Obj *p_array_to_list(Obj** args, int arg_count) {
     prev = new;
   }
   return list;
+}
+
+/* Obj *p_array(Obj** args, int arg_count) { */
+/*   Obj *new_array = obj_new_array(arg_count); */
+/*   for(int i = 0; i < arg_count; i++) { */
+/*     new_array->array[i] = args[i]; */
+/*   } */
+/*   return new_array; */
+/* } */
+
+Obj *p_array_of_size(Obj** args, int arg_count) {
+  int array_count = args[0]->i;
+  Obj *new_array = obj_new_array(array_count);
+  for(int i = 0; i < array_count; i++) {
+    new_array->array[i] = nil;
+  }
+  return new_array;
+}
+
+Obj *p_array_set_BANG(Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "array-set! must take 3 arguments: ", args[0]);
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-set! must take an array as first arg: ", args[0]);
+  Obj *i = args[1];
+  assert_or_set_error_return_nil(i->tag == 'I', "array-set! must take an int as second arg: ", args[1]);
+  Obj *o = args[2];
+  a->array[i->i] = o;
+  return nil;
+}
+
+Obj *p_array_set(Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "array-set must take 3 arguments: ", args[0]);
+  Obj *a = args[0];
+  assert_or_set_error_return_nil(a->tag == 'A', "array-set must take an array as first arg: ", args[0]);
+  Obj *i = args[1];
+  assert_or_set_error_return_nil(i->tag == 'I', "array-set must take an int as second arg: ", args[1]);
+  Obj *o = args[2];
+  Obj *new_array = obj_copy(a);
+  new_array->array[i->i] = o;
+  return new_array;
 }

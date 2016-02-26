@@ -82,9 +82,9 @@
 (def total-time 0)
 
 (defmacro time (form)
-  (list 'let (list 't1 (list 'now))
-        (list 'let (list 'result form
-                         't (list '- (list 'now) 't1))
+  (list 'let ['t1 (list 'now)]
+        (list 'let ['result form
+                    't (list '- (list 'now) 't1)]
               (list 'do
                     (list 'println (list 'str "Evaluating form took " 't "ms."))
                     (list 'reset! 'total-time (list '+ 'total-time 't))
@@ -106,12 +106,16 @@
 (defn any (pred xs)
   (contains? (map pred xs) true))
 
+(defn true? (x) (if x true false))
+(defn false? (x) (if x false true))
+
 (defn log (message value)
   (do
     (println (str message value))
     value))
 
 (defn nil? (x) (= nil x))
+(defn not-nil? (x) (not (= nil x)))
 
 (defn int? (x) (= :int (type x)))
 (defn string? (x) (= :string (type x)))
@@ -239,3 +243,10 @@
 (register-builtin "call1" '((:fn (:int) :void)) :void)
 (register-builtin "calls" '((:fn (:string) :void)) :void)
 (register-builtin "printret" '((:fn () :int)) :void)
+
+
+;; Set type signatures for primops
+(meta-set! str :signature '(:fn :any :string))
+(meta-set! nth :signature '(:fn ((:ref (:Array "T")) :int) "T"))
+(meta-set! array-of-size :signature '(:fn (:int) (:Array "T")))
+(meta-set! array-set :signature '(:fn ((:Array "T") :int "T") (:Array "T")))

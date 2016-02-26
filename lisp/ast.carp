@@ -31,6 +31,27 @@
 (defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
+(defn nest [a index array-name-symbol]
+  (match a
+    [] array-name-symbol
+    [x & xs] (list 'array-set (nest xs (inc index) array-name-symbol) index x)))
+
+(def array-to-ast-var-name-counters (copy {}))
+
+(defn array-to-ast [a]
+  (let [a-count (count a)
+        array-name-symbol (symbol (gen-var-name array-to-ast-var-name-counters "array"))
+        nested-calls (nest a 0 array-name-symbol)
+        array-setup-ast (form-to-ast (list 'let [array-name-symbol (list 'array-of-size a-count)]
+                                           nested-calls))]
+    (do
+      ;;(println (str "array-setup-ast:\n" array-setup-ast))
+      array-setup-ast)))
+
+;; {:node :do
+;;        :type (list :Array (gen-typevar))
+;;        :forms (list array-setup-ast)}
+
 (defn list-to-ast [l]
   (if (binop? l)
     (match l
@@ -147,9 +168,11 @@
     'NULL {:node :null :type (gen-typevar)}
     'true {:node :literal :type :bool :value 1}
     'false {:node :literal :type :bool :value 0}
-    x (if (= :list (type x))
+    x (if (list? x)
         (list-to-ast x)
-        (literal-or-lookup-to-ast x))
+        (if (array? x)
+          (array-to-ast x)
+          (literal-or-lookup-to-ast x)))
     ))
 
 (defn body-to-ast [body]

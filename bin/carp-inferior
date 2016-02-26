@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# inferior-lisp-mode in Emacs can't handle lrwrap so this script doesn't use that
+
+# Get the dir of this script (which is in the bin folder)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+CARP_DIR=$DIR/../ $DIR/carp-repl

@@ -1,0 +1,28 @@
+
+(defstruct Vec2 [x :float y :float])
+
+(def v (Vec2 3.0 4.0))
+
+(def x (#x v))
+(def y (#y v))
+
+;; pretend that the FauxVec2 type in shared.h is the same as Vec2 (they have the same memory layout):
+(register-builtin "position" '() :Vec2)
+
+(defn print-vec2 [m]
+  (println (str (#x m) ", " (#y m))))
+
+(defstruct Mix [a :int b :float c :int])
+
+(def m (Mix 10 3.2 20))
+
+(defn print-mix [m]
+  (println (str "Mix: " (#a m) ", " (#b m) ", " (#c m))))
+
+(defstruct Mix2 [mix-a :Mix mix-b :Mix])
+(def m2 (Mix2 (Mix 1 2.0 3) (Mix 4 5.0 6)))
+
+(defn test-mix2 []
+  (do
+    (print-mix (#mix-a m2))
+    (print-mix (#mix-b m2))))

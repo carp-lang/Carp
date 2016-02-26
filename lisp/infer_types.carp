@@ -13,19 +13,23 @@
       ;;(println (str "app-f: " app-f-name ", x: " x))
       (= x :self))))
 
-(defn get-type-of-symbol (type-env sym)
-  (let [lookup (get-maybe type-env sym)]
+(defn get-type-of-symbol (type-env symbol)
+  (let [lookup (get-maybe type-env symbol)]
     (if (nil? lookup)
-      (let [global-lookup (eval sym)
+      (let [global-lookup (eval symbol)
             t (type global-lookup)]
         (match t
           :lambda (if (meta-get global-lookup :generic)
                     (let [signature (meta-get global-lookup :signature)]
-                      (do (println (str "'" sym "' is generic with signature " signature))
+                      (do ;;(println (str "'" symbol "' is generic with signature "))
                           signature))
-                    (error (str "Found non-baked symbol '" sym "'.")))
-          :macro (error (str "Found non-expanded macro '" sym "'."))
+                    (error (str "Found non-baked symbol '" symbol "'.")))
+          :macro (error (str "Found non-expanded macro '" symbol "'."))
           :foreign (signature global-lookup)
+          :primop (let [s (signature global-lookup)]
+                    (if (nil? s)
+                      (error (str "No signature set for primop " symbol " (maybe it isn't allowed to be baked?)"))
+                      s))
           _ t))
       lookup)))
 
@@ -91,9 +95,11 @@
                       t (get-type-of-symbol type-env val)
                       ;;_ (println (str "type of lookup '" val "': " t))
                       ]
-                  (cons {:a (:type ast)
-                         :b t
-                         :doc (str "lookup " val)} constraints)))
+                  (if (nil? t)
+                    (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
+                    (cons {:a (:type ast)
+                           :b t
+                           :doc (str "lookup " val)} constraints))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
                    x1 (generate-constraints-internal x0 (get ast :right) type-env)
@@ -124,6 +130,7 @@
                            constraints (:forms ast))
                 ;;_ (log "count: " (count x0))
                 n (count (:forms ast))
+                _ (when (= 0 n) (error (str "do-form must have at least one statement.")))
                 ret-constr {:a (:type ast) :b (get-in ast (list :forms (- n 1) :type)) :doc "do-ret-constr"}]
             (cons ret-constr x0))
 
@@ -169,14 +176,16 @@
 
 
 (defn lookup (substs b)
-  (let [val (get-maybe substs b)]
-    (if (= () val)
-      b
-      (if (= b val)
-        val
-        (if (= :string (type val))
-          (lookup substs val) ; keep looking
-          val)) ; found the actual type
+  (if (list? b)
+    (map (fn [x] (lookup substs x)) b)
+    (let [val (get-maybe substs b)]
+      (if (= () val)
+        b
+        (if (= b val)
+          val
+          (if (= :string (type val))
+            (lookup substs val) ; keep looking
+            val))) ; found the actual type
       )))
 
 ;; Replacement function for replacing "from the right" in an associative map
@@ -192,7 +201,9 @@
       () ()
       (x & xs) (if (= x replace-this)
                  (cons with-this (replace-in-list xs replace-this with-this))
-                 (cons x (replace-in-list xs replace-this with-this))))))
+                 (if (list? x)
+                   (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
+                   (cons x (replace-in-list xs replace-this with-this)))))))
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do
@@ -235,12 +246,13 @@
       (if (typevar? lhs)
         (let [existing (get-maybe substs lhs)]
           (if (= nil existing)
-            (do (when log-substs (println (str "No existing binding, will set " lhs " to " value-lookup)))
-                (let [new-substs (assoc substs lhs value-lookup)
-                      ;;_ (println (str "new-substs:\n" new-substs))
-                      substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
-                      ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
-                      ]
+            (let [new-substs (assoc substs lhs value-lookup)
+                  ;;_ (println (str "new-substs:\n" new-substs))
+                  substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
+                  ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
+                  ]
+              (do (when log-substs (println (str "No existing binding, set " lhs " to " value-lookup
+                                                 ", substs-replaced-from-right:\n" substs-replaced-from-right)))
                   substs-replaced-from-right))
             (do (when log-substs (println (str "Existing binding: " existing)))
                 (if (list? existing)
@@ -386,8 +398,9 @@
 
 (defn func-dep? (constraint) (has-key? constraint :func-dep))
 
-(defn infer-types (ast)
+(defn infer-types (ast func-signature-if-generic)
   (let [type-constraints (generate-constraints ast)
-        substs (solve-constraints type-constraints)
+        func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic :b (:type ast) :doc "generic-constr"}))
+        substs (solve-constraints (concat func-signature-constraint type-constraints))
         ast-typed (assign-types ast substs)]
     ast-typed))

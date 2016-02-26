@@ -1,5 +1,6 @@
 #include "obj_string.h"
 #include "env.h"
+#include "eval.h"
 
 bool setting_print_lambda_body = true;
 
@@ -138,10 +139,45 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'Q') {
+    Obj *type_lookup;
+    if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
+
+	/* printf("...\n"); */
+	/* Obj *ptr = o->void_ptr; */
+	/* Obj *call_to_str = obj_list(obj_new_symbol("str--RefTo-ArrayOf-int-string"), (struct Obj*)ptr); */
+	/* printf("Call to str: %s\n", obj_to_string(call_to_str)->s); */
+	
+	/* Obj *array_to_string_result = eval(global_env, call_to_str); // obj_new_string("[...]") */
+	/* if(eval_error) { */
+	/*   printf("Error when calling str function for void ptr of type %s:\n", obj_to_string(type_lookup)->s); */
+	/*   printf("%s\n", obj_to_string(eval_error)->s); */
+	/*   stack_pop(); */
+	/*   obj_string_mut_append(total, "FAIL"); */
+	/*   return; */
+	/* } */
+	/* obj_string_mut_append(total, obj_to_string(array_to_string_result)->s); */
+
+	obj_string_mut_append(total, "<ptr to Array of ");
+	obj_string_mut_append(total, obj_to_string(type_lookup->cdr->car)->s);
+	obj_string_mut_append(total, ">");
+	
+	return;
+      }
+      else {
+	obj_string_mut_append(total, "<ptr ");
+	obj_string_mut_append(total, "of type ");
+	obj_string_mut_append(total, obj_to_string(type_lookup)->s);
+	obj_string_mut_append(total, ">");
+      }
+      return;
+    }
+    
     obj_string_mut_append(total, "<ptr:");
     static char temp[256];
     snprintf(temp, 256, "%p", o->primop);
     obj_string_mut_append(total, temp);
+    obj_string_mut_append(total, " of unknown type");
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'F') {
