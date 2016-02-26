@@ -2,8 +2,8 @@
 (defn generic-safe-name (t)
   (match t
          (:fn args ret) (str "Fn_" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
-         (:ref r) (str "RefTo_" (generic-safe-name r) "")
-         (:Array a) (str "ArrayOf_" (generic-safe-name a) "")
+         (:ref r) (str "RefTo-" (generic-safe-name r) "")
+         (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
          x (if (keyword? t)
              (name t)
              (error (str "generic-safe-name can't handle type signature: " t)))))
@@ -54,7 +54,7 @@
                                                             n
                                                             (str lookup-sym)
                                                             t)
-                                       ;;(reset! deps (cons (symbol n) deps))
+                                       (reset! deps (cons (symbol n) deps))
                                        (assoc-in ast '(:value) (symbol n))))
                                    ast)))
                              ast))))
@@ -103,36 +103,56 @@
 
 (defn bake-generic-primop [builder func-name primop-name signature]
   (let [c-func-name (c-ify-name func-name)
-        c-file-name (str out-dir c-func-name ".c")
-        c-code (build-generic-primop c-func-name primop-name signature)
-        arg-types (nth signature 1)
-        return-type (nth signature 2)]
-    (do
-      ;;(println (str "C-code for " func-name ":\n" c-code))
-      (add-func! c-func-name c-code nil)
-      ;;(println (str "Baked generic primop " func-name))
-      )))
+        c-file-name (str out-dir c-func-name ".c")]
+    (if (func-baked? func-name)
+      (println (str "Ignoring already baked generic primop: " func-name))
+      (let [result (build-generic-primop c-func-name primop-name signature)
+            c-program-string (str "#include <shared.h>\n" (:c result))
+            proto (str (:proto result) ";")]
+        (do
+          ;; (println (str "Baking generic primop " func-name))
+          ;; (println (str "Prototype for " func-name ":\n" proto))
+          ;; (println (str "C-code for " func-name ":\n" c-program-string))
+          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto '() false))))))
 
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
+
+    "" (match signature
+            (:fn () )
+            (let [proto (str)
+                  c (str)]
+              {:proto proto :c c})
+            _ (error "Invalid type for call to ''"))
+    
+    
     "nth" (match signature
-            (:fn ((:ref (:Array t)) :int) t) (str (type-build t) " " c-func-name
-                                           "(Array *a, int index) { return ((" (type-build t) "*)(a->data))[index]; }")
+            (:fn ((:ref (:Array t)) :int) t)
+            (let [proto (str (type-build t) " " c-func-name "(Array *a, int index)")
+                  c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
+              {:proto proto :c c})
             _ (error "Invalid type for call to 'nth'"))
+
+    
     "array-of-size" (match signature
-                      (:fn (:int) (:Array t)) (str (type-build '(:Array t)) " " c-func-name
-                                                   "(int count) {"
-                                                   " Array *a = malloc(sizeof(Array));"
-                                                   " a->count = count;"
-                                                   " a->data = calloc(count, sizeof(" (type-build t) "));"
-                                                   " return a;"
-                                                   "; }")
+                      (:fn (:int) (:Array t))
+                      (let [proto (str (type-build '(:Array t)) " " c-func-name "(int count)")
+                            c (str proto
+                                   "{ Array *a = malloc(sizeof(Array));"
+                                   " a->count = count;"
+                                   " a->data = calloc(count, sizeof(" (type-build t) "));"
+                                   " return a;"
+                                   " }")]
+                        {:proto proto :c c})
                       _ (error "Invalid type for call to 'array-of-size'"))
+
+    
     "array-set" (match signature
-                  (:fn ((:Array t) :int t) (:Array t)) (str (type-build '(:Array t)) " " c-func-name
-                                                            "(Array *a, int index, " (type-build t) " value) {"
-                                                            " ((" (type-build t) "*)(a->data))[index] = value;"
-                                                            " return a;"
-                                                            " }")
+                  (:fn ((:Array t) :int t) (:Array t))
+                  (let [proto (str (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
+                        c (str proto " { ((" (type-build t) "*)(a->data))[index] = value; return a; }")]
+                    {:proto proto :c c})
                   _ (error "Invalid type for call to 'array-set'"))
+
+
     x (error (str "Can't build generic primop for '" x "'"))))

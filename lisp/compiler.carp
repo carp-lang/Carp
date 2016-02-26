@@ -54,6 +54,9 @@
                                                    :func-proto func-proto
                                                    :func-dylib func-dylib}))))
 
+(defn func-baked? [func-name]
+  (not (nil? (get-maybe baked-funcs func-name))))
+
 ;; (defn add-baked-primop! [func-name]
 ;;   (reset! baked-primops (cons func-name baked-primops)))
 
@@ -163,31 +166,34 @@
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))]
+        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))
+        t (get ast-annotated :type)]
     (do
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (def ast ast-annotated)
       (def c c-program-string)
-      (match (get ast-annotated :type)
-        (:fn arg-types return-type)
-        (do
-          (save-function-prototypes)
-          (save c-file-name c-program-string)
-          (run-clang c-func-name c-file-name total-dependencies exe)
-          (unload-if-necessary func-name)
-          (if exe
-            :exe-done
-            (do
-              (def out-lib (load-dylib (str out-dir c-func-name ".so")))
-              (register out-lib c-func-name arg-types return-type)
-              (add-func! func-name proto out-lib)
-              (let [f (eval (read func-name))]
-                (do (def s (pretty-signature (signature f)))
-                    (when echo-signature-after-bake (println (str func-name " : " s)))
-                    f)))))
-        _ (error "Must bake function with type (:fn ...)")))))
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe))))
+
+(defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
+  (match t
+    (:fn arg-types return-type) (do
+                                  (save-function-prototypes)
+                                  (save c-file-name c-program-string)
+                                  (run-clang c-func-name c-file-name total-dependencies exe)
+                                  (unload-if-necessary func-name)
+                                  (if exe
+                                    :exe-done
+                                    (do
+                                      (def out-lib (load-dylib (str out-dir c-func-name ".so")))
+                                      (register out-lib c-func-name arg-types return-type)
+                                      (add-func! func-name proto out-lib)
+                                      (let [f (eval (read func-name))]
+                                        (do (def s (pretty-signature (signature f)))
+                                            (when echo-signature-after-bake (println (str func-name " : " s)))
+                                            f)))))
+    _ (error "Must bake function with type (:fn ...)")))
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
