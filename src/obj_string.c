@@ -143,27 +143,24 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
 
-	Obj *array_to_string_result = eval(global_env, obj_new_string("[...]"));
-	obj_string_mut_append(total, obj_to_string(array_to_string_result)->s);
-
-	/* Obj *inner_type = type_lookup->cdr->car; */
+	/* printf("...\n"); */
+	/* Obj *ptr = o->void_ptr; */
+	/* Obj *call_to_str = obj_list(obj_new_symbol("str--RefTo-ArrayOf-int-string"), (struct Obj*)ptr); */
+	/* printf("Call to str: %s\n", obj_to_string(call_to_str)->s); */
 	
-	/* // HACK while I figure out how to import shared.h in this file */
-	/* typedef struct { */
-	/*   int count; */
-	/*   void *data; */
-	/* } Array; */
-	
-	/* Array *c_array = o->void_ptr; */
-	/* Obj *obj_array = obj_new_array(c_array->count); */
-	/* //obj_array->array */
-
-	/* for(int i = 0; i < c_array->count; i++) { */
-	  
-	/*   obj_array->array[i] = nil; */
+	/* Obj *array_to_string_result = eval(global_env, call_to_str); // obj_new_string("[...]") */
+	/* if(eval_error) { */
+	/*   printf("Error when calling str function for void ptr of type %s:\n", obj_to_string(type_lookup)->s); */
+	/*   printf("%s\n", obj_to_string(eval_error)->s); */
+	/*   stack_pop(); */
+	/*   obj_string_mut_append(total, "FAIL"); */
+	/*   return; */
 	/* } */
+	/* obj_string_mut_append(total, obj_to_string(array_to_string_result)->s); */
 
-	/* obj_to_string_internal(total, obj_array, prn, indent); */
+	obj_string_mut_append(total, "<ptr to Array of ");
+	obj_string_mut_append(total, obj_to_string(type_lookup->cdr->car)->s);
+	obj_string_mut_append(total, ">");
 	
 	return;
       }

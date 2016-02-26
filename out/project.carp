@@ -22,3 +22,13 @@
 ;;(bake aha)
 ;;(def a (aha))
 
+(defn star []
+  (str (ref [7 3 4])))
+
+;;(bake star)
+
+
+(defn starr []
+  [100 200 300])
+
+(bake starr)
