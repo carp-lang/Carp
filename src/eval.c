@@ -357,7 +357,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
     else if(obj_eq(return_type, type_int)) { 
       //printf("Returning int.\n");
-      ffi_arg result;
+      ffi_sarg result;
 	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_int(result);
     }
@@ -368,7 +368,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       obj_result = result ? lisp_true : lisp_false;
     }
     else if(obj_eq(return_type, type_char)) { 
-      ffi_arg result;
+      ffi_sarg result;
 	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_char(result);
     }
@@ -380,7 +380,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
     else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");
-      ffi_arg result;
+      ffi_sarg result;
 	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
