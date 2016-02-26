@@ -462,13 +462,20 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
 	*vp = args[i]->void_ptr;
       }
+      else if(args[i]->tag == 'S') {
+	char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
+	*sp = args[i]->s;
+      }
       else {
 	eval_error = obj_new_string("Can't set member ");
-	//obj_string_mut_append(eval_error, );
+	char buffer[32];
+	sprintf(buffer, "%d", i);
+	obj_string_mut_append(eval_error, buffer);
         obj_string_mut_append(eval_error, " of struct ");
 	obj_string_mut_append(eval_error, name);
 	obj_string_mut_append(eval_error, " to ");
 	obj_string_mut_append(eval_error, obj_to_string(args[i])->s);
+	obj_string_mut_append(eval_error, " (unhandled type).");
 	return;
       }
     }
@@ -508,6 +515,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
       int *xp = location;
       int x = *xp;
       lookup = obj_new_int(x);
+    }
+    else if(obj_eq(member_type, type_string)) {
+      char **sp = location;
+      char *s = *sp;
+      lookup = obj_new_string(s);
     }
     else {
       void **pp = location;

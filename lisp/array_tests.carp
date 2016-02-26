@@ -138,3 +138,40 @@
   (str (ref [(string-copy "yeah") (string-copy "oh")])))
 
 (bake star-s)
+
+
+
+
+
+
+(defn call-id []
+  (id 10))
+
+;;(bake call-id)
+
+(defn call-nth [x]
+  (+ 1 (nth x 0)))
+
+;;(bake call-nth)
+
+(defn aha []
+  [1 2 3 4 5])
+;;(bake aha)
+;;(def a (aha))
+
+(defn star []
+  (str (ref [7 3 4])))
+
+;;(bake star)
+
+
+(defn starr []
+  [100 200 300])
+
+;;(bake starr)
+
+(defn foo []
+  (str (ref (starr))))
+;;(bake foo)
+
+(def a (starr))
