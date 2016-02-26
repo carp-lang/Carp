@@ -19,9 +19,15 @@
 
 (defn aha []
   [1 2 3 4 5])
+;;(bake aha)
+;;(def a (aha))
 
-(bake aha)
+(defn istr []
+  (str 42))
 
-(def a (aha))
+;;(bake istr)
 
+(defn star []
+  (str (ref [7 3 4])))
 
+(bake star)

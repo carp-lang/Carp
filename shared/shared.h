@@ -203,4 +203,24 @@ typedef struct {
 } Array;
 
 
+string str__RefTo_ArrayOf_int_stringsfdfsf(Array *a) {
+  char buffer[1024];
+  int pos = 0;
+  int count = a->count;
+  buffer[pos++] = '[';
+  for(int i = 0; i < count; i++) {
+    int **casted_data = a->data;
+    int *element = casted_data[i];
+    //str__int_string(*element);
+    if(i < count - 1) {
+      buffer[pos++] = ',';
+      buffer[pos++] = ' ';
+    }
+  }
+  buffer[pos++] = ']';
+  buffer[pos++] = '\0';
+  return strdup(buffer);
+}
+
+
 #endif

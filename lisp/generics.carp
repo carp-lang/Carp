@@ -120,13 +120,16 @@
         ;;(println (str "Ignoring already baked generic primop: " func-name))
         nil)
       (let [result (build-generic-primop c-func-name primop-name signature)
-            c-program-string (str "#include <shared.h>\n" (:c result))
-            proto (str (:proto result) ";")]
+            c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" (:c result))
+            proto (str (:proto result) ";")
+            deps (:deps result)
+            ]
         (do
+          (def c c-program-string)
           ;; (println (str "Baking generic primop " func-name))
           ;; (println (str "Prototype for " func-name ":\n" proto))
           ;; (println (str "C-code for " func-name ":\n" c-program-string))
-          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto '() false))))))
+          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))))))
 
 
 (defn build-generic-primop [c-func-name primop-name signature]
@@ -136,15 +139,49 @@
             (:fn () )
             (let [proto (str)
                   c (str)]
-              {:proto proto :c c})
+              {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to ''"))
     
+    "str" (match signature
+            (:fn ((:ref (:Array t))) :string) (let [proto (str "string " c-func-name "(Array *a)")
+                                                    inner-signature (list :fn (list t) :string)
+                                                    inner-str-call (c-ify-name (generic-name (symbol "str") inner-signature))
+                                                    _ (bake-generic-primop-auto "str" inner-signature)
+                                                    _ (println (str "inner-str-call: " inner-str-call))
+                                                    c (str proto
+                                                           "{"
+                                                           " char buffer[1024];\n"
+                                                           " int pos = 0;\n"
+                                                           " int count = a->count;\n"
+                                                           " buffer[pos++] = '[';\n"
+                                                           " " (type-build t) " *casted_data = a->data;\n"
+                                                           " for(int i = 0; i < count; i++) {\n"
+                                                           ;;"   printf(\"%d \", casted_data[i]);\n"
+                                                           "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
+                                                           "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
+                                                           "   pos += strlen(inner_str);\n"
+                                                           "   if(i < count - 1) {"
+                                                           "     buffer[pos++] = ',';\n"
+                                                           "     buffer[pos++] = ' ';\n"
+                                                           "   }"
+                                                           " }"
+                                                           " buffer[pos++] = ']';\n"
+                                                           " buffer[pos++] = '\\0';\n"
+                                                           " return strdup(buffer);\n"
+                                                           "}")]
+                                                {:proto proto :c c :deps (list inner-str-call)})
+            
+            (:fn (:int) :string) (let [proto (str "string " c-func-name "(int x)")
+                                       c (str proto " { return itos(x); }")]
+                                   {:proto proto :c c :deps ()})
+            
+            x (error (str "Invalid type for call to 'str': " x)))
     
     "nth" (match signature
             (:fn ((:ref (:Array t)) :int) t)
             (let [proto (str (type-build t) " " c-func-name "(Array *a, int index)")
                   c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
-              {:proto proto :c c})
+              {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to 'nth'"))
 
     
@@ -157,7 +194,7 @@
                                    " a->data = calloc(count, sizeof(" (type-build t) "));"
                                    " return a;"
                                    " }")]
-                        {:proto proto :c c})
+                        {:proto proto :c c :deps ()})
                       _ (error "Invalid type for call to 'array-of-size'"))
 
     
@@ -165,7 +202,7 @@
                   (:fn ((:Array t) :int t) (:Array t))
                   (let [proto (str (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
                         c (str proto " { ((" (type-build t) "*)(a->data))[index] = value; return a; }")]
-                    {:proto proto :c c})
+                    {:proto proto :c c :deps ()})
                   _ (error "Invalid type for call to 'array-set'"))
 
 
