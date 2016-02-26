@@ -357,31 +357,31 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
     else if(obj_eq(return_type, type_int)) { 
       //printf("Returning int.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_int(result);
     }
     else if(obj_eq(return_type, type_bool)) { 
       //printf("Returning bool.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = result ? lisp_true : lisp_false;
     }
     else if(obj_eq(return_type, type_char)) { 
-      char result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_char(result);
     }
     else if(obj_eq(return_type, type_float)) { 
       //printf("Returning float.\n");
       float result;
-      ffi_call(function->cif, function->funptr, &result, values);
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_float(result);
     }
     else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
     else {
@@ -447,19 +447,19 @@ void apply(Obj *function, Obj **args, int arg_count) {
       int offset = offsets[i]->i;
       if(args[i]->tag == 'V') {
 	assert_or_set_error(obj_eq(member_type, type_float), "Can't assign float to a member of type ", obj_to_string(member_type));
-	float *fp = new_struct->void_ptr + offset;
+	float *fp = (float*)(((char*)new_struct->void_ptr) + offset);
 	float f = args[i]->f32;
 	//printf("Setting member %d at offset %d to %f.\n", i, offset, f);
 	*fp = f;
       }
       else if(args[i]->tag == 'I') {
 	assert_or_set_error(obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
-	int *xp = new_struct->void_ptr + offset;
+	int *xp = (int*)(((char*)new_struct->void_ptr) + offset);
 	int x = args[i]->i;
 	*xp = x;
       }
       else if(args[i]->tag == 'Q') {
-	void **vp = new_struct->void_ptr + offset;
+	void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
 	*vp = args[i]->void_ptr;
       }
       else {
@@ -497,7 +497,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     Obj *target_struct = args[0];
 
     Obj *lookup = nil;
-    void *location = target_struct->void_ptr + offset;
+    void *location = (void*)(((char*)target_struct->void_ptr) + offset);
     
     if(obj_eq(member_type, type_float)) {
       float *fp = location;

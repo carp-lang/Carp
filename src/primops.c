@@ -11,7 +11,7 @@
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
-#include "../shared/platform.h"
+#include "../shared/types.h"
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
@@ -1289,7 +1289,7 @@ Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_typ
 
   //printf("Registration of '%s' OK.\n", name);
   
-  Obj *ffi = obj_new_ffi(cif, funptr, args, return_type_obj);
+  Obj *ffi = obj_new_ffi(name, cif, funptr, args, return_type_obj);
 
   if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
   env_assoc(ffi->meta, obj_new_keyword("name"), obj_new_string(name));
