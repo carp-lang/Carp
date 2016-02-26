@@ -1,5 +1,4 @@
 # Compiler 
-  - Compile generic primops into separate functions and register them to enable usage from repl
   - Automatically implement for structs and arrays:
      - str
 	 - copy
