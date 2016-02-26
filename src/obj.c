@@ -77,13 +77,15 @@ Obj *obj_new_ptr(void *ptr) {
   return o;
 }
 
-Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj) {
+Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj) {
   assert(cif);
+  assert(name);
   assert(arg_types);
   assert(arg_types->tag == 'C');
   assert(return_type_obj);
   Obj *o = obj_new('F');
   o->cif = cif;
+  o->name = strdup(name);
   o->funptr = funptr;
   o->arg_types = arg_types;
   o->return_type = return_type_obj;
@@ -199,7 +201,7 @@ Obj *obj_copy(Obj *o) {
     return obj_new_dylib(o->dylib);
   }
   else if(o->tag == 'F') {
-    return obj_new_ffi(o->cif, o->funptr, obj_copy(o->arg_types), obj_copy(o->return_type));
+    return obj_new_ffi(o->name, o->cif, o->funptr, obj_copy(o->arg_types), obj_copy(o->return_type));
   }
   else if(o->tag == 'L') {
     return o;
