@@ -138,18 +138,20 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'Q') {
+    Obj *lookup;
+    if(o->meta && (lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+      obj_string_mut_append(total, "<ptr ");
+      obj_string_mut_append(total, "of type ");
+      obj_string_mut_append(total, obj_to_string(lookup)->s);
+      obj_string_mut_append(total, ">");
+      return;
+    }
+    
     obj_string_mut_append(total, "<ptr:");
     static char temp[256];
     snprintf(temp, 256, "%p", o->primop);
     obj_string_mut_append(total, temp);
-    Obj *lookup;
-    if(o->meta && (lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
-      obj_string_mut_append(total, " of type ");
-      obj_string_mut_append(total, obj_to_string(lookup)->s);
-    }
-    else {
-      obj_string_mut_append(total, " of unknown type");
-    }
+    obj_string_mut_append(total, " of unknown type");
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'F') {
