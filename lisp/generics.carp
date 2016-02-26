@@ -2,8 +2,8 @@
 (defn generic-safe-name (t)
   (match t
          (:fn args ret) (str "Fn_" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
-         (:ref r) (str "RefTo_" (pretty-signature r) "")
-         (:Array a) (str "ArrayOf_" (pretty-signature a) "")
+         (:ref r) (str "RefTo_" (generic-safe-name r) "")
+         (:Array a) (str "ArrayOf_" (generic-safe-name a) "")
          x (if (keyword? t)
              (name t)
              (error (str "generic-safe-name can't handle type signature: " t)))))

@@ -1,5 +1,10 @@
 # Compiler 
-  - Want to be able to bake struct constructors!
+  - Compile generic primops into separate functions and register them to enable usage from repl
+  - Automatically implement for structs and arrays:
+     - str
+	 - copy
+	 - delete
+  - Want to be able to bake struct constructors! (they are dictionaries)
   - Ownership in while loops
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Handle Function pointers as values, must typedef the correct function type
@@ -30,6 +35,7 @@
   
   
 # Dynamic Runtime
+  - kunna printa arrayer och structar som kommer från kompilerad kod
   - make line numbers and position be actually correct
   - quasiquoting and splicing for easier macro writing
   - add one stack frame to the printout that's actually at the location of the error, if possible

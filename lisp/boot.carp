@@ -20,7 +20,6 @@
   (do
     (load-lisp (str carp-dir "lisp/compiler_tests.carp"))
     (load-lisp (str carp-dir "lisp/examples.carp"))
-    (load-lisp (str carp-dir "lisp/string_array.carp"))
     (load-gl)
     ))
 

@@ -54,7 +54,13 @@
            (:fn _ _) "void*"
            (:ref r) (type-build r)
            (:Array a) "Array*"
-           x (c-ify-name (name x)))))
+           :float "float"
+           :int "int"
+           :char "char"
+           :bool "bool"
+           :string "string"
+           :void "void"
+           x (str (c-ify-name (name x)) "*"))))
 
 (defn visit-arg-explicit (c arg)
   (let [result (visit-form c arg true)]

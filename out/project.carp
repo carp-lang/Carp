@@ -168,3 +168,7 @@
 ;;   [(Vec2 1.0 2.0)
 ;;    (Vec2 3.0 1.0)
 ;;    (Vec2 6.0 4.0)])
+
+(defn arrarr []
+  [(array-literal) (array-literal)])
+(def arrarrast (lambda-to-ast (code arrarr)))

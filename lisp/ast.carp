@@ -31,15 +31,18 @@
 (defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
-(defn nest [a index]
+(defn nest [a index array-name-symbol]
   (match a
-    [] 'array
-    [x & xs] (list 'array-set (nest xs (inc index)) index x)))
+    [] array-name-symbol
+    [x & xs] (list 'array-set (nest xs (inc index) array-name-symbol) index x)))
+
+(def array-to-ast-var-name-counters (copy {}))
 
 (defn array-to-ast [a]
   (let [a-count (count a)
-        nested-calls (nest a 0)
-        array-setup-ast (form-to-ast (list 'let ['array (list 'array-of-size a-count)]
+        array-name-symbol (symbol (gen-var-name array-to-ast-var-name-counters "array"))
+        nested-calls (nest a 0 array-name-symbol)
+        array-setup-ast (form-to-ast (list 'let [array-name-symbol (list 'array-of-size a-count)]
                                            nested-calls))]
     (do
       ;;(println (str "array-setup-ast:\n" array-setup-ast))
