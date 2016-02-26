@@ -5,6 +5,7 @@
 	 - copy
 	 - delete
   - Want to be able to bake struct constructors! (they are dictionaries)
+  - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Handle Function pointers as values, must typedef the correct function type
