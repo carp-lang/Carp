@@ -1065,6 +1065,20 @@ Obj *p_symbol(Obj** args, int arg_count) {
   return obj_new_symbol(args[0]->s);
 }
 
+Obj *p_keyword(Obj** args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong arg count to 'keyword'.");
+    return nil;
+  }
+  if(args[0]->tag != 'S') {
+    Obj *s = obj_new_string("Argument to 'keyword' must be string: ");
+    obj_string_mut_append(s, obj_to_string(args[0])->s);
+    eval_error = s;
+    return nil;
+  }
+  return obj_new_keyword(args[0]->s);
+}
+
 Obj *p_error(Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'error'\n"); return nil; }
   eval_error = args[0];
@@ -1471,4 +1485,10 @@ Obj *p_array_set(Obj** args, int arg_count) {
   Obj *new_array = obj_copy(a);
   new_array->array[i->i] = o;
   return new_array;
+}
+
+Obj *p_new(Obj** args, int arg_count) {
+  // This is used for baking of struct constructors
+  eval_error = obj_new_string("The primop 'new' should never be called in dynamic code.");
+  return nil;
 }

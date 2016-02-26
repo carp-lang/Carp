@@ -141,6 +141,13 @@
                   c (str)]
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to ''"))
+
+    ;; "new" (match signature
+    ;;         (:fn arg-types :t)
+    ;;         (let [proto (str (type-build t) " " c-func-name "(" (string-join ", " (map (fn (arg)) arg-types)) ")")
+    ;;               c (str proto " { return NULL; }")]
+    ;;           {:proto proto :c c :deps ()})
+    ;;         _ (error "Invalid type for call to 'new'"))
     
     "str" (match signature
             (:fn ((:ref (:Array t))) :string) (let [proto (str "string " c-func-name "(Array *a)")

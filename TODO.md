@@ -6,6 +6,7 @@
   - ensure correctness of GC
 
 # Compiler 
+  - Is the 'new' primop necessary?
   - Automatically implement for structs and arrays:
      - str
 	 - copy

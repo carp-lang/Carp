@@ -48,9 +48,22 @@
       ;;(println (str "array-setup-ast:\n" array-setup-ast))
       array-setup-ast)))
 
-;; {:node :do
-;;        :type (list :Array (gen-typevar))
-;;        :forms (list array-setup-ast)}
+(defn is-struct-constructor? [form]
+  (and (dict? form) (true? (get-maybe form :struct))))
+
+(defn struct-constructor-ast [struct-description args]
+  (let [struct-name (:name struct-description)
+        struct-type (keyword struct-name)]
+    (do
+      (add-type! struct-name (str "typedef void* " struct-name ";"))
+      ;;(bake-generic-primop-auto "new" (list :fn () struct-type))
+      {:node :app
+       :type struct-type
+       :head {:node :lookup
+              :constructor true
+              :type (gen-fn-type (count args)) ;; TODO: we actually know the types here so why not put them in instead?
+              :value (str "new--" struct-name)}
+       :tail (map form-to-ast args)})))
 
 (defn list-to-ast [l]
   (if (binop? l)
@@ -66,12 +79,17 @@
                             :op '==
                             :left (form-to-ast left)
                             :right (form-to-ast right)}
-           (x & xs) (if (and (symbol? x) (def? x) (macro? (eval x)))
-                      (expand-macro l)
-                      {:node :app
-                       :type (gen-typevar)
-                       :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
-                       :tail (map form-to-ast xs)})
+
+           (x & xs) (let [evaled (eval x)]
+                      (if (and (symbol? x) (def? x) (macro? evaled))
+                        (expand-macro l)
+                        (if (and (symbol? x) (def? x) (is-struct-constructor? evaled))
+                          (struct-constructor-ast evaled xs)
+                          {:node :app
+                           :type (gen-typevar)
+                           :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
+                           :tail (map form-to-ast xs)})))
+           
            nil {:node :literal :type :any :value ""})))
 
 (defn expand-macro [form]

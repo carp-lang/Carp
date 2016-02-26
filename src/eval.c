@@ -675,7 +675,8 @@ void eval_list(Obj *env, Obj *o) {
 
     int member_count = types->count / 2;
 
-    Obj *member_types = obj_new_array(member_count);    
+    Obj *member_types = obj_new_array(member_count);
+    Obj *member_names = obj_new_array(member_count);
     Obj *offsets = obj_new_array(member_count);
     int offset = 0;
     bool generic = false;
@@ -684,6 +685,7 @@ void eval_list(Obj *env, Obj *o) {
       assert_or_set_error(member_name->tag == 'Y', "Struct member name must be symbol: ", member_name);
       Obj *member_type = types->array[i * 2 + 1];
       member_types->array[i] = member_type;
+      member_names->array[i] = member_name;
       offsets->array[i] = obj_new_int(offset);
       int size = 0;
       if(obj_eq(member_type, type_float)) { size = sizeof(float); }
@@ -710,6 +712,7 @@ void eval_list(Obj *env, Obj *o) {
     env_extend(struct_description, obj_new_keyword("member-offsets"), offsets);
     env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count));
     env_extend(struct_description, obj_new_keyword("member-types"), member_types);
+    env_extend(struct_description, obj_new_keyword("member-names"), member_names);
     env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset));
     env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false);
     env_extend(struct_description, obj_new_keyword("struct"), lisp_true);

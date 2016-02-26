@@ -83,7 +83,9 @@
   (save (str out-dir "functions.h")
         (str
          "#include <shared.h>\n"
+         "//Types:\n"
          (join "\n" (map :type-definition (values types)))
+         "\n\n//Functions:\n"
          (join "\n" (map :func-proto (values baked-funcs))))))
 
 (defn link-libs (dependencies)

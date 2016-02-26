@@ -54,6 +54,7 @@ Obj *p_code(Obj** args, int arg_count);
 Obj *p_now(Obj** args, int arg_count);
 Obj *p_name(Obj** args, int arg_count);
 Obj *p_symbol(Obj** args, int arg_count);
+Obj *p_keyword(Obj** args, int arg_count);
 Obj *p_error(Obj** args, int arg_count);
 Obj *p_keys(Obj** args, int arg_count);
 Obj *p_values(Obj** args, int arg_count);
@@ -68,6 +69,7 @@ Obj *p_array_of_size(Obj** args, int arg_count);
 //Obj *p_array(Obj** args, int arg_count);
 Obj *p_array_set_BANG(Obj** args, int arg_count);
 Obj *p_array_set(Obj** args, int arg_count);
+Obj *p_new(Obj** args, int arg_count);
 
 Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

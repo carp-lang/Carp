@@ -17,4 +17,13 @@
   [name :string
    age :int])
 
-(def me (Person "erik" 29))
+(defn me [] (Person "erik" 29))
+
+;;(bake me)
+
+(def me-ast (lambda-to-ast (code me)))
+(def me-deps (find-func-deps me-ast false))
+(def me-con (gencon me-deps))
+(def me-typed (infer-types me-deps nil))
+
+;;(def me-con (gencon me-ast))

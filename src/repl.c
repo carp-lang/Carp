@@ -201,6 +201,7 @@ void env_new_global() {
   register_primop("now", p_now);
   register_primop("name", p_name);
   register_primop("symbol", p_symbol);
+  register_primop("keyword", p_keyword);
   register_primop("error", p_error);
   register_primop("keys", p_keys);
   register_primop("values", p_values);
@@ -212,6 +213,7 @@ void env_new_global() {
   register_primop("array-of-size", p_array_of_size);
   register_primop("array-set!", p_array_set_BANG);
   register_primop("array-set", p_array_set);
+  register_primop("new", p_new);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);
