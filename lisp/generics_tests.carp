@@ -76,3 +76,14 @@
 
 (defn test-array-literal []
   (bake array-literal))
+
+
+
+
+(defn letpoly []
+  (let [x (id (string-copy "hej"))
+        y (id 120)]
+    (+ (strlen x) y)))
+
+
+

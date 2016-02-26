@@ -1,0 +1,97 @@
+
+(defn get-a-float [xs]
+  (* 2.0f (nth xs 0)))
+
+(defn test-get-a-float []
+  (do (bake get-a-float)))
+
+
+(defn test-int-array []
+  (+ 100 (nth (array-of-size 3) 0)))
+
+
+
+(defn small-array []
+  (let [a (array-of-size 3)
+        b (array-set a 0 10)
+        c (array-set b 1 20)
+        d (array-set c 2 30)]
+    d))
+
+;; (def small-ast (lambda-to-ast (code small-array)))
+;; (def small-con (gencon small-ast))
+;; (def small-sol (solve-constraints small-con))
+;; (def small-asta (annotate-ast small-ast))
+
+
+
+
+(defn small-array-2 []
+  ;;(array-set
+   (array-set
+    (array-set
+     (array-of-size 3)
+     0 10)
+    1 20)
+   ;;2 30)
+  )
+
+;; (def small-2-ast (lambda-to-ast (code small-array-2)))
+;; (def small-2-con (gencon small-2-ast))
+;; (def small-2-sol (solve-constraints small-2-con))
+;; (def small-2-asta (annotate-ast small-2-ast))
+
+
+
+(defn print-small-array []
+  (let [a (small-array)]
+    (do (print "[")
+        (print (ref (itos (nth (ref a) 0))))
+        (print ", ")
+        (print (ref (itos (nth (ref a) 1))))
+        (print ", ")
+        (print (ref (itos (nth (ref a) 2))))
+        (println "]"))))
+
+;; (defn print-small-array []
+;;   (let [a (small-array)]
+;;     (print (ref (itos (nth (ref a) 0))))
+;;         ))
+
+;; (bake small-array)
+;; (def ps-ast (lambda-to-ast (code print-small-array)))
+;; (def ps-con (gencon ps-ast))
+;; (def ps-sol (solve-constraints ps-con))
+;;(def ps-asta (annotate-ast ps-ast))
+
+
+
+
+
+(defn array-literal []
+  [10 20 30])
+
+(def l-ast (lambda-to-ast (code array-literal)))
+(def lcon (gencon l-ast))
+(def tlast (infer-types l-ast nil))
+(def lasta (annotate-ast l-ast))
+
+
+
+
+(defn array-literal-2 []
+  [10.1 20.7 30.2])
+
+
+
+(defn arrarr []
+  [(array-literal) (array-literal)])
+(def arrarrast (lambda-to-ast (code arrarr)))
+
+
+
+
+;; (defn array-literal-3 []
+;;   [(Vec2 1.0 2.0)
+;;    (Vec2 3.0 1.0)
+;;    (Vec2 6.0 4.0)])

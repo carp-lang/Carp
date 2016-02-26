@@ -36,6 +36,7 @@
   
   
 # Dynamic Runtime
+  - be able to mark symbols as "frozen" (with meta data) so that they can't be overriden by user
   - kunna printa arrayer och structar som kommer från kompilerad kod
   - make line numbers and position be actually correct
   - quasiquoting and splicing for easier macro writing
