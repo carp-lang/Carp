@@ -1,4 +1,23 @@
 
+;; Generic Arrays
+
+(defn get-a-float [xs]
+  (* 2.0f (nth xs 0)))
+
+(defn test-get-a-float []
+  (do (bake get-a-float)))
+
+(test-get-a-float)
+
+
+
+(defn array-literal []
+  [10 20 30])
+
+(defn test-array-literal []
+  (bake array-literal))
+
+
 (defn get-a-float [xs]
   (* 2.0f (nth xs 0)))
 
