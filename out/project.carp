@@ -10,9 +10,18 @@
 (defn call-id []
   (id 10))
 
-(bake call-id)
+;;(bake call-id)
 
 (defn call-nth [x]
   (+ 1 (nth x 0)))
 
-(bake call-nth)
+;;(bake call-nth)
+
+(defn aha []
+  [1 2 3 4 5])
+
+(bake aha)
+
+(def a (aha))
+
+

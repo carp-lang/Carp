@@ -1201,9 +1201,6 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
   else if(obj_eq(type_obj, type_char)) {
     return &ffi_type_schar;
   }
-  else if(type_obj->tag == 'C' && obj_eq(type_obj->car, type_ptr)) {
-    return &ffi_type_pointer;
-  }
   else {
     return &ffi_type_pointer; // Assume it's a user defined type
     /* error = obj_new_string("Unhandled return type for foreign function: "); */

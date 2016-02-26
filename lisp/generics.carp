@@ -105,7 +105,9 @@
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
     (if (func-baked? func-name)
-      (println (str "Ignoring already baked generic primop: " func-name))
+      (do
+        ;;(println (str "Ignoring already baked generic primop: " func-name))
+        nil)
       (let [result (build-generic-primop c-func-name primop-name signature)
             c-program-string (str "#include <shared.h>\n" (:c result))
             proto (str (:proto result) ";")]

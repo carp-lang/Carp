@@ -384,21 +384,20 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
-    else if(return_type->tag == 'C' && obj_eq(function->return_type->car, type_ptr)) {
-      void *result;
-      ffi_call(function->cif, function->funptr, &result, values);
-      //printf("Creating new void* with value: %p\n", result);
-      obj_result = obj_new_ptr(result);
-    }
     else {
       //set_error("Returning what? ", function->return_type);
       // Assume it's a user defined type:
       void *result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_ptr(result);
+
+      if(!obj_result->meta) {
+	obj_result->meta = obj_new_environment(NULL);
+      }
+      env_assoc(obj_result->meta, obj_new_keyword("type"), return_type);
     }
 
-	free(values);
+    free(values);
 
     assert(obj_result);
     stack_push(obj_result);
