@@ -31,7 +31,7 @@
 (defn starr []
   [100 200 300])
 
-(bake starr)
+;;(bake starr)
 
 (defn foo []
   (str (ref (starr))))

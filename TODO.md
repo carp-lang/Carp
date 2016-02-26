@@ -1,3 +1,8 @@
+# Bigger Questions
+  - what numeric types
+  - modules
+  - typeclasses / interfaces
+
 # Compiler 
   - Automatically implement for structs and arrays:
      - str
