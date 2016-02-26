@@ -2,6 +2,8 @@
   - what numeric types
   - modules
   - typeclasses / interfaces
+  - how to not leak memory in the repl
+  - ensure correctness of GC
 
 # Compiler 
   - Automatically implement for structs and arrays:
