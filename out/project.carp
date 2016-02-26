@@ -32,3 +32,9 @@
   [100 200 300])
 
 (bake starr)
+
+(defn foo []
+  (str (ref (starr))))
+;;(bake foo)
+
+(def a (starr))
