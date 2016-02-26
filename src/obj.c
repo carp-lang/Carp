@@ -135,7 +135,7 @@ Obj *obj_new_char(char b) {
 
 Obj *obj_new_array(int count) {
   Obj *o = obj_new('A');
-  o->array = malloc(sizeof(Obj*) * count);
+  o->array = calloc(sizeof(Obj*), count);
   o->count = count;
   return o;
 }

@@ -1,5 +1,6 @@
 #include "obj_string.h"
 #include "env.h"
+#include "eval.h"
 
 bool setting_print_lambda_body = true;
 
@@ -138,12 +139,40 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'Q') {
-    Obj *lookup;
-    if(o->meta && (lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
-      obj_string_mut_append(total, "<ptr ");
-      obj_string_mut_append(total, "of type ");
-      obj_string_mut_append(total, obj_to_string(lookup)->s);
-      obj_string_mut_append(total, ">");
+    Obj *type_lookup;
+    if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
+
+	Obj *array_to_string_result = eval(global_env, obj_new_string("[...]"));
+	obj_string_mut_append(total, obj_to_string(array_to_string_result)->s);
+
+	/* Obj *inner_type = type_lookup->cdr->car; */
+	
+	/* // HACK while I figure out how to import shared.h in this file */
+	/* typedef struct { */
+	/*   int count; */
+	/*   void *data; */
+	/* } Array; */
+	
+	/* Array *c_array = o->void_ptr; */
+	/* Obj *obj_array = obj_new_array(c_array->count); */
+	/* //obj_array->array */
+
+	/* for(int i = 0; i < c_array->count; i++) { */
+	  
+	/*   obj_array->array[i] = nil; */
+	/* } */
+
+	/* obj_to_string_internal(total, obj_array, prn, indent); */
+	
+	return;
+      }
+      else {
+	obj_string_mut_append(total, "<ptr ");
+	obj_string_mut_append(total, "of type ");
+	obj_string_mut_append(total, obj_to_string(type_lookup)->s);
+	obj_string_mut_append(total, ">");
+      }
       return;
     }
     

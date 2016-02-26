@@ -101,6 +101,17 @@
     (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
 
 
+;; The easy version of bake-generic-primop, used to ensure that a certain instance of a generic function exists
+;; For example, to ensure that 'nth' (a primop) exists for float arrays, call this function like this:
+;;  (bake-generic-primop-auto "nth" '(:fn ((:ref (:Array :float)) :int) :float))
+;; This will generate the function nth--RefTo-ArrayOf-float-int-float of type (&Array float, int) -> float
+(defn bake-generic-primop-auto [primop-name signature]
+  (let [builder (new-builder)
+        func-name (generic-name (symbol primop-name) signature)]
+    (bake-generic-primop builder func-name primop-name signature)))
+
+
+;; Used by the visit-generic-func algorithm to generate and register baked version of generic primops
 (defn bake-generic-primop [builder func-name primop-name signature]
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
@@ -116,6 +127,7 @@
           ;; (println (str "Prototype for " func-name ":\n" proto))
           ;; (println (str "C-code for " func-name ":\n" c-program-string))
           (save-and-compile func-name signature c-func-name c-file-name c-program-string proto '() false))))))
+
 
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
