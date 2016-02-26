@@ -62,6 +62,7 @@ typedef struct Obj {
     struct {
       ffi_cif *cif;
       VoidFn funptr;
+	  char* name;
       struct Obj *arg_types;
       struct Obj *return_type;
     };
@@ -98,7 +99,7 @@ Obj *obj_new_keyword(char *s);
 Obj *obj_new_primop(Primop p);
 Obj *obj_new_dylib(void *dylib);
 Obj *obj_new_ptr(void *ptr);
-Obj *obj_new_ffi(ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
+Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);

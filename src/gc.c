@@ -44,6 +44,7 @@ void free_internal_data(Obj *dead) {
   }
   else if(dead->tag == 'F') {
     free(dead->cif);
+	free(dead->name);
   }
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {
     free(dead->s);

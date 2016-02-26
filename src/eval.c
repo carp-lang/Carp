@@ -356,36 +356,36 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
     else if(obj_eq(return_type, type_int)) { 
       //printf("Returning int.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_int(result);
     }
     else if(obj_eq(return_type, type_bool)) { 
       //printf("Returning bool.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = result ? lisp_true : lisp_false;
     }
     else if(obj_eq(return_type, type_char)) { 
-      char result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_char(result);
     }
     else if(obj_eq(return_type, type_float)) { 
       //printf("Returning float.\n");
       float result;
-      ffi_call(function->cif, function->funptr, &result, values);
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_float(result);
     }
     else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");
-      int result;
-      ffi_call(function->cif, function->funptr, &result, values);
+      ffi_arg result;
+	  ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
     else if(return_type->tag == 'C' && obj_eq(function->return_type->car, type_ptr)) {
       void *result;
-      ffi_call(function->cif, function->funptr, &result, values);
+	  ffi_call(function->cif, function->funptr, &result, values);
       //printf("Creating new void* with value: %p\n", result);
       obj_result = obj_new_ptr(result);
     }
