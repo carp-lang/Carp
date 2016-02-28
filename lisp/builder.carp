@@ -198,7 +198,7 @@
                       arg-vars (map :c arg-results)
                       t (:type form)]
                   (do
-                    (when (get-maybe head :constructor)
+                    (when (= true (get-maybe head :constructor))
                       (build-constructor form))
                     (if (= :void t)
                       (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
@@ -287,7 +287,7 @@
 ;; calling the constructor. Trying to do it in the 'generics' pass is hard since
 ;; we have too little information there.
 (defn build-constructor [app-ast]
-  (let [_ (println (str app-ast))
+  (let [;;_ (println (str app-ast))
         constructor-ast (:head app-ast)
         _ (assert-eq true (:constructor constructor-ast))
         member-names (array-to-list (:member-names constructor-ast))
@@ -297,7 +297,7 @@
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword constructor-name))
-        _ (println (str constructor-signature))
+        ;;_ (println (str constructor-signature))
         ]
     (if (func-baked? constructor-name)
       (do
