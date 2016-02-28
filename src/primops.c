@@ -1487,8 +1487,8 @@ Obj *p_array_set(Obj** args, int arg_count) {
   return new_array;
 }
 
-Obj *p_new(Obj** args, int arg_count) {
-  // This is used for baking of struct constructors
-  eval_error = obj_new_string("The primop 'new' should never be called in dynamic code.");
-  return nil;
-}
+/* Obj *p_new(Obj** args, int arg_count) { */
+/*   // This is used for baking of struct constructors */
+/*   eval_error = obj_new_string("The primop 'new' should never be called in dynamic code."); */
+/*   return nil; */
+/* } */

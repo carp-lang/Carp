@@ -69,7 +69,7 @@ Obj *p_array_of_size(Obj** args, int arg_count);
 //Obj *p_array(Obj** args, int arg_count);
 Obj *p_array_set_BANG(Obj** args, int arg_count);
 Obj *p_array_set(Obj** args, int arg_count);
-Obj *p_new(Obj** args, int arg_count);
+//Obj *p_new(Obj** args, int arg_count);
 
 Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

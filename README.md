@@ -48,7 +48,7 @@ For example, to compile a function named 'fib' you enter the following:
 λ> (bake fib)
 ```
 
-This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, ast and type signature are bound to the three variables 'c', 'ast' and 's', respectively. Inspecting their contents will teach you more about the innards of the Carp language, for sure!
+This results in the compiler analyzing the code form for 'fib' and compiling it to (hopefully very fast) binary code, immediately loading this back into the REPL so that it can be called from there. The resulting C-code, AST and type signature are bound to the three variables 'c', 'ast' and 's', respectively. Inspecting their contents will teach you more about the innards of the Carp language, for sure!
 
 From the REPL you can also inspect your the state of variables, extend the compiler, script the build process of your project, or statically analyze its code. All these operations should be really quick to execute and easy to remember so you can focus on developing your program.
 

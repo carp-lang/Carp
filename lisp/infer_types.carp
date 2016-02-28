@@ -91,7 +91,7 @@
       :lookup (if (has-key? ast :self-recursive)
                 constraints
                 (if (has-key? ast :constructor)
-                  constraints
+                  constraints ;; TODO: what's the correct thing to do here?
                   (let [val (:value ast)
                         ;;_ (println (str "not self-recursive: \n" ast))
                         t (get-type-of-symbol type-env val)
@@ -157,6 +157,7 @@
       
       _ constraints
       )))
+
 
 ;; This function will generate a list with two kinds of constraints: type-constraints and func-deps
 ;;

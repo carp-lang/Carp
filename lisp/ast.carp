@@ -55,14 +55,16 @@
   (let [struct-name (:name struct-description)
         struct-type (keyword struct-name)]
     (do
-      (add-type! struct-name (str "typedef void* " struct-name ";"))
-      ;;(bake-generic-primop-auto "new" (list :fn () struct-type))
+      ;; The struct constructor is a amped up function application node with some extra data
       {:node :app
        :type struct-type
        :head {:node :lookup
               :constructor true
               :type (gen-fn-type (count args)) ;; TODO: we actually know the types here so why not put them in instead?
-              :value (str "new--" struct-name)}
+              :member-names (:member-names struct-description)
+              :member-types (:member-types struct-description)
+              :struct-name struct-name
+              :value (str "new-" struct-name)}
        :tail (map form-to-ast args)})))
 
 (defn list-to-ast [l]

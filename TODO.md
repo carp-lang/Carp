@@ -66,6 +66,7 @@
   - Reader syntax for refs: &
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
   - add 'case'/'cond' macro
+  - use modules to solve problem of using same name for members in different structs
 
 # Maybes
   - Add void constraints for (do ...) statements ?

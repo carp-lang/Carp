@@ -24,6 +24,7 @@
                                                       is-global-lookup (global? vars-in-scope symbol)
                                                       ;;_ (println (str "Comparing " func-name " with " symbol-name))
                                                       self-recursive (= func-name symbol-name)
+                                                      is-constructor (= true (get-maybe ast :constructor))
                                                       ]
                                                   (if self-recursive
                                                     (assoc ast :self-recursive true)
@@ -33,6 +34,9 @@
                                                               is-primop (primop? evaled)
                                                               is-lambda (lambda? evaled)]
                                                           (do
+                                                            (when is-constructor
+                                                              (do
+                                                                (reset! deps (cons symbol deps))))
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
                                                                 (bake-internal (new-builder) (str symbol) (code evaled) '() false)
