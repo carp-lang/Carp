@@ -28,3 +28,9 @@
 
 ;;(def me-con (gencon me-ast))
 
+
+(defn peeps []
+  [(me) (me) (me)])
+
+
+

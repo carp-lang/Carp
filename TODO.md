@@ -6,8 +6,7 @@
   - ensure correctness of GC
 
 # Compiler 
-  - Is the 'new' primop necessary?
-  - Use the shiny new 'template' function when generating C code
+  - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Automatically implement for structs and arrays:
      - str
 	 - copy
