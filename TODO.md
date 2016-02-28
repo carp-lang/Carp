@@ -7,6 +7,7 @@
 
 # Compiler 
   - Is the 'new' primop necessary?
+  - Use the shiny new 'template' function when generating C code
   - Automatically implement for structs and arrays:
      - str
 	 - copy

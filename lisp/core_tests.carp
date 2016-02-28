@@ -1,4 +1,7 @@
 
+(defn test-template []
+  (assert-eq "cAr123" (template "carp" {"a" "A" "p" 123})))
+
 (defn test-for-macro ()
   (let [sum 0]
     (do (for (i 0 5)
@@ -389,6 +392,7 @@
     (test-for-macro)
     (test-match-with-nil)
     (test-match-array)
+    (test-template)
     ))
 
 (run-core-tests)

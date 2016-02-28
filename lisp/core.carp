@@ -206,6 +206,14 @@
                                         (list 'reset! sym (list '+ sym 1)))))
     _ (error "Failed to match bindings in for loop.")))
 
+(defn second [xs]
+  (nth xs 1))
+
+(defn template [text substitutions]
+  (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
+          text
+          (map2 list (keys substitutions) (values substitutions))))
+
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
 (defn user () (getenv "USER"))
