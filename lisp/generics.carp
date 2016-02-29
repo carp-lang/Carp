@@ -203,7 +203,7 @@
                                                  "}")]
                                       {:proto proto :c c :deps ()})
 
-            (:fn (maybe-struct-type) :string) (if (keyword? maybe-struct-type)
+            (:fn ((:ref maybe-struct-type)) :string) (if (keyword? maybe-struct-type)
                                                 (let [lookup (eval (symbol (name maybe-struct-type)))]
                                                   (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
                                                     (let [t-name (name maybe-struct-type)

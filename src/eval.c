@@ -267,7 +267,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     assert(function->arg_types);
     assert(function->return_type);
      
-    void **values = malloc(sizeof(void*) * arg_count);
+    void **values = calloc(sizeof(void*), arg_count);
 	assert(values);
 
     Obj *p = function->arg_types;
@@ -319,6 +319,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
 	  }
 	  else {
 	    printf("INVALID ARG TYPE: %c\n", args[i]->tag);
+	    printf("ARG: %s\n", obj_to_string(args[i])->s);
 	    set_error("Can't send argument of invalid type to foreign function taking parameter of type ", p->car);
 	  }
 	}
@@ -440,6 +441,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
     //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
     void *p = malloc(sizeof(size));
     Obj *new_struct = obj_new_ptr(p);
+    if(!new_struct->meta) {
+      new_struct->meta = obj_new_environment(NULL);
+    }
+    env_assoc(new_struct->meta, obj_new_keyword("type"), obj_new_keyword(name));
     assert_or_set_error(!(arg_count < member_count), "Too few args to struct constructor: ", obj_new_string(name));
     assert_or_set_error(!(arg_count > member_count), "Too many args to struct constructor: ", obj_new_string(name));
     for(int i = 0; i < arg_count; i++) {

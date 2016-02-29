@@ -23,9 +23,15 @@ Obj *concat_c_strings(char *a, const char *b) {
   return s;
 }
 
-void print_generic_array_or_struct(Obj *total, Obj *type_lookup, const Obj *o) {
+void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg_to_str_obj) {
+  assert(total);
+  assert(total->tag == 'S');
+  assert(type_lookup);
+  assert(arg_to_str_obj);
+  
   shadow_stack_push(total);
   shadow_stack_push(type_lookup);
+  shadow_stack_push(arg_to_str_obj);
 	
   Obj *reffed_arg_type = obj_list(obj_new_keyword("ref"), type_lookup); // HACK: ref needed when sending arrays into str
   Obj *args_type = obj_list(reffed_arg_type);
@@ -66,8 +72,8 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, const Obj *o) {
   char *generic_name = obj_to_string_not_prn(generic_name_result)->s;
   //printf("generic_name 1: %s\n", generic_name);
 
-  Obj *call_to_str = obj_list(obj_new_symbol(generic_name), (struct Obj*)o);
-
+  Obj *call_to_str = obj_list(obj_new_symbol(generic_name), (struct Obj *)arg_to_str_obj);
+  
   //   OBS!!!
   //
   //   Calling obj_to_string on the call_to_str form will result in an infinite loop:
@@ -79,14 +85,16 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, const Obj *o) {
   Obj *array_to_string_result = eval(global_env, call_to_str);
   shadow_stack_push(array_to_string_result);
   if(eval_error) {
-    printf("Error when calling str function for void ptr of type %s:\n", obj_to_string(type_lookup)->s);
+    printf("Error when calling str function for void ptr of type '%s':\n", obj_to_string(type_lookup)->s);
     printf("%s\n", obj_to_string(eval_error)->s);
+    assert(false);
     stack_pop();
     obj_string_mut_append(total, "FAIL");
     return;
   }
   obj_string_mut_append(total, obj_to_string_not_prn(array_to_string_result)->s);
 
+  shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
@@ -218,13 +226,15 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     Obj *type_lookup;
     if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
-	print_generic_array_or_struct(total, type_lookup, o);
+	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
       }
       else {
-	obj_string_mut_append(total, "<ptr ");
-	obj_string_mut_append(total, "of type ");
-	obj_string_mut_append(total, obj_to_string(type_lookup)->s);
-	obj_string_mut_append(total, ">");
+	//printf("o: %s\n", obj_to_string(o->));
+	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+	/* obj_string_mut_append(total, "<ptr "); */
+	/* obj_string_mut_append(total, "of type "); */
+	/* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
+	/* obj_string_mut_append(total, ">"); */
       }
       return;
     }
