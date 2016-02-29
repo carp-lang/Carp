@@ -301,7 +301,7 @@
         ]
     (if (func-baked? constructor-name)
       (do
-        (println (str "Ignoring already baked constructor " constructor-name))
+        ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
         nil)
       (let [type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types member-names))
             type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
