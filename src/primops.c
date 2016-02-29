@@ -12,6 +12,7 @@
 #include "eval.h"
 #include "reader.h"
 #include "../shared/types.h"
+//#include "../shared/shared.h" // WHY CAN'T I DO THIS?
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
@@ -719,9 +720,46 @@ Obj *p_map(Obj** args, int arg_count) {
     shadow_stack_pop(); // new_a
     return new_a;
   }
-  else {
-    set_error_return_nil("'map' requires arg 1 to be a list or array: ", args[1]);
+
+  Obj *type_lookup;
+  Obj *o = args[1];
+  if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+    if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
+      Obj *inner_type = type_lookup->cdr->car;
+      typedef struct {
+	int count;
+	void *data;
+      } Array;
+      Array *a = o->void_ptr;
+      Obj *new_a = obj_new_array(a->count);
+      shadow_stack_push(new_a);
+      for(int i = 0; i < a->count; i++) {
+	Obj *arg[1];
+	if(obj_eq(inner_type, type_string)) {
+	  arg[0] = obj_new_string(((char**)(a->data))[i]);
+	}
+	else if(obj_eq(inner_type, type_char)) {
+	  arg[0] = obj_new_char(((char*)(a->data))[i]);
+	}
+	else if(obj_eq(inner_type, type_float)) {
+	  arg[0] = obj_new_float(((float*)(a->data))[i]);
+	}
+	else if(obj_eq(inner_type, type_int)) {
+	  arg[0] = obj_new_int(((int*)(a->data))[i]);
+	}
+	else {
+	  arg[0] = obj_new_ptr(((void**)(a->data))[i]);
+	  //set_error_return_nil("Map over void_ptr to array can't handle type: ", inner_type);
+	}
+	apply(f, arg, 1);
+	new_a->array[i] = stack_pop();
+      }
+      shadow_stack_pop(); // new_a
+      return new_a;
+    }
   }
+
+  set_error_return_nil("'map' requires arg 1 to be a list or array: ", args[1]);
 }
 
 Obj *p_map2(Obj** args, int arg_count) {

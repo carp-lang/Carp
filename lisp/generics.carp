@@ -201,7 +201,37 @@
                                                  " new_s[new_len - 1] = '\\0';"
                                                  " return new_s;"
                                                  "}")]
-                                   {:proto proto :c c :deps ()})
+                                      {:proto proto :c c :deps ()})
+
+            (:fn (maybe-struct-type) :string) (if (keyword? maybe-struct-type)
+                                                (let [lookup (eval (symbol (name maybe-struct-type)))]
+                                                  (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+                                                    (let [t-name (name maybe-struct-type)
+                                                          proto (str "string " c-func-name "(" t-name " *x)")
+                                                          c (str proto " { "
+                                                                 ;; " char buffer[1024];\n"
+                                                                 ;; " int pos = 0;\n"
+                                                                 ;; " int count = a->count;\n"
+                                                                 ;; " buffer[pos++] = '[';\n"
+                                                                 ;; " " (type-build t) " *casted_data = a->data;\n"
+                                                                 ;; " for(int i = 0; i < count; i++) {\n"
+                                                                 ;; ;;"   printf(\"%d \", casted_data[i]);\n"
+                                                                 ;; "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
+                                                                 ;; "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
+                                                                 ;; "   pos += strlen(inner_str);\n"
+                                                                 ;; "   if(i < count - 1) {"
+                                                                 ;; "     buffer[pos++] = ',';\n"
+                                                                 ;; "     buffer[pos++] = ' ';\n"
+                                                                 ;; "   }"
+                                                                 ;; " }"
+                                                                 ;; " buffer[pos++] = ']';\n"
+                                                                 ;; " buffer[pos++] = '\\0';\n"
+                                                                 ;; " return strdup(buffer);\n"
+                                                                 "return \"" t-name "\"; "
+                                                                 "}")]
+                                                      {:proto proto :c c :deps ()})
+                                                    (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
+                                                (error (str "Invalid type for call to 'str': " maybe-struct-type)))
             
             x (error (str "Invalid type for call to 'str': " x)))
     

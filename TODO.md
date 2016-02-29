@@ -6,6 +6,9 @@
   - ensure correctness of GC
 
 # Compiler 
+  - Can't include shared.h
+  - Get inferior lisp to work
+  - Change () to [] in defn:s
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Automatically implement for structs and arrays:
      - str

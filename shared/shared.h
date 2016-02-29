@@ -1,5 +1,4 @@
-#ifndef SHARED_H
-#define SHARED_H
+#pragma once
 
 #include <math.h>
 #include <stdlib.h>
@@ -220,4 +219,3 @@ EXPORT CARP_PLATFORM platform() {
 	return carp_get_platform();
 }
 
-#endif

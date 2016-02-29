@@ -28,9 +28,13 @@
 
 ;;(def me-con (gencon me-ast))
 
+(bake me)
 
 (defn peeps []
-  [(me) (me) (me)])
+  [(me) (Person "Klabbe" 53)])
 
+;;(bake peeps)
 
+;; (println (str (map #name (peeps))))
+;; (println (str (map #age (peeps))))
 
