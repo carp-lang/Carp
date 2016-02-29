@@ -67,18 +67,20 @@ void repl(Obj *env) {
 }
 
 void pop_stacks_to_zero() {
-  while(stack_pos > 0) {
-    //printf("Pop: "); // Popping extra stack value
-    Obj *popped = stack_pop();
-    //obj_print(popped);
-    //printf("\n");
-  }
-  while(shadow_stack_pos > 0) {
-    //printf("Shadow pop: "); // Popping extra stack value
-    Obj *popped = shadow_stack_pop();
-    //obj_print(popped);
-    //printf("\n");
-  }
+  stack_pos = 0;
+  shadow_stack_pos = 0;
+  /* while(stack_pos > 0) { */
+  /*   //printf("Pop: "); // Popping extra stack value */
+  /*   Obj *popped = stack_pop(); */
+  /*   //obj_print(popped); */
+  /*   //printf("\n"); */
+  /* } */
+  /* while(shadow_stack_pos > 0) { */
+  /*   //printf("Shadow pop: "); // Popping extra stack value */
+  /*   Obj *popped = shadow_stack_pop(); */
+  /*   //obj_print(popped); */
+  /*   //printf("\n"); */
+  /* } */
 }
 
 void env_new_global() {

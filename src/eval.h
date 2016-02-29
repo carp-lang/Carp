@@ -19,6 +19,7 @@ void function_trace_print();
 
 void stack_push(Obj *o);
 Obj *stack_pop();
+void stack_print();
 
 void apply(Obj *function, Obj **args, int arg_count);
 
