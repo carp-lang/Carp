@@ -4,7 +4,7 @@ LDLIBS=-lffi
 SOURCE_FILES=src/main.c src/obj.c src/gc.c src/obj_string.c src/reader.c src/eval.c src/env.c src/primops.c src/repl.c src/obj_array.c
 
 all: src/main.o
-	clang $(SOURCE_FILES) -g -O0 -rdynamic -o ./bin/carp-repl -ldl $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	clang $(SOURCE_FILES) -g -O2 -rdynamic -o ./bin/carp-repl -ldl $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 
 run:
 	./bin/carp

@@ -1,5 +1,4 @@
-#ifndef SHARED_H
-#define SHARED_H
+#pragma once
 
 #include <math.h>
 #include <stdlib.h>
@@ -216,5 +215,3 @@ typedef struct {
   void *data;
 } Array;
 
-
-#endif
