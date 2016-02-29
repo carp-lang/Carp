@@ -89,6 +89,10 @@ char* carp_get_load_library_error() {
     return dlerror();
 }
 
+CARP_PLATFORM carp_get_platform() {
+	return CARP_PLATFORM_OSX;
+}
+
 #endif // __APPLE__
 
 #ifdef WIN32
@@ -275,6 +279,10 @@ char* carp_get_load_library_error() {
 
 void carp_sleep(int millis) {
 	Sleep(millis);
+}
+
+CARP_PLATFORM carp_get_platform() {
+	return CARP_PLATFORM_WINDOWS;
 }
 
 #endif

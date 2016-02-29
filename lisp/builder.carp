@@ -265,11 +265,10 @@
         c (copy "") ;; mutable string holding the resulting C code for the function
         result (visit-form c body true)
         result-var-name (:result-name ast)
-        ret-type (get-in ast '(:type 2))
-        ]
+        ret-type (get-in ast '(:type 2))]
     (do
       ;;(println "visit-function: \n" ast)
-      (let [code (str (type-build return-type) " " (c-ify-name func-name)
+      (let [code (str "API " (type-build return-type) " " (c-ify-name func-name)
                       "(" (arg-list-build args) ") {\n"
                       c
                       (if (= :void ret-type)
@@ -330,7 +329,7 @@
   (let [t (get ast :type)
         return-type (nth t 2)
         args (get ast :args)]
-    (str (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
+    (str "API " (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
 
 (defn builder-visit-ast (builder ast func-name)
   (match (get ast :node)

@@ -1,9 +1,16 @@
+.DS_Store
 /bin/carp-repl
 *.dSYM
 /gl-constants/gl_constants.o
 /out/*.c
 /out/*.so
 /out/*.h
+/out/*.dll
+/out/*.exp
+/out/*.lib
+/out/*.pdb
+/out/*.ilk
+/out/*.obj
 /src/*.o
 /out/exe
 a.out

@@ -216,5 +216,8 @@ typedef struct {
   void *data;
 } Array;
 
+EXPORT CARP_PLATFORM platform() {
+	return carp_get_platform();
+}
 
 #endif

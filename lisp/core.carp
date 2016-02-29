@@ -252,6 +252,7 @@
 (register-builtin "calls" '((:fn (:string) :void)) :void)
 (register-builtin "printret" '((:fn () :int)) :void)
 
+(register-builtin "platform" '() :int)
 
 ;; Set type signatures for primops
 (meta-set! str :signature '(:fn :any :string))
@@ -259,3 +260,18 @@
 (meta-set! array-of-size :signature '(:fn (:int) (:Array "T")))
 (meta-set! array-set :signature '(:fn ((:Array "T") :int "T") (:Array "T")))
 ;;(meta-set! new :signature '(:fn () "T"))
+
+(def platform-osx 0)
+(def platform-windows 1)
+(def platform-linux 2)
+(def platform-unknown 100)
+
+(defn windows? []
+  (= (platform) platform-windows))
+
+(defn osx? []
+  (= (platform) platform-osx))
+
+(defn linux? []
+  (= (platform) platform-linux))
+
