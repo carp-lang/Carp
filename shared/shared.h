@@ -210,8 +210,3 @@ FauxVec2 *position() {
   return v2;
 }
 
-typedef struct {
-  int count;
-  void *data;
-} Array;
-

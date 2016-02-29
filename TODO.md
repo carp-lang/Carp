@@ -6,7 +6,6 @@
   - ensure correctness of GC
 
 # Compiler 
-  - Can't include shared.h
   - Get inferior lisp to work
   - Change () to [] in defn:s
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
@@ -14,14 +13,11 @@
      - str
 	 - copy
 	 - delete
-  - Want to be able to bake struct constructors! (they are dictionaries)
   - Use 'delete' instead of free for memory management
   - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Handle Function pointers as values, must typedef the correct function type
-  - Compilation of generic functions
-  - Compiling arrays
   - Make let-polymorphism work
   - Handle global variables referenced inside functions, in regards to the lifetime checker
   - Track dependencies between functions to enable automatic recompilation when a function changes 
@@ -30,10 +26,9 @@
   - speed up some passes by mutating a single variable instead of copying immutable versions around
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - self recuring function doens't check argument count/types in the actual call to itself
-  - use C style name for the emitted source file during compilation
   - rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
-  - deftype
+  - deftype (tagged unions)
   - clean up the awful 'list-to-ast' function
 
 # Lisp Core Libs
@@ -48,18 +43,18 @@
   
 # Dynamic Runtime
   - be able to mark symbols as "frozen" (with meta data) so that they can't be overriden by user
-  - kunna printa arrayer och structar som kommer från kompilerad kod
   - make line numbers and position be actually correct
   - quasiquoting and splicing for easier macro writing
   - add one stack frame to the printout that's actually at the location of the error, if possible
   - call stack isn't properly popped when errors occur inside (load-lisp ...) at startup!
-  - use [] in parameter list for function definitions
+  - modules
+  - add 'case'/'cond' macro
+  - only allow [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - jump table in evaluator, use a 'dispatch' member with a label adress in Obj
   - remove globals to enable several instances of the runner in parallel
   - nicer pretty printing of lists of lists
   - don't leak values returned from calling ffi functions at the repl (but how..?)
-  - namespaces
   - don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - create pretty printed stack when needed, not always when calling functions
   - profile the evaluator
@@ -67,7 +62,6 @@
   - Fix problem with "No meta data." for some calls in stack trace
   - Reader syntax for refs: &
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
-  - add 'case'/'cond' macro
   - use modules to solve problem of using same name for members in different structs
 
 # Maybes

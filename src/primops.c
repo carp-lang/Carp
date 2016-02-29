@@ -726,10 +726,6 @@ Obj *p_map(Obj** args, int arg_count) {
   if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
     if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
       Obj *inner_type = type_lookup->cdr->car;
-      typedef struct {
-	int count;
-	void *data;
-      } Array;
       Array *a = o->void_ptr;
       Obj *new_a = obj_new_array(a->count);
       shadow_stack_push(new_a);

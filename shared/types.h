@@ -34,3 +34,8 @@ char* carp_get_load_library_error();
 /* -- misc -- */
 
 void carp_sleep(int millis);
+
+typedef struct {
+  int count;
+  void *data;
+} Array;
