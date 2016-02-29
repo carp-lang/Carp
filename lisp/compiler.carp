@@ -250,10 +250,18 @@
 (defmacro bake-exe* (func-symbol dependencies)
   (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies true))
 
-;; TODO: Windows support?
 (defn clean ()
-  (do
-    (system "rm functions.h")
-    (system "rm *.so")
-    (system "rm *.c")
-    (system "rm -r *.dSYM")))
+  (if (windows?)
+    (do
+      (system "del functions.h")
+      (system "del *.dll")
+      (system "del *.exp")
+      (system "del *.lib")
+      (system "del *.pdb")
+      (system "del *.ilk")
+      (system "del *.obj"))
+    (do
+      (system "rm functions.h")
+      (system "rm *.so")
+      (system "rm *.c")
+      (system "rm -r *.dSYM"))))

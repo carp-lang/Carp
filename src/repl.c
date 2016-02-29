@@ -33,6 +33,12 @@ int paren_balance(char *s) {
   return balance;
 }
 
+#ifdef WIN32
+#define PROMPT "CARP> "
+#else
+#define PROMPT "\e[36mλ>\e[0m "
+#endif
+
 void repl(Obj *env) {
   while(1) {
     if(GC_COLLECT_BEFORE_REPL_INPUT) {
@@ -41,7 +47,7 @@ void repl(Obj *env) {
       }
       gc(env);
     }
-    printf("\e[36mλ>\e[0m ");
+    printf(PROMPT);
     int read_offset = 0;
     
   read_more:;
@@ -56,7 +62,7 @@ void repl(Obj *env) {
     }
     else {
       //printf("Unbalanced, waiting for ending parenthesis.\n");
-      printf("\e[36m_>\e[0m ");
+      printf(PROMPT);
       read_offset = strlen(input);
       goto read_more;
     }
