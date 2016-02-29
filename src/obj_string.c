@@ -61,7 +61,7 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   eval(global_env, call_to_bake_generic_primop_auto);
 
   if(eval_error) {
-    printf("Error when calling bake-generic-primop-auto:\n");
+    printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
     printf("%s\n", obj_to_string(eval_error)->s);
     return;
   }
@@ -229,12 +229,11 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
 	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
       }
       else {
-	//printf("o: %s\n", obj_to_string(o->));
-	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
-	/* obj_string_mut_append(total, "<ptr "); */
-	/* obj_string_mut_append(total, "of type "); */
-	/* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
-	/* obj_string_mut_append(total, ">"); */
+	//print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+
+	obj_string_mut_append(total, "<ptr");
+	obj_string_mut_append(total, obj_to_string(type_lookup)->s);
+	obj_string_mut_append(total, ">");
       }
       return;
     }

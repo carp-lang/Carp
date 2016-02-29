@@ -1,6 +1,6 @@
 
 (load-lisp (str carp-dir "lisp/array_tests.carp"))
-;;(load-lisp (str carp-dir "lisp/struct_tests.carp"))
+(load-lisp (str carp-dir "lisp/struct_tests.carp"))
 (load-lisp (str carp-dir "lisp/constraint_tests.carp"))
 (load-lisp (str carp-dir "lisp/generics_tests.carp"))
 (load-lisp (str carp-dir "lisp/ownership_tests.carp"))
