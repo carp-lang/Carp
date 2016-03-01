@@ -5,6 +5,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 WRAPPER=rlwrap
 #WRAPPER=lldb
-#WRAPPER=valgrind
+WRAPPER=valgrind
 
 CARP_DIR=$DIR/../ $WRAPPER $DIR/carp-repl

@@ -144,7 +144,7 @@ bool obj_match_arrays(Obj *env, Obj *attempt, Obj *value) {
       //printf("rest_count: %d\n", rest_count);
       Obj *rest = obj_new_array(rest_count);
       for(int j = 0; j < rest_count; j++) {
-	rest->array[j] = value->array[i + j]; // copy the rest of the objects to a smaller array
+        rest->array[j] = value->array[i + j]; // copy the rest of the objects to a smaller array
       }
       //printf("rest: %s\n", obj_to_string(rest)->s);
       Obj *symbol_after_ampersand = attempt->array[i + 1];
@@ -200,10 +200,10 @@ bool obj_match(Obj *env, Obj *attempt, Obj *value) {
   }
   else {
     /* printf("attempt %s (%c) is NOT equal to value %s (%c)\n", */
-    /* 	   obj_to_string(attempt)->s, */
-    /* 	   attempt->tag, */
-    /* 	   obj_to_string(value)->s, */
-    /* 	   value->tag); */
+    /*     obj_to_string(attempt)->s, */
+    /*     attempt->tag, */
+    /*     obj_to_string(value)->s, */
+    /*     value->tag); */
     return false;
   }
 }
@@ -268,69 +268,79 @@ void apply(Obj *function, Obj **args, int arg_count) {
     assert(function->return_type);
      
     void **values = calloc(sizeof(void*), arg_count);
-	assert(values);
+    assert(values);
+
+#define assert_or_free_values_and_set_error(assertion, message, object) \
+    if(!(assertion)) {                                                  \
+      free(values);                                                      \
+    }                                                                   \
+    assert_or_set_error((assertion), (message), (object));
 
     Obj *p = function->arg_types;
     for(int i = 0; i < arg_count; i++) {      
       if(p && p->cdr) {
-	assert(p->car);
-	Obj *type_obj = p->car;
+        assert(p->car);
+        Obj *type_obj = p->car;
 
-	// Handle ref types by unwrapping them: (:ref x) -> x
-	if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(type_obj->car, type_ref)) {
-	  type_obj = type_obj->cdr->car; // the second element of the list
-	}
-	
-	args[i]->given_to_ffi = true; // This makes the GC ignore this value when deleting internal C-data, like inside a string
-	
-	if(obj_eq(type_obj, type_int)) {
-	  assert_or_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
-	  values[i] = &args[i]->i;
-	}
-	else if(obj_eq(type_obj, type_bool)) {
-	  assert_or_set_error(args[i]->tag == 'Y', "Invalid type of arg: ", args[i]);
-	  bool b = is_true(args[i]);
-	  values[i] = &b;
-	}
-	else if(obj_eq(type_obj, type_char)) {
-	  assert_or_set_error(args[i]->tag == 'B', "Invalid type of arg: ", args[i]);
-	  char b = args[i]->b;
-	  values[i] = &b;
-	}
-	else if(obj_eq(type_obj, type_float)) {
-	  assert_or_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
-	  values[i] = &args[i]->f32;
-	}
-	else if(obj_eq(type_obj, type_string)) {
-	  assert_or_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
-	  args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
-	  values[i] = &args[i]->s;
-	}
-	else {
-	  //printf("Calling function with parameter of type %s. Argument is of type %c.\n", obj_to_string(p->car)->s, args[i]->tag);
-	  if(args[i]->tag == 'Q') {
-	    values[i] = &args[i]->void_ptr;
-	  }
-	  else if(args[i]->tag == 'F') {
-	    values[i] = &args[i]->funptr;
-	  }
-	  else if(args[i]->tag == 'L') {
-	    set_error("Can't send argument of lambda type (tag 'L') to ffi function, you need to compile it to a C function using (bake ...) first:\n", args[i]);
-	  }
-	  else {
-	    printf("INVALID ARG TYPE: %c\n", args[i]->tag);
-	    printf("ARG: %s\n", obj_to_string(args[i])->s);
-	    set_error("Can't send argument of invalid type to foreign function taking parameter of type ", p->car);
-	  }
-	}
-	p = p->cdr;
+        // Handle ref types by unwrapping them: (:ref x) -> x
+        if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(type_obj->car, type_ref)) {
+          type_obj = type_obj->cdr->car; // the second element of the list
+        }
+        
+        args[i]->given_to_ffi = true; // This makes the GC ignore this value when deleting internal C-data, like inside a string
+
+        if(obj_eq(type_obj, type_int)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
+          values[i] = &args[i]->i;
+        }
+        else if(obj_eq(type_obj, type_bool)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'Y', "Invalid type of arg: ", args[i]);
+          bool b = is_true(args[i]);
+          values[i] = &b;
+        }
+        else if(obj_eq(type_obj, type_char)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'B', "Invalid type of arg: ", args[i]);
+          char b = args[i]->b;
+          values[i] = &b;
+        }
+        else if(obj_eq(type_obj, type_float)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
+          values[i] = &args[i]->f32;
+        }
+        else if(obj_eq(type_obj, type_string)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
+          //args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
+          values[i] = &args[i]->s;
+        }
+        else {
+          //printf("Calling function with parameter of type %s. Argument is of type %c.\n", obj_to_string(p->car)->s, args[i]->tag);
+          if(args[i]->tag == 'Q') {
+            values[i] = &args[i]->void_ptr;
+          }
+          else if(args[i]->tag == 'F') {
+            values[i] = &args[i]->funptr;
+          }
+          else if(args[i]->tag == 'L') {
+            free(values);
+            set_error("Can't send argument of lambda type (tag 'L') to ffi function, you need to compile it to a C function using (bake ...) first:\n", args[i]);
+          }
+          else {
+            free(values);
+            printf("INVALID ARG TYPE: %c\n", args[i]->tag);
+            printf("ARG: %s\n", obj_to_string(args[i])->s);
+            set_error("Can't send argument of invalid type to foreign function taking parameter of type ", p->car);
+          }
+        }
+        p = p->cdr;
       }
       else {
-	set_error("Too many arguments to ", function);
-      }	
+        free(values);
+        set_error("Too many arguments to ", function);
+      } 
     }
 
     if(p && p->car) {
+      free(values);
       set_error("Too few arguments to ", function);
     }
 
@@ -348,41 +358,41 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &c, values);
 
       if(c == NULL) {
-	// TODO: have an error here instead?
-	//printf("c is null");
-	obj_result = obj_new_string("");
+        // TODO: have an error here instead?
+        //printf("c is null");
+        obj_result = obj_new_string("");
       }
       else {      
-	obj_result = obj_new_string(c);
+        obj_result = obj_new_string(c);
       }
     }
     else if(obj_eq(return_type, type_int)) { 
       //printf("Returning int.\n");
       ffi_sarg result;
-	  ffi_call(function->cif, function->funptr, &result, values);
+      ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_int(result);
     }
     else if(obj_eq(return_type, type_bool)) { 
       //printf("Returning bool.\n");
       ffi_arg result;
-	  ffi_call(function->cif, function->funptr, &result, values);
+      ffi_call(function->cif, function->funptr, &result, values);
       obj_result = result ? lisp_true : lisp_false;
     }
     else if(obj_eq(return_type, type_char)) { 
       ffi_sarg result;
-	  ffi_call(function->cif, function->funptr, &result, values);
+      ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_char(result);
     }
     else if(obj_eq(return_type, type_float)) { 
       //printf("Returning float.\n");
       float result;
-	  ffi_call(function->cif, function->funptr, &result, values);
+      ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_float(result);
     }
     else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");
       ffi_sarg result;
-	  ffi_call(function->cif, function->funptr, &result, values);
+      ffi_call(function->cif, function->funptr, &result, values);
       obj_result = nil;
     }
     else {
@@ -393,7 +403,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       obj_result = obj_new_ptr(result);
 
       if(!obj_result->meta) {
-	obj_result->meta = obj_new_environment(NULL);
+        obj_result->meta = obj_new_environment(NULL);
       }
       env_assoc(obj_result->meta, obj_new_keyword("type"), return_type);
     }
@@ -414,20 +424,20 @@ void apply(Obj *function, Obj **args, int arg_count) {
     else {
       Obj *value = env_lookup(args[0], function);
       if(value) {
-	stack_push(value);
+        stack_push(value);
       } else {
-	eval_error = obj_new_string("Failed to lookup keyword '");
-	obj_string_mut_append(eval_error, obj_to_string(function)->s);
-	obj_string_mut_append(eval_error, "'");
-	obj_string_mut_append(eval_error, " in \n");
-	obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
-	obj_string_mut_append(eval_error, "\n");
+        eval_error = obj_new_string("Failed to lookup keyword '");
+        obj_string_mut_append(eval_error, obj_to_string(function)->s);
+        obj_string_mut_append(eval_error, "'");
+        obj_string_mut_append(eval_error, " in \n");
+        obj_string_mut_append(eval_error, obj_to_string(args[0])->s);
+        obj_string_mut_append(eval_error, "\n");
       }
     }
   }
   else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct")), lisp_true)) {
     char *name = env_lookup(function, obj_new_keyword("name"))->s;
-    int size = env_lookup(function, obj_new_keyword("size"))->i;
+    int struct_size = env_lookup(function, obj_new_keyword("size"))->i;
     int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
 
     Obj *offsets_obj = env_lookup(function, obj_new_keyword("member-offsets"));
@@ -439,7 +449,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     Obj **member_types = member_types_obj->array;
     
     //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
-    void *p = malloc(sizeof(size));
+    void *p = malloc(struct_size);
     Obj *new_struct = obj_new_ptr(p);
     if(!new_struct->meta) {
       new_struct->meta = obj_new_environment(NULL);
@@ -451,37 +461,37 @@ void apply(Obj *function, Obj **args, int arg_count) {
       Obj *member_type = member_types[i];
       int offset = offsets[i]->i;
       if(args[i]->tag == 'V') {
-	assert_or_set_error(obj_eq(member_type, type_float), "Can't assign float to a member of type ", obj_to_string(member_type));
-	float *fp = (float*)(((char*)new_struct->void_ptr) + offset);
-	float f = args[i]->f32;
-	//printf("Setting member %d at offset %d to %f.\n", i, offset, f);
-	*fp = f;
+        assert_or_set_error(obj_eq(member_type, type_float), "Can't assign float to a member of type ", obj_to_string(member_type));
+        float *fp = (float*)(((char*)new_struct->void_ptr) + offset);
+        float f = args[i]->f32;
+        //printf("Setting member %d at offset %d to %f.\n", i, offset, f);
+        *fp = f;
       }
       else if(args[i]->tag == 'I') {
-	assert_or_set_error(obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
-	int *xp = (int*)(((char*)new_struct->void_ptr) + offset);
-	int x = args[i]->i;
-	*xp = x;
+        assert_or_set_error(obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
+        int *xp = (int*)(((char*)new_struct->void_ptr) + offset);
+        int x = args[i]->i;
+        *xp = x;
       }
       else if(args[i]->tag == 'Q') {
-	void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
-	*vp = args[i]->void_ptr;
+        void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
+        *vp = args[i]->void_ptr;
       }
       else if(args[i]->tag == 'S') {
-	char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
-	*sp = args[i]->s;
+        char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
+        *sp = args[i]->s;
       }
       else {
-	eval_error = obj_new_string("Can't set member ");
-	char buffer[32];
-	sprintf(buffer, "%d", i);
-	obj_string_mut_append(eval_error, buffer);
+        eval_error = obj_new_string("Can't set member ");
+        char buffer[32];
+        sprintf(buffer, "%d", i);
+        obj_string_mut_append(eval_error, buffer);
         obj_string_mut_append(eval_error, " of struct ");
-	obj_string_mut_append(eval_error, name);
-	obj_string_mut_append(eval_error, " to ");
-	obj_string_mut_append(eval_error, obj_to_string(args[i])->s);
-	obj_string_mut_append(eval_error, " (unhandled type).");
-	return;
+        obj_string_mut_append(eval_error, name);
+        obj_string_mut_append(eval_error, " to ");
+        obj_string_mut_append(eval_error, obj_to_string(args[i])->s);
+        obj_string_mut_append(eval_error, " (unhandled type).");
+        return;
       }
     }
     stack_push(new_struct);
@@ -508,7 +518,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     Obj *member_type = env_lookup(function, obj_new_keyword("member-type"));
     Obj *target_struct = args[0];
 
-    Obj *lookup = nil;
+    Obj *lookup = NULL;
     void *location = (void*)(((char*)target_struct->void_ptr) + offset);
     
     if(obj_eq(member_type, type_float)) {
@@ -554,7 +564,7 @@ void eval_list(Obj *env, Obj *o) {
       if(eval_error) { return; }
       p = p->cdr;
       if(p && p->car) {
-	stack_pop(); // remove result from form that is not last
+        stack_pop(); // remove result from form that is not last
       }
     }
   }
@@ -567,7 +577,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *a = o->cdr->car;
     for(int i = 0; i < a->count; i += 2) {
       if(i + 1 == a->count) {
-	set_error("Uneven nr of forms in let: ", o); // TODO: add error code for this kind of error, return error map instead
+        set_error("Uneven nr of forms in let: ", o); // TODO: add error code for this kind of error, return error map instead
       }
       assert_or_set_error(a->array[i]->tag == 'Y', "Must bind to symbol in let form: ", p->car);
       eval_internal(let_env, a->array[i + 1]);
@@ -583,12 +593,12 @@ void eval_list(Obj *env, Obj *o) {
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
-	eval_internal(env, p->car);
-	if(eval_error) { return; }
-	if(is_true(stack_pop())) {
-	  stack_push(lisp_false);
-	  return;
-	}
+        eval_internal(env, p->car);
+        if(eval_error) { return; }
+        if(is_true(stack_pop())) {
+          stack_push(lisp_false);
+          return;
+        }
       }
       p = p->cdr;
     }
@@ -598,12 +608,12 @@ void eval_list(Obj *env, Obj *o) {
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
-	eval_internal(env, p->car);
-	if(eval_error) { return; }
-	if(is_true(stack_pop())) {
-	  stack_push(lisp_true);
-	  return;
-	}
+        eval_internal(env, p->car);
+        if(eval_error) { return; }
+        if(is_true(stack_pop())) {
+          stack_push(lisp_true);
+          return;
+        }
       }
       p = p->cdr;
     }
@@ -613,12 +623,12 @@ void eval_list(Obj *env, Obj *o) {
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
-	eval_internal(env, p->car);
-	if(eval_error) { return; }
-	if(!is_true(stack_pop())) {
-	  stack_push(lisp_false);
-	  return;
-	}
+        eval_internal(env, p->car);
+        if(eval_error) { return; }
+        if(!is_true(stack_pop())) {
+          stack_push(lisp_false);
+          return;
+        }
       }
       p = p->cdr;
     }
@@ -643,7 +653,7 @@ void eval_list(Obj *env, Obj *o) {
       stack_pop();
       eval_internal(env, o->cdr->car);
       if(eval_error) {
-	return;
+        return;
       }
     }
     stack_push(nil);
@@ -835,15 +845,15 @@ void eval_list(Obj *env, Obj *o) {
     
     while(p && p->car) {
       if(eval_error) {
-	shadow_stack_pop();
-	return;
+        shadow_stack_pop();
+        return;
       }
       
       if(eval_args) {
-	eval_internal(env, p->car);
+        eval_internal(env, p->car);
       }
       else {
-	stack_push(p->car); // push non-evaled
+        stack_push(p->car); // push non-evaled
       }
       count++;
       p = p->cdr;
@@ -855,7 +865,10 @@ void eval_list(Obj *env, Obj *o) {
     }
 
     //printf("Popping args!\n");
-    Obj **args = malloc(sizeof(Obj*) * count);
+    Obj **args = NULL;
+    if(count > 0) {
+      args = malloc(sizeof(Obj*) * count);
+    }
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop();
       args[count - i - 1] = arg;
@@ -867,10 +880,10 @@ void eval_list(Obj *env, Obj *o) {
       env_extend_with_args(calling_env, function, count, args);
       shadow_stack_push(calling_env);
       eval_internal(calling_env, function->body);
-	  if (eval_error) { free(args); return; }
+      if (eval_error) { free(args); return; }
       Obj *expanded = stack_pop();
       if(SHOW_MACRO_EXPANSION) {
-	printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
+        printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
       }
       shadow_stack_push(expanded);
       eval_internal(env, expanded);
@@ -879,45 +892,45 @@ void eval_list(Obj *env, Obj *o) {
     }
     else {
       if(function_trace_pos > STACK_SIZE - 1) {
-	printf("Out of function trace stack.\n");
-	stack_print();
-	function_trace_print();
-	exit(1);
+        printf("Out of function trace stack.\n");
+        stack_print();
+        function_trace_print();
+        exit(1);
       }
 
       if(LOG_FUNC_APPLICATION) {
-	printf("evaluating form %s\n", obj_to_string(o)->s);
+        printf("evaluating form %s\n", obj_to_string(o)->s);
       }
 
       if(o->meta) {
-	//printf("%s\n", obj_to_string(o->meta)->s);
-	char *func_name = "";
-	Obj *func_name_data = NULL;
-	if(function && function->meta) {
-	  func_name_data = env_lookup(function->meta, obj_new_keyword("name"));
-	}
-	if(func_name_data) {
-	  func_name = obj_to_string_not_prn(func_name_data)->s;
-	} else {
-	  func_name = obj_to_string(function)->s;
-	}
-	int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
-	int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
-	char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
-	char *file = file_path;
+        //printf("%s\n", obj_to_string(o->meta)->s);
+        char *func_name = "";
+        Obj *func_name_data = NULL;
+        if(function && function->meta) {
+          func_name_data = env_lookup(function->meta, obj_new_keyword("name"));
+        }
+        if(func_name_data) {
+          func_name = obj_to_string_not_prn(func_name_data)->s;
+        } else {
+          func_name = obj_to_string(function)->s;
+        }
+        int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
+        int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
+        char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
+        char *file = file_path;
 
-	int len = (int)strlen(file_path);
-	for(int i = len - 1; i >= 0; i--) {
-	  if(file_path[i] == '/') {
-	    file = strdup(file_path + i + 1);
-	    break;
-	  }
-	}
-	
-	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-30s %s %d:%d", func_name, file, line, pos);
+        int len = (int)strlen(file_path);
+        for(int i = len - 1; i >= 0; i--) {
+          if(file_path[i] == '/') {
+            file = strdup(file_path + i + 1);
+            break;
+          }
+        }
+        
+        snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-30s %s %d:%d", func_name, file, line, pos);
       }
       else {
-	snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "No meta data."); //"%s", obj_to_string(function)->s);
+        snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "No meta data."); //"%s", obj_to_string(function)->s);
       }
       function_trace_pos++;
 
@@ -926,27 +939,27 @@ void eval_list(Obj *env, Obj *o) {
       //printf("apply end\n");
       
       if(!eval_error) {
-	function_trace_pos--;
+        function_trace_pos--;
       }
     }
 
     if(!eval_error) {
       //printf("time to pop!\n");
       for(int i = 0; i < count; i++) {
-	shadow_stack_pop();
+        shadow_stack_pop();
       }
       shadow_stack_pop();
       
       Obj *oo = shadow_stack_pop(); // o
       if(o != oo) {
-	printf("o != oo\n");
-	printf("o: %p ", o); obj_print_cout(o); printf("\n");
-	printf("oo: %p ", oo); obj_print_cout(oo); printf("\n");
-	assert(false);
+        printf("o != oo\n");
+        printf("o: %p ", o); obj_print_cout(o); printf("\n");
+        printf("oo: %p ", oo); obj_print_cout(oo); printf("\n");
+        assert(false);
       }
     }
 
-	free(args);
+    free(args);
   }
 }
 
@@ -967,7 +980,7 @@ void eval_internal(Obj *env, Obj *o) {
     //printf("new obj_total_max = %d\n", obj_total_max);
   }
   else {
-      //printf("%d/%d\n", obj_total, obj_total_max);
+    //printf("%d/%d\n", obj_total, obj_total_max);
   }
   
   if(!o) {
@@ -1042,10 +1055,10 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
     }
     if(print) {
       if(result) {
-	obj_print(result);
+        obj_print(result);
       }
       else {
-	printf("Result was NULL when evaling %s\n", obj_to_string(form->car)->s);
+        printf("Result was NULL when evaling %s\n", obj_to_string(form->car)->s);
       }
       printf("\n");
     }

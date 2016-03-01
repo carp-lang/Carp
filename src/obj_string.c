@@ -8,9 +8,12 @@ bool setting_print_lambda_body = true;
 void obj_string_mut_append(Obj *string_obj, const char *s2) {
   assert(string_obj);
   assert(string_obj->tag == 'S');
+  assert(string_obj->s);
+  assert(s2);
   int string_obj_len = (int)strlen(string_obj->s);
   int s2_len = (int)strlen(s2);
   int total_length = (string_obj_len + s2_len);
+  //printf("mut append '%s' (%d) << '%s' (%d)\n", string_obj->s, string_obj_len, s2, s2_len);
   char *s3 = realloc(string_obj->s, sizeof(char) * (total_length + 1));
   s3[total_length] = '\0';
   strncpy(s3 + string_obj_len, s2, s2_len);

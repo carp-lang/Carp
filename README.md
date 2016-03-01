@@ -73,6 +73,8 @@ Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avo
 
 You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
 
+If 'libffi' is installed with Brew, you can find the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include" and the lib at "/usr/local/opt/libffi/lib/".
+
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
 
 ### Compiler Variables

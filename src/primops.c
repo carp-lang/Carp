@@ -596,10 +596,11 @@ Obj *p_concat(Obj** args, int arg_count) {
   Obj *new = obj_copy(args[i]);
 
   while(!new->car) {
-    new = args[++i];
+    ++i;
     if(i >= arg_count) {
       return nil;
     }
+    new = args[i];
   }
   
   Obj *last = new;
@@ -1133,7 +1134,7 @@ Obj *p_load_lisp(Obj** args, int arg_count) {
     while(form && form->car) {
       eval_internal(global_env, form->car);
       if(eval_error) { return nil; }
-      Obj *result = stack_pop();
+      /*Obj *discarded_result = */ stack_pop();
       form = form->cdr;
     }
     shadow_stack_pop(); // forms
