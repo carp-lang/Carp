@@ -54,6 +54,7 @@ EXPORT void print(string msg) {
 }
 
 EXPORT void println(string msg) {
+  assert(msg);
   printf("%s\n", msg);
 }
 
