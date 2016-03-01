@@ -73,7 +73,7 @@ Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avo
 
 You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
 
-If 'libffi' is installed with Brew, you can find the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include" and the lib at "/usr/local/opt/libffi/lib/".
+If 'libffi' is installed with Brew, you can find the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
 
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
 
@@ -171,6 +171,7 @@ true ; bool
 
 ### Dynamic-only Data Literals
 ```clojure
+(1 2 3) ; list
 foo ; symbol
 :string ; keyword
 {:a 10 :b 20} ; dictionary
@@ -188,11 +189,13 @@ foo ; symbol
 (reset! variable value)
 ```
 
-### Structs (not implemented)
+### Structs
 ```clojure
 (defstruct Vector2 [x :float, y :float])
 
 (def my-pos (Vector2 102.2f 210.3f))
+
+(#x my-pos) ;; => 102.2f
 ```
 
 ### Algebraic Data Types (not implemented)
