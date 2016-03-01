@@ -44,6 +44,7 @@
 # Dynamic Runtime
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
+  - Xcode finds strange error in primops.c 1271
   - be able to mark symbols as "frozen" (with meta data) so that they can't be overriden by user
   - make line numbers and position be actually correct
   - quasiquoting and splicing for easier macro writing

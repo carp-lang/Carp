@@ -33,7 +33,7 @@ Obj *open_file(const char *filename) {
     length = ftell (f);
     fseek (f, 0, SEEK_SET);
     buffer = malloc (length + 1);
-    if (buffer)	{
+    if (buffer) {
       fread (buffer, 1, length, f);
       buffer[length] = '\0';
     }
@@ -78,8 +78,8 @@ Obj *p_add(Obj** args, int arg_count) {
     int sum = 0;
     for(int i = 0; i < arg_count; i++) {
       if(args[i]->tag != 'I') {
-	printf("Args to add must be integers.\n");
-	return nil;
+        printf("Args to add must be integers.\n");
+        return nil;
       }
       sum += args[i]->i;
     }
@@ -89,8 +89,8 @@ Obj *p_add(Obj** args, int arg_count) {
     float sum = 0;
     for(int i = 0; i < arg_count; i++) {
       if(args[i]->tag != 'V') {
-	printf("Args to add must be floats.\n");
-	return nil;
+        printf("Args to add must be floats.\n");
+        return nil;
       }
       sum += args[i]->f32;
     }
@@ -245,81 +245,81 @@ Obj *p_str_append_bang(Obj** args, int arg_count) {
 
 char *str_replace(const char *str, const char *old, const char *new) {
 
-	/* Adjust each of the below values to suit your needs. */
+  /* Adjust each of the below values to suit your needs. */
 
-	/* Increment positions cache size initially by this number. */
-	size_t cache_sz_inc = 16;
-	/* Thereafter, each time capacity needs to be increased,
-	 * multiply the increment by this factor. */
-	const size_t cache_sz_inc_factor = 3;
-	/* But never increment capacity by more than this number. */
-	const size_t cache_sz_inc_max = 1048576;
+  /* Increment positions cache size initially by this number. */
+  size_t cache_sz_inc = 16;
+  /* Thereafter, each time capacity needs to be increased,
+   * multiply the increment by this factor. */
+  const size_t cache_sz_inc_factor = 3;
+  /* But never increment capacity by more than this number. */
+  const size_t cache_sz_inc_max = 1048576;
 
-	char *pret, *ret = NULL;
-	const char *pstr2, *pstr = str;
-	size_t i, count = 0;
-	ptrdiff_t *pos_cache = NULL;
-	size_t cache_sz = 0;
-	size_t cpylen, orglen, retlen, newlen, oldlen = strlen(old);
+  char *pret, *ret = NULL;
+  const char *pstr2, *pstr = str;
+  size_t i, count = 0;
+  ptrdiff_t *pos_cache = NULL;
+  size_t cache_sz = 0;
+  size_t cpylen, orglen, retlen, newlen, oldlen = strlen(old);
 
-	/* Find all matches and cache their positions. */
-	while ((pstr2 = strstr(pstr, old)) != NULL) {
-		count++;
+  /* Find all matches and cache their positions. */
+  while ((pstr2 = strstr(pstr, old)) != NULL) {
+    count++;
 
-		/* Increase the cache size when necessary. */
-		if (cache_sz < count) {
-			cache_sz += cache_sz_inc;
-			pos_cache = realloc(pos_cache, sizeof(*pos_cache) * cache_sz);
-			if (pos_cache == NULL) {
-				goto end_repl_str;
-			}
-			cache_sz_inc *= cache_sz_inc_factor;
-			if (cache_sz_inc > cache_sz_inc_max) {
-				cache_sz_inc = cache_sz_inc_max;
-			}
-		}
+    /* Increase the cache size when necessary. */
+    if (cache_sz < count) {
+      cache_sz += cache_sz_inc;
+      pos_cache = realloc(pos_cache, sizeof(*pos_cache) * cache_sz);
+      if (pos_cache == NULL) {
+        goto end_repl_str;
+      }
+      cache_sz_inc *= cache_sz_inc_factor;
+      if (cache_sz_inc > cache_sz_inc_max) {
+        cache_sz_inc = cache_sz_inc_max;
+      }
+    }
 
-		pos_cache[count-1] = pstr2 - str;
-		pstr = pstr2 + oldlen;
-	}
+    pos_cache[count-1] = pstr2 - str;
+    pstr = pstr2 + oldlen;
+  }
 
-	orglen = pstr - str + strlen(pstr);
+  orglen = pstr - str + strlen(pstr);
 
-	/* Allocate memory for the post-replacement string. */
-	if (count > 0) {
-		newlen = strlen(new);
-		retlen = orglen + (newlen - oldlen) * count;
-	} else	retlen = orglen;
-	ret = malloc(retlen + 1);
-	if (ret == NULL) {
-		goto end_repl_str;
-	}
+  /* Allocate memory for the post-replacement string. */
+  if (count > 0) {
+    newlen = strlen(new);
+    retlen = orglen + (newlen - oldlen) * count;
+  } else        retlen = orglen;
+  ret = malloc(retlen + 1);
+  if (ret == NULL) {
+    goto end_repl_str;
+  }
 
-	if (count == 0) {
-		/* If no matches, then just duplicate the string. */
-		strcpy(ret, str);
-	} else {
-		/* Otherwise, duplicate the string whilst performing
-		 * the replacements using the position cache. */
-		pret = ret;
-		memcpy(pret, str, pos_cache[0]);
-		pret += pos_cache[0];
-		for (i = 0; i < count; i++) {
-			memcpy(pret, new, newlen);
-			pret += newlen;
-			pstr = str + pos_cache[i] + oldlen;
-			cpylen = (i == count-1 ? orglen : pos_cache[i+1]) - pos_cache[i] - oldlen;
-			memcpy(pret, pstr, cpylen);
-			pret += cpylen;
-		}
-		ret[retlen] = '\0';
-	}
+  if (count == 0) {
+    /* If no matches, then just duplicate the string. */
+    strcpy(ret, str);
+  } else {
+    /* Otherwise, duplicate the string whilst performing
+     * the replacements using the position cache. */
+    pret = ret;
+    memcpy(pret, str, pos_cache[0]);
+    pret += pos_cache[0];
+    for (i = 0; i < count; i++) {
+      memcpy(pret, new, newlen);
+      pret += newlen;
+      pstr = str + pos_cache[i] + oldlen;
+      cpylen = (i == count-1 ? orglen : pos_cache[i+1]) - pos_cache[i] - oldlen;
+      memcpy(pret, pstr, cpylen);
+      pret += cpylen;
+    }
+    ret[retlen] = '\0';
+  }
 
-end_repl_str:
-	/* Free the cache and return the post-replacement string,
-	 * which will be NULL in the event of an error. */
-	free(pos_cache);
-	return ret;
+ end_repl_str:
+  /* Free the cache and return the post-replacement string,
+   * which will be NULL in the event of an error. */
+  free(pos_cache);
+  return ret;
 }
 
 Obj *p_str_replace(Obj** args, int arg_count) {
@@ -419,7 +419,7 @@ Obj *p_get(Obj** args, int arg_count) {
     Obj *p = args[0];
     while(p && p->car) {
       if(i == n) {
-	return p->car;
+        return p->car;
       }
       p = p->cdr;
       i++;
@@ -454,7 +454,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
     Obj *p = args[0];
     while(p && p->car) {
       if(i == n) {
-	return p->car;
+        return p->car;
       }
       p = p->cdr;
       i++;
@@ -482,8 +482,8 @@ Obj *p_dict_set_bang(Obj** args, int arg_count) {
     Obj *p = args[0];
     while(p && p->car) {
       if(i == n) {
-	p->car = args[2];
-	return nil;
+        p->car = args[2];
+        return nil;
       }
       p = p->cdr;
       i++;
@@ -513,10 +513,10 @@ Obj *p_dict_remove_bang(Obj** args, int arg_count) {
     Obj *pair = p->car;
     if(obj_eq(pair->car, args[1])) {
       if(prev) {
-	prev->cdr = p->cdr;
+        prev->cdr = p->cdr;
       }
       else {
-	args[0]->bindings = p->cdr;
+        args[0]->bindings = p->cdr;
       }
       break;
     }
@@ -575,7 +575,7 @@ Obj *p_cons_last(Obj** args, int arg_count) {
   if(args[0]->tag != 'C') { printf("'rest' requires arg 0 to be a list: %s\n", obj_to_string(args[1])->s); return nil; }
   Obj *new_list = obj_copy(args[0]);
   Obj *p = new_list;
-  while(p && p->cdr) { p = p->cdr; }
+  while(p->cdr) { p = p->cdr; }
   Obj *last = p;
   Obj *new_nil = obj_new_cons(NULL, NULL);
   last->car = args[1];
@@ -611,11 +611,11 @@ Obj *p_concat(Obj** args, int arg_count) {
       // continue
     } else {
       while(last->cdr->cdr) {
-	last = last->cdr;
+        last = last->cdr;
       }
       Obj *o = args[i];
       if(o->car) {
-	last->cdr = obj_copy(o);
+        last->cdr = obj_copy(o);
       }
     }
   }
@@ -631,7 +631,7 @@ Obj *p_nth(Obj** args, int arg_count) {
     Obj *p = args[0];
     while(p && p->car) {
       if(i == n) {
-	return p->car;
+        return p->car;
       }
       p = p->cdr;
       i++;
@@ -731,25 +731,25 @@ Obj *p_map(Obj** args, int arg_count) {
       Obj *new_a = obj_new_array(a->count);
       shadow_stack_push(new_a);
       for(int i = 0; i < a->count; i++) {
-	Obj *arg[1];
-	if(obj_eq(inner_type, type_string)) {
-	  arg[0] = obj_new_string(((char**)(a->data))[i]);
-	}
-	else if(obj_eq(inner_type, type_char)) {
-	  arg[0] = obj_new_char(((char*)(a->data))[i]);
-	}
-	else if(obj_eq(inner_type, type_float)) {
-	  arg[0] = obj_new_float(((float*)(a->data))[i]);
-	}
-	else if(obj_eq(inner_type, type_int)) {
-	  arg[0] = obj_new_int(((int*)(a->data))[i]);
-	}
-	else {
-	  arg[0] = obj_new_ptr(((void**)(a->data))[i]);
-	  //set_error_return_nil("Map over void_ptr to array can't handle type: ", inner_type);
-	}
-	apply(f, arg, 1);
-	new_a->array[i] = stack_pop();
+        Obj *arg[1];
+        if(obj_eq(inner_type, type_string)) {
+          arg[0] = obj_new_string(((char**)(a->data))[i]);
+        }
+        else if(obj_eq(inner_type, type_char)) {
+          arg[0] = obj_new_char(((char*)(a->data))[i]);
+        }
+        else if(obj_eq(inner_type, type_float)) {
+          arg[0] = obj_new_float(((float*)(a->data))[i]);
+        }
+        else if(obj_eq(inner_type, type_int)) {
+          arg[0] = obj_new_int(((int*)(a->data))[i]);
+        }
+        else {
+          arg[0] = obj_new_ptr(((void**)(a->data))[i]);
+          //set_error_return_nil("Map over void_ptr to array can't handle type: ", inner_type);
+        }
+        apply(f, arg, 1);
+        new_a->array[i] = stack_pop();
       }
       shadow_stack_pop(); // new_a
       return new_a;
@@ -883,12 +883,12 @@ Obj *p_filter(Obj** args, int arg_count) {
       apply(f, arg, 1);
       Obj *result = stack_pop();
       if(is_true(result)) {
-	Obj *new = obj_new_cons(NULL, NULL);
-	shadow_stack_push(new);
-	shadow_count++;
-	prev->car = p->car;
-	prev->cdr = new;
-	prev = new;
+        Obj *new = obj_new_cons(NULL, NULL);
+        shadow_stack_push(new);
+        shadow_count++;
+        prev->car = p->car;
+        prev->cdr = new;
+        prev = new;
       }
       p = p->cdr;
     }
@@ -907,15 +907,15 @@ Obj *p_filter(Obj** args, int arg_count) {
       apply(f, arg, 1);
       Obj *result = stack_pop();
       if(is_true(result)) {
-	temp[count] = a->array[i];
-	count++;
+        temp[count] = a->array[i];
+        count++;
       }
     }
     Obj *a_new = obj_new_array(count);
     for(int i = 0; i < count; i++) {
       a_new->array[i] = temp[i];
     }
-	free(temp);
+    free(temp);
     return a_new;
   }
   else {
@@ -972,7 +972,10 @@ Obj *p_apply(Obj** args, int arg_count) {
     apply_arg_count++;
     p = p->cdr;
   }
-  Obj **apply_args = malloc(sizeof(Obj*) * apply_arg_count);
+  Obj **apply_args = NULL;
+  if(apply_arg_count > 0) {
+    apply_args = malloc(sizeof(Obj*) * apply_arg_count);
+  }
   Obj *q = args[1];
   for(int i = 0; i < apply_arg_count; i++) {
     apply_args[i] = q->car;
@@ -1059,12 +1062,12 @@ Obj *p_lt(Obj** args, int arg_count) {
 }
 
 /*
-int current_timestamp() {
-    struct timeval te;
-    gettimeofday(&te, NULL); // get current time
-    long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // calculate milliseconds
-    return milliseconds;
-}
+  int current_timestamp() {
+  struct timeval te;
+  gettimeofday(&te, NULL); // get current time
+  long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // calculate milliseconds
+  return milliseconds;
+  }
 */
 
 Obj *p_now(Obj** args, int arg_count) {
@@ -1268,12 +1271,13 @@ char *lispify(char *name) {
 }
 
 ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
-  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type) * (arg_count + 1));
+  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type*) * (arg_count + 1));
 
   Obj *p = args;
   for(int i = 0; i < arg_count; i++) {
     ffi_type *arg_type = lisp_type_to_ffi_type(p->car);
     if(!arg_type) {
+      free(arg_types_c_array);
       char buffer[512];
       snprintf(buffer, 512, "Arg %d for function %s has invalid type: %s\n", i, func_name, obj_to_string(p->car)->s);
       eval_error = obj_new_string(strdup(buffer));
@@ -1296,6 +1300,7 @@ ffi_cif *create_cif(Obj *args, int arg_count, Obj *return_type_obj, char *func_n
   ffi_type *return_type = lisp_type_to_ffi_type(return_type_obj);
 
   if(!return_type) {
+    free(arg_types_c_array);
     return NULL;
   }
 
@@ -1303,10 +1308,10 @@ ffi_cif *create_cif(Obj *args, int arg_count, Obj *return_type_obj, char *func_n
 
   ffi_cif *cif = malloc(sizeof(ffi_cif));
   int init_result = ffi_prep_cif(cif,
-				 FFI_DEFAULT_ABI,
-				 arg_count,
-				 return_type,
-				 arg_types_c_array);
+                                 FFI_DEFAULT_ABI,
+                                 arg_count,
+                                 return_type,
+                                 arg_types_c_array);
   
   if (init_result != FFI_OK) {
     printf("Registration of foreign function %s failed.\n", func_name);
