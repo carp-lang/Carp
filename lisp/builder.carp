@@ -311,7 +311,7 @@
                     "ARG_LIST" arg-list-c
                     "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) member-names))}
             c-program-string (template
-"#include \"functions.h\"\n\nSTRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+"#include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
