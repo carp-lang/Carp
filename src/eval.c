@@ -991,6 +991,7 @@ void eval_internal(Obj *env, Obj *o) {
   }
   else if(o->tag == 'E') {
     Obj *new_env = obj_copy(o);
+    obj_copy_meta(new_env, o);
     shadow_stack_push(new_env);
     Obj *p = new_env->bindings;
     while(p && p->car) {
@@ -1005,6 +1006,7 @@ void eval_internal(Obj *env, Obj *o) {
   }
   else if(o->tag == 'A') {
     Obj *new_array = obj_new_array(o->count);
+    obj_copy_meta(new_array, o);
     shadow_stack_push(new_array);
     for(int i = 0; i < o->count; i++) {
       eval_internal(env, o->array[i]);

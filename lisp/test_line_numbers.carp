@@ -1,0 +1,35 @@
+(def line-1 "hej")
+
+(def line-3 [1 2 3])
+
+(def line-5 {})
+
+(def line-7 '())
+
+(def line-9 'whatever)
+
+(def line-11 :yeah)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(assert-eq 1 (meta-get line-1 :line))
+(assert-eq 3 (meta-get line-3 :line))
+(assert-eq 5 (meta-get line-5 :line))
+(assert-eq 7 (meta-get line-7 :line))
+(assert-eq 9 (meta-get line-9 :line))
+(assert-eq 11 (meta-get line-11 :line))
