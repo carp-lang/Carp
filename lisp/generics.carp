@@ -158,7 +158,7 @@
     ;;         _ (error "Invalid type for call to 'new'"))
     
     "str" (do
-            (println (str "Calling str for signature: " signature))
+            ;;(println (str "Calling str for signature: " signature))
             (match signature
               (:fn ((:ref (:Array t))) :string) (let [proto (str "API string " c-func-name "(Array *a)")
                                                       ;; Call str without ref for primitive types, otherwise use ref
@@ -202,18 +202,8 @@
                                                   "}")]
                                        {:proto proto :c c :deps ()})
 
-              (:fn ((:ref :string)) :string) (let [proto (str "API string " c-func-name "(string s)")
-                                            c (str proto " { "
-                                                   " int len = strlen(s);"
-                                                   " int new_len = len + 3;"
-                                                   " char *new_s = malloc(sizeof(char) * new_len);"
-                                                   " memcpy(new_s + 1, s, len); "
-                                                   " new_s[0] = '\"';"
-                                                   " new_s[new_len - 2] = '\"';"
-                                                   " new_s[new_len - 1] = '\\0';"
-                                                   " return new_s;"
-                                                   "}")]
-                                        {:proto proto :c c :deps ()})
+              (:fn (:string) :string) (instantiate-str-for-string c-func-name)
+              (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
 
               (:fn ((:ref maybe-struct-type)) :string) (if (keyword? maybe-struct-type)
                                                          (let [_ (when (or (= :string maybe-struct-type)
@@ -285,3 +275,18 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
 
 
     x (error (str "Can't build generic primop for '" x "'"))))
+
+
+(defn instantiate-str-for-string [c-func-name]
+  (let [proto (str "API string " c-func-name "(string s)")
+        c (str proto " { "
+               " int len = strlen(s);"
+               " int new_len = len + 3;"
+               " char *new_s = malloc(sizeof(char) * new_len);"
+               " memcpy(new_s + 1, s, len); "
+               " new_s[0] = '\"';"
+               " new_s[new_len - 2] = '\"';"
+               " new_s[new_len - 1] = '\\0';"
+               " return new_s;"
+               "}")]
+    {:proto proto :c c :deps ()}))
