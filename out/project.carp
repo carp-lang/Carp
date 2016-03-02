@@ -18,6 +18,8 @@
   (do (bake generic-call-2)
       (assert-eq (signature generic-call-2) (list :fn '(:int) :int))))
 
+
+
 ;;(test-generic-call-2)
 
 
@@ -54,3 +56,26 @@
 
 
 
+
+
+
+
+
+(defn fa [] 100)
+(bake fa)
+(assert-eq 100 (fa))
+
+(defn fb [] (fa))
+(bake fb)
+(assert-eq 100 (fb))
+
+(defn fc [] (fa))
+(bake fc)
+(assert-eq 100 (fc))
+
+(defn fd [] (fc))
+(bake fd)
+(assert-eq 100 (fd))
+
+(defn fa [] 200)
+(bake fa)

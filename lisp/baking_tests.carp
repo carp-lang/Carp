@@ -154,14 +154,24 @@
     (assert-eq 100 (f7))
 
     (defn f8 [] (f7))
-    ;;(bake f8)
+    (bake f8)
     (assert-eq 100 (f8))
+
+    (defn f9 [] (f7))
+    (bake f9)
+    (assert-eq 100 (f9))
+
+    (defn f10 [] (f9))
+    (bake f10)
+    (assert-eq 100 (f10))
 
     (defn f7 [] 200)
     (bake f7)
 
     (assert-eq 200 (f7))
     (assert-eq 200 (f8))
+    (assert-eq 200 (f9))
+    (assert-eq 200 (f10))
     ))
 
 (test-unloading-depending-functions)

@@ -1473,6 +1473,20 @@ Obj *p_meta_get(Obj** args, int arg_count) {
   }
 }
 
+Obj *p_meta_get_all(Obj** args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Invalid argument to meta-get-all");
+    return nil;
+  }
+  Obj *o = args[0];
+  if(o->meta) {
+    return o->meta;
+  }
+  else {
+    return nil;
+  }
+}
+
 Obj *p_array_to_list(Obj** args, int arg_count) {
   Obj *a = args[0];
   assert_or_set_error_return_nil(a->tag == 'A', "array-to-list must take array as argument: ", args[0]);

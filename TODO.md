@@ -35,6 +35,7 @@
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
   - Xcode finds strange error in primops.c 1271
+  - Binding to a function call in 'let' crashes
   - ^syntax for meta data
   - Get inferior lisp to work
   - be able to mark symbols as "frozen" (with meta data) so that they can't be overriden by user

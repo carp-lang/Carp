@@ -39,8 +39,8 @@
                                                                 (reset! deps (cons symbol deps))))
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
+                                                                ;;(println (str symbol " is a dependency of " func-name ", code: " (code evaled)))
                                                                 (bake-internal (new-builder) (str symbol) (code evaled) '() false)
-                                                                ;;(println (str symbol " is a dependency of " func-name))
                                                                 (reset! deps (cons symbol deps))))
                                                             (when (and (foreign? evaled))
                                                               (reset! deps (cons symbol deps)))

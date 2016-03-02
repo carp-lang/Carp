@@ -64,9 +64,27 @@
   (let [baked-func (get-maybe baked-funcs func-name)]
     (when (not (nil? baked-func))
       (let [dylib (get baked-func :func-dylib)]
-        (do (when log-unloading-of-dylibs (println (str "Unloading dylib " dylib " for function " func-name ".")))
+        (do (when log-unloading-of-dylibs
+              (println (str "Unloading dylib " dylib " for function " func-name ".")))
             (unload-dylib dylib)
             (dict-remove! baked-funcs func-name))))))
+
+(defn recompile [func-name]
+  (let [function-symbol (symbol func-name)
+        func (eval function-symbol)]
+    (if (foreign? func)
+      (let [func-code (meta-get func :code)]
+        (do
+          (println (str "Recompiling baked function '" func-name "' using original code: " func-code))
+          (eval (list 'def (symbol func-name) func-code))
+          (bake-internal (new-builder) func-name func-code '() false)
+          ))
+      (if (lambda? func)
+        (let [func-code (code (eval (symbol func-name)))]
+          (do
+            (println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
+            (bake-internal (new-builder) func-name func-code '() false)))
+        (error (str "What is this: " func))))))
 
 (defn unload-all-baked ()
   (join "\n" (map (fn (x) (str (unload-dylib (:func-dylib x)))) (values baked-funcs))))
@@ -86,6 +104,14 @@
          (join "\n" (map :type-definition (values types)))
          "\n\n//Functions:\n"
          (join "\n" (map :func-proto (values baked-funcs))))))
+
+;; Keys:   Names of functions (strings)
+;; Values: A list of all the functions that depend on this particular function
+(def function-dependency-graph {})
+
+(defn add-function-dependency! [target-function name-of-depending-function]
+  (let [current-list (get-maybe function-dependency-graph target-function)]
+    (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
 
 (defn link-libs (dependencies)
   (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) ".so")) dependencies)))
@@ -146,19 +172,22 @@
       (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
-(defn run-clang [c-func-name c-file-name total-dependencies exe]
-  (let [clang-command (str "clang "
-                           (if exe
-                             (str "-o " out-dir "exe ")
-                             (str "-shared -g -o " out-dir c-func-name ".so "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do ;;(println clang-command)
-      (def cmd clang-command)
-      (system clang-command))))
+(defn get-depending-funcs-recursively [func-name]
+  (let [depending-funcs (get-maybe function-dependency-graph func-name)]
+    (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
+
+(defn bake-function-and-its-depending-funcs [func-name external-deps]
+  (let [functions-depending-on-this-function (get-depending-funcs-recursively func-name)]
+    (do
+      ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
+      ;;(unload-if-necessary func-name)
+      (map unload-if-necessary functions-depending-on-this-function)
+      (map recompile functions-depending-on-this-function)    
+      (if (foreign? (eval (symbol func-name)))
+        (do
+          ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
+          :OK)
+        (bake-internal (new-builder) func-name (code (eval (symbol func-name))) external-deps false)))))
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
@@ -172,14 +201,17 @@
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
         total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))
-        t (get ast-annotated :type)]
+        t (get ast-annotated :type)
+        ]
     (do
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
       (def ast ast-annotated)
       (def c c-program-string)
-      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe))))
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      (meta-set! (eval (symbol func-name)) :code func-code))))
 
 (defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
   (match t
@@ -200,9 +232,23 @@
                                             f)))))
     _ (error "Must bake function with type (:fn ...)")))
 
+(defn run-clang [c-func-name c-file-name total-dependencies exe]
+  (let [clang-command (str "clang "
+                           (if exe
+                             (str "-o " out-dir "exe ")
+                             (str "-shared -g -o " out-dir c-func-name ".so "))
+                           c-file-name " "
+                           (include-paths)  " "
+                           (lib-paths) " "
+                           (framework-paths) " "
+                           (link-libs total-dependencies))]
+    (do ;;(println clang-command)
+      (def cmd clang-command)
+      (system clang-command))))
+
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '() false))
+  (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
 
 (defmacro bake-exe (func-symbol)
   (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '() true))

@@ -202,6 +202,7 @@ void env_new_global() {
   register_primop("eval", p_eval);
   register_primop("meta-set!", p_meta_set_BANG);
   register_primop("meta-get", p_meta_get);
+  register_primop("meta-get-all", p_meta_get_all);
   register_primop("array-to-list", p_array_to_list);
   register_primop("array-of-size", p_array_of_size);
   register_primop("array-set!", p_array_set_BANG);
