@@ -45,6 +45,7 @@ void skip_whitespace(char *s) {
     while(CURRENT != '\n' && CURRENT != '\0') {
       read_pos++;
     }
+    hit_new_line();
     read_pos++;
     skip_whitespace(s);
   }
@@ -171,6 +172,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return obj_new_char(b);
   }
   else if(isdigit(CURRENT) || (CURRENT == '-' && isdigit(s[read_pos + 1]))) {
+    int line = read_line_nr, pos = read_line_pos;
     int negator = 1;
     if(CURRENT == '-') {
       negator = -1;
@@ -196,10 +198,14 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     scratch[i] = '\0';
     if(is_floating) {
       float x = (float)atof(scratch) * negator;
-      return obj_new_float(x);
+      Obj *new_float = obj_new_float(x);
+      obj_set_line_info(new_float, line, pos, filename);
+      return new_float;
     } else {
       int num = atoi(scratch) * negator;
-      return obj_new_int(num);
+      Obj *new_int = obj_new_int(num);
+      obj_set_line_info(new_int, line, pos, filename);
+      return new_int;
     }
   }
   else if(CURRENT == '\'') {

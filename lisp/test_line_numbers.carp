@@ -10,13 +10,17 @@
 
 (def line-11 :yeah)
 
+(def line-13 1000)
 
+(def line-15 3.14)
 
+(def line-17 (fn [] "..."))
 
+(defn line-19 [] "...")
 
+;; comment
 
-
-
+(defn line-23 [] "...")
 
 
 
@@ -33,3 +37,8 @@
 (assert-eq 7 (meta-get line-7 :line))
 (assert-eq 9 (meta-get line-9 :line))
 (assert-eq 11 (meta-get line-11 :line))
+(assert-eq 13 (meta-get line-13 :line))
+(assert-eq 15 (meta-get line-15 :line))
+(assert-eq 17 (meta-get line-17 :line))
+(assert-eq 19 (meta-get line-19 :line))
+(assert-eq 23 (meta-get line-23 :line))

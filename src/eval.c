@@ -770,6 +770,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *body = o->cdr->cdr->car;
     //printf("Creating lambda with env: %s\n", obj_to_string(env)->s);
     Obj *lambda = obj_new_lambda(params, body, env, o);
+    obj_copy_meta(lambda, o);
     stack_push(lambda);
   }
   else if(HEAD_EQ("macro")) {
