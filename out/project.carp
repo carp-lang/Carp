@@ -83,13 +83,3 @@
 (def prob-ast (lambda-to-ast (code problematic)))
 ;; (def prob-asta (annotate-ast prob-ast))
 
-(println (str (let [ast-func-deps (find-func-deps prob-ast '())
-                    ast-typed (infer-types ast-func-deps '())
-                    ast-named (generate-names (copy {}) ast-typed)
-                    ast-lifetimes (calculate-lifetimes ast-named)
-                    _ (println (str ast-lifetimes))
-                    ast-generics (visit-generic-funcs ast-lifetimes)
-                    ]
-                ;;ast-lifetimes
-                ast-generics
-                )))
