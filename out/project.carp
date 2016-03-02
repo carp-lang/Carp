@@ -102,7 +102,7 @@
     (if (< x 10)
       xs
       [10 20 30])))
-(bake trixy-1)
+;; (bake trixy-1)
 
 ;; Can't bake this -- complaints about borrowing of 'x'
 (defn trixy-2 [x]
