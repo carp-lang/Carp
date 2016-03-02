@@ -118,6 +118,15 @@
 ;; Values: A list of all the functions that depend on this particular function
 (def function-dependency-graph {})
 
+;; Print a nice version of the function dependency graph
+(defn graph []
+  (println (str "- FUNCTION DEPENDENCY GRAPH-\n\n"
+                (join "\n"
+                      (map2 (fn [k v] (str k " <~ " (join ", " v)))
+                            (keys function-dependency-graph)
+                            (values function-dependency-graph)))
+                "\n")))
+
 (defn add-function-dependency! [target-function name-of-depending-function]
   (let [current-list (get-maybe function-dependency-graph target-function)]
     (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
