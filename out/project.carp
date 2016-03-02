@@ -56,27 +56,40 @@
 
 
 
+;; (defn fa [] 100)
+;; (bake fa)
+;; (assert-eq 100 (fa))
 
+;; (defn fb [] (fa))
+;; (bake fb)
+;; (assert-eq 100 (fb))
 
+;; (defn fc [] (fa))
+;; (bake fc)
+;; (assert-eq 100 (fc))
 
-
-
-(defn fa [] 100)
-(bake fa)
-(assert-eq 100 (fa))
-
-(defn fb [] (fa))
-(bake fb)
-(assert-eq 100 (fb))
-
-(defn fc [] (fa))
-(bake fc)
-(assert-eq 100 (fc))
-
-(defn fd [] (fc))
-(bake fd)
-(assert-eq 100 (fd))
+;; (defn fd [] (fc))
+;; (bake fd)
+;; (assert-eq 100 (fd))
 
 ;;(defn fa [] 200)
 ;;(bake fa)
 
+
+
+(defn problematic [prob-f prob-a prob-b]
+  (println (ref (str (prob-f prob-a prob-b)))))
+
+(def prob-ast (lambda-to-ast (code problematic)))
+;; (def prob-asta (annotate-ast prob-ast))
+
+(println (str (let [ast-func-deps (find-func-deps prob-ast '())
+                    ast-typed (infer-types ast-func-deps '())
+                    ast-named (generate-names (copy {}) ast-typed)
+                    ast-lifetimes (calculate-lifetimes ast-named)
+                    _ (println (str ast-lifetimes))
+                    ast-generics (visit-generic-funcs ast-lifetimes)
+                    ]
+                ;;ast-lifetimes
+                ast-generics
+                )))

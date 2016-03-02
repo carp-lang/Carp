@@ -462,8 +462,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
     return nil;
   }
   else {
-    printf("'get-maybe' requires arg 0 to be a dictionary or list: %s\n", obj_to_string(args[0])->s);
-    return nil;
+    set_error_return_nil("'get-maybe' requires arg 0 to be a dictionary or list:\n", args[0]);
   }
 }
 

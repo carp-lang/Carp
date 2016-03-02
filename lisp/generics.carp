@@ -15,7 +15,9 @@
        (generic-safe-name (nth signature 2))))
 
 (defn generic-name [base-name signature]
-  (str base-name "--" (generic-suffix signature)))
+  (do
+    ;;(println (str "Will find generic name for " base-name " with signature " signature))
+    (str base-name "--" (generic-suffix signature))))
 
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))
@@ -33,29 +35,35 @@
                                    is-generic (meta-get lookup-t :generic)
                                    ]
                                (if (and (lambda? global-lookup) is-generic)
-                                 (let [n (generic-name lookup-sym t)]
-                                   (do
-                                     ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                     (bake-generic-func-internal (new-builder)
-                                                                 n
-                                                                 (code global-lookup)
-                                                                 '()
-                                                                 false
-                                                                 t)
-                                     (reset! deps (cons (symbol n) deps))
-                                     (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
-                                       ast0)))
-                                 (if (and (primop? global-lookup) is-generic)
+                                 (do
+                                   (when (generic-type? t)
+                                       (error (str "Found generic lambda type with missing type information, can't compile concrete version:\n" t)))
                                    (let [n (generic-name lookup-sym t)]
                                      (do
-                                       ;; (println (str "Found a generic primop to bake: " lookup-sym))
-                                       ;; (println (str "Final name will be " n))
-                                       (bake-generic-primop (new-builder)
-                                                            n
-                                                            (str lookup-sym)
-                                                            t)
+                                       ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
+                                       (bake-generic-func-internal (new-builder)
+                                                                   n
+                                                                   (code global-lookup)
+                                                                   '()
+                                                                   false
+                                                                   t)
                                        (reset! deps (cons (symbol n) deps))
-                                       (assoc-in ast '(:value) (symbol n))))
+                                       (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
+                                         ast0))))
+                                 (if (and (primop? global-lookup) is-generic)
+                                   (do
+                                     (when (generic-type? t)
+                                       (error (str "Found generic primop type with missing type information, can't compile concrete version:\n" t)))
+                                     (let [n (generic-name lookup-sym t)]
+                                       (do
+                                         ;; (println (str "Found a generic primop to bake: " lookup-sym))
+                                         ;; (println (str "Final name will be " n))
+                                         (bake-generic-primop (new-builder)
+                                                              n
+                                                              (str lookup-sym)
+                                                              t)
+                                         (reset! deps (cons (symbol n) deps))
+                                         (assoc-in ast '(:value) (symbol n)))))
                                    ast)))
                              ast))))
 
