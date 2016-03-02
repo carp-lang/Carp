@@ -41,22 +41,23 @@ Obj *env_lookup_binding(Obj *env, Obj *symbol) {
   }
 }
 
-void env_extend(Obj *env, Obj *key, Obj *value) {
+Obj *env_extend(Obj *env, Obj *key, Obj *value) {
   assert(env->tag == 'E');
   
   Obj *pair = obj_new_cons(key, value);
   Obj *cons = obj_new_cons(pair, env->bindings);
 
   env->bindings = cons;
+
+  return pair;
 }
 
 void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args) {
   Obj *paramp = function->params;
   if(paramp->tag == 'C') {
     for(int i = 0; i < arg_count; i++) {
-      if(paramp && !paramp->car) {
-	//obj_print_cout(paramp);
-	set_error("Too many arguments to function: ", function);
+      if(!paramp || !paramp->car) {
+          set_error("Too many arguments to function: ", function);
       }
       env_extend(calling_env, paramp->car, args[i]);
       paramp = paramp->cdr;

@@ -44,3 +44,8 @@ typedef enum CARP_PLATFORM {
 
 CARP_PLATFORM carp_get_platform();
 
+typedef struct {
+  int count;
+  void *data;
+} Array;
+

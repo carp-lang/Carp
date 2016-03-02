@@ -127,6 +127,7 @@ bool obj_eq(Obj *a, Obj *b);
 bool is_true(Obj *o);
 
 void obj_print_cout(Obj *o);
+void obj_copy_meta(Obj *to, Obj *from);
 
 Obj *obj_latest;
 int obj_total;
@@ -142,6 +143,9 @@ Obj *eval_error;
 Obj *ampersand;
 Obj *hash;
 Obj *lisp_NULL;
+
+Obj *prompt;
+Obj *prompt_unfinished_form;
 
 Obj *type_int;
 Obj *type_bool;

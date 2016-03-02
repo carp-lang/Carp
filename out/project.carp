@@ -1,4 +1,5 @@
 (reset! echo-signature-after-bake true)
+(reset! log-unloading-of-dylibs true)
 
 (when (not carp-dev)
   (do
@@ -7,34 +8,74 @@
     nil
     ))
 
-(defstruct Vec2
-  [x :float
-   y :float])
+(defn generic-call-2 [x]
+  (+ (id 10) (id x)))
 
-(def pos (Vec2 3.4 5.5))
+(defn generic-call-2b [x]
+  (+ (id 10) (id x)))
 
-(defstruct Person
-  [name :string
-   age :int])
+(defn test-generic-call-2 []
+  (do (bake generic-call-2)
+      (assert-eq (signature generic-call-2) (list :fn '(:int) :int))))
 
-(defn me [] (Person "erik" 29))
 
-;;(bake me)
 
-(def me-ast (lambda-to-ast (code me)))
-(def me-deps (find-func-deps me-ast false))
-(def me-con (gencon me-deps))
-(def me-typed (infer-types me-deps nil))
+;;(test-generic-call-2)
 
-;;(def me-con (gencon me-ast))
 
-(bake me)
+;; (defstruct Vec2
+;;   [x :float
+;;    y :float])
 
-(defn peeps []
-  [(me) (Person "Klabbe" 53)])
+;; (def pos (Vec2 3.4 5.5))
 
-;;(bake peeps)
+;; (defstruct Person
+;;   [name :string
+;;    age :int])
 
-;; (println (str (map #name (peeps))))
-;; (println (str (map #age (peeps))))
+;; (defn me [] (Person "erik" 29))
 
+;; ;;(bake me)
+
+;; (def me-ast (lambda-to-ast (code me)))
+;; (def me-deps (find-func-deps me-ast false))
+;; (def me-con (gencon me-deps))
+;; (def me-typed (infer-types me-deps nil))
+
+;; ;;(def me-con (gencon me-ast))
+
+;; (bake me)
+
+;; (defn peeps []
+;;   [(me) (Person "Klabbe" 53)])
+
+;; ;;(bake peeps)
+
+;; ;; (println (str (map #name (peeps))))
+;; ;; (println (str (map #age (peeps))))
+
+
+
+
+
+
+
+
+(defn fa [] 100)
+(bake fa)
+(assert-eq 100 (fa))
+
+(defn fb [] (fa))
+(bake fb)
+(assert-eq 100 (fb))
+
+(defn fc [] (fa))
+(bake fc)
+(assert-eq 100 (fc))
+
+(defn fd [] (fc))
+(bake fd)
+(assert-eq 100 (fd))
+
+(defn fa [] 200)
+(bake fa)

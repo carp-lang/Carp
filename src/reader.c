@@ -45,6 +45,7 @@ void skip_whitespace(char *s) {
     while(CURRENT != '\n' && CURRENT != '\0') {
       read_pos++;
     }
+    hit_new_line();
     read_pos++;
     skip_whitespace(s);
   }
@@ -92,6 +93,8 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 #define MAX_COUNT 512
     Obj *temp[MAX_COUNT];
     int count = 0;
+    int line = read_line_nr;
+    int pos = read_line_pos;
 
     read_pos++;
     while(1) {
@@ -117,9 +120,12 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     for(int i = 0; i <  count; i++) {
       new_array->array[i] = temp[i];
     }
+    obj_set_line_info(new_array, line, pos, filename);
     return new_array;
   }
   else if(CURRENT == '{') {
+    int line = read_line_nr;
+    int pos = read_line_pos;
     Obj *list = obj_new_cons(NULL, NULL);
     Obj *prev = list;
     read_pos++;
@@ -152,6 +158,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     Obj *dict = obj_new_environment(NULL);
     dict->bindings = list;
+    obj_set_line_info(dict, line, pos, filename);
     return dict;
   }
   else if(CURRENT == '&') {
@@ -165,6 +172,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return obj_new_char(b);
   }
   else if(isdigit(CURRENT) || (CURRENT == '-' && isdigit(s[read_pos + 1]))) {
+    int line = read_line_nr, pos = read_line_pos;
     int negator = 1;
     if(CURRENT == '-') {
       negator = -1;
@@ -190,10 +198,14 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     scratch[i] = '\0';
     if(is_floating) {
       float x = (float)atof(scratch) * negator;
-      return obj_new_float(x);
+      Obj *new_float = obj_new_float(x);
+      obj_set_line_info(new_float, line, pos, filename);
+      return new_float;
     } else {
       int num = atoi(scratch) * negator;
-      return obj_new_int(num);
+      Obj *new_int = obj_new_int(num);
+      obj_set_line_info(new_int, line, pos, filename);
+      return new_int;
     }
   }
   else if(CURRENT == '\'') {
@@ -217,6 +229,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return symbol;
   }
   else if(CURRENT == ':') {
+    int line = read_line_nr, pos = read_line_pos;
     read_pos++;
     char name[512];
     int i = 0;
@@ -225,10 +238,15 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       read_pos++;
     }
     name[i] = '\0';
-    return obj_new_keyword(name);
+
+    Obj *new_keyword = obj_new_keyword(name);
+    obj_set_line_info(new_keyword, line, pos, filename);
+    return new_keyword;
   }
   else if(CURRENT == '"') {
     read_pos++;
+    int line = read_line_nr;
+    int pos = read_line_pos;
     char str[512];
     int i = 0;
     while(CURRENT != '"') {
@@ -261,7 +279,10 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     str[i] = '\0';
     read_pos++;
-    return obj_new_string(str);
+    Obj *new_string = obj_new_string(str);
+    obj_new_string(str);
+    obj_set_line_info(new_string, line, pos, filename);
+    return new_string;
   }
   else if(CURRENT == 0) {
     return nil;

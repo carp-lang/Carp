@@ -1,0 +1,9 @@
+
+;; TOO BIG TO FAIL
+
+(defn too-big-to-fail []
+  (error {:error error-test-failed
+          :message "no message"}))
+
+;; (too-big-to-fail)
+

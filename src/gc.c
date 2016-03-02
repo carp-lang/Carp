@@ -44,7 +44,7 @@ void free_internal_data(Obj *dead) {
   }
   else if(dead->tag == 'F') {
     free(dead->cif);
-	free(dead->name);
+    free(dead->name);
   }
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {
     free(dead->s);
@@ -62,10 +62,10 @@ void gc_sweep() {
       Obj *dead = *p;
 
       if(LOG_FREE) {
-	printf("free ");
-	printf("%p %c ", dead, dead->tag);
-	//obj_print_cout(dead);
-	printf("\n");
+        printf("free ");
+        printf("%p %c ", dead, dead->tag);
+        //obj_print_cout(dead);
+        printf("\n");
       }
 
       *p = dead->prev;
@@ -92,6 +92,10 @@ void gc(Obj *env) {
   }
   for(int i = 0; i < shadow_stack_pos; i++) {
     obj_mark_alive(shadow_stack[i]);
+  }
+  for(int i = 0; i < function_trace_pos; i++) {
+    obj_mark_alive(function_trace[i].caller);
+    obj_mark_alive(function_trace[i].callee);
   }
   gc_sweep();
 }

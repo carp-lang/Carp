@@ -438,3 +438,9 @@ void obj_set_line_info(Obj *o, int line, int pos, Obj *filename) {
   env_assoc(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
   env_assoc(o->meta, obj_new_keyword("file"), filename);
 }
+
+void obj_copy_meta(Obj *to, Obj *from) {
+  if(from->meta) {
+    to->meta = obj_copy(from->meta);
+  }
+}

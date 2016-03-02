@@ -73,12 +73,15 @@ Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avo
 
 You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
 
+If 'libffi' is installed with Brew, you can find the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
+
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
 
 ### Compiler Variables
 * ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is "".
 * ```carp-dir``` The root folder of the Carp compiler, should be the same folder as the on where this README.md file resides.
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
+* ```prompt``` The prompt displayed in the repl
 
 ### Special Files
 If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
@@ -169,6 +172,7 @@ true ; bool
 
 ### Dynamic-only Data Literals
 ```clojure
+(1 2 3) ; list
 foo ; symbol
 :string ; keyword
 {:a 10 :b 20} ; dictionary
@@ -186,11 +190,13 @@ foo ; symbol
 (reset! variable value)
 ```
 
-### Structs (not implemented)
+### Structs
 ```clojure
 (defstruct Vector2 [x :float, y :float])
 
 (def my-pos (Vector2 102.2f 210.3f))
+
+(#x my-pos) ;; => 102.2f
 ```
 
 ### Algebraic Data Types (not implemented)

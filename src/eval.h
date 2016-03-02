@@ -15,6 +15,13 @@ int shadow_stack_pos;
 void shadow_stack_push(Obj *o);
 Obj *shadow_stack_pop();
 
+typedef struct {
+  Obj *caller;
+  Obj *callee;
+} StackTraceCallSite;
+
+StackTraceCallSite function_trace[STACK_SIZE];
+int function_trace_pos;
 void function_trace_print();
 
 void stack_push(Obj *o);

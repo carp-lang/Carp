@@ -47,7 +47,7 @@ void repl(Obj *env) {
       }
       gc(env);
     }
-    printf(PROMPT);
+    printf("%s", prompt->cdr->s);
     int read_offset = 0;
     
   read_more:;
@@ -62,7 +62,7 @@ void repl(Obj *env) {
     }
     else {
       //printf("Unbalanced, waiting for ending parenthesis.\n");
-      printf(PROMPT);
+      printf("%s", prompt_unfinished_form->cdr->s);
       read_offset = strlen(input);
       goto read_more;
     }
@@ -75,18 +75,6 @@ void repl(Obj *env) {
 void pop_stacks_to_zero() {
   stack_pos = 0;
   shadow_stack_pos = 0;
-  /* while(stack_pos > 0) { */
-  /*   //printf("Pop: "); // Popping extra stack value */
-  /*   Obj *popped = stack_pop(); */
-  /*   //obj_print(popped); */
-  /*   //printf("\n"); */
-  /* } */
-  /* while(shadow_stack_pos > 0) { */
-  /*   //printf("Shadow pop: "); // Popping extra stack value */
-  /*   Obj *popped = shadow_stack_pop(); */
-  /*   //obj_print(popped); */
-  /*   //printf("\n"); */
-  /* } */
 }
 
 void env_new_global() {
@@ -161,6 +149,9 @@ void env_new_global() {
   type_array = obj_new_keyword("array");
   define("type-array", type_array);
 
+  prompt = define("prompt", obj_new_string("\e[36mλ>\e[0m "));
+  prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string("\e[36m_>\e[0m "));
+  
   register_primop("open", p_open_file);
   register_primop("save", p_save_file);
   register_primop("+", p_add);
@@ -217,6 +208,7 @@ void env_new_global() {
   register_primop("eval", p_eval);
   register_primop("meta-set!", p_meta_set_BANG);
   register_primop("meta-get", p_meta_get);
+  register_primop("meta-get-all", p_meta_get_all);
   register_primop("array-to-list", p_array_to_list);
   register_primop("array-of-size", p_array_of_size);
   register_primop("array-set!", p_array_set_BANG);

@@ -63,6 +63,7 @@ Obj *p_eval(Obj** args, int arg_count);
 Obj *p_builtin_p(Obj** args, int arg_count);
 Obj *p_meta_set_BANG(Obj** args, int arg_count);
 Obj *p_meta_get(Obj** args, int arg_count);
+Obj *p_meta_get_all(Obj** args, int arg_count);
 Obj *p_array_to_list(Obj** args, int arg_count);
 Obj *p_spork(Obj** args, int arg_count);
 Obj *p_array_of_size(Obj** args, int arg_count);

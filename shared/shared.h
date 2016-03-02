@@ -54,6 +54,7 @@ EXPORT void print(string msg) {
 }
 
 EXPORT void println(string msg) {
+  assert(msg);
   printf("%s\n", msg);
 }
 
@@ -209,11 +210,6 @@ FauxVec2 *position() {
   v2->y = 200.0f;
   return v2;
 }
-
-typedef struct {
-  int count;
-  void *data;
-} Array;
 
 EXPORT CARP_PLATFORM platform() {
 	return carp_get_platform();
