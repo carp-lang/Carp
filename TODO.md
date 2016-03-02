@@ -1,5 +1,6 @@
 # Compiler 
   - Bake fails: (fn [f a b] (println (ref (str (f a b)))))
+  - Bake can't handle when a function changes signature
   - Automatically implement for structs and arrays:
      - str
 	 - copy
