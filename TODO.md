@@ -1,11 +1,11 @@
 # Compiler 
-  - Bake fails: (fn [f a b] (println (ref (str (f a b)))))
-  - Bake can't handle when a function changes signature
+  - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
 	 - copy
 	 - delete
   - Use 'delete' instead of free for memory management
+  - Bake can't handle when a function changes signature
   - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Handle global variables referenced inside functions
