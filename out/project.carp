@@ -35,7 +35,7 @@
 
 (defn me [] (Person "erik" 29))
 
-(bake me)
+;;(bake me)
 
 ;; (def me-ast (lambda-to-ast (code me)))
 ;; (def me-deps (find-func-deps me-ast false))
@@ -45,10 +45,10 @@
 (defn peeps []
   [(me) (Person "Klabbe" 53)])
 
-(bake peeps)
+;;(bake peeps)
 
-(println (str (map #name (peeps))))
-(println (str (map #age (peeps))))
+;; (println (str (map #name (peeps))))
+;; (println (str (map #age (peeps))))
 
 
 
@@ -88,3 +88,7 @@
                             (Color 0.1 0.1 0.1)))))
 
 ;;(bake test-mix-colors)
+
+;; (defn int-stuff []
+;;   [100 200 300])
+;; (bake int-stuff)

@@ -65,6 +65,22 @@
 
 
 
+(defn istr []
+  (str 42))
+(bake istr)
+
+(defn star []
+  (str (ref [7 3 4])))
+(bake star)
+
+(defn star-f []
+  (str (ref [7.2 3.1 4.2])))
+(bake star-f)
+
+(defn star-s []
+  (str (ref [(string-copy "yeah") (string-copy "oh")])))
+(bake star-s)
+
 
 
 (defn function-as-argument [x y]
