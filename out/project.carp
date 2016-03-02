@@ -92,3 +92,23 @@
 ;; (defn int-stuff []
 ;;   [100 200 300])
 ;; (bake int-stuff)
+
+
+
+
+;; This one bakes
+(defn trixy-1 [x]
+  (let [xs [1 2 x 4 5]]
+    (if (< x 10)
+      xs
+      [10 20 30])))
+(bake trixy-1)
+
+;; Can't bake this -- complaints about borrowing of 'x'
+(defn trixy-2 [x]
+  (println (ref (str (Color x x x)))))
+
+;; Can't bake this one either -- the type Color isn't added to 'types' when instantiating generic primop
+(defn trixy-3 [x]
+  (println (ref (str (ref (Color x 1 2))))))
+
