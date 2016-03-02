@@ -112,3 +112,10 @@
 (defn trixy-3 [x]
   (println (ref (str (ref (Color x 1 2))))))
 
+
+
+(defn color [x]
+  (Color 1.0 x 3.0))
+
+(defn trixy-5 []
+  (println (ref (str (ref (color 2.3))))))

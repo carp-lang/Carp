@@ -1,4 +1,5 @@
 # Compiler 
+  - Add constraints for struct constructor arguments based on the types in the struct
   - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
