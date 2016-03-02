@@ -81,6 +81,7 @@ Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, 
 * ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is "".
 * ```carp-dir``` The root folder of the Carp compiler, should be the same folder as the on where this README.md file resides.
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
+* ```prompt``` The prompt displayed in the repl
 
 ### Special Files
 If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
