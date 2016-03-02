@@ -197,7 +197,9 @@
             (meta-set! func-def :signature (:type ast-annotated))
             (def ast ast-annotated)
             (def s (pretty-signature (:type ast-annotated)))
-            :generic)))
+            (if echo-signature-after-bake
+              (println (str func-name " : " s))
+              nil))))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
 (defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
