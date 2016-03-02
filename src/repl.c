@@ -12,6 +12,8 @@ char input[MAX_INPUT_BUFFER_SIZE];
 
 #define GC_COLLECT_BEFORE_REPL_INPUT 0
 
+char *prompt_string = "\e[36mλ>\e[0m";
+
 int paren_balance(char *s) {
   int balance = 0;
   bool ignore = false;
@@ -41,7 +43,7 @@ void repl(Obj *env) {
       }
       gc(env);
     }
-    printf("\e[36mλ>\e[0m ");
+    printf("%s ", prompt_string);
     int read_offset = 0;
     
   read_more:;

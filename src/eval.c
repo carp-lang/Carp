@@ -12,10 +12,6 @@
 #define LOG_FUNC_APPLICATION 0
 #define GC_COLLECT_AFTER_EACH_FORM 0
 
-#define STACK_TRACE_LEN 256
-char function_trace[STACK_SIZE][STACK_TRACE_LEN];
-int function_trace_pos;
-
 void stack_print() {
   printf("----- STACK -----\n");
   for(int i = 0; i < stack_pos; i++) {
@@ -97,9 +93,46 @@ Obj *shadow_stack_pop() {
 
 void function_trace_print() {
   printf(" ----------------------------------------------------------------\n");
+  
   for(int i = function_trace_pos - 1; i >= 0; i--) {
-    printf("%3d  %s\n", i, function_trace[i]);
+    printf("%3d ", i);
+
+    StackTraceCallSite call_site = function_trace[i];
+    Obj *o = call_site.caller;
+    Obj *function = call_site.callee;
+    
+    if(o->meta) {
+      //printf("%s\n", obj_to_string(o->meta)->s);
+      char *func_name = "";
+      Obj *func_name_data = NULL;
+      if(function && function->meta) {
+        func_name_data = env_lookup(function->meta, obj_new_keyword("name"));
+      }
+      if(func_name_data) {
+        func_name = obj_to_string_not_prn(func_name_data)->s;
+      } else {
+        func_name = obj_to_string(function)->s;
+      }
+      int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
+      int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
+      char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
+      char *file = file_path;
+
+      int len = (int)strlen(file_path);
+      for(int i = len - 1; i >= 0; i--) {
+        if(file_path[i] == '/') {
+          file = strdup(file_path + i + 1);
+          break;
+        }
+      }
+      printf("%-30s %s %d:%d", func_name, file, line, pos);
+    }
+    else {
+      printf("No meta data."); //"%s", obj_to_string(function)->s);
+    }
+    printf("\n");
   }
+  
   printf(" ----------------------------------------------------------------\n");
 }
 
@@ -813,10 +846,12 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr, "Too few args to 'catch-error': ", o);
     int shadow_stack_size_save = shadow_stack_pos;
     int stack_size_save = stack_pos;
+    int function_trace_save = function_trace_pos;
     eval_internal(env, o->cdr->car);
 
     shadow_stack_pos = shadow_stack_size_save;
     stack_pos = stack_size_save + 1;
+    function_trace_pos = function_trace_save;
 
     if(eval_error) {      
       stack_push(eval_error);
@@ -903,36 +938,8 @@ void eval_list(Obj *env, Obj *o) {
         printf("evaluating form %s\n", obj_to_string(o)->s);
       }
 
-      if(o->meta) {
-        //printf("%s\n", obj_to_string(o->meta)->s);
-        char *func_name = "";
-        Obj *func_name_data = NULL;
-        if(function && function->meta) {
-          func_name_data = env_lookup(function->meta, obj_new_keyword("name"));
-        }
-        if(func_name_data) {
-          func_name = obj_to_string_not_prn(func_name_data)->s;
-        } else {
-          func_name = obj_to_string(function)->s;
-        }
-        int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
-        int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;
-        char *file_path = env_lookup(o->meta, obj_new_keyword("file"))->s;
-        char *file = file_path;
-
-        int len = (int)strlen(file_path);
-        for(int i = len - 1; i >= 0; i--) {
-          if(file_path[i] == '/') {
-            file = strdup(file_path + i + 1);
-            break;
-          }
-        }
-        
-        snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "%-30s %s %d:%d", func_name, file, line, pos);
-      }
-      else {
-        snprintf(function_trace[function_trace_pos], STACK_TRACE_LEN, "No meta data."); //"%s", obj_to_string(function)->s);
-      }
+      StackTraceCallSite call_site = { .caller = o, .callee = function };
+      function_trace[function_trace_pos] = call_site;
       function_trace_pos++;
 
       //printf("apply start: "); obj_print_cout(function); printf("\n");
@@ -968,6 +975,7 @@ void eval_internal(Obj *env, Obj *o) {
   if(eval_error) { return; }
 
   //shadow_stack_print();
+  
   if(LOG_EVAL) {
     printf("> "); obj_print_cout(o); printf("\n");
   }
@@ -1034,7 +1042,7 @@ void eval_internal(Obj *env, Obj *o) {
 
 Obj *eval(Obj *env, Obj *form) {
   eval_error = NULL;
-  function_trace_pos = 0;
+  //function_trace_pos = 0;
   eval_internal(env, form);
   Obj *result = stack_pop();
   return result;
