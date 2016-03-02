@@ -1,5 +1,4 @@
 # Compiler 
-  - Handle Function pointers as values, must typedef the correct function type
   - Automatically implement for structs and arrays:
      - str
 	 - copy

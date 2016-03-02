@@ -1,4 +1,5 @@
 
+(load-lisp (str carp-dir "lisp/baking_tests.carp"))
 (load-lisp (str carp-dir "lisp/test_stack_trace.carp"))
 (load-lisp (str carp-dir "lisp/test_line_numbers.carp"))
 (load-lisp (str carp-dir "lisp/array_tests.carp"))
@@ -6,5 +7,4 @@
 (load-lisp (str carp-dir "lisp/constraint_tests.carp"))
 (load-lisp (str carp-dir "lisp/generics_tests.carp"))
 (load-lisp (str carp-dir "lisp/ownership_tests.carp"))
-(load-lisp (str carp-dir "lisp/baking_tests.carp"))
 

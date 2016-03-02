@@ -199,9 +199,9 @@
 (defn test-call-twice ()
   (do (bake call-twice)
       (bake call-me)
-      (call-twice call-me)))
+      (assert-eq "CARP!" (call-twice call-me))))
 
-;;(test-call-twice)
+(test-call-twice)
 
 
 ;; CHARS

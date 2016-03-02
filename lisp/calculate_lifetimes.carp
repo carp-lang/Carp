@@ -34,7 +34,8 @@
 
 (defn managed-type? (t)
   (match t
-    (:ref x) false
+    (:ref _) false
+    (:fn _ _) false
     _ (not (or (void-type? t) (primitive-type? t)))))
 
 (defn manage? (descriptor)
