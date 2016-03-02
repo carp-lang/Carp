@@ -145,6 +145,29 @@
 (test-auto-chain-bake-2)
 
 
+
+
+(defn test-unloading-depending-functions []
+  (do
+    (defn f7 [] 100)
+    (bake f7)
+    (assert-eq 100 (f7))
+
+    (defn f8 [] (f7))
+    ;;(bake f8)
+    (assert-eq 100 (f8))
+
+    (defn f7 [] 200)
+    (bake f7)
+
+    (assert-eq 200 (f7))
+    (assert-eq 200 (f8))
+    ))
+
+(test-unloading-depending-functions)
+
+
+
 ;; COMPILE TIME MACROS
 (defn macro-1 ()
   (if-not true
@@ -208,3 +231,4 @@
 
 (defn gimme-char ()
   \e)
+

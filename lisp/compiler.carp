@@ -61,13 +61,12 @@
 
 ;; Takes the name of a function and unloads it if it is in the list of baked functions
 (defn unload-if-necessary (func-name)
-  (map (fn (f)
-         (when (= func-name (get f :func-name))
-           (let [dylib (get f :func-dylib)]
-             (do (when log-unloading-of-dylibs (println (str "Unloading dylib " dylib " for function " func-name ".")))
-                 (unload-dylib dylib)
-                 (dict-remove! baked-funcs func-name)))))
-       (values baked-funcs)))
+  (let [baked-func (get-maybe baked-funcs func-name)]
+    (when (not (nil? baked-func))
+      (let [dylib (get baked-func :func-dylib)]
+        (do (when log-unloading-of-dylibs (println (str "Unloading dylib " dylib " for function " func-name ".")))
+            (unload-dylib dylib)
+            (dict-remove! baked-funcs func-name))))))
 
 (defn unload-all-baked ()
   (join "\n" (map (fn (x) (str (unload-dylib (:func-dylib x)))) (values baked-funcs))))

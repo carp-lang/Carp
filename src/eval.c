@@ -814,6 +814,7 @@ void eval_list(Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->cdr->car, "No body in macro: ", o);
     Obj *body = o->cdr->cdr->car;
     Obj *macro = obj_new_macro(params, body, env, o);
+    obj_copy_meta(macro, o);
     stack_push(macro);
   }
   else if(HEAD_EQ("def")) {
@@ -919,6 +920,7 @@ void eval_list(Obj *env, Obj *o) {
       if (eval_error) { free(args); return; }
       Obj *expanded = stack_pop();
       if(SHOW_MACRO_EXPANSION) {
+        //printf("Meta of macro: %s\n", obj_to_string(function->meta)->s);
         printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
       }
       shadow_stack_push(expanded);
