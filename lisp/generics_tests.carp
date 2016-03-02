@@ -65,3 +65,15 @@
 
 
 
+
+
+(defn function-as-argument [x y]
+  (itos (+ x y)))
+
+(defn generic-function-calling-generic-functions [prob-f prob-a prob-b]
+  (prob-f prob-a prob-b))
+
+(defn try-it-out [] (generic-function-calling-generic-functions function-as-argument 10 20))
+
+(bake try-it-out)
+(assert-eq "30" (try-it-out))

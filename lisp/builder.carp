@@ -77,7 +77,7 @@
 
 (defn visit-arg-explicit (c arg)
   (let [result (visit-form c arg true)]
-    (str-append! c (str (indent) (type-build (:type arg)) " " (:arg-name arg) " = " (get result :c) ";\n"))))
+    (str-append! c (str (indent) (type-build (:type arg)) " " (c-ify-name (:arg-name arg)) " = " (get result :c) ";\n"))))
 
 (defn visit-args-explicit (c args)
   (let []
@@ -118,7 +118,7 @@
 
       _ (let [result-name (get-maybe arg :result-name)]
           (if (nil? result-name)
-            (do (str-append! c (str (indent) (type-build arg-type) " " arg-name " = " (:c result) ";\n"))
+            (do (str-append! c (str (indent) (type-build arg-type) " " (c-ify-name arg-name) " = " (:c result) ";\n"))
                 {:c (:arg-name arg)})
             {:c result-name}))
 
@@ -267,7 +267,7 @@
            x (error (str "visit-form failed to match " x)))))
 
 (defn arg-list-build (args)
-  (join ", " (map (fn (arg) (str (type-build (get arg :type)) " " (get arg :name)))args)))
+  (join ", " (map (fn (arg) (str (type-build (get arg :type)) " " (c-ify-name (str (:name arg)))))args)))
 
 (defn visit-function (builder ast func-name)
   (let [t (:type ast)

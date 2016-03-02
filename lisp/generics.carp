@@ -1,7 +1,7 @@
 
 (defn generic-safe-name (t)
   (match t
-         (:fn args ret) (str "Fn_" (join "" (map pretty-signature args)) "->" (pretty-signature ret))
+         (:fn args ret) (str "Fn-" (join "" (map pretty-signature args)) "-" (pretty-signature ret))
          (:ref r) (str "RefTo-" (generic-safe-name r) "")
          (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
          x (if (keyword? t)
@@ -35,9 +35,9 @@
                                    is-generic (meta-get lookup-t :generic)
                                    ]
                                (if (and (lambda? global-lookup) is-generic)
-                                 (do
-                                   (when (generic-type? t)
-                                       (error (str "Found generic lambda type with missing type information, can't compile concrete version:\n" t)))
+                                 (if (generic-type? t)
+                                   (do (println (str "Lambda with missing type information, can't compile concrete version:\n" t))
+                                       ast)
                                    (let [n (generic-name lookup-sym t)]
                                      (do
                                        ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
@@ -51,9 +51,9 @@
                                        (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
                                          ast0))))
                                  (if (and (primop? global-lookup) is-generic)
-                                   (do
-                                     (when (generic-type? t)
-                                       (error (str "Found generic primop type with missing type information, can't compile concrete version:\n" t)))
+                                   (if (generic-type? t)
+                                     (do (println (str "Primop with missing type information, can't compile concrete version:\n" t))
+                                         ast)
                                      (let [n (generic-name lookup-sym t)]
                                        (do
                                          ;; (println (str "Found a generic primop to bake: " lookup-sym))
