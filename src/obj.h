@@ -144,6 +144,9 @@ Obj *ampersand;
 Obj *hash;
 Obj *lisp_NULL;
 
+Obj *prompt;
+Obj *prompt_unfinished_form;
+
 Obj *type_int;
 Obj *type_bool;
 Obj *type_string;

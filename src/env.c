@@ -41,13 +41,15 @@ Obj *env_lookup_binding(Obj *env, Obj *symbol) {
   }
 }
 
-void env_extend(Obj *env, Obj *key, Obj *value) {
+Obj *env_extend(Obj *env, Obj *key, Obj *value) {
   assert(env->tag == 'E');
   
   Obj *pair = obj_new_cons(key, value);
   Obj *cons = obj_new_cons(pair, env->bindings);
 
   env->bindings = cons;
+
+  return pair;
 }
 
 void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args) {

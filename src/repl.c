@@ -12,8 +12,6 @@ char input[MAX_INPUT_BUFFER_SIZE];
 
 #define GC_COLLECT_BEFORE_REPL_INPUT 0
 
-char *prompt_string = "\e[36mλ>\e[0m";
-
 int paren_balance(char *s) {
   int balance = 0;
   bool ignore = false;
@@ -43,7 +41,7 @@ void repl(Obj *env) {
       }
       gc(env);
     }
-    printf("%s ", prompt_string);
+    printf("%s", prompt->cdr->s);
     int read_offset = 0;
     
   read_more:;
@@ -58,7 +56,7 @@ void repl(Obj *env) {
     }
     else {
       //printf("Unbalanced, waiting for ending parenthesis.\n");
-      printf("\e[36m_>\e[0m ");
+      printf("%s", prompt_unfinished_form->cdr->s);
       read_offset = strlen(input);
       goto read_more;
     }
@@ -145,6 +143,9 @@ void env_new_global() {
   type_array = obj_new_keyword("array");
   define("type-array", type_array);
 
+  prompt = define("prompt", obj_new_string("\e[36mλ>\e[0m "));
+  prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string("\e[36m_>\e[0m "));
+  
   register_primop("open", p_open_file);
   register_primop("save", p_save_file);
   register_primop("+", p_add);
