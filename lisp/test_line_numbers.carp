@@ -22,14 +22,13 @@
 
 (defn line-23 [] "...")
 
+;; more comments...
+;; () [] {} !?@#.-_ <>
+;;
+;
+;;;
 
-
-
-
-
-
-
-
+(defn line-31 [] "...")
 
 (assert-eq 1 (meta-get line-1 :line))
 (assert-eq 3 (meta-get line-3 :line))
@@ -41,4 +40,4 @@
 (assert-eq 15 (meta-get line-15 :line))
 (assert-eq 17 (meta-get line-17 :line))
 (assert-eq 19 (meta-get line-19 :line))
-(assert-eq 23 (meta-get line-23 :line))
+(assert-eq 31 (meta-get line-31 :line))
