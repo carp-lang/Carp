@@ -78,4 +78,5 @@
 (assert-eq 100 (fd))
 
 (defn fa [] 200)
-(bake fa)
+;;(bake fa)
+
