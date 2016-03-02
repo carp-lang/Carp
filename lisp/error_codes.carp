@@ -1,3 +1,4 @@
 
 (def error-given-away 1)
+(def error-test-failed 2)
 
