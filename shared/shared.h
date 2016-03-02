@@ -211,3 +211,7 @@ FauxVec2 *position() {
   return v2;
 }
 
+EXPORT CARP_PLATFORM platform() {
+	return carp_get_platform();
+}
+

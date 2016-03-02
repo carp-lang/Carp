@@ -33,6 +33,12 @@ int paren_balance(char *s) {
   return balance;
 }
 
+#ifdef WIN32
+#define PROMPT "CARP> "
+#else
+#define PROMPT "\e[36mλ>\e[0m "
+#endif
+
 void repl(Obj *env) {
   while(1) {
     if(GC_COLLECT_BEFORE_REPL_INPUT) {

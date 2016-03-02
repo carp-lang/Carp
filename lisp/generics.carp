@@ -150,7 +150,7 @@
     ;;         _ (error "Invalid type for call to 'new'"))
     
     "str" (match signature
-            (:fn ((:ref (:Array t))) :string) (let [proto (str "string " c-func-name "(Array *a)")
+            (:fn ((:ref (:Array t))) :string) (let [proto (str "API string " c-func-name "(Array *a)")
                                                     inner-signature (list :fn (list t) :string)
                                                     inner-str-call (c-ify-name (generic-name (symbol "str") inner-signature))
                                                     _ (bake-generic-primop-auto "str" inner-signature)
@@ -178,11 +178,11 @@
                                                            "}")]
                                                 {:proto proto :c c :deps (list inner-str-call)})
             
-            (:fn (:int) :string) (let [proto (str "string " c-func-name "(int x)")
+            (:fn (:int) :string) (let [proto (str "API string " c-func-name "(int x)")
                                        c (str proto " { return itos(x); }")]
                                    {:proto proto :c c :deps ()})
 
-            (:fn (:float) :string) (let [proto (str "string " c-func-name "(float x)")
+            (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
                                          c (str proto " { "
                                                 " char output[50];"
                                                 " snprintf(output, 50, \"%f\", x);"
@@ -190,7 +190,7 @@
                                                 "}")]
                                      {:proto proto :c c :deps ()})
 
-            (:fn (:string) :string) (let [proto (str "string " c-func-name "(string s)")
+            (:fn (:string) :string) (let [proto (str "API string " c-func-name "(string s)")
                                           c (str proto " { "
                                                  " int len = strlen(s);"
                                                  " int new_len = len + 3;"
@@ -242,7 +242,7 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
     
     "nth" (match signature
             (:fn ((:ref (:Array t)) :int) t)
-            (let [proto (str (type-build t) " " c-func-name "(Array *a, int index)")
+            (let [proto (str "API " (type-build t) " " c-func-name "(Array *a, int index)")
                   c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to 'nth'"))
@@ -250,7 +250,7 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
     
     "array-of-size" (match signature
                       (:fn (:int) (:Array t))
-                      (let [proto (str (type-build '(:Array t)) " " c-func-name "(int count)")
+                      (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(int count)")
                             c (str proto
                                    "{ Array *a = malloc(sizeof(Array));"
                                    " a->count = count;"
@@ -263,7 +263,7 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
     
     "array-set" (match signature
                   (:fn ((:Array t) :int t) (:Array t))
-                  (let [proto (str (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
+                  (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
                         c (str proto " { ((" (type-build t) "*)(a->data))[index] = value; return a; }")]
                     {:proto proto :c c :deps ()})
                   _ (error "Invalid type for call to 'array-set'"))

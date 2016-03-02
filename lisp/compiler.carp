@@ -21,6 +21,17 @@
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 (load-lisp (str carp-dir "lisp/generics.carp"))
 
+(def platform-specifics
+  (if (windows?)
+    {:dylib-extension ".dll"
+     :link-extension ".lib"
+     :include-flag "/I"
+     :linkdir-flag "/link /NOLOGO /LIBPATH:"}
+    {:dylib-extension ".so"
+     :link-extension ".so"
+     :include-flag "-I"
+     :linkdir-flag "-L"}))
+
 (defn annotate-ast (ast)
   (annotate-ast-internal ast false nil))
 
@@ -132,16 +143,20 @@
     (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
 
 (defn link-libs (dependencies)
-  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) ".so")) dependencies)))
+  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) (:link-extension platform-specifics))) dependencies)))
 
 (defn include-paths ()
-  (str "-I/usr/local/include" " -I" carp-dir "/shared"))
+  (str (:include-flag platform-specifics) "/usr/local/include " (:include-flag platform-specifics) carp-dir "/shared"))
 
 (defn lib-paths ()
-  "-L/usr/local/lib/ -lglfw3")
+  (if (windows?)
+    ""
+    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")))
 
 (defn framework-paths ()
-  "-framework OpenGL -framework Cocoa -framework IOKit")
+  (if (windows?)
+    ""
+    "-framework OpenGL -framework Cocoa -framework IOKit"))
 
 (def out-dir "./")
 (def echo-signature-after-bake false)
@@ -191,6 +206,25 @@
       (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
+(defn run-compiler [c-func-name c-file-name total-dependencies exe]
+  (if (windows?)
+    (run-cl c-func-name c-file-name total-dependencies exe)
+    (run-clang c-func-name c-file-name total-dependencies exe)))
+
+(defn run-clang [c-func-name c-file-name total-dependencies exe]
+  (let [clang-command (str "clang -DAPI= "
+                           (if exe
+                             (str "-o " out-dir "exe ")
+                             (str "-shared -g -o " out-dir c-func-name ".so "))
+                           c-file-name " "
+                           (include-paths)  " "
+                           (lib-paths) " "
+                           (framework-paths) " "
+                           (link-libs total-dependencies))]
+    (do
+      (def cmd clang-command)
+      (system clang-command))))
+
 (defn get-depending-funcs-recursively [func-name]
   (let [depending-funcs (get-maybe function-dependency-graph func-name)]
     (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
@@ -210,6 +244,22 @@
             ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
             :OK)
           (bake-internal (new-builder) func-name (code (eval (symbol func-name))) external-deps false))))))
+
+(defn run-cl [c-func-name c-file-name total-dependencies exe]
+  (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"
+        cl-command (str "cl.exe "
+                           (if exe
+                             (str common-options out-dir c-func-name ".exe ")
+                             (str "/DAPI=__declspec(dllexport) /LDd " common-options out-dir c-func-name ".dll "))
+                           c-file-name " "
+                           (include-paths)  " "
+                           (lib-paths) " "
+                           (framework-paths) " "
+                           (link-libs total-dependencies))]
+    (do
+      (println cl-command)
+      (def cmd cl-command)
+      (system cl-command))))
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
@@ -240,12 +290,12 @@
     (:fn arg-types return-type) (do
                                   (save-function-prototypes)
                                   (save c-file-name c-program-string)
-                                  (run-clang c-func-name c-file-name total-dependencies exe)
+                                  (run-compiler c-func-name c-file-name total-dependencies exe)
                                   (unload-if-necessary func-name)
                                   (if exe
                                     :exe-done
                                     (do
-                                      (def out-lib (load-dylib (str out-dir c-func-name ".so")))
+                                      (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
                                       (register out-lib c-func-name arg-types return-type)
                                       (add-func! func-name proto out-lib)
                                       (let [f (eval (read func-name))]
@@ -253,20 +303,6 @@
                                             (when echo-signature-after-bake (println (str func-name " : " s)))
                                             f)))))
     _ (error "Must bake function with type (:fn ...)")))
-
-(defn run-clang [c-func-name c-file-name total-dependencies exe]
-  (let [clang-command (str "clang "
-                           (if exe
-                             (str "-o " out-dir "exe ")
-                             (str "-shared -g -o " out-dir c-func-name ".so "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do ;;(println clang-command)
-      (def cmd clang-command)
-      (system clang-command))))
 
 ;; Bake a function in the current environment, just give it's symbol
 (defmacro bake (func-symbol)
@@ -282,8 +318,17 @@
   (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies true))
 
 (defn clean ()
-  (do
-    (system "rm functions.h")
-    (system "rm *.so")
-    (system "rm *.c")
-    (system "rm -r *.dSYM")))
+  (if (windows?)
+    (do
+      (system "del functions.h")
+      (system "del *.dll")
+      (system "del *.exp")
+      (system "del *.lib")
+      (system "del *.pdb")
+      (system "del *.ilk")
+      (system "del *.obj"))
+    (do
+      (system "rm functions.h")
+      (system "rm *.so")
+      (system "rm *.c")
+      (system "rm -r *.dSYM"))))

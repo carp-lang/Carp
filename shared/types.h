@@ -35,7 +35,17 @@ char* carp_get_load_library_error();
 
 void carp_sleep(int millis);
 
+typedef enum CARP_PLATFORM {
+	CARP_PLATFORM_OSX = 0,
+	CARP_PLATFORM_WINDOWS = 1,
+	CARP_PLATFORM_LINUX = 2,
+	CARP_PLATFORM_UNKNOWN = 100
+} CARP_PLATFORM;
+
+CARP_PLATFORM carp_get_platform();
+
 typedef struct {
   int count;
   void *data;
 } Array;
+
