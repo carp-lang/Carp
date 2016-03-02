@@ -1,4 +1,5 @@
 # Compiler 
+  - Bake fails: (fn [f a b] (println (ref (str (f a b)))))
   - Automatically implement for structs and arrays:
      - str
 	 - copy
