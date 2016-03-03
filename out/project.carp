@@ -136,4 +136,13 @@
 (defn mapping-floats []
   (map x2f [10.0 20.0 30.0 40.0 50.0]))
 
+(defn x2s [s]
+  (itos (strlen (ref s))))
+
+(defn exclaim (s)
+  (string-append (ref s) "!"))
+
+(defn mapping-strings []
+  (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
+
 ;;(bake mapping)
