@@ -127,7 +127,13 @@
 (defn x2 [x]
   (* x 2))
 
+(defn x2f [x]
+  (* x 2.0))
+
 (defn mapping []
   (map x2 [1 2 3 4 5]))
+
+(defn mapping-floats []
+  (map x2f [10.0 20.0 30.0 40.0 50.0]))
 
 ;;(bake mapping)
