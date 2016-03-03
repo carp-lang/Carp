@@ -1,5 +1,4 @@
 # Compiler 
-  - Add constraints for struct constructor arguments based on the types in the struct
   - Can't have star in function name when baking
   - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Compile struct member lookups properly
@@ -24,6 +23,7 @@
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype (tagged unions)
   - Clean up the awful 'list-to-ast' function
+  - Complete type constraints for binops, check for "numeric" types
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)

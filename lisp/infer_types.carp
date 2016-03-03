@@ -59,10 +59,6 @@
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
                  arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
-                 ;; func-constrs (let [app-f-sym (get-in ast '(:head :value))
-                 ;;                    app-f-name (str app-f-sym)
-                 ;;                    app-f (eval app-f-sym)]
-                 ;;                )
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
                  tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
@@ -91,7 +87,12 @@
       :lookup (if (has-key? ast :self-recursive)
                 constraints
                 (if (has-key? ast :constructor)
-                  constraints ;; TODO: what's the correct thing to do here?
+                  (let [member-types (array-to-list (:member-types ast))
+                        t (:type ast)
+                        constructor-arg-constrs (map2 (fn [a b] {:a a :b b :doc "constructor-arg"})
+                                                      member-types
+                                                      (nth t 1))]
+                    constructor-arg-constrs)
                   (let [val (:value ast)
                         ;;_ (println (str "not self-recursive: \n" ast))
                         t (get-type-of-symbol type-env val)
