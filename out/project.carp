@@ -109,9 +109,9 @@
   (println (ref (str (Color x x x)))))
 
 ;; Can't bake this one either -- the type Color isn't added to 'types' when instantiating generic primop
-(defn trixy-3 [x]
-  (println (ref (str (ref (Color x 1 2))))))
-
+(defn trixy-3 []
+  (flexprint (Color 1.3 2.4 3.5)))
+;;(println (ref (str (ref (Color x 1.0 2.0)))))
 
 
 (defn color [x]

@@ -212,7 +212,7 @@
                       t (:type form)]
                   (do
                     (when (= true (get-maybe head :constructor))
-                      (build-constructor form))
+                      (build-constructor-from-ast form))
                     (if (= :void t)
                       (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
                           {:c n})
@@ -294,18 +294,34 @@
                       "}")]
         (builder-add builder :functions code)))))
 
-;; This should potentially be done in a separate pass but right now I put it here.
-;; What's needed when generating the code for structs is all the types used when
-;; calling the constructor. Trying to do it in the 'generics' pass is hard since
-;; we have too little information there.
-(defn build-constructor [app-ast]
+(defn get-function-prototype (ast func-name)
+  (let [t (get ast :type)
+        return-type (nth t 2)
+        args (get ast :args)]
+    (str "API " (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
+
+(defn builder-visit-ast (builder ast func-name)
+  (match (get ast :node)
+         :function (visit-function builder ast func-name)
+         x (error (str "Can't match :ast '" x "' in builder-visit-ast."))))
+
+
+
+(defn build-constructor-from-ast [app-ast]
   (let [;;_ (println (str app-ast))
         constructor-ast (:head app-ast)
         _ (assert-eq true (:constructor constructor-ast))
         member-names (array-to-list (:member-names constructor-ast))
         member-types (array-to-list (:member-types constructor-ast))
-        struct-name (:struct-name constructor-ast)
-        constructor-name (str "new-" struct-name)
+        struct-name (:struct-name constructor-ast)]
+    (build-constructor struct-name member-names member-types)))
+
+;; This should potentially be done in a separate pass but right now I put it here.
+;; What's needed when generating the code for structs is all the types used when
+;; calling the constructor. Trying to do it in the 'generics' pass is hard since
+;; we have too little information there.
+(defn build-constructor [struct-name member-names member-types]
+  (let [constructor-name (str "new-" struct-name)
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword constructor-name))
@@ -337,14 +353,3 @@
           (def c c-program-string)
           (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
           )))))
-
-(defn get-function-prototype (ast func-name)
-  (let [t (get ast :type)
-        return-type (nth t 2)
-        args (get ast :args)]
-    (str "API " (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
-
-(defn builder-visit-ast (builder ast func-name)
-  (match (get ast :node)
-         :function (visit-function builder ast func-name)
-         x (error (str "Can't match :ast '" x "' in builder-visit-ast."))))

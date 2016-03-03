@@ -254,6 +254,10 @@
 (register-builtin "calls" '((:fn (:string) :void)) :void)
 (register-builtin "printret" '((:fn () :int)) :void)
 
+;; A better println!
+(defn println* [x]
+  (println (ref (str x))))
+
 (register-builtin "platform" '() :int)
 
 ;; Set type signatures for primops

@@ -1,5 +1,6 @@
 # Compiler 
   - Add constraints for struct constructor arguments based on the types in the struct
+  - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
