@@ -156,6 +156,21 @@
     ;;               c (str proto " { return NULL; }")]
     ;;           {:proto proto :c c :deps ()})
     ;;         _ (error "Invalid type for call to 'new'"))
+
+    "map" (match signature
+            (:fn ((:fn (a) a) (:Array a)) (:Array a)) (let [proto (str "API " (type-build (list :Array a)) " " c-func-name "(" (type-build (list :fn (list a) a)) " f, Array *array)")
+                                                            c (str proto
+                                                                   "{ \n"
+                                                                   "  int count = array->count;\n"
+                                                                   "  " (type-build a) "* casted = array->data;\n" 
+                                                                   "  for(int i = 0; i < count; i++) {\n"
+                                                                   "    casted[i] = f(casted[i]);\n"
+                                                                   "  }\n"
+                                                                   "  array->data = casted;"
+                                                                   "  return array;\n"
+                                                                   "}")]
+                                                        {:proto proto :c c :deps ()})
+            x (error (str "Invalid type for call to 'map': " x)))
     
     "str" (do
             ;;(println (str "Calling str for signature: " signature))

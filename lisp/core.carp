@@ -265,6 +265,7 @@
 (meta-set! nth :signature '(:fn ((:ref (:Array "T")) :int) "T"))
 (meta-set! array-of-size :signature '(:fn (:int) (:Array "T")))
 (meta-set! array-set :signature '(:fn ((:Array "T") :int "T") (:Array "T")))
+(meta-set! map :signature '(:fn ((:fn ("a") "a") (:Array "a")) (:Array "a")))
 ;;(meta-set! new :signature '(:fn () "T"))
 
 (def platform-osx 0)

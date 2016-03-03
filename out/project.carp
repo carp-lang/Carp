@@ -123,3 +123,11 @@
 
 (def ast6 (lambda-to-ast (code trixy-6)))
 (def asta6 (annotate-ast ast6))
+
+(defn x2 [x]
+  (* x 2))
+
+(defn mapping []
+  (map x2 [1 2 3 4 5]))
+
+;;(bake mapping)
