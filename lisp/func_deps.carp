@@ -7,6 +7,10 @@
 
 (defn find-func-deps (ast bake-deps)
   (let [deps (copy '())
+
+        _ (when (not (dict? ast)) (error (str "ast is not a dict: " ast)))
+        _ (when (not (= :function (get-maybe ast :node))) (error (str "ast is not a function ast node: " ast)))
+        
         func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
 
         find-deps-in-list (fn (asts vars-in-scope)

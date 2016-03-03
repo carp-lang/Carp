@@ -232,11 +232,11 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
 	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
       }
       else {
-	//print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
 
-	obj_string_mut_append(total, "<ptr");
-	obj_string_mut_append(total, obj_to_string(type_lookup)->s);
-	obj_string_mut_append(total, ">");
+	/* obj_string_mut_append(total, "<ptr"); */
+	/* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
+	/* obj_string_mut_append(total, ">"); */
       }
       return;
     }

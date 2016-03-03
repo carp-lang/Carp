@@ -82,17 +82,23 @@
                             :left (form-to-ast left)
                             :right (form-to-ast right)}
 
-           (x & xs) (let [evaled (eval x)]
-                      (if (and (symbol? x) (def? x) (macro? evaled))
-                        (expand-macro l)
-                        (if (and (symbol? x) (def? x) (is-struct-constructor? evaled))
-                          (struct-constructor-ast evaled xs)
-                          {:node :app
-                           :type (gen-typevar)
-                           :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
-                           :tail (map form-to-ast xs)})))
+           (x & xs) (if (def? x)
+                      (let [evaled (eval x)]
+                        (if (and (symbol? x) (macro? evaled))
+                          (expand-macro l)
+                          (if (and (symbol? x) (is-struct-constructor? evaled))
+                            (struct-constructor-ast evaled xs)
+                            (app-to-ast x xs))))
+                      (app-to-ast x xs))
            
            nil {:node :literal :type :any :value ""})))
+
+(defn app-to-ast [x xs]
+  (do ;;(println (str "app-to-ast: " x ", " xs))
+      {:node :app
+       :type (gen-typevar)
+       :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
+       :tail (map form-to-ast xs)}))
 
 (defn expand-macro [form]
   (do ;;(println (str "expand:\n" form))

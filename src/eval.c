@@ -111,7 +111,7 @@ void function_trace_print() {
       if(func_name_data) {
         func_name = obj_to_string_not_prn(func_name_data)->s;
       } else {
-        func_name = obj_to_string(function)->s;
+        func_name = "???"; // obj_to_string(function)->s;
       }
       int line = env_lookup(o->meta, obj_new_keyword("line"))->i;
       int pos = env_lookup(o->meta, obj_new_keyword("pos"))->i;

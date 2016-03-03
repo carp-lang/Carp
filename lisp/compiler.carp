@@ -197,7 +197,9 @@
             (meta-set! func-def :signature (:type ast-annotated))
             (def ast ast-annotated)
             (def s (pretty-signature (:type ast-annotated)))
-            :generic)))
+            (if echo-signature-after-bake
+              (println (str func-name " : " s))
+              nil))))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
 (defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
@@ -230,18 +232,20 @@
     (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
 
 (defn bake-function-and-its-depending-funcs [func-name external-deps]
-  (let [functions-depending-on-this-function (set (get-depending-funcs-recursively func-name))]
-    (do
-      ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
-      (unload-if-necessary func-name)
-      (map unload-if-necessary functions-depending-on-this-function)
-      (map re-lambda-fy functions-depending-on-this-function)
-      (map re-compile functions-depending-on-this-function)
-      (if (foreign? (eval (symbol func-name)))
-        (do
-          ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
-          :OK)
-        (bake-internal (new-builder) func-name (code (eval (symbol func-name))) external-deps false)))))
+  (if (foreign? (eval (symbol func-name)))
+    :already-baked
+    (let [functions-depending-on-this-function (set (get-depending-funcs-recursively func-name))]
+      (do
+        ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
+        (unload-if-necessary func-name)
+        (map unload-if-necessary functions-depending-on-this-function)
+        (map re-lambda-fy functions-depending-on-this-function)
+        (map re-compile functions-depending-on-this-function)
+        (if (foreign? (eval (symbol func-name)))
+          (do
+            ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
+            :OK)
+          (bake-internal (new-builder) func-name (code (eval (symbol func-name))) external-deps false))))))
 
 (defn run-cl [c-func-name c-file-name total-dependencies exe]
   (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"

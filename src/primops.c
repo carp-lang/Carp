@@ -78,7 +78,7 @@ Obj *p_add(Obj** args, int arg_count) {
     int sum = 0;
     for(int i = 0; i < arg_count; i++) {
       if(args[i]->tag != 'I') {
-        printf("Args to add must be integers.\n");
+        eval_error = obj_new_string("Args to add must be integers.\n");
         return nil;
       }
       sum += args[i]->i;
@@ -89,7 +89,7 @@ Obj *p_add(Obj** args, int arg_count) {
     float sum = 0;
     for(int i = 0; i < arg_count; i++) {
       if(args[i]->tag != 'V') {
-        printf("Args to add must be floats.\n");
+        eval_error = obj_new_string("Args to add must be floats.\n");
         return nil;
       }
       sum += args[i]->f32;
@@ -202,6 +202,9 @@ Obj *p_eq(Obj** args, int arg_count) {
 }
 
 Obj *p_list(Obj** args, int arg_count) {
+  if(arg_count == 0) {
+    return nil; // TODO: don't use a hack like this
+  }
   Obj *first = NULL;
   Obj *prev = NULL;
   for(int i = 0; i < arg_count; i++) {
@@ -462,8 +465,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
     return nil;
   }
   else {
-    printf("'get-maybe' requires arg 0 to be a dictionary or list: %s\n", obj_to_string(args[0])->s);
-    return nil;
+    set_error_return_nil("'get-maybe' requires arg 0 to be a dictionary or list:\n", args[0]);
   }
 }
 

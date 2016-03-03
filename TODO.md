@@ -1,9 +1,12 @@
 # Compiler 
+  - Add constraints for struct constructor arguments based on the types in the struct
+  - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
 	 - copy
 	 - delete
   - Use 'delete' instead of free for memory management
+  - Bake can't handle when a function changes signature
   - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Handle global variables referenced inside functions

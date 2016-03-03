@@ -29,54 +29,93 @@
 
 ;; (def pos (Vec2 3.4 5.5))
 
-;; (defstruct Person
-;;   [name :string
-;;    age :int])
+(defstruct Person
+  [name :string
+   age :int])
 
-;; (defn me [] (Person "erik" 29))
+(defn me [] (Person "erik" 29))
 
-;; ;;(bake me)
+;;(bake me)
 
 ;; (def me-ast (lambda-to-ast (code me)))
 ;; (def me-deps (find-func-deps me-ast false))
 ;; (def me-con (gencon me-deps))
 ;; (def me-typed (infer-types me-deps nil))
 
-;; ;;(def me-con (gencon me-ast))
+(defn peeps []
+  [(me) (Person "Klabbe" 53)])
 
-;; (bake me)
+;;(bake peeps)
 
-;; (defn peeps []
-;;   [(me) (Person "Klabbe" 53)])
-
-;; ;;(bake peeps)
-
-;; ;; (println (str (map #name (peeps))))
-;; ;; (println (str (map #age (peeps))))
+;; (println (str (map #name (peeps))))
+;; (println (str (map #age (peeps))))
 
 
 
+;; (defn fa [] 100)
+;; (bake fa)
+;; (assert-eq 100 (fa))
 
+;; (defn fb [] (fa))
+;; (bake fb)
+;; (assert-eq 100 (fb))
 
+;; (defn fc [] (fa))
+;; (bake fc)
+;; (assert-eq 100 (fc))
 
-
-
-(defn fa [] 100)
-(bake fa)
-(assert-eq 100 (fa))
-
-(defn fb [] (fa))
-(bake fb)
-(assert-eq 100 (fb))
-
-(defn fc [] (fa))
-(bake fc)
-(assert-eq 100 (fc))
-
-(defn fd [] (fc))
-(bake fd)
-(assert-eq 100 (fd))
+;; (defn fd [] (fc))
+;; (bake fd)
+;; (assert-eq 100 (fd))
 
 ;;(defn fa [] 200)
 ;;(bake fa)
 
+
+(defstruct Color [r :float
+                  g :float
+                  b :float])
+
+(defn test-color [] (Color 1.0 0.0 0.5))
+
+(defn mix-colors [col1 col2]
+  (Color (+ (#r col1) (#r col2))
+         (+ (#g col1) (#g col2))
+         (+ (#b col1) (#b col2))))
+
+(defn test-mix-colors []
+  (println (str (mix-colors (Color 0.3 1.0 0.0)
+                            (Color 0.1 0.1 0.1)))))
+
+;;(bake test-mix-colors)
+
+;; (defn int-stuff []
+;;   [100 200 300])
+;; (bake int-stuff)
+
+
+
+
+;; This one bakes
+(defn trixy-1 [x]
+  (let [xs [1 2 x 4 5]]
+    (if (< x 10)
+      xs
+      [10 20 30])))
+;; (bake trixy-1)
+
+;; Can't bake this -- complaints about borrowing of 'x'
+(defn trixy-2 [x]
+  (println (ref (str (Color x x x)))))
+
+;; Can't bake this one either -- the type Color isn't added to 'types' when instantiating generic primop
+(defn trixy-3 [x]
+  (println (ref (str (ref (Color x 1 2))))))
+
+
+
+(defn color [x]
+  (Color 1.0 x 3.0))
+
+(defn trixy-5 []
+  (println (ref (str (ref (color 2.3))))))

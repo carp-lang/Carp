@@ -35,8 +35,10 @@ int paren_balance(char *s) {
 
 #ifdef WIN32
 #define PROMPT "CARP> "
+#define PROMPT_UNFINISHED_FORM "   _> "
 #else
 #define PROMPT "\e[36mλ>\e[0m "
+#define PROMPT_UNFINISHED_FORM "\e[36m_>\e[0m "
 #endif
 
 void repl(Obj *env) {
@@ -149,8 +151,8 @@ void env_new_global() {
   type_array = obj_new_keyword("array");
   define("type-array", type_array);
 
-  prompt = define("prompt", obj_new_string("\e[36mλ>\e[0m "));
-  prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string("\e[36m_>\e[0m "));
+  prompt = define("prompt", obj_new_string(PROMPT));
+  prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string(PROMPT_UNFINISHED_FORM));
   
   register_primop("open", p_open_file);
   register_primop("save", p_save_file);
