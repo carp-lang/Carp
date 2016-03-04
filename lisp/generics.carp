@@ -36,7 +36,7 @@
                                    ]
                                (if (and (lambda? global-lookup) is-generic)
                                  (if (generic-type? t)
-                                   (do (println (str "Lambda with missing type information, can't compile concrete version:\n" t))
+                                   (do ;;(println (str "Lambda with missing type information, can't compile concrete version: " t))
                                        ast)
                                    (let [n (generic-name lookup-sym t)]
                                      (do
@@ -52,11 +52,11 @@
                                          ast0))))
                                  (if (and (primop? global-lookup) is-generic)
                                    (if (generic-type? t)
-                                     (do (println (str "Primop with missing type information, can't compile concrete version:\n" t))
+                                     (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
                                          ast)
                                      (let [n (generic-name lookup-sym t)]
                                        (do
-                                         ;; (println (str "Found a generic primop to bake: " lookup-sym))
+                                         ;;(println (str "Found a generic primop to bake: " lookup-sym))
                                          ;; (println (str "Final name will be " n))
                                          (bake-generic-primop (new-builder)
                                                               n
@@ -156,6 +156,21 @@
     ;;               c (str proto " { return NULL; }")]
     ;;           {:proto proto :c c :deps ()})
     ;;         _ (error "Invalid type for call to 'new'"))
+
+    "map" (match signature
+            (:fn ((:fn (a) a) (:Array a)) (:Array a)) (let [proto (str "API " (type-build (list :Array a)) " " c-func-name "(" (type-build (list :fn (list a) a)) " f, Array *array)")
+                                                            c (str proto
+                                                                   "{ \n"
+                                                                   "  int count = array->count;\n"
+                                                                   "  " (type-build a) "* casted = array->data;\n" 
+                                                                   "  for(int i = 0; i < count; i++) {\n"
+                                                                   "    casted[i] = f(casted[i]);\n"
+                                                                   "  }\n"
+                                                                   "  array->data = casted;"
+                                                                   "  return array;\n"
+                                                                   "}")]
+                                                        {:proto proto :c c :deps ()})
+            x (error (str "Invalid type for call to 'map': " x)))
     
     "str" (do
             ;;(println (str "Calling str for signature: " signature))
@@ -174,9 +189,12 @@
                                                   "}")]
                                        {:proto proto :c c :deps ()})
 
-              (:fn (:string) :string) (instantiate-str-for-string c-func-name)
               (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)              
+              (:fn (:string) :string) (instantiate-str-for-string c-func-name)
+
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)
+              (:fn (maybe-struct-type) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)
+              
               x (error (str "Invalid type for call to 'str': " x))))
     
     "nth" (match signature
@@ -236,6 +254,7 @@
               proto (str "string " c-func-name "(" t-name " *x)")
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
+              _ (build-constructor t-name member-names member-types) ;; build the constructor type to make it accessible to this function
               c (str proto " { "
                      " char buffer[1024];\n"
                      " int pos = 0;\n"

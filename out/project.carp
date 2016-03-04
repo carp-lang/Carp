@@ -108,10 +108,8 @@
 (defn trixy-2 [x]
   (println (ref (str (Color x x x)))))
 
-;; Can't bake this one either -- the type Color isn't added to 'types' when instantiating generic primop
 (defn trixy-3 [x]
-  (println (ref (str (ref (Color x 1 2))))))
-
+  (printlng (Color x 1.0 2.0)))
 
 
 (defn color [x]
@@ -119,3 +117,34 @@
 
 (defn trixy-5 []
   (println (ref (str (ref (color 2.3))))))
+
+(defn trixy-6 [x y z]
+  (Color x y z))
+
+(def ast6 (lambda-to-ast (code trixy-6)))
+(def asta6 (annotate-ast ast6))
+
+(defn x2 [x]
+  (* x 2))
+
+(defn mapping []
+  (map x2 [1 2 3 4 5]))
+
+(bake mapping)
+
+(defn x2f [x]
+  (* x 2.0))
+
+(defn mapping-floats []
+  (map x2f [10.0 20.0 30.0 40.0 50.0]))
+
+(defn x2s [s]
+  (itos (strlen (ref s))))
+
+(defn exclaim (s)
+  (string-append (ref s) "!"))
+
+(defn mapping-strings []
+  (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
+
+;;(bake mapping)

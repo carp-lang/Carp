@@ -1,5 +1,6 @@
 # Compiler 
-  - Add constraints for struct constructor arguments based on the types in the struct
+  - Can't have star in function name when baking
+  - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
@@ -22,6 +23,7 @@
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype (tagged unions)
   - Clean up the awful 'list-to-ast' function
+  - Complete type constraints for binops, check for "numeric" types
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
@@ -35,10 +37,10 @@
   
   
 # Dynamic Runtime
+  - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
   - Xcode finds strange error in primops.c 1271
-  - Binding to a function call in 'let' crashes
   - ^syntax for meta data
   - Get inferior lisp to work
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
