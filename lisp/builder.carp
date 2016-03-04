@@ -211,8 +211,6 @@
                       arg-vars (map :c arg-results)
                       t (:type form)]
                   (do
-                    (when (= true (get-maybe head :constructor))
-                      (build-constructor-from-ast form))
                     (if (= :void t)
                       (do (str-append! c (str (indent) c-func-name "(" (join ", " arg-vars) ");\n"))
                           {:c n})
@@ -306,50 +304,59 @@
          x (error (str "Can't match :ast '" x "' in builder-visit-ast."))))
 
 
-
-(defn build-constructor-from-ast [app-ast]
-  (let [;;_ (println (str app-ast))
-        constructor-ast (:head app-ast)
-        _ (assert-eq true (:constructor constructor-ast))
-        member-names (array-to-list (:member-names constructor-ast))
-        member-types (array-to-list (:member-types constructor-ast))
-        struct-name (:struct-name constructor-ast)]
-    (build-constructor struct-name member-names member-types)))
+;; TODO: remove this function since we will bake the constructor when the type is defined instead?
+;; (defn build-constructor-from-ast [app-ast]
+;;   (let [;;_ (println (str app-ast))
+;;         constructor-ast (:head app-ast)
+;;         _ (assert-eq true (:constructor constructor-ast))
+;;         member-names (array-to-list (:member-names constructor-ast))
+;;         member-types (array-to-list (:member-types constructor-ast))
+;;         struct-name (:struct-name constructor-ast)]
+;;     (build-constructor struct-name member-names member-types)))
 
 ;; This should potentially be done in a separate pass but right now I put it here.
 ;; What's needed when generating the code for structs is all the types used when
 ;; calling the constructor. Trying to do it in the 'generics' pass is hard since
 ;; we have too little information there.
 (defn build-constructor [struct-name member-names member-types]
-  (let [constructor-name (str "new-" struct-name)
+  (let [member-names (if (array? member-names) (array-to-list member-names) member-names)
+        c-member-names (map c-ify-name member-names)
+        member-types (if (array? member-types) (array-to-list member-types) member-types)
+        constructor-name (str "new-" struct-name)
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
-        constructor-signature (list :fn member-types (keyword constructor-name))
+        constructor-signature (list :fn member-types (keyword struct-name))
         ;;_ (println (str constructor-signature))
+        type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
+        type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
         ]
-    (if (func-baked? constructor-name)
-      (do
-        ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
-        nil)
-      (let [type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types member-names))
-            type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
-            arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types member-names))
-            proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
-            substs {"STRUCT-NAME" struct-name
-                    "CONSTRUCTOR-NAME" c-constructor-name
-                    "ARG_LIST" arg-list-c
-                    "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) member-names))}
-            c-program-string (template
-"#include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+    (do
+      (add-type! struct-name type-definition)
+      ;;(println (str "types:\n" types))
+      (save-function-prototypes)
+      (if (func-baked? constructor-name)
+        (do
+          ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
+          nil)
+        (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
+              proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
+              substs {"STRUCT-NAME" struct-name
+                      "CONSTRUCTOR-NAME" c-constructor-name
+                      "ARG_LIST" arg-list-c
+                      "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
+              c-program-string (template
+                                "#include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
 }"
-                                       substs)
-            deps '()
-            ]
-        (do
-          (add-type! constructor-name type-definition)
-          (def c c-program-string)
-          (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
-          )))))
+                                substs)
+              deps '()
+              ]
+          (do
+            (def c c-program-string)
+            (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
+            (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
+                  member-names
+                  member-types)
+            ))))))

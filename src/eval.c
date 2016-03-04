@@ -729,8 +729,8 @@ void eval_list(Obj *env, Obj *o) {
     int offset = 0;
     bool generic = false;
     for(int i = 0; i < member_count; i++) {
-      Obj *member_name = types->array[i * 2];
-      assert_or_set_error(member_name->tag == 'Y', "Struct member name must be symbol: ", member_name);
+      assert_or_set_error(types->array[i * 2]->tag == 'Y', "Struct member name must be symbol: ", types->array[i * 2]);
+      Obj *member_name = obj_new_string(types->array[i * 2]->s);
       Obj *member_type = types->array[i * 2 + 1];
       member_types->array[i] = member_type;
       member_names->array[i] = member_name;
@@ -741,17 +741,17 @@ void eval_list(Obj *env, Obj *o) {
       else if(obj_eq(member_type, type_char)) { size = sizeof(char); }
       else { size = sizeof(void*); }
 
-      char fixed_member_name[256];
-      snprintf(fixed_member_name, 255, "get-%s", member_name->s);
+      /* char fixed_member_name[256]; */
+      /* snprintf(fixed_member_name, 255, "get-%s", member_name->s); */
 
-      Obj *struct_member_lookup = obj_new_environment(NULL);
-      env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true);
-      env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description
-      env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset));
-      env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name);
-      env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type);
+      /* Obj *struct_member_lookup = obj_new_environment(NULL); */
+      /* env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true); */
+      /* env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description */
+      /* env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset)); */
+      /* env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name); */
+      /* env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type); */
       
-      env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup);
+      /* env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup); */
 
       offset += size;
     }
@@ -765,8 +765,21 @@ void eval_list(Obj *env, Obj *o) {
     env_extend(struct_description, obj_new_keyword("struct"), lisp_true);
 
     env_extend(env, obj_new_symbol(name), struct_description);
-    
     stack_push(struct_description);
+
+    // Will call this function now: (build-constructor struct-name member-names member-types)
+    Obj *call_to_build_constructor = obj_list(obj_new_symbol("build-constructor"), obj_new_string(name), member_names, member_types);
+
+    shadow_stack_push(call_to_build_constructor);
+    //printf("Call to build-constructor: \n%s\n", obj_to_string(call_to_build_constructor)->s);
+    eval_internal(global_env, call_to_build_constructor);
+    shadow_stack_pop();
+
+    if(eval_error) {
+      printf("Error when calling build-constructor:\n");
+      printf("%s\n", obj_to_string(eval_error)->s);
+      return;
+    }
   }
   else if(HEAD_EQ("match")) {
     eval_internal(env, o->cdr->car);

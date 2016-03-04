@@ -768,38 +768,56 @@ Obj *p_map2(Obj** args, int arg_count) {
   if(!is_callable(args[0])) {
     set_error_return_nil("'map2' requires arg 0 to be a function or lambda: ", args[0]);
   }
-  if(args[1]->tag != 'C') {
-    set_error_return_nil("'map2' requires arg 1 to be a list: ", args[1]);
+  Obj *f = args[0];
+  if(args[1]->tag == 'C' && args[2]->tag == 'C') {
+    Obj *p = args[1];
+    Obj *p2 = args[2];
+    Obj *list = obj_new_cons(NULL, NULL);
+    shadow_stack_push(list);
+    Obj *prev = list;
+    int shadow_count = 0;
+    while(p && p->car && p2 && p2->car) {
+      Obj *argz[2] = { p->car, p2->car };
+      apply(f, argz, 2);
+      prev->car = stack_pop();
+      Obj *new = obj_new_cons(NULL, NULL);
+      shadow_stack_push(new);
+      shadow_count++;
+      prev->cdr = new;
+      prev = new;
+      p = p->cdr;
+      p2 = p2->cdr;
+    }
+    for(int i = 0; i < shadow_count; i++) {
+      shadow_stack_pop();
+    }
+    shadow_stack_pop(); // list
+    return list;
   }
-  if(args[2]->tag != 'C') {
-    eval_error = obj_new_string("'map2' requires arg 2 to be a list: ");
+  else if(args[1]->tag == 'A' && args[2]->tag == 'A') {
+    if(args[1]->count != args[2]->count) {
+      eval_error = obj_new_string("Arrays to map2 are of different length.");
+      return nil;
+    }
+    Obj *a = args[1];
+    Obj *b = args[2];
+    Obj *new_a = obj_new_array(a->count);
+    shadow_stack_push(new_a);
+    for(int i = 0; i < a->count; i++) {
+      Obj *fargs[2] = { a->array[i], b->array[i] };
+      apply(f, fargs, 2);
+      new_a->array[i] = stack_pop();
+    }
+    shadow_stack_pop(); // new_a
+    return new_a;
+  }
+  else {
+    eval_error = obj_new_string("'map2' requires both arg 1 and 2 to be lists or arrays:\n");
+    obj_string_mut_append(eval_error, obj_to_string(args[1])->s);
+    obj_string_mut_append(eval_error, "\n");
     obj_string_mut_append(eval_error, obj_to_string(args[2])->s);
     return nil;
-  }
-  Obj *f = args[0];
-  Obj *p = args[1];
-  Obj *p2 = args[2];
-  Obj *list = obj_new_cons(NULL, NULL);
-  shadow_stack_push(list);
-  Obj *prev = list;
-  int shadow_count = 0;
-  while(p && p->car && p2 && p2->car) {
-    Obj *argz[2] = { p->car, p2->car };
-    apply(f, argz, 2);
-    prev->car = stack_pop();
-    Obj *new = obj_new_cons(NULL, NULL);
-    shadow_stack_push(new);
-    shadow_count++;
-    prev->cdr = new;
-    prev = new;
-    p = p->cdr;
-    p2 = p2->cdr;
-  }
-  for(int i = 0; i < shadow_count; i++) {
-    shadow_stack_pop();
-  }
-  shadow_stack_pop(); // list
-  return list;
+  }  
 }
 
 Obj *p_keys(Obj** args, int arg_count) {

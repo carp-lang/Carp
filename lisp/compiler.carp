@@ -20,6 +20,7 @@
 (load-lisp (str carp-dir "lisp/builder.carp"))
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 (load-lisp (str carp-dir "lisp/generics.carp"))
+(load-lisp (str carp-dir "lisp/structs.carp"))
 
 (def platform-specifics
   (if (windows?)
@@ -121,7 +122,7 @@
         (str
          "#include <shared.h>\n"
          "//Types:\n"
-         (join "\n" (map :type-definition (values types)))
+         (join "\n" (map :type-definition (reverse (values types))))
          "\n\n//Functions:\n"
          (join "\n" (map :func-proto (values baked-funcs))))))
 
