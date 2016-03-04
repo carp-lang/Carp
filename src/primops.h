@@ -12,7 +12,7 @@ Obj *p_add(Obj** args, int arg_count);
 Obj *p_sub(Obj** args, int arg_count);
 Obj *p_mul(Obj** args, int arg_count);
 Obj *p_div(Obj** args, int arg_count);
-Obj *p_mod(Obj** args, int arg_count);
+//Obj *p_mod(Obj** args, int arg_count);
 Obj *p_eq(Obj** args, int arg_count);
 Obj *p_list(Obj** args, int arg_count);
 Obj *p_str(Obj** args, int arg_count);

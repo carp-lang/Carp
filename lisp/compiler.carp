@@ -284,6 +284,7 @@
       (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
       (def ast ast-annotated)
       (def c c-program-string)
+      ;;(println (str "Will save and compile: '" func-name "' with c-func-name '" c-func-name "' and signature: " t))
       (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
       (meta-set! (eval (symbol func-name)) :code func-code))))
 
@@ -300,8 +301,10 @@
                                       (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
                                       (register out-lib c-func-name arg-types return-type)
                                       (add-func! func-name proto out-lib)
-                                      (let [f (eval (read func-name))]
-                                        (do (def s (pretty-signature (signature f)))
+                                      (let [f (eval (read func-name))
+                                            sig (signature f)]
+                                        (do (when (nil? sig) (error (str "No signature on function " f)))
+                                            (def s (pretty-signature sig))
                                             (when echo-signature-after-bake (println (str func-name " : " s)))
                                             f)))))
     _ (error "Must bake function with type (:fn ...)")))

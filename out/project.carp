@@ -130,7 +130,7 @@
 (defn mapping []
   (map x2 [1 2 3 4 5]))
 
-(bake mapping)
+;;(bake mapping)
 
 (defn x2f [x]
   (* x 2.0))
@@ -147,4 +147,10 @@
 (defn mapping-strings []
   (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
 
-;;(bake mapping)
+(defn even-i? [x]
+  (if (even? x)
+    1
+    0))
+
+(defn map-even []
+  (map even-i? [1 2 3 4 5 6 7]))

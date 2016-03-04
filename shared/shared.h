@@ -193,6 +193,10 @@ EXPORT void printret(int (*f)()) {
   printf("ret = %d\n", x);
 }
 
+EXPORT int mod(int x, int y) {
+  return x % y;
+}
+
 #ifdef WIN32
 EXPORT void sleep(int millis) {
 	carp_sleep(millis);

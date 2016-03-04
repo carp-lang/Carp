@@ -160,7 +160,7 @@ void env_new_global() {
   register_primop("-", p_sub);
   register_primop("*", p_mul);
   register_primop("/", p_div);
-  register_primop("mod", p_mod);
+  //register_primop("mod", p_mod);
   register_primop("=", p_eq);
   register_primop("list", p_list);
   register_primop("str", p_str);

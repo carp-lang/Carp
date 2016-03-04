@@ -177,16 +177,16 @@ Obj *p_div(Obj** args, int arg_count) {
   }
 }
 
-Obj *p_mod(Obj** args, int arg_count) {
-  if(arg_count == 0) {
-    return obj_new_int(1);
-  }
-  int prod = args[0]->i;
-  for(int i = 1; i < arg_count; i++) {
-    prod %= args[i]->i;
-  }
-  return obj_new_int(prod);
-}
+/* Obj *p_mod(Obj** args, int arg_count) { */
+/*   if(arg_count == 0) { */
+/*     return obj_new_int(1); */
+/*   } */
+/*   int prod = args[0]->i; */
+/*   for(int i = 1; i < arg_count; i++) { */
+/*     prod %= args[i]->i; */
+/*   } */
+/*   return obj_new_int(prod); */
+/* } */
 
 Obj *p_eq(Obj** args, int arg_count) {
   if(arg_count < 2) {
@@ -1267,9 +1267,11 @@ char *lispify(char *name) {
   char *s0 = str_replace(name, "_", "-");
   char *s1 = str_replace(s0, "BANG", "!");
   char *s2 = str_replace(s1, "QMARK", "?");
+  char *s3 = str_replace(s2, "PTR", "*");
   free(s0);
   free(s1);
-  return s2;
+  free(s2);
+  return s3;
 }
 
 ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
