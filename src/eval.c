@@ -742,8 +742,7 @@ void eval_list(Obj *env, Obj *o) {
       else { size = sizeof(void*); }
 
       char fixed_member_name[256];
-      fixed_member_name[0] = '#';
-      snprintf(fixed_member_name + 1, 255, "%s", member_name->s);
+      snprintf(fixed_member_name, 255, "get-%s", member_name->s);
 
       Obj *struct_member_lookup = obj_new_environment(NULL);
       env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true);

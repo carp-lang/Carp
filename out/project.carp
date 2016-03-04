@@ -156,3 +156,21 @@
 
 (defn map-even []
   (map even-i? [1 2 3 4 5 6 7]))
+
+
+
+
+
+
+
+(defstruct SimplePair
+  [x :int
+   y :int])
+
+(defn test-simple-pair []
+  (let [p (SimplePair 13 27)]
+    (get-x p)))
+
+;;(bake test-simple-pair)
+;;(test-simple-pair)
+
