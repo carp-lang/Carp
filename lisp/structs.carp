@@ -1,6 +1,6 @@
 
 (defn generate-struct-lens [struct-name member-name member-type]
-  (do (println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
+  (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
       (let [struct-type (keyword struct-name)
             struct-t (type-build struct-type)
             member-t (type-build member-type)
@@ -14,20 +14,20 @@
 (defn bake-struct-lens-function [builder func-name func-signature proto c deps]
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
-    (if (func-baked? func-name)
-      (do
-        (println (str "Ignoring already baked struct lens: " func-name))
-        nil)
-      (do
-        (println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-        (let [c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" c)]
-          (do
-            (def c c-program-string)
-            (save-and-compile func-name
-                              func-signature
-                              c-func-name
-                              c-file-name
-                              c-program-string
-                              (str proto ";")
-                              deps
-                              false)))))))
+    (do
+      (when (func-baked? func-name)
+        (do
+          (println (str "WARNING! Overriding lens function: " func-name))
+          (unload-if-necessary func-name)))
+      ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
+      (let [c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" c)]
+        (do
+          (def c c-program-string)
+          (save-and-compile func-name
+                            func-signature
+                            c-func-name
+                            c-file-name
+                            c-program-string
+                            (str proto ";")
+                            deps
+                            false))))))
