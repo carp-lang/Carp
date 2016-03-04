@@ -319,9 +319,9 @@
 ;; calling the constructor. Trying to do it in the 'generics' pass is hard since
 ;; we have too little information there.
 (defn build-constructor [struct-name member-names member-types]
-  (let [member-names (if (array? member-names) (array-to-list member-names) member-names)
+  (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
-        member-types (if (array? member-types) (array-to-list member-types) member-types)
+        member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
         constructor-name (str "new-" struct-name)
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
