@@ -37,6 +37,7 @@
   
   
 # Dynamic Runtime
+  - Remove support for dynamic struct getters
   - Should be error when ptr of wrong type is sent to baked function
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
