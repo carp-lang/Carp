@@ -256,7 +256,7 @@
 (register-builtin "printret" '((:fn () :int)) :void)
 
 ;; A better println!
-(defn printlng [x]
+(defn println* [x]
   (println (ref (str x))))
 
 (register-builtin "platform" '() :int)

@@ -147,6 +147,8 @@
 (defn mapping-strings []
   (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
 
+
+
 (defn even-i? [x]
   (if (even? x)
     1
