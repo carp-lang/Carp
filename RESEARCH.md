@@ -9,9 +9,6 @@ http://msm.runhello.com/p/1003
 http://blog.piston.rs/2016/01/23/dynamo/
 http://evincarofautumn.blogspot.se/2016/01/thoughts-on-using-fractional-types-to.html
 
-# LAMBDA LIFTING
-https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
-
 # MODULES & FUNCTORS
 http://homepages.inf.ed.ac.uk/mfourman/teaching/mlCourse/notes/sml-modules.html
 https://www.cse.unsw.edu.au/~chak/papers/modules-classes.pdf
@@ -24,7 +21,15 @@ https://jeltsch.wordpress.com/2016/02/22/generic-programming-in-haskell/
 http://reaktor.com/blog/why-csp-matters-ii-how-do-i-know-sync-works/
 
 # OTHER LISPS
+https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
 http://alex-charlton.com/posts/Prototype_to_polish_Making_games_in_CHICKEN_Scheme_with_Hypergiant/
+http://beautifulracket.com/first-lang.html
+http://stackoverflow.com/questions/4899113/fixed-point-combinator-for-mutually-recursive-functions/5272086#5272086
 
 # LANGUAGE DESIGN
 http://www.complang.tuwien.ac.at/kps2015/proceedings/KPS_2015_submission_29.pdf
+http://www.lihaoyi.com/post/WhatsinaBuildTool.html
+
+# GRAPHS
+https://en.wikipedia.org/wiki/Strongly_connected_component
+https://en.wikipedia.org/wiki/Transitive_closure#In_graph_theory
