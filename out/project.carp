@@ -9,3 +9,12 @@
     ))
 
 ;;(load-gl)
+
+
+
+(defstruct Vector
+  [x :int
+   y :int])
+
+(defn f [x] (Vector x (+ x 10)))
+(defn g [] (map-copy f [100 200 300]))

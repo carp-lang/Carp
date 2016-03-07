@@ -1,4 +1,5 @@
 # Compiler 
+  - Printing of arrays from code that haven't been compiled is incorrect or crashes on first call
   - Make defstruct be a macro instead of special form
   - A call to constructor doesn't have a constraint for its return type
   - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
