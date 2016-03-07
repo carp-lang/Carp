@@ -1,4 +1,47 @@
 
+(defn build-constructor [struct-name member-names member-types]
+  (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
+        c-member-names (map c-ify-name member-names)
+        member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
+        constructor-name (str "new-" struct-name)
+        c-constructor-name (c-ify-name constructor-name)
+        c-file-name (str out-dir constructor-name ".c")
+        constructor-signature (list :fn member-types (keyword struct-name))
+        ;;_ (println (str constructor-signature))
+        type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
+        type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
+        ]
+    (do
+      (add-type! struct-name type-definition)
+      ;;(println (str "types:\n" types))
+      (save-function-prototypes)
+      (if (func-baked? constructor-name)
+        (do
+          ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
+          nil)
+        (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
+              proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
+              substs {"STRUCT-NAME" struct-name
+                      "CONSTRUCTOR-NAME" c-constructor-name
+                      "ARG_LIST" arg-list-c
+                      "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
+              c-program-string (template
+                                "#include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+  STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
+  SETTERS
+  return new_struct;
+}"
+                                substs)
+              deps '()
+              ]
+          (do
+            (def c c-program-string)
+            (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
+            (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
+                  member-names
+                  member-types)
+            ))))))
+
 (defn generate-struct-lens [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
       (let [struct-type (keyword struct-name)

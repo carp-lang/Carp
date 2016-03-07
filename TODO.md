@@ -1,4 +1,5 @@
 # Compiler 
+  - Make defstruct be a macro instead of special form
   - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Automatically implement for structs and arrays:
      - str

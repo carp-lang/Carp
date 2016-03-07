@@ -118,8 +118,8 @@
 (defn trixy-5 []
   (println (ref (str (ref (color 2.3))))))
 
-(defn trixy-6 [x y z]
-  (Color x y z))
+(defn trixy-6 [xx yy zz]
+  (Color xx yy zz))
 
 (def ast6 (lambda-to-ast (code trixy-6)))
 (def asta6 (annotate-ast ast6))
@@ -173,4 +173,19 @@
 
 ;;(bake test-simple-pair)
 ;;(test-simple-pair)
+
+
+
+
+
+(defstruct Wrap [something :int])
+
+(defn map-special [f]
+  (f 100))
+
+(defn map-constructor []
+  (map-special Wrap))
+
+
+
 

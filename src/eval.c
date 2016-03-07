@@ -472,15 +472,13 @@ void apply(Obj *function, Obj **args, int arg_count) {
     char *name = env_lookup(function, obj_new_keyword("name"))->s;
     int struct_size = env_lookup(function, obj_new_keyword("size"))->i;
     int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
-
     Obj *offsets_obj = env_lookup(function, obj_new_keyword("member-offsets"));
     assert_or_set_error(offsets_obj->tag == 'A', "offsets must be an array: ", function);
     Obj **offsets = offsets_obj->array;
-
     Obj *member_types_obj = env_lookup(function, obj_new_keyword("member-types"));
     assert_or_set_error(member_types_obj->tag == 'A', "member-types must be an array: ", function);
     Obj **member_types = member_types_obj->array;
-    
+   
     //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
     void *p = malloc(struct_size);
     Obj *new_struct = obj_new_ptr(p);
@@ -528,56 +526,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       }
     }
     stack_push(new_struct);
-  }
-  else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct-lookup")), lisp_true)) {
-    if(arg_count != 1) {
-      eval_error = obj_new_string("Invalid arg count to struct member lookup: ");
-      char buffer[32];
-      snprintf(buffer, 32, "%d", arg_count);
-      obj_string_mut_append(eval_error, buffer);
-      return;
-    }
-
-    /* Obj *struct_description = env_lookup(function, obj_new_keyword("struct-ref")); */
-    /* assert_or_set_error(struct_description->tag == 'E', "struct-lookup doesn't have a struct-ref: ", function); */
-    /* printf("%s\n", obj_to_string(struct_description)->s); */
-
-    Obj *offset_obj = env_lookup(function, obj_new_keyword("member-offset"));
-    assert_or_set_error(offset_obj->tag == 'I', "struct-lookup has invalid member-offset: ", function);
-    int offset = offset_obj->i;
-
-    //printf("Looking up member at offset %d.\n", offset);
-
-    Obj *member_type = env_lookup(function, obj_new_keyword("member-type"));
-    Obj *target_struct = args[0];
-
-    Obj *lookup = NULL;
-    void *location = (void*)(((char*)target_struct->void_ptr) + offset);
-    
-    if(obj_eq(member_type, type_float)) {
-      float *fp = location;
-      float x = *fp;
-      lookup = obj_new_float(x);
-    }
-    else if(obj_eq(member_type, type_int)) {
-      int *xp = location;
-      int x = *xp;
-      lookup = obj_new_int(x);
-    }
-    else if(obj_eq(member_type, type_string)) {
-      char **sp = location;
-      char *s = *sp;
-      lookup = obj_new_string(s);
-    }
-    else {
-      void **pp = location;
-      void *p = *pp;
-      lookup = obj_new_ptr(p);
-    }
-
-    stack_push(lookup);
-  }
-  else {
+  } else {
     set_error("Can't call non-function: ", function);
   }
 }
@@ -764,7 +713,10 @@ void eval_list(Obj *env, Obj *o) {
     env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false);
     env_extend(struct_description, obj_new_keyword("struct"), lisp_true);
 
-    env_extend(env, obj_new_symbol(name), struct_description);
+    Obj *struct_info_binding = obj_new_string(name);
+    //obj_string_mut_append(struct_info_binding, "-info");
+    
+    env_extend(env, obj_new_symbol(struct_info_binding->s), struct_description);
     stack_push(struct_description);
 
     // Will call this function now: (build-constructor struct-name member-names member-types)
@@ -842,6 +794,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {
+    assert_or_set_error(o->cdr, "Too few args to 'def?': ", o);
+    assert_or_set_error(o->cdr->cdr, "Too few args to 'def?': ", o);
+    assert_or_set_error(o->car->tag == 'Y', "Can't call 'def?' on non-symbol: ", o);
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }
     Obj *key = stack_pop();

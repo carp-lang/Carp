@@ -48,25 +48,6 @@
       ;;(println (str "array-setup-ast:\n" array-setup-ast))
       array-setup-ast)))
 
-(defn is-struct-constructor? [form]
-  (and (dict? form) (true? (get-maybe form :struct))))
-
-(defn struct-constructor-ast [struct-description args]
-  (let [struct-name (:name struct-description)
-        struct-type (keyword struct-name)]
-    (do
-      ;; The struct constructor is a amped up function application node with some extra data
-      {:node :app
-       :type struct-type
-       :head {:node :lookup
-              :constructor true
-              :type (gen-fn-type (count args)) ;; TODO: we actually know the types here so why not put them in instead?
-              :member-names (:member-names struct-description)
-              :member-types (:member-types struct-description)
-              :struct-name struct-name
-              :value (str "new-" struct-name)}
-       :tail (map form-to-ast args)})))
-
 (defn list-to-ast [l]
   (if (binop? l)
     (match l
@@ -86,9 +67,7 @@
                       (let [evaled (eval x)]
                         (if (and (symbol? x) (macro? evaled))
                           (expand-macro l)
-                          (if (and (symbol? x) (is-struct-constructor? evaled))
-                            (struct-constructor-ast evaled xs)
-                            (app-to-ast x xs))))
+                          (app-to-ast x xs)))
                       (app-to-ast x xs))
            
            nil {:node :literal :type :any :value ""})))
@@ -170,6 +149,23 @@
      :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
      :value expr}))
 
+(defn is-struct-constructor? [form]
+  (and (dict? form) (true? (get-maybe form :struct))))
+
+(defn struct-constructor-ast [struct-description]
+  (let [struct-name (:name struct-description)
+        struct-type (keyword struct-name)
+        arg-count (:member-count struct-description)]
+    (do
+      ;;(println (str "found struct constructor: ") struct-name)
+      {:node :lookup
+       :constructor true
+       :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
+       :member-types (:member-types struct-description)
+       :member-names (:member-names struct-description)
+       :struct-name struct-name
+       :value (str "new-" struct-name)})))
+
 (defn form-to-ast [form]
   (match form
     
@@ -198,8 +194,9 @@
         (list-to-ast x)
         (if (array? x)
           (array-to-ast x)
-          (literal-or-lookup-to-ast x)))
-    ))
+          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x)))
+            (struct-constructor-ast (eval x))
+            (literal-or-lookup-to-ast x))))))
 
 (defn body-to-ast [body]
   (form-to-ast body))
