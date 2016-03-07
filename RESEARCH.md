@@ -1,7 +1,9 @@
-# C PROGRAMMING AND DEBUGGING
+# C PROGRAMMING, LLVM, AND DEBUGGING
 http://clang.llvm.org/docs/AddressSanitizer.html
 https://www.iar.com/support/resources/articles/advanced-preprocessor-tips-and-tricks/
 http://jvns.ca/blog/2016/03/01/a-few-notes-on-the-stack/
+https://www.recurse.com/blog/7-understanding-c-by-learning-assembly
+http://msm.runhello.com/p/1003
 
 # OWNERSHIP & BORROWING
 http://blog.piston.rs/2016/01/23/dynamo/

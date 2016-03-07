@@ -1,13 +1,10 @@
 # Compiler 
-  - Can't have star in function name when baking
   - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
-  - Compile struct member lookups properly
   - Automatically implement for structs and arrays:
      - str
 	 - copy
 	 - delete
   - Use 'delete' instead of free for memory management
-  - Bake can't handle when a function changes signature
   - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Handle global variables referenced inside functions
@@ -38,6 +35,9 @@
   
 # Dynamic Runtime
   - Remove support for dynamic struct getters
+  - Make defstruct into a macro instead, remove it from eval
+  - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
+  - Define the constructor of a struct to be the same name as the struct (not "new-STRUCTNAME"). Save the struct definition in a dictionary of struct definitions.
   - Should be error when ptr of wrong type is sent to baked function
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
