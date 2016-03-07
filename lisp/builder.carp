@@ -47,7 +47,7 @@
 
 (defn ensure-function-type [t]
   (match t
-    (:fn arg-types return-type) (let [func-type-name (str "Fn_" (join "_" (map type-build arg-types)) "_" (type-build return-type))]
+    (:fn arg-types return-type) (let [func-type-name (str "Fn_" (join "_" (map type-build-no-star arg-types)) "_" (type-build-no-star return-type))]
                                   (do (if (has-key? types func-type-name)
                                         (do ;;(println (str "Ignoring " func-type-name))
                                             func-type-name)
@@ -59,6 +59,12 @@
     _ (error "Can't match t in ensure-function-type: " t)))
 
 (defn type-build (t)
+  (type-build-internal t true))
+
+(defn type-build-no-star (t)
+  (type-build-internal t false))
+
+(defn type-build-internal (t star)
   (if (string? t)
     ;;(error (str "Can't build type from unresolved typevar '" t "'"))
     "typevar"
@@ -73,7 +79,7 @@
            :bool "bool"
            :string "string"
            :void "void"
-           x (str (c-ify-name (name x)) "*"))))
+           x (str (c-ify-name (name x)) (if star "*" "")))))
 
 (defn visit-arg-explicit (c arg)
   (let [result (visit-form c arg true)]

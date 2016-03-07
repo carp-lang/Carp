@@ -1,7 +1,7 @@
 
 (defn generic-safe-name (t)
   (match t
-         (:fn args ret) (str "Fn-" (join "" (map pretty-signature args)) "-" (pretty-signature ret))
+         (:fn args ret) (str "Fn-" (join "" (map generic-safe-name args)) "-" (generic-safe-name ret))
          (:ref r) (str "RefTo-" (generic-safe-name r) "")
          (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
          x (if (keyword? t)
@@ -171,6 +171,27 @@
                                                                    "}")]
                                                         {:proto proto :c c :deps ()})
             x (error (str "Invalid type for call to 'map': " x)))
+
+    "map-copy" (match signature
+            (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
+                                                            array-of-size-sig (list :fn (list :int) (list :Array b))
+                                                            _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
+                                                            array_of_size_call (generic-name "array-of-size" array-of-size-sig)
+                                                            _ (println array_of_size_call)
+                                                            c (str proto
+                                                                   "{ \n"
+                                                                   "  int count = array->count;\n"
+                                                                   "  " (type-build a) "* casted = array->data;\n"
+                                                                   "  Array* new_array = " (c-ify-name array_of_size_call) "(count);\n"
+                                                                   "  " (type-build b) "* new_casted = new_array->data;\n"
+                                                                   "  for(int i = 0; i < count; i++) {\n"
+                                                                   "    new_casted[i] = f(casted[i]);\n"
+                                                                   "  }\n"
+                                                                   "  free(array);\n"
+                                                                   "  return new_array;\n"
+                                                                   "}")]
+                                                        {:proto proto :c c :deps (list array_of_size_call)})
+            x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
             ;;(println (str "Calling str for signature: " signature))
@@ -215,7 +236,7 @@
                                    " return a;"
                                    " }")]
                         {:proto proto :c c :deps ()})
-                      _ (error "Invalid type for call to 'array-of-size'"))
+                      x (error (str "Invalid type for call to 'array-of-size': " x)))
 
     
     "array-set" (match signature

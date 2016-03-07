@@ -185,6 +185,7 @@ void env_new_global() {
   register_primop("nth", p_nth);
   register_primop("count", p_count);
   register_primop("map", p_map);
+  register_primop("map-copy", p_map); // only matters when compiling to C
   register_primop("map2", p_map2);
   register_primop("filter", p_filter);
   register_primop("reduce", p_reduce);
