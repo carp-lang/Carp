@@ -1,5 +1,6 @@
 # Compiler 
   - Make defstruct be a macro instead of special form
+  - A call to constructor doesn't have a constraint for its return type
   - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Automatically implement for structs and arrays:
      - str

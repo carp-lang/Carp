@@ -8,11 +8,4 @@
     nil
     ))
 
-(load-gl)
-
-;;(def hej)
-;; (def asdas 12)
-;; (if (and (println "A") (println "B") (def? asdas) (do (println "C") false) (println "D"))
-;;   10
-;;   20)
-
+;;(load-gl)
