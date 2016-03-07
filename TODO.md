@@ -35,6 +35,7 @@
   
   
 # Dynamic Runtime
+  - Ensure shadow stack is always properly popped (blew it)
   - Remove support for dynamic struct getters
   - Make defstruct into a macro instead, remove it from eval
   - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)

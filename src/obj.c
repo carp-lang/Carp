@@ -384,6 +384,16 @@ void obj_print_cout(Obj *o) {
     }
     printf(")");
   }
+  else if(o->tag == 'A') {
+    printf("[");
+    for(int i = 0; i < o->count; i++) {
+      obj_print_cout(o->array[i]);
+      if(i < o->count - 1) {
+        printf(" ");
+      }
+    }
+    printf("[");
+  }
   else if(o->tag == 'E') {
     printf("{ ... }");
   }

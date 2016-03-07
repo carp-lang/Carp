@@ -194,7 +194,7 @@
         (list-to-ast x)
         (if (array? x)
           (array-to-ast x)
-          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x)))
+          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x))) ;; (log (str "def? : " (type x) " ") x)
             (struct-constructor-ast (eval x))
             (literal-or-lookup-to-ast x))))))
 

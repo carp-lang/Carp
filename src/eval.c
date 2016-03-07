@@ -55,7 +55,7 @@ Obj *stack_pop() {
 
 void shadow_stack_print() {
   printf("----- SHADOW STACK -----\n");
-  for(int i = 0; i < stack_pos - 1; i++) {
+  for(int i = 0; i < shadow_stack_pos - 1; i++) {
     printf("%d\t", i);
     obj_print_cout(shadow_stack[i]);
     printf("\n");
@@ -252,7 +252,8 @@ void match(Obj *env, Obj *value, Obj *attempts) {
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(p->cdr->car)->s); //, obj_to_string(new_env)->s);
       eval_internal(new_env, p->cdr->car); // eval the following form using the new environment
-      shadow_stack_pop(); // new_env
+      /*Obj *e = */shadow_stack_pop(); // new_env
+      //assert(e == new_env);
       return;
     }
     
@@ -280,9 +281,15 @@ void apply(Obj *function, Obj **args, int arg_count) {
 
     shadow_stack_push(function);
     shadow_stack_push(calling_env);
+    int shadow_stack_pos_before = shadow_stack_pos;
     eval_internal(calling_env, function->body);
-    shadow_stack_pop();
-    shadow_stack_pop();
+    if(shadow_stack_pos_before != shadow_stack_pos) {
+      //printf("shadow_stack_pos_before = %d, shadow_stack_pos now = %d\n", shadow_stack_pos_before, shadow_stack_pos);
+    }
+    /* Obj *pop1 =  */shadow_stack_pop();
+    /* Obj *pop2 =  */shadow_stack_pop();
+    //assert(pop1 == calling_env);
+    //assert(pop2 == function);
   }
   else if(function->tag == 'P') {   
     Obj *result = function->primop(args, arg_count);
@@ -794,13 +801,13 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {
-    assert_or_set_error(o->cdr, "Too few args to 'def?': ", o);
-    assert_or_set_error(o->cdr->cdr, "Too few args to 'def?': ", o);
-    assert_or_set_error(o->car->tag == 'Y', "Can't call 'def?' on non-symbol: ", o);
+    //assert_or_set_error(o->cdr, "Too few args to 'def?': ", o);
+    //assert_or_set_error(o->cdr->cdr, "Too few args to 'def?': ", o);
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }
     Obj *key = stack_pop();
-    if(obj_eq(nil, env_lookup_binding(env, key))) {
+    assert_or_set_error(key->tag == 'Y', "Can't call 'def?' on non-symbol: ", key);
+    if(obj_eq(nil, env_lookup_binding(global_env, key))) {
       stack_push(lisp_false);
     } else {
       stack_push(lisp_true);

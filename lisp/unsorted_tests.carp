@@ -1,0 +1,193 @@
+(defn generic-call-2 [x]
+  (+ (id 10) (id x)))
+
+(defn generic-call-2b [x]
+  (+ (id 10) (id x)))
+
+(defn test-generic-call-2 []
+  (do (bake generic-call-2)
+      (assert-eq (signature generic-call-2) (list :fn '(:int) :int))))
+
+
+
+;;(test-generic-call-2)
+
+
+;; (defstruct Vec2
+;;   [x :float
+;;    y :float])
+
+;; (def pos (Vec2 3.4 5.5))
+
+(defstruct Person
+  [name :string
+   age :int])
+
+(defn me [] (Person "erik" 29))
+
+;;(bake me)
+
+;; (def me-ast (lambda-to-ast (code me)))
+;; (def me-deps (find-func-deps me-ast false))
+;; (def me-con (gencon me-deps))
+;; (def me-typed (infer-types me-deps nil))
+
+(defn peeps []
+  [(me) (Person "Klabbe" 53)])
+
+;;(bake peeps)
+
+;; (println (str (map #name (peeps))))
+;; (println (str (map #age (peeps))))
+
+
+
+;; (defn fa [] 100)
+;; (bake fa)
+;; (assert-eq 100 (fa))
+
+;; (defn fb [] (fa))
+;; (bake fb)
+;; (assert-eq 100 (fb))
+
+;; (defn fc [] (fa))
+;; (bake fc)
+;; (assert-eq 100 (fc))
+
+;; (defn fd [] (fc))
+;; (bake fd)
+;; (assert-eq 100 (fd))
+
+;;(defn fa [] 200)
+;;(bake fa)
+
+
+(defstruct Color [r :float
+                  g :float
+                  b :float])
+
+(defn test-color [] (Color 1.0 0.0 0.5))
+
+(defn mix-colors [col1 col2]
+  (Color (+ (#r col1) (#r col2))
+         (+ (#g col1) (#g col2))
+         (+ (#b col1) (#b col2))))
+
+(defn test-mix-colors []
+  (println (str (mix-colors (Color 0.3 1.0 0.0)
+                            (Color 0.1 0.1 0.1)))))
+
+;;(bake test-mix-colors)
+
+;; (defn int-stuff []
+;;   [100 200 300])
+;; (bake int-stuff)
+
+
+
+
+;; This one bakes
+(defn trixy-1 [x]
+  (let [xs [1 2 x 4 5]]
+    (if (< x 10)
+      xs
+      [10 20 30])))
+;; (bake trixy-1)
+
+;; Can't bake this -- complaints about borrowing of 'x'
+(defn trixy-2 [x]
+  (println (ref (str (Color x x x)))))
+
+(defn trixy-3 [x]
+  (printlng (Color x 1.0 2.0)))
+
+
+(defn color [x]
+  (Color 1.0 x 3.0))
+
+(defn trixy-5 []
+  (println (ref (str (ref (color 2.3))))))
+
+(defn trixy-6 [xx yy zz]
+  (Color xx yy zz))
+
+(def ast6 (lambda-to-ast (code trixy-6)))
+(def asta6 (annotate-ast ast6))
+
+(defn x2 [x]
+  (* x 2))
+
+(defn mapping []
+  (map x2 [1 2 3 4 5]))
+
+;;(bake mapping)
+
+(defn x2f [x]
+  (* x 2.0))
+
+(defn mapping-floats []
+  (map x2f [10.0 20.0 30.0 40.0 50.0]))
+
+(defn x2s [s]
+  (itos (strlen (ref s))))
+
+(defn exclaim (s)
+  (string-append (ref s) "!"))
+
+(defn mapping-strings []
+  (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
+
+
+
+(defn even-i? [x]
+  (if (even? x)
+    1
+    0))
+
+(defn map-even []
+  (map even-i? [1 2 3 4 5 6 7]))
+
+
+
+
+
+
+
+(defstruct SimplePair
+  [x :int
+   y :int])
+
+(defn test-simple-pair []
+  (let [p (SimplePair 13 27)]
+    (get-x p)))
+
+;;(bake test-simple-pair)
+;;(test-simple-pair)
+
+
+
+
+
+(defstruct Wrap [something :int])
+
+;; TODO: this fails
+(defn call-constructor [f]
+  (f 100))
+(defn test-call-constructor []
+  (call-constructor Wrap))
+(bake test-call-constructor)
+
+(defn map-wrap []
+  (map-copy Wrap [100 500 999]))
+(bake map-wrap)
+
+
+(defn map-itof [] (map-copy itof [1 2 3]))
+(bake map-itof)
+
+(defn my-strlen [s]
+  (strlen s))
+
+(defn map-strlen [] (map-copy my-strlen ["erik" "anna" "marie"]))
+(bake map-strlen)
+;;(assert-eq [4 4 5] (map-strlen))
