@@ -29,6 +29,7 @@ http://stackoverflow.com/questions/4899113/fixed-point-combinator-for-mutually-r
 # LANGUAGE DESIGN
 http://www.complang.tuwien.ac.at/kps2015/proceedings/KPS_2015_submission_29.pdf
 http://www.lihaoyi.com/post/WhatsinaBuildTool.html
+http://prog21.dadgum.com/136.html
 
 # GRAPHS
 https://en.wikipedia.org/wiki/Strongly_connected_component
