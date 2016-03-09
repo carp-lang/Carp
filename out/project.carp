@@ -18,3 +18,7 @@
 
 (defn f [x] (Vector x (+ x 10)))
 (defn g [] (map-copy f [100 200 300]))
+
+(defn h []
+  (let [v (Vector 100 100)]
+    (set-x v 666)))
