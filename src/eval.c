@@ -476,6 +476,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     }
   }
   else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct")), lisp_true)) {
+    // Evaluation of a struct-definition (a dictionary) in function position (which means that it is used as a constructor)
     char *name = env_lookup(function, obj_new_keyword("name"))->s;
     int struct_size = env_lookup(function, obj_new_keyword("size"))->i;
     int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
@@ -512,10 +513,12 @@ void apply(Obj *function, Obj **args, int arg_count) {
         *xp = x;
       }
       else if(args[i]->tag == 'Q') {
+	assert_or_set_error(obj_eq(member_type, type_ptr), "Can't assign pointer to a member of type ", obj_to_string(member_type));
         void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
         *vp = args[i]->void_ptr;
       }
       else if(args[i]->tag == 'S') {
+	assert_or_set_error(obj_eq(member_type, type_string), "Can't assign int to a member of type ", obj_to_string(member_type));
         char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
         *sp = args[i]->s;
       }
@@ -692,9 +695,9 @@ void eval_list(Obj *env, Obj *o) {
       member_names->array[i] = member_name;
       offsets->array[i] = obj_new_int(offset);
       int size = 0;
-      if(obj_eq(member_type, type_float)) { size = sizeof(float); }
-      else if(obj_eq(member_type, type_int)) { size = sizeof(int); }
-      else if(obj_eq(member_type, type_char)) { size = sizeof(char); }
+      if(obj_eq(member_type, type_float)) { size = 8; } // sizeof(float); }
+      else if(obj_eq(member_type, type_int)) { size = 8; } // sizeof(int); }
+      else if(obj_eq(member_type, type_char)) { size = 8; } // sizeof(char); }
       else { size = sizeof(void*); }
 
       /* char fixed_member_name[256]; */

@@ -1,4 +1,4 @@
-# Compiler 
+# Compiler
   - Printing of arrays from code that haven't been compiled is incorrect or crashes on first call
   - Automatically implement for structs and arrays:
 	 - copy
@@ -19,7 +19,7 @@
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - deftype (tagged unions)
   - Clean up the awful 'list-to-ast' function
-  - Complete type constraints for binops, check for "numeric" types
+  - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?)
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
