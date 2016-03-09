@@ -26,3 +26,32 @@
   (do
     (print-mix (get-mix-a m2))
     (print-mix (get-mix-b m2))))
+
+
+
+
+(defstruct Vector
+  [x :int
+   y :int])
+
+(defn setter-1 []
+  (let [v (Vector 100 100)]
+    (set-x v 666)))
+
+(defn test-setter-1 []
+  (do (bake setter-1)
+      (assert-eq 666 (get-x (setter-1)))))
+
+(test-setter-1)
+
+
+
+(defn updater-1 []
+  (let [v (Vector 100 100)]
+    (update-y v inc)))
+
+(defn test-updater-1 []
+  (do (bake updater-1)
+      (assert-eq 101 (get-y (updater-1)))))
+
+(test-updater-1)
