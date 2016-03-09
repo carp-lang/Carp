@@ -1,9 +1,6 @@
 # Compiler 
   - Printing of arrays from code that haven't been compiled is incorrect or crashes on first call
-  - Make defstruct be a macro instead of special form 
-  - Don't apply borrowing rules to primitive (auto-copyable) types like int/float/bool/char
   - Automatically implement for structs and arrays:
-     - str
 	 - copy
 	 - delete
   - Use 'delete' instead of free for memory management
@@ -39,8 +36,6 @@
   - Ensure shadow stack is always properly popped (blew it)
   - Remove support for dynamic struct getters
   - Make defstruct into a macro instead, remove it from eval
-  - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
-  - Define the constructor of a struct to be the same name as the struct (not "new-STRUCTNAME"). Save the struct definition in a dictionary of struct definitions.
   - Should be error when ptr of wrong type is sent to baked function
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
@@ -62,6 +57,7 @@
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - Fix problem with "No meta data." for some calls in stack trace
   - Reader syntax for refs: &
+  - Match rest of list can use '...' instead
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
   - Use modules to solve problem of using same name for members in different structs
   - How to not leak memory in the repl
@@ -75,6 +71,7 @@
   - Reading of dotted pairs?
   - Not possible to write an 'eat-void' function: (register-builtin "eat_void" '(:void) :void), need a proper unit type for that
   - :when clauses in match?
+  - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
 
 # Niceties
   - Built in tutorial for the language

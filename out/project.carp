@@ -20,3 +20,9 @@
 (defn g [] (map-copy f [100 200 300]))
 
 
+(defn multi-use-of-int []
+  (let [x 1]
+    (Vector x x)))
+
+(bake multi-use-of-int)
+
