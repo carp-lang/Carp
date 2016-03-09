@@ -89,10 +89,11 @@
                 (if (has-key? ast :constructor)
                   (let [member-types (array-to-list (:member-types ast))
                         t (:type ast)
+                        constructor-return-constr {:a (keyword (:struct-name ast)) :b (nth t 2) :doc "constructor-return-value"}
                         constructor-arg-constrs (map2 (fn [a b] {:a a :b b :doc "constructor-arg"})
                                                       member-types
                                                       (nth t 1))]
-                    constructor-arg-constrs)
+                    (cons constructor-return-constr constructor-arg-constrs))
                   (let [val (:value ast)
                         ;;_ (println (str "not self-recursive: \n" ast))
                         t (get-type-of-symbol type-env val)
