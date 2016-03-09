@@ -10,21 +10,15 @@
 
 ;;(load-gl)
 
-;; (defstruct Vector
-;;   [x :int
-;;    n :string
-;;    y :int])
+(defstruct Vector
+  [x :int
+   y :int])
 
-;; (defn f [x] (Vector x (+ x 10)))
-;; (defn g [] (map-copy f [100 200 300]))
+(defn test-print-array-of-vector []
+  (let [vecs [(Vector 1001 1002)
+              (Vector 1003 1004)
+              (Vector 1005 1006)]]
+    (println* vecs)))
 
-
-;; (defn test-print-array-of-vector []
-;;   (let [vecs [(Vector 1001 (string-copy "AAAAA") 1002)
-;;               (Vector 1003 (string-copy "BBBBB") 1004)
-;;               (Vector 1005 (string-copy "CCCCC") 1006)]]
-;;     ;;(println* vecs)
-;;     vecs))
-
-;; (bake test-print-array-of-vector)
-;; (test-print-array-of-vector)
+(test-print-array-of-vector)
+;;(bake test-print-array-of-vector)

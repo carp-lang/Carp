@@ -6,6 +6,10 @@
 
 void register_primop(char *name, Primop primop);
 
+// PLEASE NOTE
+// All primops must be very careful to put any temp variables on the shadow stack.
+// All calls to the rest of the lisp system might trigger GC and remove the fresh locals!
+
 Obj *p_open_file(Obj** args, int arg_count);
 Obj *p_save_file(Obj** args, int arg_count);
 Obj *p_add(Obj** args, int arg_count);
@@ -72,6 +76,7 @@ Obj *p_array_of_size(Obj** args, int arg_count);
 Obj *p_array_set_BANG(Obj** args, int arg_count);
 Obj *p_array_set(Obj** args, int arg_count);
 //Obj *p_new(Obj** args, int arg_count);
+Obj *p_gc(Obj** args, int arg_count);
 
 Obj *register_ffi_internal(char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

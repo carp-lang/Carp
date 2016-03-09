@@ -399,7 +399,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
 
       if(c == NULL) {
         // TODO: have an error here instead?
-        //printf("c is null");
+        //printf("Return value of type string from ffi function is null.\n");
         obj_result = obj_new_string("");
       }
       else {      
@@ -506,8 +506,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
       new_struct->meta = obj_new_environment(NULL);
     }
     env_assoc(new_struct->meta, obj_new_keyword("type"), obj_new_keyword(name));
+
     assert_or_set_error(!(arg_count < member_count), "Too few args to struct constructor: ", obj_new_string(name));
     assert_or_set_error(!(arg_count > member_count), "Too many args to struct constructor: ", obj_new_string(name));
+    
     for(int i = 0; i < arg_count; i++) {
       Obj *member_type = member_types[i];
       int offset = offsets[i]->i;
@@ -535,7 +537,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       else if(args[i]->tag == 'S') {
 	assert_or_set_error(obj_eq(member_type, type_string), "Can't assign int to a member of type ", obj_to_string(member_type));
         char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
-        *sp = args[i]->s;
+        *sp = args[i]->s; // TODO: strdup?
       }
       else {
         eval_error = obj_new_string("Can't set member ");

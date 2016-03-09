@@ -47,6 +47,11 @@ void free_internal_data(Obj *dead) {
     free(dead->name);
   }
   else if(dead->tag == 'S' || dead->tag == 'Y' || dead->tag == 'K') {
+    /* if(dead->tag == 'S') { */
+    /*   printf("freeing '%s'\n", dead->s); */
+    /*   dead->deathwish = dead->s; */
+    /*   return; */
+    /* } */
     free(dead->s);
   }
   else if(dead->tag == 'A') {
@@ -70,7 +75,37 @@ void gc_sweep() {
 
       *p = dead->prev;
       free_internal_data(dead);
-      free(dead);
+
+      //memset(dead, 0, sizeof(Obj));
+      //free(dead);
+      
+      if(dead->tag == 'A') free(dead);
+      else if(dead->tag == 'B') free(dead);
+      else if(dead->tag == 'C') free(dead);
+      else if(dead->tag == 'D') free(dead);
+      else if(dead->tag == 'E') free(dead);
+      else if(dead->tag == 'F') free(dead);
+      else if(dead->tag == 'G') free(dead);
+      else if(dead->tag == 'H') free(dead);
+      else if(dead->tag == 'I') free(dead);
+      else if(dead->tag == 'K') free(dead);
+      else if(dead->tag == 'L') free(dead);
+      else if(dead->tag == 'M') free(dead);
+      else if(dead->tag == 'N') free(dead);
+      else if(dead->tag == 'O') free(dead);
+      else if(dead->tag == 'P') free(dead);
+      else if(dead->tag == 'Q') free(dead);
+      else if(dead->tag == 'R') free(dead);
+      else if(dead->tag == 'S') free(dead);
+      else if(dead->tag == 'T') free(dead);
+      else if(dead->tag == 'U') free(dead);
+      else if(dead->tag == 'V') free(dead);
+      else if(dead->tag == 'X') free(dead);
+      else if(dead->tag == 'Y') free(dead);
+      else if(dead->tag == 'Z') free(dead);
+      else {
+	printf("Can't free object with invalid tag: %c\n", dead->tag);
+      }
       
       obj_total--;
       kill_count++;

@@ -11,8 +11,8 @@
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
+#include "gc.h"
 #include "../shared/types.h"
-//#include "../shared/shared.h" // WHY CAN'T I DO THIS?
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
@@ -230,9 +230,11 @@ Obj *p_array(Obj** args, int arg_count) {
 
 Obj *p_str(Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
+  shadow_stack_push(s);
   for(int i = 0; i < arg_count; i++) {
     obj_string_mut_append(s, obj_to_string_not_prn(args[i])->s);
   }
+  shadow_stack_pop();
   return s;
 }
 
@@ -1576,3 +1578,8 @@ Obj *p_array_set(Obj** args, int arg_count) {
 /*   eval_error = obj_new_string("The primop 'new' should never be called in dynamic code."); */
 /*   return nil; */
 /* } */
+
+Obj *p_gc(Obj** args, int arg_count) {
+  gc(global_env);
+  return nil;
+}

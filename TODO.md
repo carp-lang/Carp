@@ -33,6 +33,7 @@
   
   
 # Dynamic Runtime
+  - Make sure ALL primops use the shadow stack!!!
   - Ensure shadow stack is always properly popped (blew it)
   - Remove support for dynamic struct getters
   - Should be error when ptr of wrong type is sent to baked function

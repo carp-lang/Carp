@@ -217,6 +217,7 @@ void env_new_global() {
   register_primop("array-of-size", p_array_of_size);
   register_primop("array-set!", p_array_set_BANG);
   register_primop("array-set", p_array_set);
+  register_primop("gc", p_gc);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);
