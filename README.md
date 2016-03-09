@@ -196,7 +196,7 @@ foo ; symbol
 
 (def my-pos (Vector2 102.2 210.3))
 
-;; A [lens](https://www21.in.tum.de/teaching/fp/SS15/papers/17.pdf) is automatically generated for each member:
+;; A [![lens](https://www21.in.tum.de/teaching/fp/SS15/papers/17.pdf)] is automatically generated for each member:
 (get-x my-pos) ;; => 102.2
 (set-x my-pos 3.0) ;; => (Vector2 10.2 3.0)
 (update-x my-pos inc) ;; => (Vector2 10.2 4.0)
