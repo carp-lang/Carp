@@ -61,6 +61,7 @@
                 (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
+            (println "Time to go.")
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 
