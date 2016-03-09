@@ -63,7 +63,11 @@
                 updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
                 updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
                 updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
-            (bake-struct-lens-function (new-builder) (str "update-" member-name) updater-signature updater-proto updater-c '()))))))
+            (bake-struct-lens-function (new-builder) (str "update-" member-name) updater-signature updater-proto updater-c '()))
+          (let [offset-signature (list :fn () :int)
+                offset-proto (str "int offset_" (c-ify-name member-name) "()")
+                offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
+            (bake-struct-lens-function (new-builder) (str "offset-" member-name) offset-signature offset-proto offset-c '()))))))
 
 (defn bake-struct-lens-function [builder func-name func-signature proto c deps]
   (let [c-func-name (c-ify-name func-name)
