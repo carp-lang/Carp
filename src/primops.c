@@ -381,10 +381,12 @@ Obj *p_print(Obj** args, int arg_count) {
 
 Obj *p_prn(Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
+  shadow_stack_push(s);
   for(int i = 0; i < arg_count; i++) {
     Obj *s2 = obj_to_string(args[i]);
     obj_string_mut_append(s, s2->s);
   }
+  shadow_stack_pop(); // s
   return s;
 }
 
@@ -414,11 +416,13 @@ Obj *p_get(Obj** args, int arg_count) {
       return o;
     } else {
       Obj *s = obj_new_string("Can't get key '");
+      shadow_stack_push(s);
       obj_string_mut_append(s, obj_to_string(args[1])->s);
       obj_string_mut_append(s, "' in dict:\n");
       obj_string_mut_append(s, obj_to_string(args[0])->s);
       obj_string_mut_append(s, "");
       eval_error = s;
+      shadow_stack_pop();
       return nil;
     }
   }
@@ -1112,8 +1116,10 @@ Obj *p_name(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S' && args[0]->tag != 'Y' && args[0]->tag != 'K') {
     Obj *s = obj_new_string("Argument to 'name' must be string, keyword or symbol: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_string(args[0]->s);
@@ -1126,8 +1132,10 @@ Obj *p_symbol(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'symbol' must be string: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_symbol(args[0]->s);
@@ -1140,8 +1148,10 @@ Obj *p_keyword(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'keyword' must be string: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_keyword(args[0]->s);

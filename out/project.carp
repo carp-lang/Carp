@@ -10,15 +10,4 @@
 
 ;;(load-gl)
 
-(defstruct Vector
-  [x :int
-   y :int])
 
-(defn test-print-array-of-vector []
-  (let [vecs [(Vector 1001 1002)
-              (Vector 1003 1004)
-              (Vector 1005 1006)]]
-    (println* vecs)))
-
-(test-print-array-of-vector)
-;;(bake test-print-array-of-vector)

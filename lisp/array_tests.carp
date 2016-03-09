@@ -90,3 +90,15 @@
 
 
 
+(defstruct Vector
+  [x :int
+   y :int])
+
+(defn test-print-array-of-vector []
+  (let [vecs [(Vector 1001 1002)
+              (Vector 1003 1004)
+              (Vector 1005 1006)]]
+    (assert-eq "[(Vector 1001 1002) (Vector 1003 1004) (Vector 1005 1006)]" (str vecs))))
+
+(test-print-array-of-vector)
+
