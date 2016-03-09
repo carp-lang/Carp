@@ -35,7 +35,6 @@
 # Dynamic Runtime
   - Ensure shadow stack is always properly popped (blew it)
   - Remove support for dynamic struct getters
-  - Make defstruct into a macro instead, remove it from eval
   - Should be error when ptr of wrong type is sent to baked function
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)

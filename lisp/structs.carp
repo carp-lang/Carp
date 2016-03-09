@@ -1,4 +1,33 @@
 
+(defn split-every-second [xs]
+  (match xs
+    () (list () ())
+    (_) (error "split-every-second needs an even number of arguments")
+    (a b & misc) (let [inside (split-every-second misc)]
+                   (list (cons a (first inside))
+                         (cons b (second inside))))))
+
+(defmacro defstruct (struct-name struct-members)
+  (let [names-and-types (split-every-second (array-to-list struct-members))]
+    (list 'defstruct-internal (str struct-name)
+          (cons 'array (map str (first names-and-types)))
+          (cons 'array (second names-and-types)))))
+
+(defn defstruct-internal [struct-name member-names member-types]
+  (do
+    (assert-eq (count member-names) (count member-types))
+    (build-constructor struct-name member-names member-types)
+    (eval (list 'def (symbol struct-name) {:struct true
+                                           :generic false
+                                           :name struct-name
+                                           :member-names member-names
+                                           :member-types member-types
+                                           :size (eval (list (symbol (str "size-" struct-name))))
+                                           :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                                member-names)
+                                           :member-count (count member-names)}))))
+
+
 (defn build-constructor [struct-name member-names member-types]
   (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
@@ -38,9 +67,15 @@
           (do
             (def c c-program-string)
             (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
+            ;; Compile lenses:
             (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
                   member-names
                   member-types)
+            ;; Compile sizeof function
+            (let [size-signature (list :fn () :int)
+                  size-proto (str "int size_" struct-name "()")
+                  size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+              (bake-struct-lens-function (new-builder) (str "size-" struct-name) size-signature size-proto size-c '()))
             ))))))
 
 (defn generate-struct-lens [struct-name member-name member-type]

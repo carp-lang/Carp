@@ -15,6 +15,7 @@ Obj *p_div(Obj** args, int arg_count);
 //Obj *p_mod(Obj** args, int arg_count);
 Obj *p_eq(Obj** args, int arg_count);
 Obj *p_list(Obj** args, int arg_count);
+Obj *p_array(Obj** args, int arg_count);
 Obj *p_str(Obj** args, int arg_count);
 Obj *p_str_append_bang(Obj** args, int arg_count);
 Obj *p_str_replace(Obj** args, int arg_count);

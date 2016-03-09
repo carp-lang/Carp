@@ -163,6 +163,7 @@ void env_new_global() {
   //register_primop("mod", p_mod);
   register_primop("=", p_eq);
   register_primop("list", p_list);
+  register_primop("array", p_array);
   register_primop("str", p_str);
   register_primop("str-append!", p_str_append_bang);
   register_primop("str-replace", p_str_replace);

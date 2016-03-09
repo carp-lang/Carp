@@ -477,13 +477,25 @@ void apply(Obj *function, Obj **args, int arg_count) {
   }
   else if(function->tag == 'E' && obj_eq(env_lookup(function, obj_new_keyword("struct")), lisp_true)) {
     // Evaluation of a struct-definition (a dictionary) in function position (which means that it is used as a constructor)
-    char *name = env_lookup(function, obj_new_keyword("name"))->s;
-    int struct_size = env_lookup(function, obj_new_keyword("size"))->i;
-    int member_count = env_lookup(function, obj_new_keyword("member-count"))->i;
+    Obj *name_obj = env_lookup(function, obj_new_keyword("name"));
+    assert_or_set_error(name_obj, "no key 'name' on struct definition: ", function);
+    char *name = name_obj->s;
+
+    Obj *struct_size_obj = env_lookup(function, obj_new_keyword("size"));
+    assert_or_set_error(struct_size_obj, "no key 'size' on struct definition: ", function);
+    int struct_size = struct_size_obj->i;
+
+    Obj *struct_member_count_obj = env_lookup(function, obj_new_keyword("member-count"));
+    assert_or_set_error(struct_member_count_obj, "no key 'member-count' on struct definition: ", function);
+    int member_count = struct_member_count_obj->i;
+    
     Obj *offsets_obj = env_lookup(function, obj_new_keyword("member-offsets"));
+    assert_or_set_error(offsets_obj, "no key 'member-offsets' on struct definition: ", function);
     assert_or_set_error(offsets_obj->tag == 'A', "offsets must be an array: ", function);
     Obj **offsets = offsets_obj->array;
+    
     Obj *member_types_obj = env_lookup(function, obj_new_keyword("member-types"));
+    assert_or_set_error(member_types_obj, "no key 'member-types' on struct definition: ", function);
     assert_or_set_error(member_types_obj->tag == 'A', "member-types must be an array: ", function);
     Obj **member_types = member_types_obj->array;
    
@@ -513,7 +525,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
         *xp = x;
       }
       else if(args[i]->tag == 'Q') {
-	assert_or_set_error(obj_eq(member_type, type_ptr), "Can't assign pointer to a member of type ", obj_to_string(member_type));
+	assert_or_set_error(!obj_eq(member_type, type_char), "Can't assign char to a member of type ", obj_to_string(member_type));
+	assert_or_set_error(!obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
+	assert_or_set_error(!obj_eq(member_type, type_float), "Can't assign float to a member of type ", obj_to_string(member_type));
+	assert_or_set_error(!obj_eq(member_type, type_string), "Can't assign string to a member of type ", obj_to_string(member_type));
         void **vp = (void**)(((char*)new_struct->void_ptr) + offset);
         *vp = args[i]->void_ptr;
       }
@@ -666,83 +681,84 @@ void eval_list(Obj *env, Obj *o) {
       eval_internal(env, o->cdr->cdr->cdr->car);
     }
   }
-  else if(HEAD_EQ("defstruct")) {
-    assert_or_set_error(o->cdr->car, "Too few forms in 'defstruct' form: ", o);
-    assert_or_set_error(o->cdr->cdr->car, "Too few forms in 'defstruct' form: ", o);
-    assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many forms in 'defstruct' form: ", o);
+  /* else if(HEAD_EQ("defstruct")) { */
+  /*   assert_or_set_error(o->cdr->car, "Too few forms in 'defstruct' form: ", o); */
+  /*   assert_or_set_error(o->cdr->cdr->car, "Too few forms in 'defstruct' form: ", o); */
+  /*   assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many forms in 'defstruct' form: ", o); */
 
-    assert_or_set_error(o->cdr->car->tag == 'Y', "First argument to 'defstruct' form must be a symbol (it's the name of the struct): ", o);
-    assert_or_set_error(o->cdr->cdr->car->tag == 'A', "Second argument to 'defstruct' form must be an array (with the members, i.e. [x :float, y :float]): ", o);
+  /*   assert_or_set_error(o->cdr->car->tag == 'Y', "First argument to 'defstruct' form must be a symbol (it's the name of the struct): ", o); */
+  /*   assert_or_set_error(o->cdr->cdr->car->tag == 'A', "Second argument to 'defstruct' form must be an array (with the members, i.e. [x :float, y :float]): ", o); */
 
-    char *name = o->cdr->car->s;
-    Obj *types = o->cdr->cdr->car;
+  /*   char *name = o->cdr->car->s; */
+  /*   Obj *types = o->cdr->cdr->car; */
 
-    Obj *struct_description = obj_new_environment(NULL);
-    env_extend(struct_description, obj_new_keyword("name"), obj_new_string(name));
+  /*   Obj *struct_description = obj_new_environment(NULL); */
+  /*   env_extend(struct_description, obj_new_keyword("name"), obj_new_string(name)); */
 
-    int member_count = types->count / 2;
+  /*   int member_count = types->count / 2; */
 
-    Obj *member_types = obj_new_array(member_count);
-    Obj *member_names = obj_new_array(member_count);
-    Obj *offsets = obj_new_array(member_count);
-    int offset = 0;
-    bool generic = false;
-    for(int i = 0; i < member_count; i++) {
-      assert_or_set_error(types->array[i * 2]->tag == 'Y', "Struct member name must be symbol: ", types->array[i * 2]);
-      Obj *member_name = obj_new_string(types->array[i * 2]->s);
-      Obj *member_type = types->array[i * 2 + 1];
-      member_types->array[i] = member_type;
-      member_names->array[i] = member_name;
-      offsets->array[i] = obj_new_int(offset);
-      int size = 0;
-      if(obj_eq(member_type, type_float)) { size = 8; } // sizeof(float); }
-      else if(obj_eq(member_type, type_int)) { size = 8; } // sizeof(int); }
-      else if(obj_eq(member_type, type_char)) { size = 8; } // sizeof(char); }
-      else { size = sizeof(void*); }
+  /*   Obj *member_types = obj_new_array(member_count); */
+  /*   Obj *member_names = obj_new_array(member_count); */
+  /*   Obj *offsets = obj_new_array(member_count); */
+  /*   int offset = 0; */
+  /*   bool generic = false; */
+  /*   for(int i = 0; i < member_count; i++) { */
+  /*     assert_or_set_error(types->array[i * 2]->tag == 'Y', "Struct member name must be symbol: ", types->array[i * 2]); */
+  /*     Obj *member_name = obj_new_string(types->array[i * 2]->s); */
+  /*     Obj *member_type = types->array[i * 2 + 1]; */
+  /*     member_types->array[i] = member_type; */
+  /*     member_names->array[i] = member_name; */
+  /*     offsets->array[i] = obj_new_int(offset); */
+  /*     int size = 0; */
+  /*     if(obj_eq(member_type, type_float)) { size = 8; } // sizeof(float); } */
+  /*     else if(obj_eq(member_type, type_int)) { size = 8; } // sizeof(int); } */
+  /*     else if(obj_eq(member_type, type_char)) { size = 8; } // sizeof(char); } */
+  /*     else { size = sizeof(void*); } */
 
-      /* char fixed_member_name[256]; */
-      /* snprintf(fixed_member_name, 255, "get-%s", member_name->s); */
+  /*     /\* char fixed_member_name[256]; *\/ */
+  /*     /\* snprintf(fixed_member_name, 255, "get-%s", member_name->s); *\/ */
 
-      /* Obj *struct_member_lookup = obj_new_environment(NULL); */
-      /* env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true); */
-      /* env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description */
-      /* env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset)); */
-      /* env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name); */
-      /* env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type); */
+  /*     /\* Obj *struct_member_lookup = obj_new_environment(NULL); *\/ */
+  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true); *\/ */
+  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description *\/ */
+  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset)); *\/ */
+  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name); *\/ */
+  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type); *\/ */
       
-      /* env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup); */
+  /*     /\* env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup); *\/ */
 
-      offset += size;
-    }
+  /*     offset += size; */
+  /*   } */
 
-    env_extend(struct_description, obj_new_keyword("member-offsets"), offsets);
-    env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count));
-    env_extend(struct_description, obj_new_keyword("member-types"), member_types);
-    env_extend(struct_description, obj_new_keyword("member-names"), member_names);
-    env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset));
-    env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false);
-    env_extend(struct_description, obj_new_keyword("struct"), lisp_true);
+  /*   env_extend(struct_description, obj_new_keyword("member-offsets"), offsets); */
+  /*   env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count)); */
+  /*   env_extend(struct_description, obj_new_keyword("member-types"), member_types); */
+  /*   env_extend(struct_description, obj_new_keyword("member-names"), member_names); */
+  /*   env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset)); */
+  /*   env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false); */
+  /*   env_extend(struct_description, obj_new_keyword("struct"), lisp_true); */
 
-    Obj *struct_info_binding = obj_new_string(name);
-    //obj_string_mut_append(struct_info_binding, "-info");
+  /*   Obj *struct_info_binding = obj_new_string(name); */
+  /*   //obj_string_mut_append(struct_info_binding, "-info"); */
     
-    env_extend(env, obj_new_symbol(struct_info_binding->s), struct_description);
-    stack_push(struct_description);
+  /*   env_extend(env, obj_new_symbol(struct_info_binding->s), struct_description); */
+  /*   stack_push(struct_description); */
 
-    // Will call this function now: (build-constructor struct-name member-names member-types)
-    Obj *call_to_build_constructor = obj_list(obj_new_symbol("build-constructor"), obj_new_string(name), member_names, member_types);
+  /*   // Will call this function now: (build-constructor struct-name member-names member-types) */
+  /*   Obj *call_to_build_constructor = obj_list(obj_new_symbol("build-constructor"), obj_new_string(name), member_names, member_types); */
 
-    shadow_stack_push(call_to_build_constructor);
-    //printf("Call to build-constructor: \n%s\n", obj_to_string(call_to_build_constructor)->s);
-    eval_internal(global_env, call_to_build_constructor);
-    shadow_stack_pop();
+  /*   shadow_stack_push(call_to_build_constructor); */
+  /*   //printf("Call to build-constructor: \n%s\n", obj_to_string(call_to_build_constructor)->s); */
+  /*   eval_internal(global_env, call_to_build_constructor); */
+  /*   stack_pop(); */
+  /*   shadow_stack_pop(); */
 
-    if(eval_error) {
-      printf("Error when calling build-constructor:\n");
-      printf("%s\n", obj_to_string(eval_error)->s);
-      return;
-    }
-  }
+  /*   if(eval_error) { */
+  /*     printf("Error when calling build-constructor:\n"); */
+  /*     printf("%s\n", obj_to_string(eval_error)->s); */
+  /*     return; */
+  /*   } */
+  /* } */
   else if(HEAD_EQ("match")) {
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }

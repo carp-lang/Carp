@@ -220,6 +220,14 @@ Obj *p_list(Obj** args, int arg_count) {
   return first;
 }
 
+Obj *p_array(Obj** args, int arg_count) {
+  Obj *a = obj_new_array(arg_count);
+  for(int i = 0; i < arg_count; i++) {
+    a->array[i] = args[i];
+  }
+  return a;
+}
+
 Obj *p_str(Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
   for(int i = 0; i < arg_count; i++) {
