@@ -194,9 +194,12 @@ foo ; symbol
 ```clojure
 (defstruct Vector2 [x :float, y :float])
 
-(def my-pos (Vector2 102.2f 210.3f))
+(def my-pos (Vector2 102.2 210.3))
 
-(#x my-pos) ;; => 102.2f
+;; A [lens](https://www21.in.tum.de/teaching/fp/SS15/papers/17.pdf) is automatically generated for each member:
+(get-x my-pos) ;; => 102.2
+(set-x my-pos 3.0) ;; => (Vector2 10.2 3.0)
+(update-x my-pos inc) ;; => (Vector2 10.2 4.0)
 ```
 
 ### Algebraic Data Types (not implemented)
