@@ -58,7 +58,7 @@
                   (concat func-arg-constrs (cons func-ret-constr new-constraints)))
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
-                 arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
+                 arg-constrs (map2 (fn (a b) {:a a :b b :doc (str "app-arg " a " vs " b)}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
                  tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
@@ -280,7 +280,7 @@
                           (do (when log-substs (println "Current binding do not match new value"))
                               (if (or (= :any lhs) (typevar? value-lookup))
                                 substs
-                                (error (str "Can't unify typevar \n" existing " with \n" value-lookup)))))))))))
+                                (error (str "Can't unify typevar \n\n" existing "\n\nwith\n\n" value-lookup "\n\nLocation: " (meta-get value :doc))))))))))))
         ;; Not a typevar:
         (if (list? lhs)
           (let [value-lookup (lookup substs value)]
@@ -312,7 +312,11 @@
 (defn solve-contraint-internal (substs constraint)
   (let [a (:a constraint)
         b (:b constraint)]
-    (solve (solve substs a b) b a))) ; Solving from both directions!
+    (do
+      ;; TODO: set meta earlier in process
+      (meta-set! a :doc (get-maybe constraint :doc))
+      (meta-set! b :doc (get-maybe constraint :doc))
+      (solve (solve substs a b) b a)))) ; Solving from both directions!
 
 ;; Returns a substitution map from type variables to actual types
 (defn solve-constraints (constraints)

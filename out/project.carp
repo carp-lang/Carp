@@ -11,3 +11,29 @@
 ;;(load-gl)
 
 
+;; (defn no-nesting []
+;;   [666])
+
+;;(def ast1 (lambda-to-ast (code no-nesting)))
+;;(def con1 (gencon1))
+
+;; (defn nesting1 []
+;;   [(string-copy "hej")])
+;; (def ast1 (annotate-ast (lambda-to-ast (code nesting1))))
+
+;; (defn nesting2 []
+;;   [3.0 2.0 1.0])
+;; (def ast2 (annotate-ast (lambda-to-ast (code nesting2))))
+
+;; (defn nesting3 []
+;;   [[1000 2000 3000]])
+;; (def ast3 (annotate-ast (lambda-to-ast (code nesting3))))
+
+
+(defn nesting []
+  [[(string-copy "hej")]])
+
+(def ast (lambda-to-ast (code nesting)))
+(def con (gencon ast))
+
+;;(def asta (annotate-ast ast2))

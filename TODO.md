@@ -1,4 +1,6 @@
 # Compiler
+  - Need let polymorphism before array literals can be nested
+  - Better (shorter, using < and >) names for generic functions
   - Automatically implement for structs and arrays:
 	 - copy
 	 - delete

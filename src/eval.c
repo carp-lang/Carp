@@ -995,8 +995,8 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
     if(eval_error) {
       printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(eval_error)->s);
       function_trace_print();
-      printf("\n\n");
-      stack_print();
+      /* printf("\n"); */
+      /* stack_print(); */
       eval_error = NULL;
       if(LOG_GC_POINTS) {
         printf("Running GC after error occured:\n");
