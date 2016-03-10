@@ -388,7 +388,7 @@
       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str t-name " *" c-func-name "(" t-name " *x)")
-              _ (println (str "proto for struct copying function: " proto))
+              ;;_ (println (str "proto for struct copying function: " proto))
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
               c (str proto " { \n"
