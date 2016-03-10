@@ -1,8 +1,4 @@
 # Compiler Big Features
-    - Automatically implement for structs and arrays:
-	 - copy
-	 - delete
-  - Use 'delete' instead of free for memory management
   - Handle global variables referenced inside functions
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
@@ -34,20 +30,20 @@
   - Quasiquoting and splicing for easier macro writing
   - Remove globals to enable several instances of the runner in parallel
   - ^syntax for meta data
+  - Get inferior lisp to work
+  - Reader syntax for refs: &
 
 # Dynamic Runtime Small Features
-  - Reader syntax for refs: &
   - Match rest of list can use '...' instead
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Should be error when ptr of wrong type is sent to baked function
-  - Get inferior lisp to work
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - ONLY allow [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - Nicer pretty printing of lists of lists
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - Better error handling and input validation for primops, clean up the C error/assertion macros
-  - Fix problem with "No meta data." for some calls in stack trace
+  - Fix problem with missing meta data ("???") for some calls in stack trace
   - Use modules to solve problem of using same name for members in different structs
   
 # Dynamic Runtime Optimization
