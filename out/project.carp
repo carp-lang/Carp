@@ -37,3 +37,28 @@
 (def con (gencon ast))
 
 ;;(def asta (annotate-ast ast2))
+
+
+(defn copy-1 []
+  (copy "CARP"))
+
+(defn test-copy-1 []
+  (do
+    (bake copy-1)
+    (assert-eq "CARP" (copy-1))))
+
+(test-copy-1)
+
+
+
+(defstruct CopyMe [copyMeMember :int])
+
+(defn copy-2 []
+  (copy (ref (CopyMe 666))))
+
+(defn test-copy-2 []
+  (do
+    (bake copy-2)
+    (assert-eq 666 (get-copyMeMember (copy-2)))))
+
+(test-copy-2)

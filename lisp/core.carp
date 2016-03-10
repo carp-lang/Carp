@@ -262,13 +262,14 @@
 (register-builtin "platform" '() :int)
 
 ;; Set type signatures for primops
-(meta-set! str :signature '(:fn :any :string))
+(meta-set! str :signature '(:fn :any :string)) ;; TODO: use a list with one :Any instead?
 (meta-set! nth :signature '(:fn ((:ref (:Array "T")) :int) "T"))
 (meta-set! array-of-size :signature '(:fn (:int) (:Array "T")))
 (meta-set! array-set :signature '(:fn ((:Array "T") :int "T") (:Array "T")))
 (meta-set! map :signature '(:fn ((:fn ("a") "a") (:Array "a")) (:Array "a")))
 (meta-set! map-copy :signature '(:fn ((:fn ("a") "b") (:Array "a")) (:Array "b")))
 ;;(meta-set! new :signature '(:fn () "T"))
+(meta-set! copy :signature '(:fn ((:ref "T")) "T"))
 
 (def platform-osx 0)
 (def platform-windows 1)
