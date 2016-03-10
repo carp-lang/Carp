@@ -16,6 +16,8 @@ https://www.cse.unsw.edu.au/~chak/papers/modules-classes.pdf
 # TYPES
 https://lambdacube3d.wordpress.com/2016/03/03/tuples-as-heterogeneous-lists/
 https://jeltsch.wordpress.com/2016/02/22/generic-programming-in-haskell/
+http://okmij.org/ftp/ML/generalization.html
+http://www.cs.cornell.edu/courses/cs312/2005sp/lectures/rec22.asp
 
 # CSP
 http://reaktor.com/blog/why-csp-matters-ii-how-do-i-know-sync-works/
@@ -34,3 +36,7 @@ http://prog21.dadgum.com/136.html
 # GRAPHS
 https://en.wikipedia.org/wiki/Strongly_connected_component
 https://en.wikipedia.org/wiki/Transitive_closure#In_graph_theory
+
+# TO TRY
+let fun ident(x) => x
+in ident(ident)(2) end
