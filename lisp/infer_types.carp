@@ -20,16 +20,18 @@
             t (type global-lookup)]
         (match t
           :lambda (if (meta-get global-lookup :generic)
-                    (let [signature (meta-get global-lookup :signature)]
-                      (do ;;(println (str "'" symbol "' is generic with signature "))
-                        signature))
+                    (let [signature (meta-get global-lookup :signature)
+                          uniquified (uniquify-typevars signature)]
+                      (do
+                        ;;(println (str "'" symbol "' is generic with signature " signature ", uniquified: " uniquified))
+                        uniquified))
                     (error (str "Found non-baked symbol '" symbol "'.")))
           :macro (error (str "Found non-expanded macro '" symbol "'."))
           :foreign (signature global-lookup)
           :primop (let [s (signature global-lookup)]
                     (if (nil? s)
                       (error (str "No signature set for primop " symbol " (maybe it isn't allowed to be baked?)"))
-                      s))
+                      (uniquify-typevars s)))
           _ t))
       lookup)))
 

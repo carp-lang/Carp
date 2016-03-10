@@ -9,7 +9,6 @@
   - Can't declare array literals inside array literals (works with temp variables inside though)
   - Ownership in while loops
   - Handle global variables referenced inside functions
-  - Make let-polymorphism work
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Lambdas / lambda lifting
   - Compile a whole file to a single dylib

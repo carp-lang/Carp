@@ -58,10 +58,25 @@
 
 
 
-(defn letpoly []
-  (let [x (id (string-copy "hej"))
-        y (id 120)]
-    (+ (strlen x) y)))
+;; Let-polymorphism
+(defn polylet-1 []
+  (let [a (id 1)
+        b (id 2.0)]
+    a))
+
+(bake polylet-1)
+
+
+
+(defstruct A [])
+(defstruct B [])
+
+(defn polylet-2 []
+  (let [a (copy (ref (A)))
+        b (copy (ref (B)))]
+    b))
+
+(bake polylet-2)
 
 
 

@@ -80,14 +80,3 @@
 ;; (test-copy-3)
 
 
-(defn id [x] x)
-(bake id)
-
-(defn polylet-1 []
-  (let [a (id 1)
-        b (id 2.0)]
-    a))
-
-(def ast (lambda-to-ast (code polylet-1)))
-(def con (gencon ast))
-(def sol (solve-constraints con))
