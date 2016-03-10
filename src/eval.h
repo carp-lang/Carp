@@ -5,11 +5,12 @@
 
 #define LOG_GC_POINTS 0
 
-#define STACK_SIZE 2000
+#define STACK_SIZE 1024
 Obj *stack[STACK_SIZE];
 int stack_pos;
 
-Obj *shadow_stack[STACK_SIZE];
+#define SHADOW_STACK_SIZE 2048
+Obj *shadow_stack[SHADOW_STACK_SIZE];
 int shadow_stack_pos;
 
 void shadow_stack_push(Obj *o);

@@ -59,6 +59,9 @@ void repl(Obj *env) {
     }
     if(paren_balance(input) <= 0) {
       eval_text(env, input, true, obj_new_string("repl"));
+      if(!eval_error && stack_pos != 0) {
+        printf("WARNING: Stack pos should be 0 but is now: %d\n", stack_pos);
+      }
       pop_stacks_to_zero();
       printf("\n");
     }

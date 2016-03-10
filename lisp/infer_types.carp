@@ -22,7 +22,7 @@
           :lambda (if (meta-get global-lookup :generic)
                     (let [signature (meta-get global-lookup :signature)]
                       (do ;;(println (str "'" symbol "' is generic with signature "))
-                          signature))
+                        signature))
                     (error (str "Found non-baked symbol '" symbol "'.")))
           :macro (error (str "Found non-expanded macro '" symbol "'."))
           :foreign (signature global-lookup)

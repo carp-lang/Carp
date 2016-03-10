@@ -26,7 +26,8 @@ void stack_push(Obj *o) {
     printf("Pushing %s\n", obj_to_string(o)->s);
   }
   if(stack_pos >= STACK_SIZE) {
-    printf("Stack overflow.");
+    printf("Stack overflow:\n");
+    stack_print();
     exit(1);
   }
   stack[stack_pos++] = o;
@@ -40,7 +41,7 @@ Obj *stack_pop() {
     return nil;
   }
   if(stack_pos <= 0) {
-    printf("Stack underflow.");
+    printf("Stack underflow.\n");
     assert(false);
   }
   if(LOG_STACK) {
@@ -69,8 +70,8 @@ void shadow_stack_push(Obj *o) {
     obj_print_cout(o);
     printf("\n");
   }
-  if(shadow_stack_pos >= STACK_SIZE) {
-    printf("Shadow stack overflow.");
+  if(shadow_stack_pos >= SHADOW_STACK_SIZE) {
+    printf("Shadow stack overflow.\n");
     shadow_stack_print();
     exit(1);
   }
@@ -79,7 +80,7 @@ void shadow_stack_push(Obj *o) {
 
 Obj *shadow_stack_pop() {
   if(shadow_stack_pos <= 0) {
-    printf("Shadow stack underflow.");
+    printf("Shadow stack underflow.\n");
     assert(false);
   }
   Obj *o = shadow_stack[--shadow_stack_pos];
@@ -252,8 +253,11 @@ void match(Obj *env, Obj *value, Obj *attempts) {
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(p->cdr->car)->s); //, obj_to_string(new_env)->s);
       eval_internal(new_env, p->cdr->car); // eval the following form using the new environment
-      /*Obj *e = */shadow_stack_pop(); // new_env
-      //assert(e == new_env);
+      Obj *pop = shadow_stack_pop(); // new_env
+      if(eval_error) {
+        return;
+      }
+      assert(pop == new_env);
       return;
     }
     
@@ -281,15 +285,16 @@ void apply(Obj *function, Obj **args, int arg_count) {
 
     shadow_stack_push(function);
     shadow_stack_push(calling_env);
-    int shadow_stack_pos_before = shadow_stack_pos;
+    
     eval_internal(calling_env, function->body);
-    if(shadow_stack_pos_before != shadow_stack_pos) {
-      //printf("shadow_stack_pos_before = %d, shadow_stack_pos now = %d\n", shadow_stack_pos_before, shadow_stack_pos);
+    if(eval_error) {
+      return;
     }
-    /* Obj *pop1 =  */shadow_stack_pop();
-    /* Obj *pop2 =  */shadow_stack_pop();
-    //assert(pop1 == calling_env);
-    //assert(pop2 == function);
+    
+    Obj *pop1 = shadow_stack_pop();
+    Obj *pop2 = shadow_stack_pop();
+    assert(pop1 == calling_env);
+    assert(pop2 == function);
   }
   else if(function->tag == 'P') {   
     Obj *result = function->primop(args, arg_count);
@@ -683,84 +688,6 @@ void eval_list(Obj *env, Obj *o) {
       eval_internal(env, o->cdr->cdr->cdr->car);
     }
   }
-  /* else if(HEAD_EQ("defstruct")) { */
-  /*   assert_or_set_error(o->cdr->car, "Too few forms in 'defstruct' form: ", o); */
-  /*   assert_or_set_error(o->cdr->cdr->car, "Too few forms in 'defstruct' form: ", o); */
-  /*   assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many forms in 'defstruct' form: ", o); */
-
-  /*   assert_or_set_error(o->cdr->car->tag == 'Y', "First argument to 'defstruct' form must be a symbol (it's the name of the struct): ", o); */
-  /*   assert_or_set_error(o->cdr->cdr->car->tag == 'A', "Second argument to 'defstruct' form must be an array (with the members, i.e. [x :float, y :float]): ", o); */
-
-  /*   char *name = o->cdr->car->s; */
-  /*   Obj *types = o->cdr->cdr->car; */
-
-  /*   Obj *struct_description = obj_new_environment(NULL); */
-  /*   env_extend(struct_description, obj_new_keyword("name"), obj_new_string(name)); */
-
-  /*   int member_count = types->count / 2; */
-
-  /*   Obj *member_types = obj_new_array(member_count); */
-  /*   Obj *member_names = obj_new_array(member_count); */
-  /*   Obj *offsets = obj_new_array(member_count); */
-  /*   int offset = 0; */
-  /*   bool generic = false; */
-  /*   for(int i = 0; i < member_count; i++) { */
-  /*     assert_or_set_error(types->array[i * 2]->tag == 'Y', "Struct member name must be symbol: ", types->array[i * 2]); */
-  /*     Obj *member_name = obj_new_string(types->array[i * 2]->s); */
-  /*     Obj *member_type = types->array[i * 2 + 1]; */
-  /*     member_types->array[i] = member_type; */
-  /*     member_names->array[i] = member_name; */
-  /*     offsets->array[i] = obj_new_int(offset); */
-  /*     int size = 0; */
-  /*     if(obj_eq(member_type, type_float)) { size = 8; } // sizeof(float); } */
-  /*     else if(obj_eq(member_type, type_int)) { size = 8; } // sizeof(int); } */
-  /*     else if(obj_eq(member_type, type_char)) { size = 8; } // sizeof(char); } */
-  /*     else { size = sizeof(void*); } */
-
-  /*     /\* char fixed_member_name[256]; *\/ */
-  /*     /\* snprintf(fixed_member_name, 255, "get-%s", member_name->s); *\/ */
-
-  /*     /\* Obj *struct_member_lookup = obj_new_environment(NULL); *\/ */
-  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("struct-lookup"), lisp_true); *\/ */
-  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("struct-ref"), struct_description); // immediate access to the struct description *\/ */
-  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-offset"), obj_new_int(offset)); *\/ */
-  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-name"), member_name); *\/ */
-  /*     /\* env_extend(struct_member_lookup, obj_new_keyword("member-type"), member_type); *\/ */
-      
-  /*     /\* env_extend(env, obj_new_symbol(fixed_member_name), struct_member_lookup); *\/ */
-
-  /*     offset += size; */
-  /*   } */
-
-  /*   env_extend(struct_description, obj_new_keyword("member-offsets"), offsets); */
-  /*   env_extend(struct_description, obj_new_keyword("member-count"), obj_new_int(member_count)); */
-  /*   env_extend(struct_description, obj_new_keyword("member-types"), member_types); */
-  /*   env_extend(struct_description, obj_new_keyword("member-names"), member_names); */
-  /*   env_extend(struct_description, obj_new_keyword("size"), obj_new_int(offset)); */
-  /*   env_extend(struct_description, obj_new_keyword("generic"), generic ? lisp_true : lisp_false); */
-  /*   env_extend(struct_description, obj_new_keyword("struct"), lisp_true); */
-
-  /*   Obj *struct_info_binding = obj_new_string(name); */
-  /*   //obj_string_mut_append(struct_info_binding, "-info"); */
-    
-  /*   env_extend(env, obj_new_symbol(struct_info_binding->s), struct_description); */
-  /*   stack_push(struct_description); */
-
-  /*   // Will call this function now: (build-constructor struct-name member-names member-types) */
-  /*   Obj *call_to_build_constructor = obj_list(obj_new_symbol("build-constructor"), obj_new_string(name), member_names, member_types); */
-
-  /*   shadow_stack_push(call_to_build_constructor); */
-  /*   //printf("Call to build-constructor: \n%s\n", obj_to_string(call_to_build_constructor)->s); */
-  /*   eval_internal(global_env, call_to_build_constructor); */
-  /*   stack_pop(); */
-  /*   shadow_stack_pop(); */
-
-  /*   if(eval_error) { */
-  /*     printf("Error when calling build-constructor:\n"); */
-  /*     printf("%s\n", obj_to_string(eval_error)->s); */
-  /*     return; */
-  /*   } */
-  /* } */
   else if(HEAD_EQ("match")) {
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }
@@ -920,8 +847,13 @@ void eval_list(Obj *env, Obj *o) {
       }
       shadow_stack_push(expanded);
       eval_internal(env, expanded);
-      shadow_stack_pop(); // expanded
-      shadow_stack_pop(); // calling_env
+      if(eval_error) {
+        return;
+      }
+      Obj *pop1 = shadow_stack_pop(); // expanded
+      Obj *pop2 = shadow_stack_pop(); // calling_env
+      assert(pop1 == expanded);
+      assert(pop2 == calling_env);
     }
     else {
       if(function_trace_pos > STACK_SIZE - 1) {
@@ -953,7 +885,8 @@ void eval_list(Obj *env, Obj *o) {
       for(int i = 0; i < count; i++) {
         shadow_stack_pop();
       }
-      shadow_stack_pop();
+      Obj *pop = shadow_stack_pop();
+      assert(pop == function);
       
       Obj *oo = shadow_stack_pop(); // o
       if(o != oo) {
@@ -988,7 +921,7 @@ void eval_internal(Obj *env, Obj *o) {
   else {
     //printf("%d/%d\n", obj_total, obj_total_max);
   }
-  
+
   if(!o) {
     stack_push(nil);
   }
@@ -1003,12 +936,16 @@ void eval_internal(Obj *env, Obj *o) {
     while(p && p->car) {
       Obj *pair = p->car;
       eval_internal(env, pair->cdr);
+      if(eval_error) {
+        return;
+      }
       //printf("Evaling env-binding %s, setting cdr to %s.\n", obj_to_string(pair)->s, obj_to_string(stack[stack_pos - 1])->s);
       pair->cdr = stack_pop();
       p = p->cdr;
     }
     stack_push(new_env);
-    shadow_stack_pop(); // new_env
+    Obj *pop = shadow_stack_pop(); // new_env
+    assert(pop == new_env);
   }
   else if(o->tag == 'A') {
     Obj *new_array = obj_new_array(o->count);
@@ -1016,10 +953,14 @@ void eval_internal(Obj *env, Obj *o) {
     shadow_stack_push(new_array);
     for(int i = 0; i < o->count; i++) {
       eval_internal(env, o->array[i]);
+      if(eval_error) {
+        return;
+      }
       new_array->array[i] = stack_pop();
     }
     stack_push(new_array);
-    shadow_stack_pop(); // new_array
+    Obj *pop = shadow_stack_pop(); // new_array
+    assert(pop == new_array);
   }
   else if(o->tag == 'Y') {
     Obj *result = env_lookup(env, o);
@@ -1054,6 +995,8 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
     if(eval_error) {
       printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(eval_error)->s);
       function_trace_print();
+      printf("\n\n");
+      stack_print();
       eval_error = NULL;
       if(LOG_GC_POINTS) {
         printf("Running GC after error occured:\n");

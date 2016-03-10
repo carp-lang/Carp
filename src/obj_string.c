@@ -97,14 +97,16 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   }
   obj_string_mut_append(total, obj_to_string_not_prn(array_to_string_result)->s);
 
+  Obj *pop1 = shadow_stack_pop();
+  assert(pop1 == array_to_string_result);
   shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
   shadow_stack_pop();
-  shadow_stack_pop();
-  shadow_stack_pop();
+  Obj *pop8 = shadow_stack_pop();
+  assert(pop8 == total);
 
   return;
 }

@@ -1,5 +1,4 @@
 # Compiler
-  - Printing of arrays from code that haven't been compiled is incorrect or crashes on first call
   - Automatically implement for structs and arrays:
 	 - copy
 	 - delete
@@ -11,7 +10,6 @@
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Lambdas / lambda lifting
   - Compile a whole file to a single dylib
-  - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - self recuring function doens't check argument count/types in the actual call to itself
@@ -33,10 +31,8 @@
   
   
 # Dynamic Runtime
-  - Make sure ALL primops use the shadow stack!!!
+  - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - glfw-demo closes repl second time
-  - Ensure shadow stack is always properly popped (blew it)
-  - Remove support for dynamic struct getters
   - Should be error when ptr of wrong type is sent to baked function
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
