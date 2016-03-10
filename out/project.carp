@@ -62,3 +62,18 @@
     (assert-eq 666 (get-copyMeMember (copy-2)))))
 
 (test-copy-2)
+
+
+
+
+(defstruct AnotherCopy [aNameToCopy :string anotherNameToCopy :string])
+
+(defn copy-3 [n1 n2]
+  (copy (ref (AnotherCopy n1 n2))))
+
+(defn test-copy-3 []
+  (do
+    (bake copy-3)
+    (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (copy-3 "AHA" "BUHU")))))
+
+(test-copy-3)
