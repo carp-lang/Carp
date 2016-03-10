@@ -585,7 +585,7 @@ void eval_list(Obj *env, Obj *o) {
   else if(HEAD_EQ("let")) {
     Obj *let_env = obj_new_environment(env);
     shadow_stack_push(let_env);
-    Obj *p = o->cdr->car;
+    //Obj *p = o->cdr->car;
     assert_or_set_error(o->cdr->car, "No bindings in 'let' form: ", o);
     assert_or_set_error(o->cdr->car->tag == 'A', "Bindings in 'let' form must be an array: ", o);
     Obj *a = o->cdr->car;
@@ -593,7 +593,7 @@ void eval_list(Obj *env, Obj *o) {
       if(i + 1 == a->count) {
         set_error("Uneven nr of forms in let: ", o); // TODO: add error code for this kind of error, return error map instead
       }
-      assert_or_set_error(a->array[i]->tag == 'Y', "Must bind to symbol in let form: ", p->car);
+      assert_or_set_error(a->array[i]->tag == 'Y', "Trying to bind to non-symbol in let form: ", a->array[i]);
       eval_internal(let_env, a->array[i + 1]);
       if(eval_error) { return; }
       env_extend(let_env, a->array[i], stack_pop());

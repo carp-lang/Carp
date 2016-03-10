@@ -1,4 +1,10 @@
 
+(defn test-bind-to-function-in-let []
+  (do (defn misbind []
+        (let [(fn [] nil) 123]
+          :fail))
+      (assert-eq (catch-error (misbind)) "Trying to bind to non-symbol in let form: (fn [] nil)")))
+
 (defn test-template []
   (assert-eq "cAr123" (template "carp" {"a" "A" "p" 123})))
 
@@ -393,6 +399,7 @@
     (test-match-with-nil)
     (test-match-array)
     (test-template)
+    (test-bind-to-function-in-let)
     ))
 
 (run-core-tests)

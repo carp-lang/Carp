@@ -34,7 +34,6 @@
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - glfw-demo closes repl second time
   - Should be error when ptr of wrong type is sent to baked function
-  - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
   - ^syntax for meta data
