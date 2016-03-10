@@ -30,50 +30,64 @@
 ;; (def ast3 (annotate-ast (lambda-to-ast (code nesting3))))
 
 
-(defn nesting []
-  [[(string-copy "hej")]])
+;; THIS IS THE HARD ONE:
+;; (defn nesting []
+;;   [[(string-copy "hej")]])
 
-(def ast (lambda-to-ast (code nesting)))
-(def con (gencon ast))
+;; (def ast (lambda-to-ast (code nesting)))
+;; (def con (gencon ast))
 
 ;;(def asta (annotate-ast ast2))
 
 
-(defn copy-1 []
-  (copy "CARP"))
+;; (defn copy-1 []
+;;   (copy "CARP"))
 
-(defn test-copy-1 []
-  (do
-    (bake copy-1)
-    (assert-eq "CARP" (copy-1))))
+;; (defn test-copy-1 []
+;;   (do
+;;     (bake copy-1)
+;;     (assert-eq "CARP" (copy-1))))
 
-(test-copy-1)
-
-
-
-(defstruct CopyMe [copyMeMember :int])
-
-(defn copy-2 []
-  (copy (ref (CopyMe 666))))
-
-(defn test-copy-2 []
-  (do
-    (bake copy-2)
-    (assert-eq 666 (get-copyMeMember (copy-2)))))
-
-(test-copy-2)
+;; (test-copy-1)
 
 
 
+;; (defstruct CopyMe [copyMeMember :int])
 
-(defstruct AnotherCopy [aNameToCopy :string anotherNameToCopy :string])
+;; (defn copy-2 []
+;;   (copy (ref (CopyMe 666))))
 
-(defn copy-3 [n1 n2]
-  (copy (ref (AnotherCopy n1 n2))))
+;; (defn test-copy-2 []
+;;   (do
+;;     (bake copy-2)
+;;     (assert-eq 666 (get-copyMeMember (copy-2)))))
 
-(defn test-copy-3 []
-  (do
-    (bake copy-3)
-    (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (copy-3 "AHA" "BUHU")))))
+;; (test-copy-2)
 
-(test-copy-3)
+
+
+
+;; (defstruct AnotherCopy [aNameToCopy :string anotherNameToCopy :string])
+
+;; (defn copy-3 [n1 n2]
+;;   (copy (ref (AnotherCopy n1 n2))))
+
+;; (defn test-copy-3 []
+;;   (do
+;;     (bake copy-3)
+;;     (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (copy-3 "AHA" "BUHU")))))
+
+;; (test-copy-3)
+
+
+(defn id [x] x)
+(bake id)
+
+(defn polylet-1 []
+  (let [a (id 1)
+        b (id 2.0)]
+    a))
+
+(def ast (lambda-to-ast (code polylet-1)))
+(def con (gencon ast))
+(def sol (solve-constraints con))

@@ -93,3 +93,16 @@
 
 (bake try-it-out)
 (assert-eq "30" (try-it-out))
+
+
+
+(defn test-uniquify []
+  (let [n (uniquify-typevars '("T" :a "S" "T" ("S")))]
+    (do (assert-eq (nth n 0) (nth n 3))
+        (assert-eq (nth n 2) (get-in n '(4 0)))
+        (assert-eq false (= (nth n 0) (nth n 2)))
+        (assert-eq :a (nth n 1)))))
+
+(test-uniquify)
+
+

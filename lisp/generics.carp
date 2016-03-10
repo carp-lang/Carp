@@ -19,6 +19,30 @@
     ;;(println (str "Will find generic name for " base-name " with signature " signature))
     (str base-name "--" (generic-suffix signature))))
 
+
+
+;; Used for let polymorphism to make the generic type of a function unique (i.e. change all the "T":s to a fresh typevar)
+;; (:fn ("T" "S") "T") becomes (:f ("t319" "t302") "t319)
+(defn uniquify-typevars [t]
+  (uniquify-typevars-internal t (copy {})))
+
+(defn uniquify-typevars-internal [t substs]
+  (if (string? t)
+    (let [existing-tvar (get-maybe substs t)]
+                    (if (nil? existing-tvar)
+                      (let [new-tvar (gen-typevar)]
+                        (do                          
+                          (dict-set! substs t new-tvar)
+                          new-tvar))
+                      existing-tvar))
+    (if (keyword? t)
+      t
+      (if (list? t)
+        (map (fn [x] (uniquify-typevars-internal x substs)) t)
+        (error (str "Can't handle t " t " of type " (type t)))))))
+
+
+
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))
 
