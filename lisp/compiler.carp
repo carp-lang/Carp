@@ -267,20 +267,23 @@
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
   (let [builder-with-headers (builder-add-headers builder header-files)
-        builder-fns (builder-visit-ast builder-with-headers ast-annotated func-name)
+        builder-result (builder-visit-ast builder-with-headers ast-annotated func-name)
+        builder-funcs (:funcs builder-result)
+        builder-deps (:deps builder-result)
         builder-final (if (and exe (not (= func-name "main")))
-                        (builder-add-main-function builder-fns (c-ify-name func-name))
-                        builder-fns)
+                        (builder-add-main-function builder-funcs (c-ify-name func-name))
+                        builder-funcs)
         c-program-string (builder-merge-to-c builder-final)
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps))
+        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps builder-deps))
         t (get ast-annotated :type)
         ]
     (do
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
       ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
       (def ast ast-annotated)

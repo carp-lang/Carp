@@ -309,28 +309,31 @@
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
               ;;_ (build-constructor t-name member-names member-types) ;; build the constructor type to make it accessible to this function
-              c (str proto " { "
-                     " char buffer[1024];\n"
-                     " int pos = 0;\n"
-                     " buffer[pos++] = '(';\n"
-                     " snprintf(buffer + pos, 1000, \"%s\", \"" t-name "\");"
-                     " pos += " (strlen t-name) ";"
-                     " buffer[pos++] = ' ';\n"
-                     " char *s;"
+              c (str proto " {\n"
+                     "  char buffer[1024];\n"
+                     "  int pos = 0;\n"
+                     "  buffer[pos++] = '(';\n"
+                     "  snprintf(buffer + pos, 1000, \"%s\", \"" t-name "\");"
+                     "  pos += " (strlen t-name) ";"
+                     "  buffer[pos++] = ' ';\n"
+                     "  char *s;"
                      (join " " (map2 (fn [t n]
                                        (do
                                          (bake-generic-primop-auto "str" (list :fn (list t) :string))
                                          (str "
-s = str__" (type-build t) "_string(x->" n "); 
-snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; ")))
+  s = str__" (type-build t) "_string(x->" n "); 
+  snprintf(buffer + pos, 1000, \"%s\", s);
+  pos += strlen(s);
+  buffer[pos++] = ' ';")))
                                      member-types
                                      member-names))
-                     " pos--;"
-                     " buffer[pos++] = ')';\n"
-                     " buffer[pos++] = '\\0';\n"
-                     " return strdup(buffer);\n"
+                     "  \n"
+                     "  pos--;\n"
+                     "  buffer[pos++] = ')';\n"
+                     "  buffer[pos++] = '\\0';\n"
+                     "  return strdup(buffer);\n"
                      ;;"return \"" t-name "\"; "
-                     "}")]
+                     "}\n")]
           {:proto proto
            :c c
            :deps (map (fn [t] (str "str__" (type-build t) "_string")) member-types)})
@@ -414,7 +417,9 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
         t (second array-type)
         inner-arg-type (if (primitive-type? t) t (list :ref t))
         inner-signature (list :fn (list (list :ref t)) t)
-        inner-copy-call (c-ify-name (generic-name "copy" inner-signature))
+        inner-copy-call (if (primitive-type? t)
+                          ""
+                          (c-ify-name (generic-name "copy" inner-signature)))
         _ (println (str "inner-copy-call: " inner-copy-call))
         _ (when (not (primitive-type? t))
             (bake-generic-primop-auto "copy" inner-signature))
@@ -459,25 +464,25 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str "void " c-func-name "(" t-name " *x)")
-              _ (println (str "proto for struct delete function: " proto))
+              ;;_ (println (str "proto for struct delete function: " proto))
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
-              c (str proto " { \n"
+              c (str proto " {\n"
                      (join " " (map2 (fn [t n]
                                        (if (primitive-type? t)
-                                         (str "  /* no need to delete the member '" n "' */ \n")
+                                         (str "  /* no need to delete the member '" n "' */\n")
                                          (let [inner-delete-sig (list :fn (list t) :void)
-                                               copy-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
+                                               delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
                                            (do
-                                             (bake-generic-primop-auto "delete" inner-copy-sig)
-                                             (str "  " copy-function-c-name "(x);\n")))))
+                                             (bake-generic-primop-auto "delete" inner-delete-sig)
+                                             (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))))
                                      member-types
                                      member-names))
                      "  free(x);\n"
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
+           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (remove primitive-type? member-types))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
@@ -485,7 +490,7 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
   (let [proto (str "API void " c-func-name "(Array *a)")
         inner-signature (list :fn (list t) :void)
         inner-delete-call (c-ify-name (generic-name "delete" inner-signature))
-        _ (println (str "inner-delete-call: " inner-delete-call))
+        ;;_ (println (str "inner-delete-call: " inner-delete-call))
         _ (when (not (primitive-type? t))
             (bake-generic-primop-auto "delete" inner-signature))
         c (str proto
@@ -499,6 +504,7 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
                   (str "    " inner-delete-call "(casted_data[i]);\n")
                   "  }\n"
                   ))
+               "  free(a->data);\n"
                "  free(a); \n"
                "}\n")]
     {:proto proto

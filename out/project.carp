@@ -10,30 +10,33 @@
 
 ;;(load-gl)
 
-(defn delete-1 []
-  (delete (copy "CARP")))
+;; (defn delete-1 []
+;;   (delete (copy "CARP")))
 
-(bake delete-1)
-
-
-
-(defstruct DeleteMe [deleteThisMember :int])
-
-(defn delete-2 []
-  (delete (DeleteMe 10000)))
-
-(bake delete-2)
+;; (bake delete-1)
 
 
 
-(defn delete-3 []
-  (delete [1 2 3]))
+;; (defstruct DeleteMe [deleteThisMember :int])
 
-(bake delete-3)
+;; (defn delete-2 []
+;;   (delete (DeleteMe 10000)))
+
+;; (bake delete-2)
 
 
 
-(defn delete-4 []
-  (delete [[] [1] [1 2] [1 2 3]]))
+;; (defn delete-3 []
+;;   (delete [1 2 3]))
 
-(bake delete-4)
+;; (bake delete-3)
+
+
+
+;; (defn delete-4 []
+;;   (delete [[] [1] [1 2] [1 2 3]]))
+
+;; (bake delete-4)
+
+
+

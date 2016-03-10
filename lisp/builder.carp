@@ -35,8 +35,17 @@
 (defn indent-out! ()
   (swap! indent-level dec))
 
-(defn free-variables (free-list)
-  (join "" (map (fn (variable) (str (indent) "free(" (c-ify-name (:name variable)) ");\n")) free-list)))
+(defn free-variables (free-list deps)
+  (do
+    ;;(println (str "free-list: " free-list))
+    (map (fn [t] (bake-generic-primop-auto "delete" (list :fn (list t) :void))) (map :type free-list))
+    (join "" (map (fn (variable)
+                    (let [delete-signature (list :fn (list (:type variable)) :void)
+                          delete-fn-name (generic-name "delete" delete-signature)]
+                      (do
+                        (dict-set! deps :mutable-value (cons (symbol delete-fn-name) (:mutable-value deps)))
+                        (str (indent) (c-ify-name delete-fn-name) "(" (c-ify-name (:name variable)) ");\n"))))
+                  free-list))))
 
 (defn c-ify-name (lisp-name)
   (let [x0 (str-replace lisp-name "-" "_")
@@ -81,15 +90,15 @@
            :void "void"
            x (str (c-ify-name (name x)) (if star "*" "")))))
 
-(defn visit-arg-explicit (c arg)
-  (let [result (visit-form c arg true)]
+(defn visit-arg-explicit (c arg deps)
+  (let [result (visit-form c arg true deps)]
     (str-append! c (str (indent) (type-build (:type arg)) " " (c-ify-name (:arg-name arg)) " = " (get result :c) ";\n"))))
 
-(defn visit-args-explicit (c args)
+(defn visit-args-explicit (c args deps)
   (let []
     (do
       ;;(println "visit args:" args)
-      (map (fn (arg) (visit-arg-explicit c arg)) args)
+      (map (fn (arg) (visit-arg-explicit c arg deps)) args)
       (map (fn (arg) {:c (:arg-name arg)}) args))))
 
 
@@ -110,10 +119,10 @@
     _ (prn x)))
 
 ;; New version of visit arg that generates slimmer code (no intermediate arg variables)
-(defn visit-arg-slim (c arg)
+(defn visit-arg-slim (c arg deps)
   (let [arg-name (:arg-name arg)
         arg-type (:type arg)
-        result (visit-form c arg true)]
+        result (visit-form c arg true deps)]
     (match (:node arg)
 
       :lookup (do ;;(println (str "Arg " arg-name " is lookup."))
@@ -130,24 +139,24 @@
 
       )))
 
-(defn visit-args-slim (c args)
+(defn visit-args-slim (c args deps)
   (let []
     (do
       ;(println (str "visit args slim:\n" args))
-      (map (fn (arg) (visit-arg-slim c arg)) args))))
+      (map (fn (arg) (visit-arg-slim c arg deps)) args))))
 
-(defn visit-let-bindings (c bindings)
-  (map (fn (b) (let [value-result (visit-form c (:value b) false)]
+(defn visit-let-bindings (c bindings deps)
+  (map (fn (b) (let [value-result (visit-form c (:value b) false deps)]
                  (str-append! c (str (indent) (type-build (:type b)) " " (c-ify-name (str (:name b))) " = " (:c value-result) ";\n"))))
        bindings))
 
-(defn visit-form (c form toplevel)
+(defn visit-form (c form toplevel deps)
   (do
     ;;(println (str "\nvisit-form:\n" form))
     (match (get form :node)
 
-           :binop (let [result-a (visit-form c (get form :left) false)
-                        result-b (visit-form c (get form :right) false)]
+           :binop (let [result-a (visit-form c (get form :left) false deps)
+                        result-b (visit-form c (get form :right) false deps)]
                     {:c (str (if toplevel "" "(") (:c result-a) " " (:op form) " " (:c result-b) (if toplevel "" ")"))})
 
            :literal (let [val (:value form)
@@ -165,17 +174,17 @@
                      {:c (c-ify-name (name val))})
 
            :ref (let [expr (:expr form)
-                      result (visit-form c expr toplevel)]
+                      result (visit-form c expr toplevel deps)]
                   result)
 
            :reset (let [expr (:expr form)
                         symbol (:symbol form)
-                        result (visit-form c expr toplevel)]
+                        result (visit-form c expr toplevel deps)]
                     (do (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
                         {:c ""}))
 
            :if (let [n (get form :result-name)
-                     if-expr (visit-form c (get form :expr) true)]
+                     if-expr (visit-form c (get form :expr) true deps)]
                  (do (if (= :void (:type form))
                        () ;; no result variable needed
                        (str-append! c (str (indent) (type-build (:type form)) " " n ";\n")))
@@ -187,9 +196,9 @@
                      ;; true-block begins
                      (str-append! c " {\n")
                      (indent-in!)
-                     (let [result-a (visit-form c (:if-true form) true)]
+                     (let [result-a (visit-form c (:if-true form) true deps)]
                        (do
-                         (str-append! c (free-variables (get-maybe form :free-left)))
+                         (str-append! c (free-variables (get-maybe form :free-left) deps))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-a :c) ";\n")))
@@ -197,9 +206,9 @@
                          (str-append! c (str (indent) "} else {\n"))))
                      
                      (indent-in!) ;; false-block-begins
-                     (let [result-b (visit-form c (:if-false form) true)]
+                     (let [result-b (visit-form c (:if-false form) true deps)]
                        (do
-                         (str-append! c (free-variables (get-maybe form :free-right)))
+                         (str-append! c (free-variables (get-maybe form :free-right) deps))
                          (if (= :void (:type form))
                            () ;; no-op
                            (str-append! c (str (indent) n " = " (get result-b :c) ";\n")))
@@ -212,7 +221,7 @@
                       c-func-name (c-ify-name (str func-name))
                       n (:result-name form)
                       ;;_ (println (str "c before call to " func-name ":\n" c))
-                      arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c (get form :tail))
+                      arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c (get form :tail) deps)
                       ;;_ (println (str "c after call to " func-name ":\n" c))
                       arg-vars (map :c arg-results)
                       t (:type form)]
@@ -227,7 +236,7 @@
 
            :do (let [forms (:forms form)
                      ;_ (println (str "forms:\n" forms))
-                     results (map (fn (x) (visit-form c x toplevel)) forms)]
+                     results (map (fn (x) (visit-form c x toplevel deps)) forms)]
                  {:c (:c (last results))})
 
            :let (let [n (:result-name form)]
@@ -237,9 +246,9 @@
                       (str-append! c (str (indent) "{\n"))
                       (indent-in!)
                       (let [body (:body form)
-                            _ (visit-let-bindings c (:bindings form))
-                            result (visit-form c body false)]
-                        (do (str-append! c (free-variables (get-maybe form :free)))
+                            _ (visit-let-bindings c (:bindings form) deps)
+                            result (visit-form c body false deps)]
+                        (do (str-append! c (free-variables (get-maybe form :free) deps))
                             (if (= :void (:type form))
                               ()
                               (str-append! c (str (indent) n " = " (:c result) ";\n")))))
@@ -247,16 +256,16 @@
                       (str-append! c  (str (indent) "}\n"))
                       {:c n}))
 
-           :while (let [while-expr (visit-form c (get form :expr) true)
+           :while (let [while-expr (visit-form c (get form :expr) true deps)
                         while-expr-name (:while-expr-name form)]
                     (do (str-append! c (str (indent) (type-build (get-in form '(:expr :type))) " " while-expr-name " = " (get while-expr :c) ";\n"))
                         (str-append! c (str (indent) "while(" while-expr-name ") {\n"))
                         (indent-in!)
                         (let [body (:body form)]
-                          (visit-form c body false))
-                        (let [while-expr-again (visit-form c (get form :expr) true)]
+                          (visit-form c body false deps))
+                        (let [while-expr-again (visit-form c (get form :expr) true deps)]
                           (do
-                            (str-append! c (free-variables (get-maybe form :free)))
+                            (str-append! c (free-variables (get-maybe form :free) deps))
                             (str-append! c (str (indent) while-expr-name " = " (get while-expr-again :c) ";\n"))
                             ))
                         (indent-out!)
@@ -280,7 +289,8 @@
         args (get ast :args)
         body (get ast :body)
         c (copy "") ;; mutable string holding the resulting C code for the function
-        result (visit-form c body true)
+        deps (copy {:mutable-value (get-maybe ast :deps)}) ;; HACK: passing around a dict so that the mutation of the cdr (in the binding pair) will work. Add set-cdr! to list instead?
+        result (visit-form c body true deps)
         result-var-name (:result-name ast)
         ret-type (get-in ast '(:type 2))]
     (do
@@ -291,12 +301,13 @@
                       (if (= :void ret-type)
                         ""
                         (str (indent) (type-build ret-type) " " result-var-name " = " (get result :c) ";\n")) ;; TODO: evaluate if this extra step is needed
-                      (free-variables (get-maybe ast :free))
+                      (free-variables (get-maybe ast :free) deps)
                       (if (= :void (:type body))
                         "" ;; no return
                         (str (indent) "return " result-var-name ";\n"))
                       "}")]
-        (builder-add builder :functions code)))))
+        {:funcs (builder-add builder :functions code)
+         :deps (:mutable-value deps)}))))
 
 (defn get-function-prototype (ast func-name)
   (let [t (get ast :type)

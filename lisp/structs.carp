@@ -15,6 +15,7 @@
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
+    (when (def? (symbol struct-name)) (error (str "A struct named '" struct-name "' is already defined. Redefining structs is not implemented yet.")))
     (assert-eq (count member-names) (count member-types))
     (build-constructor struct-name member-names member-types)
     (eval (list 'def (symbol struct-name) {:struct true

@@ -33,12 +33,12 @@
 
 
 
-(defstruct Vector
+(defstruct AnotherVector
   [xx :int
    yy :int])
 
 (defn setter-1 []
-  (let [v (Vector 100 100)]
+  (let [v (AnotherVector 100 100)]
     (set-xx v 666)))
 
 (defn test-setter-1 []
@@ -50,7 +50,7 @@
 
 
 (defn updater-1 []
-  (let [v (Vector 100 100)]
+  (let [v (AnotherVector 100 100)]
     (update-yy v inc)))
 
 (defn test-updater-1 []

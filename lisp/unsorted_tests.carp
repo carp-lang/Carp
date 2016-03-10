@@ -108,11 +108,11 @@
 (defn trixy-5 []
   (println (ref (str (ref (color 2.3))))))
 
-(defn trixy-6 [xx yy zz]
-  (Color xx yy zz))
+;; (defn trixy-6 [xx yy zz]
+;;   (Color xx yy zz))
 
-(def ast6 (lambda-to-ast (code trixy-6)))
-(def asta6 (annotate-ast ast6))
+;; (def ast6 (lambda-to-ast (code trixy-6)))
+;; (def asta6 (annotate-ast ast6))
 
 (defn x2 [x]
   (* x 2))
