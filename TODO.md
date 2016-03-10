@@ -20,6 +20,7 @@
   - deftype (tagged unions)
   - Clean up the awful 'list-to-ast' function
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?)
+  - Avoid creating unique typevars for multiple calls with the same types to a generic function?
 
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)

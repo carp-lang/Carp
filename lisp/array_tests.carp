@@ -102,3 +102,10 @@
 
 (test-print-array-of-vector)
 
+
+;; Nested arrays
+
+(defn nesting []
+  [[(copy "hej")]])
+
+(bake nesting)
