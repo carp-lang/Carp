@@ -37,28 +37,28 @@
   - Binding to a function call in 'let' crashes process!!!
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
-  - Xcode finds strange error in primops.c 1271
   - ^syntax for meta data
   - Get inferior lisp to work
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - Quasiquoting and splicing for easier macro writing
   - Modules
-  - Only allow [] in parameter list for function definitions
+  - ONLY allow [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
   - Jump table in evaluator, use a 'dispatch' member with a label adress in Obj
   - Remove globals to enable several instances of the runner in parallel
   - Nicer pretty printing of lists of lists
-  - Don't leak values returned from calling ffi functions at the repl (but how..?)
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
-  - Profile the evaluator
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - Fix problem with "No meta data." for some calls in stack trace
   - Reader syntax for refs: &
   - Match rest of list can use '...' instead
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
   - Use modules to solve problem of using same name for members in different structs
-  - How to not leak memory in the repl
-  - Ensure correctness of GC
+  
+# Sanity checks
+  - Ensure correctness of GC (run at every step)
+  - Don't leak values returned from calling ffi functions at the repl (but how..?)
+  - Profile the evaluator
 
 # Maybes
   - Add void constraints for (do ...) statements ?
