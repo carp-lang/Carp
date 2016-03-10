@@ -42,7 +42,7 @@
 
 (defn generate-constraints-internal (constraints ast type-env)
   (do
-    ;;(println "gen constrs: \n" ast)
+    ;;(println (str "gen constrs: \n" ast))
     (match (get ast :node)
 
       :function (let [extended-type-env (type-env-extend type-env (get ast :args))

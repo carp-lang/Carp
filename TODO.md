@@ -4,14 +4,15 @@
 	 - delete
   - Use 'delete' instead of free for memory management
   - Handle global variables referenced inside functions
-  - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
   - deftype (tagged unions)
+  - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
 
 # Compiler Small Features
   - Allow dashes in struct member names
   - Better (shorter, using < and >) names for generic functions
+  - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
   - Ownership in while loops

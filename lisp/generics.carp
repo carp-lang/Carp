@@ -251,7 +251,7 @@
 
     "copy" (do
                (match signature
-                 ;;(:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
+                 (:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
                  (:fn ((:ref :string)) :string) (instantiate-copy-for-string c-func-name)
                  ;;(:fn (:string) :string) (instantiate-copy-for-string c-func-name)
                  (:fn ((:ref maybe-struct-type)) maybe-struct-type) (instantiate-copy-for-struct c-func-name maybe-struct-type)
@@ -413,3 +413,68 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
            :deps (map (fn [t] (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
+
+(defn instantiate-copy-for-array [c-func-name array-type]
+  (let [proto (str "API Array *" c-func-name "(Array *a)")
+        ;; Call str without ref for primitive types, otherwise use ref
+        t (second array-type)
+        inner-arg-type (if (primitive-type? t) t (list :ref t))
+        inner-signature (list :fn (list (list :ref t)) t)
+        inner-copy-call (c-ify-name (generic-name "copy" inner-signature))
+        _ (println (str "inner-copy-call: " inner-copy-call))
+        _ (when (not (primitive-type? t))
+            (bake-generic-primop-auto "copy" inner-signature))
+        c (str proto
+               "{ \n"
+               "  Array *a_copy = malloc(sizeof(Array));\n"
+               "  a_copy->count = a->count;\n"
+               "  a_copy->data = calloc(a->count, sizeof(" (type-build inner-arg-type) "));\n"
+               "  int count = a_copy->count;\n"
+               "  " (type-build t) " *casted_data = a->data;\n"
+               "  " (type-build t) " *casted_data_copy = a_copy->data;\n"
+               "  for(int i = 0; i < count; ++i) {\n"
+               (if (primitive-type? t)
+                 "    casted_data_copy[i] = casted_data[i];\n"
+                 (str "    casted_data_copy[i] = " inner-copy-call "(casted_data[i]);\n"))
+               "  }\n"
+               "  return a_copy; \n"
+               "}")]
+    {:proto proto
+     :c c
+     :deps (if (primitive-type? t)
+             '()
+             (list inner-copy-call))}))
+
+;;
+
+
+;; (if (keyword? maybe-struct-type)
+;;     (let [_ (when (or (= :string maybe-struct-type)
+;;                       (primitive-type? maybe-struct-type))
+;;               (error (str "Primitive type sent to 'copy' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
+;;           lookup (eval (symbol (name maybe-struct-type)))]
+;;       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+;;         (let [t-name (name maybe-struct-type)
+;;               proto (str t-name " *" c-func-name "(" t-name " *x)")
+;;               _ (println (str "proto for struct copying function: " proto))
+;;               member-names (array-to-list (:member-names lookup))
+;;               member-types (array-to-list (:member-types lookup))
+;;               c (str proto " { \n"
+;;                      "  " (type-build maybe-struct-type) " x_copy = calloc(1, sizeof(" t-name "));\n"
+;;                      (join " " (map2 (fn [t n]
+;;                                        (if (primitive-type? t)
+;;                                          (str "  x_copy->" n " = x->" n ";\n")
+;;                                          (let [inner-copy-sig (list :fn (list (list :ref t)) t)
+;;                                                copy-function-c-name (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))]
+;;                                            (do
+;;                                              (bake-generic-primop-auto "copy" inner-copy-sig)
+;;                                              (str "x_copy->" n " = " copy-function-c-name "(x->" n ");\n")))))                                           
+;;                                      member-types
+;;                                      member-names))
+;;                      "  return x_copy;\n"
+;;                      "}\n")]
+;;           {:proto proto
+;;            :c c
+;;            :deps (map (fn [t] (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
+;;         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
+;;     (error (str "Invalid type for call to 'str': " maybe-struct-type)))
