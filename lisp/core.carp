@@ -270,6 +270,7 @@
 (meta-set! map-copy :signature '(:fn ((:fn ("a") "b") (:Array "a")) (:Array "b")))
 ;;(meta-set! new :signature '(:fn () "T"))
 (meta-set! copy :signature '(:fn ((:ref "T")) "T"))
+(meta-set! delete :signature '(:fn ("T") :void))
 
 (def platform-osx 0)
 (def platform-windows 1)

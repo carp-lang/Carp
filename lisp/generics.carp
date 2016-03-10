@@ -174,13 +174,6 @@
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to ''"))
 
-    ;; "new" (match signature
-    ;;         (:fn arg-types :t)
-    ;;         (let [proto (str (type-build t) " " c-func-name "(" (string-join ", " (map (fn (arg)) arg-types)) ")")
-    ;;               c (str proto " { return NULL; }")]
-    ;;           {:proto proto :c c :deps ()})
-    ;;         _ (error "Invalid type for call to 'new'"))
-
     "map" (match signature
             (:fn ((:fn (a) a) (:Array a)) (:Array a)) (let [proto (str "API " (type-build (list :Array a)) " " c-func-name "(" (type-build (list :fn (list a) a)) " f, Array *array)")
                                                             c (str proto
@@ -196,6 +189,7 @@
                                                         {:proto proto :c c :deps ()})
             x (error (str "Invalid type for call to 'map': " x)))
 
+    ;; TODO: can this be a normal function now?
     "map-copy" (match signature
             (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
                                                             array-of-size-sig (list :fn (list :int) (list :Array b))
@@ -244,9 +238,9 @@
 
     "delete" (do
                (match signature
-                 (:fn ((:Array t)) :string) (instantiate-delete-for-array c-func-name t)
-                 (:fn (:string) :string) (instantiate-delete-for-string c-func-name)
-                 (:fn (maybe-struct-type) :string) (instantiate-delete-for-struct c-func-name maybe-struct-type)
+                 (:fn ((:Array t)) :void) (instantiate-delete-for-array c-func-name t)
+                 (:fn (:string) :void) (instantiate-delete-for-string c-func-name)
+                 (:fn (maybe-struct-type) :void) (instantiate-delete-for-struct c-func-name maybe-struct-type)
                  x (error (str "Invalid type for call to 'delete': " x))))
 
     "copy" (do
@@ -438,43 +432,78 @@ snprintf(buffer + pos, 1000, \"%s\", s); pos += strlen(s); buffer[pos++] = ' '; 
                  (str "    casted_data_copy[i] = " inner-copy-call "(casted_data[i]);\n"))
                "  }\n"
                "  return a_copy; \n"
-               "}")]
+               "}\n")]
     {:proto proto
      :c c
      :deps (if (primitive-type? t)
              '()
              (list inner-copy-call))}))
 
-;;
 
 
-;; (if (keyword? maybe-struct-type)
-;;     (let [_ (when (or (= :string maybe-struct-type)
-;;                       (primitive-type? maybe-struct-type))
-;;               (error (str "Primitive type sent to 'copy' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
-;;           lookup (eval (symbol (name maybe-struct-type)))]
-;;       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
-;;         (let [t-name (name maybe-struct-type)
-;;               proto (str t-name " *" c-func-name "(" t-name " *x)")
-;;               _ (println (str "proto for struct copying function: " proto))
-;;               member-names (array-to-list (:member-names lookup))
-;;               member-types (array-to-list (:member-types lookup))
-;;               c (str proto " { \n"
-;;                      "  " (type-build maybe-struct-type) " x_copy = calloc(1, sizeof(" t-name "));\n"
-;;                      (join " " (map2 (fn [t n]
-;;                                        (if (primitive-type? t)
-;;                                          (str "  x_copy->" n " = x->" n ";\n")
-;;                                          (let [inner-copy-sig (list :fn (list (list :ref t)) t)
-;;                                                copy-function-c-name (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))]
-;;                                            (do
-;;                                              (bake-generic-primop-auto "copy" inner-copy-sig)
-;;                                              (str "x_copy->" n " = " copy-function-c-name "(x->" n ");\n")))))                                           
-;;                                      member-types
-;;                                      member-names))
-;;                      "  return x_copy;\n"
-;;                      "}\n")]
-;;           {:proto proto
-;;            :c c
-;;            :deps (map (fn [t] (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
-;;         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
-;;     (error (str "Invalid type for call to 'str': " maybe-struct-type)))
+
+
+
+
+(defn instantiate-delete-for-string [c-func-name]
+  (let [proto (str "API void " c-func-name "(string s)")
+        c (str proto " { free(s); }")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-delete-for-struct [c-func-name maybe-struct-type]
+  (if (keyword? maybe-struct-type)
+    (let [_ (when (or (= :string maybe-struct-type)
+                      (primitive-type? maybe-struct-type))
+              (error (str "Primitive type sent to 'delete' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
+          lookup (eval (symbol (name maybe-struct-type)))]
+      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+        (let [t-name (name maybe-struct-type)
+              proto (str "void " c-func-name "(" t-name " *x)")
+              _ (println (str "proto for struct delete function: " proto))
+              member-names (array-to-list (:member-names lookup))
+              member-types (array-to-list (:member-types lookup))
+              c (str proto " { \n"
+                     (join " " (map2 (fn [t n]
+                                       (if (primitive-type? t)
+                                         (str "  /* no need to delete the member '" n "' */ \n")
+                                         (let [inner-delete-sig (list :fn (list t) :void)
+                                               copy-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
+                                           (do
+                                             (bake-generic-primop-auto "delete" inner-copy-sig)
+                                             (str "  " copy-function-c-name "(x);\n")))))
+                                     member-types
+                                     member-names))
+                     "  free(x);\n"
+                     "}\n")]
+          {:proto proto
+           :c c
+           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
+        (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
+    (error (str "Invalid type for call to 'str': " maybe-struct-type))))
+
+(defn instantiate-delete-for-array [c-func-name t]
+  (let [proto (str "API void " c-func-name "(Array *a)")
+        inner-signature (list :fn (list t) :void)
+        inner-delete-call (c-ify-name (generic-name "delete" inner-signature))
+        _ (println (str "inner-delete-call: " inner-delete-call))
+        _ (when (not (primitive-type? t))
+            (bake-generic-primop-auto "delete" inner-signature))
+        c (str proto
+               "{ \n"
+               (if (primitive-type? t)
+                 "/* no inner pointers to delete */\n"
+                 (str
+                  "  int count = a->count;\n"
+                  "  " (type-build t) " *casted_data = a->data;\n"
+                  "  for(int i = 0; i < count; ++i) {\n"
+                  (str "    " inner-delete-call "(casted_data[i]);\n")
+                  "  }\n"
+                  ))
+               "  free(a); \n"
+               "}\n")]
+    {:proto proto
+     :c c
+     :deps (if (primitive-type? t)
+             '()
+             (list inner-delete-call))}))
+

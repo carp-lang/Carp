@@ -1593,3 +1593,8 @@ Obj *p_gc(Obj** args, int arg_count) {
   gc(global_env);
   return nil;
 }
+
+Obj *p_delete(Obj** args, int arg_count) {
+  // no op?
+  return nil;
+}

@@ -218,6 +218,7 @@ void env_new_global() {
   register_primop("array-set!", p_array_set_BANG);
   register_primop("array-set", p_array_set);
   register_primop("gc", p_gc);
+  register_primop("delete", p_delete);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);
