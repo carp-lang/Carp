@@ -11,6 +11,7 @@
   - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
+  - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
   - Ownership in while loops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Self recuring function doesn't check argument count/types in the actual call to itself
@@ -26,6 +27,7 @@
 
 
 # Dynamic Runtime Big Features
+  - Proper bool type
   - Modules
   - Quasiquoting and splicing for easier macro writing
   - Remove globals to enable several instances of the runner in parallel

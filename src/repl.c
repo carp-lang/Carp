@@ -97,6 +97,9 @@ void env_new_global() {
   ampersand = obj_new_symbol("&");
   define("&", ampersand);
 
+  dotdotdot = obj_new_symbol("dotdotdot");
+  define("dotdotdot", dotdotdot);
+
   lisp_NULL = obj_new_ptr(NULL);
   define("NULL", lisp_NULL);
 

@@ -165,6 +165,10 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     read_pos++;
     return ampersand;
   }
+  else if(CURRENT == '.' && s[read_pos + 1] == '.' && s[read_pos + 2] == '.') {
+    read_pos += 3;
+    return dotdotdot;
+  }
   else if(CURRENT == '\\') {
     read_pos++;
     char b = CURRENT;

@@ -3,8 +3,8 @@
   (match xs
     () (list () ())
     (_) (error "split-every-second needs an even number of arguments")
-    (a b & misc) (let [inside (split-every-second misc)]
-                   (list (cons a (first inside))
+    (a b ... misc) (let [inside (split-every-second misc)]
+                     (list (cons a (first inside))
                          (cons b (second inside))))))
 
 (defmacro defstruct (struct-name struct-members)

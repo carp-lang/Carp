@@ -10,6 +10,8 @@
 
 ;;(load-gl)
 
+;;(defn tricky-let [] ((id id) 2))
+
 (defstruct Player [playerName :string
                    playerScore :int])
 
@@ -22,9 +24,11 @@
 (defn play []
   (let [p1 (Player (copy "erik") 100)
         p2 (Player (copy "marie") 120)]
-    (println* (map grow [p1 p2]))))
+    (println (ref (str (map grow [p1 p2]))))))
 
-(bake-exe play)
+;; (println*  eats the arg
+
+;;(bake play)
 
 ;;(println (str (play)))
 

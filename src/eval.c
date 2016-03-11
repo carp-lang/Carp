@@ -144,7 +144,7 @@ bool obj_match_lists(Obj *env, Obj *attempt, Obj *value) {
   Obj *p1 = attempt;
   Obj *p2 = value;
   while(p1 && p1->car) {
-    if(obj_eq(p1->car, ampersand) && p1->cdr && p1->cdr->car) {
+    if(obj_eq(p1->car, dotdotdot) && p1->cdr && p1->cdr->car) {
       //printf("Matching & %s against %s\n", obj_to_string(p1->cdr->car)->s, obj_to_string(p2)->s);
       bool matched_rest = obj_match(env, p1->cdr->car, p2);
       return matched_rest;
@@ -173,7 +173,7 @@ bool obj_match_arrays(Obj *env, Obj *attempt, Obj *value) {
   int i;
   for(i = 0; i < attempt->count; i++) {
     Obj *o = attempt->array[i];
-    if(obj_eq(o, ampersand) && ((i + 1) < attempt->count)) {
+    if(obj_eq(o, dotdotdot) && ((i + 1) < attempt->count)) {
       int rest_count = value->count - i;
       //printf("rest_count: %d\n", rest_count);
       Obj *rest = obj_new_array(rest_count);
@@ -181,9 +181,9 @@ bool obj_match_arrays(Obj *env, Obj *attempt, Obj *value) {
         rest->array[j] = value->array[i + j]; // copy the rest of the objects to a smaller array
       }
       //printf("rest: %s\n", obj_to_string(rest)->s);
-      Obj *symbol_after_ampersand = attempt->array[i + 1];
-      //printf("symbol_after_ampersand: %s\n", obj_to_string(symbol_after_ampersand)->s);
-      bool matched_rest = obj_match(env, symbol_after_ampersand, rest);
+      Obj *symbol_after_dotdotdot = attempt->array[i + 1];
+      //printf("symbol_after_dotdotdot: %s\n", obj_to_string(symbol_after_dotdotdot)->s);
+      bool matched_rest = obj_match(env, symbol_after_dotdotdot, rest);
       //printf("%s\n", matched_rest ? "match" : "no match");
       return matched_rest;
     }

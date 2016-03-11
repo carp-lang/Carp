@@ -25,7 +25,7 @@
 
 (defn binop? [form]
   (match form
-         (x & _) (contains? '(+ - * / <) x)
+         (x ... _) (contains? '(+ - * / <) x)
          _ false))
 
 (defn gen-fn-type [arg-count]
@@ -34,7 +34,7 @@
 (defn nest [a index array-name-symbol]
   (match a
     [] (literal-or-lookup-to-ast array-name-symbol)
-    [x & xs]
+    [x ... xs]
     (do
       ;;(println (str "nest x & xs: " x " & " xs))
       (let [array-set-signature (list :fn (list (list :Array (gen-typevar)) :int (gen-typevar)) (list :Array (gen-typevar)))]
@@ -80,12 +80,12 @@
                             :left (form-to-ast left)
                             :right (form-to-ast right)}
 
-           (x & xs) (if (def? x)
-                      (let [evaled (eval x)]
-                        (if (and (symbol? x) (macro? evaled))
-                          (expand-macro l)
-                          (app-to-ast x xs)))
-                      (app-to-ast x xs))
+           (x ... xs) (if (def? x)
+                        (let [evaled (eval x)]
+                          (if (and (symbol? x) (macro? evaled))
+                            (expand-macro l)
+                            (app-to-ast x xs)))
+                        (app-to-ast x xs))
            
            nil {:node :literal :type :any :value ""})))
 
@@ -125,11 +125,11 @@
 
 (defn bindings-to-ast [bindings]
   (match bindings
-    [name value & rest-bindings] (cons {:node :binding
-                                        :type (gen-typevar)
-                                        :name name
-                                        :value (form-to-ast value)}
-                                       (bindings-to-ast rest-bindings))
+    [name value ... rest-bindings] (cons {:node :binding
+                                          :type (gen-typevar)
+                                          :name name
+                                          :value (form-to-ast value)}
+                                         (bindings-to-ast rest-bindings))
     _ ()))
 
 (defn let-to-ast [bindings body]
@@ -187,21 +187,21 @@
   (match form
     
     ('if expr a b) (if-to-ast expr a b)
-    ('if & _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
+    ('if ... _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
 
-    ('do & forms) (do-to-ast forms)
+    ('do ... forms) (do-to-ast forms)
 
     ('let bindings body) (let-to-ast bindings body)
-    ('let & _) (error (str "'let' needs exactly two inner forms, bindings and a body. Compiler got:\n" form))
+    ('let ... _) (error (str "'let' needs exactly two inner forms, bindings and a body. Compiler got:\n" form))
 
     ('while expr body) (while-to-ast expr body)
-    ('while & _) (error (str "'while' needs exactly two inner forms, an expression and a body. Compiler got:\n" form))
+    ('while ... _) (error (str "'while' needs exactly two inner forms, an expression and a body. Compiler got:\n" form))
 
     ('ref expr) (ref-to-ast expr)
-    ('ref & _) (error (str "'ref' needs exactly one inner form, an expression. Compiler got:\n" form))
+    ('ref ... _) (error (str "'ref' needs exactly one inner form, an expression. Compiler got:\n" form))
 
     ('reset! symbol expr) (reset-to-ast symbol expr)
-    ('reset! & _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
+    ('reset! ... _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
     
     ('include-c-code s) {:node :c-code :code s :type (gen-typevar)}
     'NULL {:node :null :type (gen-typevar)}
