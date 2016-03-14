@@ -30,9 +30,11 @@
 (defn quasiquote-internal [form]  
   (match form
     ('dequote x) x
+
     ;; (x ... xs) (match x
     ;;              ('dequote-splicing inner-x) (concat (quasiquote-internal (eval inner-x)) (quasiquote-internal xs))
     ;;              _ (cons (quasiquote-internal x) (quasiquote-internal xs)))
+
     x (if (list? x)
         (cons 'list (map quasiquote-internal x))
         (list 'quote x))
