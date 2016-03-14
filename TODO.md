@@ -1,7 +1,12 @@
 # Compiler Big Features
   - Handle global variables referenced inside functions
+  - Equality
+  - Recompiling changed defstructs
+  - Structs refering to structs
+  - Generic structs
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
+  - Compile match statements
   - deftype (tagged unions)
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
 
@@ -34,7 +39,6 @@
   - Reader syntax for refs: &
 
 # Dynamic Runtime Small Features
-  - Match rest of list can use '...' instead
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Should be error when ptr of wrong type is sent to baked function
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
