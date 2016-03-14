@@ -162,8 +162,13 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     return dict;
   }
   else if(CURRENT == '&') {
+    int line = read_line_nr, pos = read_line_pos;
     read_pos++;
-    return ampersand;
+    Obj *inner = read_internal(env, s, filename);
+    Obj *cons2 = obj_new_cons(inner, nil);
+    Obj *cons1 = obj_new_cons(obj_new_symbol("ref"), cons2);
+    obj_set_line_info(cons1, line, pos, filename);
+    return cons1;
   }
   else if(CURRENT == '.' && s[read_pos + 1] == '.' && s[read_pos + 2] == '.') {
     read_pos += 3;
