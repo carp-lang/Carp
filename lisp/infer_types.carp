@@ -206,11 +206,11 @@
     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
     (match l
       () ()
-      (x & xs) (if (= x replace-this)
-                 (cons with-this (replace-in-list xs replace-this with-this))
-                 (if (list? x)
-                   (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
-                   (cons x (replace-in-list xs replace-this with-this)))))))
+      (x ... xs) (if (= x replace-this)
+                   (cons with-this (replace-in-list xs replace-this with-this))
+                   (if (list? x)
+                     (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
+                     (cons x (replace-in-list xs replace-this with-this)))))))
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do
@@ -303,7 +303,7 @@
 (defn solve-list (substs a-list b-list)
   (match (list a-list b-list)
     (() ()) substs
-    ((a & as) (b & bs)) (solve (solve substs a b) as bs)
+    ((a ... as) (b ... bs)) (solve (solve substs a b) as bs)
     _ (error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))))
 
 (defn solve (substs a b)

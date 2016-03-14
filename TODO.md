@@ -16,6 +16,7 @@
   - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
+  - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
   - Ownership in while loops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Self recuring function doesn't check argument count/types in the actual call to itself
@@ -31,6 +32,7 @@
 
 
 # Dynamic Runtime Big Features
+  - Proper bool type
   - Modules
   - Quasiquoting and splicing for easier macro writing
   - Remove globals to enable several instances of the runner in parallel
@@ -69,12 +71,13 @@
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
   - -> and ->>
-  - shuffle
+  - 'case'/'cond' macro
+  - shuffle (for lists)
   - Conversions between a list of pairs and dictionaries
   - 'for' macro with multiple bindings (i, j, etc...)
-  - 'case'/'cond' macro
 
 # Maybes
+  - Compile keywords?
   - Add void constraints for (do ...) statements ?
   - Add proper no-op :node for () ?
   - Polymorphic math operators?

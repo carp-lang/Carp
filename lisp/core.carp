@@ -101,9 +101,9 @@
 (defn contains? (items item)
   (match items
     () false
-    (x & xs) (if (= x item)
-               true
-               (contains? xs item))))
+    (x ... xs) (if (= x item)
+                 true
+                 (contains? xs item))))
 
 (defn any (pred xs)
   (contains? (map pred xs) true))
@@ -146,7 +146,7 @@
   (match l
     () ()
     (x) (list x)
-    (x & xs) (cons-last (reverse xs) x)))
+    (x ... xs) (cons-last (reverse xs) x)))
 
 (defn has-key? (dict key)
   (not (= () (get-maybe dict key))))
@@ -182,7 +182,7 @@
 (defn set-internal (xs ys)
   (match xs
     () ys
-    (x & xs) (set-internal xs (cons-unique x ys))
+    (x ... xs) (set-internal xs (cons-unique x ys))
     (x) (cons-unique x ys)))
 
 (defn set (xs)
@@ -195,9 +195,9 @@
 (defn intersection (xs ys)
   (match xs
     () ()
-    (x & xs) (if (contains? ys x)
-               (cons x (intersection xs ys))
-               (intersection xs ys))))
+    (x ... xs) (if (contains? ys x)
+                 (cons x (intersection xs ys))
+                 (intersection xs ys))))
 
 (defmacro for (b body)
   (match b
