@@ -450,10 +450,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_ptr(result);
 
-      if(!obj_result->meta) {
-        obj_result->meta = obj_new_environment(NULL);
-      }
-      env_assoc(obj_result->meta, obj_new_keyword("type"), return_type);
+      obj_set_meta(obj_result, obj_new_keyword("type"), return_type);
     }
 
     free(values);
@@ -647,7 +644,9 @@ void eval_list(Obj *env, Obj *o) {
       assert_or_set_error(a->array[i]->tag == 'Y', "Trying to bind to non-symbol in let form: ", a->array[i]);
       eval_internal(let_env, a->array[i + 1]);
       if(eval_error) { return; }
-      env_extend(let_env, a->array[i], stack_pop());
+      Obj *value = stack_pop();
+      env_extend(let_env, a->array[i], value);
+      obj_set_meta(value, obj_new_keyword("name"), a->array[i]);
     }
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", o);
@@ -830,6 +829,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *val = stack_pop();
     global_env_extend(key, val);
     //printf("def %s to %s\n", obj_to_string(key)->s, obj_to_string(val)->s);
+    obj_set_meta(val, obj_new_keyword("name"), key);
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {

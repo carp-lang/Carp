@@ -34,30 +34,27 @@
   - Proper bool type
   - Modules 
   - Remove globals to enable several instances of the runner in parallel
-  - ^syntax for meta data
   - Get inferior lisp to work
 
 # Dynamic Runtime Small Features
   - Want to be able to send Obj-arrays to ffi functions
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
-  - Should be error when ptr of wrong type is sent to baked function
-  - Can send compiled ffi-function to another ffi-function that expects a struct
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
-  - ONLY allow [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 
-  - Nicer pretty printing of lists of lists
-  - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - Better error handling and input validation for primops, clean up the C error/assertion macros
-  - Fix problem with missing meta data ("???") for some calls in stack trace
+  - ONLY allow [] in parameter list for function definitions
   - Use modules to solve problem of using same name for members in different structs
   
 # Dynamic Runtime Optimization
 
 # Bugs
-  - glfw-demo closes repl second time
+  - Can send compiled ffi-function to another ffi-function that expects a struct
+  - Should be error when ptr of wrong type is sent to baked function
+  - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
   - Valgrind finds error with realloc in obj_string.c line 17
+  - glfw-demo closes repl second time
 
 # Sanity checks
   - Ensure correctness of GC (run at every step)

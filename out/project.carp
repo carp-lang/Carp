@@ -24,3 +24,8 @@
 ;; (defn f [] "yeah")
 
 
+(defn f []
+  (let [a (fn [] (nth "erik"))
+        b (fn [] (a))]
+    (b)))
+
