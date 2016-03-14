@@ -1,4 +1,9 @@
 
+(defn println* [x]
+  (println (ref (str (ref x)))))
+
+
+
 (defstruct Player [playerName :string
                    playerScore :int])
 
@@ -7,9 +12,6 @@
 
 (defn grow [player]
   (update-playerScore player x2))
-
-(defn println* [x]
-   (println (ref (str (ref x)))))
 
 (defn play []
   (let [p1 (Player (copy "erik") 100)

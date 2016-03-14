@@ -22,8 +22,9 @@
   (do
     (time (load-lisp (str carp-dir "lisp/compiler_tests.carp")))
     (load-lisp (str carp-dir "lisp/examples.carp"))
-    (load-gl)
-    ))
+    (load-gl)))
+
+;;(load-lisp (str carp-dir "lisp/improved_core.carp"))
 
 (let [user-boot-file (str (getenv "HOME") "/.carp/user.carp")]
   (when (file-exists? user-boot-file)
