@@ -13,7 +13,7 @@
 #define LOG_FUNC_APPLICATION 0
 #define GC_COLLECT_AFTER_EACH_FORM 0
 
-#define LABELED_DISPATCH 1
+#define LABELED_DISPATCH 0
 
 void stack_print() {
   printf("----- STACK -----\n");
