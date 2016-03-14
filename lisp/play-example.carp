@@ -8,12 +8,11 @@
 (defn grow [player]
   (update-playerScore player x2))
 
+(defn println* [x]
+   (println (ref (str (ref x)))))
+
 (defn play []
   (let [p1 (Player (copy "erik") 100)
         p2 (Player (copy "marie") 120)]
-    (println (ref (str (map grow [p1 p2]))))))
-
-;; (println*  eats the arg
-;;(bake play)
-;;(println (str (play)))
+    (println* (map grow [p1 p2]))))
 
