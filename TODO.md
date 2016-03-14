@@ -12,7 +12,6 @@
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
 
 # Compiler Small Features
-  - Allow dashes in struct member names
   - Better (shorter, using < and >) names for generic functions
   - Be able to compare C-array in pointer to Obj array
 
@@ -42,6 +41,7 @@
 # Dynamic Runtime Small Features
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Should be error when ptr of wrong type is sent to baked function
+  - Can send compiled ffi-function to another ffi-function that expects a struct
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - ONLY allow [] in parameter list for function definitions
   - register/register-builtin should use the lisp name, not the C name 

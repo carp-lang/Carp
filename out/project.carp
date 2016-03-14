@@ -5,3 +5,7 @@
 ;;(load-gl)
 ;;(defn tricky-let [] ((id id) 2))
 
+(defstruct Blahaha [x-man :int])
+
+(defn b [] (Blahaha 3))
+(bake b)
