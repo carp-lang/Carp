@@ -593,6 +593,7 @@ void eval_list(Obj *env, Obj *o) {
     &&dispatch_defp, // 14
     &&dispatch_ref, // 15
     &&dispatch_catch, // 16
+    &&dispatch_local_eval, // 17
   };
    
   Obj *head = o->car;
@@ -879,6 +880,17 @@ void eval_list(Obj *env, Obj *o) {
       stack_push(nil);
       return;
     }
+  }
+  else if(HEAD_EQ("local-eval")) {
+    #if LABELED_DISPATCH
+  dispatch_local_eval:;
+    #endif
+    // Evaluate something in the local environment
+    assert_or_set_error(o->cdr, "Wrong argument count to 'local-eval'.", nil);
+    eval_internal(env, o->cdr->car);
+    Obj *evaled = stack_pop();
+    //printf("Local env: %s\n", obj_to_string(o->bindings)->s);
+    eval_internal(env, evaled);
   }
   else {
     #if LABELED_DISPATCH

@@ -3,18 +3,27 @@
   - Equality
   - Allow recompiling changed defstructs
   - Structs refering to structs
-  - Generic structs
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
   - Compile match statements
+  - Generic structs
   - deftype (tagged unions)
-  - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
+  - Option Type (Maybe in Haskell)
+  - Err Type (Either in Haskell)
 
 # Compiler Small Features
   - Better (shorter, using < and >) names for generic functions
   - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
+  - Fix types and memory management for:
+   - [ ] str--array
+   - [ ] str--struct
+   - [ ] array-set
+   - [ ] array-nth
+   - [ ] struct-set
+   - [ ] struct-get
+   - [ ] struct-update
   - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
   - Ownership in while loops
   - Self recuring function doesn't check argument count/types in the actual call to itself
@@ -31,6 +40,7 @@
 
 
 # Dynamic Runtime Big Features
+  - Use array for macro parameter list
   - Proper bool type
   - Modules 
   - Get inferior lisp to work
@@ -81,6 +91,7 @@
   - Not possible to write an 'eat-void' function: (register-builtin "eat_void" '(:void) :void), need a proper unit type for that
   - :when clauses in match?
   - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
+  - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
 
 # Niceties
   - Built in tutorial for the language
