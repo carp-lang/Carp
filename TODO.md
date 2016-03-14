@@ -52,7 +52,6 @@
   - Use modules to solve problem of using same name for members in different structs
   
 # Dynamic Runtime Optimization
-  - Jump table in evaluator, use a 'dispatch' member with a label adress in Obj
 
 # Bugs
   - glfw-demo closes repl second time
