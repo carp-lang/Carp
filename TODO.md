@@ -4,6 +4,7 @@
   - Move gl bindings to its own file, add things for keyboard input etc.
   - Allow recompiling changed defstructs
   - Structs refering to structs
+  - Special handling of POD structs (stack allocated, not sent by pointer)
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
   - Compile match statements
