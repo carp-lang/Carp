@@ -1,6 +1,7 @@
 # Compiler Big Features
   - Compile global variables
   - Equality
+  - Move gl bindings to its own file, add things for keyboard input etc.
   - Allow recompiling changed defstructs
   - Structs refering to structs
   - Compile a whole file to a single dylib
@@ -24,6 +25,7 @@
    - [ ] struct-get
    - [ ] struct-update
   - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
+  - Disallow "returning" of ref in let-form
   - Ownership in while loops
   - Self recuring function doesn't check argument count/types in the actual call to itself
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
@@ -40,8 +42,7 @@
 
 
 # Dynamic Runtime Big Features
-  - Macroexpand function
-  - Macro dequote doesn't work
+  - Macro splicing
   - Use array for macro parameter list
   - Proper bool type
   - Modules 
