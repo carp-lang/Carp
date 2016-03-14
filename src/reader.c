@@ -219,10 +219,33 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
   }
   else if(CURRENT == '\'') {
     read_pos++;
-    Obj *sym = read_internal(env, s, filename);
-    Obj *cons2 = obj_new_cons(sym, nil);
+    Obj *inner = read_internal(env, s, filename);
+    Obj *cons2 = obj_new_cons(inner, nil);
     Obj *cons1 = obj_new_cons(lisp_quote, cons2);
     return cons1;
+  }
+  else if(CURRENT == '`') {
+    read_pos++;
+    Obj *inner = read_internal(env, s, filename);
+    Obj *cons2 = obj_new_cons(inner, nil);
+    Obj *cons1 = obj_new_cons(obj_new_symbol("quasiquote"), cons2);
+    //printf("Read quasiquote.\n");
+    return cons1;
+  }
+  else if(CURRENT == '~') {
+    read_pos++;
+    if(CURRENT == '@') {
+      read_pos++;
+      Obj *sym = read_internal(env, s, filename);
+      Obj *cons2 = obj_new_cons(sym, nil);
+      Obj *cons1 = obj_new_cons(obj_new_symbol("dequote-splicing"), cons2);
+      return cons1;
+    } else {
+      Obj *sym = read_internal(env, s, filename);
+      Obj *cons2 = obj_new_cons(sym, nil);
+      Obj *cons1 = obj_new_cons(obj_new_symbol("dequote"), cons2);
+      return cons1;
+    }
   }
   else if(is_ok_in_symbol(CURRENT, true)) {
     int line = read_line_nr, pos = read_line_pos;

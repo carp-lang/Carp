@@ -28,6 +28,17 @@
         (list 'meta-set! name :user-defined true)
         (list 'meta-set! name :name (str name))))
 
+(defn quasiquote-internal [form]
+  (match form
+      ('dequote x) (eval x)
+      (x ... xs) (match x
+                   ('dequote-splicing inner-x) (concat (quasiquote-internal (eval inner-x)) (quasiquote-internal xs))
+                   _ (cons (quasiquote-internal x) (quasiquote-internal xs)))
+      x x))
+
+(defmacro quasiquote (form)
+  (list 'quote (quasiquote-internal form)))
+
 (defn assert-approx-eq (target x)
   (do
     (assert-eq true (< x (+ target 0.1)))
@@ -80,6 +91,14 @@
   (if (< times 1)
     '()
     (cons (f) (repeatedly f (- times 1)))))
+
+;; Replace all occurences of something in a list
+(defn replace [the-list something replacement]
+  (match the-list
+    () ()
+    (x ... xs) (if (= x something)
+                 (cons replacement (replace xs something replacement))
+                 (cons x (replace xs something replacement)))))
 
 (def total-time 0)
 

@@ -1,5 +1,6 @@
 # Compiler Big Features
   - Handle global variables referenced inside functions
+  - Print location of type inference error
   - Equality
   - Recompiling changed defstructs
   - Structs refering to structs
@@ -33,12 +34,10 @@
 
 # Dynamic Runtime Big Features
   - Proper bool type
-  - Modules
-  - Quasiquoting and splicing for easier macro writing
+  - Modules 
   - Remove globals to enable several instances of the runner in parallel
   - ^syntax for meta data
   - Get inferior lisp to work
-  - Reader syntax for refs: &
 
 # Dynamic Runtime Small Features
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays

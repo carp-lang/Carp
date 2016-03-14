@@ -1,34 +1,7 @@
 (reset! echo-signature-after-bake true)
 (reset! log-unloading-of-dylibs true)
 
-(when (not carp-dev)
-  (do
-    ;;(load-lisp (str carp-dir "lisp/glfw_test.carp"))
-    (load-lisp (str carp-dir "lisp/examples.carp"))
-    nil
-    ))
-
+;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
 ;;(load-gl)
-
 ;;(defn tricky-let [] ((id id) 2))
-
-(defstruct Player [playerName :string
-                   playerScore :int])
-
-(defn x2 [x]
-  (* x 2))
-
-(defn grow [player]
-  (update-playerScore player x2))
-
-(defn play []
-  (let [p1 (Player (copy "erik") 100)
-        p2 (Player (copy "marie") 120)]
-    (println (ref (str (map grow [p1 p2]))))))
-
-;; (println*  eats the arg
-
-;;(bake play)
-
-;;(println (str (play)))
 
