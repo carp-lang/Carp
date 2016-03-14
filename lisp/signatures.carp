@@ -4,15 +4,11 @@
 (defmacro set-signature! (sym sig)
   `(meta-set! ~sym :signature '~sig))
 
-;; (defmacro seth (sym)
-;;   `(meta-set! ~sym :ok true))
-
-;; (defmacro set-signature! (sym sig)
-;;   (list 'meta-set! sym :signature (list 'quote sig)))
-
 (set-signature! array-of-size  (:fn (:int)                          (:Array "T") ))
+
 (set-signature! array-set      (:fn ((:Array "T") :int "T")         (:Array "T") ))
-(set-signature! nth            (:fn ((:ref (:Array "T")) :int)      "T"          ))
+(set-signature! nth            (:fn ((:ref (:Array "T")) :int)      "T"          )) ;; TODO: must copy (or return ref?)
+
 (set-signature! map            (:fn ((:fn ("a") "a") (:Array "a"))  (:Array "a") ))
 (set-signature! map-copy       (:fn ((:fn ("a") "b") (:Array "a"))  (:Array "b") ))
 
