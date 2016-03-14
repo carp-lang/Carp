@@ -18,7 +18,7 @@
 
 (when carp-dev
   (do
-    (load-lisp (str carp-dir "lisp/compiler_tests.carp"))
+    (time (load-lisp (str carp-dir "lisp/compiler_tests.carp")))
     (load-lisp (str carp-dir "lisp/examples.carp"))
     (load-gl)
     ))
