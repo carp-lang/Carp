@@ -1,7 +1,7 @@
 # Compiler Big Features
-  - Handle global variables referenced inside functions
+  - Compile global variables
   - Equality
-  - Recompiling changed defstructs
+  - Allow recompiling changed defstructs
   - Structs refering to structs
   - Generic structs
   - Compile a whole file to a single dylib
@@ -17,8 +17,8 @@
 # Compiler Correctness
   - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
   - Ownership in while loops
-  - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Self recuring function doesn't check argument count/types in the actual call to itself
+  - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?)
   
@@ -33,8 +33,8 @@
 # Dynamic Runtime Big Features
   - Proper bool type
   - Modules 
-  - Remove globals to enable several instances of the runner in parallel
   - Get inferior lisp to work
+  - Remove globals to enable several instances of the runner in parallel
 
 # Dynamic Runtime Small Features
   - Want to be able to send Obj-arrays to ffi functions
