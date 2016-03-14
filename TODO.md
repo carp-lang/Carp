@@ -67,12 +67,13 @@
 # Lisp Core Libs
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
   - -> and ->>
-  - shuffle
+  - 'case'/'cond' macro
+  - shuffle (for lists)
   - Conversions between a list of pairs and dictionaries
   - 'for' macro with multiple bindings (i, j, etc...)
-  - 'case'/'cond' macro
 
 # Maybes
+  - Compile keywords?
   - Add void constraints for (do ...) statements ?
   - Add proper no-op :node for () ?
   - Polymorphic math operators?
