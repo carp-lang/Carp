@@ -1,6 +1,5 @@
 # Compiler Big Features
   - Handle global variables referenced inside functions
-  - Print location of type inference error
   - Equality
   - Recompiling changed defstructs
   - Structs refering to structs
