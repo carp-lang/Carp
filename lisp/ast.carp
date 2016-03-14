@@ -84,15 +84,17 @@
                         (let [evaled (eval x)]
                           (if (and (symbol? x) (macro? evaled))
                             (expand-macro l)
-                            (app-to-ast x xs)))
-                        (app-to-ast x xs))
+                            (app-to-ast x xs l)))
+                        (app-to-ast x xs l))
            
            nil {:node :literal :type :any :value ""})))
 
-(defn app-to-ast [x xs]
+(defn app-to-ast [x xs original-form]
   (do ;;(println (str "app-to-ast: " x ", " xs))
       {:node :app
        :type (gen-typevar)
+       :line (meta-get x :line)
+       :original-form original-form
        :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
        :tail (map form-to-ast xs)}))
 
@@ -147,6 +149,8 @@
 (defn ref-to-ast [expr]
   {:node :ref
    :type (list :ref (gen-typevar))
+   :line (meta-get expr :line)
+   :original-form expr
    :expr (form-to-ast expr)})
 
 (defn reset-to-ast [symbol expr]
@@ -161,9 +165,13 @@
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
+     :line (meta-get expr :line)
+     :original-form expr
      :value expr} ;; change key to :name ..?
     {:node :literal
      :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
+     :line (meta-get expr :line)
+     :original-form expr
      :value expr}))
 
 (defn is-struct-constructor? [form]

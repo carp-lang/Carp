@@ -5,7 +5,15 @@
 ;;(load-gl)
 ;;(defn tricky-let [] ((id id) 2))
 
-(defstruct Blahaha [x-man :int])
+;; (defn h [a b]
+;;   (+ (strlen a)
+;;      (strlen b)))
 
-(defn b [] (Blahaha 3))
-(bake b)
+;; (defn f []
+;;   (h 3 "b"))
+
+;; (defn g []
+;;   (let [s (string-copy &"hej")]
+;;     (f s)))
+
+;;(bake g)

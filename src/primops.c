@@ -465,7 +465,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
     }
   }
   else if(args[0]->tag == 'C') {
-    if(args[1]->tag != 'I') { printf("get-maybe requires arg 1 to be an integer\n"); return nil; }
+    if(args[1]->tag != 'I') { eval_error = obj_new_string("get-maybe requires arg 1 to be an integer\n"); return nil; }
     int i = 0;
     int n = args[1]->i;
     Obj *p = args[0];

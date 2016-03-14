@@ -39,6 +39,7 @@
   - Get inferior lisp to work
 
 # Dynamic Runtime Small Features
+  - Want to be able to send Obj-arrays to ffi functions
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Should be error when ptr of wrong type is sent to baked function
   - Can send compiled ffi-function to another ffi-function that expects a struct
