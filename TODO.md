@@ -40,6 +40,8 @@
 
 
 # Dynamic Runtime Big Features
+  - Macroexpand function
+  - Macro dequote doesn't work
   - Use array for macro parameter list
   - Proper bool type
   - Modules 

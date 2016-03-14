@@ -277,6 +277,8 @@ void match(Obj *env, Obj *value, Obj *attempts) {
   set_error("Failed to find a suitable match for: ", value);
 }
 
+bool in_macro_expansion = false;
+
 void apply(Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
@@ -593,7 +595,6 @@ void eval_list(Obj *env, Obj *o) {
     &&dispatch_defp, // 14
     &&dispatch_ref, // 15
     &&dispatch_catch, // 16
-    &&dispatch_local_eval, // 17
   };
    
   Obj *head = o->car;
@@ -881,16 +882,11 @@ void eval_list(Obj *env, Obj *o) {
       return;
     }
   }
-  else if(HEAD_EQ("local-eval")) {
-    #if LABELED_DISPATCH
-  dispatch_local_eval:;
-    #endif
-    // Evaluate something in the local environment
-    assert_or_set_error(o->cdr, "Wrong argument count to 'local-eval'.", nil);
+  else if(HEAD_EQ("macroexpand")) {
+    assert_or_set_error(o->cdr, "Wrong argument count to 'macroexpand'.", nil);
+    in_macro_expansion = true; // TODO: this is an ugly global variable to avoid threading of state 
     eval_internal(env, o->cdr->car);
-    Obj *evaled = stack_pop();
-    //printf("Local env: %s\n", obj_to_string(o->bindings)->s);
-    eval_internal(env, evaled);
+    in_macro_expansion = false;
   }
   else {
     #if LABELED_DISPATCH
@@ -955,7 +951,11 @@ void eval_list(Obj *env, Obj *o) {
         printf("Expanded macro: %s\n", obj_to_string(expanded)->s);
       }
       shadow_stack_push(expanded);
-      eval_internal(env, expanded);
+      if(in_macro_expansion) {
+        stack_push(expanded);
+      } else {
+        eval_internal(env, expanded);
+      }
       if(eval_error) {
         return;
       }
