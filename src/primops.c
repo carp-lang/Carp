@@ -1493,7 +1493,7 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count) {
     o->meta = obj_new_environment(NULL);
   }
   env_assoc(o->meta, args[1], args[2]);
-  return nil;
+  return o;
 }
 
 Obj *p_meta_get(Obj** args, int arg_count) {

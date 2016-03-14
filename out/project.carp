@@ -17,3 +17,10 @@
 ;;     (f s)))
 
 ;;(bake g)
+
+;; ^doc "Hej på dig"
+;; ^ann '(:fn () :void)
+
+;; (defn f [] "yeah")
+
+

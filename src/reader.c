@@ -1,5 +1,7 @@
 #include "reader.h"
 #include <ctype.h>
+#include "env.h"
+#include "obj_string.h"
 
 int read_line_nr;
 int read_line_pos;
@@ -247,6 +249,24 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       return cons1;
     }
   }
+  else if(CURRENT == '^') {
+    read_pos++;
+    Obj *key_symbol = read_internal(env, s, filename);
+
+    if(key_symbol->tag != 'Y') {
+      eval_error = obj_new_string("Invalid key for meta data.");
+      return nil;
+    }
+
+    Obj *key = obj_new_keyword(key_symbol->s);
+    Obj *value = read_internal(env, s, filename);
+    Obj *form = read_internal(env, s, filename);
+    Obj *head = obj_new_symbol("meta-set!");
+    
+    Obj *new_form = obj_list(head, form, key, value);
+    
+    return new_form;
+  }
   else if(is_ok_in_symbol(CURRENT, true)) {
     int line = read_line_nr, pos = read_line_pos;
     char name[512];
@@ -257,27 +277,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    obj_set_line_info(symbol, line, pos, filename);
-
-    /* &&dispatch_do, */
-    /* &&dispatch_let, */
-    /* &&dispatch_not, */
-    /* &&dispatch_or, */
-    /* &&dispatch_and, */
-    /* &&dispatch_quote, */
-    /* &&dispatch_while, */
-    /* &&dispatch_if, */
-    /* &&dispatch_match, */
-    /* &&dispatch_reset, */
-    /* &&dispatch_fn, */
-    /* &&dispatch_macro, */
-    /* &&dispatch_def, */
-    /* &&dispatch_defp, */
-    /* &&dispatch_ref, */
-    /* &&dispatch_catch, */
-
-    //printf("New symbol with dispatch_index %d\n", symbol->dispatch_index);
-    
+    obj_set_line_info(symbol, line, pos, filename);   
     return symbol;
   }
   else if(CURRENT == ':') {

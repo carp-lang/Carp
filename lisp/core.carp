@@ -230,6 +230,13 @@
 (defn second [xs]
   (nth xs 1))
 
+(defn third [xs]
+  (nth xs 1))
+
+(defn doc [x]
+  (meta-get x :doc))
+
+
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
           text
