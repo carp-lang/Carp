@@ -50,6 +50,27 @@ Obj *obj_new_string(char *s) {
 Obj *obj_new_symbol(char *s) {
   Obj *o = obj_new('Y');
   o->s = strdup(s);
+
+  if(strcmp(s, "do") == 0) { o->dispatch_index = 1; }
+  else if(strcmp(s, "let") == 0) { o->dispatch_index = 2; }
+  else if(strcmp(s, "not") == 0) { o->dispatch_index = 3; }
+  else if(strcmp(s, "or") == 0) { o->dispatch_index = 4; }
+  else if(strcmp(s, "and") == 0) { o->dispatch_index = 5; }
+  else if(strcmp(s, "quote") == 0) { o->dispatch_index = 6; }
+  else if(strcmp(s, "while") == 0) { o->dispatch_index = 7; }
+  else if(strcmp(s, "if") == 0) { o->dispatch_index = 8; }
+  else if(strcmp(s, "match") == 0) { o->dispatch_index = 9; }
+  else if(strcmp(s, "reset!") == 0) { o->dispatch_index = 10; }
+  else if(strcmp(s, "fn") == 0) { o->dispatch_index = 11; }
+  else if(strcmp(s, "macro") == 0) { o->dispatch_index = 12; }
+  else if(strcmp(s, "def") == 0) { o->dispatch_index = 13; }
+  else if(strcmp(s, "def?") == 0) { o->dispatch_index = 14; }
+  else if(strcmp(s, "ref") == 0) { o->dispatch_index = 15; }
+  else if(strcmp(s, "catch-error") == 0) { o->dispatch_index = 16; }
+  else {   
+    o->dispatch_index = 0;
+  }
+  
   return o;
 }
 

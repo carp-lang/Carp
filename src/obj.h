@@ -53,7 +53,10 @@ typedef struct Obj {
     // Integers
     int i;
     // Strings, symbols and keywords
-    char *s;
+    struct {
+      char *s;
+      int dispatch_index; // used for quick dispatch of special forms in eval
+    };
     // Lambdas / Macros
     struct {
       struct Obj *params;
@@ -166,3 +169,4 @@ Obj *type_array;
 
 Obj *prompt;
 Obj *prompt_unfinished_form;
+

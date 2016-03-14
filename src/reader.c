@@ -258,6 +258,26 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
     obj_set_line_info(symbol, line, pos, filename);
+
+    /* &&dispatch_do, */
+    /* &&dispatch_let, */
+    /* &&dispatch_not, */
+    /* &&dispatch_or, */
+    /* &&dispatch_and, */
+    /* &&dispatch_quote, */
+    /* &&dispatch_while, */
+    /* &&dispatch_if, */
+    /* &&dispatch_match, */
+    /* &&dispatch_reset, */
+    /* &&dispatch_fn, */
+    /* &&dispatch_macro, */
+    /* &&dispatch_def, */
+    /* &&dispatch_defp, */
+    /* &&dispatch_ref, */
+    /* &&dispatch_catch, */
+
+    //printf("New symbol with dispatch_index %d\n", symbol->dispatch_index);
+    
     return symbol;
   }
   else if(CURRENT == ':') {

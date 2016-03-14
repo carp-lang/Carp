@@ -4,6 +4,7 @@
 #include "reader.h"
 #include "gc.h"
 #include "primops.h"
+#include "obj.h"
 
 #define LOG_EVAL 0
 #define LOG_STACK 0
@@ -11,6 +12,8 @@
 #define SHOW_MACRO_EXPANSION 0
 #define LOG_FUNC_APPLICATION 0
 #define GC_COLLECT_AFTER_EACH_FORM 0
+
+#define LABELED_DISPATCH 1
 
 void stack_print() {
   printf("----- STACK -----\n");
@@ -567,11 +570,56 @@ void apply(Obj *function, Obj **args, int arg_count) {
 
 void eval_list(Obj *env, Obj *o) {
   assert(o);
+  
   //printf("Evaling list %s\n", obj_to_string(o)->s);
   if(!o->car) {
     stack_push(o); // nil, empty list
+    return;
   }
-  else if(HEAD_EQ("do")) {
+
+  #if LABELED_DISPATCH
+  static void* dispatch_table[] = {
+    NULL, // index 0 means no dispatch
+    &&dispatch_do, // 1
+    &&dispatch_let, // 2
+    &&dispatch_not, // 3
+    &&dispatch_or, // 4
+    &&dispatch_and, // 5
+    &&dispatch_quote, // 6
+    &&dispatch_while, // 7
+    &&dispatch_if, // 8
+    &&dispatch_match, // 9
+    &&dispatch_reset, // 10
+    &&dispatch_fn, // 11
+    &&dispatch_macro, // 12
+    &&dispatch_def, // 13
+    &&dispatch_defp, // 14
+    &&dispatch_ref, // 15
+    &&dispatch_catch, // 16
+  };
+   
+  Obj *head = o->car;
+  if(head->tag == 'Y') {
+    if(head->dispatch_index) {
+      //printf("Will dispatch instruction %d\n", head->dispatch_index);
+      goto *dispatch_table[head->dispatch_index];
+    }
+    else {
+      //printf("Will dispatch non-special form symbol: %s\n", obj_to_string(head)->s);
+      goto dispatch_function_evaluation;
+    }
+  }
+  else {
+    //printf("Will dispatch non-symbol: %s\n", obj_to_string(head)->s);
+    goto dispatch_function_evaluation;
+  }
+  assert(false); // Don't go past here, it's SLOW.
+  #endif
+
+  if(HEAD_EQ("do")) {
+    #if LABELED_DISPATCH
+  dispatch_do:;
+    #endif
     Obj *p = o->cdr;
     while(p && p->car) {
       eval_internal(env, p->car);
@@ -583,6 +631,9 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else if(HEAD_EQ("let")) {
+    #if LABELED_DISPATCH
+  dispatch_let:;
+    #endif
     Obj *let_env = obj_new_environment(env);
     shadow_stack_push(let_env);
     //Obj *p = o->cdr->car;
@@ -604,6 +655,9 @@ void eval_list(Obj *env, Obj *o) {
     shadow_stack_pop(); // let_env
   }
   else if(HEAD_EQ("not")) {
+    #if LABELED_DISPATCH
+  dispatch_not:;
+    #endif
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
@@ -619,6 +673,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(lisp_true);
   }
   else if(HEAD_EQ("or")) {
+    #if LABELED_DISPATCH
+  dispatch_or:;
+    #endif
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
@@ -634,6 +691,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(lisp_false);
   }
   else if(HEAD_EQ("and")) {
+    #if LABELED_DISPATCH
+  dispatch_and:;
+    #endif
     Obj *p = o->cdr;
     while(p) {
       if(p->car) {
@@ -649,6 +709,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(lisp_true);
   }
   else if(HEAD_EQ("quote")) {
+    #if LABELED_DISPATCH
+  dispatch_quote:;
+    #endif
     if(o->cdr == nil) {
       stack_push(nil);
     } else {
@@ -656,6 +719,9 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else if(HEAD_EQ("while")) {
+    #if LABELED_DISPATCH
+  dispatch_while:;
+    #endif
     assert_or_set_error(o->cdr->car, "Too few body forms in 'while' form: ", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'while' form (use explicit 'do').", o);
     eval_internal(env, o->cdr->car);
@@ -673,6 +739,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(nil);
   }
   else if(HEAD_EQ("if")) {
+    #if LABELED_DISPATCH
+  dispatch_if:;
+    #endif
     assert_or_set_error(o->cdr->car, "Too few body forms in 'if' form: ", o);
     assert_or_set_error(o->cdr->cdr->car, "Too few body forms in 'if' form: ", o);
     assert_or_set_error(o->cdr->cdr->cdr->car, "Too few body forms in 'if' form: ", o);
@@ -689,6 +758,9 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else if(HEAD_EQ("match")) {
+    #if LABELED_DISPATCH
+  dispatch_match:;
+    #endif
     eval_internal(env, o->cdr->car);
     if(eval_error) { return; }
     Obj *value = stack_pop();
@@ -696,6 +768,9 @@ void eval_list(Obj *env, Obj *o) {
     match(env, value, p);
   }
   else if(HEAD_EQ("reset!")) {
+    #if LABELED_DISPATCH
+  dispatch_reset:;
+    #endif
     assert_or_set_error(o->cdr->car->tag == 'Y', "Must use 'reset!' on a symbol.", o->cdr->car);
     Obj *pair = env_lookup_binding(env, o->cdr->car);
     if(!pair->car || pair->car->tag != 'Y') {
@@ -709,6 +784,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(pair->cdr);
   }
   else if(HEAD_EQ("fn")) {
+    #if LABELED_DISPATCH
+  dispatch_fn:;
+    #endif
     assert_or_set_error(o->cdr, "Lambda form too short (no parameter list or body).", o);
     assert_or_set_error(o->cdr->car, "No parameter list in lambda.", o);
     Obj *params = o->cdr->car;
@@ -726,6 +804,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(lambda);
   }
   else if(HEAD_EQ("macro")) {
+    #if LABELED_DISPATCH
+  dispatch_macro:;
+    #endif
     assert_or_set_error(o->cdr, "Macro form too short (no parameter list or body): ", o);
     assert_or_set_error(o->cdr->car, "No parameter list in macro: ", o);
     Obj *params = o->cdr->car;
@@ -737,6 +818,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(macro);
   }
   else if(HEAD_EQ("def")) {
+    #if LABELED_DISPATCH
+  dispatch_def:;
+    #endif
     assert_or_set_error(o->cdr, "Too few args to 'def': ", o);
     assert_or_set_error(o->cdr->car, "Can't assign to nil: ", o);
     assert_or_set_error(o->cdr->car->tag == 'Y', "Can't assign to non-symbol: ", o);
@@ -749,6 +833,9 @@ void eval_list(Obj *env, Obj *o) {
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {
+    #if LABELED_DISPATCH
+  dispatch_defp:;
+    #endif
     //assert_or_set_error(o->cdr, "Too few args to 'def?': ", o);
     //assert_or_set_error(o->cdr->cdr, "Too few args to 'def?': ", o);
     eval_internal(env, o->cdr->car);
@@ -762,10 +849,16 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else if(HEAD_EQ("ref")) {
+    #if LABELED_DISPATCH
+  dispatch_ref:;
+    #endif
     assert_or_set_error(o->cdr, "Too few args to 'ref': ", o);
     eval_internal(env, o->cdr->car);
   }
   else if(HEAD_EQ("catch-error")) {
+    #if LABELED_DISPATCH
+  dispatch_catch:;
+    #endif
     assert_or_set_error(o->cdr, "Too few args to 'catch-error': ", o);
     int shadow_stack_size_save = shadow_stack_pos;
     int stack_size_save = stack_pos;
@@ -788,6 +881,10 @@ void eval_list(Obj *env, Obj *o) {
     }
   }
   else {
+    #if LABELED_DISPATCH
+  dispatch_function_evaluation:;
+    #endif
+    
     shadow_stack_push(o);
     
     // Lambda, primop or macro   
@@ -1023,3 +1120,4 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
   }
   stack_pop(); // pop the 'forms' that was pushed above
 }
+
