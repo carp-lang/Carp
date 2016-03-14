@@ -17,8 +17,7 @@
 
 # Compiler Correctness
   - Fix types and memory management for:
-   - [ ] str--array
-   - [ ] str--struct
+   - [ ] str
    - [ ] array-set
    - [ ] array-nth
    - [ ] struct-set
@@ -29,7 +28,8 @@
   - Self recuring function doesn't check argument count/types in the actual call to itself
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
-  - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?)
+  - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
+  - Automatic recompilation doesn't work when depending on concrete instantiation of generic function
   
 # Compiler efficiency
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
