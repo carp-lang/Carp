@@ -18,27 +18,29 @@ The key features of Carp are the following:
 
 ## A Small OpenGL/GLFW Example
 ```clojure
-(load-gl)
+(load gl)
 
-(defn gl-demo ()
-  (if (glfwInit)
-    (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
-      (if (null? window)
-        (panic "No window.")
-        (do (glfwMakeContextCurrent window)
-            (while (not (glfwWindowShouldClose window))
-              (do
-                (glClearColor 0.6f 0.85f 0.85f 1.0f)
-                (glClear gl-color-buffer-bit)
-                (glColor3f 1.0f 0.9f 0.2f)
-                (draw-rect -0.5f -0.5f 1.0f 1.0f)
-                (glfwSwapBuffers window)
-                (glfwPollEvents)))
-            (glfwTerminate))))
-    (panic "Failed to initialize glfw.")))
+^ann glfw-key-callback-type
+(defn on-key [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (println &(str key))))
+
+(defn draw []
+  (do
+    (glClearColor 0.1 0.1 0.1 1.0)
+    (glClear carp-gl-color-buffer-bit)
+    (glColor3f 1.0 1.0 1.0)
+    (let [r 0.9
+          t (glfwGetTime)]
+      (draw-line 0.0 0.0 (* r (cosf t)) (* r (sinf t))))
+    ))
+
+(defn game []
+  (glfw-app "This is a demo" draw on-key))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe gl-demo)``` to build an executable, or just ```(gl-demo)``` to run the program directly from the REPL. Please note that there will be some build artifacts put into the working directory.
+To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe game)``` to build an executable, or just ```(bake game)``` followed by ```(game)``` to run the program directly from the REPL.
 
 ## The Compiler
 The Carp language is very tightly integrated with it's compiler which itself is written in a dynamic version of Carp (implemented in C). To work on a Carp program you run ```carp``` (first making sure it's in your $PATH, see installation instructions below) which starts the REPL. Everything you want to do to your program can be controlled from here.
