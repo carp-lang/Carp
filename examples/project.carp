@@ -1,0 +1,31 @@
+(reset! echo-signature-after-bake true)
+(reset! log-unloading-of-dylibs true)
+
+;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
+;;(load-gl)
+;;(defn tricky-let [] ((id id) 2))
+
+;; (defn h [a b]
+;;   (+ (strlen a)
+;;      (strlen b)))
+
+;; (defn f []
+;;   (h 3 "b"))
+
+;; (defn g []
+;;   (let [s (string-copy &"hej")]
+;;     (f s)))
+
+;;(bake g)
+
+;; ^doc "Hej på dig"
+;; ^ann '(:fn () :void)
+
+;; (defn f [] "yeah")
+
+
+(defn f []
+  (let [a (fn [] (nth "erik"))
+        b (fn [] (a))]
+    (b)))
+
