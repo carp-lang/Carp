@@ -251,6 +251,8 @@
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
 (defn user () (getenv "USER"))
+(defn mkdir (dir-name) (system (str "mkdir " dir-name)))
+(defn touch (file-name) (system (str "touch " file-name)))
 
 (register-builtin "platform" '() :int)
 
@@ -270,7 +272,6 @@
 
 (defmacro import (module-symbol)
   (list 'import-internal (str module-symbol)))
-
 ;;`(import-internal (name ~module-symbol))
 
 (defn import-internal [module-name]

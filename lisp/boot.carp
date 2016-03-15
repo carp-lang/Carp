@@ -1,11 +1,19 @@
+(def env-variable-true?
+  (fn [v]
+    (and (not (= "" v))
+         (not (= "0" v))
+         (not (= "false" v)))))
+
 (def carp-dir (getenv "CARP_DIR"))
-(def carp-dev (not (= "" (getenv "CARP_DEV"))))
+(def carp-dev (env-variable-true? (getenv "CARP_DEV")))
 
 (if (= carp-dir "")
-  (do (println "Environment variable 'CARP_DIR' is not set, did you run 'carp-repl' directly? Please use the carp shell script instead.")
+  (do (println (str "Environment variable 'CARP_DIR' is not set, did you run 'carp-repl' directly?\n"
+                    "Please use the carp shell script instead."))
       (exit -1))
   nil)
 
+;; ~~~ CORE ~~~
 (load-lisp (str carp-dir "lisp/core.carp"))
 (load-lisp (str carp-dir "lisp/builtins.carp"))
 (load-lisp (str carp-dir "lisp/signatures.carp"))
@@ -13,19 +21,18 @@
 (when carp-dev
   (load-lisp (str carp-dir "lisp/core_tests.carp")))
 
+;; ~~~ COMPILER ~~~
 (load-lisp (str carp-dir "lisp/compiler.carp"))
-
-(defn load-gl ()
-  (load-lisp (str carp-dir "lisp/glfw_test.carp")))
 
 (when carp-dev
   (do
     (time (load-lisp (str carp-dir "lisp/compiler_tests.carp")))
     (load-lisp (str carp-dir "lisp/examples.carp"))
-    (load-gl)))
+    (load-lisp (str carp-dir "lisp/glfw_test.carp"))))
 
 ;;(load-lisp (str carp-dir "lisp/improved_core.carp"))
 
+;; ~~~ USER BOOT FILES ~~~
 (let [user-boot-file (str (getenv "HOME") "/.carp/user.carp")]
   (when (file-exists? user-boot-file)
     (load-lisp user-boot-file)))
