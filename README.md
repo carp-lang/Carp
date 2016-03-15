@@ -33,8 +33,7 @@ The key features of Carp are the following:
     (glColor3f 1.0 1.0 1.0)
     (let [r 0.9
           t (glfwGetTime)]
-      (draw-line 0.0 0.0 (* r (cosf t)) (* r (sinf t))))
-    ))
+      (draw-line 0.0 0.0 (* r (cosf t)) (* r (sinf t))))))
 
 (defn game []
   (glfw-app "This is a demo" draw on-key))
