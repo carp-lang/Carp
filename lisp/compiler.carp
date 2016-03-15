@@ -129,7 +129,7 @@
          "#include <shared.h>\n"
          "//Types:\n"
          (join "\n" (map :type-definition (reverse (values types))))
-         "//Globals:\n"
+         "\n//Globals:\n"
          (join "\n" (map :global-definition (values globals)))
          "\n\n//Functions:\n"
          (join "\n" (map :func-proto (values baked-funcs))))))

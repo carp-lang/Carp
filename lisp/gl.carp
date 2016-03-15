@@ -10,8 +10,11 @@
 (register glfw "glfwPollEvents" '() :void)
 (register glfw "glfwWindowShouldClose" '((:ref :GLFWwindow)) :bool)
 (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
+(register glfw "glfwSetWindowShouldClose" '((:ref :GLFWwindow) :bool) :void)
+(register glfw "glfwGetTime" '() :float)
 
-(register glfw "glfwSetKeyCallback" '((:ref :GLFWwindow) (:fn ((:ref :GLFWwindow) :int :int :int :int))) :void)
+(def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
+(register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
 
 (register glfw "glClearColor" '(:float :float :float :float) :void)
 (register glfw "glClear" '(:int) :void)
@@ -25,8 +28,7 @@
 (def carp-gl-line-strip 3)
 (def carp-gl-triangles 4)
 
-;; glfwSetKeyCallback(window, key_callback);
-;; void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);;
+(def key-esc 256)
 
 ;; glfwSetCharCallback(window, character_callback);
 ;; void character_callback(GLFWwindow* window, unsigned int codepoint)
@@ -47,3 +49,25 @@
       (glVertex3f x y 0.0f)
       (glEnd)))
 
+(defn draw-line (x1 y1 x2 y2)
+  (do (glBegin carp-gl-lines)
+      (glVertex3f x1 y1 0.0f)
+      (glVertex3f x2 y2 0.0f)
+      (glEnd)))
+
+(defn glfw-app [title render-callback on-key-callback]
+  (if (glfwInit)
+    (let [window (glfwCreateWindow 640 480 title NULL NULL)]
+      (if (null? window)
+        (panic "No window.")
+        (do (println "Window OK.")
+            (glfwMakeContextCurrent window)
+            (glfwSetKeyCallback window on-key-callback)
+            (while (not (glfwWindowShouldClose window))
+              (do
+                (render-callback)
+                (glfwSwapBuffers window)
+                (glfwPollEvents)))
+            (println "Time to go.")
+            (glfwTerminate))))
+    (panic "Failed to initialize glfw.")))
