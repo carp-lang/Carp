@@ -268,3 +268,10 @@
 (defn linux? []
   (= (platform) platform-linux))
 
+(defmacro import (module-symbol)
+  (list 'import-internal (str module-symbol)))
+
+;;`(import-internal (name ~module-symbol))
+
+(defn import-internal [module-name]
+  (load-lisp (str carp-dir "lisp/" module-name ".carp")))
