@@ -29,3 +29,16 @@
         b (fn [] (a))]
     (b)))
 
+
+(defn servant []
+  100)
+
+(defn master [f]
+  (* 5 (f)))
+
+(bake master)
+
+(defn test-master []
+  (master servant))
+
+

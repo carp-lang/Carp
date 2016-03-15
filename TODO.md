@@ -1,7 +1,5 @@
 # Compiler Big Features
-  - Compile global variables
   - Equality
-  - Move gl bindings to its own file, add things for keyboard input etc.
   - Allow recompiling changed defstructs
   - Structs refering to structs
   - Special handling of POD structs (stack allocated, not sent by pointer)
@@ -12,6 +10,7 @@
   - deftype (tagged unions)
   - Option Type (Maybe in Haskell)
   - Err Type (Either in Haskell)
+  - Compile global variables with correct initialization and any kind of type
 
 # Compiler Small Features
   - Better (shorter, using < and >) names for generic functions
@@ -43,8 +42,8 @@
 
 
 # Dynamic Runtime Big Features
+  - Allow sending lambdas to ffi functions as arguments
   - Macro splicing
-  - Be able to start carp with a file as argument
   - Use array for macro parameter list
   - Proper bool type
   - Modules 
