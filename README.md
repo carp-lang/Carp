@@ -18,7 +18,7 @@ The key features of Carp are the following:
 
 ## A Small OpenGL/GLFW Example
 ```clojure
-(load gl)
+(import gl)
 
 ^ann glfw-key-callback-type
 (defn on-key [window key scancode action mods]

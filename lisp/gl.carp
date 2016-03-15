@@ -11,7 +11,7 @@
 (register glfw "glfwWindowShouldClose" '((:ref :GLFWwindow)) :bool)
 (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
 (register glfw "glfwSetWindowShouldClose" '((:ref :GLFWwindow) :bool) :void)
-(register glfw "glfwGetTime" '() :float)
+(register glfw "glfwGetTime" '() :float) ;; TODO: should return a double
 
 (def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
 (register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
