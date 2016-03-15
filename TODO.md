@@ -44,11 +44,14 @@
 
 # Dynamic Runtime Big Features
   - Macro splicing
+  - Be able to start carp with a file as argument
   - Use array for macro parameter list
   - Proper bool type
   - Modules 
   - Get inferior lisp to work
   - Remove globals to enable several instances of the runner in parallel
+  - Add more numeric types (double, unsigned long?)
+  - A Set-type with reader syntax #{}
 
 # Dynamic Runtime Small Features
   - Want to be able to send Obj-arrays to ffi functions
@@ -58,6 +61,7 @@
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - ONLY allow [] in parameter list for function definitions
   - Use modules to solve problem of using same name for members in different structs
+  - Use size_t where approperiate
   
 # Dynamic Runtime Optimization
 
@@ -78,6 +82,7 @@
   
   
 # Lisp Core Libs
+  - 'import' function that searches paths for carp files
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
   - -> and ->>
   - 'case'/'cond' macro

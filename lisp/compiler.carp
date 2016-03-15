@@ -159,7 +159,7 @@
     ""
     "-framework OpenGL -framework Cocoa -framework IOKit"))
 
-(def out-dir "./")
+(def out-dir (str carp-dir "out/"))
 (def echo-signature-after-bake false)
 
 (defn remove-non-user-defined-deps (func-deps)

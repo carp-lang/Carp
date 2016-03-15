@@ -78,8 +78,8 @@ If 'libffi' is installed with Brew, you can find the include files at "/usr/loca
 Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
 
 ### Compiler Variables
-* ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is "".
 * ```carp-dir``` The root folder of the Carp compiler, should be the same folder as the on where this README.md file resides.
+* ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is the 'out' folder in the carp directory.
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
 * ```prompt``` The prompt displayed in the repl
 
