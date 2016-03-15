@@ -145,6 +145,7 @@
 (defn not-nil? (x) (not (= nil x)))
 
 (defn int? (x) (= :int (type x)))
+(defn float? (x) (= :float (type x)))
 (defn string? (x) (= :string (type x)))
 (defn symbol? (x) (= :symbol (type x)))
 (defn keyword? (x) (= :keyword (type x)))
@@ -156,6 +157,10 @@
 (defn lambda? (x) (= :lambda (type x)))
 (defn foreign? (x) (= :foreign (type x)))
 (defn primop? (x) (= :primop (type x)))
+
+(defn function? (x) (or (lambda? x)
+                        (foreign? x)
+                        (primop? x)))
 
 (defn range (start stop)
   (if (< start stop)

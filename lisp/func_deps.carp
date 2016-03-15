@@ -38,6 +38,10 @@
                                                               is-primop (primop? evaled)
                                                               is-lambda (lambda? evaled)]
                                                           (do
+                                                            (when (not (function? evaled))
+                                                              (do
+                                                                ;;(println (str symbol " is not a function, make it a global variable."))
+                                                                (add-global! (name symbol) (code-for-global-variable symbol))))
                                                             (when is-constructor
                                                               (do
                                                                 (reset! deps (cons symbol deps))))
@@ -105,3 +109,9 @@
         new-ast (find-func-deps-internal ast '())]
     (assoc new-ast :func-deps deps)))
 
+(defn code-for-global-variable [variable-symbol]
+  (let [evaled (eval variable-symbol)
+        t (type evaled)]
+    (if (or (int? evaled) (float? evaled) (string? evaled))
+      (str (type-build t) " " variable-symbol " = " (prn evaled) ";")
+      (error (str "Can't handle globals of type " t " yet.")))))
