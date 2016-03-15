@@ -102,7 +102,7 @@
         (let [func-code (code (eval (symbol func-name)))]
           (do
             ;;(println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
-            (bake-internal (new-builder) func-name func-code '() false)))
+            (bake-internal (new-builder) func-name func-code (meta-get func :ann) '() false)))
         (do
           ;;(println (str "re-compile will ignore non-lambda: " func))
           :ignore))))
@@ -175,12 +175,13 @@
     (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
 ;; (filter (fn [dep] (meta-get (eval dep) :user-defined)) func-deps)
 
-(defn func-to-annotated-ast (func-name func-code func-signature-if-generic)
+(defn func-to-annotated-ast (func-name func-code func-signature-if-generic func-type-annotation)
   (let [ast (lambda-to-ast func-code)
         ast-named (assoc ast :name func-name)
-        ast-annotated (annotate-ast-internal ast-named true func-signature-if-generic)
-        _ (check-for-ref-return ast-annotated)]
-    ast-annotated))
+        ast-with-type-annotation (assoc ast-named :annotation func-type-annotation)
+        ast-fully-annotated (annotate-ast-internal ast-with-type-annotation true func-signature-if-generic)
+        _ (check-for-ref-return ast-fully-annotated)]
+    ast-fully-annotated))
 
 (defn generic-type? [t]
   (match (type t)
@@ -195,24 +196,24 @@
     x (error (str "Can't match " x " in generic-function?"))))
 
 ;; Takes a function name and the list representation of the lambda
-(defn bake-internal [builder func-name func-code external-deps exe]
-  (let [ast-annotated (func-to-annotated-ast func-name func-code nil)]
-    (if (generic-function? ast-annotated)
+(defn bake-internal [builder func-name func-code func-annotation external-deps exe]
+  (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
+    (if (generic-function? annotated-ast)
       (do
         ;;(println (str "bake found generic function: " func-name))
         (let [func-def (eval (symbol func-name))]
           (do
             (meta-set! func-def :generic true)
-            (meta-set! func-def :signature (:type ast-annotated))
-            (def ast ast-annotated)
-            (def s (pretty-signature (:type ast-annotated)))
+            (meta-set! func-def :signature (:type annotated-ast))
+            (def ast annotated-ast)
+            (def s (pretty-signature (:type annotated-ast)))
             (if echo-signature-after-bake
               (println (str func-name " : " s))
               nil))))
-      (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
+      (bake-internal-common annotated-ast builder func-name func-code external-deps exe))))
 
 (defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
-  (let [ast-annotated (func-to-annotated-ast func-name func-code func-signature)]
+  (let [ast-annotated (func-to-annotated-ast func-name func-code nil func-signature)]
     (if (generic-function? ast-annotated)
       (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
@@ -250,11 +251,12 @@
         (map unload-if-necessary functions-depending-on-this-function)
         (map re-lambda-fy functions-depending-on-this-function)
         (map re-compile functions-depending-on-this-function)
-        (if (foreign? (eval (symbol func-name)))
-          (do
-            ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
-            :OK)
-          (bake-internal (new-builder) func-name (code (eval (symbol func-name))) external-deps false))))))
+        (let [evaled (eval (symbol func-name))]
+          (if (foreign? evaled)
+            (do
+              ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
+              :OK)
+            (bake-internal (new-builder) func-name (code evaled) (meta-get evaled :ann) external-deps false)))))))
 
 (defn run-cl [c-func-name c-file-name total-dependencies exe]
   (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"
@@ -326,13 +328,13 @@
   (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
 
 (defmacro bake-exe (func-symbol)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) '() true))
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true))
 
 (defmacro bake* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies false))
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
 
 (defmacro bake-exe* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) dependencies true))
+  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
 
 (defn clean ()
   (if (windows?)

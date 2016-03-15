@@ -65,8 +65,13 @@
                                        :doc (str "func-ret-constr")}
                       func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})
                                              (map :type (:args ast))
-                                             (get-in ast '(:type 1)))]
-                  (concat func-arg-constrs (cons func-ret-constr new-constraints)))
+                                             (get-in ast '(:type 1)))
+                      annotation-constr (if (nil? (:annotation ast))
+                                          ()
+                                          (list {:a (:annotation ast)
+                                                 :b (:type ast)
+                                                 :doc (str "func-annoation-constr")}))]
+                  (concat annotation-constr func-arg-constrs (cons func-ret-constr new-constraints)))
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
                  arg-constrs (map2 (fn (a b) {:a a

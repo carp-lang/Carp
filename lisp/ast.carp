@@ -232,6 +232,7 @@
       (match form
              ('fn args body) {:node :function
                               :type (gen-fn-type (count args))
+                              :annotation nil
                               :args (arg-list-to-ast (if (array? args) (array-to-list args) args))
                               :body (body-to-ast body)}
              _ (error (str "Failed to match lambda form: " form)))))

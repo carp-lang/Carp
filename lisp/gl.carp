@@ -11,6 +11,8 @@
 (register glfw "glfwWindowShouldClose" '((:ref :GLFWwindow)) :bool)
 (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
 
+(register glfw "glfwSetKeyCallback" '((:ref :GLFWwindow) (:fn ((:ref :GLFWwindow) :int :int :int :int))) :void)
+
 (register glfw "glClearColor" '(:float :float :float :float) :void)
 (register glfw "glClear" '(:int) :void)
 (register glfw "glColor3f" '(:float :float :float) :void)

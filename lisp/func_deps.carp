@@ -36,11 +36,12 @@
                                                       (when is-global-lookup
                                                         (let [evaled (eval symbol)
                                                               is-primop (primop? evaled)
-                                                              is-lambda (lambda? evaled)]
+                                                              is-lambda (lambda? evaled)
+                                                              is-function (function? evaled)]
                                                           (do
-                                                            (when (not (function? evaled))
+                                                            (when (and (not is-function) (not is-constructor))
                                                               (do
-                                                                ;;(println (str symbol " is not a function, make it a global variable."))
+                                                                ;;(println (str symbol " is not a function/constructor, make it a global variable."))
                                                                 (add-global! (name symbol) (code-for-global-variable symbol))))
                                                             (when is-constructor
                                                               (do
@@ -48,7 +49,12 @@
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
                                                                 ;;(println (str symbol " is a dependency of " func-name ", code: " (code evaled)))
-                                                                (bake-internal (new-builder) (str symbol) (code evaled) '() false)
+                                                                (bake-internal (new-builder)
+                                                                               (str symbol)
+                                                                               (code evaled)
+                                                                               (meta-get evaled :ann)
+                                                                               '()
+                                                                               false)
                                                                 (reset! deps (cons symbol deps))))
                                                             (when (and (foreign? evaled))
                                                               (reset! deps (cons symbol deps)))
@@ -113,5 +119,7 @@
   (let [evaled (eval variable-symbol)
         t (type evaled)]
     (if (or (int? evaled) (float? evaled) (string? evaled))
-      (str (type-build t) " " (c-ify-name (str variable-symbol)) " = " (prn evaled) ";")
+      (do
+        ;;(println (str "Adding global named " variable-symbol " of type " t))
+        (str (type-build t) " " (c-ify-name (str variable-symbol)) " = " (prn evaled) ";"))
       (error (str "Can't handle globals of type " t " yet.")))))
