@@ -13,7 +13,7 @@
             (while (not (glfwWindowShouldClose window))
               (do
                 (glClearColor (red) 0.85f 0.85f 1.0f)
-                (glClear gl-color-buffer-bit)
+                (glClear carp-gl-color-buffer-bit)
                 (glColor3f 1.0 0.9f 0.2f)
                 (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)

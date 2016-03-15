@@ -113,5 +113,5 @@
   (let [evaled (eval variable-symbol)
         t (type evaled)]
     (if (or (int? evaled) (float? evaled) (string? evaled))
-      (str (type-build t) " " variable-symbol " = " (prn evaled) ";")
+      (str (type-build t) " " (c-ify-name (str variable-symbol)) " = " (prn evaled) ";")
       (error (str "Can't handle globals of type " t " yet.")))))
