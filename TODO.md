@@ -14,7 +14,7 @@
   - Compile global variables with correct initialization and any kind of type
 
 # Compiler Small Features
-  - Better (shorter, using < and >) names for generic functions
+  - Shorter names for concrete versions of generic functions
   - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
