@@ -24,21 +24,27 @@
 ;; (defn f [] "yeah")
 
 
-(defn f []
-  (let [a (fn [] (nth "erik"))
-        b (fn [] (a))]
-    (b)))
+;; (defn f []
+;;   (let [a (fn [] (nth "erik"))
+;;         b (fn [] (a))]
+;;     (b)))
 
+(defn aaa [x]
+  (* x 10))
 
-(defn servant []
-  100)
+(defn bbb [f]
+  (+ 1 (f 5)))
+
+(bake bbb)
+
+(println (str (bbb aaa)))
+
+(defn servant [s]
+  (string-append s "!"))
 
 (defn master [f]
-  (* 5 (f)))
+  (string-append (f "hje") "..."))
 
 (bake master)
 
-(defn test-master []
-  (master servant))
-
-
+(println (master servant))

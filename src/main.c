@@ -10,7 +10,6 @@ int main(int argc, char **argv) {
   shadow_stack_pos = 0;
   env_new_global();
   eval_text(global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false, obj_new_string("main.c"));
-  printf("%d\n", argc);
   if(argc == 2) {
     char load_file[512];
     snprintf(load_file, 512, "(load-lisp (str \"%s\"))", argv[1]);

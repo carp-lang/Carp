@@ -12,6 +12,7 @@
 #define SHOW_MACRO_EXPANSION 0
 #define LOG_FUNC_APPLICATION 0
 #define GC_COLLECT_AFTER_EACH_FORM 0
+#define ALLOW_SENDING_LAMBDA_TO_FFI 1
 
 #define LABELED_DISPATCH 0
 
@@ -277,6 +278,109 @@ void match(Obj *env, Obj *value, Obj *attempts) {
   set_error("Failed to find a suitable match for: ", value);
 }
 
+typedef struct {
+  Obj *lambda;
+  Obj *signature;
+} LambdaAndItsType;
+
+void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsType *lambda_and_its_type) {
+  printf("Calling lambda %s from ffi function!\n", obj_to_string(lambda_and_its_type->lambda)->s);
+
+  int arg_count = cif->nargs;
+  //printf("arg count: %d\n", arg_count);
+
+  Obj *obj_args[arg_count];
+  Obj *lambda_type_signature = lambda_and_its_type->signature; // TODO: shadow stack?!
+  Obj *lambda_return_type = lambda_type_signature->cdr->cdr->car;
+  Obj *lambda_arg_type_p = lambda_type_signature->cdr->car->car;
+
+  //printf("Lambda signature: %s\n", obj_to_string(lambda_type_signature)->s);
+  
+  for(int i = 0; i < arg_count; i++) {
+    // Unwrap ref args
+    if(lambda_arg_type_p->tag == 'C' && lambda_arg_type_p->car && lambda_arg_type_p->cdr && lambda_arg_type_p->cdr->car && obj_eq(lambda_arg_type_p->car, obj_new_keyword("ref"))) {
+      lambda_arg_type_p = lambda_arg_type_p->cdr->car; // the second element of the list
+    }    
+    //printf("Lambda arg p: %s\n", obj_to_string(lambda_arg_type_p)->s);
+
+    if(cif->arg_types[i] == &ffi_type_sint) {
+      int *x = args[i];
+      obj_args[i] = obj_new_int(*x);
+    }
+    else if(cif->arg_types[i] == &ffi_type_float) {
+      float *x = args[i];
+      obj_args[i] = obj_new_float(*x);
+    }
+    else if(cif->arg_types[i] == &ffi_type_schar) {
+      char *x = args[i];
+      obj_args[i] = obj_new_char(*x);
+    }
+    else {
+      if(obj_eq(lambda_arg_type_p, type_string)) {
+        char **x = args[i];
+        assert(*x);
+        char *new_s = strdup(*x);
+        printf("new_s: %s\n", new_s);
+        obj_args[i] = obj_new_string(new_s);
+      }
+      else {
+        printf("Can't handle arg type %p when calling ffi function.\n", cif->arg_types[i]);
+        set_error("FFI function failed to call lambda: ", lambda_and_its_type->lambda);
+        return;
+        //obj_args[i] = obj_new_ptr(args[i]);
+      }
+    }
+    //printf("arg %d: %s\n", i, obj_to_string(obj_args[i])->s);
+    lambda_arg_type_p = lambda_arg_type_p->cdr;
+
+    //shadow_stack_push(obj_args[i]);
+  }
+
+  apply(lambda_and_its_type->lambda, obj_args, cif->nargs);
+  Obj *result = stack_pop();
+
+  // unwrap ref
+  if(lambda_return_type->tag == 'C' && lambda_return_type->car && lambda_return_type->cdr && lambda_return_type->cdr->car && obj_eq(lambda_return_type->car, obj_new_keyword("ref"))) {
+      lambda_return_type = lambda_return_type->cdr->car; // the second element of the list
+    }  
+  
+  // TODO: extract this and refactor to common helper function
+  if(obj_eq(lambda_return_type, type_int)) {
+    assert_or_set_error(result->tag == 'I', "Invalid type of return value: ", result);
+    int *integer = ret;
+    *integer = result->i;
+  }
+  else if(obj_eq(lambda_return_type, type_bool)) {
+    assert_or_set_error(result->tag == 'Y', "Invalid type of return value ", result);
+    bool b = is_true(result);
+    bool *boolean = ret;
+    *boolean = b;
+  }
+  else if(obj_eq(lambda_return_type, type_char)) {
+    assert_or_set_error(result->tag == 'B', "Invalid type of return value ", result);
+    char c = result->b;
+    char *character = ret;
+    *character = c;
+  }
+  else if(obj_eq(lambda_return_type, type_float)) {
+    assert_or_set_error(result->tag == 'V', "Invalid type of return value ", result);
+    float *x = ret;
+    *x = result->f32;
+  }
+  else if(obj_eq(lambda_return_type, type_string)) {
+    assert_or_set_error(result->tag == 'S', "Invalid type of return value ", result);
+    char **s = ret;
+    *s = result->s;
+  }
+  else {
+    set_error("Calling lambda from FFI can't handle return type ", lambda_return_type);
+  }
+
+  /* for(int i = 0; i < arg_count; i++) { */
+  /*   shadow_stack_pop(); */
+  /* } */
+}
+
 bool in_macro_expansion = false;
 
 void apply(Obj *function, Obj **args, int arg_count) {
@@ -322,7 +426,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
 
 #define assert_or_free_values_and_set_error(assertion, message, object) \
     if(!(assertion)) {                                                  \
-      free(values);                                                      \
+      free(values);                                                     \
     }                                                                   \
     assert_or_set_error((assertion), (message), (object));
 
@@ -371,8 +475,57 @@ void apply(Obj *function, Obj **args, int arg_count) {
             values[i] = &args[i]->funptr;
           }
           else if(args[i]->tag == 'L') {
-            free(values);
-            set_error("Can't send argument of lambda type (tag 'L') to ffi function, you need to compile it to a C function using (bake ...) first:\n", args[i]);
+            if(ALLOW_SENDING_LAMBDA_TO_FFI) {
+              //printf("Will call unbaked lambda from ffi function. Lambda should have types: %s\n", obj_to_string(type_obj)->s);
+	    
+              ffi_type *closure_args[0];
+              ffi_closure *closure;  
+              void (*closure_fun_ptr)();
+              closure = ffi_closure_alloc(sizeof(ffi_closure), (void**)&closure_fun_ptr);
+     
+              if (closure) {
+                /* Initialize the argument info vectors */
+                closure_args[0] = &ffi_type_pointer;
+
+                /* ffi_cif cif_static; */
+                /* ffi_cif *cif = &cif_static; */
+                /* ffi_prep_cif(cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, closure_args); */
+
+                //printf("Type obj: %s\n", obj_to_string(type_obj)->s);
+
+                Obj *lambda_arg_types = type_obj->cdr->car;
+                Obj *lambda_return_type = type_obj->cdr->cdr->car;
+                int lambda_arg_count = 0;
+                Obj *p = lambda_arg_types;
+                while(p && p->car) {
+                  p = p->cdr;
+                  lambda_arg_count++;
+                }
+		
+                ffi_cif *cif = create_cif(lambda_arg_types, lambda_arg_count, lambda_return_type, "TODO:proper-name");
+
+                Obj *lambda_arg = args[i];
+                LambdaAndItsType *lambda_and_its_type = malloc(sizeof(LambdaAndItsType)); // TODO: free!
+                lambda_and_its_type->lambda = lambda_arg; // the uncompiled lambda that was passed to the ffi function
+                lambda_and_its_type->signature = type_obj;
+                
+                typedef void (*LambdaCallback)(ffi_cif *, void *, void **, void *);
+	      
+                if (ffi_prep_closure_loc(closure, cif, (LambdaCallback)call_lambda_from_ffi, lambda_and_its_type, closure_fun_ptr) == FFI_OK) {
+                  //printf("Closure preparation done.\n");
+                  values[i] = &closure_fun_ptr;
+                }
+                else {
+                  set_error("Closure prep failed. ", nil);
+                }
+              }
+              else {
+                set_error("Failed to allocate closure. ", nil);
+              }
+            } else {
+              free(values);
+              set_error("Can't send argument of lambda type (tag 'L') to ffi function, you need to compile it to a C function using (bake ...) first:\n", args[i]);
+            }
           }
           else {
             free(values);
