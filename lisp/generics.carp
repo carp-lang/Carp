@@ -254,7 +254,7 @@
                  x (error (str "Invalid type for call to 'copy': " x))))
     
     "nth" (match signature
-            (:fn ((:ref (:Array t)) :int) t)
+            (:fn ((:ref (:Array t)) :int) (:ref t))
             (let [proto (str "API " (type-build t) " " c-func-name "(Array *a, int index)")
                   c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
               {:proto proto :c c :deps ()})
