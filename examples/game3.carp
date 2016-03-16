@@ -18,9 +18,13 @@
    (Ship (Vec2 0.1 0.2))
    (Ship (Vec2 -0.3 0.5))])
 
+(defn domap [f xs]
+  (for (i 0 (count xs))
+    (f (nth xs i))))
+
 (defn draw []
   (let [ships (generate-ships)]
-    (map-copy draw-ship ships)))
+    (domap draw-ship (ref ships))))
 
 (defn app []
   (glfw-app "CARP (game 3)" draw default-on-keys))

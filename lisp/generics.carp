@@ -280,6 +280,12 @@
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to 'nth'"))
 
+    "count" (match signature
+              (:fn ((:ref (:Array t))) :int)
+              (let [proto (str "API int " c-func-name "(Array *a)")
+                    c (str proto " { return a->count; }")]
+                {:proto proto :c c :deps ()})
+              _ (error "Invalid type for call to 'count'"))
     
     "array-of-size" (match signature
                       (:fn (:int) (:Array t))

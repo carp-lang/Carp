@@ -8,6 +8,7 @@
 
 (set-signature! array-set      (:fn ((:Array "T") :int "T")         (:Array "T") ))
 (set-signature! nth            (:fn ((:ref (:Array "T")) :int)      (:ref "T")   ))
+(set-signature! count          (:fn ((:ref (:Array "T")))           :int         ))
 
 (set-signature! map            (:fn ((:fn ("a") "a") (:Array "a"))  (:Array "a") ))
 (set-signature! map-copy       (:fn ((:fn ("a") "b") (:Array "a"))  (:Array "b") ))
