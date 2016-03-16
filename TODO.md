@@ -43,6 +43,7 @@
 
 
 # Dynamic Runtime Big Features
+  - Join-function blows the stack
   - Allow sending lambdas to ffi functions as arguments
   - Macro splicing
   - Use array for macro parameter list

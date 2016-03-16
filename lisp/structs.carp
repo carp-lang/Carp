@@ -84,9 +84,12 @@
       (let [struct-type (keyword struct-name)
             struct-t (type-build struct-type)
             member-t (type-build member-type)
+            member-t-reffed (if (primitive-type? member-type)
+                              member-type
+                              (list :ref member-type))
             c-member-name (c-ify-name member-name)]
         (do
-          (let [getter-signature (list :fn (list struct-type) member-type)
+          (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
                 getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
                 getter-c (str getter-proto "{ return x->" c-member-name "; }")]
             (bake-struct-lens-function (new-builder) (str "get-" member-name) getter-signature getter-proto getter-c '()))

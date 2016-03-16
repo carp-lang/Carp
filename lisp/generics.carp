@@ -459,7 +459,8 @@
 
 (defn instantiate-delete-for-struct [c-func-name maybe-struct-type]
   (if (keyword? maybe-struct-type)
-    (let [_ (when (or (= :string maybe-struct-type)
+    (let [_ (when (or (= :void maybe-struct-type)
+                      (= :string maybe-struct-type)
                       (primitive-type? maybe-struct-type))
               (error (str "Primitive type sent to 'delete' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
           lookup (eval (symbol (name maybe-struct-type)))]

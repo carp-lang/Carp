@@ -1,25 +1,46 @@
 (reset! echo-signature-after-bake true)
 (reset! log-unloading-of-dylibs true)
 
-;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
-;;(defn tricky-let [] ((id id) 2))
+
+
+
+
 
 
 (import gl)
 
 (defn draw []
-  (draw-line -0.2 0.3 0.4 0.1))
-
-^ann glfw-key-callback-type
-(defn onkeys [window key scancode action mods]
-  (if (= key-esc key)
-    (do
-      (println "TRY TO EXIT")
-      (glfwSetWindowShouldClose window true))
-    (println &(str key))))
+  (draw-lines [(Vec2 0.0 0.0)
+               (Vec2 0.1 0.3)
+               (Vec2 0.2 0.4)
+               (Vec2 -0.3 0.5)
+               (Vec2 -0.5 0.4)
+               (Vec2 -0.2 0.1)]))
 
 (defn app []
-  (glfw-app "CARP" draw onkeys))
+  (glfw-app "CARP" draw default-on-keys))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -72,3 +93,7 @@
 ;; (bake master)
 
 ;; (println (master servant))
+
+
+;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
+;;(defn tricky-let [] ((id id) 2))

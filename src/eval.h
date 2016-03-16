@@ -9,7 +9,7 @@
 Obj *stack[STACK_SIZE];
 int stack_pos;
 
-#define SHADOW_STACK_SIZE 2048
+#define SHADOW_STACK_SIZE 5000
 Obj *shadow_stack[SHADOW_STACK_SIZE];
 int shadow_stack_pos;
 

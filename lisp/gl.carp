@@ -55,6 +55,23 @@
       (glVertex3f x2 y2 0.0f)
       (glEnd)))
 
+(defstruct Vec2 [V2X :float V2Y :float])
+
+(defn draw-vec2 [v]
+  (do (glVertex3f (get-V2X &v) (get-V2Y &v) 0.0f)
+      0))
+
+(defn draw-lines (positions)
+  (do (glBegin carp-gl-line-strip)
+      (map-copy draw-vec2 positions)
+      (glEnd)))
+
+^ann glfw-key-callback-type
+(defn default-on-keys [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (println &(str key))))
+
 (defn glfw-app [title render-callback on-key-callback]
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 title NULL NULL)]
