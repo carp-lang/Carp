@@ -41,9 +41,26 @@
     ))
 
 (defmacro quasiquote (form)
-  ;;(list 'quote )
-  (quasiquote-internal form)
-  )
+  (quasiquote-internal form))
+
+;; (defn quasiquote-internal [form]
+;;   (do
+;;     (println (str "form: " form))
+;;     (if (list? form)
+;;       (match form
+;;         ('dequote x) x
+;;         _ (map quasiquote-internal form))
+;;       form)))
+
+;; (defn replace-dequotes [form]
+;;   (match form
+;;     () ()
+;;     ('dequote x) x
+;;     (x ... xs) (cons (replace-dequotes x) (replace-dequotes xs))
+;;     x x))
+
+;; (defmacro quasiquote (form)
+;;   (list 'quote (map replace-dequotes form)))
 
 (defn assert-approx-eq (target x)
   (do

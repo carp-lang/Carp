@@ -1,0 +1,9 @@
+
+(def a 10)
+
+(defmacro m0 (blah)
+  (list '+ 1 blah))
+
+(defmacro m1 (blah)
+  `(+ 1 ~blah))
+
