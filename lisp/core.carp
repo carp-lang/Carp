@@ -255,6 +255,10 @@
                                         (list 'reset! sym (list '+ sym 1)))))
     _ (error "Failed to match bindings in for loop.")))
 
+(defn domap [f xs]
+  (for (i 0 (count xs))
+    (f (nth xs i))))
+
 (defn second [xs]
   (nth xs 1))
 
