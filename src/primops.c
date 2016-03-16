@@ -1306,10 +1306,14 @@ char *lispify(char *name) {
   char *s1 = str_replace(s0, "BANG", "!");
   char *s2 = str_replace(s1, "QMARK", "?");
   char *s3 = str_replace(s2, "PTR", "*");
+  char *s4 = str_replace(s3, "LT", "<");
+  char *s5 = str_replace(s4, "GT", ">");
   free(s0);
   free(s1);
   free(s2);
-  return s3;
+  free(s3);
+  free(s4);
+  return s5;
 }
 
 ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {

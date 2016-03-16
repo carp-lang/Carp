@@ -1,15 +1,31 @@
+;; ;; t is the complete type
+;; ;; o is the original type with typevars (represented as strings)
+;; (defn better-generic-name [t o]
+;;   nil)
 
-(defn generic-safe-name (t)
+;; (defn extract-typevars [o]
+;;   (if (list? o)
+;;     (set (mapcat extract-typevars o))
+;;     (if (string? o)
+;;       (list o)
+;;       ())))
+
+(defn generic-safe-name [t]
   (match t
-    (:fn args ret) (str "Fn-" (join "" (map generic-safe-name args)) "-" (generic-safe-name ret))
-    (:ref r) (str "RefTo-" (generic-safe-name r) "")
-    (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
-    x (if (keyword? t)
+    (x ... xs) (str (generic-safe-name x) "<" (join "-" (map generic-safe-name xs)) ">")
+    x (if (keyword? x)
         (name t)
         (error (str "generic-safe-name can't handle type signature: " t)))))
 
+;; (match t
+;;     (:fn args ret) (str "Fn-" (join "" (map generic-safe-name args)) "-" (generic-safe-name ret))
+;;     (:ref r) (str "RefTo-" (generic-safe-name r) "")
+;;     (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
+;;     x (if (keyword? t)
+;;         (name t)
+;;         (error (str "generic-safe-name can't handle type signature: " t))))
 
-(defn generic-suffix (signature)
+(defn generic-suffix [signature]
   (str (join "-" (map generic-safe-name (nth signature 1)))
        "-"
        (generic-safe-name (nth signature 2))))
