@@ -1,4 +1,6 @@
 # Compiler Big Features
+  - Don't compile a function if there's already an adequate build artifact
+  - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Equality
   - Instantiate concrete versions of generic functions sent as parameters
   - Allow recompiling changed defstructs
