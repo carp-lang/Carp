@@ -713,6 +713,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
         char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
         *sp = strdup(args[i]->s); // must strdup or the struct will ref Obj's on the stack that will get gc:ed
       }
+      else if(args[i]->tag == 'B') {
+        assert_or_set_error(obj_eq(member_type, type_char), "Can't assign char to a member of type ", obj_to_string(member_type));
+        char *cp = (char*)(((char*)new_struct->void_ptr) + offset);
+        *cp = args[i]->b;
+      }
       else {
         eval_error = obj_new_string("Can't set member ");
         char buffer[32];

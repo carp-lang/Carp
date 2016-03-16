@@ -18,14 +18,6 @@
   - Be able to compare C-array in pointer to Obj array
 
 # Compiler Correctness
-  - Fix types and memory management for:
-   - [ ] str
-   - [ ] array-set
-   - [ ] array-nth
-   - [ ] struct-set
-   - [ ] struct-get
-   - [ ] struct-update
-  - When 'str' is called with non-ref args it is assumed by caller that it's eating it's arg but that's not true (at the moment)
   - Disallow "returning" of ref in let-form
   - Ownership in while loops
   - Self recuring function doesn't check argument count/types in the actual call to itself

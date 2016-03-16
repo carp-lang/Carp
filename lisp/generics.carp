@@ -1,12 +1,12 @@
 
 (defn generic-safe-name (t)
   (match t
-         (:fn args ret) (str "Fn-" (join "" (map generic-safe-name args)) "-" (generic-safe-name ret))
-         (:ref r) (str "RefTo-" (generic-safe-name r) "")
-         (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
-         x (if (keyword? t)
-             (name t)
-             (error (str "generic-safe-name can't handle type signature: " t)))))
+    (:fn args ret) (str "Fn-" (join "" (map generic-safe-name args)) "-" (generic-safe-name ret))
+    (:ref r) (str "RefTo-" (generic-safe-name r) "")
+    (:Array a) (str "ArrayOf-" (generic-safe-name a) "")
+    x (if (keyword? t)
+        (name t)
+        (error (str "generic-safe-name can't handle type signature: " t)))))
 
 
 (defn generic-suffix (signature)
@@ -29,12 +29,12 @@
 (defn uniquify-typevars-internal [t substs]
   (if (string? t)
     (let [existing-tvar (get-maybe substs t)]
-                    (if (nil? existing-tvar)
-                      (let [new-tvar (gen-typevar)]
-                        (do                          
-                          (dict-set! substs t new-tvar)
-                          new-tvar))
-                      existing-tvar))
+      (if (nil? existing-tvar)
+        (let [new-tvar (gen-typevar)]
+          (do                          
+            (dict-set! substs t new-tvar)
+            new-tvar))
+        existing-tvar))
     (if (keyword? t)
       t
       (if (list? t)
@@ -61,7 +61,7 @@
                                (if (and (lambda? global-lookup) is-generic)
                                  (if (generic-type? t)
                                    (do ;;(println (str "Lambda with missing type information, can't compile concrete version: " t))
-                                       ast)
+                                     ast)
                                    (let [n (generic-name lookup-sym t)]
                                      (do
                                        ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
@@ -77,7 +77,7 @@
                                  (if (and (primop? global-lookup) is-generic)
                                    (if (generic-type? t)
                                      (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
-                                         ast)
+                                       ast)
                                      (let [n (generic-name lookup-sym t)]
                                        (do
                                          ;;(println (str "Found a generic primop to bake: " lookup-sym))
@@ -168,11 +168,11 @@
   (match primop-name
 
     "" (match signature
-            (:fn () )
-            (let [proto (str)
-                  c (str)]
-              {:proto proto :c c :deps ()})
-            _ (error "Invalid type for call to ''"))
+         (:fn () )
+         (let [proto (str)
+               c (str)]
+           {:proto proto :c c :deps ()})
+         _ (error "Invalid type for call to ''"))
 
     "map" (match signature
             (:fn ((:fn (a) a) (:Array a)) (:Array a)) (let [proto (str "API " (type-build (list :Array a)) " " c-func-name "(" (type-build (list :fn (list a) a)) " f, Array *array)")
@@ -191,36 +191,39 @@
 
     ;; TODO: can this be a normal function now?
     "map-copy" (match signature
-            (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
-                                                            array-of-size-sig (list :fn (list :int) (list :Array b))
-                                                            _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
-                                                            array_of_size_call (generic-name "array-of-size" array-of-size-sig)
-                                                            _ (println array_of_size_call)
-                                                            c (str proto
-                                                                   "{ \n"
-                                                                   "  int count = array->count;\n"
-                                                                   "  " (type-build a) "* casted = array->data;\n"
-                                                                   "  Array* new_array = " (c-ify-name array_of_size_call) "(count);\n"
-                                                                   "  " (type-build b) "* new_casted = new_array->data;\n"
-                                                                   "  for(int i = 0; i < count; i++) {\n"
-                                                                   "    new_casted[i] = f(casted[i]);\n"
-                                                                   "  }\n"
-                                                                   "  free(array);\n"
-                                                                   "  return new_array;\n"
-                                                                   "}")]
-                                                        {:proto proto :c c :deps (list array_of_size_call)})
-            x (error (str "Invalid type for call to 'map-copy': " x)))
+                 (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
+                                                                 array-of-size-sig (list :fn (list :int) (list :Array b))
+                                                                 _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
+                                                                 array_of_size_call (generic-name "array-of-size" array-of-size-sig)
+                                                                 _ (println array_of_size_call)
+                                                                 c (str proto
+                                                                        "{ \n"
+                                                                        "  int count = array->count;\n"
+                                                                        "  " (type-build a) "* casted = array->data;\n"
+                                                                        "  Array* new_array = " (c-ify-name array_of_size_call) "(count);\n"
+                                                                        "  " (type-build b) "* new_casted = new_array->data;\n"
+                                                                        "  for(int i = 0; i < count; i++) {\n"
+                                                                        "    new_casted[i] = f(casted[i]);\n"
+                                                                        "  }\n"
+                                                                        "  free(array);\n"
+                                                                        "  return new_array;\n"
+                                                                        "}")]
+                                                             {:proto proto :c c :deps (list array_of_size_call)})
+                 x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
             ;;(println (str "Calling str for signature: " signature))
             (match signature
 
               (:fn ((:ref (:Array t))) :string) (instantiate-str-for-array c-func-name t)
-              ;;(:fn ((:Array t)) :string) (instantiate-str-for-array c-func-name t)
               
               (:fn (:int) :string) (let [proto (str "API string " c-func-name "(int x)")
                                          c (str proto " { return itos(x); }")]
                                      {:proto proto :c c :deps ()})
+
+              (:fn (:char) :string) (let [proto (str "API string " c-func-name "(char x)")
+                                          c (str proto " { string s = malloc(3); s[0] = '\\\\'; s[1] = x; return s; }")]
+                                      {:proto proto :c c :deps ()})
 
               (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
                                            c (str proto " { "
@@ -231,10 +234,8 @@
                                        {:proto proto :c c :deps ()})
 
               (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
-              ;;(:fn (:string) :string) (instantiate-str-for-string c-func-name)
 
               (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)
-              ;;(:fn (maybe-struct-type) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)
               
               x (error (str "Invalid (non-ref?) type for call to 'str': " x))))
 
