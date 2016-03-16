@@ -10,19 +10,13 @@
 (defn draw []
   (draw-line -0.2 0.3 0.4 0.1))
 
-;;^ann glfw-key-callback-type
+^ann glfw-key-callback-type
 (defn onkeys [window key scancode action mods]
   (if (= key-esc key)
     (do
       (println "TRY TO EXIT")
       (glfwSetWindowShouldClose window true))
     (println &(str key))))
-
-;; ^ann glfw-key-callback-type
-;; (defn on-key [window key scancode action mods]
-;;   (if (= key-esc key)
-;;     (glfwSetWindowShouldClose window true)
-;;     (println &(str key))))
 
 (defn app []
   (glfw-app "CARP" draw onkeys))
