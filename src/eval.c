@@ -711,7 +711,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
       else if(args[i]->tag == 'S') {
 	assert_or_set_error(obj_eq(member_type, type_string), "Can't assign int to a member of type ", obj_to_string(member_type));
         char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
-        *sp = args[i]->s; // TODO: strdup?
+        *sp = strdup(args[i]->s); // must strdup or the struct will ref Obj's on the stack that will get gc:ed
       }
       else {
         eval_error = obj_new_string("Can't set member ");

@@ -15,22 +15,10 @@
 
 
 
+(defstruct AnotherCopy [aNameToCopy :string anotherNameToCopy :string])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+;; (defn copy-3 []
+;;   (AnotherCopy (copy "hej") (copy "svej")))
 
 
 

@@ -149,16 +149,32 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     x++;
   }
   else if(o->tag == 'A') {
+    //printf("Will print Obj Array with count %d\n", o->count);
+    shadow_stack_push((struct Obj *)o);
+    x++;
+    //int save_x = x;
     obj_string_mut_append(total, "[");
     for(int i = 0; i < o->count; i++) {
       obj_to_string_internal(total, o->array[i], true, x);
       if(i < o->count - 1) {
+        /* if(o->array[i]->car->tag == 'Q' || o->array[i]->car->tag == 'E') { */
+	/*   obj_string_mut_append(total, "\n"); */
+	/*   x = save_x; */
+	/*   add_indentation(total, x); */
+	/* } */
+	/* else { */
+	/*   obj_string_mut_append(total, " "); */
+	/*   x++; */
+	/* } */
 	obj_string_mut_append(total, " ");
       }
     }
     obj_string_mut_append(total, "]");
+    shadow_stack_pop();
+    x++;
   }
   else if(o->tag == 'E') {
+    shadow_stack_push((struct Obj *)o);
     obj_string_mut_append(total, "{");
     x++;
     Obj *p = o->bindings;
@@ -179,6 +195,7 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
       Obj *parent_printout = obj_to_string(o->parent);
       obj_string_mut_append(total, parent_printout->s);
     }
+    shadow_stack_pop();
   }
   else if(o->tag == 'I') {
     static char temp[64];
@@ -228,6 +245,7 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'Q') {
+    shadow_stack_push((struct Obj *)o);
     Obj *type_lookup;
     if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
@@ -240,15 +258,16 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
 	/* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
 	/* obj_string_mut_append(total, ">"); */
       }
-      return;
     }
-    
-    obj_string_mut_append(total, "<ptr:");
-    static char temp[256];
-    snprintf(temp, 256, "%p", o->primop);
-    obj_string_mut_append(total, temp);
-    obj_string_mut_append(total, " of unknown type");
-    obj_string_mut_append(total, ">");
+    else {
+      obj_string_mut_append(total, "<ptr:");
+      static char temp[256];
+      snprintf(temp, 256, "%p", o->primop);
+      obj_string_mut_append(total, temp);
+      obj_string_mut_append(total, " of unknown type");
+      obj_string_mut_append(total, ">");
+    }
+    shadow_stack_pop();
   }
   else if(o->tag == 'F') {
     obj_string_mut_append(total, "<ffi:");

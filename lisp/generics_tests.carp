@@ -156,7 +156,7 @@
 (defn test-copy-3 []
   (do
     (bake copy-3)
-    (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (copy-3 "AHA" "BUHU")))))
+    (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (ref (copy-3 "AHA" "BUHU"))))))
 
 (test-copy-3)
 
