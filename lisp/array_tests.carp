@@ -1,16 +1,6 @@
 
 ;; Generic Arrays
 
-(defn get-a-float [xs]
-  (* 2.0f (nth xs 0)))
-
-(defn test-get-a-float []
-  (do (bake get-a-float)))
-
-(test-get-a-float)
-
-
-
 (defn array-literal []
   [10 20 30])
 
@@ -22,7 +12,7 @@
 
 
 (defn get-a-float [xs]
-  (* 2.0f (nth xs 0)))
+  (* 2.0f (copy (nth xs 0))))
 
 (defn test-get-a-float []
   (do
@@ -31,7 +21,7 @@
 
 
 (defn test-int-array []
-  (+ 100 (nth (array-of-size 3) 0)))
+  (+ 100 (copy (nth (array-of-size 3) 0))))
 
 ;; (test-int-array) ;; FAILS...
 

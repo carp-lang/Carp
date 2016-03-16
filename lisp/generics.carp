@@ -246,12 +246,14 @@
                  x (error (str "Invalid type for call to 'delete': " x))))
 
     "copy" (do
-               (match signature
-                 (:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
-                 (:fn ((:ref :string)) :string) (instantiate-copy-for-string c-func-name)
-                 ;;(:fn (:string) :string) (instantiate-copy-for-string c-func-name)
-                 (:fn ((:ref maybe-struct-type)) maybe-struct-type) (instantiate-copy-for-struct c-func-name maybe-struct-type)
-                 x (error (str "Invalid type for call to 'copy': " x))))
+             (match signature
+               (:fn ((:ref :float)) :float) (instantiate-copy-for-primitive-type c-func-name :float) ;; These are no-ops
+               (:fn ((:ref :int)) :int) (instantiate-copy-for-primitive-type c-func-name :int) ;; These are no-ops
+               (:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
+               (:fn ((:ref :string)) :string) (instantiate-copy-for-string c-func-name)
+               ;;(:fn (:string) :string) (instantiate-copy-for-string c-func-name)
+               (:fn ((:ref maybe-struct-type)) maybe-struct-type) (instantiate-copy-for-struct c-func-name maybe-struct-type)
+               x (error (str "Invalid type for call to 'copy': " x))))
     
     "nth" (match signature
             (:fn ((:ref (:Array t)) :int) (:ref t))
@@ -379,6 +381,11 @@
   (let [;;_ (println (str "instantiate " c-func-name))
         proto (str "API string " c-func-name "(string s)")
         c (str proto " { return strdup(s); }")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-copy-for-primitive-type [c-func-name t]
+  (let [proto (str "API " (type-build t) " " c-func-name "(" (type-build t)" x)")
+        c (str proto " { return x; }")]
     {:proto proto :c c :deps ()}))
 
 (defn instantiate-copy-for-struct [c-func-name maybe-struct-type]
