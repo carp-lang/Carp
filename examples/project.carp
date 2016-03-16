@@ -2,8 +2,38 @@
 (reset! log-unloading-of-dylibs true)
 
 ;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
-;;(load-gl)
 ;;(defn tricky-let [] ((id id) 2))
+
+
+(import gl)
+
+(defn draw []
+  (draw-line -0.2 0.3 0.4 0.1))
+
+;;^ann glfw-key-callback-type
+(defn onkeys [window key scancode action mods]
+  (if (= key-esc key)
+    (do
+      (println "TRY TO EXIT")
+      (glfwSetWindowShouldClose window true))
+    (println &(str key))))
+
+;; ^ann glfw-key-callback-type
+;; (defn on-key [window key scancode action mods]
+;;   (if (= key-esc key)
+;;     (glfwSetWindowShouldClose window true)
+;;     (println &(str key))))
+
+(defn app []
+  (glfw-app "CARP" draw onkeys))
+
+
+
+
+
+
+
+
 
 ;; (defn h [a b]
 ;;   (+ (strlen a)
@@ -29,22 +59,22 @@
 ;;         b (fn [] (a))]
 ;;     (b)))
 
-(defn aaa [x]
-  (* x 10))
+;; (defn aaa [x]
+;;   (* x 10))
 
-(defn bbb [f]
-  (+ 1 (f 5)))
+;; (defn bbb [f]
+;;   (+ 1 (f 5)))
 
-(bake bbb)
+;; (bake bbb)
 
-(println (str (bbb aaa)))
+;; (println (str (bbb aaa)))
 
-(defn servant [s]
-  (string-append s "!"))
+;; (defn servant [s]
+;;   (string-append s "!"))
 
-(defn master [f]
-  (string-append (f "hje") "..."))
+;; (defn master [f]
+;;   (string-append (f "hje") "..."))
 
-(bake master)
+;; (bake master)
 
-(println (master servant))
+;; (println (master servant))

@@ -65,6 +65,9 @@
             (glfwSetKeyCallback window on-key-callback)
             (while (not (glfwWindowShouldClose window))
               (do
+                (glClearColor 0.1 0.1 0.1 1.0)
+                (glClear carp-gl-color-buffer-bit)
+                (glColor3f 1.0 1.0 1.0)
                 (render-callback)
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))

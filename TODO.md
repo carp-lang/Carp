@@ -1,5 +1,6 @@
 # Compiler Big Features
   - Equality
+  - Instantiate concrete versions of generic functions sent as parameters
   - Allow recompiling changed defstructs
   - Structs refering to structs
   - Special handling of POD structs (stack allocated, not sent by pointer)

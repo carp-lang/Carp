@@ -284,7 +284,7 @@ typedef struct {
 } LambdaAndItsType;
 
 void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsType *lambda_and_its_type) {
-  printf("Calling lambda %s from ffi function!\n", obj_to_string(lambda_and_its_type->lambda)->s);
+  //printf("Calling lambda %s from ffi function!\n", obj_to_string(lambda_and_its_type->lambda)->s);
 
   int arg_count = cif->nargs;
   //printf("arg count: %d\n", arg_count);
@@ -292,11 +292,20 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
   Obj *obj_args[arg_count];
   Obj *lambda_type_signature = lambda_and_its_type->signature; // TODO: shadow stack?!
   Obj *lambda_return_type = lambda_type_signature->cdr->cdr->car;
-  Obj *lambda_arg_type_p = lambda_type_signature->cdr->car->car;
+  Obj *lambda_arg_type_list_p = lambda_type_signature->cdr->car;
 
   //printf("Lambda signature: %s\n", obj_to_string(lambda_type_signature)->s);
   
   for(int i = 0; i < arg_count; i++) {
+
+    Obj *lambda_arg_type_p = lambda_arg_type_list_p->car;
+
+    if(!lambda_arg_type_p) {
+      printf("Too many arguments (%d) sent to lambda with signature: %s\n", arg_count, obj_to_string(lambda_type_signature)->s);
+      set_error("Too many args. ", nil);
+      return;
+    }
+    
     // Unwrap ref args
     if(lambda_arg_type_p->tag == 'C' && lambda_arg_type_p->car && lambda_arg_type_p->cdr && lambda_arg_type_p->cdr->car && obj_eq(lambda_arg_type_p->car, obj_new_keyword("ref"))) {
       lambda_arg_type_p = lambda_arg_type_p->cdr->car; // the second element of the list
@@ -324,14 +333,16 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
         obj_args[i] = obj_new_string(new_s);
       }
       else {
-        printf("Can't handle arg type %p when calling ffi function.\n", cif->arg_types[i]);
-        set_error("FFI function failed to call lambda: ", lambda_and_its_type->lambda);
-        return;
-        //obj_args[i] = obj_new_ptr(args[i]);
+        //printf("Lambda called from ffi with arg %d of type %s\n", i, obj_to_string(lambda_arg_type_p)->s);
+        /* printf("Can't handle arg type %p when calling ffi function.\n", cif->arg_types[i]); */
+        /* set_error("FFI function failed to call lambda: ", lambda_and_its_type->lambda); */
+        /* return; */
+        void **ptr = args[i];
+        obj_args[i] = obj_new_ptr(*ptr);
       }
     }
     //printf("arg %d: %s\n", i, obj_to_string(obj_args[i])->s);
-    lambda_arg_type_p = lambda_arg_type_p->cdr;
+    lambda_arg_type_list_p = lambda_arg_type_list_p->cdr;
 
     //shadow_stack_push(obj_args[i]);
   }
@@ -371,6 +382,9 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
     assert_or_set_error(result->tag == 'S', "Invalid type of return value ", result);
     char **s = ret;
     *s = result->s;
+  }
+  else if(obj_eq(lambda_return_type, type_void)) {
+    
   }
   else {
     set_error("Calling lambda from FFI can't handle return type ", lambda_return_type);
