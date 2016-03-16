@@ -12,6 +12,7 @@
 
 (defn generic-safe-name [t]
   (match t
+    () ""
     (x ... xs) (str (generic-safe-name x) "<" (join "-" (map generic-safe-name xs)) ">")
     x (if (keyword? x)
         (name t)

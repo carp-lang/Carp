@@ -57,6 +57,7 @@
     (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))
 
 (def header-files (list "\"functions.h\"" "\"shared.h\""))
+(def extra-header-deps ())
 
 (def baked-funcs {})
 (def baked-primops ())
@@ -127,7 +128,8 @@
   (save (str out-dir "functions.h")
         (str
          "#include <shared.h>\n"
-         "//Types:\n"
+         (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
+         "\n//Types:\n"
          (join "\n" (map :type-definition (reverse (values types))))
          "\n//Globals:\n"
          (join "\n" (map :global-definition (values globals)))

@@ -1,7 +1,7 @@
 
 (def glfw (load-dylib "libglfw3.dylib"))
 
-(reset! header-files (cons "<GLFW/glfw3.h>" header-files))
+(reset! extra-header-deps (cons "<GLFW/glfw3.h>" extra-header-deps))
 
 (register glfw "glfwInit" '() :bool)
 (register glfw "glfwCreateWindow" '(:int :int (:ref :string) :GLFWmonitor :GLFWwindow) '(:ref :GLFWwindow))

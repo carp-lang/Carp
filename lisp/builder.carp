@@ -87,7 +87,7 @@
            :? "unknown"
            (:fn _ _) (ensure-function-type t)
            (:ref r) (type-build-internal r star)
-           (:Array a) "Array*"
+           (:Array a) (str "Array" (if star "*" ""))
            :float "float"
            :int "int"
            :char "char"
