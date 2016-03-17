@@ -17,8 +17,10 @@
    (Ship (Vec2 -0.3 0.5))])
 
 (defn draw []
-  (let [ships (generate-ships)]
-    (domap draw-ship (ref ships))))
+  (do
+    (draw-line 0.0 0.0 (dtof (cos (glfwGetTime))) 0.9)
+    (let [ships (generate-ships)]
+      (domap draw-ship (ref ships)))))
 
 (defn app []
   (glfw-app "CARP (game 3)" draw default-on-keys))

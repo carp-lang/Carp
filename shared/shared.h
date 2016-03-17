@@ -23,6 +23,8 @@ typedef char* string;
 
 EXPORT int intsqrt(int x) { return (int)sqrt(x); }
 EXPORT float itof(int x) { return (float)x; }
+EXPORT float dtof(double x) { return (float)x; }
+EXPORT double ftod(float x) { return (double)x; }
 
 #ifdef max
 #undef max

@@ -18,6 +18,8 @@
 
 ;; Conversions
 (register-builtin "itof" '(:int) :float)
+(register-builtin "dtof" '(:double) :float)
+(register-builtin "ftod" '(:float) :double)
 (register-builtin "itos" '(:int) :string)
 
 ;; Strings
