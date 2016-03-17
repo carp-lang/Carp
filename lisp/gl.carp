@@ -22,6 +22,7 @@
 (register glfw "glBegin" '(:int) :void)
 (register glfw "glEnd" '() :void)
 (register glfw "glVertex3f" '(:float, :float, :float) :void)
+(register glfw "glOrtho" '(:double :double :double :double :double :double) :void)
 
 (def carp-gl-color-buffer-bit 16384)
 (def carp-gl-lines 1)
@@ -96,6 +97,7 @@
         (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (glfwSetKeyCallback window on-key-callback)
+            (glOrtho 0.0 640.0 480.0 0.0 1.0 -1.0)
             (while (not (glfwWindowShouldClose window))
               (do
                 (glClearColor 0.1f 0.1f 0.1f 1.0f)

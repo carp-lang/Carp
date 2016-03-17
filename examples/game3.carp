@@ -4,21 +4,24 @@
   (let [pos (get-shipPos ship)]
     (draw-rect (get-V2X pos)
                (get-V2Y pos)
-               0.1f
-               0.1f)))
+               10f
+               10f)))
 
 (defstruct Ship [shipPos :Vec2])
 
 (defn generate-ships []
-  [(Ship (Vec2 0.0f -0.6f))
-   (Ship (Vec2 0.3f -0.2f))
-   (Ship (Vec2 0.4f -0.3f))
-   (Ship (Vec2 0.1f 0.2f))
-   (Ship (Vec2 -0.3f 0.5f))])
+  [(Ship (Vec2 100f 300f))
+   (Ship (Vec2 150f 100f))
+   (Ship (Vec2 200f 150f))
+   (Ship (Vec2 250f 050f))
+   (Ship (Vec2 300f 100f))])
+
+(defn t []
+  (dtof (glfwGetTime)))
 
 (defn draw []
   (do
-    (draw-line 0.0f 0.0f (dtof (cos (glfwGetTime))) 0.9f)
+    (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
     (let [ships (generate-ships)]
       (domap draw-ship (ref ships)))))
 
