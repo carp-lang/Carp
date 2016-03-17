@@ -1,7 +1,9 @@
 # Compiler Big Features
+  - Double arguments generate weird _lit variable
   - Don't compile a function if there's already an adequate build artifact
   - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Equality
+  - Can't pass generic functions as arguments, their names are wrong?
   - Instantiate concrete versions of generic functions sent as parameters
   - Allow recompiling changed defstructs
   - Structs refering to structs

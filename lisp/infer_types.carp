@@ -203,17 +203,19 @@
 
 
 (defn lookup (substs b)
-  (if (list? b)
-    (map (fn [x] (lookup substs x)) b)
-    (let [val (get-maybe substs b)]
-      (if (= () val)
-        b
-        (if (= b val)
-          val
-          (if (= :string (type val))
-            (lookup substs val) ; keep looking
-            val))) ; found the actual type
-      )))
+  (if (= :fail substs)
+    :fail
+    (if (list? b)
+      (map (fn [x] (lookup substs x)) b)
+      (let [val (get-maybe substs b)]
+        (if (= () val)
+          b
+          (if (= b val)
+            val
+            (if (= :string (type val))
+              (lookup substs val) ; keep looking
+              val))) ; found the actual type
+        ))))
 
 ;; Replacement function for replacing "from the right" in an associative map
 ;; Example usage:
@@ -269,60 +271,62 @@
     (when log-substs (do
                        (println (str "\nSubsts:\n" substs))
                        (println (str "Try extend " lhs " => " value))))
-    (let [value-lookup (lookup substs value)]
-      (if (typevar? lhs)
-        (let [existing (get-maybe substs lhs)]
-          (if (= nil existing)
-            (let [new-substs (assoc substs lhs value-lookup)
-                  ;;_ (println (str "new-substs:\n" new-substs))
-                  substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
-                  ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
-                  ]
-              (do (when log-substs (println (str "No existing binding, set " lhs " to " value-lookup
-                                                 ", substs-replaced-from-right:\n" substs-replaced-from-right)))
-                  substs-replaced-from-right))
-            (do (when log-substs (println (str "Existing binding: " existing)))
-                (if (list? existing)
-                  (if (list? value-lookup)
-                    (let [_ (when log-substs (println "The existing binding is a list"))
-                          new-substs (reduce (fn (s m2) (extend-substitutions substs (:e m2) (:l m2)))
-                                             substs
-                                             (map2 (fn (e l) {:e e :l l}) existing value-lookup))
-                          _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
-                      new-substs)
-                    (do
-                      substs))
-                  (if (typevar? existing)
-                    (do (when log-substs (println "The existing binding is a typevar, will replace from right"))
-                        (replace-subst-from-right substs existing value-lookup))
-                    (do (when log-substs (println "The existing binding is not a typevar"))
-                        (if (types-exactly-eq? existing value-lookup)
-                          (do (when log-substs (println "Current binding matches new value"))
-                              substs)
-                          (do (when log-substs (println "Current binding do not match new value"))
-                              (if (or (= :any lhs) (typevar? value-lookup))
-                                substs
-                                :fail
-                                ;;(error (str "Can't unify typevar \n\n" existing "\n\nwith\n\n" value-lookup "\n\nLocation: " (meta-get value :doc)))
-                                )))))))))
-        ;; Not a typevar:
-        (if (list? lhs)
-          (let [value-lookup (lookup substs value)]
-            (if (list? value-lookup)
-              (do
-                ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))
-                (reduce (fn (s m2) (let [s1 (extend-substitutions s (:t m2) (:v m2))]
-                                     (extend-substitutions s1 (:v m2) (:t m2))))
-                        substs (map2 (fn (t v) {:t t :v v}) lhs value-lookup)))
-              (do
-                ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
-                substs)))
-          (do (when log-substs (println (str "lhs " lhs " is not a tvar or list.")))
-              (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
-                substs
-                :fail
-                ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
-                )))))))
+    (if (= :fail substs)
+      :fail
+      (let [value-lookup (lookup substs value)]
+        (if (typevar? lhs)
+          (let [existing (get-maybe substs lhs)]
+            (if (= nil existing)
+              (let [new-substs (assoc substs lhs value-lookup)
+                    ;;_ (println (str "new-substs:\n" new-substs))
+                    substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
+                    ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
+                    ]
+                (do (when log-substs (println (str "No existing binding, set " lhs " to " value-lookup
+                                                   ", substs-replaced-from-right:\n" substs-replaced-from-right)))
+                    substs-replaced-from-right))
+              (do (when log-substs (println (str "Existing binding: " existing)))
+                  (if (list? existing)
+                    (if (list? value-lookup)
+                      (let [_ (when log-substs (println "The existing binding is a list"))
+                            new-substs (reduce (fn (s m2) (extend-substitutions substs (:e m2) (:l m2)))
+                                               substs
+                                               (map2 (fn (e l) {:e e :l l}) existing value-lookup))
+                            _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
+                        new-substs)
+                      (do
+                        substs))
+                    (if (typevar? existing)
+                      (do (when log-substs (println "The existing binding is a typevar, will replace from right"))
+                          (replace-subst-from-right substs existing value-lookup))
+                      (do (when log-substs (println "The existing binding is not a typevar"))
+                          (if (types-exactly-eq? existing value-lookup)
+                            (do (when log-substs (println "Current binding matches new value"))
+                                substs)
+                            (do (when log-substs (println "Current binding do not match new value"))
+                                (if (or (= :any lhs) (typevar? value-lookup))
+                                  substs
+                                  :fail
+                                  ;;(error (str "Can't unify typevar \n\n" existing "\n\nwith\n\n" value-lookup "\n\nLocation: " (meta-get value :doc)))
+                                  )))))))))
+          ;; Not a typevar:
+          (if (list? lhs)
+            (let [value-lookup (lookup substs value)]
+              (if (list? value-lookup)
+                (do
+                  ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))
+                  (reduce (fn (s m2) (let [s1 (extend-substitutions s (:t m2) (:v m2))]
+                                       (extend-substitutions s1 (:v m2) (:t m2))))
+                          substs (map2 (fn (t v) {:t t :v v}) lhs value-lookup)))
+                (do
+                  ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
+                  substs)))
+            (do (when log-substs (println (str "lhs " lhs " is not a tvar or list.")))
+                (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
+                  substs
+                  :fail
+                  ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
+                  ))))))))
 
 (defn solve-list (substs a-list b-list constraint)
   (match (list a-list b-list)

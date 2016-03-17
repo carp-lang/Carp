@@ -19,13 +19,25 @@
 (defn t []
   (dtof (glfwGetTime)))
 
-(defn draw []
+^ann '(:fn ((:ref (:Array :Ship))) :void)
+(defn draw [state]
   (do
     (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
-    (let [ships (generate-ships)]
-      (domap draw-ship (ref ships)))))
+    (let [ships state]
+      (domap draw-ship ships))))
+
+(defn move-vec2 [v]
+  (let [x (get-V2Y &v)]
+    (set-V2Y v (+ 1.0f x))))
+
+(defn move [ship]
+  (update-shipPos ship move-vec2))
+
+^ann '(:fn ((:Array :Ship)) (:Array :Ship))
+(defn update [state]
+  (map move state))
 
 (defn app []
-  (glfw-app "CARP (game 3)" draw default-on-keys))
+  (glfw-app "CARP (game 3)" (generate-ships) update draw default-on-keys))
 
 

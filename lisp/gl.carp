@@ -89,7 +89,7 @@
       (print ", mods: ")
       (println &(str mods)))))
 
-(defn glfw-app [title render-callback on-key-callback]
+(defn glfw-app [title state tick render-callback on-key-callback]
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 title NULL NULL)]
       (if (null? window)
@@ -103,7 +103,8 @@
                 (glClearColor 0.1f 0.1f 0.1f 1.0f)
                 (glClear carp-gl-color-buffer-bit)
                 (glColor3f 1.0f 1.0f 1.0f)
-                (render-callback)
+                (render-callback state)
+                (reset! state (tick state))
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
             (println "Time to go.")
