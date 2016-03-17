@@ -170,6 +170,8 @@
     "-framework OpenGL -framework Cocoa -framework IOKit"))
 
 (def out-dir (str carp-dir "out/"))
+(def exe-out-dir "./")
+(def exe-name "exe")
 (def echo-signature-after-bake false)
 
 (defn remove-non-user-defined-deps (func-deps)
@@ -228,7 +230,7 @@
 (defn run-clang [c-func-name c-file-name total-dependencies exe]
   (let [clang-command (str "clang -DAPI= "
                            (if exe
-                             (str "-o " out-dir "exe ")
+                             (str "-o " exe-out-dir exe-name " ")
                              (str "-shared -g -o " out-dir c-func-name ".so "))
                            c-file-name " "
                            (include-paths)  " "

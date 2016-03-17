@@ -396,7 +396,10 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
     
   }
   else {
-    set_error("Calling lambda from FFI can't handle return type ", lambda_return_type);
+    //set_error("Calling lambda from FFI can't handle return type ", lambda_return_type);
+    assert_or_set_error(result->tag == 'Q', "Invalid type of return value ", result);
+    void **p = ret;
+    *p = result->void_ptr;
   }
 
   /* for(int i = 0; i < arg_count; i++) { */
