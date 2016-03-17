@@ -217,7 +217,7 @@
 (defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
   (let [ast-annotated (func-to-annotated-ast func-name func-code nil func-signature)]
     (if (generic-function? ast-annotated)
-      (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
+      (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
 (defn run-compiler [c-func-name c-file-name total-dependencies exe]
