@@ -1,4 +1,5 @@
 # Compiler Big Features
+  - A deref function that can remove the ref from primitive types?
   - (map println state) makes the type system create an instance of "map" that expects a void->void function 
   - Double arguments generate weird _lit variable
   - Don't compile a function if there's already an adequate build artifact
