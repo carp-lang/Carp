@@ -289,7 +289,7 @@
                   (if (list? existing)
                     (if (list? value-lookup)
                       (let [_ (when log-substs (println "The existing binding is a list"))
-                            new-substs (reduce (fn (s m2) (extend-substitutions substs (:e m2) (:l m2)))
+                            new-substs (reduce (fn (s m2) (extend-substitutions s (:e m2) (:l m2)))
                                                substs
                                                (map2 (fn (e l) {:e e :l l}) existing value-lookup))
                             _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
@@ -297,8 +297,10 @@
                       (do
                         substs))
                     (if (typevar? existing)
-                      (do (when log-substs (println "The existing binding is a typevar, will replace from right"))
-                          (replace-subst-from-right substs existing value-lookup))
+                      (do (when log-substs (println (str "The existing binding is a typevar, will replace " existing " with " value-lookup " from right")))
+                          (let [result (replace-subst-from-right substs existing value-lookup)]
+                            (do ;;(println (str "result: " result))
+                                result)))
                       (do (when log-substs (println "The existing binding is not a typevar"))
                           (if (types-exactly-eq? existing value-lookup)
                             (do (when log-substs (println "Current binding matches new value"))

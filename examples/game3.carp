@@ -19,7 +19,7 @@
 (defn t []
   (dtof (glfwGetTime)))
 
-^ann '(:fn ((:ref (:Array :Ship))) :void)
+;;^ann '(:fn ((:ref (:Array :Ship))) :void)
 (defn draw [state]
   (do
     (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))

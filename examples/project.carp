@@ -10,21 +10,44 @@
 ;; (println (str (B true)))
 
 
+(defn f [s]
+  (println s))
 
+;;^ann '(:fn ((:ref (:Array :string))) :void)
+(defn draws [state]
+  (domap f state))
 
-^ann '(:fn ((:ref (:Array :string))) :void)
-(defn draw [state]
-  (domap println state))
-
-(defn run-app [init-state draw-fn]
-  (draw-fn init-state))
+(defn run-app [draw-fn]
+  (let [state [(copy "hej") (copy "på") (copy "dig!")]]
+    (draw-fn &state)))
 
 (defn app []
-  (let [state ["hej" "på" "dig!"]]
-    (run-app state draw)))
+  (run-app draws))
 
 
+(def CONSTRS (list
+              
+              {:a "x", 
+               :b '(:BLURG :FLORP)}
+              
+              {:a '("y" "c"), 
+               :b '(("a" "b") "a")}
+              
+              ))
 
+;; (println (str "1:\n" (solve-constraints (cons-last CONSTRS {:a "x" :b "y"}))))
+;; (println (str "\n2:\n" (solve-constraints (cons {:a "x" :b "y"} CONSTRS))))
+
+;; (def answer
+;;   (replace-subst-from-right 
+;;    {"c" "a", 
+;;     "x" '(:BLURG :FLORP), 
+;;     "y" '("a" "b"), 
+;;     "a" "a", 
+;;     "b" "b"}
+;;    "a"
+;;    :BLURG
+;;    ))
 
 
 ;; (defn h [a b]

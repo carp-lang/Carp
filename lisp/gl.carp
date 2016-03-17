@@ -103,7 +103,7 @@
                 (glClearColor 0.1f 0.1f 0.1f 1.0f)
                 (glClear carp-gl-color-buffer-bit)
                 (glColor3f 1.0f 1.0f 1.0f)
-                (render-callback state)
+                (render-callback &state)
                 (reset! state (tick state))
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
