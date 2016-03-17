@@ -16,6 +16,7 @@
   - Option Type (Maybe in Haskell)
   - Err Type (Either in Haskell)
   - Compile global variables with correct initialization and any kind of type
+  - Reorder arguements to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
 
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
