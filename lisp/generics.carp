@@ -515,7 +515,7 @@
               c (str proto " {\n"
                      (join "" (map2 (fn [t n]
                                       (if (primitive-type? t)
-                                        (str "  /* no need to delete the member '" n "' */\n")
+                                        (str "  /* no need to delete " t " member '" n "' */\n")
                                         (let [inner-delete-sig (list :fn (list t) :void)
                                               delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
                                           (do
