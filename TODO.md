@@ -2,6 +2,7 @@
   - Double arguments generate weird _lit variable
   - Don't compile a function if there's already an adequate build artifact
   - Compile globals so that they can be mutated (and all references refer to the same storage)
+  - Collect all unification errors and present them in the end
   - Equality
   - Can't pass generic functions as arguments, their names are wrong?
   - Instantiate concrete versions of generic functions sent as parameters
