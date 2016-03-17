@@ -28,6 +28,7 @@ http://alex-charlton.com/posts/Prototype_to_polish_Making_games_in_CHICKEN_Schem
 http://beautifulracket.com/first-lang.html
 http://stackoverflow.com/questions/4899113/fixed-point-combinator-for-mutually-recursive-functions/5272086#5272086
 http://klisp.org
+http://gliese1337.blogspot.se/2012/04/schrodingers-equation-of-software.html
 
 # LANGUAGE DESIGN
 http://www.complang.tuwien.ac.at/kps2015/proceedings/KPS_2015_submission_29.pdf
