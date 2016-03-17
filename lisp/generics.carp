@@ -229,7 +229,7 @@
                  x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
-            (println (str "Calling str for signature: " signature))
+            ;;(println (str "Calling str for signature: " signature))
             (match signature
 
               (:fn ((:ref (:Array t))) :string) (instantiate-str-for-array c-func-name t)
