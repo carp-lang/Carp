@@ -27,7 +27,7 @@
    :doc "parameter"})
 
 (defn primitive-type? (t)
-  (contains? '(:int :float :bool :char) t))
+  (contains? '(:int :float :double :bool :char) t))
 
 (defn void-type? (t)
   (= :void t))

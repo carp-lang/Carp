@@ -242,6 +242,10 @@
                                           c (str proto " { string s = malloc(3); s[0] = '\\\\'; s[1] = x; return s; }")]
                                       {:proto proto :c c :deps ()})
 
+              (:fn (:bool) :string) (let [proto (str "API string " c-func-name "(bool b)")
+                                          c (str proto " { if(b) { return strdup(\"true\"); } else { return strdup(\"false\"); } }")]
+                                      {:proto proto :c c :deps ()})
+
               (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
                                            c (str proto " { "
                                                   " char output[50];"

@@ -458,25 +458,25 @@ void apply(Obj *function, Obj **args, int arg_count) {
         args[i]->given_to_ffi = true; // This makes the GC ignore this value when deleting internal C-data, like inside a string
 
         if(obj_eq(type_obj, type_int)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'I', "Invalid type of arg: ", args[i]);
+          assert_or_free_values_and_set_error(args[i]->tag == 'I', "Invalid (expected int) type of arg: ", args[i]);
           values[i] = &args[i]->i;
         }
         else if(obj_eq(type_obj, type_bool)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'Y', "Invalid type of arg: ", args[i]);
-          bool b = is_true(args[i]);
+          assert_or_free_values_and_set_error(args[i]->tag == 'B', "Invalid (expected bool) type of arg: ", args[i]);
+          bool b = args[i]->boolean;
           values[i] = &b;
         }
         else if(obj_eq(type_obj, type_char)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'T', "Invalid type of arg: ", args[i]);
+          assert_or_free_values_and_set_error(args[i]->tag == 'T', "Invalid (expected char) type of arg: ", args[i]);
           char c = args[i]->character;
           values[i] = &c;
         }
         else if(obj_eq(type_obj, type_float)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
+          assert_or_free_values_and_set_error(args[i]->tag == 'V', "Invalid (expected float) type of arg: ", args[i]);
           values[i] = &args[i]->f32;
         }
         else if(obj_eq(type_obj, type_string)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'S', "Invalid type of arg: ", args[i]);
+          assert_or_free_values_and_set_error(args[i]->tag == 'S', "Invalid (expected string) type of arg: ", args[i]);
           //args[i]->s = strdup(args[i]->s); // OBS! Duplicating string here. TODO: Think about if this is the correct thing to do!
           values[i] = &args[i]->s;
         }
@@ -698,6 +698,12 @@ void apply(Obj *function, Obj **args, int arg_count) {
         assert_or_set_error(obj_eq(member_type, type_int), "Can't assign int to a member of type ", obj_to_string(member_type));
         int *xp = (int*)(((char*)new_struct->void_ptr) + offset);
         int x = args[i]->i;
+        *xp = x;
+      }
+      else if(args[i]->tag == 'B') {
+        assert_or_set_error(obj_eq(member_type, type_bool), "Can't assign bool to a member of type ", obj_to_string(member_type));
+        bool *xp = (bool*)(((char*)new_struct->void_ptr) + offset);
+        bool x = args[i]->boolean;
         *xp = x;
       }
       else if(args[i]->tag == 'Q') {

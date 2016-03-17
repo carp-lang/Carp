@@ -5,9 +5,9 @@
 
 
 
+;; (defstruct B [b :bool])
 
-
-
+;; (println (str (B true)))
 
 
 

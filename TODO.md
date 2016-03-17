@@ -40,7 +40,6 @@
   - Join-function blows the stack
   - Macro splicing
   - Use array for macro parameter list
-  - Proper bool type
   - Modules 
   - Get inferior lisp to work
   - Remove globals to enable several instances of the runner in parallel
