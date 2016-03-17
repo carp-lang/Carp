@@ -262,6 +262,9 @@
   (for (i 0 (count xs))
     (f (nth xs i))))
 
+(defmacro str-ref (x)
+  (list 'ref (list 'str x)))
+
 (defn second [xs]
   (nth xs 1))
 

@@ -10,15 +10,18 @@
 ;; (println (str (B true)))
 
 
-(defn f [s]
-  (println s))
+;; (defn f [i]
+;;   (println (ref (itos (copy i)))))
 
-;;^ann '(:fn ((:ref (:Array :string))) :void)
+^ann '(:fn ((:ref :int)) :void)
+(defn f [x]
+  (println (str-ref (copy x))))
+
 (defn draws [state]
   (domap f state))
 
 (defn run-app [draw-fn]
-  (let [state [(copy "hej") (copy "på") (copy "dig!")]]
+  (let [state [10 20 30]]
     (draw-fn &state)))
 
 (defn app []
