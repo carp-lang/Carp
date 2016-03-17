@@ -41,6 +41,12 @@ Obj *obj_new_float(float x) {
   return o;
 }
 
+Obj *obj_new_double(double x) {
+  Obj *o = obj_new('W');
+  o->f64 = x;
+  return o;
+}
+
 Obj *obj_new_string(char *s) {
   Obj *o = obj_new('S');
   o->s = strdup(s);

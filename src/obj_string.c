@@ -207,6 +207,12 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     snprintf(temp, 64, "%f", o->f32);
     obj_string_mut_append(total, temp);
   }
+  else if(o->tag == 'W') {
+    static char temp[64];
+    snprintf(temp, 64, "%f", o->f64);
+    obj_string_mut_append(total, temp);
+    obj_string_mut_append(total, "d");
+  }
   else if(o->tag == 'S') {
     if(prn) {
       obj_string_mut_append(total, "\"");

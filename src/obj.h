@@ -89,6 +89,8 @@ typedef struct Obj {
     void *void_ptr;
     // Float
     float f32;
+    // Double
+    double f64;
     // Char
     char character;
     // Bool
@@ -108,6 +110,7 @@ typedef Obj* (*Primop)(Obj**, int);
 Obj *obj_new_cons(Obj *car, Obj *cdr);
 Obj *obj_new_int(int i);
 Obj *obj_new_float(float x);
+Obj *obj_new_double(double x);
 Obj *obj_new_string(char *s);
 Obj *obj_new_symbol(char *s);
 Obj *obj_new_keyword(char *s);

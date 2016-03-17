@@ -190,6 +190,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       read_pos++;
     }
     bool is_floating = false;
+    bool is_double = false;
     char scratch[32];
     int i = 0;
     while(isdigit(CURRENT)) {
@@ -205,14 +206,26 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	read_pos++;
 	break;
       }
+      if(CURRENT == 'd') {
+	is_double = true;
+	read_pos++;
+	break;
+      }
     }
     scratch[i] = '\0';
-    if(is_floating) {
+    if(is_double) {
+      double x = atof(scratch) * negator;
+      Obj *new_double = obj_new_double(x);
+      obj_set_line_info(new_double, line, pos, filename);
+      return new_double;
+    } 
+    else if(is_floating) {
       float x = (float)atof(scratch) * negator;
       Obj *new_float = obj_new_float(x);
       obj_set_line_info(new_float, line, pos, filename);
       return new_float;
-    } else {
+    }
+    else {
       int num = atoi(scratch) * negator;
       Obj *new_int = obj_new_int(num);
       obj_set_line_info(new_int, line, pos, filename);
