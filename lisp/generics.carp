@@ -229,7 +229,7 @@
                  x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
-            ;;(println (str "Calling str for signature: " signature))
+            (println (str "Calling str for signature: " signature))
             (match signature
 
               (:fn ((:ref (:Array t))) :string) (instantiate-str-for-array c-func-name t)
@@ -247,6 +247,14 @@
                                       {:proto proto :c c :deps ()})
 
               (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
+                                           c (str proto " { "
+                                                  " char output[50];"
+                                                  " snprintf(output, 50, \"%f\", x);"
+                                                  " return strdup(output);"
+                                                  "}")]
+                                       {:proto proto :c c :deps ()})
+
+              (:fn (:double) :string) (let [proto (str "API string " c-func-name "(double x)")
                                            c (str proto " { "
                                                   " char output[50];"
                                                   " snprintf(output, 50, \"%f\", x);"

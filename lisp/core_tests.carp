@@ -1,4 +1,9 @@
 
+(defn test-doubles []
+  (let [x 3.0d
+        y 5.0d]
+    (assert (< 14.0d (* x y) 16.0d))))
+
 (defn test-bind-to-function-in-let []
   (do (defn misbind []
         (let [(fn [] nil) 123]
@@ -400,6 +405,7 @@
     (test-match-array)
     (test-template)
     (test-bind-to-function-in-let)
+    (test-doubles)
     ))
 
 (run-core-tests)

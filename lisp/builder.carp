@@ -89,6 +89,7 @@
            (:ref r) (type-build-internal r star)
            (:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
            :float "float"
+           :double "double"
            :int "int"
            :char "char"
            :bool "bool"

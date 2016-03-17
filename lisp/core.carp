@@ -62,6 +62,9 @@
 ;; (defmacro quasiquote (form)
 ;;   (list 'quote (map replace-dequotes form)))
 
+(defmacro assert (x)
+  (list 'assert-eq true x))
+
 (defn assert-approx-eq (target x)
   (do
     (assert-eq true (< x (+ target 0.1)))

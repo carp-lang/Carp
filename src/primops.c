@@ -96,6 +96,17 @@ Obj *p_add(Obj** args, int arg_count) {
     }
     return obj_new_float(sum);
   }
+  else if(args[0]->tag == 'W') {
+    double sum = 0;
+    for(int i = 0; i < arg_count; i++) {
+      if(args[i]->tag != 'W') {
+        eval_error = obj_new_string("Args to add must be doubles.\n");
+        return nil;
+      }
+      sum += args[i]->f64;
+    }
+    return obj_new_double(sum);
+  }
   else {
     eval_error = obj_new_string("Can't add non-numbers together.");
     return nil;
@@ -120,6 +131,16 @@ Obj *p_sub(Obj** args, int arg_count) {
       sum -= args[i]->f32;
     }
     return obj_new_float(sum);
+  }
+  else if(args[0]->tag == 'W') {
+    if(arg_count == 1) {
+      return obj_new_int((int)-args[0]->f64);
+    }
+    double sum = args[0]->f64;
+    for(int i = 1; i < arg_count; i++) {
+      sum -= args[i]->f64;
+    }
+    return obj_new_double(sum);
   }
   else {
     eval_error = obj_new_string("Can't subtract non-numbers.");
@@ -146,6 +167,13 @@ Obj *p_mul(Obj** args, int arg_count) {
     }
     return obj_new_float(prod);
   }
+  else if(args[0]->tag == 'W') {
+    double prod = args[0]->f64;
+    for(int i = 1; i < arg_count; i++) {
+      prod *= args[i]->f64;
+    }
+    return obj_new_double(prod);
+  }
   else {
     eval_error = obj_new_string("Can't multiply non-numbers.");
     return nil;
@@ -170,6 +198,13 @@ Obj *p_div(Obj** args, int arg_count) {
       prod /= args[i]->f32;
     }
     return obj_new_float(prod);
+  }
+  else if(args[0]->tag == 'W') {
+    double prod = args[0]->f64;
+    for(int i = 1; i < arg_count; i++) {
+      prod /= args[i]->f64;
+    }
+    return obj_new_double(prod);
   }
   else {
     eval_error = obj_new_string("Can't divide non-numbers.");
@@ -757,6 +792,9 @@ Obj *p_map(Obj** args, int arg_count) {
         else if(obj_eq(inner_type, type_float)) {
           arg[0] = obj_new_float(((float*)(a->data))[i]);
         }
+        else if(obj_eq(inner_type, type_double)) {
+          arg[0] = obj_new_double(((float*)(a->data))[i]);
+        }
         else if(obj_eq(inner_type, type_int)) {
           arg[0] = obj_new_int(((int*)(a->data))[i]);
         }
@@ -1031,6 +1069,9 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'V') {
     return type_float;
   }
+  else if(args[0]->tag == 'W') {
+    return type_double;
+  }
   else if(args[0]->tag == 'C') {
     return type_list;
   }
@@ -1079,6 +1120,7 @@ Obj *p_lt(Obj** args, int arg_count) {
   if(args[0]->tag == 'I') {
     int smallest = args[0]->i;
     for(int i = 1; i < arg_count; i++) {
+      assert_or_set_error_return_nil(args[i]->tag == 'I', "< for ints called with non-int: ", args[0]);
       if(smallest >= args[i]->i) { return lisp_false; }
       smallest = args[i]->i;
     }
@@ -1087,8 +1129,18 @@ Obj *p_lt(Obj** args, int arg_count) {
   else if(args[0]->tag == 'V') {
     float smallest = args[0]->f32;
     for(int i = 1; i < arg_count; i++) {
+      assert_or_set_error_return_nil(args[i]->tag == 'V', "< for floats called with non-float: ", args[0]);
       if(smallest >= args[i]->f32) { return lisp_false; }
       smallest = args[i]->f32;
+    }
+    return lisp_true;
+  }
+  else if(args[0]->tag == 'W') {
+    double smallest = args[0]->f64;
+    for(int i = 1; i < arg_count; i++) {
+      assert_or_set_error_return_nil(args[i]->tag == 'W', "< for doubles called with non-double: ", args[0]);
+      if(smallest >= args[i]->f64) { return lisp_false; }
+      smallest = args[i]->f64;
     }
     return lisp_true;
   }
@@ -1286,6 +1338,9 @@ ffi_type *lisp_type_to_ffi_type(Obj *type_obj) {
   }
   else if(obj_eq(type_obj, type_float)) {
     return &ffi_type_float;
+  }
+  else if(obj_eq(type_obj, type_double)) {
+    return &ffi_type_double;
   }
   else if(obj_eq(type_obj, type_void)) {
     return &ffi_type_uint;

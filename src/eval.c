@@ -320,6 +320,10 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
       float *x = args[i];
       obj_args[i] = obj_new_float(*x);
     }
+    else if(cif->arg_types[i] == &ffi_type_double) {
+      double *x = args[i];
+      obj_args[i] = obj_new_double(*x);
+    }
     else if(cif->arg_types[i] == &ffi_type_schar) {
       char *x = args[i];
       obj_args[i] = obj_new_char(*x);
@@ -377,6 +381,11 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
     assert_or_set_error(result->tag == 'V', "Invalid type of return value ", result);
     float *x = ret;
     *x = result->f32;
+  }
+  else if(obj_eq(lambda_return_type, type_double)) {
+    assert_or_set_error(result->tag == 'W', "Invalid type of return value ", result);
+    double *x = ret;
+    *x = result->f64;
   }
   else if(obj_eq(lambda_return_type, type_string)) {
     assert_or_set_error(result->tag == 'S', "Invalid type of return value ", result);
@@ -474,6 +483,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
         else if(obj_eq(type_obj, type_float)) {
           assert_or_free_values_and_set_error(args[i]->tag == 'V', "Invalid (expected float) type of arg: ", args[i]);
           values[i] = &args[i]->f32;
+        }
+        else if(obj_eq(type_obj, type_double)) {
+          assert_or_free_values_and_set_error(args[i]->tag == 'W', "Invalid (expected double) type of arg: ", args[i]);
+          values[i] = &args[i]->f64;
         }
         else if(obj_eq(type_obj, type_string)) {
           assert_or_free_values_and_set_error(args[i]->tag == 'S', "Invalid (expected string) type of arg: ", args[i]);
@@ -605,6 +618,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
       float result;
       ffi_call(function->cif, function->funptr, &result, values);
       obj_result = obj_new_float(result);
+    }
+    else if(obj_eq(return_type, type_double)) { 
+      double result;
+      ffi_call(function->cif, function->funptr, &result, values);
+      obj_result = obj_new_double(result);
     }
     else if(obj_eq(return_type, type_void)) { 
       //printf("Returning void.\n");

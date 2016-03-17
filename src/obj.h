@@ -168,6 +168,7 @@ Obj *type_symbol;
 Obj *type_macro;
 Obj *type_void;
 Obj *type_float;
+Obj *type_double;
 Obj *type_ptr;
 Obj *type_ref;
 Obj *type_char;

@@ -1,28 +1,49 @@
+;; Int math
 (register-builtin "srand" '(:int) :void)
 (register-builtin "rand" '() :int)
 (register-builtin "max" '(:int :int) :int)
 (register-builtin "inc" '(:int) :int)
 (register-builtin "dec" '(:int) :int)
+(register-builtin "mod" '(:int :int) :int)
+
+;; Double math
+(register-builtin "sin" '(:double) :double)
+(register-builtin "cos" '(:double) :double)
+(register-builtin "sqrt" '(:double) :double)
+
+;; Float math
 (register-builtin "sinf" '(:float) :float)
 (register-builtin "cosf" '(:float) :float)
 (register-builtin "sqrtf" '(:float) :float)
+
+;; Conversions
 (register-builtin "itof" '(:int) :float)
 (register-builtin "itos" '(:int) :string)
-(register-builtin "panic" '((:ref :string)) :void)
-(register-builtin "printf" '((:ref :string)) :void)
-(register-builtin "print" '((:ref :string)) :void)
-(register-builtin "println" '((:ref :string)) :void)
-(register-builtin "sleep" '(:int) :void)
-(register-builtin "nullQMARK" '(:any) :bool)
-(register-builtin "not" '(:bool) :bool)
+
+;; Strings
 (register-builtin "strlen" '((:ref :string)) :int)
 (register-builtin "string_append" '((:ref :string) (:ref :string)) :string)
-(register-builtin "file_existsQMARK" '((:ref :string)) :bool)
 (register-builtin "eat_string" '(:string) :void)
 (register-builtin "string_copy" '((:ref :string)) :string)
-(register-builtin "async" '((:fn () :void)) :void)
 (register-builtin "last_index_of" '(:string :char) :int)
 (register-builtin "substring" '(:string :int) :string)
 (register-builtin "file_path_component" '(:string) :string)
+
+;; IO
+(register-builtin "printf" '((:ref :string)) :void)
+(register-builtin "print" '((:ref :string)) :void)
+(register-builtin "println" '((:ref :string)) :void)
 (register-builtin "get_input" '() :string)
-(register-builtin "mod" '(:int :int) :int)
+
+;; Files
+(register-builtin "file_existsQMARK" '((:ref :string)) :bool)
+
+;; System
+(register-builtin "panic" '((:ref :string)) :void)
+(register-builtin "sleep" '(:int) :void)
+(register-builtin "async" '((:fn () :void)) :void)
+
+;;Misc
+(register-builtin "nullQMARK" '(:any) :bool)
+(register-builtin "not" '(:bool) :bool)
+

@@ -114,6 +114,9 @@ void env_new_global() {
 
   type_float = obj_new_keyword("float");
   define("type-float", type_float);
+
+  type_double = obj_new_keyword("double");
+  define("type-double", type_double);
   
   type_string = obj_new_keyword("string");
   define("type-string", type_string);

@@ -218,6 +218,9 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'V') {
     return obj_new_float(o->f32);
   }
+  else if(o->tag == 'W') {
+    return obj_new_float(o->f64);
+  }
   else if(o->tag == 'S') {
     return obj_new_string(strdup(o->s));
   }
