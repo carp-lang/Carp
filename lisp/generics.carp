@@ -513,16 +513,16 @@
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
               c (str proto " {\n"
-                     (join " " (map2 (fn [t n]
-                                       (if (primitive-type? t)
-                                         (str "  /* no need to delete the member '" n "' */\n")
-                                         (let [inner-delete-sig (list :fn (list t) :void)
-                                               delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
-                                           (do
-                                             (bake-generic-primop-auto "delete" inner-delete-sig)
-                                             (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))))
-                                     member-types
-                                     member-names))
+                     (join "" (map2 (fn [t n]
+                                      (if (primitive-type? t)
+                                        (str "  /* no need to delete the member '" n "' */\n")
+                                        (let [inner-delete-sig (list :fn (list t) :void)
+                                              delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
+                                          (do
+                                            (bake-generic-primop-auto "delete" inner-delete-sig)
+                                            (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))))
+                                    member-types
+                                    member-names))
                      "  free(x);\n"
                      "}\n")]
           {:proto proto
