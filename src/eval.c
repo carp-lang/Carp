@@ -368,8 +368,8 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
     *boolean = b;
   }
   else if(obj_eq(lambda_return_type, type_char)) {
-    assert_or_set_error(result->tag == 'B', "Invalid type of return value ", result);
-    char c = result->b;
+    assert_or_set_error(result->tag == 'T', "Invalid type of return value ", result);
+    char c = result->character;
     char *character = ret;
     *character = c;
   }
@@ -467,9 +467,9 @@ void apply(Obj *function, Obj **args, int arg_count) {
           values[i] = &b;
         }
         else if(obj_eq(type_obj, type_char)) {
-          assert_or_free_values_and_set_error(args[i]->tag == 'B', "Invalid type of arg: ", args[i]);
-          char b = args[i]->b;
-          values[i] = &b;
+          assert_or_free_values_and_set_error(args[i]->tag == 'T', "Invalid type of arg: ", args[i]);
+          char c = args[i]->character;
+          values[i] = &c;
         }
         else if(obj_eq(type_obj, type_float)) {
           assert_or_free_values_and_set_error(args[i]->tag == 'V', "Invalid type of arg: ", args[i]);
@@ -713,10 +713,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
         char **sp = (char**)(((char*)new_struct->void_ptr) + offset);
         *sp = strdup(args[i]->s); // must strdup or the struct will ref Obj's on the stack that will get gc:ed
       }
-      else if(args[i]->tag == 'B') {
+      else if(args[i]->tag == 'T') {
         assert_or_set_error(obj_eq(member_type, type_char), "Can't assign char to a member of type ", obj_to_string(member_type));
         char *cp = (char*)(((char*)new_struct->void_ptr) + offset);
-        *cp = args[i]->b;
+        *cp = args[i]->character;
       }
       else {
         eval_error = obj_new_string("Can't set member ");

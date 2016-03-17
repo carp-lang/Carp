@@ -150,9 +150,9 @@ Obj *obj_new_environment(Obj *parent) {
   return o;
 }
 
-Obj *obj_new_char(char b) {
-  Obj *o = obj_new('B');
-  o->b = b;
+Obj *obj_new_char(char character) {
+  Obj *o = obj_new('T');
+  o->character = character;
   return o;
 }
 
@@ -160,6 +160,12 @@ Obj *obj_new_array(int count) {
   Obj *o = obj_new('A');
   o->array = calloc(sizeof(Obj*), count);
   o->count = count;
+  return o;
+}
+
+Obj *obj_new_bool(bool b) {
+  Obj *o = obj_new('B');
+  o->boolean = b;
   return o;
 }
 
@@ -230,8 +236,11 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'M') {
     return o;
   }
+  else if(o->tag == 'T') {
+    return obj_new_char(o->character);
+  }
   else if(o->tag == 'B') {
-    return obj_new_char(o->b);
+    return obj_new_bool(o->boolean);
   }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
@@ -265,6 +274,9 @@ bool obj_eq(Obj *a, Obj *b) {
   }
   else if(a->tag != b->tag) {
     return false;
+  }
+  else if(a->tag == 'B') {
+    return a->boolean == b->boolean;
   }
   else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
     return (strcmp(a->s, b->s) == 0);
@@ -381,7 +393,7 @@ bool obj_eq(Obj *a, Obj *b) {
 
 bool is_true(Obj *o) {
   //printf("is_true? %s\n", obj_to_string(o)->s);
-  if(o == lisp_false || (o->tag == 'Y' && strcmp(o->s, "false") == 0)) {
+  if(o->tag == 'B' && !o->boolean) {
     return false;
   }
   else {

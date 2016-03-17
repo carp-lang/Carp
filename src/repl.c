@@ -85,10 +85,10 @@ void env_new_global() {
   nil = obj_new_cons(NULL, NULL);
   define("nil", nil);
 
-  lisp_false = obj_new_symbol("false");
+  lisp_false = obj_new_bool(false);
   define("false", lisp_false);
   
-  lisp_true = obj_new_symbol("true");
+  lisp_true = obj_new_bool(true);
   define("true", lisp_true);
 
   lisp_quote = obj_new_symbol("quote");

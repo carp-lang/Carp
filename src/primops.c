@@ -1058,11 +1058,14 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'M') {
     return type_macro;
   }
-  else if(args[0]->tag == 'B') {
+  else if(args[0]->tag == 'T') {
     return type_char;
   }
   else if(args[0]->tag == 'A') {
     return type_array;
+  }
+  else if(args[0]->tag == 'B') {
+    return type_bool;
   }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);

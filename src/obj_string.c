@@ -312,12 +312,20 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
       obj_string_mut_append(total, "<macro>");
     }
   }
-  else if(o->tag == 'B') {
-    char s[2] = { o->b, '\0' };
+  else if(o->tag == 'T') {
+    char s[2] = { o->character, '\0' };
     if(prn) {
       obj_string_mut_append(total, "\\");
     }
     obj_string_mut_append(total, s);
+  }
+  else if(o->tag == 'B') {
+    if(o->boolean) {
+      obj_string_mut_append(total, "true");
+    }
+    else {
+      obj_string_mut_append(total, "false");
+    }
   }
   else {
     printf("obj_to_string() can't handle type tag %c (%d).\n", o->tag, o->tag);

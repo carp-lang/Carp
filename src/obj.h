@@ -16,7 +16,7 @@ typedef void (*VoidFn)(void);
 
 /* Type tags
    A = Array
-   B = Char
+   B = Bool
    C = Cons cell
    D = Dylib
    E = Environment
@@ -34,7 +34,7 @@ typedef void (*VoidFn)(void);
    Q = Void pointer
    R 
    S = String
-   T
+   T = Char
    U
    V = Float
    W = Double (not implemented yet)
@@ -90,7 +90,9 @@ typedef struct Obj {
     // Float
     float f32;
     // Char
-    char b;
+    char character;
+    // Bool
+    bool boolean;
   };
   struct Obj *meta;
   // GC
@@ -116,8 +118,9 @@ Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, 
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
-Obj *obj_new_char(char b);
+Obj *obj_new_char(char character);
 Obj *obj_new_array(int count);
+Obj *obj_new_bool(bool b);
 
 Obj *obj_copy(Obj *o);
 
