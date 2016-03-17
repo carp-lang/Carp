@@ -12,19 +12,16 @@
 
 
 
+^ann '(:fn ((:ref (:Array :string))) :void)
+(defn draw [state]
+  (domap println state))
 
+(defn run-app [init-state draw-fn]
+  (draw-fn init-state))
 
-
-
-
-
-
-
-
-
-
-
-
+(defn app []
+  (let [state ["hej" "på" "dig!"]]
+    (run-app state draw)))
 
 
 
