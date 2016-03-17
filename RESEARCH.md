@@ -27,6 +27,7 @@ https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
 http://alex-charlton.com/posts/Prototype_to_polish_Making_games_in_CHICKEN_Scheme_with_Hypergiant/
 http://beautifulracket.com/first-lang.html
 http://stackoverflow.com/questions/4899113/fixed-point-combinator-for-mutually-recursive-functions/5272086#5272086
+http://klisp.org
 
 # LANGUAGE DESIGN
 http://www.complang.tuwien.ac.at/kps2015/proceedings/KPS_2015_submission_29.pdf
