@@ -67,8 +67,8 @@
 
 (defn assert-approx-eq (target x)
   (do
-    (assert-eq true (< x (+ target 0.1)))
-    (assert-eq true (< (- target 0.1) x))))
+    (assert-eq true (< x (+ target 0.1f)))
+    (assert-eq true (< (- target 0.1f) x))))
 
 (defn id (x) x)
 

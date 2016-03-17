@@ -8,12 +8,12 @@
 
 (defn draw []
   (do
-    (glClearColor 0.1 0.1 0.1 1.0)
+    (glClearColor 0.1f 0.1f 0.1f 1.0f)
     (glClear carp-gl-color-buffer-bit)
-    (glColor3f 1.0 1.0 1.0)
-    (let [r 0.9
-          t (glfwGetTime)]
-      (draw-line 0.0 0.0 (* r (cosf t)) (* r (sinf t))))))
+    (glColor3f 1.0f 1.0f 1.0f)
+    (let [r 0.9f
+          t (dtof (glfwGetTime))]
+      (draw-line 0.0f 0.0f (* r (cosf t)) (* r (sinf t))))))
 
 (defn game []
   (glfw-app "This is a demo" draw on-key))

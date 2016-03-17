@@ -47,7 +47,7 @@
 
 
 (defn generic-call-4 []
-  (let [pi (id 3.14)]
+  (let [pi (id 3.14f)]
     pi))
 
 (defn test-generic-call-4 []

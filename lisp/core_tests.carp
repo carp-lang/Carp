@@ -123,10 +123,10 @@
       (do
         (assert-eq false (< x y))
         (assert-eq true (< y x))
-        (assert-approx-eq 5.5 (+ x y))
-        (assert-approx-eq 7.0 (* x y))
-        (assert-approx-eq 1.5 (- x y))
-        (assert-approx-eq 1.75 (/ x y))
+        (assert-approx-eq 5.5f (+ x y))
+        (assert-approx-eq 7.0f (* x y))
+        (assert-approx-eq 1.5f (- x y))
+        (assert-approx-eq 1.75f (/ x y))
         ))))
 
 (defn test-shadowing ()
