@@ -25,47 +25,45 @@
 
 (defn binop? [form]
   (match form
-         (x & _) (contains? '(+ - * / <) x)
+         (x ... _) (contains? '(+ - * / <) x)
          _ false))
 
 (defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
 
-(defn nest [a index array-name-symbol]
+(defn nest-calls-to-array-set [a index array-name-symbol]
   (match a
-    [] array-name-symbol
-    [x & xs] (list 'array-set (nest xs (inc index) array-name-symbol) index x)))
+    [] (literal-or-lookup-to-ast array-name-symbol)
+    [x ... xs]
+    (do
+      ;;(println (str "nest-calls-to-array-set x & xs: " x " & " xs))
+      (let [array-set-signature (list :fn (list (list :Array (gen-typevar)) :int (gen-typevar)) (list :Array (gen-typevar)))]
+        {:node :app
+         :type (gen-typevar)
+         :head (assoc (literal-or-lookup-to-ast 'array-set) :type array-set-signature)
+         :tail (list (nest-calls-to-array-set xs (inc index) array-name-symbol) (literal-or-lookup-to-ast index) (form-to-ast x))}))))
 
 (def array-to-ast-var-name-counters (copy {}))
 
 (defn array-to-ast [a]
   (let [a-count (count a)
         array-name-symbol (symbol (gen-var-name array-to-ast-var-name-counters "array"))
-        nested-calls (nest a 0 array-name-symbol)
-        array-setup-ast (form-to-ast (list 'let [array-name-symbol (list 'array-of-size a-count)]
-                                           nested-calls))]
+        nested-calls (nest-calls-to-array-set a 0 array-name-symbol)
+        ;; array-form (list 'let [array-name-symbol (list 'array-of-size a-count)]
+        ;;                  nested-calls)
+        ;;array-setup-ast (form-to-ast array-form)
+        array-setup-ast {:node :let
+                         :type (gen-typevar)
+                         :bindings (list {:node :binding
+                                          :type (gen-typevar)
+                                          :name array-name-symbol
+                                          :value (form-to-ast (list 'array-of-size a-count))})
+                         :body nested-calls}
+        ]
     (do
-      ;;(println (str "array-setup-ast:\n" array-setup-ast))
+      ;;(println (str "\narray-setup-ast:\n" array-setup-ast))
+      ;;(println (str "\narray-form:\n" array-form))
       array-setup-ast)))
-
-(defn is-struct-constructor? [form]
-  (and (dict? form) (true? (get-maybe form :struct))))
-
-(defn struct-constructor-ast [struct-description args]
-  (let [struct-name (:name struct-description)
-        struct-type (keyword struct-name)]
-    (do
-      ;; The struct constructor is a amped up function application node with some extra data
-      {:node :app
-       :type struct-type
-       :head {:node :lookup
-              :constructor true
-              :type (gen-fn-type (count args)) ;; TODO: we actually know the types here so why not put them in instead?
-              :member-names (:member-names struct-description)
-              :member-types (:member-types struct-description)
-              :struct-name struct-name
-              :value (str "new-" struct-name)}
-       :tail (map form-to-ast args)})))
 
 (defn list-to-ast [l]
   (if (binop? l)
@@ -82,21 +80,21 @@
                             :left (form-to-ast left)
                             :right (form-to-ast right)}
 
-           (x & xs) (if (def? x)
-                      (let [evaled (eval x)]
-                        (if (and (symbol? x) (macro? evaled))
-                          (expand-macro l)
-                          (if (and (symbol? x) (is-struct-constructor? evaled))
-                            (struct-constructor-ast evaled xs)
-                            (app-to-ast x xs))))
-                      (app-to-ast x xs))
+           (x ... xs) (if (def? x)
+                        (let [evaled (eval x)]
+                          (if (and (symbol? x) (macro? evaled))
+                            (expand-macro l)
+                            (app-to-ast x xs l)))
+                        (app-to-ast x xs l))
            
            nil {:node :literal :type :any :value ""})))
 
-(defn app-to-ast [x xs]
+(defn app-to-ast [x xs original-form]
   (do ;;(println (str "app-to-ast: " x ", " xs))
       {:node :app
        :type (gen-typevar)
+       :line (meta-get x :line)
+       :original-form original-form
        :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
        :tail (map form-to-ast xs)}))
 
@@ -129,11 +127,11 @@
 
 (defn bindings-to-ast [bindings]
   (match bindings
-    [name value & rest-bindings] (cons {:node :binding
-                                        :type (gen-typevar)
-                                        :name name
-                                        :value (form-to-ast value)}
-                                       (bindings-to-ast rest-bindings))
+    [name value ... rest-bindings] (cons {:node :binding
+                                          :type (gen-typevar)
+                                          :name name
+                                          :value (form-to-ast value)}
+                                         (bindings-to-ast rest-bindings))
     _ ()))
 
 (defn let-to-ast [bindings body]
@@ -151,6 +149,8 @@
 (defn ref-to-ast [expr]
   {:node :ref
    :type (list :ref (gen-typevar))
+   :line (meta-get expr :line)
+   :original-form expr
    :expr (form-to-ast expr)})
 
 (defn reset-to-ast [symbol expr]
@@ -165,30 +165,51 @@
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
+     :line (meta-get expr :line)
+     :original-form expr
      :value expr} ;; change key to :name ..?
     {:node :literal
      :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
+     :line (meta-get expr :line)
+     :original-form expr
      :value expr}))
+
+(defn is-struct-constructor? [form]
+  (and (dict? form) (true? (get-maybe form :struct))))
+
+(defn struct-constructor-ast [struct-description]
+  (let [struct-name (:name struct-description)
+        struct-type (keyword struct-name)
+        arg-count (:member-count struct-description)]
+    (do
+      ;;(println (str "found struct constructor: ") struct-name)
+      {:node :lookup
+       :constructor true
+       :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
+       :member-types (:member-types struct-description)
+       :member-names (:member-names struct-description)
+       :struct-name struct-name
+       :value (str "new-" struct-name)})))
 
 (defn form-to-ast [form]
   (match form
     
     ('if expr a b) (if-to-ast expr a b)
-    ('if & _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
+    ('if ... _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
 
-    ('do & forms) (do-to-ast forms)
+    ('do ... forms) (do-to-ast forms)
 
     ('let bindings body) (let-to-ast bindings body)
-    ('let & _) (error (str "'let' needs exactly two inner forms, bindings and a body. Compiler got:\n" form))
+    ('let ... _) (error (str "'let' needs exactly two inner forms, bindings and a body. Compiler got:\n" form))
 
     ('while expr body) (while-to-ast expr body)
-    ('while & _) (error (str "'while' needs exactly two inner forms, an expression and a body. Compiler got:\n" form))
+    ('while ... _) (error (str "'while' needs exactly two inner forms, an expression and a body. Compiler got:\n" form))
 
     ('ref expr) (ref-to-ast expr)
-    ('ref & _) (error (str "'ref' needs exactly one inner form, an expression. Compiler got:\n" form))
+    ('ref ... _) (error (str "'ref' needs exactly one inner form, an expression. Compiler got:\n" form))
 
     ('reset! symbol expr) (reset-to-ast symbol expr)
-    ('reset! & _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
+    ('reset! ... _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
     
     ('include-c-code s) {:node :c-code :code s :type (gen-typevar)}
     'NULL {:node :null :type (gen-typevar)}
@@ -198,8 +219,9 @@
         (list-to-ast x)
         (if (array? x)
           (array-to-ast x)
-          (literal-or-lookup-to-ast x)))
-    ))
+          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x))) ;; (log (str "def? : " (type x) " ") x)
+            (struct-constructor-ast (eval x))
+            (literal-or-lookup-to-ast x))))))
 
 (defn body-to-ast [body]
   (form-to-ast body))
@@ -210,6 +232,7 @@
       (match form
              ('fn args body) {:node :function
                               :type (gen-fn-type (count args))
+                              :annotation nil
                               :args (arg-list-to-ast (if (array? args) (array-to-list args) args))
                               :body (body-to-ast body)}
              _ (error (str "Failed to match lambda form: " form)))))

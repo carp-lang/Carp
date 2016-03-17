@@ -53,7 +53,10 @@ typedef struct Obj {
     // Integers
     int i;
     // Strings, symbols and keywords
-    char *s;
+    struct {
+      char *s;
+      int dispatch_index; // used for quick dispatch of special forms in eval
+    };
     // Lambdas / Macros
     struct {
       struct Obj *params;
@@ -72,7 +75,7 @@ typedef struct Obj {
     struct {
       ffi_cif *cif;
       VoidFn funptr;
-	  char* name;
+      char* name;
       struct Obj *arg_types;
       struct Obj *return_type;
     };
@@ -134,18 +137,17 @@ int obj_total;
 int obj_total_max;
 
 Obj *global_env;
+Obj *eval_error;
 
 Obj *nil;
 Obj *lisp_false;
 Obj *lisp_true;
 Obj *lisp_quote;
-Obj *eval_error;
-Obj *ampersand;
-Obj *hash;
 Obj *lisp_NULL;
 
-Obj *prompt;
-Obj *prompt_unfinished_form;
+Obj *ampersand; // "&"
+Obj *hash; // "#"
+Obj *dotdotdot; // "..."
 
 Obj *type_int;
 Obj *type_bool;
@@ -164,3 +166,7 @@ Obj *type_ptr;
 Obj *type_ref;
 Obj *type_char;
 Obj *type_array;
+
+Obj *prompt;
+Obj *prompt_unfinished_form;
+

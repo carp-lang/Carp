@@ -97,6 +97,9 @@ void env_new_global() {
   ampersand = obj_new_symbol("&");
   define("&", ampersand);
 
+  dotdotdot = obj_new_symbol("dotdotdot");
+  define("dotdotdot", dotdotdot);
+
   lisp_NULL = obj_new_ptr(NULL);
   define("NULL", lisp_NULL);
 
@@ -160,9 +163,10 @@ void env_new_global() {
   register_primop("-", p_sub);
   register_primop("*", p_mul);
   register_primop("/", p_div);
-  register_primop("mod", p_mod);
+  //register_primop("mod", p_mod);
   register_primop("=", p_eq);
   register_primop("list", p_list);
+  register_primop("array", p_array);
   register_primop("str", p_str);
   register_primop("str-append!", p_str_append_bang);
   register_primop("str-replace", p_str_replace);
@@ -185,6 +189,7 @@ void env_new_global() {
   register_primop("nth", p_nth);
   register_primop("count", p_count);
   register_primop("map", p_map);
+  register_primop("map-copy", p_map); // only matters when compiling to C
   register_primop("map2", p_map2);
   register_primop("filter", p_filter);
   register_primop("reduce", p_reduce);
@@ -215,6 +220,8 @@ void env_new_global() {
   register_primop("array-of-size", p_array_of_size);
   register_primop("array-set!", p_array_set_BANG);
   register_primop("array-set", p_array_set);
+  register_primop("gc", p_gc);
+  register_primop("delete", p_delete);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal("abs", (VoidFn)abs, abs_args, type_int, true);

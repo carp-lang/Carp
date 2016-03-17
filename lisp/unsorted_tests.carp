@@ -1,13 +1,3 @@
-(reset! echo-signature-after-bake true)
-(reset! log-unloading-of-dylibs true)
-
-(when (not carp-dev)
-  (do
-    ;;(load-lisp (str carp-dir "lisp/glfw_test.carp"))
-    (load-lisp (str carp-dir "lisp/examples.carp"))
-    nil
-    ))
-
 (defn generic-call-2 [x]
   (+ (id 10) (id x)))
 
@@ -118,11 +108,11 @@
 (defn trixy-5 []
   (println (ref (str (ref (color 2.3))))))
 
-(defn trixy-6 [x y z]
-  (Color x y z))
+;; (defn trixy-6 [xx yy zz]
+;;   (Color xx yy zz))
 
-(def ast6 (lambda-to-ast (code trixy-6)))
-(def asta6 (annotate-ast ast6))
+;; (def ast6 (lambda-to-ast (code trixy-6)))
+;; (def asta6 (annotate-ast ast6))
 
 (defn x2 [x]
   (* x 2))
@@ -130,7 +120,7 @@
 (defn mapping []
   (map x2 [1 2 3 4 5]))
 
-(bake mapping)
+;;(bake mapping)
 
 (defn x2f [x]
   (* x 2.0))
@@ -147,4 +137,57 @@
 (defn mapping-strings []
   (map exclaim [(string-copy "hej") (string-copy "san") (string-copy "svej") (string-copy "san")]))
 
-;;(bake mapping)
+
+
+(defn even-i? [x]
+  (if (even? x)
+    1
+    0))
+
+(defn map-even []
+  (map even-i? [1 2 3 4 5 6 7]))
+
+
+
+
+
+
+
+(defstruct SimplePair
+  [x :int
+   y :int])
+
+(defn test-simple-pair []
+  (let [p (SimplePair 13 27)]
+    (get-x p)))
+
+;;(bake test-simple-pair)
+;;(test-simple-pair)
+
+
+
+
+
+(defstruct Wrap [something :int])
+
+;; TODO: this fails
+(defn call-constructor [f]
+  (f 100))
+(defn test-call-constructor []
+  (call-constructor Wrap))
+(bake test-call-constructor)
+
+(defn map-wrap []
+  (map-copy Wrap [100 500 999]))
+(bake map-wrap)
+
+
+(defn map-itof [] (map-copy itof [1 2 3]))
+(bake map-itof)
+
+(defn my-strlen [s]
+  (strlen s))
+
+(defn map-strlen [] (map-copy my-strlen ["erik" "anna" "marie"]))
+(bake map-strlen)
+;;(assert-eq [4 4 5] (map-strlen))

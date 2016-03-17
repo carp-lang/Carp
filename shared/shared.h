@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "types.h"
 #include "platform.h"
 
@@ -191,6 +192,10 @@ EXPORT void calls(void *f(char*)) {
 EXPORT void printret(int (*f)()) {
   int x = f();
   printf("ret = %d\n", x);
+}
+
+EXPORT int mod(int x, int y) {
+  return x % y;
 }
 
 #ifdef WIN32

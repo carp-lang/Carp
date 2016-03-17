@@ -1,7 +1,9 @@
-.DS_Store
-/bin/carp-repl
 *.dSYM
+a.out
+.DS_Store
+
 /gl-constants/gl_constants.o
+
 /out/*.c
 /out/*.so
 /out/*.h
@@ -11,9 +13,12 @@
 /out/*.pdb
 /out/*.ilk
 /out/*.obj
-/src/*.o
 /out/exe
-a.out
-/bin/Debug/
+
+/src/*.o
+
+/bin/carp-repl
 /bin/Release/
+/bin/Debug/
+
 /build/

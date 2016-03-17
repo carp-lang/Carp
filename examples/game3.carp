@@ -1,0 +1,26 @@
+(import gl)
+
+(defn draw-ship [ship]
+  (let [pos (get-shipPos ship)]
+    (draw-rect (get-V2X pos)
+               (get-V2Y pos)
+               0.1
+               0.1)))
+
+(defstruct Ship [shipPos :Vec2])
+
+(defn generate-ships []
+  [(Ship (Vec2 0.0 -0.6))
+   (Ship (Vec2 0.3 -0.2))
+   (Ship (Vec2 0.4 -0.3))
+   (Ship (Vec2 0.1 0.2))
+   (Ship (Vec2 -0.3 0.5))])
+
+(defn draw []
+  (let [ships (generate-ships)]
+    (domap draw-ship (ref ships))))
+
+(defn app []
+  (glfw-app "CARP (game 3)" draw default-on-keys))
+
+

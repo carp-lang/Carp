@@ -1,0 +1,79 @@
+(reset! echo-signature-after-bake true)
+(reset! log-unloading-of-dylibs true)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; (defn h [a b]
+;;   (+ (strlen a)
+;;      (strlen b)))
+
+;; (defn f []
+;;   (h 3 "b"))
+
+;; (defn g []
+;;   (let [s (string-copy &"hej")]
+;;     (f s)))
+
+;;(bake g)
+
+;; ^doc "Hej på dig"
+;; ^ann '(:fn () :void)
+
+;; (defn f [] "yeah")
+
+
+;; (defn f []
+;;   (let [a (fn [] (nth "erik"))
+;;         b (fn [] (a))]
+;;     (b)))
+
+;; (defn aaa [x]
+;;   (* x 10))
+
+;; (defn bbb [f]
+;;   (+ 1 (f 5)))
+
+;; (bake bbb)
+
+;; (println (str (bbb aaa)))
+
+;; (defn servant [s]
+;;   (string-append s "!"))
+
+;; (defn master [f]
+;;   (string-append (f "hje") "..."))
+
+;; (bake master)
+
+;; (println (master servant))
+
+
+;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
+;;(defn tricky-let [] ((id id) 2))

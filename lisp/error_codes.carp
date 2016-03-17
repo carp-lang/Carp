@@ -1,4 +1,5 @@
 
 (def error-given-away 1)
 (def error-test-failed 2)
+(def error-binding-to-non-symbol 3)
 

@@ -1,0 +1,20 @@
+
+(defn println* [x]
+  (println (ref (str (ref x)))))
+
+
+
+(defstruct Player [playerName :string
+                   playerScore :int])
+
+(defn x2 [x]
+  (* x 2))
+
+(defn grow [player]
+  (update-playerScore player x2))
+
+(defn play []
+  (let [p1 (Player (copy "erik") 100)
+        p2 (Player (copy "marie") 120)]
+    (println* (map grow [p1 p2]))))
+

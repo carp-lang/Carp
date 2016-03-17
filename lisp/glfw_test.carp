@@ -1,50 +1,4 @@
-
-(defn register-glfw ()
-  (let [glfw (load-dylib "libglfw3.dylib")
-        gl-constants (load-dylib (str carp-dir "gl-constants/gl_constants.so"))]
-    (do
-      (reset! header-files (cons "<GLFW/glfw3.h>" header-files))
-      (reset! header-files (cons (str "\"" carp-dir "gl-constants/gl_constants.h\"") header-files))
-      
-      (register glfw "glfwInit" '() :bool)
-      (register glfw "glfwCreateWindow" '(:int :int (:ref :string) :GLFWmonitor :GLFWwindow) '(:ref :GLFWwindow))
-      (register glfw "glfwMakeContextCurrent" '((:ref :GLFWwindow)) :void)
-      (register glfw "glfwTerminate" '() :void)
-      (register glfw "glfwPollEvents" '() :void)
-      (register glfw "glfwWindowShouldClose" '((:ref :GLFWwindow)) :bool)
-      (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
-      
-      (register glfw "glClearColor" '(:float :float :float :float) :void)
-      (register glfw "glClear" '(:int) :void)
-      (register glfw "glColor3f" '(:float :float :float) :void)
-      (register glfw "glBegin" '(:int) :void)
-      (register glfw "glEnd" '() :void)
-      (register glfw "glVertex3f" '(:float, :float, :float) :void)
-
-      (register-variable gl-constants "gl_color_buffer_bit" :int)
-      (register-variable gl-constants "gl_lines" :int)
-      (register-variable gl-constants "gl_line_strip" :int)
-      (register-variable gl-constants "gl_triangles" :int)
-      
-      )))
-
-(register-glfw)
-
-(defn set-clear-color ()
-  (glClearColor 0.0f 0.95f 0.75f 1.0f))
-
-(defn draw-rect (x y w h)
-  (do (glBegin gl-triangles)
-      (glVertex3f x y 0.0f)
-      (glVertex3f (+ x w) y 0.0f)
-      (glVertex3f (+ x w) (+ y h) 0.0f)
-      (glVertex3f (+ x w) (+ y h) 0.0f)
-      (glVertex3f x (+ y h) 0.0f)
-      (glVertex3f x y 0.0f)
-      (glEnd)))
-
-(defn red ()
-  0.6)
+(import gl)
 
 (defn gl-demo ()
   (if (glfwInit)
@@ -55,12 +9,13 @@
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
               (do
-                (glClearColor (red) 0.85f 0.85f 1.0f)
-                (glClear gl-color-buffer-bit)
+                (glClearColor 0.6 0.85f 0.85f 1.0f)
+                (glClear carp-gl-color-buffer-bit)
                 (glColor3f 1.0 0.9f 0.2f)
                 (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
+            (println "Time to go.")
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))
 

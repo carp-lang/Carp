@@ -102,3 +102,10 @@ Obj *env_assoc(Obj *env, Obj *key, Obj *value) {
   }
   return env;
 }
+
+void obj_set_meta(Obj *o, Obj *key, Obj *value) {
+  if(!o->meta) {
+    o->meta = obj_new_environment(NULL);
+  }
+  env_extend(o->meta, key, value);
+}

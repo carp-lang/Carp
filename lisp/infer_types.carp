@@ -20,16 +20,18 @@
             t (type global-lookup)]
         (match t
           :lambda (if (meta-get global-lookup :generic)
-                    (let [signature (meta-get global-lookup :signature)]
-                      (do ;;(println (str "'" symbol "' is generic with signature "))
-                          signature))
+                    (let [signature (meta-get global-lookup :signature)
+                          uniquified (uniquify-typevars signature)]
+                      (do
+                        ;;(println (str "'" symbol "' is generic with signature " signature ", uniquified: " uniquified))
+                        uniquified))
                     (error (str "Found non-baked symbol '" symbol "'.")))
           :macro (error (str "Found non-expanded macro '" symbol "'."))
           :foreign (signature global-lookup)
           :primop (let [s (signature global-lookup)]
                     (if (nil? s)
                       (error (str "No signature set for primop " symbol " (maybe it isn't allowed to be baked?)"))
-                      s))
+                      (uniquify-typevars s)))
           _ t))
       lookup)))
 
@@ -38,9 +40,18 @@
 
 (def log-chaining false)
 
+;; Generates a dictionary with location data used when type unification fails
+(defn location [ast-a ast-b]
+  (do
+    ;;(println (str "ast-a: " ast-a "\n" "ast-b: " ast-b))
+    {:a {:line (if (dict? ast-a) (get-maybe ast-a :line) "???")
+         :original-form (if (dict? ast-a) (get-maybe ast-a :original-form) "???")}
+     :b {:line (if (dict? ast-b) (get-maybe ast-b :line) "???")
+         :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
+
 (defn generate-constraints-internal (constraints ast type-env)
   (do
-    ;;(println "gen constrs: \n" ast)
+    ;;(println (str "gen constrs: \n" ast))
     (match (get ast :node)
 
       :function (let [extended-type-env (type-env-extend type-env (get ast :args))
@@ -54,11 +65,21 @@
                                        :doc (str "func-ret-constr")}
                       func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})
                                              (map :type (:args ast))
-                                             (get-in ast '(:type 1)))]
-                  (concat func-arg-constrs (cons func-ret-constr new-constraints)))
+                                             (get-in ast '(:type 1)))
+                      annotation-constr (if (nil? (:annotation ast))
+                                          ()
+                                          (list {:a (:annotation ast)
+                                                 :b (:type ast)
+                                                 :doc (str "func-annoation-constr")}))]
+                  (concat annotation-constr func-arg-constrs (cons func-ret-constr new-constraints)))
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
-                 arg-constrs (map2 (fn (a b) {:a a :b b :doc "app-arg"}) (get-in ast '(:head :type 1)) (map :type (:tail ast)))
+                 arg-constrs (map2 (fn (a b) {:a a
+                                              :b (:type b)
+                                              :location (location (:head ast) b)
+                                              :doc (str "app-arg " a " vs " b)})
+                                   (get-in ast '(:head :type 1))
+                                   (:tail ast))
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
                  tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
@@ -89,10 +110,11 @@
                 (if (has-key? ast :constructor)
                   (let [member-types (array-to-list (:member-types ast))
                         t (:type ast)
+                        constructor-return-constr {:a (keyword (:struct-name ast)) :b (nth t 2) :doc "constructor-return-value"}
                         constructor-arg-constrs (map2 (fn [a b] {:a a :b b :doc "constructor-arg"})
                                                       member-types
                                                       (nth t 1))]
-                    constructor-arg-constrs)
+                    (cons constructor-return-constr constructor-arg-constrs))
                   (let [val (:value ast)
                         ;;_ (println (str "not self-recursive: \n" ast))
                         t (get-type-of-symbol type-env val)
@@ -102,6 +124,7 @@
                       (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
                       (cons {:a (:type ast)
                              :b t
+                             :location (location ast {:line "?" :original-form val})
                              :doc (str "lookup " val)} constraints)))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
@@ -203,11 +226,11 @@
     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
     (match l
       () ()
-      (x & xs) (if (= x replace-this)
-                 (cons with-this (replace-in-list xs replace-this with-this))
-                 (if (list? x)
-                   (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
-                   (cons x (replace-in-list xs replace-this with-this)))))))
+      (x ... xs) (if (= x replace-this)
+                   (cons with-this (replace-in-list xs replace-this with-this))
+                   (if (list? x)
+                     (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
+                     (cons x (replace-in-list xs replace-this with-this)))))))
 
 (defn maybe-replace-binding (key value replace-this with-this)
   (do
@@ -279,7 +302,9 @@
                           (do (when log-substs (println "Current binding do not match new value"))
                               (if (or (= :any lhs) (typevar? value-lookup))
                                 substs
-                                (error (str "Can't unify typevar \n" existing " with \n" value-lookup)))))))))))
+                                :fail
+                                ;;(error (str "Can't unify typevar \n\n" existing "\n\nwith\n\n" value-lookup "\n\nLocation: " (meta-get value :doc)))
+                                )))))))))
         ;; Not a typevar:
         (if (list? lhs)
           (let [value-lookup (lookup substs value)]
@@ -295,23 +320,48 @@
           (do (when log-substs (println (str "lhs " lhs " is not a tvar or list.")))
               (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
                 substs
-                (error (str "Can't unify \n" lhs " with \n" value-lookup)))))))))
+                :fail
+                ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
+                )))))))
 
-(defn solve-list (substs a-list b-list)
+(defn solve-list (substs a-list b-list constraint)
   (match (list a-list b-list)
     (() ()) substs
-    ((a & as) (b & bs)) (solve (solve substs a b) as bs)
-    _ (error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))))
+    ((a ... as) (b ... bs)) (solve (solve substs a b constraint) as bs constraint)
+    _ :fail ;;(error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))
+    ))
 
-(defn solve (substs a b)
-  (if (and (list? a) (list? b))
-    (solve-list substs a b)
-    (extend-substitutions substs a b)))
+(defn solve (substs a b constraint)
+  (let [result (if (and (list? a) (list? b))
+                 (if (= (count a) (count b))
+                   (solve-list substs a b constraint)
+                   :fail)
+                 (extend-substitutions substs a b))]
+    (if (= :fail result)
+      (let [loc (get-maybe constraint :location)]
+        (if (nil? loc)
+          (error (str "Can't unify typevar \n\n" a "\n\nwith\n\n" b "\n\n"))
+          (error (str "Can't unify the types of \n\n"
+                      "'"
+                      (get-in loc '(:a :original-form))
+                      "'"
+                      " at line "
+                      (get-in loc '(:a :line))
+                      " of type " a
+                      "\n\nwith\n\n"
+                      "'"
+                      (get-in loc '(:b :original-form))
+                      "'"
+                      " at line "
+                      (get-in loc '(:b :line))
+                      " of type " b
+                      "\n"))))
+      result)))
 
 (defn solve-contraint-internal (substs constraint)
   (let [a (:a constraint)
         b (:b constraint)]
-    (solve (solve substs a b) b a))) ; Solving from both directions!
+    (solve (solve substs a b constraint) b a constraint))) ; Solving from both directions! TODO: is this needed?
 
 ;; Returns a substitution map from type variables to actual types
 (defn solve-constraints (constraints)

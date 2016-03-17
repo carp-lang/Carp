@@ -11,8 +11,8 @@
 #include "env.h"
 #include "eval.h"
 #include "reader.h"
+#include "gc.h"
 #include "../shared/types.h"
-//#include "../shared/shared.h" // WHY CAN'T I DO THIS?
 
 void register_primop(char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
@@ -177,16 +177,16 @@ Obj *p_div(Obj** args, int arg_count) {
   }
 }
 
-Obj *p_mod(Obj** args, int arg_count) {
-  if(arg_count == 0) {
-    return obj_new_int(1);
-  }
-  int prod = args[0]->i;
-  for(int i = 1; i < arg_count; i++) {
-    prod %= args[i]->i;
-  }
-  return obj_new_int(prod);
-}
+/* Obj *p_mod(Obj** args, int arg_count) { */
+/*   if(arg_count == 0) { */
+/*     return obj_new_int(1); */
+/*   } */
+/*   int prod = args[0]->i; */
+/*   for(int i = 1; i < arg_count; i++) { */
+/*     prod %= args[i]->i; */
+/*   } */
+/*   return obj_new_int(prod); */
+/* } */
 
 Obj *p_eq(Obj** args, int arg_count) {
   if(arg_count < 2) {
@@ -220,11 +220,21 @@ Obj *p_list(Obj** args, int arg_count) {
   return first;
 }
 
+Obj *p_array(Obj** args, int arg_count) {
+  Obj *a = obj_new_array(arg_count);
+  for(int i = 0; i < arg_count; i++) {
+    a->array[i] = args[i];
+  }
+  return a;
+}
+
 Obj *p_str(Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
+  shadow_stack_push(s);
   for(int i = 0; i < arg_count; i++) {
     obj_string_mut_append(s, obj_to_string_not_prn(args[i])->s);
   }
+  shadow_stack_pop();
   return s;
 }
 
@@ -371,10 +381,12 @@ Obj *p_print(Obj** args, int arg_count) {
 
 Obj *p_prn(Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
+  shadow_stack_push(s);
   for(int i = 0; i < arg_count; i++) {
     Obj *s2 = obj_to_string(args[i]);
     obj_string_mut_append(s, s2->s);
   }
+  shadow_stack_pop(); // s
   return s;
 }
 
@@ -404,11 +416,13 @@ Obj *p_get(Obj** args, int arg_count) {
       return o;
     } else {
       Obj *s = obj_new_string("Can't get key '");
+      shadow_stack_push(s);
       obj_string_mut_append(s, obj_to_string(args[1])->s);
       obj_string_mut_append(s, "' in dict:\n");
       obj_string_mut_append(s, obj_to_string(args[0])->s);
       obj_string_mut_append(s, "");
       eval_error = s;
+      shadow_stack_pop();
       return nil;
     }
   }
@@ -451,7 +465,7 @@ Obj *p_get_maybe(Obj** args, int arg_count) {
     }
   }
   else if(args[0]->tag == 'C') {
-    if(args[1]->tag != 'I') { printf("get-maybe requires arg 1 to be an integer\n"); return nil; }
+    if(args[1]->tag != 'I') { eval_error = obj_new_string("get-maybe requires arg 1 to be an integer\n"); return nil; }
     int i = 0;
     int n = args[1]->i;
     Obj *p = args[0];
@@ -625,7 +639,7 @@ Obj *p_concat(Obj** args, int arg_count) {
 }
 
 Obj *p_nth(Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'nth'\n"); return nil; }
+  if(arg_count != 2) { eval_error = obj_new_string("Wrong argument count to 'nth'\n"); return nil; }
   if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
   if(args[0]->tag == 'C') {
     int i = 0;
@@ -768,38 +782,56 @@ Obj *p_map2(Obj** args, int arg_count) {
   if(!is_callable(args[0])) {
     set_error_return_nil("'map2' requires arg 0 to be a function or lambda: ", args[0]);
   }
-  if(args[1]->tag != 'C') {
-    set_error_return_nil("'map2' requires arg 1 to be a list: ", args[1]);
+  Obj *f = args[0];
+  if(args[1]->tag == 'C' && args[2]->tag == 'C') {
+    Obj *p = args[1];
+    Obj *p2 = args[2];
+    Obj *list = obj_new_cons(NULL, NULL);
+    shadow_stack_push(list);
+    Obj *prev = list;
+    int shadow_count = 0;
+    while(p && p->car && p2 && p2->car) {
+      Obj *argz[2] = { p->car, p2->car };
+      apply(f, argz, 2);
+      prev->car = stack_pop();
+      Obj *new = obj_new_cons(NULL, NULL);
+      shadow_stack_push(new);
+      shadow_count++;
+      prev->cdr = new;
+      prev = new;
+      p = p->cdr;
+      p2 = p2->cdr;
+    }
+    for(int i = 0; i < shadow_count; i++) {
+      shadow_stack_pop();
+    }
+    shadow_stack_pop(); // list
+    return list;
   }
-  if(args[2]->tag != 'C') {
-    eval_error = obj_new_string("'map2' requires arg 2 to be a list: ");
+  else if(args[1]->tag == 'A' && args[2]->tag == 'A') {
+    if(args[1]->count != args[2]->count) {
+      eval_error = obj_new_string("Arrays to map2 are of different length.");
+      return nil;
+    }
+    Obj *a = args[1];
+    Obj *b = args[2];
+    Obj *new_a = obj_new_array(a->count);
+    shadow_stack_push(new_a);
+    for(int i = 0; i < a->count; i++) {
+      Obj *fargs[2] = { a->array[i], b->array[i] };
+      apply(f, fargs, 2);
+      new_a->array[i] = stack_pop();
+    }
+    shadow_stack_pop(); // new_a
+    return new_a;
+  }
+  else {
+    eval_error = obj_new_string("'map2' requires both arg 1 and 2 to be lists or arrays:\n");
+    obj_string_mut_append(eval_error, obj_to_string(args[1])->s);
+    obj_string_mut_append(eval_error, "\n");
     obj_string_mut_append(eval_error, obj_to_string(args[2])->s);
     return nil;
-  }
-  Obj *f = args[0];
-  Obj *p = args[1];
-  Obj *p2 = args[2];
-  Obj *list = obj_new_cons(NULL, NULL);
-  shadow_stack_push(list);
-  Obj *prev = list;
-  int shadow_count = 0;
-  while(p && p->car && p2 && p2->car) {
-    Obj *argz[2] = { p->car, p2->car };
-    apply(f, argz, 2);
-    prev->car = stack_pop();
-    Obj *new = obj_new_cons(NULL, NULL);
-    shadow_stack_push(new);
-    shadow_count++;
-    prev->cdr = new;
-    prev = new;
-    p = p->cdr;
-    p2 = p2->cdr;
-  }
-  for(int i = 0; i < shadow_count; i++) {
-    shadow_stack_pop();
-  }
-  shadow_stack_pop(); // list
-  return list;
+  }  
 }
 
 Obj *p_keys(Obj** args, int arg_count) {
@@ -1084,8 +1116,10 @@ Obj *p_name(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S' && args[0]->tag != 'Y' && args[0]->tag != 'K') {
     Obj *s = obj_new_string("Argument to 'name' must be string, keyword or symbol: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_string(args[0]->s);
@@ -1098,8 +1132,10 @@ Obj *p_symbol(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'symbol' must be string: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_symbol(args[0]->s);
@@ -1112,8 +1148,10 @@ Obj *p_keyword(Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'keyword' must be string: ");
+    shadow_stack_push(s);
     obj_string_mut_append(s, obj_to_string(args[0])->s);
     eval_error = s;
+    shadow_stack_pop();
     return nil;
   }
   return obj_new_keyword(args[0]->s);
@@ -1267,9 +1305,15 @@ char *lispify(char *name) {
   char *s0 = str_replace(name, "_", "-");
   char *s1 = str_replace(s0, "BANG", "!");
   char *s2 = str_replace(s1, "QMARK", "?");
+  char *s3 = str_replace(s2, "PTR", "*");
+  char *s4 = str_replace(s3, "LT", "<");
+  char *s5 = str_replace(s4, "GT", ">");
   free(s0);
   free(s1);
-  return s2;
+  free(s2);
+  free(s3);
+  free(s4);
+  return s5;
 }
 
 ffi_type **make_arg_type_array(Obj *args, int arg_count, char *func_name) {
@@ -1453,7 +1497,7 @@ Obj *p_meta_set_BANG(Obj** args, int arg_count) {
     o->meta = obj_new_environment(NULL);
   }
   env_assoc(o->meta, args[1], args[2]);
-  return nil;
+  return o;
 }
 
 Obj *p_meta_get(Obj** args, int arg_count) {
@@ -1548,3 +1592,13 @@ Obj *p_array_set(Obj** args, int arg_count) {
 /*   eval_error = obj_new_string("The primop 'new' should never be called in dynamic code."); */
 /*   return nil; */
 /* } */
+
+Obj *p_gc(Obj** args, int arg_count) {
+  gc(global_env);
+  return nil;
+}
+
+Obj *p_delete(Obj** args, int arg_count) {
+  // no op?
+  return nil;
+}

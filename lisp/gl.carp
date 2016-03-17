@@ -1,0 +1,93 @@
+
+(def glfw (load-dylib "libglfw3.dylib"))
+
+(reset! extra-header-deps (cons "<GLFW/glfw3.h>" extra-header-deps))
+
+(register glfw "glfwInit" '() :bool)
+(register glfw "glfwCreateWindow" '(:int :int (:ref :string) :GLFWmonitor :GLFWwindow) '(:ref :GLFWwindow))
+(register glfw "glfwMakeContextCurrent" '((:ref :GLFWwindow)) :void)
+(register glfw "glfwTerminate" '() :void)
+(register glfw "glfwPollEvents" '() :void)
+(register glfw "glfwWindowShouldClose" '((:ref :GLFWwindow)) :bool)
+(register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
+(register glfw "glfwSetWindowShouldClose" '((:ref :GLFWwindow) :bool) :void)
+(register glfw "glfwGetTime" '() :float) ;; TODO: should return a double
+
+(def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
+(register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
+
+(register glfw "glClearColor" '(:float :float :float :float) :void)
+(register glfw "glClear" '(:int) :void)
+(register glfw "glColor3f" '(:float :float :float) :void)
+(register glfw "glBegin" '(:int) :void)
+(register glfw "glEnd" '() :void)
+(register glfw "glVertex3f" '(:float, :float, :float) :void)
+
+(def carp-gl-color-buffer-bit 16384)
+(def carp-gl-lines 1)
+(def carp-gl-line-strip 3)
+(def carp-gl-triangles 4)
+
+(def key-esc 256)
+
+;; glfwSetCharCallback(window, character_callback);
+;; void character_callback(GLFWwindow* window, unsigned int codepoint)
+
+;; glfwSetCursorPosCallback(window, cursor_pos_callback);
+;; static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+
+(defn set-clear-color ()
+  (glClearColor 0.0f 0.95f 0.75f 1.0f))
+
+(defn draw-rect (x y w h)
+  (do (glBegin carp-gl-triangles)
+      (glVertex3f x y 0.0f)
+      (glVertex3f (+ x w) y 0.0f)
+      (glVertex3f (+ x w) (+ y h) 0.0f)
+      (glVertex3f (+ x w) (+ y h) 0.0f)
+      (glVertex3f x (+ y h) 0.0f)
+      (glVertex3f x y 0.0f)
+      (glEnd)))
+
+(defn draw-line (x1 y1 x2 y2)
+  (do (glBegin carp-gl-lines)
+      (glVertex3f x1 y1 0.0f)
+      (glVertex3f x2 y2 0.0f)
+      (glEnd)))
+
+(defstruct Vec2 [V2X :float V2Y :float])
+
+(defn draw-vec2 [v]
+  (do (glVertex3f (get-V2X &v) (get-V2Y &v) 0.0f)
+      0))
+
+(defn draw-lines (positions)
+  (do (glBegin carp-gl-line-strip)
+      (map-copy draw-vec2 positions)
+      (glEnd)))
+
+^ann glfw-key-callback-type
+(defn default-on-keys [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (println &(str key))))
+
+(defn glfw-app [title render-callback on-key-callback]
+  (if (glfwInit)
+    (let [window (glfwCreateWindow 640 480 title NULL NULL)]
+      (if (null? window)
+        (panic "No window.")
+        (do (println "Window OK.")
+            (glfwMakeContextCurrent window)
+            (glfwSetKeyCallback window on-key-callback)
+            (while (not (glfwWindowShouldClose window))
+              (do
+                (glClearColor 0.1 0.1 0.1 1.0)
+                (glClear carp-gl-color-buffer-bit)
+                (glColor3f 1.0 1.0 1.0)
+                (render-callback)
+                (glfwSwapBuffers window)
+                (glfwPollEvents)))
+            (println "Time to go.")
+            (glfwTerminate))))
+    (panic "Failed to initialize glfw.")))
