@@ -20,8 +20,8 @@ The key features of Carp are the following:
 ## Learn more
 
 * [Installation](INSTALL.md) - how to build the Carp compiler
-* [The Carp Compiler Manual](MANUAL.md) - how to compile code and configure your projects
-* [The Language Guide](LANGUAGE.md) - syntax and semantics of the language
+* [The Compiler Manual](MANUAL.md) - how to compile code and configure your projects
+* [Carp Language Guide](LANGUAGE.md) - syntax and semantics of the language
 
 
 ## A Small OpenGL/GLFW Example
