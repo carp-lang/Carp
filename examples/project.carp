@@ -3,6 +3,18 @@
 
 
 
+(defn fold [f x xs]
+  (do (for (i 0 (count xs))
+        (reset! x (f &x (nth xs i))))
+      x))
+
+(defn add [x y]
+  (+ (copy x) (copy y)))
+
+(defn f [] (fold add 0 &[1 2 3]))
+
+
+
 
 
 ;; (defstruct B [b :bool])
@@ -13,19 +25,19 @@
 ;; (defn f [i]
 ;;   (println (ref (itos (copy i)))))
 
-^ann '(:fn ((:ref :int)) :void)
-(defn f [x]
-  (println (str-ref (copy x))))
+;; ^ann '(:fn ((:ref :int)) :void)
+;; (defn f [x]
+;;   (println (str-ref (copy x))))
 
-(defn draws [state]
-  (domap f state))
+;; (defn draws [state]
+;;   (domap f state))
 
-(defn run-app [draw-fn]
-  (let [state [10 20 30]]
-    (draw-fn &state)))
+;; (defn run-app [draw-fn]
+;;   (let [state [10 20 30]]
+;;     (draw-fn &state)))
 
-(defn app []
-  (run-app draws))
+;; (defn app []
+;;   (run-app draws))
 
 
 (def CONSTRS (list

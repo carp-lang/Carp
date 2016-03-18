@@ -315,6 +315,16 @@
                         {:proto proto :c c :deps ()})
                       x (error (str "Invalid type for call to 'array-of-size': " x)))
 
+    ;; "reduce" (match signature
+    ;;            (:fn ((:fn ("a" "b") "a") "a" (:Array "b")) "a")
+    ;;            (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(f, a, bs)")
+    ;;                  c (str proto
+    ;;                         "{\n"
+    ;;                         "  return a;\n"
+    ;;                         "}\n")]
+    ;;              {:proto proto :c c :deps ()})
+    ;;            x (error (str "Invalid type for call to 'reduce': " x)))
+
     
     "array-set" (match signature
                   (:fn ((:Array t) :int t) (:Array t))
