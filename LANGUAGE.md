@@ -135,3 +135,14 @@ Omit the name tag to create a data constructor with the same name as the type:
 (def blah (load-dylib "./libs/blah.so"))
 (register blah "foo" (:int :int) :string) ;; will register the function 'foo' in the dynamic library 'blah' that takes two ints and returns a string
 ```
+
+### Type annotations
+There should never be a need for explicit type annotations in Carp. Still, they can be useful to show intent and make sure that the compiler does thing you were planning for it to do. Type annotations are added using meta data ('ann' stands for 'annotation') on the function form, like this:
+
+```clojure 
+^ann '(:fn ((:ref :Ship)) :void)
+
+(defn draw-ship [ship]
+  (let [pos (get-shipPos ship)]
+    (draw-rect (get-x pos) (get-y pos) 10f 10f)))
+```
