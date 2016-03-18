@@ -19,7 +19,6 @@
 (defn t []
   (dtof (glfwGetTime)))
 
-;;^ann '(:fn ((:ref (:Array :Ship))) :void)
 (defn draw [state]
   (do
     (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
@@ -35,7 +34,6 @@
 (defn move [ship]
   (update-shipPos ship move-vec2))
 
-^ann '(:fn ((:Array :Ship)) (:Array :Ship))
 (defn update [state]
   (map move state))
 
