@@ -4,7 +4,7 @@
 
 <img src="https://github.com/eriksvedang/Carp/blob/master/img/temp_logo2.jpg" alt="Logo" align="right" />
 
-<i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't try it out just yet!</i>
+<i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
 Carp is a small programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
