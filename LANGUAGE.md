@@ -82,10 +82,12 @@ true ; bool
 ```
 
 ### Dynamic-only Data Literals
+Right now these data types are only available in non-compiled code.
+
 ```clojure
 (1 2 3) ; list
 foo ; symbol
-:string ; keyword
+:blergh ; keyword
 {:a 10 :b 20} ; dictionary
 ```
 
@@ -99,6 +101,12 @@ foo ; symbol
 (while expression body)
 (ref x) ;; Turns an owned value into an unowned one
 (reset! variable value)
+```
+
+### Dynamic-only Special Forms
+```
+(quote x)
+(match x pattern-1 expr-1, pattern-2 expr-2, ...)
 ```
 
 ### Structs
