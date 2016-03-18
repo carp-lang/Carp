@@ -1,22 +1,44 @@
 (import gl)
 
-^ann glfw-key-callback-type
-(defn on-key [window key scancode action mods]
-  (if (= key-esc key)
-    (glfwSetWindowShouldClose window true)
-    (println &(str key))))
+(defn draw-ship [ship]
+  (let [pos (get-shipPos ship)]
+    (draw-rect (get-V2X pos)
+               (get-V2Y pos)
+               10f
+               10f)))
 
-(defn draw []
+(defstruct Ship [shipPos :Vec2])
+
+(defn generate-ships []
+  [(Ship (Vec2 100f 300f))
+   (Ship (Vec2 150f 100f))
+   (Ship (Vec2 200f 150f))
+   (Ship (Vec2 250f 050f))
+   (Ship (Vec2 300f 100f))])
+
+(defn t []
+  (dtof (glfwGetTime)))
+
+;;^ann '(:fn ((:ref (:Array :Ship))) :void)
+(defn draw [state]
   (do
-    (glClearColor 0.1f 0.1f 0.1f 1.0f)
-    (glClear carp-gl-color-buffer-bit)
-    (glColor3f 1.0f 1.0f 1.0f)
-    (let [r 0.9f
-          t (dtof (glfwGetTime))]
-      (draw-line 0.0f 0.0f (* r (cosf t)) (* r (sinf t))))))
+    (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
+    (let [ships state]
+      (domap draw-ship ships))))
+
+(defn speed [] 1.0f)
+
+(defn move-vec2 [v]
+  (let [x (get-V2Y &v)]
+    (set-V2Y v (+ (speed) x))))
+
+(defn move [ship]
+  (update-shipPos ship move-vec2))
+
+^ann '(:fn ((:Array :Ship)) (:Array :Ship))
+(defn update [state]
+  (map move state))
 
 (defn game []
-  (glfw-app "This is a demo" draw on-key))
-
-(bake game)
+  (glfw-app "The Attack of the Space Worms" (generate-ships) update draw default-on-keys))
 

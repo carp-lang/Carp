@@ -1,0 +1,15 @@
+(import gl)
+
+(defn tick [state]
+  (+ state 0.033f))
+
+(defn draw [state]
+  (let [r 200f
+        t (copy state)]
+    (draw-line 300f
+               220f
+               (+ 300f (* r (cosf t)))
+               (+ 220f (* r (sinf t))))))
+
+(defn spin []
+  (glfw-app "This is a demo" 0.0f tick draw default-on-keys))
