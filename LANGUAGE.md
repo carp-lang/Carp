@@ -77,7 +77,7 @@ To know whether a function takes over the responsibility of freeing some memory 
 3.14 ; float
 true ; bool
 "hello" ; string
-'e' ; char
+\e ; char
 [1 2 3] ; array
 ```
 
