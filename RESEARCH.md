@@ -4,6 +4,7 @@ https://www.iar.com/support/resources/articles/advanced-preprocessor-tips-and-tr
 http://jvns.ca/blog/2016/03/01/a-few-notes-on-the-stack/
 https://www.recurse.com/blog/7-understanding-c-by-learning-assembly
 http://msm.runhello.com/p/1003
+http://stackoverflow.com/questions/2505385/classes-and-static-variables-in-shared-libraries
 
 # OWNERSHIP & BORROWING
 http://blog.piston.rs/2016/01/23/dynamo/
