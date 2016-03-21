@@ -50,8 +50,8 @@ mode.  Default is whitespace followed by 0 or 1 single-letter colon-keyword
     (define-key map "\M-\C-x"  #'inf-carp-eval-defun)     ; Gnu convention
     (define-key map "\C-x\C-e" #'inf-carp-eval-last-sexp) ; Gnu convention
     (define-key map "\C-c\C-e" #'inf-carp-eval-last-sexp)
-    (define-key map "\C-c\C-c" #'inf-carp-eval-defun)     ; SLIME/CIDER style
-    (define-key map "<s-return>" #'inf-carp-eval-defun)     ; Light Table style
+    (define-key map "\C-c\C-c" #'inf-carp-bake)
+    (define-key map (kbd "<s-return>") #'inf-carp-eval-defun)     ; Light Table style
     (define-key map "\C-c\C-b" #'inf-carp-eval-buffer)
     (define-key map "\C-c\C-r" #'inf-carp-eval-region)
     (define-key map "\C-c\C-n" #'inf-carp-eval-form-and-next)
@@ -409,6 +409,12 @@ Used by this command to determine defaults."
 ;;; Command strings
 ;;; ===============
 
+(defcustom inf-carp-var-bake-command
+  "(bake %s)\n"
+  "Command to bake a form."
+  :type 'string
+  :group 'inf-carp)
+
 (defcustom inf-carp-var-doc-command
   "(carp.repl/doc %s)\n"
   "Command to query inferior Carp for a var's documentation."
@@ -509,6 +515,12 @@ The value is nil if it can't find one."
 (defun inf-carp-symbol-at-point ()
   "Return the name of the symbol at point, otherwise nil."
   (or (thing-at-point 'symbol) ""))
+
+(defun inf-carp-bake (var)
+  "Send a command to the inferior Carp to bake a form.
+See variable `inf-carp-var-bake-command'."
+  (interactive (inf-carp-symprompt "Var bake" (inf-carp-var-at-pt)))
+  (comint-proc-query (inf-carp-proc) (format inf-carp-var-bake-command var)))
 
 ;;; Documentation functions: var doc and arglist.
 ;;; ======================================================================

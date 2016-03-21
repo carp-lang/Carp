@@ -1,6 +1,6 @@
 
 (defn f [x]
-  (* 2 x))
+  (copy "hej"))
 
 (defn g ()
   (f 3))
@@ -9,9 +9,3 @@
 (bake g)
 
 (g)
-
-(defn blaha2 []
-  123)
-
-(bake blaha)
-(meta-get-all blaha)
