@@ -1,20 +1,17 @@
 
-(defn mini []
-  (do
-    (+ 2 3)
-    (+ 2 3)
-    (+ 2 3)
-    (+ 2 3)
-    (+ 2 3)
-    (+ 2 3)
-    (println "hej")))
+(defn f [x]
+  (* 2 x))
 
-(def x 1234)
+(defn g ()
+  (f 3))
 
-(mini)
+(bake f)
+(bake g)
 
-(def a 12)
+(g)
 
-mini
+(defn blaha2 []
+  123)
 
-{:a 10 :b 20}
+(bake blaha)
+(meta-get-all blaha)

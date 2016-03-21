@@ -847,7 +847,8 @@ void eval_list(Obj *env, Obj *o) {
       if(eval_error) { return; }
       Obj *value = stack_pop();
       env_extend(let_env, a->array[i], value);
-      obj_set_meta(value, obj_new_keyword("name"), a->array[i]);
+      //printf("let %s to %s\n", obj_to_string(a->array[i])->s, obj_to_string(a->array[i + 1])->s);
+      //obj_set_meta(value, obj_new_keyword("name"), a->array[i]); // TODO: only do this in certain situations
     }
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", o);
@@ -1030,7 +1031,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *val = stack_pop();
     global_env_extend(key, val);
     //printf("def %s to %s\n", obj_to_string(key)->s, obj_to_string(val)->s);
-    obj_set_meta(val, obj_new_keyword("name"), key);
+    obj_set_meta(val, obj_new_keyword("name"), obj_to_string(key));
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {
