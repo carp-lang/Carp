@@ -1,8 +1,20 @@
 
 (defn mini []
-  (println "hej"))
+  (do
+    (+ 2 3)
+    (+ 2 3)
+    (+ 2 3)
+    (+ 2 3)
+    (+ 2 3)
+    (+ 2 3)
+    (println "hej")))
 
 (def x 1234)
 
+(mini)
+
 (def a 12)
 
+mini
+
+{:a 10 :b 20}

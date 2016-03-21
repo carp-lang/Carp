@@ -4,3 +4,4 @@
 
 (add-to-list 'auto-mode-alist '("\\.carp\\'" . carp-mode))
 
+(provide 'carp-mode)

@@ -1,6 +1,8 @@
 (require 'comint)
 (require 'thingatpt)
 
+;; This code is blatantly stolen from clojure-inf by Bozhidar Batsov
+
 (defgroup inf-carp nil
   "Run an external Carp process (REPL) in an Emacs buffer."
   :group 'carp)
@@ -105,12 +107,12 @@ to load that file."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-prompt "^[^> \n]+> *"
+(defcustom inf-carp-prompt "^[^λ> \n]+λ> *"
   "Regexp to recognize prompts in the Inferior Carp mode."
   :type 'regexp
   :group 'inf-carp)
 
-(defcustom inf-carp-subprompt " *#_> *"
+(defcustom inf-carp-subprompt " *_> *"
   "Regexp to recognize subprompts in the Inferior Carp mode."
   :type 'regexp
   :group 'inf-carp)
@@ -281,6 +283,7 @@ of `inf-carp-program').  Runs the hooks from
                            "inf-carp" (car cmdlist) nil (cdr cmdlist)))
         (inf-carp-mode)))
   (setq inf-carp-buffer "*inf-carp*")
+  (split-window-below)
   (pop-to-buffer-same-window "*inf-carp*"))
 
 ;;;###autoload
@@ -633,3 +636,5 @@ Returns the selected completion or nil."
             (if (fboundp 'completion-table-with-cache)
                 (completion-table-with-cache #'inf-carp-completions)
               (completion-table-dynamic #'inf-carp-completions))))))
+
+(provide 'inf-carp-mode)
