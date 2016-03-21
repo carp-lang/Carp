@@ -211,7 +211,8 @@ to continue it."
   (setq comint-input-filter #'inf-carp-input-filter)
   (set (make-local-variable 'comint-prompt-read-only) inf-carp-prompt-read-only)
   (add-hook 'comint-preoutput-filter-functions #'inf-carp-preoutput-filter nil t)
-  (add-hook 'completion-at-point-functions #'inf-carp-completion-at-point nil t))
+  (add-hook 'completion-at-point-functions #'inf-carp-completion-at-point nil t)
+  (inf-carp-minor-mode 1))
 
 (defun inf-carp-get-old-input ()
   "Return a string containing the sexp ending at point."
