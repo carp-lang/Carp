@@ -1,0 +1,8 @@
+
+(defn mini []
+  (println "hej"))
+
+(def x 1234)
+
+(def a 12)
+
