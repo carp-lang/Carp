@@ -1,6 +1,6 @@
 
 (defn f [x]
-  (copy "hej"))
+  2.3f)
 
 (defn g ()
   (f 3))
