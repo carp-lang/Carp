@@ -1,68 +1,46 @@
+
 (reset! echo-signature-after-bake true)
 (reset! log-unloading-of-dylibs true)
 
+(defn println-eat [x]
+  (println (ref x)))
 
+(defn foo [xs]
+  (domap println &(map-copy itos xs)))
 
-(defn fold [f x xs]
-  (do (for (i 0 (count xs))
-        (reset! x (f &x (nth xs i))))
-      x))
+(defn goo []
+  (foo [1 2 3]))
 
-(defn add [x y]
-  (+ (copy x) (copy y)))
+;; (defn fold [f x xs]
+;;   (do (for (i 0 (count xs))
+;;         (reset! x (f &x (nth xs i))))
+;;       x))
 
-(defn f [] (fold add 0 &[1 2 3]))
+;; (defn add [x y]
+;;   (+ (copy x) (copy y)))
 
+;; (defn f [] (fold add 0 &[1 2 3]))
 
+(defn f [i]
+  (println (ref (str (copy i)))))
 
+(defn f [i]
+  (println (ref (itos (copy i)))))
 
+^ann '(:fn ((:ref :int)) :void)
+(defn f [x]
+  (println (str-ref (copy x))))
 
-;; (defstruct B [b :bool])
+(defn draws [state]
+  (domap f state))
 
-;; (println (str (B true)))
+(defn run-app [draw-fn]
+  (let [state [10 20 30]]
+    (draw-fn &state)))
 
+(defn app []
+  (run-app draws))
 
-;; (defn f [i]
-;;   (println (ref (itos (copy i)))))
-
-;; ^ann '(:fn ((:ref :int)) :void)
-;; (defn f [x]
-;;   (println (str-ref (copy x))))
-
-;; (defn draws [state]
-;;   (domap f state))
-
-;; (defn run-app [draw-fn]
-;;   (let [state [10 20 30]]
-;;     (draw-fn &state)))
-
-;; (defn app []
-;;   (run-app draws))
-
-
-(def CONSTRS (list
-              
-              {:a "x", 
-               :b '(:BLURG :FLORP)}
-              
-              {:a '("y" "c"), 
-               :b '(("a" "b") "a")}
-              
-              ))
-
-;; (println (str "1:\n" (solve-constraints (cons-last CONSTRS {:a "x" :b "y"}))))
-;; (println (str "\n2:\n" (solve-constraints (cons {:a "x" :b "y"} CONSTRS))))
-
-;; (def answer
-;;   (replace-subst-from-right 
-;;    {"c" "a", 
-;;     "x" '(:BLURG :FLORP), 
-;;     "y" '("a" "b"), 
-;;     "a" "a", 
-;;     "b" "b"}
-;;    "a"
-;;    :BLURG
-;;    ))
 
 
 ;; (defn h [a b]

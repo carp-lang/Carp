@@ -78,7 +78,7 @@
                                (if (and (lambda? global-lookup) is-generic)
                                  (if (generic-type? t)
                                    (do
-                                     (error (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
+                                     ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
                                      ast)
                                    (let [n (generic-name lookup-sym t)]
                                      (do
