@@ -1,7 +1,7 @@
 
-(defn f []
-  (domap println &[(copy "hej") (copy "san") (copy "svej") (copy "san")]))
+(defn foo []
+  (domap println (ref (map-copy copy ["hej" "san" "svej" "san"]))))
 
-(f)
+(foo)
 
-(bake f)
+(bake foo)
