@@ -132,6 +132,35 @@
       (assert-eq solution solution-backwards)
       )))
 
+
+
+(defn test-constraint-solving-10 ()
+  (let [;;_ (println "\n- Constraint solving 10 -")
+        constraints (list
+              
+              {:a "x", 
+               :b '(:BLURG :FLORP)}
+              
+              {:a '("y" "c"), 
+               :b '(("a" "b") "a")}
+
+              {:a "x"
+               :b "y"}
+              
+              )
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"a" :BLURG
+                           "b" :FLORP
+                           "c" :BLURG
+                           "x" '(:BLURG :FLORP)
+                           "y" '(:BLURG :FLORP)})
+      (assert-eq solution solution-backwards))))
+
+
+
 (test-constraint-solving-1)
 (test-constraint-solving-2)
 (test-constraint-solving-3)
@@ -142,3 +171,4 @@
 (test-constraint-solving-8)
 (test-subst-in-nested-list)
 (test-constraint-solving-9)
+(test-constraint-solving-10)
