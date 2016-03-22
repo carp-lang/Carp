@@ -1,10 +1,7 @@
 # Compiler Big Features
-  - A deref function that can remove the ref from primitive types?
   - Don't compile a function if there's already an adequate build artifact
   - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Collect all unification errors and present them in the end
-  - Equality
-  - Instantiate concrete versions of generic functions sent as parameters
   - Allow recompiling changed defstructs
   - Structs refering to structs
   - Special handling of POD structs (stack allocated, not sent by pointer)
@@ -12,6 +9,7 @@
   - Lambdas / lambda lifting
   - Compile match statements
   - Generic structs
+  - Equality
   - deftype (tagged unions)
   - Option Type (Maybe in Haskell)
   - Err Type (Either in Haskell)
@@ -21,6 +19,7 @@
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
   - Be able to compare C-array in pointer to Obj array
+  - A deref function that can remove the ref from primitive types?
 
 # Compiler Correctness
   - Disallow "returning" of ref in let-form
