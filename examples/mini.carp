@@ -1,11 +1,14 @@
 
 (defn f [x]
-  2.3f)
+  (+ 2.0 x))
 
-(defn g ()
-  (f 3))
+(f 5.0)
 
 (bake f)
+
+(defn g []
+  (f 3.2))
+
 (bake g)
 
-(g)
+
