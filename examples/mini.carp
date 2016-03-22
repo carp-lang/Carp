@@ -1,14 +1,7 @@
 
-(defn f [x]
-  (+ 2.0 x))
+(defn f []
+  (domap println &[(copy "hej") (copy "san") (copy "svej") (copy "san")]))
 
-(f 5.0)
+(f)
 
 (bake f)
-
-(defn g []
-  (f 3.2))
-
-(bake g)
-
-

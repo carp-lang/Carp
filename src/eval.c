@@ -1031,7 +1031,7 @@ void eval_list(Obj *env, Obj *o) {
     Obj *val = stack_pop();
     global_env_extend(key, val);
     //printf("def %s to %s\n", obj_to_string(key)->s, obj_to_string(val)->s);
-    obj_set_meta(val, obj_new_keyword("name"), obj_to_string(key));
+    //obj_set_meta(val, obj_new_keyword("name"), obj_to_string(key));
     stack_push(val);
   }
   else if(HEAD_EQ("def?")) {
