@@ -334,35 +334,52 @@
   (match (list a-list b-list)
     (() ()) substs
     ((a ... as) (b ... bs)) (solve (solve substs a b constraint) as bs constraint)
-    _ :fail ;;(error (str "Lists not matching: " a-list " - vs - " b-list ", substs: \n" substs))
+    _ :fail ;; mismatched length
     ))
 
 (defn solve (substs a b constraint)
-  (let [result (if (and (list? a) (list? b))
-                 (if (= (count a) (count b))
-                   (solve-list substs a b constraint)
-                   :fail)
-                 (extend-substitutions substs a b))]
-    (if (= :fail result)
-      (let [loc (get-maybe constraint :location)]
-        (if (nil? loc)
-          (error (str "Can't unify typevar \n\n" a "\n\nwith\n\n" b "\n\n"))
-          (error (str "Can't unify the types of \n\n"
-                      "'"
-                      (get-in loc '(:a :original-form))
-                      "'"
-                      " at line "
-                      (get-in loc '(:a :line))
-                      " of type " a
-                      "\n\nwith\n\n"
-                      "'"
-                      (get-in loc '(:b :original-form))
-                      "'"
-                      " at line "
-                      (get-in loc '(:b :line))
-                      " of type " b
-                      "\n"))))
-      result)))
+  (if (= :fail substs)
+    (error "substs shouldn't be set to :fail")
+    (let [result (if (and (list? a) (list? b))
+                   (if (= (count a) (count b))
+                     (solve-list substs a b constraint)
+                     :fail)
+                   (extend-substitutions substs a b))]
+      (if (= :fail result)
+        (let [loc (get-maybe constraint :location)]
+          (do
+            (print-type-error {:a a :b b :loc loc})
+            (error "Failed to type check.")))
+        result))))
+
+;; (def type-errors ())
+
+;; (defn reset-type-errors! [] (reset! type-errors ()))
+
+;; (defn on-error [a b loc]
+;;   (reset! type-errors (cons {:a a :b b :loc loc} type-errors)))
+
+(defn print-type-error [e]
+  (let [a (:a e)
+        b (:b e)
+        loc (:loc e)]
+    (if (nil? loc)
+      (println (str "Can't unify typevar " a " WITH " b " (missing info)"))
+      (println (str "Can't unify the types of "
+                    "'"
+                    (get-in loc '(:a :original-form))
+                    "'"
+                    " at line "
+                    (get-in loc '(:a :line))
+                    " of type " a
+                    " WITH "
+                    "'"
+                    (get-in loc '(:b :original-form))
+                    "'"
+                    " at line "
+                    (get-in loc '(:b :line))
+                    " of type " b
+                    "")))))
 
 (defn solve-contraint-internal (substs constraint)
   (let [a (:a constraint)
@@ -371,7 +388,14 @@
 
 ;; Returns a substitution map from type variables to actual types
 (defn solve-constraints (constraints)
-  (reduce solve-contraint-internal {} constraints))
+  (do
+    (reduce solve-contraint-internal {} constraints)
+    ))
+
+;; (when (< 0 (count type-errors))
+;;       (do
+;;         (map (fn [e] (print-type-error e)) type-errors)
+;;         (error "Failed to type check.")))
 
 
 
