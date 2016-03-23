@@ -58,6 +58,8 @@
                                           :type (gen-typevar)
                                           :name array-name-symbol
                                           :value (form-to-ast (list 'array-of-size a-count))})
+                         :line (meta-get a :line)
+                         :original-form a
                          :body nested-calls}
         ]
     (do
