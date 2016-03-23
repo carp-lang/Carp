@@ -53,6 +53,13 @@
          :arg-index (get-maybe ast-b :arg-index)
          :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
 
+(def prio-func-annotation 1)
+(def prio-func-ret-constr 5)
+(def prio-default 10)
+(def prio-lookup-constraint 15)
+(def prio-func-arg-constr 16)
+(def prio-app-arg-constraint 20)
+
 (defn generate-constraints-internal (constraints ast type-env)
   (do
     ;;(println (str "gen constrs: \n" ast))
@@ -66,23 +73,32 @@
                       new-constraints (generate-constraints-internal constraints (:body ast) extended-type-env-2)
                       func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the fn type
                                        :b (get-in ast '(:body :type))
+                                       :prio prio-func-ret-constr
                                        :doc (str "func-ret-constr")}
-                      func-arg-constrs (map2 (fn (a b) {:a a :b b :doc "func-arg"})
+                      func-arg-constrs (map2 (fn (a b) {:a a
+                                                        :b b
+                                                        :prio prio-func-arg-constr
+                                                        :doc "func-arg"})
                                              (map :type (:args ast))
                                              (get-in ast '(:type 1)))
                       annotation-constr (if (nil? (:annotation ast))
                                           ()
                                           (list {:a (:annotation ast)
                                                  :b (:type ast)
-                                                 :doc (str "func-annoation-constr")}))]
+                                                 :prio prio-func-annotation
+                                                 :doc (str "func-annotation-constr")}))]
                   (concat annotation-constr func-arg-constrs (cons func-ret-constr new-constraints)))
 
-      :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
+      :app (let [ret-constr {:a  (get ast :type)
+                             :b (get-in ast '(:head :type 2))
+                             :prio prio-default
+                             :doc "ret-constr for :app"}
                  arg-constrs (map2 (fn (a b) (do ;;(println (str "ast: " ast))
                                                  {:a a
                                                   :b (:type b)
+                                                  :prio prio-app-arg-constraint
                                                   :location (location (assoc (assoc (:head ast) :node :app-arg) ;; changing the node and arg-index for better location data
-                                                                             :arg-index (:arg-index b))
+                                                                             :arg-index (get-maybe b :arg-index))
                                                                       b)
                                                   :doc (str "app-arg " a " vs " (:type b))}))
                                    (get-in ast '(:head :type 1))
@@ -100,7 +116,10 @@
                  inner-type (match (:type ast)
                               (:ref t) t
                               _ (error "Not a ref type"))
-                 expr-constr {:a inner-type :b (:type expr) :doc "ref-constr"}]
+                 expr-constr {:a inner-type
+                              :b (:type expr)
+                              :prio prio-default
+                              :doc "ref-constr"}]
              (cons expr-constr x0))
 
       :reset (let [expr (:expr ast)
@@ -109,6 +128,7 @@
                    t (get-type-of-symbol type-env symbol)
                    expr-constr {:a t
                                 :b (:type expr)
+                                :prio prio-default
                                 :doc "reset!-constr"}]
              (cons expr-constr x0))
 
@@ -117,8 +137,14 @@
                 (if (has-key? ast :constructor)
                   (let [member-types (array-to-list (:member-types ast))
                         t (:type ast)
-                        constructor-return-constr {:a (keyword (:struct-name ast)) :b (nth t 2) :doc "constructor-return-value"}
-                        constructor-arg-constrs (map2 (fn [a b] {:a a :b b :doc "constructor-arg"})
+                        constructor-return-constr {:a (keyword (:struct-name ast))
+                                                   :b (nth t 2)
+                                                   :prio prio-default
+                                                   :doc "constructor-return-value"}
+                        constructor-arg-constrs (map2 (fn [a b] {:a a
+                                                                 :b b
+                                                                 :prio prio-default
+                                                                 :doc "constructor-arg"})
                                                       member-types
                                                       (nth t 1))]
                     (cons constructor-return-constr constructor-arg-constrs))
@@ -131,20 +157,23 @@
                       (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
                       (cons {:a (:type ast)
                              :b t
+                             :prio prio-lookup-constraint
                              :location (location ast
                                                  {:node :lookup-other :line "?" :original-form val})
                              :doc (str "lookup " val)} constraints)))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
                    x1 (generate-constraints-internal x0 (get ast :right) type-env)
-                   ;;tvar (gen-typevar)
-                   ;;left-arg-constr {:a tvar :b (get-in ast '(:a :type)) :doc "left-arg-constr"}
-                   ;;right-arg-constr {:a tvar :b (get-in ast '(:b :type)) :doc "right-arg-constr"}
-                   ;;ret-constr {:a tvar :b (:type ast)}
-                   same-arg-type-constr {:a (get-in ast '(:left :type)) :b (get-in ast '(:right :type))
-                                         :doc "same-arg-type-constr" :location (location (:left ast) (:right ast))}
+                   same-arg-type-constr {:a (get-in ast '(:left :type))
+                                         :b (get-in ast '(:right :type))
+                                         :prio prio-default
+                                         :doc "same-arg-type-constr"
+                                         :location (location (:left ast) (:right ast))}
                    maybe-constr (if (math-op? (:op ast))
-                                  (list {:a (get-in ast '(:left :type)) :b (:type ast)})
+                                  (list {:a (get-in ast '(:left :type))
+                                         :b (:type ast)
+                                         :prio prio-default
+                                         :doc "maybe constr"})
                                   ())
                    ]
                ;;(concat x1 (list left-arg-constr right-arg-constr ret-constr)))
@@ -153,9 +182,15 @@
       :if (let [x0 (generate-constraints-internal constraints (get ast :if-true) type-env)
                 x1 (generate-constraints-internal x0 (get ast :if-false) type-env)
                 x2 (generate-constraints-internal x1 (get ast :expr) type-env)
-                left-result-constr {:a (get-in ast '(:if-true :type)) :b (:type ast)}
-                right-result-constr {:a (get-in ast '(:if-false :type)) :b (:type ast)}
-                expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
+                left-result-constr {:a (get-in ast '(:if-true :type))
+                                    :b (:type ast)
+                                    :prio prio-default}
+                right-result-constr {:a (get-in ast '(:if-false :type))
+                                     :b (:type ast)
+                                     :prio prio-default}
+                expr-must-be-bool {:a :bool
+                                   :b (get-in ast '(:expr :type))
+                                   :prio prio-default}]
             (concat x2 (list
                         expr-must-be-bool
                         left-result-constr
@@ -166,14 +201,22 @@
                 ;;_ (log "count: " (count x0))
                 n (count (:forms ast))
                 _ (when (= 0 n) (error (str "do-form must have at least one statement.")))
-                ret-constr {:a (:type ast) :b (get-in ast (list :forms (- n 1) :type)) :doc "do-ret-constr"}]
+                ret-constr {:a (:type ast)
+                            :b (get-in ast (list :forms (- n 1) :type))
+                            :prio prio-default
+                            :doc "do-ret-constr"}]
             (cons ret-constr x0))
 
       :let (let [bindings (:bindings ast)
                  extended-type-env (reduce (fn (e b) (assoc e (:name b) (get-in b '(:value :type)))) type-env bindings)
                  ;;_ (println "Extended type env: " extended-type-env)
-                 let-constr {:a (:type ast) :b (get-in ast '(:body :type)) :doc "let-constr"}
-                 bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding) :b (get-in binding '(:value :type))}
+                 let-constr {:a (:type ast)
+                             :b (get-in ast '(:body :type))
+                             :prio prio-default
+                             :doc "let-constr"}
+                 bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding)
+                                                                          :b (get-in binding '(:value :type))
+                                                                          :prio prio-default}
                                                              value-constrs (generate-constraints-internal constraints (:value binding) extended-type-env)]
                                                          (cons bind-constr value-constrs)))
                                          bindings)
@@ -182,8 +225,12 @@
 
       :while (let [x0 (generate-constraints-internal constraints (get ast :body) type-env)
                    x1 (generate-constraints-internal x0 (get ast :expr) type-env)
-                   body-result-constr {:a (get-in ast '(:body :type)) :b (:type ast)}
-                   expr-must-be-bool {:a :bool :b (get-in ast '(:expr :type))}]
+                   body-result-constr {:a (get-in ast '(:body :type))
+                                       :b (:type ast)
+                                       :prio prio-default}
+                   expr-must-be-bool {:a :bool
+                                      :b (get-in ast '(:expr :type))
+                                      :prio prio-default}]
                (concat x1 (list expr-must-be-bool )))
 
       :null constraints
@@ -431,6 +478,12 @@
         (error {:error error-failed-typechecking :show-stacktrace false :message "Failed to typecheck."}))
       final-substs)))
 
+(defn compare-constraints [c1 c2]
+  (< (:prio c1) (:prio c2)))
+
+(defn sort-constraints [constraints]
+  (sort-by compare-constraints constraints))
+
 
 (defn make-type-list (substs typevars)
   (map (fn (t) (if (string? t) (get-type substs t)
@@ -518,6 +571,7 @@
 (defn infer-types (ast func-signature-if-generic)
   (let [type-constraints (generate-constraints ast)
         func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic :b (:type ast) :doc "generic-constr"}))
-        substs (solve-constraints (concat func-signature-constraint type-constraints))
+        sorted-constraints (sort-constraints (concat func-signature-constraint type-constraints))
+        substs (solve-constraints sorted-constraints)
         ast-typed (assign-types ast substs)]
     ast-typed))
