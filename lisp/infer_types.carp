@@ -404,7 +404,7 @@
          :lookup "lookup of"
          :literal "literal"
          :lookup-other "variable/function called"
-         :app-arg (str "expected argument at index " (:arg-index sub-loc) " to")
+         :app-arg (str "argument at index " (:arg-index sub-loc) " to")
          x (str x))))
 
 (defn get-arg-index-description (sub-loc)
