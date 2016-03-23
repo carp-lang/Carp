@@ -130,7 +130,7 @@
                                 :b (:type expr)
                                 :prio prio-default
                                 :doc "reset!-constr"}]
-             (cons expr-constr x0))
+               (cons expr-constr x0))
 
       :lookup (if (has-key? ast :self-recursive)
                 constraints
@@ -357,7 +357,7 @@
                       (do (when log-substs (println (str "The existing binding is a typevar, will replace " existing " with " value-lookup " from right")))
                           (let [result (replace-subst-from-right substs existing value-lookup)]
                             (do ;;(println (str "result: " result))
-                                result)))
+                              result)))
                       (do (when log-substs (println "The existing binding is not a typevar"))
                           (if (types-exactly-eq? existing value-lookup)
                             (do (when log-substs (println "Current binding matches new value"))
@@ -461,9 +461,9 @@
 
 (defn but []
   (str
-    (get-console-color console-color-yellow)
-    "\n - BUT - \n"
-    (get-normal-console-color)))
+   (get-console-color console-color-yellow)
+   "\n - BUT - \n"
+   (get-normal-console-color)))
 
 (defn str-expected-type [sub-loc t substs]
   (str
