@@ -46,11 +46,9 @@
     ;;(println (str "ast-a: " ast-a "\n" "ast-b: " ast-b))
     {:a {:line (if (dict? ast-a) (get-maybe ast-a :line) "???")
          :node (:node ast-a)
-         :arg-index (get-maybe ast-a :arg-index)
          :original-form (if (dict? ast-a) (get-maybe ast-a :original-form) "???")}
      :b {:line (if (dict? ast-b) (get-maybe ast-b :line) "???")
          :node (:node ast-b)
-         :arg-index (get-maybe ast-b :arg-index)
          :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
 
 (def prio-func-annotation 1)
@@ -94,13 +92,15 @@
                              :prio prio-default
                              :doc "ret-constr for :app"}
                  arg-constrs (map2 (fn (a b) (do ;;(println (str "ast: " ast))
-                                                 {:a a
-                                                  :b (:type b)
-                                                  :prio prio-app-arg-constraint
-                                                  :location (location (assoc (assoc (:head ast) :node :app-arg) ;; changing the node and arg-index for better location data
-                                                                             :arg-index (get-maybe b :arg-index))
-                                                                      b)
-                                                  :doc (str "app-arg " a " vs " (:type b))}))
+                                               {:a a
+                                                :b (:type b)
+                                                :prio prio-app-arg-constraint
+                                                :location (location (assoc (:head ast) :node :expected-arg-type) ;; Override the node type for better error messages
+                                                                    b)
+                                                :constraint-kind :app-arg
+                                                :arg-index (get-maybe b :arg-index)
+                                                :head-name (str (get-maybe (:head ast) :value))
+                                                :doc (str "app-arg " a " vs " (:type b))}))
                                    (get-in ast '(:head :type 1))
                                    (:tail ast))
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
@@ -160,6 +160,7 @@
                              :prio prio-lookup-constraint
                              :location (location ast
                                                  {:node :lookup-other :line "?" :original-form val})
+                             :constraint-kind :lookup
                              :doc (str "lookup " val)} constraints)))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
@@ -386,21 +387,26 @@
                   ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
                   ))))))))
 
-(defn solve-list (substs-and-errors a-list b-list constraint)
+(defn solve-list (substs-and-errors a-list b-list constraint flipped)
   (match (list a-list b-list)
     (() ()) substs-and-errors
-    ((a ... as) (b ... bs)) (solve (solve substs-and-errors a b constraint) as bs constraint)
-    _ (assoc substs-and-errors :type-errors (cons {:type-error true :description "List lengths not matching" :a a-list :b b-list :loc loc} type-errors))
+    ((a ... as) (b ... bs)) (solve (solve substs-and-errors a b constraint false) as bs constraint true)
+    _ (assoc substs-and-errors :type-errors (cons {:type-error true
+                                                   :description "List lengths not matching"
+                                                   :constraint constraint
+                                                   :a (if flipped b-list a-list)
+                                                   :b (if flipped a-list b-list)
+                                                   :loc loc} type-errors))
     ))
 
-(defn solve (substs-and-errors a b constraint)
+(defn solve (substs-and-errors a b constraint flipped)
   (do
     ;;(println (str "\nsolve:\n" substs-and-errors))
     (let [substs (:substs substs-and-errors)
           type-errors (:type-errors substs-and-errors)]
       (let [result (if (and (list? a) (list? b))
                      (if (= (count a) (count b))
-                       (solve-list substs-and-errors a b constraint)
+                       (solve-list substs-and-errors a b constraint flipped)
                        :fail)
                      (let [new-substs (extend-substitutions substs a b)]
                        (if (= new-substs :fail)
@@ -408,62 +414,73 @@
                          (assoc substs-and-errors :substs new-substs))))]
         (if (= :fail result)
           (let [loc (get-maybe constraint :location)]
-            (assoc substs-and-errors :type-errors (cons {:type-error true :a a :b b :loc loc} type-errors)))
+            (assoc substs-and-errors :type-errors (cons {:type-error true
+                                                         :a (if flipped b a)
+                                                         :b (if flipped a b)
+                                                         :constraint constraint
+                                                         :loc loc} type-errors)))
           result)))))
 
 (defn print-type-error [final-substs e]
   (let [a (:a e)
         b (:b e)
+        constraint (:constraint e)
         loc (:loc e)]
     (if (nil? loc)
       (println (str "Can't unify typevar " a " WITH " b " (missing info)\n" loc))
-      (println (str ;;"Can't unify the types of\n"
-                    (type-error-node-description (:a loc))
-                    " '"
-                    (get-in loc '(:a :original-form))
-                    "'"
-                    " of type " (get-type final-substs a)
-                    ;;(get-arg-index-description (:a loc))
-                    ;;" / " a
-                    " (line "
-                    (get-in loc '(:a :line))
-                    ")"
-                    (get-console-color console-color-yellow)
-                    "\n - doesn't match the type of - \n"
-                    (get-normal-console-color)
-                    (type-error-node-description (:b loc))
-                    " '"
-                    (get-in loc '(:b :original-form))
-                    "'"
-                    " of type " (get-type final-substs b)
-                    ;;(get-arg-index-description (:b loc))
-                    ;;" / " b
-                    " (line "
-                    (get-in loc '(:b :line))
-                    ")"
+      (println (str (describe-constraint constraint loc a b final-substs)
                     "\n")))))
 
-(defn type-error-node-description (sub-loc)
-  (str "The "
-       (match (:node sub-loc)
-         :app "function application"
-         :arg "argument"
-         :lookup "lookup of"
-         :literal "literal"
-         :lookup-other "variable/function called"
-         :app-arg (str "argument at index " (:arg-index sub-loc) " to")
-         x (str x))))
+(defn describe-constraint [constraint loc a b substs]
+  (let [constraint-kind (get-maybe constraint :constraint-kind)]
+    (if (nil? constraint-kind)
+      "Missing a constraint kind."
+      (match constraint-kind
 
-(defn get-arg-index-description (sub-loc)
-  (let [arg-index (:arg-index sub-loc)]
-    (if (nil? arg-index)
-      ""
-      (str " at argument index " arg-index ""))))
+        :app-arg (str (get-console-color console-color-yellow)
+                      "Conflicting types for arg " (:arg-index constraint) " to "
+                      (if (nil? (:head-name constraint))
+                        "some unknown function" ;; can this case happen?
+                        (:head-name constraint))
+                      ":\n"
+                      (get-normal-console-color)
+                      "The expected type of the argument to"
+                      (str-expected-type (:a loc) a substs)
+                      (but)
+                      "the actual type of"
+                      (str-expected-type (:b loc) b substs))
+
+        :lookup (str "Conflicting types for lookup:\n"
+                     (str-expected-type (:a loc) a substs)
+                     (get-console-color console-color-yellow)
+                     "\n - BUT - \n"
+                     (get-normal-console-color)
+                     (str-expected-type (:b loc) b substs))
+        
+        x (str "Unhandled kind of constraint:" x)))))
+
+(defn but []
+  (str
+    (get-console-color console-color-yellow)
+    "\n - BUT - \n"
+    (get-normal-console-color)))
+
+(defn str-expected-type [sub-loc t substs]
+  (str
+   " '"
+   (:original-form sub-loc)
+   "'"
+   " is " (get-type substs t)
+   " (line "
+   (:line sub-loc)
+   ")"
+   ))
+
 
 (defn solve-constraint-internal (substs-and-errors constraint)
   (let [a (:a constraint)
         b (:b constraint)]
-    (solve (solve substs-and-errors a b constraint) b a constraint))) ; Solving from both directions! TODO: is this needed?
+    (solve (solve substs-and-errors a b constraint false) b a constraint true))) ; Solving from both directions! TODO: is this needed?
 
 ;; Returns a substitution map from type variables to actual types
 (defn solve-constraints (constraints)
@@ -473,8 +490,9 @@
     (if (< 0 (count type-errors))
       (do
         (println "")
-        (map (fn [type-error] (print-type-error final-substs type-error)) type-errors)
-        (println (str "What we managed to infer:\n" final-substs "\n"))
+        (map (fn [type-error] (print-type-error final-substs type-error))
+             (set type-errors)) ;; turning it to a set because duplicate of errors may occur because we run solver both ways at the moment
+        ;;(println (str "What we managed to infer:\n" final-substs "\n"))
         (error {:error error-failed-typechecking :show-stacktrace false :message "Failed to typecheck."}))
       final-substs)))
 
@@ -483,6 +501,7 @@
 
 (defn sort-constraints [constraints]
   (sort-by compare-constraints constraints))
+
 
 
 (defn make-type-list (substs typevars)

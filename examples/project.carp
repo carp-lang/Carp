@@ -3,10 +3,6 @@
 
 
 
-
-
-
-
 (defn bleh []
   (strlen 10))
 
@@ -132,3 +128,28 @@
 
 ;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
 ;;(defn tricky-let [] ((id id) 2))
+
+
+
+;; (def CON {:a "t3", 
+;;           :b :int, 
+;;           :prio 20, 
+;;           :location {:a {:line 11, 
+;;                          :node :lookup, 
+;;                          :original-form "strlen"}, 
+;;                      :b {:line 11, 
+;;                          :node :literal, 
+;;                          :original-form "10"}}, 
+;;           :constraint-kind :app-arg, 
+;;           :arg-index 0, 
+;;           :head-name "strlen", 
+;;           :doc "app-arg t3 vs :int"})
+
+;; (def CON2 {:a "t3"
+;;            :b :BLORF
+;;            :constraint-kind :whatevs})
+
+;; (def CONS (list CON2 CON))
+
+;; (defn test-CON []
+;;   (solve-constraints CONS))
