@@ -330,36 +330,32 @@
                   ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
                   ))))))))
 
-(defn solve-list (substs a-list b-list constraint)
+(defn solve-list (substs-and-errors a-list b-list constraint)
   (match (list a-list b-list)
-    (() ()) substs
-    ((a ... as) (b ... bs)) (solve (solve substs a b constraint) as bs constraint)
-    _ :fail ;; mismatched length
+    (() ()) substs-and-errors
+    ((a ... as) (b ... bs)) (solve (solve substs-and-errors a b constraint) as bs constraint)
+    _ (assoc substs-and-errors :type-errors (cons {:type-error true :description "List lengths not matching" :a a-list :b b-list :loc loc} type-errors))
     ))
 
-(defn solve (substs a b constraint)
-  (if (= :fail substs)
-    (error "substs shouldn't be set to :fail")
-    (let [result (if (and (list? a) (list? b))
-                   (if (= (count a) (count b))
-                     (solve-list substs a b constraint)
-                     :fail)
-                   (extend-substitutions substs a b))]
-      (if (= :fail result)
-        (let [loc (get-maybe constraint :location)]
-          (do
-            (print-type-error {:a a :b b :loc loc})
-            (error "Failed to type check.")))
-        result))))
+(defn solve (substs-and-errors a b constraint)
+  (do
+    ;;(println (str "\nsolve:\n" substs-and-errors))
+    (let [substs (:substs substs-and-errors)
+          type-errors (:type-errors substs-and-errors)]
+      (let [result (if (and (list? a) (list? b))
+                     (if (= (count a) (count b))
+                       (solve-list substs-and-errors a b constraint)
+                       :fail)
+                     (let [new-substs (extend-substitutions substs a b)]
+                       (if (= new-substs :fail)
+                         :fail
+                         (assoc substs-and-errors :substs new-substs))))]
+        (if (= :fail result)
+          (let [loc (get-maybe constraint :location)]
+            (assoc substs-and-errors :type-errors (cons {:type-error true :a a :b b :loc loc} type-errors)))
+          result)))))
 
-;; (def type-errors ())
-
-;; (defn reset-type-errors! [] (reset! type-errors ()))
-
-;; (defn on-error [a b loc]
-;;   (reset! type-errors (cons {:a a :b b :loc loc} type-errors)))
-
-(defn print-type-error [e]
+(defn print-type-error [final-substs e]
   (let [a (:a e)
         b (:b e)
         loc (:loc e)]
@@ -371,32 +367,32 @@
                     "'"
                     " at line "
                     (get-in loc '(:a :line))
-                    " of type " a
+                    " of type " (get-type final-substs a)
                     " WITH "
                     "'"
                     (get-in loc '(:b :original-form))
                     "'"
                     " at line "
                     (get-in loc '(:b :line))
-                    " of type " b
+                    " of type " (get-type final-substs b)
                     "")))))
 
-(defn solve-contraint-internal (substs constraint)
+(defn solve-constraint-internal (substs-and-errors constraint)
   (let [a (:a constraint)
         b (:b constraint)]
-    (solve (solve substs a b constraint) b a constraint))) ; Solving from both directions! TODO: is this needed?
+    (solve (solve substs-and-errors a b constraint) b a constraint))) ; Solving from both directions! TODO: is this needed?
 
 ;; Returns a substitution map from type variables to actual types
 (defn solve-constraints (constraints)
-  (do
-    (reduce solve-contraint-internal {} constraints)
-    ))
-
-;; (when (< 0 (count type-errors))
-;;       (do
-;;         (map (fn [e] (print-type-error e)) type-errors)
-;;         (error "Failed to type check.")))
-
+  (let [result (reduce solve-constraint-internal {:substs {} :type-errors ()} constraints)
+        final-substs (:substs result)
+        type-errors (:type-errors result)]
+    (if (< 0 (count type-errors))
+      (do
+        (map (fn [type-error] (print-type-error final-substs type-error)) type-errors)
+        ;;(println (str final-substs))
+        (error {:error error-failed-typechecking :show-stacktrace false :message "Failed to typecheck."}))
+      final-substs)))
 
 
 (defn make-type-list (substs typevars)

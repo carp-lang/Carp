@@ -25,6 +25,7 @@
   (list 'do
         (list 'def name (list 'fn args body))
         (list 'meta-set! name :line (meta-get name :line))
+        (list 'meta-set! name :name (str name))
         (list 'meta-set! name :user-defined true)))
 
 (defn quasiquote-internal [form]  

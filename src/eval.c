@@ -1302,8 +1302,25 @@ void eval_text(Obj *env, char *text, bool print, Obj *filename) {
   while(form && form->car) {
     Obj *result = eval(env, form->car);
     if(eval_error) {
-      printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(eval_error)->s);
-      function_trace_print();
+      Obj *lookup_message = NULL;
+      if(eval_error->tag == 'E') {
+        lookup_message = env_lookup(eval_error, obj_new_keyword("message"));
+      }
+      if(lookup_message) {
+        printf("\e[31m%s\e[0m\n", obj_to_string_not_prn(lookup_message)->s);
+      } else {
+        printf("\e[31mERROR: %s\e[0m\n", obj_to_string_not_prn(eval_error)->s);
+      }
+      bool show_stacktrace = true;
+      if(eval_error->tag == 'E') {
+        Obj *lookup_show_stacktrace = env_lookup(eval_error, obj_new_keyword("show-stacktrace"));
+        if(lookup_show_stacktrace && !is_true(lookup_show_stacktrace)) {
+          show_stacktrace = false;
+        }
+      }
+      if(show_stacktrace) {
+        function_trace_print();
+      }
       /* printf("\n"); */
       /* stack_print(); */
       eval_error = NULL;

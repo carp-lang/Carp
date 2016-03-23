@@ -11,13 +11,14 @@
   (sin (strlen "hej")))
 
 
-(bake bleh)
-(bake meh)
-(gencon (lambda-to-ast (code bleh)))
+;; (bake bleh)
+;; (bake meh)
+;; (gencon (lambda-to-ast (code bleh)))
 
+(defn foo [x]
+  (string-append "hej" (strlen 3)))
 
-
-
+(bake foo)
 
 
 
