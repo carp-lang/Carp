@@ -77,6 +77,7 @@ void repl(Obj *env) {
 void pop_stacks_to_zero() {
   stack_pos = 0;
   shadow_stack_pos = 0;
+  function_trace_pos = 0;
 }
 
 void env_new_global() {

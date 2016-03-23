@@ -1,15 +1,31 @@
-
 (reset! echo-signature-after-bake true)
 (reset! log-unloading-of-dylibs true)
 
-(defn println-eat [x]
-  (println (ref x)))
 
-(defn foo [xs]
-  (domap println &(map-copy itos xs)))
 
-(defn goo []
-  (foo [1 2 3]))
+
+(defn bleh []
+  (strlen 10))
+
+(defn meh []
+  (sin (strlen "hej")))
+
+
+(bake bleh)
+(bake meh)
+(gencon (lambda-to-ast (code bleh)))
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;; (defn fold [f x xs]
 ;;   (do (for (i 0 (count xs))
@@ -19,27 +35,43 @@
 ;; (defn add [x y]
 ;;   (+ (copy x) (copy y)))
 
+
+
+
+
+
+
+
+
+
 ;; (defn f [] (fold add 0 &[1 2 3]))
 
-(defn f [i]
-  (println (ref (str (copy i)))))
+;; (defn f [i]
+;;   (println (ref (str (copy i)))))
 
-(defn f [i]
-  (println (ref (itos (copy i)))))
+;; (defn f [i]
+;;   (println (ref (itos (copy i)))))
 
-^ann '(:fn ((:ref :int)) :void)
-(defn f [x]
-  (println (str-ref (copy x))))
+;; ^ann '(:fn ((:ref :int)) :void)
+;; (defn f [x]
+;;   (println (str-ref (copy x))))
 
-(defn draws [state]
-  (domap f state))
+;; (defn draws [state]
+;;   (domap f state))
 
-(defn run-app [draw-fn]
-  (let [state [10 20 30]]
-    (draw-fn &state)))
+;; (defn run-app [draw-fn]
+;;   (let [state [10 20 30]]
+;;     (draw-fn &state)))
 
-(defn app []
-  (run-app draws))
+;; (defn app []
+;;   (run-app draws))
+
+
+
+
+
+
+
 
 
 
