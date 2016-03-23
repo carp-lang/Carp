@@ -45,8 +45,10 @@
   (do
     ;;(println (str "ast-a: " ast-a "\n" "ast-b: " ast-b))
     {:a {:line (if (dict? ast-a) (get-maybe ast-a :line) "???")
+         :node (:node ast-a)
          :original-form (if (dict? ast-a) (get-maybe ast-a :original-form) "???")}
      :b {:line (if (dict? ast-b) (get-maybe ast-b :line) "???")
+         :node (:node ast-b)
          :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
 
 (defn generate-constraints-internal (constraints ast type-env)
@@ -124,7 +126,7 @@
                       (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
                       (cons {:a (:type ast)
                              :b t
-                             :location (location ast {:line "?" :original-form val})
+                             :location (location ast {:node :unknown-node :line "?" :original-form val})
                              :doc (str "lookup " val)} constraints)))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
@@ -133,7 +135,8 @@
                    ;;left-arg-constr {:a tvar :b (get-in ast '(:a :type)) :doc "left-arg-constr"}
                    ;;right-arg-constr {:a tvar :b (get-in ast '(:b :type)) :doc "right-arg-constr"}
                    ;;ret-constr {:a tvar :b (:type ast)}
-                   same-arg-type-constr {:a (get-in ast '(:left :type)) :b (get-in ast '(:right :type)) :doc "same-arg-type-constr"}
+                   same-arg-type-constr {:a (get-in ast '(:left :type)) :b (get-in ast '(:right :type))
+                                         :doc "same-arg-type-constr" :location (location (:left ast) (:right ast))}
                    maybe-constr (if (math-op? (:op ast))
                                   (list {:a (get-in ast '(:left :type)) :b (:type ast)})
                                   ())
@@ -360,9 +363,10 @@
         b (:b e)
         loc (:loc e)]
     (if (nil? loc)
-      (println (str "Can't unify typevar " a " WITH " b " (missing info)"))
+      (println (str "Can't unify typevar " a " WITH " b " (missing info)\n" loc))
       (println (str ;;"Can't unify the types of\n"
-                    "'"
+                    (type-error-node-description (get-in loc '(:a :node)))
+                    " '"
                     (get-in loc '(:a :original-form))
                     "'"
                     " of type " (get-type final-substs a)
@@ -372,7 +376,8 @@
                     (get-console-color console-color-yellow)
                     "\n - doesn't match the type of - \n"
                     (get-normal-console-color)
-                    "'"
+                    (type-error-node-description (get-in loc '(:b :node)))
+                    " '"
                     (get-in loc '(:b :original-form))
                     "'"
                     " of type " (get-type final-substs b)
@@ -380,6 +385,14 @@
                     (get-in loc '(:b :line))
                     ")"
                     "\n")))))
+
+(defn type-error-node-description (node)
+  (match node
+    :app "The function application"
+    :arg "The argument"
+    :lookup "The lookup of"
+    :literal "The literal"
+    x (str x)))
 
 (defn solve-constraint-internal (substs-and-errors constraint)
   (let [a (:a constraint)
@@ -393,6 +406,7 @@
         type-errors (:type-errors result)]
     (if (< 0 (count type-errors))
       (do
+        (println "")
         (map (fn [type-error] (print-type-error final-substs type-error)) type-errors)
         ;;(println (str final-substs))
         (error {:error error-failed-typechecking :show-stacktrace false :message "Failed to typecheck."}))

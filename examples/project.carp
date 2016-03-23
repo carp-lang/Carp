@@ -8,15 +8,18 @@
   (strlen 10))
 
 (defn meh []
-  (sin (strlen "hej")))
+  (sinf (strlen "hej")))
 
 
 ;; (bake bleh)
 ;; (bake meh)
 ;; (gencon (lambda-to-ast (code bleh)))
 
-(defn foo [x]
+(defn blorg [x]
   (string-append "hej" (strlen 3)))
+
+(defn drr []
+  (+ "hej" 10))
 
 ;;(bake foo)
 

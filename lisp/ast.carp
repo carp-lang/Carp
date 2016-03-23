@@ -171,7 +171,7 @@
     {:node :literal
      :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
      :line (meta-get expr :line)
-     :original-form expr
+     :original-form (prn expr)
      :value expr}))
 
 (defn is-struct-constructor? [form]
