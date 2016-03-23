@@ -240,7 +240,9 @@
                                        :prio prio-default}
                    expr-must-be-bool {:a :bool
                                       :b (get-in ast '(:expr :type))
-                                      :prio prio-default}]
+                                      :prio prio-default
+                                      :constraint-kind :while-expr-constr
+                                      :location (location {:line :invalid :node :bool} (:expr ast))}]
                (concat x1 (list expr-must-be-bool )))
 
       :null constraints
@@ -469,6 +471,9 @@
                      (but)
                      (str-expected-type (:b loc) b substs))
 
+        :while-expr-constr (str (highlight "The expression in a while-statement must be of type bool:\n")
+                                (str-expected-type (:b loc) b substs))
+        
         :if-expr-constr (str (highlight "The expression in an if-statement must be of type bool:\n")
                              (str-expected-type (:b loc) b substs))
 

@@ -29,3 +29,12 @@
 ;; Mismatched types of true/false branch in if
 (defn fail-7 []
   (if true 300 4.523))
+
+;; Wrong type of let statement
+(defn fail-8 []
+  (strlen (let [x 10]
+            x)))
+
+;; Wrong type of while expression
+(defn fail-9 []
+  (while 1 (println "CARP")))

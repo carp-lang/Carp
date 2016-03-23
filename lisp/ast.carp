@@ -117,7 +117,7 @@
   {:node :if
    :type (gen-typevar)
    :expr (form-to-ast expr)
-   :original-form (list expr if-true if-false)
+   :original-form (list 'if expr if-true if-false)
    :line (meta-get expr :line)
    :if-true (form-to-ast if-true)
    :if-false (form-to-ast if-false)})
@@ -140,13 +140,17 @@
   {:node :let
    :type (gen-typevar)
    :bindings (bindings-to-ast bindings)
-   :body (form-to-ast body)})
+   :body (form-to-ast body)
+   :original-form (list 'let bindings body)
+   :line (meta-get bindings :line)})
 
 (defn while-to-ast [expr body]
   {:node :while
    :type :void
    :expr (form-to-ast expr)
-   :body (form-to-ast body)})
+   :body (form-to-ast body)
+   :original-form (list 'while expr body)
+   :line (meta-get expr :line)})
 
 (defn ref-to-ast [expr]
   {:node :ref
