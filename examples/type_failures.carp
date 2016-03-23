@@ -25,3 +25,7 @@
 ;; Using non-bool in if statement
 (defn fail-6 []
   (if "yeah" 10 20))
+
+;; Mismatched types of true/false branch in if
+(defn fail-7 []
+  (if true 300 4.523))

@@ -52,6 +52,7 @@
          :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
 
 (def prio-func-annotation 1)
+(def prio-if-branch 3)
 (def prio-func-ret-constr 5)
 (def prio-default 10)
 (def prio-lookup-constraint 11)
@@ -187,12 +188,14 @@
                 x2 (generate-constraints-internal x1 (get ast :expr) type-env)
                 left-result-constr {:a (get-in ast '(:if-true :type))
                                     :b (:type ast)
-                                    :constraint-kind :if-constr
-                                    :prio prio-default}
+                                    :constraint-kind :if-branch-constr
+                                    :prio prio-if-branch
+                                    :location (location (:if-true ast) ast)}
                 right-result-constr {:a (get-in ast '(:if-false :type))
                                      :b (:type ast)
-                                     :constraint-kind :if-constr
-                                     :prio prio-default}
+                                     :constraint-kind :if-branch-constr
+                                     :prio prio-if-branch
+                                     :location (location (:if-false ast) ast)}
                 expr-must-be-bool {:a :bool
                                    :b (get-in ast '(:expr :type))
                                    :constraint-kind :if-expr-constr
@@ -469,6 +472,13 @@
         :if-expr-constr (str (highlight "The expression in an if-statement must be of type bool:\n")
                              (str-expected-type (:b loc) b substs))
 
+        :if-branch-constr (str (highlight "Conflicting types for a true/false-branch and its if statement:\n")
+                               "The type of the branch"
+                               (str-expected-type (:a loc) a substs)
+                               (but)
+                               "The type of the whole if-statement"
+                               (str-expected-type (:b loc) b substs))
+
         :arg-list-length-mismatch (str (highlight (str "Wrong number of arguments to "
                                                        (get-func-name-maybe constraint)
                                                        ":\n"))                                       
@@ -476,10 +486,10 @@
                                        (but)
                                        (str-expected-type (:b loc) b substs))
         
-        same-arg-type-constr (str (highlight "Conflicting types for arguments to binary operator:\n")
-                                  (str-expected-type (:a loc) a substs)
-                                  (but)
-                                  (str-expected-type (:b loc) b substs))
+        :same-arg-type-constr (str (highlight "Conflicting types for arguments to binary operator:\n")
+                                   (str-expected-type (:a loc) a substs)
+                                   (but)
+                                   (str-expected-type (:b loc) b substs))
         
         x (str "Unhandled kind of constraint:" x)))))
 

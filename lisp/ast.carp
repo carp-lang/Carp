@@ -117,6 +117,8 @@
   {:node :if
    :type (gen-typevar)
    :expr (form-to-ast expr)
+   :original-form (list expr if-true if-false)
+   :line (meta-get expr :line)
    :if-true (form-to-ast if-true)
    :if-false (form-to-ast if-false)})
 
