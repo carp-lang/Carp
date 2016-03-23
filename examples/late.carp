@@ -1,10 +1,6 @@
 
-(defn greatest [xs ys]
-  (let [x-sum (count xs)
-        y-sum (count ys)]
-    (if (< x-sum y-sum)
-      (println (copy "ys are bigger"))
-      (println "xs are bigger"))))
+(defn greatest [xs]
+  (domap println &(map-copy str xs)))
 
 (defn try-it []
-  (greatest &[1 2 3] &[5 6]))
+  (greatest [1 2 3]))
