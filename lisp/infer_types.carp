@@ -54,9 +54,10 @@
 (def prio-func-annotation 1)
 (def prio-func-ret-constr 5)
 (def prio-default 10)
-(def prio-lookup-constraint 15)
+(def prio-lookup-constraint 11)
 (def prio-func-arg-constr 16)
 (def prio-app-arg-constraint 20)
+(def prio-binop 30)
 
 (defn generate-constraints-internal (constraints ast type-env)
   (do
@@ -167,13 +168,14 @@
                    x1 (generate-constraints-internal x0 (get ast :right) type-env)
                    same-arg-type-constr {:a (get-in ast '(:left :type))
                                          :b (get-in ast '(:right :type))
-                                         :prio prio-default
+                                         :prio prio-binop
                                          :doc "same-arg-type-constr"
+                                         :constraint-kind :same-arg-type-constr
                                          :location (location (:left ast) (:right ast))}
                    maybe-constr (if (math-op? (:op ast))
                                   (list {:a (get-in ast '(:left :type))
                                          :b (:type ast)
-                                         :prio prio-default
+                                         :prio prio-binop
                                          :doc "maybe constr"})
                                   ())
                    ]
@@ -391,13 +393,15 @@
   (match (list a-list b-list)
     (() ()) substs-and-errors
     ((a ... as) (b ... bs)) (solve (solve substs-and-errors a b constraint false) as bs constraint true)
-    _ (assoc substs-and-errors :type-errors (cons {:type-error true
-                                                   :description "List lengths not matching"
-                                                   :constraint constraint
-                                                   :a (if flipped b-list a-list)
-                                                   :b (if flipped a-list b-list)
-                                                   :loc loc} type-errors))
-    ))
+    _ (error "Shouldn't happen")))
+
+;; (assoc substs-and-errors :type-errors (cons {:type-error true
+;;                                                    :description "List lengths not matching"
+;;                                                    :constraint (assoc constraint :constraint-kind :arg-list-length-mismatch) ;; OVERRIDE :constraint-kind
+;;                                                    :a (if flipped b-list a-list)
+;;                                                    :b (if flipped a-list b-list)
+;;                                                    :loc (get-maybe constraint :location)}
+;;                                                   (:type-errors substs-and-errors)))
 
 (defn solve (substs-and-errors a b constraint flipped)
   (do
@@ -407,7 +411,12 @@
       (let [result (if (and (list? a) (list? b))
                      (if (= (count a) (count b))
                        (solve-list substs-and-errors a b constraint flipped)
-                       :fail)
+                       (assoc substs-and-errors :type-errors (cons {:type-error true
+                                                                    :a (if flipped b a)
+                                                                    :b (if flipped a b)
+                                                                    :constraint (assoc constraint :constraint-kind :arg-list-length-mismatch)
+                                                                    :loc (get-maybe constraint :location)}
+                                                                   type-errors)))
                      (let [new-substs (extend-substitutions substs a b)]
                        (if (= new-substs :fail)
                          :fail
@@ -418,7 +427,8 @@
                                                          :a (if flipped b a)
                                                          :b (if flipped a b)
                                                          :constraint constraint
-                                                         :loc loc} type-errors)))
+                                                         :loc loc}
+                                                        type-errors)))
           result)))))
 
 (defn print-type-error [final-substs e]
@@ -434,14 +444,12 @@
 (defn describe-constraint [constraint loc a b substs]
   (let [constraint-kind (get-maybe constraint :constraint-kind)]
     (if (nil? constraint-kind)
-      "Missing a constraint kind."
+      (str "Missing a constraint kind for " constraint)
       (match constraint-kind
 
         :app-arg (str (get-console-color console-color-yellow)
                       "Conflicting types for arg " (:arg-index constraint) " to "
-                      (if (nil? (:head-name constraint))
-                        "some unknown function" ;; can this case happen?
-                        (:head-name constraint))
+                      (get-func-name-maybe constraint)
                       ":\n"
                       (get-normal-console-color)
                       "The expected type of the argument to"
@@ -450,14 +458,41 @@
                       "the actual type of"
                       (str-expected-type (:b loc) b substs))
 
-        :lookup (str "Conflicting types for lookup:\n"
+        :lookup (str (get-console-color console-color-yellow)
+                     "Conflicting types for lookup:\n"
+                     (get-normal-console-color)
                      (str-expected-type (:a loc) a substs)
                      (get-console-color console-color-yellow)
                      "\n - BUT - \n"
                      (get-normal-console-color)
                      (str-expected-type (:b loc) b substs))
+
+        :arg-list-length-mismatch (str (get-console-color console-color-yellow)
+                                       "Wrong number of arguments to "
+                                       (get-func-name-maybe constraint)
+                                       ":\n"
+                                       (get-normal-console-color)
+                                       (str-expected-type (:a loc) a substs)
+                                       (get-console-color console-color-yellow)
+                                       "\n - BUT - \n"
+                                       (get-normal-console-color)
+                                       (str-expected-type (:b loc) b substs))
+        
+        same-arg-type-constr (str (get-console-color console-color-yellow)
+                                  "Conflicting types for arguments to binary operator:\n"
+                                  (get-normal-console-color)
+                                  (str-expected-type (:a loc) a substs)
+                                  (get-console-color console-color-yellow)
+                                  "\n - BUT - \n"
+                                  (get-normal-console-color)
+                                  (str-expected-type (:b loc) b substs))
         
         x (str "Unhandled kind of constraint:" x)))))
+
+(defn get-func-name-maybe [constraint]
+  (if (nil? (get-maybe constraint :head-name))
+    "FUNCTION"
+    (:head-name constraint)))
 
 (defn but []
   (str
