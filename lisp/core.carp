@@ -144,6 +144,10 @@
 (defn inc (x) (+ x 1))
 (defn dec (x) (- x 1))
 
+(defn > [x y]
+  (not (= x y)
+       (< x y)))
+
 (defn contains? (items item)
   (match items
     () false
@@ -249,6 +253,16 @@
     (x ... xs) (if (contains? ys x)
                  (cons x (intersection xs ys))
                  (intersection xs ys))))
+
+(defn sort-by [f xs]
+  (match xs
+    () ()
+    (y ... ys) (concat (sort-by f (filter (fn [x] (f x y)) ys))
+                       (list y)
+                       (sort-by f (filter (fn [x] (not (f x y))) ys)))))
+
+(defn sort [xs]
+  (sort-by < xs))
 
 (defmacro for (b body)
   (match b

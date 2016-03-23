@@ -1,4 +1,9 @@
 
+(defn test-sort []
+  (let [nums '(4 5 6 2 3 7 1)]
+    (assert-eq '(1 2 3 4 5 6 7) (sort nums))
+    (assert-eq '(7 6 5 4 3 2 1) (sort-by > nums))))
+
 (defn test-doubles []
   (let [x 3.0d
         y 5.0d]
@@ -406,6 +411,7 @@
     (test-template)
     (test-bind-to-function-in-let)
     (test-doubles)
+    (test-sort)
     ))
 
 (run-core-tests)

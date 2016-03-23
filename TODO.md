@@ -50,6 +50,7 @@
   - A Set-type with reader syntax #{}
 
 # Dynamic Runtime Small Features
+  - concat doesn't check for arrays, crashes instead
   - Want to be able to send Obj-arrays to ffi functions
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
