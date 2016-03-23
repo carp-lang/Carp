@@ -96,7 +96,7 @@
        :line (meta-get x :line)
        :original-form original-form
        :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
-       :tail (map form-to-ast xs)}))
+       :tail (map2 (fn [form n] (assoc form :arg-index n)) (map form-to-ast xs) (range 0 (count xs)))}))
 
 (defn expand-macro [form]
   (do ;;(println (str "expand:\n" form))

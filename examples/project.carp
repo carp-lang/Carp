@@ -7,6 +7,10 @@
 (defn bleh []
   (strlen 10))
 
+(def bleh-ast (lambda-to-ast (code bleh)))
+(def bleh-con (gencon bleh-ast))
+
+
 (defn meh []
   (sinf (strlen "hej")))
 

@@ -1,4 +1,5 @@
 # Compiler Big Features
+  - Have priorities for different constraints, sort them by prio
   - Don't compile a function if there's already an adequate build artifact
   - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Collect all unification errors and present them in the end

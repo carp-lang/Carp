@@ -46,11 +46,12 @@
         ]
     ast-generics))
 
-;; WARNING: These two helper functions don't know the name of the functions
+;; WARNING: These helper functions don't know the name of the functions
 ;; so they will mess upp self-recursive functions since they will think that
 ;; they are refering to other functions and bake those:
 (defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
 (defn sign (lambda) (:type (ann lambda)))
+(defn con (lambda) (generate-constraints (lambda-to-ast (code lambda))))
 
 (defn check-for-ref-return (ast)
   (let [t (:type ast)]
