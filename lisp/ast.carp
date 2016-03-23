@@ -164,7 +164,9 @@
     {:node :reset
      :type :void
      :symbol symbol
-     :expr (form-to-ast expr)}
+     :expr (form-to-ast expr)
+     :line (meta-get symbol :line)
+     :original-form (list 'reset! symbol expr)}
     (error (str "Non-symbol '" symbol "' found in reset! form."))))
 
 (defn literal-or-lookup-to-ast [expr]

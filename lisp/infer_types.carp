@@ -131,7 +131,10 @@
                    expr-constr {:a t
                                 :b (:type expr)
                                 :prio prio-default
-                                :doc "reset!-constr"}]
+                                :doc "reset!-constr"
+                                :constraint-kind :reset-constr
+                                :location (location {:line (:line ast) :original-form symbol :node :reset-symbol}
+                                                    expr)}]
                (cons expr-constr x0))
 
       :lookup (if (has-key? ast :self-recursive)
@@ -482,6 +485,13 @@
                                (str-expected-type (:a loc) a substs)
                                (but)
                                "The type of the whole if-statement"
+                               (str-expected-type (:b loc) b substs))
+
+        :reset-constr (str (highlight "Conflicting types for reset! statement:\n")
+                               "The type the variable"
+                               (str-expected-type (:a loc) a substs)
+                               (but)
+                               "The type of the expression"
                                (str-expected-type (:b loc) b substs))
 
         :arg-list-length-mismatch (str (highlight (str "Wrong number of arguments to "

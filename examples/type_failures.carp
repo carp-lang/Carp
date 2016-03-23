@@ -38,3 +38,8 @@
 ;; Wrong type of while expression
 (defn fail-9 []
   (while 1 (println "CARP")))
+
+;; Wrong type in reset!
+(defn fail-10 []
+  (let [x 3.2]
+    (reset! x 100)))
