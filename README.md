@@ -52,7 +52,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 
 * Erik Svedäng
 * Markus Gustavsson
-* honix
+* Fyodor Shchukin
 
 
 ## License
