@@ -95,7 +95,7 @@
                                                {:a a
                                                 :b (:type b)
                                                 :prio prio-app-arg-constraint
-                                                :location (location (assoc (:head ast) :node :expected-arg-type) ;; Override the node type for better error messages
+                                                :location (location (:head ast)
                                                                     b)
                                                 :constraint-kind :app-arg
                                                 :arg-index (get-maybe b :arg-index)
