@@ -36,6 +36,8 @@
 (register-builtin "print" '((:ref :string)) :void)
 (register-builtin "println" '((:ref :string)) :void)
 (register-builtin "get_input" '() :string)
+(register-builtin "get_normal_console_color" '() :string)
+(register-builtin "get_console_color" '(:int) :string)
 
 ;; Files
 (register-builtin "file_existsQMARK" '((:ref :string)) :bool)

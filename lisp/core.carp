@@ -309,3 +309,12 @@
 
 (defn import-internal [module-name]
   (load-lisp (str carp-dir "lisp/" module-name ".carp")))
+
+(def console-color-black 0)
+(def console-color-red 1)
+(def console-color-green 2)
+(def console-color-yellow 3)
+(def console-color-blue 4)
+(def console-color-magenta 5)
+(def console-color-cyan 6)
+(def console-color-white 7)

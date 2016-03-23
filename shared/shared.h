@@ -202,7 +202,7 @@ EXPORT int mod(int x, int y) {
 
 #ifdef WIN32
 EXPORT void sleep(int millis) {
-	carp_sleep(millis);
+  carp_sleep(millis);
 }
 #endif
 
@@ -222,3 +222,20 @@ EXPORT CARP_PLATFORM platform() {
 	return carp_get_platform();
 }
 
+EXPORT string get_normal_console_color() {
+  #ifdef WIN32
+  return strdup("");
+  #else
+  return strdup("\e[0m");
+  #endif
+}
+
+EXPORT string get_console_color(int x) {
+  #ifdef WIN32
+  return strdup("");
+  #else
+  char buffer[16];
+  snprintf(buffer, 16, "\e[3%dm", x);
+  return strdup(buffer);
+  #endif
+}

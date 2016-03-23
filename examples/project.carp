@@ -18,7 +18,7 @@
 (defn foo [x]
   (string-append "hej" (strlen 3)))
 
-(bake foo)
+;;(bake foo)
 
 
 

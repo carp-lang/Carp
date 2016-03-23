@@ -361,21 +361,25 @@
         loc (:loc e)]
     (if (nil? loc)
       (println (str "Can't unify typevar " a " WITH " b " (missing info)"))
-      (println (str "Can't unify the types of "
+      (println (str ;;"Can't unify the types of\n"
                     "'"
                     (get-in loc '(:a :original-form))
                     "'"
-                    " at line "
-                    (get-in loc '(:a :line))
                     " of type " (get-type final-substs a)
-                    " WITH "
+                    " (line "
+                    (get-in loc '(:a :line))
+                    ")"
+                    (get-console-color console-color-yellow)
+                    "\n - doesn't match the type of - \n"
+                    (get-normal-console-color)
                     "'"
                     (get-in loc '(:b :original-form))
                     "'"
-                    " at line "
-                    (get-in loc '(:b :line))
                     " of type " (get-type final-substs b)
-                    "")))))
+                    " (line "
+                    (get-in loc '(:b :line))
+                    ")"
+                    "\n")))))
 
 (defn solve-constraint-internal (substs-and-errors constraint)
   (let [a (:a constraint)
