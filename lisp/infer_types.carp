@@ -187,13 +187,17 @@
                 x2 (generate-constraints-internal x1 (get ast :expr) type-env)
                 left-result-constr {:a (get-in ast '(:if-true :type))
                                     :b (:type ast)
+                                    :constraint-kind :if-constr
                                     :prio prio-default}
                 right-result-constr {:a (get-in ast '(:if-false :type))
                                      :b (:type ast)
+                                     :constraint-kind :if-constr
                                      :prio prio-default}
                 expr-must-be-bool {:a :bool
                                    :b (get-in ast '(:expr :type))
-                                   :prio prio-default}]
+                                   :constraint-kind :if-expr-constr
+                                   :prio prio-default
+                                   :location (location {:line :invalid :node :bool} (:expr ast))}]
             (concat x2 (list
                         expr-must-be-bool
                         left-result-constr
@@ -447,44 +451,34 @@
       (str "Missing a constraint kind for " constraint)
       (match constraint-kind
 
-        :app-arg (str (get-console-color console-color-yellow)
-                      "Conflicting types for arg " (:arg-index constraint) " to "
-                      (get-func-name-maybe constraint)
-                      ":\n"
-                      (get-normal-console-color)
+        :app-arg (str (highlight (str
+                                  "Conflicting types for arg " (:arg-index constraint) " to "
+                                  (get-func-name-maybe constraint)
+                                  ":\n"))
                       "The expected type of the argument to"
                       (str-expected-type (:a loc) a substs)
                       (but)
                       "the actual type of"
                       (str-expected-type (:b loc) b substs))
 
-        :lookup (str (get-console-color console-color-yellow)
-                     "Conflicting types for lookup:\n"
-                     (get-normal-console-color)
+        :lookup (str (highlight "Conflicting types for lookup:\n")
                      (str-expected-type (:a loc) a substs)
-                     (get-console-color console-color-yellow)
-                     "\n - BUT - \n"
-                     (get-normal-console-color)
+                     (but)
                      (str-expected-type (:b loc) b substs))
 
-        :arg-list-length-mismatch (str (get-console-color console-color-yellow)
-                                       "Wrong number of arguments to "
-                                       (get-func-name-maybe constraint)
-                                       ":\n"
-                                       (get-normal-console-color)
+        :if-expr-constr (str (highlight "The expression in an if-statement must be of type bool:\n")
+                             (str-expected-type (:b loc) b substs))
+
+        :arg-list-length-mismatch (str (highlight (str "Wrong number of arguments to "
+                                                       (get-func-name-maybe constraint)
+                                                       ":\n"))                                       
                                        (str-expected-type (:a loc) a substs)
-                                       (get-console-color console-color-yellow)
-                                       "\n - BUT - \n"
-                                       (get-normal-console-color)
+                                       (but)
                                        (str-expected-type (:b loc) b substs))
         
-        same-arg-type-constr (str (get-console-color console-color-yellow)
-                                  "Conflicting types for arguments to binary operator:\n"
-                                  (get-normal-console-color)
+        same-arg-type-constr (str (highlight "Conflicting types for arguments to binary operator:\n")
                                   (str-expected-type (:a loc) a substs)
-                                  (get-console-color console-color-yellow)
-                                  "\n - BUT - \n"
-                                  (get-normal-console-color)
+                                  (but)
                                   (str-expected-type (:b loc) b substs))
         
         x (str "Unhandled kind of constraint:" x)))))
@@ -494,11 +488,13 @@
     "FUNCTION"
     (:head-name constraint)))
 
+(defn highlight [text]
+  (str (get-console-color console-color-yellow)
+       text
+       (get-normal-console-color)))
+
 (defn but []
-  (str
-   (get-console-color console-color-yellow)
-   "\n - BUT - \n"
-   (get-normal-console-color)))
+  (highlight "\n - BUT - \n"))
 
 (defn str-expected-type [sub-loc t substs]
   (str

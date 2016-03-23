@@ -3,31 +3,6 @@
 
 
 
-(defn bleh []
-  (strlen 10))
-
-(def bleh-ast (lambda-to-ast (code bleh)))
-(def bleh-con (gencon bleh-ast))
-
-
-(defn meh []
-  (sinf (strlen "hej")))
-
-;; (bake bleh)
-;; (bake meh)
-;; (gencon (lambda-to-ast (code bleh)))
-
-(defn blorg [x]
-  (string-append "hej" (strlen 3)))
-
-(def blorg-con (gencon (lambda-to-ast (code blorg))))
-
-
-;;(bake foo)
-
-
-(defn floo []
-  (inc 1 2 3))
 
 
 

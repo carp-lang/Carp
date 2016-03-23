@@ -1,0 +1,27 @@
+
+;; Examples of type checking failures, to demo the error reporting in various cases.
+
+
+;; Sending an in int to a string-ref argument
+(defn fail-1 []
+  (strlen 10))
+
+;; Return value doesn't match argument type
+(defn fail-2 []
+  (sinf (strlen "hej")))
+
+;; Two type errors in the same function
+(defn fail-3 [x]
+  (string-append "hej" (strlen 3)))
+
+;; Calling function with too many args
+(defn fail-4 []
+  (inc 1 2 3))
+
+;; Calling function with too few args
+(defn fail-5 []
+  (println))
+
+;; Using non-bool in if statement
+(defn fail-6 []
+  (if "yeah" 10 20))
