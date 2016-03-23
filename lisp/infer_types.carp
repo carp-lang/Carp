@@ -624,7 +624,10 @@
 
 (defn infer-types (ast func-signature-if-generic)
   (let [type-constraints (generate-constraints ast)
-        func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic :b (:type ast) :doc "generic-constr"}))
+        func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic
+                                                                                  :b (:type ast)
+                                                                                  :prio prio-default
+                                                                                  :doc "generic-constr"}))
         sorted-constraints (sort-constraints (concat func-signature-constraint type-constraints))
         substs (solve-constraints sorted-constraints)
         ast-typed (assign-types ast substs)]
