@@ -78,10 +78,13 @@
                   (concat annotation-constr func-arg-constrs (cons func-ret-constr new-constraints)))
 
       :app (let [ret-constr {:a  (get ast :type) :b (get-in ast '(:head :type 2)) :doc "ret-constr for :app"}
-                 arg-constrs (map2 (fn (a b) {:a a
-                                              :b (:type b)
-                                              :location (location (:head ast) b)
-                                              :doc (str "app-arg " a " vs " (:type b))})
+                 arg-constrs (map2 (fn (a b) (do ;;(println (str "ast: " ast))
+                                                 {:a a
+                                                  :b (:type b)
+                                                  :location (location (assoc (assoc (:head ast) :node :app-arg) ;; changing the node and arg-index for better location data
+                                                                             :arg-index (:arg-index b))
+                                                                      b)
+                                                  :doc (str "app-arg " a " vs " (:type b))}))
                                    (get-in ast '(:head :type 1))
                                    (:tail ast))
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
@@ -373,7 +376,7 @@
                     (get-in loc '(:a :original-form))
                     "'"
                     " of type " (get-type final-substs a)
-                    (get-arg-index-description (:a loc))
+                    ;;(get-arg-index-description (:a loc))
                     ;;" / " a
                     " (line "
                     (get-in loc '(:a :line))
@@ -386,7 +389,7 @@
                     (get-in loc '(:b :original-form))
                     "'"
                     " of type " (get-type final-substs b)
-                    (get-arg-index-description (:b loc))
+                    ;;(get-arg-index-description (:b loc))
                     ;;" / " b
                     " (line "
                     (get-in loc '(:b :line))
@@ -401,6 +404,7 @@
          :lookup "lookup of"
          :literal "literal"
          :lookup-other "variable/function called"
+         :app-arg (str "expected argument at index " (:arg-index sub-loc) " to")
          x (str x))))
 
 (defn get-arg-index-description (sub-loc)
