@@ -290,6 +290,8 @@
 (defn doc [x]
   (meta-get x :doc))
 
+(defmacro -> () nil)
+(defmacro ->> () nil)
 
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
