@@ -2,7 +2,7 @@
 (reset! log-unloading-of-dylibs true)
 
 
-
+;;(defstruct Foo [x :int])
 
 
 ;; (defn fold [f x xs]

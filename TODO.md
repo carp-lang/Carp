@@ -18,6 +18,7 @@
   - Shorter names for concrete versions of generic functions
   - Be able to compare C-array in pointer to Obj array
   - A deref function that can remove the ref from primitive types?
+  - Use the new key-is-true function instead of has-key?
 
 # Compiler Correctness
   - Disallow "returning" of ref in let-form
@@ -54,8 +55,6 @@
 # Dynamic Runtime Optimization
 
 # Bugs
-  - Can send compiled ffi-function to another ffi-function that expects a struct
-  - Should be error when ptr of wrong type is sent to baked function
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
   - Valgrind finds error with strdup in eval.c:312 ('apply' function)
@@ -77,6 +76,7 @@
   - shuffle (for lists)
   - Conversions between a list of pairs and dictionaries
   - 'for' macro with multiple bindings (i, j, etc...)
+  - if-let function
 
 # Maybes
   - Compile keywords?
