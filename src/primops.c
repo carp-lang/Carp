@@ -291,6 +291,37 @@ Obj *p_str_append_bang(Obj** args, int arg_count) {
   return s;
 }
 
+Obj *p_join(Obj** args, int arg_count) {
+  if(arg_count != 2) {
+    eval_error = obj_new_string("'join' takes exactly two arguments");
+    return nil;
+  }
+  if(args[0]->tag != 'S') {
+    eval_error = obj_new_string("'join' arg0 invalid");
+    return nil;
+  }
+  if(args[1]->tag != 'C') {
+    eval_error = obj_new_string("'join' arg1 invalid, must be a list");
+    return nil;
+  }
+  Obj *s = obj_new_string("");
+  shadow_stack_push(s);  
+  Obj *p = args[1];
+  while(p && p->car) {
+    /* if(p->car->tag != 'S') { */
+    /*   eval_error = obj_new_string("Element in list to 'join' is invalid, must be a string"); */
+    /*   return nil; */
+    /* } */
+    obj_string_mut_append(s, obj_to_string_not_prn(p->car)->s);
+    if(p->cdr && p->cdr->cdr) {
+      obj_string_mut_append(s, args[0]->s);
+    }
+    p = p->cdr;
+  }
+  shadow_stack_pop();
+  return s;
+}
+
 char *str_replace(const char *str, const char *old, const char *new) {
 
   /* Adjust each of the below values to suit your needs. */

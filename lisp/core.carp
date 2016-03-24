@@ -110,12 +110,6 @@
       (dict-set-in! new keys val)
       new)))
 
-(defn join (separator xs)
-  (match (count xs)
-    0 ""
-    1 (str (first xs))
-    _ (str (first xs) separator (join separator (rest xs)))))
-
 (defn replicate (thing times)
   (if (< times 1)
     '()

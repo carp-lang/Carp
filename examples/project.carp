@@ -4,14 +4,16 @@
 
 
 
-(defn self-recur [x]
-  (+ x (self-recur)))
-
-(def self-ast (assoc (lambda-to-ast (code self-recur)) :name "self-recur"))
-(def self-con (gencon self-ast))
+(defn join-many []
+  (join "," (map str (range 1 100))))
 
 
 
+(defn OLD-join (separator xs)
+  (match (count xs)
+    0 ""
+    1 (str (first xs))
+    _ (str (first xs) separator (join separator (rest xs)))))
 
 
 

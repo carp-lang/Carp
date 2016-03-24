@@ -174,6 +174,7 @@ void env_new_global() {
   register_primop("str", p_str);
   register_primop("str-append!", p_str_append_bang);
   register_primop("str-replace", p_str_replace);
+  register_primop("join", p_join);
   register_primop("register", p_register);
   register_primop("register-variable", p_register_variable);
   register_primop("register-builtin", p_register_builtin);
