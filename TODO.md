@@ -36,21 +36,16 @@
 
 
 # Dynamic Runtime Big Features
-  - Join-function blows the stack
   - Macro splicing
   - Use array for macro parameter list
   - Modules 
-  - Get inferior lisp to work
   - Remove globals to enable several instances of the runner in parallel
-  - Add more numeric types (double, unsigned long?)
   - A Set-type with reader syntax #{}
 
 # Dynamic Runtime Small Features
-  - concat doesn't check for arrays, crashes instead
   - Want to be able to send Obj-arrays to ffi functions
   - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
-  - register/register-builtin should use the lisp name, not the C name 
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - ONLY allow [] in parameter list for function definitions
   - Use modules to solve problem of using same name for members in different structs
