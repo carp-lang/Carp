@@ -1,23 +1,20 @@
 # Compiler Big Features
-  - Have priorities for different constraints, sort them by prio
-  - Don't compile a function if there's already an adequate build artifact
   - Compile globals so that they can be mutated (and all references refer to the same storage)
-  - Collect all unification errors and present them in the end
-  - Allow recompiling changed defstructs
-  - Structs refering to structs
-  - Special handling of POD structs (stack allocated, not sent by pointer)
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
-  - Compile match statements
+  - enum / union / deftype (tagged unions)
   - Generic structs
+  - Allow recompiling changed defstructs
+  - Structs refering to other structs
+  - Special handling of POD structs (stack allocated, not sent by pointer)
+  - Compile match statements
   - Equality
-  - deftype (tagged unions)
   - Option Type (Maybe in Haskell)
   - Err Type (Either in Haskell)
   - Compile global variables with correct initialization and any kind of type
-  - Reorder arguements to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
 
 # Compiler Small Features
+  - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
   - Be able to compare C-array in pointer to Obj array
   - A deref function that can remove the ref from primitive types?
