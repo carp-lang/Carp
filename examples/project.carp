@@ -4,6 +4,12 @@
 
 
 
+(defn self-recur [x]
+  (+ x (self-recur)))
+
+(def self-ast (assoc (lambda-to-ast (code self-recur)) :name "self-recur"))
+(def self-con (gencon self-ast))
+
 
 
 

@@ -73,6 +73,13 @@
 
 (defn id (x) x)
 
+^doc "Returns true if the key exists on the dictionary AND it is set to true."
+(defn key-is-true? [dict key]
+  (let [x (get-maybe dict key)]
+    (if (nil? x)
+      false
+      x)))
+
 (defn get-in (dict keys)
   (if (= () keys)
     dict

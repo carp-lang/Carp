@@ -7,11 +7,11 @@
                 (map2 list (map :name args) (map :type args)))
         new-env)))
 
-(defn is-self-recursive? (type-env app-f-name)
-  (let [x (get-maybe type-env app-f-name)]
-    (do
-      ;;(println (str "app-f: " app-f-name ", x: " x))
-      (= x :self))))
+;; (defn is-self-recursive? (type-env app-f-name)
+;;   (let [x (get-maybe type-env app-f-name)]
+;;     (do
+;;       ;;(println (str "app-f: " app-f-name ", x: " x))
+;;       (= x :self))))
 
 (defn get-type-of-symbol (type-env symbol)
   (let [lookup (get-maybe type-env symbol)]
@@ -51,6 +51,8 @@
          :node (:node ast-b)
          :original-form (if (dict? ast-b) (get-maybe ast-b :original-form) "???")}}))
 
+;; These values determine the order of the constraints when passed to the constraint solver.
+;; Lower values mean that they are solved earlier. This affects error messages, not the solvability of the types.
 (def prio-func-annotation 1)
 (def prio-if-branch 3)
 (def prio-func-ret-constr 5)
@@ -68,7 +70,7 @@
       :function (let [extended-type-env (type-env-extend type-env (get ast :args))
                       extended-type-env-2 (let [fn-name (get-maybe ast :name)]
                                             (if (string? fn-name)
-                                              (assoc extended-type-env fn-name :self)
+                                              (assoc extended-type-env (symbol fn-name) (:type ast))
                                               extended-type-env))
                       new-constraints (generate-constraints-internal constraints (:body ast) extended-type-env-2)
                       func-ret-constr {:a (get-in ast '(:type 2)) ;; the return type of the fn type
@@ -137,36 +139,34 @@
                                                     expr)}]
                (cons expr-constr x0))
 
-      :lookup (if (has-key? ast :self-recursive)
-                constraints
-                (if (has-key? ast :constructor)
-                  (let [member-types (array-to-list (:member-types ast))
-                        t (:type ast)
-                        constructor-return-constr {:a (keyword (:struct-name ast))
-                                                   :b (nth t 2)
-                                                   :prio prio-default
-                                                   :doc "constructor-return-value"}
-                        constructor-arg-constrs (map2 (fn [a b] {:a a
-                                                                 :b b
-                                                                 :prio prio-default
-                                                                 :doc "constructor-arg"})
-                                                      member-types
-                                                      (nth t 1))]
-                    (cons constructor-return-constr constructor-arg-constrs))
-                  (let [val (:value ast)
-                        ;;_ (println (str "not self-recursive: \n" ast))
-                        t (get-type-of-symbol type-env val)
-                        ;;_ (println (str "type of lookup '" val "': " t))
-                        ]
-                    (if (nil? t)
-                      (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
-                      (cons {:a (:type ast)
-                             :b t
-                             :prio prio-lookup-constraint
-                             :location (location ast
-                                                 {:node :lookup-other :line "?" :original-form val})
-                             :constraint-kind :lookup
-                             :doc (str "lookup " val)} constraints)))))
+      :lookup (if (has-key? ast :constructor)
+                (let [member-types (array-to-list (:member-types ast))
+                      t (:type ast)
+                      constructor-return-constr {:a (keyword (:struct-name ast))
+                                                 :b (nth t 2)
+                                                 :prio prio-default
+                                                 :doc "constructor-return-value"}
+                      constructor-arg-constrs (map2 (fn [a b] {:a a
+                                                               :b b
+                                                               :prio prio-default
+                                                               :doc "constructor-arg"})
+                                                    member-types
+                                                    (nth t 1))]
+                  (cons constructor-return-constr constructor-arg-constrs))
+                (let [val (:value ast)
+                      ;;_ (println (str "\nLookup of " (:value ast) ", type-env:\n" type-env))
+                      t (get-type-of-symbol type-env val)
+                      ;;_ (println (str "type of lookup '" val "': " t))
+                      ]
+                  (if (nil? t)
+                    (error (str "Can't create constraint for lookup of '" val "', it's type is nil."))
+                    (cons {:a (:type ast)
+                           :b t
+                           :prio prio-lookup-constraint
+                           :location (location ast
+                                               {:node :lookup-other :line "?" :original-form val})
+                           :constraint-kind :lookup
+                           :doc (str "lookup " val)} constraints))))
 
       :binop (let [x0 (generate-constraints-internal constraints (get ast :left) type-env)
                    x1 (generate-constraints-internal x0 (get ast :right) type-env)
@@ -488,11 +488,11 @@
                                (str-expected-type (:b loc) b substs))
 
         :reset-constr (str (highlight "Conflicting types for reset! statement:\n")
-                               "The type the variable"
-                               (str-expected-type (:a loc) a substs)
-                               (but)
-                               "The type of the expression"
-                               (str-expected-type (:b loc) b substs))
+                           "The type the variable"
+                           (str-expected-type (:a loc) a substs)
+                           (but)
+                           "The type of the expression"
+                           (str-expected-type (:b loc) b substs))
 
         :arg-list-length-mismatch (str (highlight (str "Wrong number of arguments to "
                                                        (get-func-name-maybe constraint)
