@@ -415,7 +415,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
     //printf("Calling function "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
     
     Obj *calling_env = obj_new_environment(function->env);
-    env_extend_with_args(calling_env, function, arg_count, args);
+    env_extend_with_args(calling_env, function, arg_count, args, false);
     //printf("Lambda env: %s\n", obj_to_string(calling_env)->s);
 
     shadow_stack_push(function);
@@ -1156,7 +1156,7 @@ void eval_list(Obj *env, Obj *o) {
 
     if(function->tag == 'M') {
       Obj *calling_env = obj_new_environment(function->env);
-      env_extend_with_args(calling_env, function, count, args);
+      env_extend_with_args(calling_env, function, count, args, true);
       shadow_stack_push(calling_env);
       eval_internal(calling_env, function->body);
       if (eval_error) { free(args); return; }

@@ -52,12 +52,29 @@ Obj *env_extend(Obj *env, Obj *key, Obj *value) {
   return pair;
 }
 
-void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args) {
+void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args, bool allow_restargs) {
   Obj *paramp = function->params;
   if(paramp->tag == 'C') {
     for(int i = 0; i < arg_count; i++) {
+      if(allow_restargs && obj_eq(paramp->car, dotdotdot)) {
+        printf("Found dotdotdot\n");
+        if(paramp->cdr->car) {
+          int rest_count = arg_count - i;
+          printf("Rest count: %d\n", rest_count);
+          Obj *rest_array = obj_new_array(rest_count);
+          for(int j = 0; j < rest_count; j++) {
+            rest_array->array[j] = args[i + j];
+          }
+          env_extend(calling_env, paramp->cdr->car, rest_array);
+          return;
+        }
+        else {
+          printf("No arguments after dotdotdot\n");
+          return;
+        }
+      }
       if(!paramp || !paramp->car) {
-          set_error("Too many arguments to function: ", function);
+          set_error("Too many arguments (C) to function: ", function);
       }
       env_extend(calling_env, paramp->car, args[i]);
       paramp = paramp->cdr;
@@ -71,7 +88,7 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
       set_error("Too few arguments to function: ", function);
     }
     else if(arg_count > paramp->count) {
-      set_error("Too many arguments to function: ", function);
+      set_error("Too many arguments (A) to function: ", function);
     }
     for(int i = 0; i < arg_count; i++) {
       env_extend(calling_env, paramp->array[i], args[i]);
