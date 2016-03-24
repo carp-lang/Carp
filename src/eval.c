@@ -502,6 +502,12 @@ void apply(Obj *function, Obj **args, int arg_count) {
           /*        args[i]->tag); */         
           
           if(args[i]->tag == 'Q') {
+
+            #ifdef CHECKING
+            if(args[i]->void_ptr == NULL || obj_eq(type_obj, obj_new_keyword("any"))) {
+              goto hack;
+            }
+
             assert_or_free_values_and_set_error(args[i]->meta, "Argument is missing meta data: ", args[i]);
             Obj *meta_type_tag = env_lookup(args[i]->meta, obj_new_keyword("type")); // TODO: make this keyword to a "singleton"
             assert_or_free_values_and_set_error(meta_type_tag, "Argument is missing meta 'type' tag: ", args[i]);
@@ -514,6 +520,10 @@ void apply(Obj *function, Obj **args, int arg_count) {
               obj_string_mut_append(eval_error, obj_to_string(meta_type_tag)->s);
               return;
             }
+
+          hack:;
+            #endif
+            
             values[i] = &args[i]->void_ptr;
           }
           else if(args[i]->tag == 'F') {
