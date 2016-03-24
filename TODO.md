@@ -39,7 +39,6 @@
 # Dynamic Runtime Big Features
   - Allow varargs to macros
   - Macro splicing
-  - Use array for macro parameter list
   - Modules 
   - Remove globals to enable several instances of the runner in parallel
   - A Set-type with reader syntax #{}

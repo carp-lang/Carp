@@ -136,7 +136,7 @@ Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code) {
 
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(params);
-  assert(params->tag == 'C');
+  assert(params->tag == 'C' || params->tag == 'A');
   assert(body);
   assert(env);
   assert(env->tag == 'E');
