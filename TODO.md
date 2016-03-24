@@ -37,6 +37,7 @@
 
 
 # Dynamic Runtime Big Features
+  - Allow varargs to macros
   - Macro splicing
   - Use array for macro parameter list
   - Modules 
