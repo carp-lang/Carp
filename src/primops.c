@@ -297,21 +297,17 @@ Obj *p_join(Obj** args, int arg_count) {
     return nil;
   }
   if(args[0]->tag != 'S') {
-    eval_error = obj_new_string("'join' arg0 invalid");
+    eval_error = obj_new_string("First arg to 'join' must be a string");
     return nil;
   }
   if(args[1]->tag != 'C') {
-    eval_error = obj_new_string("'join' arg1 invalid, must be a list");
+    eval_error = obj_new_string("Second arg to 'join' must be a list");
     return nil;
   }
   Obj *s = obj_new_string("");
   shadow_stack_push(s);  
   Obj *p = args[1];
   while(p && p->car) {
-    /* if(p->car->tag != 'S') { */
-    /*   eval_error = obj_new_string("Element in list to 'join' is invalid, must be a string"); */
-    /*   return nil; */
-    /* } */
     obj_string_mut_append(s, obj_to_string_not_prn(p->car)->s);
     if(p->cdr && p->cdr->cdr) {
       obj_string_mut_append(s, args[0]->s);
