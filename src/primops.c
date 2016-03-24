@@ -667,7 +667,7 @@ Obj *p_concat(Obj** args, int arg_count) {
   }
   
   for(int i = 0; i < arg_count; i++) {
-    if(args[0]->tag != 'C') { eval_error = obj_new_string("'concat' requires all args to be lists\n"); return nil; }
+    if(args[i]->tag != 'C') { eval_error = obj_new_string("'concat' requires all args to be lists\n"); return nil; }
   }
 
   int i = 0;

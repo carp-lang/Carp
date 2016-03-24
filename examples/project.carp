@@ -4,18 +4,6 @@
 
 
 
-(defn join-many []
-  (join "," (map str (range 1 100))))
-
-
-
-(defn OLD-join (separator xs)
-  (match (count xs)
-    0 ""
-    1 (str (first xs))
-    _ (str (first xs) separator (join separator (rest xs)))))
-
-
 
 ;; (defn fold [f x xs]
 ;;   (do (for (i 0 (count xs))
