@@ -45,7 +45,7 @@ The key features of Carp are the following:
   (glfw-app "This is a demo" 0.0f tick draw default-on-keys))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe spin)``` to build an executable, ```(spin)``` to run the program directly from the REPL.
+To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe spin)``` to build an executable, or ```(spin)``` to run the program directly from the REPL.
 
 
 ### Contributors
