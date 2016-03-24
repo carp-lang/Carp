@@ -57,9 +57,6 @@
 # Bugs
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
   - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
-  - Valgrind finds error with strdup in eval.c:312 ('apply' function)
-  - Valgrind finds error with realloc in obj_string.c line 17
-  - glfw-demo closes repl second time
 
 # Sanity checks
   - Ensure correctness of GC (run at every step)
