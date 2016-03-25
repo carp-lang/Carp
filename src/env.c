@@ -53,6 +53,9 @@ Obj *env_extend(Obj *env, Obj *key, Obj *value) {
 }
 
 void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args, bool allow_restargs) {
+
+  // TODO: remove the whole 'C' branch and only allow arrays for parameters
+  
   Obj *paramp = function->params;
   if(paramp->tag == 'C') {
     for(int i = 0; i < arg_count; i++) {
@@ -84,17 +87,39 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
     }
   }
   else if(paramp->tag == 'A') {
-    if(arg_count < paramp->count) {
-      set_error("Too few arguments to function: ", function);
-    }
-    else if(arg_count > paramp->count) {
-      set_error("Too many arguments (A) to function: ", function);
-    }
-    for(int i = 0; i < arg_count; i++) {
+
+    int i = 0;
+    for(; i < arg_count; i++) {
+      if(allow_restargs && obj_eq(paramp->array[i], dotdotdot)) {
+        int rest_count = arg_count - i;
+        Obj *rest_array = obj_new_array(rest_count);
+        for(int j = 0; j < rest_count; j++) {
+          rest_array->array[j] = args[i + j];
+        }
+        env_extend(calling_env, paramp->array[i + 1], rest_array);
+        return;
+      }
+ 
       env_extend(calling_env, paramp->array[i], args[i]);
     }
+
+    if(i < paramp->count) {
+      if(allow_restargs && obj_eq(paramp->array[i], dotdotdot)) {
+        env_extend(calling_env, paramp->array[i + 1], obj_new_array(0));
+      } else {
+        set_error("Too few arguments to function/macro: ", function);
+      }
+    }
+
+    if(arg_count > paramp->count) {
+      set_error("Too many arguments (A) to function/macro: ", function);
+    }
+    
   }
 }
+
+
+    
 
 void global_env_extend(Obj *key, Obj *val) {
   assert(global_env);
