@@ -2,23 +2,23 @@
   - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
-  - enum / union / deftype (tagged unions)
-  - Generic structs
   - Allow recompiling changed defstructs
   - Structs refering to other structs
-  - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Compile match statements
   - Equality
+  - Special handling of POD structs (stack allocated, not sent by pointer)
+    
+## Tagged Unions
+  - Compile match statements
+  - Generic structs
   - Option Type (Maybe in Haskell)
   - Err Type (Either in Haskell)
-  - Compile global variables with correct initialization and any kind of type
 
 # Compiler Small Features
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
-  - Be able to compare C-array in pointer to Obj array
+  - Be able to compare C-array pointer to Obj with array tag
   - A deref function that can remove the ref from primitive types?
-  - Use the new key-is-true function instead of has-key?
+  - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
   - Disallow "returning" of ref in let-form
@@ -37,7 +37,6 @@
 
 
 # Dynamic Runtime Big Features
-  - Allow varargs to macros
   - Macro splicing
   - Modules 
   - Remove globals to enable several instances of the runner in parallel
