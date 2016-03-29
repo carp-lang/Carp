@@ -4,10 +4,14 @@
 (import gl)
 
 (defstruct TypografGlyph
-  [tgLines (:Array :Vec2dsfsd)])
+  [tgLines (:Array (:Array :Vec2))])
 
-(defn init-state []
-  (TypografGlyph [[p1 p2] [p1 p3] [p4 p5]]))
+;;(TypografGlyph [])
+
+(defn init-state [] (TypografGlyph [[(p1) (p2)] [(p1) (p3)] [(p4) (p5)]]))
+
+(defn show-init-state []
+  (str (ref (init-state))))
 
 (defn typograf []
   (glfw-app "Typograf" (init-state) id draw default-on-keys))

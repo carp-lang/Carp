@@ -408,6 +408,50 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
   /* } */
 }
 
+Array *obj_array_to_carp_array(Obj *obj_array) {
+  Array *carp_array = malloc(sizeof(Array));
+  carp_array->count = obj_array->count;
+  
+  Obj **oa = obj_array->array;
+
+  if(obj_array->count == 0) {
+          
+  }
+  else if(oa[0]->tag == 'I') {
+    carp_array->data = malloc(sizeof(int) * carp_array->count);
+    int *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be integers.", nil);
+      data[i] = oa[i]->i;
+    }
+  }
+  else if(oa[0]->tag == 'Q') {
+    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    void **data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be ptr:s.", nil);
+      data[i] = oa[i]->void_ptr;
+    }
+  }
+  else if(oa[0]->tag == 'A') {
+    printf("Nested arrays!\n");
+    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    Array **data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      Array *inner_array = obj_array_to_carp_array(oa[i]);
+      data[i] = inner_array;
+    }
+  }
+  else {
+    eval_error = obj_new_string("Can't handle this kind of array element as argument: ");
+    obj_string_mut_append(eval_error, obj_to_string(oa[0])->s);
+    //printf("FAIL %s\n", obj_to_string(eval_error)->s);
+    return NULL;
+  }
+
+  return carp_array;
+}
+
 bool in_macro_expansion = false;
 
 void apply(Obj *function, Obj **args, int arg_count) {
@@ -776,26 +820,13 @@ void apply(Obj *function, Obj **args, int arg_count) {
         //assert_or_set_error(obj_eq(member_type, type_array), "Can't assign array to a member of type ", obj_to_string(member_type));
         printf("Array as arg: %s\n", obj_to_string(args[i])->s);
 
-        Array *a = malloc(sizeof(Array));
-        a->count = args[i]->count;
-        Obj **obj_array = args[i]->array;
-
         // TODO: use this code for sending arrays to normal FFI functions too!!!
         // TODO: use the SAME code for sending data to FFI and struct constructors.
+        // TODO: check that we send the expected type to the constructor
         
-        if(args[i]->count == 0) {
-
-        }
-        else if(obj_array[0]->tag == 'I') {
-          a->data = malloc(sizeof(int) * a->count);
-          int *data = a->data;
-          for(int i = 0; i < a->count; i++) {
-            assert_or_set_error(obj_array[i]->tag == 'I', "All elements in array must be integers.", nil);
-            data[i] = obj_array[i]->i;
-          }
-        }
-        else {
-          eval_error = obj_new_string("Can't handle this array as argument.");
+        Array *a = obj_array_to_carp_array(args[i]);
+        if(!a) {
+          return;
         }
         
         void **ap = (void**)(((char*)new_struct->void_ptr) + offset);

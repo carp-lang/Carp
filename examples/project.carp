@@ -18,6 +18,13 @@
 (defn f [] (str &(Blaj [1 2 3])))
 
 
+(defstruct Blaj2 [blajArr2 (:Array (:Array :int))])
+(defn g [] (str &(Blaj2 [[10 20 30] [40 50 60 70] [80 90]])))
+
+
+(defstruct Blaj3 [blajArr3 (:Array (:Array (:Array :int)))])
+(defn h [] (str &(Blaj3 [[[10 20 30] [40 50 60 70] [80 90]]
+                         [[100 200 300] [400 500 600 700] [800 900]]])))
 
 ;; (defn f [] (fold add 0 &[1 2 3]))
 
