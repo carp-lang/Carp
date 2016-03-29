@@ -316,6 +316,14 @@
                                 a))
     x (error (str "Incorrect binding in if-let:" x))))
 
+(defmacro when-let [binding a]
+  (match binding
+    [var-name expr] (list 'let [var-name expr]
+                          (list 'if (list 'nil? var-name)
+                                nil
+                                a))
+    x (error (str "Incorrect binding in when-let:" x))))
+
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
           text
