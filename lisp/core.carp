@@ -324,6 +324,14 @@
                                 a))
     x (error (str "Incorrect binding in when-let:" x))))
 
+(defn cond-internal [forms]
+  (match forms
+    () (list 'error "No condition was true in 'cond' macro.")
+    (expr body ... xs) (list 'if expr body (cond-internal xs))))
+
+(defmacro cond [... forms]
+  (cond-internal forms))
+
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
           text
