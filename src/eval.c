@@ -5,6 +5,7 @@
 #include "gc.h"
 #include "primops.h"
 #include "obj.h"
+#include "../shared/types.h"
 
 #define LOG_EVAL 0
 #define LOG_STACK 0
@@ -771,6 +772,32 @@ void apply(Obj *function, Obj **args, int arg_count) {
         char *cp = (char*)(((char*)new_struct->void_ptr) + offset);
         *cp = args[i]->character;
       }
+      else if(args[i]->tag == 'A') {
+        //assert_or_set_error(obj_eq(member_type, type_array), "Can't assign array to a member of type ", obj_to_string(member_type));
+        printf("Array as arg: %s\n", obj_to_string(args[i])->s);
+
+        Array *a = malloc(sizeof(Array));
+        a->count = args[i]->count;
+        Obj **obj_array = args[i]->array;
+
+        if(args[i]->count == 0) {
+
+        }
+        else if(obj_array[0]->tag == 'I') {
+          a->data = malloc(sizeof(int) * a->count);
+          int *data = a->data;
+          for(int i = 0; i < a->count; i++) {
+            assert_or_set_error(obj_array[i]->tag == 'I', "All elements in array must be integers.", nil);
+            data[i] = args[i]->i;
+          }
+        }
+        else {
+          eval_error = obj_new_string("Can't handle this array as argument.");
+        }
+        
+        void **ap = (void**)(((char*)new_struct->void_ptr) + offset);
+        *ap = a;
+      }
       else {
         eval_error = obj_new_string("Can't set member ");
         char buffer[32];
@@ -942,6 +969,10 @@ void eval_list(Obj *env, Obj *o) {
     if(o->cdr == nil) {
       stack_push(nil);
     } else {
+      //assert_or_set_error(o->cdr->cdr->car, "Too many forms in 'quote' form: ", o);
+      if(o->cdr->cdr->car) {
+        printf("Too many forms in 'quote' form: %s\n", obj_to_string(o)->s);
+      }
       stack_push(o->cdr->car);
     }
   }

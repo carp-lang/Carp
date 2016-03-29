@@ -66,6 +66,7 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   if(eval_error) {
     printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
     printf("%s\n", obj_to_string(eval_error)->s);
+    function_trace_print();
     return;
   }
   else {

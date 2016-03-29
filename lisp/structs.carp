@@ -8,13 +8,17 @@
                          (cons b (second inside))))))
 
 (defmacro defstruct (struct-name struct-members)
-  (let [names-and-types (split-every-second (array-to-list struct-members))]
-    (list 'defstruct-internal (str struct-name)
-          (cons 'array (map str (first names-and-types)))
-          (cons 'array (second names-and-types)))))
+  (do
+    (println (str "Members: " struct-members))
+    (let [names-and-types (split-every-second (array-to-list struct-members))]
+      (list 'defstruct-internal (str struct-name)
+            (cons 'array (map str (first names-and-types)))
+            (cons 'array (map (fn [x] (list 'quote x)) (second names-and-types)))))))
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
+    (println (str "Member names: " member-names))
+    (println (str "Member types: " member-types))
     (when (def? (symbol struct-name)) (error (str "A struct named '" struct-name "' is already defined. Redefining structs is not implemented yet.")))
     (assert-eq (count member-names) (count member-types))
     (build-constructor struct-name member-names member-types)
@@ -22,7 +26,7 @@
                                            :generic false
                                            :name struct-name
                                            :member-names member-names
-                                           :member-types member-types
+                                           :member-types (list 'quote member-types)
                                            :size (eval (list (symbol (str "size-" struct-name))))
                                            :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
                                                                 member-names)

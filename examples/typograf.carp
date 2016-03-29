@@ -1,0 +1,38 @@
+
+;; A dynamic font
+
+(import gl)
+
+(defstruct TypografGlyph
+  [tgLines (:Array :Vec2dsfsd)])
+
+(defn init-state []
+  (TypografGlyph [[p1 p2] [p1 p3] [p4 p5]]))
+
+(defn typograf []
+  (glfw-app "Typograf" (init-state) id draw default-on-keys))
+
+(defn mid-x [] 320f)
+(defn mid-y [] 240f)
+
+(defn em [] 100f)
+(defn p1 [] (Vec2 (mid-x) (mid-y)))
+(defn p2 [] (Vec2 (- (mid-x) (em)) (- (mid-y) (em))))
+(defn p3 [] (Vec2 (+ (mid-x) (em)) (- (mid-y) (em))))
+(defn p4 [] (Vec2 (- (mid-x) (em)) (+ (mid-y) (em))))
+(defn p5 [] (Vec2 (+ (mid-x) (em)) (+ (mid-y) (em))))
+
+(defn draw-line-vec2 [p1 p2]
+  (let [x1 (get-V2X p1)
+        y1 (get-V2Y p1)
+        x2 (get-V2X p2)
+        y2 (get-V2Y p2)]
+    (draw-line x1 y1 x2 y2)))
+
+(defn draw [state]
+  (do
+    ))
+
+;; (draw-line-vec2 (p1) (p2))
+;; (draw-line-vec2 (p1) (p3))
+;; (draw-line-vec2 (p4) (p5))
