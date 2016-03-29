@@ -434,7 +434,6 @@ Array *obj_array_to_carp_array(Obj *obj_array) {
     }
   }
   else if(oa[0]->tag == 'A') {
-    printf("Nested arrays!\n");
     carp_array->data = malloc(sizeof(void*) * carp_array->count);
     Array **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
@@ -821,7 +820,6 @@ void apply(Obj *function, Obj **args, int arg_count) {
       }
       else if(args[i]->tag == 'A') {
         //assert_or_set_error(obj_eq(member_type, type_array), "Can't assign array to a member of type ", obj_to_string(member_type));
-        printf("Array as arg: %s\n", obj_to_string(args[i])->s);
 
         // TODO: use this code for sending arrays to normal FFI functions too!!!
         // TODO: use the SAME code for sending data to FFI and struct constructors.
