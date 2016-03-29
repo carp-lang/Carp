@@ -302,8 +302,8 @@
 (defn thread-last-internal [start-value forms]
   (match forms
     ()                    start-value
-    ((f ... args) ... xs) (concat (list f) args (list (thread-first-internal start-value xs)))
-    (x ... xs)            (list x (thread-first-internal start-value xs))))
+    ((f ... args) ... xs) (concat (list f) args (list (thread-last-internal start-value xs)))
+    (x ... xs)            (list x (thread-last-internal start-value xs))))
 
 (defmacro ->> [start-value ... forms]
   (thread-last-internal start-value (reverse forms)))

@@ -242,3 +242,24 @@
 (defn gimme-char ()
   \e)
 
+
+
+;; PIPE MACROS
+
+(defn baking-of-pipe-last-macro []
+  (->> [10 20 30]
+       (map inc)))
+
+(defn test-baking-of-pipe-last-macro []
+  (do (bake baking-of-pipe-last-macro)
+      (assert-eq "[11, 21, 31]" (str (baking-of-pipe-last-macro)))))
+
+
+(defn baking-of-pipe-first-macro []
+  (-> 10
+      (- 2)
+      (* 2)))
+
+(defn test-baking-of-pipe-first-macro []
+  (do (bake baking-of-pipe-first-macro)
+      (assert-eq 16 (baking-of-pipe-first-macro))))

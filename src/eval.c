@@ -415,7 +415,8 @@ void apply(Obj *function, Obj **args, int arg_count) {
     //printf("Calling function "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
     
     Obj *calling_env = obj_new_environment(function->env);
-    env_extend_with_args(calling_env, function, arg_count, args, false);
+    bool allow_rest_args = true;
+    env_extend_with_args(calling_env, function, arg_count, args, allow_rest_args);
     //printf("Lambda env: %s\n", obj_to_string(calling_env)->s);
 
     shadow_stack_push(function);

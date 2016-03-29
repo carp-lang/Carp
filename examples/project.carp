@@ -19,9 +19,6 @@
 
 
 
-
-
-
 ;; (defn f [] (fold add 0 &[1 2 3]))
 
 ;; (defn f [i]

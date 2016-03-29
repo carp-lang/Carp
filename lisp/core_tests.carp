@@ -1,4 +1,16 @@
 
+(defn test-pipe-first []
+  (assert-eq (list 7 8 9 10 11 12)
+             (-> 10
+                 (- 3)
+                 (range 13))))
+
+(defn test-pipe-last []
+  (assert-eq 20
+             (->> [3 4 5 6]
+                  (reduce (fn [a b] (+ a b)) 0)
+                  (- 38))))
+
 (defn test-sort []
   (let [nums '(4 5 6 2 3 7 1)]
     (do
@@ -413,6 +425,8 @@
     (test-bind-to-function-in-let)
     (test-doubles)
     (test-sort)
+    (test-pipe-first)
+    (test-pipe-last)
     ))
 
 (run-core-tests)
