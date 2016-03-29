@@ -73,7 +73,6 @@
 # Lisp Core Libs
   - 'import' function that searches paths for carp files
   - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
-  - -> and ->>
   - 'case'/'cond' macro
   - shuffle (for lists)
   - Conversions between a list of pairs and dictionaries
