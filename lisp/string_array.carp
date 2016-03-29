@@ -1,4 +1,47 @@
 
+;; typedef string* string_array;
+
+;; EXPORT string_array string_array_new(int size) {
+;;   string_array a = calloc(size + 1, sizeof(string));
+;;   for(int i = 0; i < size; i++) {
+;;     a[i] = strdup("");
+;;   }
+;;   return a;
+;; }
+
+;; EXPORT int string_array_count(string_array array) {
+;;   int i = 0;
+;;   string_array p = array;
+;;   while(*p) {
+;;     i++;
+;;     p++;
+;;   }
+;;   return i;
+;; }
+
+;; EXPORT string string_array_get(string_array array, int pos) {
+;;   return strdup(array[pos]);
+;; }
+
+;; EXPORT string_array string_array_set(string_array array, int pos, string new_value) {
+;;   array[pos] = strdup(new_value);
+;;   return array;
+;; }
+
+;; typedef string (*string_to_string_fn)(string);
+
+;; EXPORT string_array string_array_map(string_to_string_fn f, string_array array) {
+;;   string_array p = array;
+;;   while(*p) {
+;;     string old_string = *p;
+;;     string new_string = f(old_string);
+;;     *p = new_string;
+;;     p++;
+;;   }
+;;   return array;
+;; }
+
+
 (register-builtin "string_array_new" '(:int) ':string-array)
 (register-builtin "string_array_count" '((:ref :string-array)) :int)
 (register-builtin "string_array_get" '((:ref :string-array) :int) :string)
