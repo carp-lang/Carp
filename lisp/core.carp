@@ -308,6 +308,14 @@
 (defmacro ->> [start-value ... forms]
   (thread-last-internal start-value (reverse forms)))
 
+(defmacro if-let [binding a b]
+  (match binding
+    [var-name expr] (list 'let [var-name expr]
+                          (list 'if (list 'nil? var-name)
+                                b
+                                a))
+    x (error (str "Incorrect binding in if-let:" x))))
+
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
           text
