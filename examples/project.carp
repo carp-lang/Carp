@@ -13,24 +13,7 @@
 ;; (defn add [x y]
 ;;   (+ (copy x) (copy y)))
 
-(defstruct A [a :int])
-(defstruct B [as (:Array :A)])
-(println (str (B [(A 2) (A 3) (A 4)])))
 
-(defstruct C [ass (:Array (:Array :A))])
-;;(println (ref (str (ref (C [[(A 2) (A 3) (A 4)] [(A 3) (A 4) (A 5)]])))))
-
-(defstruct Blaj [blajArr (:Array :int)])
-(defn f [] (str &(Blaj [1 2 3])))
-
-
-(defstruct Blaj2 [blajArr2 (:Array (:Array :int))])
-(defn g [] (str &(Blaj2 [[10 20 30] [40 50 60 70] [80 90]])))
-
-
-(defstruct Blaj3 [blajArr3 (:Array (:Array (:Array :int)))])
-(defn h [] (str &(Blaj3 [[[10 20 30] [40 50 60 70] [80 90]]
-                         [[100 200 300] [400 500 600 700] [800 900]]])))
 
 ;; (defn f [] (fold add 0 &[1 2 3]))
 
@@ -135,3 +118,36 @@
 
 ;; (defn test-CON []
 ;;   (solve-constraints CONS))
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; Creating structs with nested array members, from the repl
+
+;; (defstruct A [a :int])
+;; (defstruct B [as (:Array :A)])
+;; (println (str (B [(A 2) (A 3) (A 4)])))
+
+;; (defstruct C [ass (:Array (:Array :A))])
+;; ;;(println (ref (str (ref (C [[(A 2) (A 3) (A 4)] [(A 3) (A 4) (A 5)]])))))
+
+;; (defstruct Blaj [blajArr (:Array :int)])
+;; (defn f [] (str &(Blaj [1 2 3])))
+
+
+;; (defstruct Blaj2 [blajArr2 (:Array (:Array :int))])
+;; (defn g [] (str &(Blaj2 [[10 20 30] [40 50 60 70] [80 90]])))
+
+
+;; (defstruct Blaj3 [blajArr3 (:Array (:Array (:Array :int)))])
+;; (defn h [] (str &(Blaj3 [[[10 20 30] [40 50 60 70] [80 90]]
+;;                          [[100 200 300] [400 500 600 700] [800 900]]])))

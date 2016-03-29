@@ -33,12 +33,9 @@
         y2 (get-V2Y p2)]
     (draw-line x1 y1 x2 y2)))
 
-(defn draw [state]
-  (do
-    (let [lines (get-tgLines state)
-          line (nth lines 0)]
-      (draw-line-vec2 (nth line 0) (nth line 1)))))
+(defn draw-glyph-segment [segment]
+  (draw-line-vec2 (nth segment 0) (nth segment 1)))
 
-;; (draw-line-vec2 (p1) (p2))
-;; (draw-line-vec2 (p1) (p3))
-;; (draw-line-vec2 (p4) (p5))
+(defn draw [state]
+  (domap draw-glyph-segment (get-tgLines state)))
+
