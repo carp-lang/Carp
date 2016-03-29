@@ -1,12 +1,8 @@
-
 ;; A dynamic font
-
 (import gl)
 
 (defstruct TypografGlyph
-  [tgLines (:Array (:Array :Vec2))])
-
-;;(TypografGlyph [])
+  [segments (:Array (:Array :Vec2))])
 
 (defn init-state [] (TypografGlyph [[(p1) (p2)] [(p1) (p3)] [(p4) (p5)]]))
 
@@ -37,5 +33,5 @@
   (draw-line-vec2 (nth segment 0) (nth segment 1)))
 
 (defn draw [state]
-  (domap draw-glyph-segment (get-tgLines state)))
+  (domap draw-glyph-segment (get-segments state)))
 
