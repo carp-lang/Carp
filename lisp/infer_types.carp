@@ -514,7 +514,7 @@
     (:head-name constraint)))
 
 (defn highlight [text]
-  (str (get-console-color console-color-yellow)
+  (str (get-console-color console-color-blue)
        text
        (get-normal-console-color)))
 
