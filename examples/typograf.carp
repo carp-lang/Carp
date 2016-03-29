@@ -35,7 +35,9 @@
 
 (defn draw [state]
   (do
-    ))
+    (let [lines (get-tgLines state)
+          line (nth lines 0)]
+      (draw-line-vec2 (nth line 0) (nth line 1)))))
 
 ;; (draw-line-vec2 (p1) (p2))
 ;; (draw-line-vec2 (p1) (p3))

@@ -768,6 +768,9 @@ void apply(Obj *function, Obj **args, int arg_count) {
     //printf("Will create a %s of size %d and member count %d.\n", name, size, member_count);
     void *p = malloc(struct_size);
     Obj *new_struct = obj_new_ptr(p);
+
+    shadow_stack_push(new_struct);
+    
     if(!new_struct->meta) {
       new_struct->meta = obj_new_environment(NULL);
     }
@@ -845,6 +848,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
         return;
       }
     }
+    shadow_stack_pop(); // pop new_struct
     stack_push(new_struct);
   } else {
     set_error("Can't call non-function: ", function);

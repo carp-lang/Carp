@@ -36,6 +36,8 @@ void obj_mark_alive(Obj *o) {
     obj_mark_alive(o->arg_types);
     obj_mark_alive(o->return_type);
   }
+
+  // TODO: remove data pointed to by void_ptr:s? (tag 'Q')
 }
 
 void free_internal_data(Obj *dead) {

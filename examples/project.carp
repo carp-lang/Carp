@@ -13,6 +13,12 @@
 ;; (defn add [x y]
 ;;   (+ (copy x) (copy y)))
 
+(defstruct A [a :int])
+(defstruct B [as (:Array :A)])
+(println (str (B [(A 2) (A 3) (A 4)])))
+
+(defstruct C [ass (:Array (:Array :A))])
+;;(println (ref (str (ref (C [[(A 2) (A 3) (A 4)] [(A 3) (A 4) (A 5)]])))))
 
 (defstruct Blaj [blajArr (:Array :int)])
 (defn f [] (str &(Blaj [1 2 3])))
