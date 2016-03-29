@@ -92,11 +92,16 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
     for(; i < arg_count; i++) {
       if(allow_restargs && obj_eq(paramp->array[i], dotdotdot)) {
         int rest_count = arg_count - i;
-        Obj *rest_array = obj_new_array(rest_count);
+        Obj *rest_list = obj_new_cons(NULL, NULL);
+        Obj *last = rest_list;
         for(int j = 0; j < rest_count; j++) {
-          rest_array->array[j] = args[i + j];
+          Obj *new_element = args[i + j];
+          last->car = new_element;
+          Obj *new_last = obj_new_cons(NULL, NULL);
+          last->cdr = new_last;
+          last = new_last;
         }
-        env_extend(calling_env, paramp->array[i + 1], rest_array);
+        env_extend(calling_env, paramp->array[i + 1], rest_list);
         return;
       }
  

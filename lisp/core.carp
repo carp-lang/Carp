@@ -290,8 +290,23 @@
 (defn doc [x]
   (meta-get x :doc))
 
-(defmacro -> () nil)
-(defmacro ->> () nil)
+(defn thread-first-internal [start-value forms]
+  (match forms
+    ()                    start-value
+    ((f ... args) ... xs) (concat (list f (thread-first-internal start-value xs)) args)
+    (x ... xs)            (list x (thread-first-internal start-value xs))))
+
+(defmacro -> [start-value ... forms]
+  (thread-first-internal start-value (reverse forms)))
+
+(defn thread-last-internal [start-value forms]
+  (match forms
+    ()                    start-value
+    ((f ... args) ... xs) (concat (list f) args (list (thread-first-internal start-value xs)))
+    (x ... xs)            (list x (thread-first-internal start-value xs))))
+
+(defmacro ->> [start-value ... forms]
+  (thread-last-internal start-value (reverse forms)))
 
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
