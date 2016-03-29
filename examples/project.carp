@@ -14,8 +14,8 @@
 ;;   (+ (copy x) (copy y)))
 
 
-
-
+(defstruct Blaj [blajArr (:Array :int)])
+(defn f [] (str &(Blaj [1 2 3])))
 
 
 

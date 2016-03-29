@@ -780,6 +780,9 @@ void apply(Obj *function, Obj **args, int arg_count) {
         a->count = args[i]->count;
         Obj **obj_array = args[i]->array;
 
+        // TODO: use this code for sending arrays to normal FFI functions too!!!
+        // TODO: use the SAME code for sending data to FFI and struct constructors.
+        
         if(args[i]->count == 0) {
 
         }
@@ -788,7 +791,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
           int *data = a->data;
           for(int i = 0; i < a->count; i++) {
             assert_or_set_error(obj_array[i]->tag == 'I', "All elements in array must be integers.", nil);
-            data[i] = args[i]->i;
+            data[i] = obj_array[i]->i;
           }
         }
         else {
