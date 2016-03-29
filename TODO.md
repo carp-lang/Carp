@@ -41,6 +41,12 @@
   - Modules 
   - Remove globals to enable several instances of the runner in parallel
   - A Set-type with reader syntax #{}
+  
+## Modules
+  - Name
+  - List of imported modules (with the name used for importation)
+  - List of opened modules
+  - Environment (with all the bindings)
 
 # Dynamic Runtime Small Features
   - Want to be able to send Obj-arrays to ffi functions
