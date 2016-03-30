@@ -285,7 +285,7 @@ of `inf-carp-program').  Runs the hooks from
                            "inf-carp" (car cmdlist) nil (cdr cmdlist)))
         (inf-carp-mode)))
   (setq inf-carp-buffer "*inf-carp*")
-  (split-window-below)
+  ;;(split-window-below)
   (pop-to-buffer-same-window "*inf-carp*"))
 
 ;;;###autoload
