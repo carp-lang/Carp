@@ -747,7 +747,7 @@ Obj *p_count(Obj** args, int arg_count) {
     return obj_new_int(args[0]->count);
   }
   else {
-    set_error_return_nil("'count' requires arg 0 to be a list: ", args[0]);
+    set_error_return_nil("'count' requires arg 0 to be a list or array: ", args[0]);
   }
 }
 

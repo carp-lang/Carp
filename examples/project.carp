@@ -2,6 +2,15 @@
 (reset! log-unloading-of-dylibs true)
 
 
+(defn mk-arr [] [1 2 3 4 5])
+(bake mk-arr)
+(count (mk-arr))
+
+;;(defn mk-arr-2 [] [[1] [2]])
+;;(bake mk-arr-2)
+;;(count (mk-arr-2))
+
+
 ;;(defstruct Foo [x :int])
 
 
@@ -131,7 +140,7 @@
 
 
 
-;; Creating structs with nested array members, from the repl
+;; Creating structs with nested arr-2ay members, from the repl
 
 ;; (defstruct A [a :int])
 ;; (defstruct B [as (:Array :A)])

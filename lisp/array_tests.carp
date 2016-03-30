@@ -128,7 +128,7 @@
 (defn test-copy-an-array-2 []
   (do
     (bake copy-an-array-2)
-    (assert-eq (str "[[10, 20, 30], [40, 50, 60]]") (str (copy-an-array-2)))
+    (assert-eq [[10, 20, 30], [40, 50, 60]] (copy-an-array-2))
     ))
 
 (def copy-2-ast (lambda-to-ast (code copy-an-array-2)))
