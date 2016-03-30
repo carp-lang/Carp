@@ -1,7 +1,7 @@
 ;; A dynamic font
 (import gl)
 
-(def global-state 0)
+(def gstate 65)
 
 (defstruct Segment
   [point-a :Vec2
@@ -21,16 +21,16 @@
 (defn int->glyph [x]
   (let [glyphs [(glyph-0) (glyph-1)]
         i (- x 65)]
-    (copy (if (and (< -1 i) (< i (count &glyphs)))
-            (nth &glyphs i)
-            (glyph-0)))))
+    (if (< i (count &glyphs))
+      (copy (nth &glyphs i))
+      (glyph-0))))
 
 ^ann glfw-key-callback-type
 (defn on-keys [window key scancode action mods]
   (if (= key-esc key)
     (glfwSetWindowShouldClose window true)
-    (do (println (str "key: " key))
-        (reset! global-state key))))
+    (do ;;(println (str "key: " key))
+        (reset! gstate key))))
 
 (defn glfw-app [title state tick render-callback on-key-callback]
   (if (glfwInit)
@@ -82,7 +82,8 @@
   (domap draw-glyph-segment (get-segments glyph)))
 
 (defn draw [state]
-  (let [glyph (int->glyph global-state)]
-    (draw-glyph glyph)))
+  (let [glyph (int->glyph gstate)]
+    (draw-glyph &glyph)))
 
+;;(bake typograf)
 (typograf)

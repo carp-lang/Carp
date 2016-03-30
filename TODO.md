@@ -1,4 +1,5 @@
 # Compiler Big Features
+  - Compile "and" & "or"
   - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
@@ -21,6 +22,7 @@
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
+  - Use 'generic-name' when concretesizing generic primops
   - Disallow "returning" of ref in let-form
   - Ownership in while loops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)

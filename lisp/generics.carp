@@ -469,17 +469,18 @@
                                        (if (primitive-type? t)
                                          (str "  x_copy->" n " = x->" n ";\n")
                                          (let [inner-copy-sig (list :fn (list (list :ref t)) t)
-                                               copy-function-c-name (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))]
+                                               copy-function-c-name (c-ify-name (generic-name "copy" inner-copy-sig))]
                                            (do
                                              (bake-generic-primop-auto "copy" inner-copy-sig)
-                                             (str "x_copy->" n " = " copy-function-c-name "(x->" n ");\n")))))                                           
+                                             (str "x_copy->" (c-ify-name n) " = " copy-function-c-name "(x->" (c-ify-name n) ");\n")))))                                           
                                      member-types
                                      member-names))
                      "  return x_copy;\n"
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
+           :deps (map (fn [t] (c-ify-name (generic-name "copy" (list :fn (list (list :ref t)) t))))
+                      (remove primitive-type? member-types))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
