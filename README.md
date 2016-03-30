@@ -34,15 +34,15 @@ The key features of Carp are the following:
   (+ state 0.033f))
 
 (defn draw [state]
-  (let [r 200f
+  (let [r 0.9f
         t (copy state)]
-    (draw-line 300f
-               220f
-               (+ 300f (* r (cosf t)))
-               (+ 220f (* r (sinf t))))))
+    (draw-line 0f
+               0f
+               (* r (cosf t))
+               (* r (sinf t)))))
 
 (defn spin []
-  (glfw-app "This is a demo" 0.0f tick draw default-on-keys))
+  (glfw-app "This is a demo" default-init tick draw default-on-keys))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe spin)``` to build an executable, or ```(spin)``` to run the program directly from the REPL.

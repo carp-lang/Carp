@@ -23,6 +23,7 @@
 (register glfw "glEnd" '() :void)
 (register glfw "glVertex3f" '(:float, :float, :float) :void)
 (register glfw "glOrtho" '(:double :double :double :double :double :double) :void)
+(register glfw "glLoadIdentity" '() :void)
 
 (def carp-gl-color-buffer-bit 16384)
 (def carp-gl-lines 1)
@@ -89,24 +90,28 @@
       (print ", mods: ")
       (println &(str mods)))))
 
-(defn glfw-app [title state tick render-callback on-key-callback]
+(defn default-init []
+  0f)
+
+(defn glfw-app [title init tick render-callback on-key-callback]
   (if (glfwInit)
-    (let [window (glfwCreateWindow 640 480 title NULL NULL)]
+    (let [window (glfwCreateWindow 512 512 title NULL NULL)]
       (if (null? window)
         (panic "No window.")
         (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (glfwSetKeyCallback window on-key-callback)
-            (glOrtho 0.0 640.0 480.0 0.0 1.0 -1.0)
-            (while (not (glfwWindowShouldClose window))
-              (do
-                (glClearColor 0.1f 0.1f 0.1f 1.0f)
-                (glClear carp-gl-color-buffer-bit)
-                (glColor3f 1.0f 1.0f 1.0f)
-                (render-callback &state)
-                (reset! state (tick state))
-                (glfwSwapBuffers window)
-                (glfwPollEvents)))
+            ;;(glOrtho 0.0 640.0 480.0 0.0 1.0 -1.0)
+            (let [state (init)]
+              (while (not (glfwWindowShouldClose window))
+                (do
+                  (glClearColor 0.1f 0.1f 0.1f 1.0f)
+                  (glClear carp-gl-color-buffer-bit)
+                  (glColor3f 1.0f 1.0f 1.0f)
+                  (render-callback &state)
+                  (reset! state (tick state))
+                  (glfwSwapBuffers window)
+                  (glfwPollEvents))))
             (println "Time to go.")
             (glfwTerminate))))
     (panic "Failed to initialize glfw.")))

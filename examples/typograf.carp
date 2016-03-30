@@ -32,8 +32,13 @@
     (do ;;(println (str "key: " key))
         (reset! gstate key))))
 
+(defn setup []
+  (do
+    (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
+    0))
+
 (defn typograf []
-  (glfw-app "Typograf" 1 id draw default-on-keys))
+  (glfw-app "Typograf" setup id draw on-keys))
 
 (defn mid-x [] 256f)
 (defn mid-y [] 256f)
@@ -59,10 +64,9 @@
 (defn draw-glyph [glyph]
   (domap draw-glyph-segment (get-segments glyph)))
 
-(defn draw [state]
+(defn draw [whatever]
   (let [glyph (int->glyph gstate)]
     (do
-      ;;(glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
       (draw-glyph &glyph))))
 
 ;;(bake typograf)

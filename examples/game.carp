@@ -37,6 +37,10 @@
 (defn update [state]
   (map move state))
 
+(defn setup []
+  (do (glOrtho 0.0 640.0 480.0 0.0 1.0 -1.0)
+      (generate-ships)))
+
 (defn game []
-  (glfw-app "The Attack of the Space Worms" (generate-ships) update draw default-on-keys))
+  (glfw-app "The Attack of the Space Worms" setup update draw default-on-keys))
 
