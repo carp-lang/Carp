@@ -456,7 +456,7 @@ Obj *primitive_to_obj(void *primitive, Obj *return_type);
 Obj *primitive_array_to_obj_array(Array *carp_array, Obj *inner_type) {
   Obj *new_array = obj_new_array(carp_array->count);
 
-  printf("Inner type: %s\n", obj_to_string(inner_type)->s);
+  //printf("Converting primitive array to Obj-array, inner type: %s\n", obj_to_string(inner_type)->s);
   
   if(obj_eq(inner_type, type_int)) {
     int *int_array = carp_array->data;
@@ -548,14 +548,14 @@ Obj *primitive_to_obj(void *primitive, Obj *return_type) {
           && obj_eq(return_type->car, obj_new_keyword("Array"))
           && return_type->cdr && return_type->cdr->car
           ) {
-    printf("It's an Array.\n");
+    //printf("Returning an Array.\n");
     void *result = primitive;
     Obj *inner_type = return_type->cdr->car;
     obj_result = primitive_array_to_obj_array(result, inner_type);
     if(!obj_result) {
       return NULL;
     }
-    printf("obj_result = %s\n", obj_to_string(obj_result)->s);
+    //printf("obj_result = %s\n", obj_to_string(obj_result)->s);
   }
   else {
     //set_error("Returning what? ", function->return_type);
