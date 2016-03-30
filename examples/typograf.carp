@@ -32,30 +32,8 @@
     (do ;;(println (str "key: " key))
         (reset! gstate key))))
 
-(defn glfw-app [title state tick render-callback on-key-callback]
-  (if (glfwInit)
-    (let [window (glfwCreateWindow 512 512 title NULL NULL)]
-      (if (null? window)
-        (panic "No window.")
-        (do (println "Window OK.")
-            (glfwMakeContextCurrent window)
-            (glfwSetKeyCallback window on-key-callback)
-            (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
-            (while (not (glfwWindowShouldClose window))
-              (do
-                (glClearColor 0.1f 0.1f 0.1f 1.0f)
-                (glClear carp-gl-color-buffer-bit)
-                (glColor3f 1.0f 1.0f 1.0f)
-                (render-callback &state)
-                (reset! state (tick state))
-                (glfwSwapBuffers window)
-                (glfwPollEvents)))
-            (println "Time to go.")
-            (glfwTerminate))))
-    (panic "Failed to initialize glfw.")))
-
 (defn typograf []
-  (glfw-app "Typograf" 1 id draw on-keys))
+  (glfw-app "Typograf" 1 id draw default-on-keys))
 
 (defn mid-x [] 256f)
 (defn mid-y [] 256f)
@@ -83,7 +61,9 @@
 
 (defn draw [state]
   (let [glyph (int->glyph gstate)]
-    (draw-glyph &glyph)))
+    (do
+      ;;(glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
+      (draw-glyph &glyph))))
 
 ;;(bake typograf)
 (typograf)
