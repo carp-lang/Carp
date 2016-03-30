@@ -213,7 +213,7 @@
                                                                  array-of-size-sig (list :fn (list :int) (list :Array b))
                                                                  _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
                                                                  array_of_size_call (generic-name "array-of-size" array-of-size-sig)
-                                                                 _ (println array_of_size_call)
+                                                                 ;;_ (println array_of_size_call)
                                                                  c (str proto
                                                                         "{ \n"
                                                                         "  int count = array->count;\n"
@@ -480,7 +480,7 @@
           {:proto proto
            :c c
            :deps (map (fn [t] (c-ify-name (generic-name "copy" (list :fn (list (list :ref t)) t))))
-                      (remove primitive-type? member-types))})
+                        (remove primitive-type? member-types))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
