@@ -1,6 +1,8 @@
 ;; A dynamic font
 (import gl)
 
+(def global-state 0)
+
 (defstruct Segment
   [point-a :Vec2
    point-b :Vec2])
@@ -8,14 +10,55 @@
 (defstruct TypografGlyph
   [segments (:Array :Segment)])
 
-(defn init-state [] (TypografGlyph [(Segment (p1) (p2))
-                                    (Segment (p2) (p3))]))
+(defn glyph-0 [] (TypografGlyph [(Segment (p1) (p2))
+                                 (Segment (p2) (p3))
+                                 (Segment (p1) (p3))]))
+
+(defn glyph-1 [] (TypografGlyph [(Segment (p2) (p4))
+                                 (Segment (p5) (p3))
+                                 (Segment (p4) (p5))]))
+
+(defn int->glyph [x]
+  (let [glyphs [(glyph-0) (glyph-1)]
+        i (- x 65)]
+    (copy (if (and (< -1 i) (< i (count &glyphs)))
+            (nth &glyphs i)
+            (glyph-0)))))
+
+^ann glfw-key-callback-type
+(defn on-keys [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (do (println (str "key: " key))
+        (reset! global-state key))))
+
+(defn glfw-app [title state tick render-callback on-key-callback]
+  (if (glfwInit)
+    (let [window (glfwCreateWindow 512 512 title NULL NULL)]
+      (if (null? window)
+        (panic "No window.")
+        (do (println "Window OK.")
+            (glfwMakeContextCurrent window)
+            (glfwSetKeyCallback window on-key-callback)
+            (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
+            (while (not (glfwWindowShouldClose window))
+              (do
+                (glClearColor 0.1f 0.1f 0.1f 1.0f)
+                (glClear carp-gl-color-buffer-bit)
+                (glColor3f 1.0f 1.0f 1.0f)
+                (render-callback &state)
+                (reset! state (tick state))
+                (glfwSwapBuffers window)
+                (glfwPollEvents)))
+            (println "Time to go.")
+            (glfwTerminate))))
+    (panic "Failed to initialize glfw.")))
 
 (defn typograf []
-  (glfw-app "Typograf" (init-state) id draw default-on-keys))
+  (glfw-app "Typograf" 1 id draw on-keys))
 
-(defn mid-x [] 320f)
-(defn mid-y [] 240f)
+(defn mid-x [] 256f)
+(defn mid-y [] 256f)
 
 (defn em [] 100f)
 
@@ -35,7 +78,11 @@
 (defn draw-glyph-segment [segment]
   (draw-line-vec2 (get-point-a segment) (get-point-b segment)))
 
+(defn draw-glyph [glyph]
+  (domap draw-glyph-segment (get-segments glyph)))
+
 (defn draw [state]
-  (domap draw-glyph-segment (get-segments state)))
+  (let [glyph (int->glyph global-state)]
+    (draw-glyph glyph)))
 
 (typograf)

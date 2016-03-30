@@ -388,7 +388,7 @@
                                          ;;(println (str "t: " t))
                                          (bake-generic-primop-auto "str" (list :fn (list t) :string))
                                          (str "
-  s = " (c-ify-name (generic-name "str" (list :fn (list t) :string))) "(x->" n "); 
+  s = " (c-ify-name (generic-name "str" (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
   snprintf(buffer + pos, 1000, \"%s\", s);
   pos += strlen(s);
   buffer[pos++] = ' ';")))
