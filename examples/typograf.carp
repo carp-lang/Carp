@@ -18,8 +18,17 @@
                                  (Segment (p5) (p3))
                                  (Segment (p4) (p5))]))
 
+(defn segment-nr [i]
+  (copy (nth (ref [(Segment (p1) (p2))
+                   (Segment (p2) (p3))
+                   (Segment (p3) (p4))])
+             i)))
+
+(defn glyph-2 [] (TypografGlyph (map-copy segment-nr [0 2])))
+(defn glyph-3 [] (TypografGlyph (map-copy segment-nr [1 2])))
+
 (defn int->glyph [x]
-  (let [glyphs [(glyph-0) (glyph-1)]
+  (let [glyphs [(glyph-0) (glyph-1) (glyph-2) (glyph-3)]
         i (- x 65)]
     (if (< i (count &glyphs))
       (copy (nth &glyphs i))
