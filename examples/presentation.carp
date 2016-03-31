@@ -1,0 +1,172 @@
+
+(def topics [me motivation inspiration features])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def me {:name "Erik Svedäng"
+         :job "Game Designer"
+         :age (* pi (sqrt 89.0))
+         :works ["Blueberry Garden"
+                 "Kometen"
+                 "Shot Shot Shoot"
+                 "Clairvoyance"
+                 "Else Heart.Break()"]})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def motivation
+  {:a "Lisp är AWESOME ...men funkar dåligt för spel (GC, dynamiskt)"
+   :b "C/C++ har dåliga abstraktioner och inget stöd live-utveckling (repl)"})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def inspiration
+  {1 :Rust
+   2 :ML
+   3 :Clojure})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(defn features []
+  (do
+    (println "1. Ingen Garbage Collector")
+    (println "2. Automatiskt (statiskt) uträknade typer")
+    (println "3. Bra stöd för live-kodning")
+    (println "4. Kompilerar till läsbar C")))
+
+
