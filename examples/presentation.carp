@@ -1,5 +1,5 @@
 
-(def topics [me motivation inspiration features])
+(def topics [me motivation inspiration features future])
 
 
 
@@ -174,3 +174,47 @@
     (println "4. Kompilerar till läsbar C")))
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(system "open https://github.com/eriksvedang/Carp")
