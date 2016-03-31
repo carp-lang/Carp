@@ -68,13 +68,19 @@
 (defstruct Vec2 [V2X :float V2Y :float])
 
 (defn draw-vec2 [v]
-  (do (glVertex3f (get-V2X &v) (get-V2Y &v) 0.0f)
-      0))
+  (glVertex3f (get-V2X v) (get-V2Y v) 0.0f))
 
 (defn draw-lines (positions)
   (do (glBegin carp-gl-line-strip)
-      (map-copy draw-vec2 positions)
+      (domap draw-vec2 positions)
       (glEnd)))
+
+(defn draw-line-vec2 [p1 p2]
+  (let [x1 (get-V2X p1)
+        y1 (get-V2Y p1)
+        x2 (get-V2X p2)
+        y2 (get-V2Y p2)]
+    (draw-line x1 y1 x2 y2)))
 
 ^ann glfw-key-callback-type
 (defn default-on-keys [window key scancode action mods]

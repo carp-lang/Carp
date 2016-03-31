@@ -11,7 +11,7 @@
 (set-signature! count          (:fn ((:ref (:Array "T")))           :int         ))
 
 (set-signature! map            (:fn ((:fn ("a") "a") (:Array "a"))  (:Array "a") ))
-(set-signature! map-copy       (:fn ((:fn ("a") "b") (:Array "a"))  (:Array "b") )) ;; TODO: should take array as ref instead?!
+(set-signature! map-copy       (:fn ((:fn ("a") "b") (:ref (:Array "a")))  (:Array "b") )) ;; TODO: should take array as ref instead?!
 
 (set-signature! reduce         (:fn ((:fn ("a" "b") "a") "a" (:Array "b"))   "a"          ))
 (set-signature! filter         (:fn ((:fn ("a") :bool) (:Array "a"))         (:Array "a") ))

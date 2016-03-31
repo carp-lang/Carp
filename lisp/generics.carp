@@ -209,7 +209,7 @@
 
     ;; TODO: can this be a normal function now?
     "map-copy" (match signature
-                 (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
+                 (:fn ((:fn (a) b) (:ref (:Array a))) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
                                                                  array-of-size-sig (list :fn (list :int) (list :Array b))
                                                                  _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
                                                                  array_of_size_call (generic-name "array-of-size" array-of-size-sig)
@@ -223,7 +223,7 @@
                                                                         "  for(int i = 0; i < count; i++) {\n"
                                                                         "    new_casted[i] = f(casted[i]);\n"
                                                                         "  }\n"
-                                                                        "  free(array);\n"
+                                                                        ;;"  free(array);\n"
                                                                         "  return new_array;\n"
                                                                         "}")]
                                                              {:proto proto :c c :deps (list array_of_size_call)})
@@ -543,20 +543,20 @@
               member-types (array-to-list (:member-types lookup))
               c (str proto " {\n"
                      (join "" (map2 (fn [t n]
-                                      (if (primitive-type? t)
-                                        (str "  /* no need to delete " t " member '" n "' */\n")
+                                      (if (managed-type? t)
                                         (let [inner-delete-sig (list :fn (list t) :void)
                                               delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
                                           (do
                                             (bake-generic-primop-auto "delete" inner-delete-sig)
-                                            (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))))
+                                            (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))
+                                        (str "  /* no need to delete " t " member '" n "' */\n")))
                                     member-types
                                     member-names))
                      "  free(x);\n"
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (remove primitive-type? member-types))})
+           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (filter managed-type? member-types))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 

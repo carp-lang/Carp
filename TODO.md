@@ -1,3 +1,15 @@
+
+This function will delete the result from map-copy, potentially deleting things owned by someone else
+
+(defn draw-lines (positions)
+  (do (glBegin carp-gl-line-strip)
+      (map-copy draw-vec2 positions)
+      (glEnd)))
+      
+
+
+
+
 # Compiler Big Features
   - Compile "and" & "or"
   - Compile globals so that they can be mutated (and all references refer to the same storage)

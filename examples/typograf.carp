@@ -3,84 +3,58 @@
 
 (def gstate 65)
 
-(defstruct Segment
-  [point-a :Vec2
-   point-b :Vec2])
-
-(defstruct TypografGlyph
-  [segments (:Array :Segment)])
-
 (defn mid-x [] 256f)
 (defn mid-y [] 256f)
 
 (defn em [] 100f)
 
-(defn p1 [] (Vec2 (mid-x) (mid-y)))
-(defn p2 [] (Vec2 (- (mid-x) (em)) (- (mid-y) (em))))
-(defn p3 [] (Vec2 (+ (mid-x) (em)) (- (mid-y) (em))))
-(defn p4 [] (Vec2 (- (mid-x) (em)) (+ (mid-y) (em))))
-(defn p5 [] (Vec2 (+ (mid-x) (em)) (+ (mid-y) (em))))
+(defn point-for-id [i]
+  (copy
+   (nth
+    (ref [(Vec2 (mid-x) (mid-y))
+          (Vec2 (- (mid-x) (em)) (- (mid-y) (em)))
+          (Vec2 (+ (mid-x) (em)) (- (mid-y) (em)))
+          (Vec2 (- (mid-x) (em)) (+ (mid-y) (em)))
+          (Vec2 (+ (mid-x) (em)) (+ (mid-y) (em)))])
+    i)))
 
-(defn glyph-0 [] (TypografGlyph [(Segment (p1) (p2))
-                                 (Segment (p2) (p3))
-                                 (Segment (p1) (p3))]))
+(defstruct TypografGlyph
+  [point-ids (:Array :int)])
 
-(defn glyph-1 [] (TypografGlyph [(Segment (p2) (p4))
-                                 (Segment (p5) (p3))
-                                 (Segment (p4) (p5))]))
-
-(defn segment-by-nr [i]
-  (copy (nth (ref [(Segment (p1) (p2))
-                   (Segment (p2) (p3))
-                   (Segment (p3) (p4))])
-             i)))
-
-(defn glyph-2 [] (TypografGlyph (map-copy segment-by-nr [0 2])))
-(defn glyph-3 [] (TypografGlyph (map-copy segment-by-nr [1 2])))
-
-(defn glyph-from-segment-indexes [indexes]
-  (TypografGlyph (map-copy segment-nr indexes)))
+(defn glyph-0 [] (TypografGlyph [0 1 3 4]))
 
 (defn int->glyph [x]
-  (let [glyphs [(glyph-0) (glyph-1) (glyph-2) (glyph-3)
-                (glyph-from-segment-indexes [0 2])]
+  (let [glyphs [(glyph-0)]
         i (- x 65)]
     (if (< i (count &glyphs))
       (copy (nth &glyphs i))
       (glyph-0))))
 
-^ann glfw-key-callback-type
-(defn on-keys [window key scancode action mods]
-  (if (= key-esc key)
-    (glfwSetWindowShouldClose window true)
-    (do ;;(println (str "key: " key))
-        (reset! gstate key))))
-
-(defn setup []
-  (do
-    (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0)
-    0))
-
-(defn typograf []
-  (glfw-app "Typograf" setup id draw on-keys))
-
-(defn draw-line-vec2 [p1 p2]
-  (let [x1 (get-V2X p1)
-        y1 (get-V2Y p1)
-        x2 (get-V2X p2)
-        y2 (get-V2Y p2)]
-    (draw-line x1 y1 x2 y2)))
-
-(defn draw-glyph-segment [segment]
-  (draw-line-vec2 (get-point-a segment) (get-point-b segment)))
-
 (defn draw-glyph [glyph]
-  (domap draw-glyph-segment (get-segments glyph)))
+  (let [ids (get-point-ids glyph)
+        points [(Vec2 100f 100f) (Vec2 250f 150f) (Vec2 300f 300f)]]
+    (draw-lines &points)))
 
 (defn draw [whatever]
   (let [glyph (int->glyph gstate)]
     (do
+      (glColor3f 0.4f 0.4f 0.4f)
+      ;;(draw-lines [(Vec2 100.1f 100.1f) (Vec2 100.3f 300.2f) (Vec2 200.5f 100.5f)])
+      (draw-line 0f 256f 512f 256f)
+      (glColor3f 1f 1f 1f)
       (draw-glyph &glyph))))
 
-;;(bake typograf)
-(typograf)
+^ann glfw-key-callback-type
+(defn on-keys [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (reset! gstate key)))
+
+(defn setup []
+  (do (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
+
+(defn typograf []
+  (glfw-app "Typograf" setup id draw on-keys))
+
+(bake-exe typograf)
+;;(typograf)

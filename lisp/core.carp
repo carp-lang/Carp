@@ -374,3 +374,5 @@
 (def console-color-magenta 5)
 (def console-color-cyan 6)
 (def console-color-white 7)
+
+(def pi 3.14159265)
