@@ -34,14 +34,14 @@ The key features of Carp are the following:
   0f)
 
 (defn tick [state]
-  (+ state 0.033f))
+  (+ state 0.15f))
 
 (defn draw [state]
-  (let [t (* 5f (copy state))
-        steps 100]
+  (let [t @state
+        steps 100
+        step (/ 1f (itof steps))]
     (for (i 0 steps)
-      (let [step (/ 1f (itof steps))
-            r (* step (itof i))
+      (let [r (* step (itof i))
             r2 (+ r step)]
         (draw-line (* r (cosf (* t r)))
                    (* r (sinf (* t r)))
