@@ -121,19 +121,22 @@
 
 
 (defn copy-an-array-2 []
-  (let [a [[10 20 30] [40 50 60]]
+  (let [a [[1] [2]]
         b (copy (ref a))]
     b))
 
 (defn test-copy-an-array-2 []
   (do
     (bake copy-an-array-2)
-    (assert-eq [[10, 20, 30], [40, 50, 60]] (copy-an-array-2))
+    (assert-eq [[1] [2]] (copy-an-array-2))
     ))
 
-(def copy-2-ast (lambda-to-ast (code copy-an-array-2)))
-(def copy-2-con (generate-constraints copy-2-ast))
-(def copy-2-sol (solve-constraints copy-2-con))
-(def copy-2-asta (annotate-ast copy-2-ast))
+;; (def copy-2-ast (lambda-to-ast (code copy-an-array-2)))
+;; (def copy-2-con (generate-constraints copy-2-ast))
+;; (def copy-2-sol (solve-constraints copy-2-con))
+;; (def copy-2-asta (annotate-ast copy-2-ast))
+
+;; THIS TEST IS SUPER SLOW AT THE MOMENT
 
 (test-copy-an-array-2)
+

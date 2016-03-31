@@ -36,9 +36,19 @@
 (defn annotate-ast (ast)
   (annotate-ast-internal ast false nil))
 
+(defn print-infer-time [start-time func-name]
+  (println (str (get-console-color console-color-yellow)
+                "infer-types for " func-name " took "
+                (/ (itof (- (now) start-time)) 1000f) " seconds"
+                (get-normal-console-color))))
+
+(def profile-infer-time false)
+
 (defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
   (let [ast-func-deps (find-func-deps ast bake-deps)
+        start-time (now)
         ast-typed (infer-types ast-func-deps func-signature-if-generic)
+        _ (when profile-infer-time (print-infer-time start-time (get-maybe ast :name)))
         ast-named (generate-names (copy {}) ast-typed)
         ast-lifetimes (calculate-lifetimes ast-named)
         ast-generics (visit-generic-funcs ast-lifetimes)

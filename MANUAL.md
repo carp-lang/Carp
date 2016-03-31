@@ -20,6 +20,7 @@ To start the Carp compiler in development mode (which will run its test suite), 
 * ```exe-out-dir``` Where the exe:s produced by (bake-exe ...) should be placed. Standard value is "./" (working directory)
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
 * ```prompt``` The prompt displayed in the repl
+* ```profile-infer-time``` Set to true if you want to know the time it takes to infer the types for each function
 
 ### Special Files
 If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
