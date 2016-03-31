@@ -42,7 +42,7 @@
 (def me {:name "Erik Svedäng"
          :job "Game Designer"
          :age (* pi (sqrt 89.0))
-         :web "www.eriksvedang.com"
+         :web "http://www.eriksvedang.com"
          :twitter "@e_svedang"
          :work ["Blueberry Garden"
                 "Kometen"
@@ -96,7 +96,7 @@
 
 (def motivation
   {:a "Lisp är AWESOME ...men funkar dåligt för spel (GC, dynamiskt)"
-   :b "C/C++ har dåliga abstraktioner och inget stöd live-utveckling (repl)"})
+   :b "C/C++ har bristfälliga abstraktioner och inget stöd live-utveckling (repl)"})
 
 
 

@@ -30,19 +30,26 @@ The key features of Carp are the following:
 ```clojure
 (import gl)
 
+(defn init []
+  0f)
+
 (defn tick [state]
   (+ state 0.033f))
 
 (defn draw [state]
-  (let [r 0.9f
-        t (copy state)]
-    (draw-line 0f
-               0f
-               (* r (cosf t))
-               (* r (sinf t)))))
+  (let [t (* 5f (copy state))
+        steps 100]
+    (for (i 0 steps)
+      (let [step (/ 1f (itof steps))
+            r (* step (itof i))
+            r2 (+ r step)]
+        (draw-line (* r (cosf (* t r)))
+                   (* r (sinf (* t r)))
+                   (* r2 (cosf (* t r2)))
+                   (* r2 (sinf (* t r2))))))))
 
 (defn spin []
-  (glfw-app "This is a demo" default-init tick draw default-on-keys))
+  (glfw-app "Spin" init tick draw default-on-keys))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe spin)``` to build an executable, or ```(spin)``` to run the program directly from the REPL.
