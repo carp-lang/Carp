@@ -172,6 +172,7 @@
 
 (defn int? (x) (= :int (type x)))
 (defn float? (x) (= :float (type x)))
+(defn double? (x) (= :double (type x)))
 (defn string? (x) (= :string (type x)))
 (defn symbol? (x) (= :symbol (type x)))
 (defn keyword? (x) (= :keyword (type x)))

@@ -118,7 +118,7 @@
 (defn code-for-global-variable [variable-symbol]
   (let [evaled (eval variable-symbol)
         t (type evaled)]
-    (if (or (int? evaled) (float? evaled) (string? evaled))
+    (if (or (int? evaled) (float? evaled) (double? evaled) (string? evaled))
       (do
         ;;(println (str "Adding global named " variable-symbol " of type " t))
         (str (type-build t) " " (c-ify-name (str variable-symbol)) " = " (prn evaled) ";"))
