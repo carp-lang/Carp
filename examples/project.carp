@@ -2,6 +2,24 @@
 (reset! log-unloading-of-dylibs true)
 
 
+(defn arr-1 [x]
+  [x])
+
+(defn arr-2 [x]
+  [x x])
+
+(defn arr-3 [x]
+  [(copy x) (copy x) (copy x)])
+
+(defn arr-4 [x]
+  [x x x x])
+
+(defn arr-5 [x]
+  [x x x x x])
+
+(defn arr-6 [x]
+  [x x x x x x])
+
 
 ;;(defn mk-arr-2 [] [[1] [2]])
 ;;(bake mk-arr-2)

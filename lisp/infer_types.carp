@@ -193,16 +193,19 @@
                                     :b (:type ast)
                                     :constraint-kind :if-branch-constr
                                     :prio prio-if-branch
+                                    :doc "if-left-constr"
                                     :location (location (:if-true ast) ast)}
                 right-result-constr {:a (get-in ast '(:if-false :type))
                                      :b (:type ast)
                                      :constraint-kind :if-branch-constr
                                      :prio prio-if-branch
+                                     :doc "if-right-constr"
                                      :location (location (:if-false ast) ast)}
                 expr-must-be-bool {:a :bool
                                    :b (get-in ast '(:expr :type))
                                    :constraint-kind :if-expr-constr
                                    :prio prio-default
+                                   :doc "if-expr-constr"
                                    :location (location {:line :invalid :node :bool} (:expr ast))}]
             (concat x2 (list
                         expr-must-be-bool
@@ -229,6 +232,7 @@
                              :doc "let-constr"}
                  bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding)
                                                                           :b (get-in binding '(:value :type))
+                                                                          :doc (str "let-bind-constr")
                                                                           :prio prio-default}
                                                              value-constrs (generate-constraints-internal constraints (:value binding) extended-type-env)]
                                                          (cons bind-constr value-constrs)))
