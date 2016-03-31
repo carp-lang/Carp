@@ -233,6 +233,13 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
       return new_int;
     }
   }
+  else if(CURRENT == '@') {
+    read_pos++;
+    Obj *inner = read_internal(env, s, filename);
+    Obj *cons2 = obj_new_cons(inner, nil);
+    Obj *cons1 = obj_new_cons(obj_new_symbol("copy"), cons2);
+    return cons1;
+  }
   else if(CURRENT == '\'') {
     read_pos++;
     Obj *inner = read_internal(env, s, filename);

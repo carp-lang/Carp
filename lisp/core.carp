@@ -377,3 +377,6 @@
 (def console-color-white 7)
 
 (def pi 3.14159265)
+
+(defn println* [x]
+  (println (ref (str x))))

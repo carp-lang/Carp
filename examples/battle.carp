@@ -1,0 +1,29 @@
+
+(defstruct Enemy
+  [enemy-name :string
+   enemy-hp   :int])
+
+(defn make-some-enemies []
+  [(Enemy @"Voldemort" 200)
+   (Enemy @"Sauron" 500)
+   (Enemy @"Satan" 666)])
+
+(def player-damage 50)
+
+(defn attack-enemy [enemy]
+  (let [current-hp (get-enemy-hp &enemy)]
+    (set-enemy-hp enemy (- current-hp player-damage))))
+
+(defn battle [enemies]
+  (map attack-enemy enemies))
+
+(defn try-it-out []
+  (let [enemies (make-some-enemies)]
+    (do (println "Before the battle: ")
+        (println* &enemies)
+        (println "...")
+        (let [new-enemies (battle enemies)]
+          (do
+            (println "After the battle:")
+            (println* &new-enemies))))))
+
