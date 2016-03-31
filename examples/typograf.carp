@@ -38,31 +38,12 @@
 
 (defn int->glyph [x]
   (let [glyphs [(TypografGlyph [8 1 2 3 7 6 5 4 3]) ;; a
-                (TypografGlyph [8 7 6 5 4 3 7]) ;; b
-                (TypografGlyph [1 8 7 6 5]) ;; c
-                (TypografGlyph [2 3 7 6 5 4 3]) ;; d
-                (TypografGlyph [7 3 2 1 8 6 5 4]) ;; e
+                (TypografGlyph [8 7 6 5 4 3 7])     ;; b
+                (TypografGlyph [1 8 7 6 5])         ;; c
+                (TypografGlyph [2 3 7 6 5 4 3])     ;; d
+                (TypografGlyph [7 3 2 1 8 6 5 4])   ;; e
                 (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])
-                (TypografGlyph [])]
+                ]
         i (- x 65)]
     (if (< i (count &glyphs))
       (copy (nth &glyphs i))
@@ -95,4 +76,4 @@
 
 ;;(bake-exe typograf)
 ;;(bake typograf)
-(typograf)
+;;(typograf)
