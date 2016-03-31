@@ -42,11 +42,14 @@
 (def me {:name "Erik Svedäng"
          :job "Game Designer"
          :age (* pi (sqrt 89.0))
-         :works ["Blueberry Garden"
-                 "Kometen"
-                 "Shot Shot Shoot"
-                 "Clairvoyance"
-                 "Else Heart.Break()"]})
+         :web "www.eriksvedang.com"
+         :twitter "@e_svedang"
+         :work ["Blueberry Garden"
+                "Kometen"
+                "Shot Shot Shoot"
+                "Tri Tri Triobelisk"
+                "Clairvoyance"
+                "Else Heart.Break()"]})
 
 
 
@@ -128,7 +131,8 @@
 (def inspiration
   {1 :Rust
    2 :ML
-   3 :Clojure})
+   3 :Clojure
+   4 :Emacs})
 
 
 
