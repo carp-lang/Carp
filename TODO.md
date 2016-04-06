@@ -35,6 +35,8 @@ This function will delete the result from map-copy, potentially deleting things 
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
+  - A ref to an array of non-refs shouldn't be able to get data unrestricted from the array, need to copy or get refs
+  - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
   - Disallow "returning" of ref in let-form
   - Ownership in while loops
