@@ -37,12 +37,19 @@
   (annotate-ast-internal ast false nil))
 
 (defn print-infer-time [start-time func-name]
-  (println (str (get-console-color console-color-yellow)
-                "infer-types for " func-name " took "
-                (/ (itof (- (now) start-time)) 1000f) " seconds"
-                (get-normal-console-color))))
+  (let [t (/ (itof (- (now) start-time)) 1000f)]
+    (do
+      (println (str (get-console-color console-color-yellow)
+                    "infer-types for " func-name " took "
+                    t " seconds"
+                    (get-normal-console-color)))
+      (reset! total-infer-time (+ total-infer-time t)))))
 
 (def profile-infer-time false)
+(def profile-external-compiler-time false)
+
+(def total-infer-time 0.0f)
+(def total-external-compile-time 0.0f)
 
 (defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
   (let [ast-func-deps (find-func-deps ast bake-deps)
@@ -233,10 +240,23 @@
       (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
 
+(defn print-external-compiler-time [start-time func-name]
+  (let [t (/ (itof (- (now) start-time)) 1000f)]
+    (do
+      (println (str (get-console-color console-color-yellow)
+                    "External compilation for " func-name " took "
+                     t " seconds"
+                    (get-normal-console-color)))
+      (reset! total-external-compile-time (+ total-external-compile-time t)))))
+
 (defn run-compiler [c-func-name c-file-name total-dependencies exe]
-  (if (windows?)
-    (run-cl c-func-name c-file-name total-dependencies exe)
-    (run-clang c-func-name c-file-name total-dependencies exe)))
+  (let [start-time (now)]
+    (do
+      (if (windows?)
+        (run-cl c-func-name c-file-name total-dependencies exe)
+        (run-clang c-func-name c-file-name total-dependencies exe))
+      (when profile-external-compiler-time
+        (print-external-compiler-time start-time c-func-name)))))
 
 (defn run-clang [c-func-name c-file-name total-dependencies exe]
   (let [clang-command (str "clang -DAPI= "

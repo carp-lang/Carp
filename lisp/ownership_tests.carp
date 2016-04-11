@@ -322,6 +322,15 @@
 
 
 
+
+(defn dont-allow-let-ref []
+  (copy (let [x [1 2 3]
+              r &x]
+          r)))
+
+
+
 ;; This one is weird:
 (defn own-string-weird (s)
   (ref s))
+
