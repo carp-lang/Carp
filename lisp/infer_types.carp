@@ -640,7 +640,12 @@
 
     :let (let [x0 (assoc ast :bindings (map (fn (b) (assign-types-to-binding b substs)) (:bindings ast)))
                x1 (assoc x0 :body (assign-types (:body x0) substs))
-               x2 (assoc x1 :type (get-type substs (:type ast)))]
+               let-ret-type (get-type substs (:type x1))
+               _ (when (ref? let-ret-type)
+                   (error {:error error-return-ref
+                           :message (str "The return type of " (:original-form x1) " on line " (:line x1) " is not owned.\n")
+                           :show-stacktrace false}))
+               x2 (assoc x1 :type let-ret-type)]
            x2)
     
     :while (let [x0 (assoc ast :type (get-type substs (:type ast)))

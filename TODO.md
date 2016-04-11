@@ -38,7 +38,6 @@ This function will delete the result from map-copy, potentially deleting things 
   - A ref to an array of non-refs shouldn't be able to get data unrestricted from the array, need to copy or get refs
   - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
-  - Disallow "returning" of ref in let-form
   - Ownership in while loops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
