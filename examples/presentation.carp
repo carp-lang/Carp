@@ -1,5 +1,5 @@
 
-(def topics [me motivation inspiration features future])
+(def topics '(me motivation inspiration features future))
 
 
 
