@@ -1,0 +1,21 @@
+(defstruct Ompa [ompa-x :int])
+
+(defn dangerous-ref []
+  (let [r (ref [(Ompa 1) (Ompa 2) (Ompa 3) (Ompa 4)])
+        third (nth r 2)]
+    (copy third)))
+
+(bake dangerous-ref)
+
+
+(defn grow [ompa]
+  (update-ompa-x ompa inc))
+
+(defn more-danger [omparr]
+  (map-copy grow omparr))
+
+(bake grow)
+(bake more-danger)
+
+(defn test-it-out []
+  (str (ref (more-danger (ref [(Ompa 20) (Ompa 30)])))))

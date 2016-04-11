@@ -469,7 +469,7 @@
                      "  " (type-build maybe-struct-type) " x_copy = calloc(1, sizeof(" t-name "));\n"
                      (join " " (map2 (fn [t n]
                                        (if (primitive-type? t)
-                                         (str "  x_copy->" n " = x->" n ";\n")
+                                         (str "  x_copy->" (c-ify-name n) " = x->" (c-ify-name n) ";\n")
                                          (let [inner-copy-sig (list :fn (list (list :ref t)) t)
                                                copy-function-c-name (c-ify-name (generic-name "copy" inner-copy-sig))]
                                            (do

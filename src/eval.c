@@ -573,6 +573,11 @@ void apply(Obj *function, Obj **args, int arg_count) {
             
             values[i] = &args[i]->void_ptr;
           }
+          else if(args[i]->tag == 'A') {
+            // TODO: Do some type checking here!!!
+            Array *a = obj_array_to_carp_array(args[i]);
+            values[i] = &a;            
+          }
           else if(args[i]->tag == 'F') {
             values[i] = &args[i]->funptr;
           }
