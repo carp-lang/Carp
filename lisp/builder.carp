@@ -292,7 +292,7 @@
                         arg-vars (map :c arg-results)]
                     (do (str-append! c (str (indent) "Array* " n " = malloc(sizeof(Array));\n"
                                             (indent) n "->count = " (count vals) ";\n"
-                                            (indent) n "->data = malloc(sizeof(sizeof(" t-no-star ") * " (count vals) "));\n"
+                                            (indent) n "->data = malloc(sizeof(" t-no-star ") * " (count vals) ");\n"
                                             (indent) t " *casted" n " = " n "->data;\n"
                                             (join "\n" (map2 (fn [arg-name index]
                                                                (str (indent) "casted" n "[" index "] = " arg-name ";"))
