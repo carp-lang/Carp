@@ -3,7 +3,10 @@
 
 
 (defn arr-1 [x]
-  [x])
+  [x 5])
+
+(defn f []
+  (println (ref (str (ref (arr-1 3))))))
 
 (defn arr-2 [x]
   [x x])
@@ -19,6 +22,14 @@
 
 (defn arr-6 [x]
   [x x x x x x])
+
+(defn arr-10 [x]
+  [x x x x x
+   x x x x 5])
+
+;; 8 + n * 6
+
+
 
 
 ;;(defn mk-arr-2 [] [[1] [2]])

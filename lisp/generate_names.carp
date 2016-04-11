@@ -77,6 +77,13 @@
       :lookup ast
 
       :null ast
+
+      :array (let [ast1 (update-in ast '(:values) (fn [vals] (map (fn (node) (generate-names var-name-counters node)) vals)))
+                   ast2 (assoc ast1 :array-expr-name (gen-var-name var-name-counters "array"))
+                   vals (:values ast)
+                   arg-names (repeatedly (fn () (gen-var-name var-name-counters "arg")) (count vals))
+                   ast3 (assoc ast2 :values (map2 (fn (arg arg-name) (assoc arg :arg-name arg-name)) vals arg-names))]
+               ast3)
       
       _ (error (str "Can't generate name for node " ast))
       

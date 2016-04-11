@@ -45,7 +45,7 @@
 
 (def array-to-ast-var-name-counters (copy {}))
 
-(defn array-to-ast [a]
+(defn array-to-ast-OLD [a]
   (let [a-count (count a)
         array-name-symbol (symbol (gen-var-name array-to-ast-var-name-counters "array"))
         nested-calls (nest-calls-to-array-set a 0 array-name-symbol)
@@ -66,6 +66,13 @@
       ;;(println (str "\narray-setup-ast:\n" array-setup-ast))
       ;;(println (str "\narray-form:\n" array-form))
       array-setup-ast)))
+
+(defn array-to-ast [a]
+  {:node :array
+   :type (list :Array (gen-typevar))
+   :line (meta-get a :line)
+   :original-form a
+   :values (map form-to-ast (array-to-list a))})
 
 (defn list-to-ast [l]
   (if (binop? l)

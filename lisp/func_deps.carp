@@ -108,6 +108,10 @@
 
                                         :null ast
 
+                                        :array (let [;;_ (println (str ":array " ast))
+                                                     ast0 (update-in ast '(:values) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                                 ast0)
+
                                         x (error (str "find-func-deps can't handle node: " x))
                                         
                                         )))

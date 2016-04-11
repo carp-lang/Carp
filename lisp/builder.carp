@@ -108,7 +108,6 @@
       (map (fn (arg) (visit-arg-explicit c arg deps)) args)
       (map (fn (arg) {:c (:arg-name arg)}) args))))
 
-
 (defn inlined-literal? (ast)
   (and (= :literal (:node ast))
        (contains? '(:int :float :double :bool (:ref :string)) (:type ast))))
@@ -283,6 +282,29 @@
                      {:c (:code form)})
 
            :null {:c "NULL"}
+
+           :array (let [n (:array-expr-name form)
+                        inner-type (nth (:type form) 1)
+                        t (c-ify-name (type-build inner-type))
+                        t-no-star (c-ify-name (type-build-no-star inner-type))
+                        ;;_ (println (str "vals: " vals))
+
+                        vals (:values form)
+                        arg-results ((if slim-code-generation visit-args-slim visit-args-explicit) c vals deps)
+                        arg-vars (map :c arg-results)
+                        ]
+                    (do (str-append! c (str (indent) "Array* " n " = malloc(sizeof(Array));\n"
+                                            (indent) n "->count = " (count vals) ";\n"
+                                            (indent) n "->data = malloc(sizeof(sizeof(" t-no-star ") * " (count vals) "));\n"
+                                            (indent) t " *casted_data = " n "->data;\n"
+                                            ;;(indent) "casted_data = (" t "[]){" (join "," arg-vars) "};\n"
+                                            (join "\n" (map2 (fn [arg-name index]
+                                                               (str (indent) "casted_data[" index "] = " arg-name ";"))
+                                                             arg-vars
+                                                             (range 0 (count arg-vars))))
+                                            "\n"))
+                        ;;(println (str "n: " n "\nc: " c))
+                        {:c n}))
            
            x (error (str "visit-form failed to match " x)))))
 

@@ -145,6 +145,8 @@
 
                                          :null ast
 
+                                         :array (update-in ast '(:values) (fn [vals] (map visit-generic-funcs-internal vals)))
+
                                          :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
                                          
                                          x (error (str "visit-generic can't handle node type " x))))]
