@@ -80,13 +80,20 @@
 (def baked-funcs {})
 (def baked-primops ())
 
-(defn add-func! (func-name func-proto func-dylib)
+(defn add-func! (func-name func-proto func-dylib func-deps)
   (swap! baked-funcs (fn (fs) (assoc fs func-name {:func-name func-name
                                                    :func-proto func-proto
-                                                   :func-dylib func-dylib}))))
+                                                   :func-dylib func-dylib
+                                                   :func-deps func-deps}))))
 
 (defn func-baked? [func-name]
   (not (nil? (get-maybe baked-funcs func-name))))
+
+(defn get-func-deps-recursively [func-name]
+  (if (has-key? baked-funcs (str func-name))
+    (let [deps (get-in baked-funcs (list (str func-name) :func-deps))]
+      (concat deps (mapcat get-func-deps-recursively deps)))
+    '()))
 
 (def log-unloading-of-dylibs false)
 
@@ -338,6 +345,7 @@
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
+      ;; (println (str "Deps of deps for " func-name ": " (join ", " deps-of-deps)))
       ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
       (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
       (def ast ast-annotated)
@@ -358,7 +366,7 @@
                                     (do
                                       (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
                                       (register out-lib c-func-name arg-types return-type)
-                                      (add-func! func-name proto out-lib)
+                                      (add-func! func-name proto out-lib total-dependencies)
                                       (let [f (eval (read func-name))
                                             sig (signature f)]
                                         (do (when (nil? sig) (error (str "No signature on function " f)))

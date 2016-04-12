@@ -4,7 +4,9 @@
 ;;(reset! profile-external-compiler-time true)
 
 (defn h []
-  123)
+  (strlen (ref (str 123))))
+
+;;(strlen (ref (str 123)))
 
 (defn g []
   (+ (h) (h)))
@@ -13,7 +15,7 @@
   (inc (g)))
 
 
-;;(def shared-builder (new-builder))
+(def shared-builder (new-builder))
 ;;(bake f)
 
 
