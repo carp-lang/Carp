@@ -3,7 +3,9 @@
 ;; Creates a C code builder which allows for out-of-order generation of C from the AST
 (defn new-builder ()
   {:headers ()
-   :functions ()})
+   :functions ()
+   :deps ()
+   :main ()})
 
 (defn builder-add (builder category block)
   (update-in builder (list category) (fn (blocks) (set (cons-last blocks block)))))
@@ -14,15 +16,18 @@
           files))
 
 (defn builder-add-main-function (builder func-name)
-  (builder-add builder :functions (str "int main() { " func-name "(); }")))
+  (builder-add builder :main (str "int main() { " func-name "(); }")))
 
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
-  (let [funcs (get builder :functions)
-        headers (get builder :headers)]
-    (join "\n\n"
-          (list (join "\n" headers)
-                (join "\n\n" funcs)))))
+  (let [funcs (:functions builder)
+        headers (:headers builder)
+        main (:main builder)]
+    (str (join "\n\n"
+               (list (join "\n" headers)
+                     (join "\n\n" funcs)
+                     (join "\n\n" main)))
+         "\n")))
 
 (def indent-level 1)
 

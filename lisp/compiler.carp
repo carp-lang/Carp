@@ -154,12 +154,13 @@
         (str
          "#include <shared.h>\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
-         "\n//Types:\n"
+         "\n\n//Types:\n"
          (join "\n" (map :type-definition (reverse (values types))))
-         "\n//Globals:\n"
+         "\n\n//Globals:\n"
          (join "\n" (map :global-definition (values globals)))
          "\n\n//Functions:\n"
-         (join "\n" (map :func-proto (values baked-funcs))))))
+         (join "\n" (map :func-proto (values baked-funcs)))
+         "\n")))
 
 ;; Keys:   Names of functions (strings)
 ;; Values: A list of all the functions that depend on this particular function
@@ -325,7 +326,8 @@
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
-  (let [builder-with-headers (builder-add-headers builder header-files)
+  (let [old-builder-deps (:deps builder)
+        builder-with-headers (builder-add-headers builder header-files)
         builder-result (builder-visit-ast builder-with-headers ast-annotated func-name)
         builder-funcs (:funcs builder-result)
         builder-deps (:deps builder-result)
@@ -336,12 +338,15 @@
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps builder-deps))
+        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps builder-deps old-builder-deps))
+        final-builder-with-deps (reduce (fn [b dep] (builder-add b :deps dep)) builder-final total-dependencies)
         t (get ast-annotated :type)
         ]
     (do
       (when (not-nil? shared-builder)
-        (reset! shared-builder builder-final))
+        (do
+          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
+          (reset! shared-builder final-builder-with-deps)))
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
