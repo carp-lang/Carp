@@ -19,7 +19,6 @@ This function will delete the result from map-copy, potentially deleting things 
   - Structs refering to other structs
   - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Arrays generate a ton of constraints
     
 ## Tagged Unions
   - Compile match statements
