@@ -121,7 +121,7 @@
         (let [func-code (code (eval (symbol func-name)))]
           (do
             ;;(println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
-            (bake-internal (new-builder) func-name func-code (meta-get func :ann) '() false)))
+            (bake-internal func-name func-code (meta-get func :ann) '() false)))
         (do
           ;;(println (str "re-compile will ignore non-lambda: " func))
           :ignore))))
@@ -217,8 +217,15 @@
     (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
     x (error (str "Can't match " x " in generic-function?"))))
 
+(def shared-builder nil)
+
+(defn get-builder []
+  (if (nil? shared-builder)
+    (new-builder)
+    shared-builder))
+
 ;; Takes a function name and the list representation of the lambda
-(defn bake-internal [builder func-name func-code func-annotation external-deps exe]
+(defn bake-internal [func-name func-code func-annotation external-deps exe]
   (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
     (if (generic-function? annotated-ast)
       (do
@@ -232,13 +239,13 @@
             (if echo-signature-after-bake
               (println (str func-name " : " s))
               nil))))
-      (bake-internal-common annotated-ast builder func-name func-code external-deps exe))))
+      (bake-internal-common annotated-ast (get-builder) func-name func-code external-deps exe))))
 
-(defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
+(defn bake-generic-func-internal [func-name func-code external-deps exe func-signature]
   (let [ast-annotated (func-to-annotated-ast func-name func-code nil func-signature)]
     (if (generic-function? ast-annotated)
       (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
-      (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
+      (bake-internal-common ast-annotated (get-builder) func-name func-code external-deps exe))))
 
 (defn print-external-compiler-time [start-time func-name]
   (let [t (/ (itof (- (now) start-time)) 1000f)]
@@ -291,7 +298,7 @@
             (do
               ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
               :OK)
-            (bake-internal (new-builder) func-name (code evaled) (meta-get evaled :ann) external-deps false)))))))
+            (bake-internal func-name (code evaled) (meta-get evaled :ann) external-deps false)))))))
 
 (defn run-cl [c-func-name c-file-name total-dependencies exe]
   (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"
@@ -326,6 +333,8 @@
         t (get ast-annotated :type)
         ]
     (do
+      (when (not-nil? shared-builder)
+        (reset! shared-builder builder-final))
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
@@ -363,13 +372,13 @@
   (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
 
 (defmacro bake-exe (func-symbol)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true))
+  (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true))
 
 (defmacro bake* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
+  (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
 
 (defmacro bake-exe* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
+  (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
 
 (defn clean ()
   (if (windows?)

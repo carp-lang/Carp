@@ -6,7 +6,7 @@
    :functions ()})
 
 (defn builder-add (builder category block)
-  (update-in builder (list category) (fn (blocks) (cons-last blocks block))))
+  (update-in builder (list category) (fn (blocks) (set (cons-last blocks block)))))
 
 (defn builder-add-headers (builder files)
   (reduce (fn (b file) (builder-add b :headers (str "#include " file)))
@@ -22,7 +22,7 @@
         headers (get builder :headers)]
     (join "\n\n"
           (list (join "\n" headers)
-                (join "\n" funcs)))))
+                (join "\n\n" funcs)))))
 
 (def indent-level 1)
 

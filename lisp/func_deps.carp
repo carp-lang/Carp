@@ -49,8 +49,7 @@
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
                                                                 ;;(println (str symbol " is a dependency of " func-name ", code: " (code evaled)))
-                                                                (bake-internal (new-builder)
-                                                                               (str symbol)
+                                                                (bake-internal (str symbol)
                                                                                (code evaled)
                                                                                (meta-get evaled :ann)
                                                                                '()

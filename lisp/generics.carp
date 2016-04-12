@@ -83,8 +83,7 @@
                                    (let [n (generic-name lookup-sym t)]
                                      (do
                                        ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                       (bake-generic-func-internal (new-builder)
-                                                                   n
+                                       (bake-generic-func-internal n
                                                                    (code global-lookup)
                                                                    '()
                                                                    false
@@ -100,8 +99,7 @@
                                        (do
                                          ;;(println (str "Found a generic primop to bake: " lookup-sym))
                                          ;; (println (str "Final name will be " n))
-                                         (bake-generic-primop (new-builder)
-                                                              n
+                                         (bake-generic-primop n
                                                               (str lookup-sym)
                                                               t)
                                          (reset! deps (cons (symbol n) deps))
@@ -158,13 +156,12 @@
 ;;  (bake-generic-primop-auto "nth" '(:fn ((:ref (:Array :float)) :int) :float))
 ;; This will generate the function nth--RefTo-ArrayOf-float-int-float of type (&Array float, int) -> float
 (defn bake-generic-primop-auto [primop-name signature]
-  (let [builder (new-builder)
-        func-name (generic-name (symbol primop-name) signature)]
-    (bake-generic-primop builder func-name primop-name signature)))
+  (let [func-name (generic-name (symbol primop-name) signature)]
+    (bake-generic-primop func-name primop-name signature)))
 
 
 ;; Used by the visit-generic-func algorithm to generate and register baked version of generic primops
-(defn bake-generic-primop [builder func-name primop-name signature]
+(defn bake-generic-primop [func-name primop-name signature]
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
     (if (func-baked? func-name)

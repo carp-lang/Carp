@@ -3,6 +3,18 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
+(defn h []
+  123)
+
+(defn g []
+  (+ (h) (h)))
+
+(defn f []
+  (inc (g)))
+
+
+;;(def shared-builder (new-builder))
+;;(bake f)
 
 
 ;; (defn arr-1 [x]
