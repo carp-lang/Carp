@@ -132,7 +132,7 @@
 (defn bake-global [variable-name]
   (let [t (type-of-global variable-name)
         evaled (eval (symbol variable-name))        
-        _ (println (str variable-name " : " t))
+        ;;_ (println (str variable-name " has type " t))
         c-variable-name (c-ify-name variable-name)]
     (if (contains? '(:int :float :double :string) t)
       (do

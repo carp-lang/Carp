@@ -1030,9 +1030,26 @@ void eval_list(Obj *env, Obj *o) {
       stack_push(nil);
       return;
     }
+    
     eval_internal(env, o->cdr->cdr->car);
     if(eval_error) { return; }
-    pair->cdr = stack_pop();
+
+    // TODO: Use a special tag for global variable pointers
+    if(pair->cdr->tag == 'Q' && pair->cdr->meta) {
+      printf("Resetting a ptr.\n");
+      Obj *type_meta = env_lookup(pair->cdr->meta, obj_new_keyword("type"));
+      if(type_meta && obj_eq(type_meta, type_int)) {
+        int *ip = pair->cdr->void_ptr;
+        *ip = stack_pop()->i;
+      }
+      else {
+        printf("No/invalid :type\n");
+        pair->cdr = stack_pop();
+      }
+    }
+    else {
+      pair->cdr = stack_pop();
+    }
     stack_push(pair->cdr);
   }
   else if(HEAD_EQ("fn")) {

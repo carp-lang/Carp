@@ -26,3 +26,22 @@
 
 (defn f []
   (reset! state 100))
+
+
+
+;; (defn setup []
+;;   nil)
+
+;; (defn draw [s]
+;;   nil)
+
+;; (import gl)
+
+;; ^ann glfw-key-callback-type
+;; (defn on-keys [window key scancode action mods]
+;;   (if (= key-esc key)
+;;     (glfwSetWindowShouldClose window true)
+;;     (reset! state 123)))
+
+;; (defn globapp []
+;;   (glfw-app "GLOB" setup id draw on-keys))
