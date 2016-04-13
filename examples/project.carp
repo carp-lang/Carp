@@ -3,6 +3,16 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
+(def g [1 2 3])
+
+(defn del []
+  (do
+    (reset! g [1 2 3])
+    (println (ref (str &g)))
+    (reset! g [4 5 6])
+    (println (ref (str &g)))
+    ))
+
 
 
 ;;(bake f)

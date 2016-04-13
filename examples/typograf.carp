@@ -69,7 +69,9 @@
     (reset! gstate key)))
 
 (defn setup []
-  (do (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
+  (do
+    ;;(reset! gstate 65)
+    (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
 
 (defn typograf []
   (glfw-app "Typograf" setup id draw on-keys))

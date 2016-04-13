@@ -940,6 +940,9 @@ Obj *p_signature(Obj** args, int arg_count) {
     return sig;
   }
   else if(args[0]->tag == 'P' || args[0]->tag == 'L') {
+    if(!args[0]->meta) {
+      return nil;
+    }
     Obj *sig = env_lookup(args[0]->meta, obj_new_keyword("signature"));
     if(sig) {
       return sig;

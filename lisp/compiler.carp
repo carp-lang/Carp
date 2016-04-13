@@ -21,6 +21,7 @@
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 (load-lisp (str carp-dir "lisp/generics.carp"))
 (load-lisp (str carp-dir "lisp/structs.carp"))
+(load-lisp (str carp-dir "lisp/globals.carp"))
 
 (def platform-specifics
   (if (windows?)
