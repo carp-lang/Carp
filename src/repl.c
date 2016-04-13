@@ -53,7 +53,7 @@ int paren_balance(char *s) {
 #define PROMPT "CARP> "
 #define PROMPT_UNFINISHED_FORM "   _> "
 #else
-#define PROMPT "=> " // "\e[36mλ>\e[0m "
+#define PROMPT "λ> " // "\e[36mλ>\e[0m "
 #define PROMPT_UNFINISHED_FORM "_> " // "\e[36m_>\e[0m "
 #endif
 
