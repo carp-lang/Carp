@@ -400,6 +400,16 @@
                                             (def s (pretty-signature sig))
                                             (when echo-signature-after-bake (println (str func-name " : " s)))
                                             f)))))
+    variable-type (do
+                    (save-function-prototypes)
+                    (save c-file-name c-program-string)
+                    (run-compiler c-func-name c-file-name total-dependencies exe)
+                    (unload-if-necessary func-name)
+                    (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
+                    (register-variable out-lib c-func-name variable-type)
+                    (add-func! func-name proto out-lib total-dependencies)
+                    (let [f (eval (read func-name))]
+                      f))
     _ (error "Must bake function with type (:fn ...)")))
 
 ;; Bake a function in the current environment, just give it's symbol

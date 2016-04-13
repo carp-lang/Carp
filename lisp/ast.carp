@@ -172,7 +172,7 @@
   (if (symbol? symbol)
     {:node :reset
      :type :void
-     :symbol symbol
+     :symbol (literal-or-lookup-to-ast symbol)
      :expr (form-to-ast expr)
      :line (meta-get symbol :line)
      :original-form (list 'reset! symbol expr)}

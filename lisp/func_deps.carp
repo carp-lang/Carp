@@ -42,7 +42,8 @@
                                                             (when (and (not is-function) (not is-constructor))
                                                               (do
                                                                 ;;(println (str symbol " is not a function/constructor, make it a global variable."))
-                                                                (add-global! (name symbol) (code-for-global-variable symbol))))
+                                                                (bake-global (name symbol))
+                                                                (reset! deps (cons symbol deps))))
                                                             (when is-constructor
                                                               (do
                                                                 (reset! deps (cons symbol deps))))
@@ -60,7 +61,9 @@
                                                             )))                                                      
                                                       (assoc ast :global-lookup is-global-lookup))))
 
-                                        :reset (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                        :reset (let [ast0 (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:symbol) (fn [a] (find-func-deps-internal a vars-in-scope)))]
+                                                 ast1)
 
                                         :app (let [ast0 (update-in ast '(:head) (fn (a) (find-func-deps-internal a vars-in-scope)))
                                                    ast1 (update-in ast0 '(:tail) (fn (a) (find-deps-in-list a vars-in-scope)))]
@@ -118,11 +121,19 @@
         new-ast (find-func-deps-internal ast '())]
     (assoc new-ast :func-deps deps)))
 
-(defn code-for-global-variable [variable-symbol]
-  (let [evaled (eval variable-symbol)
-        t (type evaled)]
+(defn bake-global [variable-name]
+  (let [evaled (eval (symbol variable-name))
+        t (type evaled)
+        c-variable-name (c-ify-name variable-name)]
     (if (or (int? evaled) (float? evaled) (double? evaled) (string? evaled))
       (do
-        ;;(println (str "Adding global named " variable-symbol " of type " t))
-        (str (type-build t) " " (c-ify-name (str variable-symbol)) " = " (prn evaled) ";"))
+        ;;(println (str "Adding global named " variable-name " of type " t))
+        (let [prototype (str "extern " (type-build t) " " c-variable-name ";")
+              c-code (str (type-build t) " " c-variable-name " = " (prn evaled) ";")
+              includes-string "#include <shared.h>\n\n"
+              deps '()]
+          (do
+            (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code includes-string prototype deps false)
+            ;;(add-global! variable-name prototype)
+            )))
       (error (str "Can't handle globals of type " t " yet.")))))

@@ -20,3 +20,9 @@
     (print-state)))
 
 
+(defn upp []
+  (do (reset! state (inc state))
+      (println (ref (str &state)))))
+
+(defn f []
+  (reset! state 100))

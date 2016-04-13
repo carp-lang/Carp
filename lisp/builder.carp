@@ -189,7 +189,7 @@
                   result)
 
            :reset (let [expr (:expr form)
-                        symbol (:symbol form)
+                        symbol (:value (:symbol form))
                         result (visit-form c expr toplevel deps)]
                     (do (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
                         {:c ""}))

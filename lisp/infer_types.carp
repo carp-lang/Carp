@@ -127,7 +127,7 @@
              (cons expr-constr x0))
 
       :reset (let [expr (:expr ast)
-                   symbol (:symbol ast)
+                   symbol (:value (:symbol ast))
                    x0 (generate-constraints-internal constraints expr type-env)
                    t (get-type-of-symbol type-env symbol)
                    expr-constr {:a t
