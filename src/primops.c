@@ -1494,22 +1494,25 @@ Obj *register_ffi_variable_internal(char *name, void *varptr, Obj *var_type_obj)
     return nil;
   }
   
-  Obj *new_variable_value;
+  /* Obj *new_variable_value; */
 
-  if(obj_eq(var_type_obj, type_int)) {
-    int *i = varptr;
-    new_variable_value = obj_new_int(*i);
-  }
-  else {
-    eval_error = obj_new_string("Invalid variable type.");
-    return nil;
-  }
+  /* if(obj_eq(var_type_obj, type_int)) { */
+  /*   int *i = varptr; */
+  /*   new_variable_value = obj_new_int(*i); */
+  /* } */
+  /* else { */
+  /*   eval_error = obj_new_string("Invalid variable type."); */
+  /*   return nil; */
+  /* } */
+
+  Obj *variable_ptr = obj_new_ptr(varptr);
+  obj_set_meta(variable_ptr, obj_new_keyword("type"), var_type_obj);
 
   char *lispified_name = lispify(name);
   //printf("Registering variable %s\n", lispified_name);  
-  global_env_extend(obj_new_symbol(lispified_name), new_variable_value);
+  global_env_extend(obj_new_symbol(lispified_name), variable_ptr);
 
-  return new_variable_value;
+  return variable_ptr;
 }
 
 // (register <dylib> <function-name> <arg-types> <return-type>)

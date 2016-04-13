@@ -2,6 +2,7 @@
 #include "env.h"
 #include "eval.h"
 #include "gc.h"
+#include "obj_conversions.h"
 
 bool setting_print_lambda_body = true;
 
@@ -257,6 +258,12 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
 	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+      }
+      else if(obj_eq(type_lookup, type_int)) {
+        //int i = 123;
+        void *dereffed = *(void**)o->void_ptr;
+        Obj *x = primitive_to_obj(dereffed, type_int);
+        obj_string_mut_append(total, obj_to_string(x)->s);
       }
       else {
 	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);

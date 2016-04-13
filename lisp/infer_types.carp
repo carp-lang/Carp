@@ -17,7 +17,7 @@
   (let [lookup (get-maybe type-env symbol)]
     (if (nil? lookup)
       (let [global-lookup (eval symbol)
-            t (type global-lookup)]
+            t (type-of-global (str symbol))]
         (match t
           :lambda (if (meta-get global-lookup :generic)
                     (let [signature (meta-get global-lookup :signature)

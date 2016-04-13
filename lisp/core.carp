@@ -184,6 +184,7 @@
 (defn lambda? (x) (= :lambda (type x)))
 (defn foreign? (x) (= :foreign (type x)))
 (defn primop? (x) (= :primop (type x)))
+(defn ptr? [x] (= :ptr (type x)))
 
 (defn function? (x) (or (lambda? x)
                         (foreign? x)
