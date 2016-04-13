@@ -5,37 +5,15 @@
 
 ;;(enable-shared-builder!)
 
-(defstruct Foo [foox :int])
 
-(def f (Foo 100))
 
-(defn del1 []
-  (do
-    (reset! f (Foo 200))
-    (println (ref (str &f)))
-    (reset! f (Foo 300))
-    (println (ref (str &f)))
-    ))
 
-(def g [1 2 3])
 
-(defn del2 []
-  (do
-    (reset! g [4 5 6])
-    (println (ref (str &g)))
-    (reset! g [7 8 9])
-    (println (ref (str &g)))
-    ))
 
-(def h @"hej")
 
-(defn del3 []
-  (do
-    (reset! h @"svej")
-    (println (ref h))
-    (reset! h @"nej")
-    (println (ref h))
-    ))
+
+
+
 
 ;; (defn p []
 ;;   (println (ref (str (ref 2.3f)))))
