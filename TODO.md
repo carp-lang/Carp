@@ -13,7 +13,6 @@ This function will delete the result from map-copy, potentially deleting things 
 # Compiler Big Features
   - Compile "and" & "or"
   - Compile globals so that they can be mutated (and all references refer to the same storage)
-  - Compile a whole file to a single dylib
   - Lambdas / lambda lifting
   - Allow recompiling changed defstructs
   - Structs refering to other structs
@@ -48,7 +47,7 @@ This function will delete the result from map-copy, potentially deleting things 
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Clean up the awful 'list-to-ast' function
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
-
+  - Write a unifier function in C instead
 
 
 # Dynamic Runtime Big Features
