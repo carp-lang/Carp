@@ -32,7 +32,7 @@ typedef void (*VoidFn)(void);
    O
    P = Primop / raw C function pointer
    Q = Void pointer
-   R 
+   R = Global variable
    S = String
    T = Char
    U
@@ -85,7 +85,7 @@ typedef struct Obj {
     };
     // Dylib
     void *dylib;
-    // Void pointer
+    // Void pointer / global variable
     void *void_ptr;
     // Float
     float f32;
@@ -117,6 +117,7 @@ Obj *obj_new_keyword(char *s);
 Obj *obj_new_primop(Primop p);
 Obj *obj_new_dylib(void *dylib);
 Obj *obj_new_ptr(void *ptr);
+Obj *obj_new_ptr_to_global(void *ptr);
 Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
@@ -173,6 +174,7 @@ Obj *type_ptr;
 Obj *type_ref;
 Obj *type_char;
 Obj *type_array;
+Obj *type_ptr_to_global;
 
 Obj *prompt;
 Obj *prompt_unfinished_form;

@@ -104,6 +104,12 @@ Obj *obj_new_ptr(void *ptr) {
   return o;
 }
 
+Obj *obj_new_ptr_to_global(void *ptr) {
+  Obj *o = obj_new('R');
+  o->void_ptr = ptr;
+  return o;
+}
+
 Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj) {
   assert(cif);
   assert(name);

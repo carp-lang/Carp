@@ -46,6 +46,7 @@
                                                                 (reset! deps (cons symbol deps))))
                                                             (when is-constructor
                                                               (do
+                                                                ;;(println (str "found constructor " symbol-name))
                                                                 (reset! deps (cons symbol deps))))
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
@@ -121,28 +122,3 @@
         new-ast (find-func-deps-internal ast '())]
     (assoc new-ast :func-deps deps)))
 
-(defn type-of-global [global-variable-name]
-  (let [s (symbol global-variable-name)
-        tt (eval (list 'type s))
-        t (if (= :ptr tt)
-            (eval (list 'meta-get s :type))
-            tt)]
-    t))
-
-(defn bake-global [variable-name]
-  (let [t (type-of-global variable-name)
-        evaled (eval (symbol variable-name))        
-        ;;_ (println (str variable-name " has type " t))
-        c-variable-name (c-ify-name variable-name)]
-    (if (contains? '(:int :float :double :string) t)
-      (do
-        ;;(println (str "Adding global named " variable-name " of type " t))
-        (let [prototype (str "extern " (type-build t) " " c-variable-name ";")
-              c-code (str (type-build t) " " c-variable-name " = " (prn evaled) ";")
-              includes-string "#include <shared.h>\n\n"
-              deps '()]
-          (do
-            (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code includes-string prototype deps false)
-            ;;(add-global! variable-name prototype)
-            )))
-      (error (str "Can't handle globals of type " t " yet.")))))

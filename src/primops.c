@@ -12,6 +12,7 @@
 #include "eval.h"
 #include "reader.h"
 #include "gc.h"
+#include "obj_conversions.h"
 #include "../shared/types.h"
 
 void register_primop(char *name, Primop primop) {
@@ -1138,6 +1139,9 @@ Obj *p_type(Obj** args, int arg_count) {
   else if(args[0]->tag == 'B') {
     return type_bool;
   }
+  else if(args[0]->tag == 'R') {
+    return type_ptr_to_global;
+  }
   else {
     printf("Unknown type tag: %c\n", args[0]->tag);
     //eval_error = obj_new_string("Unknown type.");
@@ -1508,7 +1512,10 @@ Obj *register_ffi_variable_internal(char *name, void *varptr, Obj *var_type_obj)
   /*   return nil; */
   /* } */
 
-  Obj *variable_ptr = obj_new_ptr(varptr);
+  /* Obj *ovar = primitive_to_obj(varptr, var_type_obj); */
+  /* printf("ovar = %s\n", obj_to_string(ovar)->s); */
+
+  Obj *variable_ptr = obj_new_ptr_to_global(varptr);
   obj_set_meta(variable_ptr, obj_new_keyword("type"), var_type_obj);
 
   char *lispified_name = lispify(name);

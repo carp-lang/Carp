@@ -548,7 +548,7 @@ void apply(Obj *function, Obj **args, int arg_count) {
           /*        obj_to_string(p->car)->s, */
           /*        args[i]->tag); */         
           
-          if(args[i]->tag == 'Q') {
+          if(args[i]->tag == 'Q' /* || args[i]->tag == 'R' */) {
 
             #ifdef CHECKING
             if(args[i]->void_ptr == NULL || obj_eq(type_obj, obj_new_keyword("any"))) {
@@ -1035,8 +1035,8 @@ void eval_list(Obj *env, Obj *o) {
     if(eval_error) { return; }
 
     // TODO: Use a special tag for global variable pointers
-    if(pair->cdr->tag == 'Q' && pair->cdr->meta) {
-      printf("Resetting a ptr.\n");
+    if(pair->cdr->tag == 'R' && pair->cdr->meta) {
+      printf("Resetting a ptr-to-global.\n");
       Obj *type_meta = env_lookup(pair->cdr->meta, obj_new_keyword("type"));
       if(type_meta && obj_eq(type_meta, type_int)) {
         int *ip = pair->cdr->void_ptr;

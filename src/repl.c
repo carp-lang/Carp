@@ -174,6 +174,9 @@ void env_new_global() {
   type_array = obj_new_keyword("array");
   define("type-array", type_array);
 
+  type_ptr_to_global = obj_new_keyword("ptr-to-global");
+  define("type-ptr-to-global", type_ptr_to_global);
+
   prompt = define("prompt", obj_new_string(PROMPT));
   prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string(PROMPT_UNFINISHED_FORM));
   

@@ -2,27 +2,14 @@
 (defn type-of-global [global-variable-name]
   (let [s (symbol global-variable-name)
         tt (eval (list 'type s))
-        t (if (= :ptr tt)
+        t (if (= :ptr-to-global tt)
             (eval (list 'meta-get s :type))
             (match tt
               :array (list :Array :int)
               _ tt))]
-    t))
-
-;; (def global-init-counter -1)
-
-;; (defn get-global-init-func-name []
-;;   (do (reset! global-init-counter (inc global-init-counter))
-;;       (str "global_init_" global-init-counter)))
-
-;; (defn bake-init-closure [func-name body return-type]
-;;   (let [func-def (list 'defn (symbol func-name) [] body)]
-;;     (do
-;;       (println (str "defining " func-name))
-;;       (eval func-def)
-;;       (eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
-;;       (bake-internal func-name (eval (list 'code (symbol func-name))) () () false)
-;;       )))
+    (do
+      ;;(println (str "type of " global-variable-name " is " t))
+      t)))
 
 (defn bake-global [variable-name]
   (let [t (type-of-global variable-name)
@@ -42,10 +29,28 @@
         ;;(println (str "Adding global named " variable-name " of type " t))
         (let [prototype (str "extern " (type-build t) " " c-variable-name ";")
               c-code (str (type-build t) " " c-variable-name " = " init-value ";")
-              includes-string "#include <shared.h>\n\n"
+              includes-string "#include <shared.h>\n#include \"declarations.h\"\n\n"
               deps (list)]
           (do
             (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code includes-string prototype deps false)
             ;;(add-global! variable-name prototype)
             ))))))
 
+
+
+
+
+;; (def global-init-counter -1)
+
+;; (defn get-global-init-func-name []
+;;   (do (reset! global-init-counter (inc global-init-counter))
+;;       (str "global_init_" global-init-counter)))
+
+;; (defn bake-init-closure [func-name body return-type]
+;;   (let [func-def (list 'defn (symbol func-name) [] body)]
+;;     (do
+;;       (println (str "defining " func-name))
+;;       (eval func-def)
+;;       (eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
+;;       (bake-internal func-name (eval (list 'code (symbol func-name))) () () false)
+;;       )))
