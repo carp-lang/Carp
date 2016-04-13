@@ -109,17 +109,23 @@
             )))))
 
 (defn re-lambda-fy [func-name]
-  (let [function-symbol (symbol func-name)
+  (let [function-symbol (if (symbol? func-name)
+                          func-name
+                          (symbol func-name))
         func (eval function-symbol)]
     (if (foreign? func)
       (let [func-code (meta-get func :code)]
         (do
           ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
           (eval (list 'def (symbol func-name) func-code))
-          ))
+          (unload-if-necessary func-name)))
       (do
         ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
         :ignore))))
+
+(defn re-lambda-fy-all-functions []
+  (do
+    (map re-lambda-fy (keys baked-funcs))))
 
 (defn re-compile [func-name]
   (let [function-symbol (symbol func-name)
@@ -402,6 +408,7 @@
 
 (defmacro bake-exe (func-symbol)
   (list 'do
+        (list 're-lambda-fy-all-functions)
         (list 'enable-shared-builder!)
         (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true)
         (list 'disable-shared-builder!)))
