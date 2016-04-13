@@ -45,6 +45,16 @@
       (def c c-program-string)
       (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
 
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
       
       ))))
 

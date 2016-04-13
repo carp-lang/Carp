@@ -7,7 +7,7 @@
 #include "env.h"
 #include "primops.h"
 
-#define MAX_INPUT_BUFFER_SIZE 2048
+#define MAX_INPUT_BUFFER_SIZE (2048 * 32)
 char input[MAX_INPUT_BUFFER_SIZE];
 
 #define GC_COLLECT_BEFORE_REPL_INPUT 0

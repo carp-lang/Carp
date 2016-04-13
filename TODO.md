@@ -71,6 +71,7 @@ This function will delete the result from map-copy, potentially deleting things 
   - ONLY allow [] in parameter list for function definitions
   - Use modules to solve problem of using same name for members in different structs
   - Use size_t where approperiate
+  - Make the reader warn when the text to read is too big (repl.c)
   
 # Dynamic Runtime Optimization
 
