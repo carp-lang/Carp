@@ -11,6 +11,7 @@ This function will delete the result from map-copy, potentially deleting things 
 
 
 # Compiler Big Features
+  - A special Obj-tag for pointers to global variables
   - Compile "and" & "or"
   - Lambdas / lambda lifting
   - Allow recompiling changed defstructs
