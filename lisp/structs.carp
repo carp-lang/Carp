@@ -55,7 +55,7 @@
                       "CONSTRUCTOR-NAME" c-constructor-name
                       "ARG_LIST" arg-list-c
                       "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
-              includes-string "#include \"functions.h\"\n\n"
+              includes-string "#include \"declarations.h\"\n\n"
               c-program-string (template
                                 "
   API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
@@ -118,7 +118,7 @@
           (println (str "WARNING! Overriding lens function: " func-name))
           (unload-if-necessary func-name)))
       ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-      (let [includes-string (str "#include <shared.h>\n#include \"functions.h\"\n")
+      (let [includes-string (str "#include <shared.h>\n#include \"declarations.h\"\n")
             c-program-string c]
         (do
           (def c c-program-string)

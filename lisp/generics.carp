@@ -169,7 +169,7 @@
         ;;(println (str "Ignoring already baked generic primop: " func-name))
         nil)
       (let [result (build-generic-primop c-func-name primop-name signature)
-            includes-string (str "#include <shared.h>\n#include \"functions.h\"\n")
+            includes-string (str "#include <shared.h>\n#include \"declarations.h\"\n")
             c-program-string (:c result)
             proto (str (:proto result) ";")
             deps (:deps result)
