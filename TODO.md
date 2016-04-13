@@ -12,7 +12,6 @@ This function will delete the result from map-copy, potentially deleting things 
 
 # Compiler Big Features
   - Compile "and" & "or"
-  - Compile globals so that they can be mutated (and all references refer to the same storage)
   - Lambdas / lambda lifting
   - Allow recompiling changed defstructs
   - Structs refering to other structs
@@ -33,6 +32,7 @@ This function will delete the result from map-copy, potentially deleting things 
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
+  - Should delete the thing that's in a variable before setting a new value
   - A ref to an array of non-refs shouldn't be able to get data unrestricted from the array, need to copy or get refs
   - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
