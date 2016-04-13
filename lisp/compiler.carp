@@ -419,10 +419,11 @@
 
 (defmacro bake-exe (func-symbol)
   (list 'do
-        (list 're-lambda-fy-all-functions)
-        (list 'enable-shared-builder!)
+        ;;(list 're-lambda-fy-all-functions)
+        ;;(list 'enable-shared-builder!)
         (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true)
-        (list 'disable-shared-builder!)))
+        ;;(list 'disable-shared-builder!)
+        ))
 
 (defmacro bake* (func-symbol dependencies)
   (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))

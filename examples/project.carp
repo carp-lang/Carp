@@ -3,6 +3,8 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
+;;(enable-shared-builder!)
+
 (def g [1 2 3])
 
 (defn del []
@@ -12,7 +14,6 @@
     (reset! g [4 5 6])
     (println (ref (str &g)))
     ))
-
 
 
 ;;(bake f)
