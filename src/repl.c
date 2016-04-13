@@ -13,21 +13,37 @@ char input[MAX_INPUT_BUFFER_SIZE];
 #define GC_COLLECT_BEFORE_REPL_INPUT 0
 
 int paren_balance(char *s) {
+  char ignore = '\0';
+  //printf("s = %s\n", s);
   int balance = 0;
-  bool ignore = false;
   for(int i = 0; s[i] != '\0'; i++) {
     char c = s[i];
-    if(!ignore) {
+    if(ignore == '\0') {
       if(c == '(') balance++;
       if(c == ')') balance--;
       if(c == '[') balance++;
       if(c == ']') balance--;
       if(c == '{') balance++;
       if(c == '}') balance--;
-      if(c == '"') ignore = true;
+      if(c == '"') {
+        ignore = '"';
+      }
+      if(c == ';') {
+        //printf("Start ignoring comment.\n");
+        ignore = ';';
+      }
     }
     else {
-      if(c == '"') ignore = false;
+      //printf("ignoring '%c' %d, ignore = '%c'\n", c, c, ignore);
+      
+      if(c == '"' && c == ignore) {
+        //printf("back from ignoring string\n");
+        ignore = '\0';
+      }
+      else if(c == '\n' && ignore == ';') {
+        //printf("back from ignoring comment\n");
+        ignore = '\0';
+      }
     }
   }
   return balance;
@@ -37,8 +53,8 @@ int paren_balance(char *s) {
 #define PROMPT "CARP> "
 #define PROMPT_UNFINISHED_FORM "   _> "
 #else
-#define PROMPT "\e[36mλ>\e[0m "
-#define PROMPT_UNFINISHED_FORM "\e[36m_>\e[0m "
+#define PROMPT "=> " // "\e[36mλ>\e[0m "
+#define PROMPT_UNFINISHED_FORM "_> " // "\e[36m_>\e[0m "
 #endif
 
 void repl(Obj *env) {

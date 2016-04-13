@@ -1,0 +1,154 @@
+
+(defn manyforms []
+  (let [
+        ]
+    (do
+
+      (when (not-nil? shared-builder)
+        (when (not-nil? shared-builder)
+        (do
+          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
+          (reset! shared-builder final-builder-with-deps)))
+      
+      (println (str "External deps for " func-name ": " (join ", " external-deps)))
+      (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
+      (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
+      
+      ))))
+
+
+
+
+
+
+
+
+;; (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+
+;; (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      ;; (def ast ast-annotated)
+      ;; (def c c-program-string)
+      
+      ;; (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      ;; (meta-set! (eval (symbol func-name)) :code func-code)
+
+(((do
+      (when (not-nil? shared-builder)
+        (do
+          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
+          (reset! shared-builder final-builder-with-deps)))
+      
+      ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
+      ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
+      ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+      
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      ;;(println (str "Will save and compile: '" func-name "' with c-func-name '" c-func-name "' and signature: " t))
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      (meta-set! (eval (symbol func-name)) :code func-code))))
+
+(defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
+  (let [old-builder-deps (:deps builder)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        merged-builder (if (nil? shared-builder)
+                         (:builder builder-result)
+                         (assoc shared-builder :functions (union (:functions shared-builder) (:functions (:builder builder-result)))))
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        ]
+    (do
+      (when (not-nil? shared-builder)
+        (do
+          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
+          (reset! shared-builder final-builder-with-deps)))
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      (meta-set! (eval (symbol func-name)) :code func-code))))
+
+
+(defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
+  (let [old-builder-deps (:deps builder)
+        builder-result (builder-visit-ast builder ast-annotated func-name)
+        merged-builder (if (nil? shared-builder)
+                         (:builder builder-result)
+                         (assoc shared-builder :functions (union (:functions shared-builder) (:functions (:builder builder-result)))))
+        builder-with-headers (builder-add-headers merged-builder header-files)
+        builder-deps (:deps builder-result)
+        builder-final (if (and exe (not (= func-name "main")))
+                        (builder-add-main-function builder-with-headers (c-ify-name func-name))
+                        builder-with-headers)
+        c-program-string (builder-merge-to-c builder-final)
+        proto (get-function-prototype ast-annotated func-name)
+        c-func-name (c-ify-name func-name)
+        c-file-name (str out-dir c-func-name ".c")
+        total-dependencies (if exe '() (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps builder-deps old-builder-deps)))
+        final-builder-with-deps (reduce (fn [b dep] (builder-add b :deps dep)) builder-final total-dependencies)
+        t (get ast-annotated :type)
+        ]
+    (do
+      (when (not-nil? shared-builder)
+        (do
+          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
+          (reset! shared-builder final-builder-with-deps)))
+      
+      ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
+      ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+      ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
+      ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
+      
+      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+      (def ast ast-annotated)
+      (def c c-program-string)
+      ;;(println (str "Will save and compile: '" func-name "' with c-func-name '" c-func-name "' and signature: " t))
+      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
+      (meta-set! (eval (symbol func-name)) :code func-code))))
