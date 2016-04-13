@@ -286,7 +286,9 @@ of `inf-carp-program').  Runs the hooks from
         (inf-carp-mode)))
   (setq inf-carp-buffer "*inf-carp*")
   ;;(split-window-below)
-  (pop-to-buffer-same-window "*inf-carp*"))
+  ;;(pop-to-buffer-same-window "*inf-carp*")
+  (pop-to-buffer "*inf-carp*")
+  )
 
 ;;;###autoload
 (defalias 'run-carp 'inf-carp)
