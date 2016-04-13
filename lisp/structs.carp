@@ -55,9 +55,10 @@
                       "CONSTRUCTOR-NAME" c-constructor-name
                       "ARG_LIST" arg-list-c
                       "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
+              includes-string "#include \"functions.h\"\n\n"
               c-program-string (template
                                 "
-  #include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+  API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
@@ -67,7 +68,7 @@
               ]
           (do
             (def c c-program-string)
-            (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
+            (bake-c-code constructor-name constructor-signature c-constructor-name c-file-name c-program-string includes-string proto deps false)
             ;; Compile lenses:
             (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
                   member-names
@@ -117,14 +118,16 @@
           (println (str "WARNING! Overriding lens function: " func-name))
           (unload-if-necessary func-name)))
       ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-      (let [c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" c)]
+      (let [includes-string (str "#include <shared.h>\n#include \"functions.h\"\n")
+            c-program-string c]
         (do
           (def c c-program-string)
-          (save-and-compile func-name
-                            func-signature
-                            c-func-name
-                            c-file-name
-                            c-program-string
-                            (str proto ";")
-                            deps
-                            false))))))
+          (bake-c-code func-name
+                       func-signature
+                       c-func-name
+                       c-file-name
+                       c-program-string
+                       includes-string
+                       (str proto ";")
+                       deps
+                       false))))))

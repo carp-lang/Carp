@@ -169,16 +169,17 @@
         ;;(println (str "Ignoring already baked generic primop: " func-name))
         nil)
       (let [result (build-generic-primop c-func-name primop-name signature)
-            c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" (:c result))
+            includes-string (str "#include <shared.h>\n#include \"functions.h\"\n")
+            c-program-string (:c result)
             proto (str (:proto result) ";")
             deps (:deps result)
             ]
         (do
           (def c c-program-string)
-          ;; (println (str "Baking generic primop " func-name))
+          ;;(println (str "Baking generic primop " func-name))
           ;; (println (str "Prototype for " func-name ":\n" proto))
           ;; (println (str "C-code for " func-name ":\n" c-program-string))
-          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))))))
+          (bake-c-code func-name signature c-func-name c-file-name c-program-string includes-string proto deps false))))))
 
 
 (defn build-generic-primop [c-func-name primop-name signature]

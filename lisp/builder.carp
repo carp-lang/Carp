@@ -335,7 +335,7 @@
                         "" ;; no return
                         (str (indent) "return " result-var-name ";\n"))
                       "}")]
-        {:funcs (builder-add builder :functions code)
+        {:builder (builder-add builder :functions code)
          :deps (:mutable-value deps)}))))
 
 (defn get-function-prototype (ast func-name)

@@ -4,7 +4,9 @@
 ;;(reset! profile-external-compiler-time true)
 
 (defn h []
-  (strlen (ref (str 123))))
+  (do
+    (str 321)
+    (str 123)))
 
 ;;(strlen (ref (str 123)))
 
