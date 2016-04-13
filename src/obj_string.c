@@ -280,12 +280,14 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     shadow_stack_push((struct Obj *)o);
       
     Obj *type_lookup;
+    //printf("o %p %p\n", o, o->void_ptr);
       
     if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
-      printf("type %s\n", obj_to_string(type_lookup)->s);
-        
+      //printf("type %s\n", obj_to_string(type_lookup)->s);        
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
-        print_generic_array_or_struct(total, type_lookup, (struct Obj *)o->void_ptr);
+        void *dereffed = *(void**)o->void_ptr;
+        Obj *x = primitive_to_obj(dereffed, type_lookup);
+        print_generic_array_or_struct(total, type_lookup, (struct Obj *)x);
       }
       else if(obj_eq(type_lookup, type_int)) {
         //int i = 123;
@@ -305,7 +307,9 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
         obj_string_mut_append(total, x->s);
       }
       else {
-        print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+        void *dereffed = *(void**)o->void_ptr;
+        Obj *x = primitive_to_obj(dereffed, type_lookup);
+        print_generic_array_or_struct(total, type_lookup, (struct Obj *)x);
         /* obj_string_mut_append(total, "<ptr"); */
         /* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
         /* obj_string_mut_append(total, ">"); */

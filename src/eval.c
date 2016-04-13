@@ -1043,8 +1043,10 @@ void eval_list(Obj *env, Obj *o) {
         *ip = stack_pop()->i;
       }
       else {
-        printf("No/invalid :type\n");
-        pair->cdr = stack_pop();
+        /* printf("No/invalid :type\n"); */
+        /* pair->cdr = stack_pop(); */
+        void **pp = pair->cdr->void_ptr;
+        *pp = stack_pop()->void_ptr;
       }
     }
     else {

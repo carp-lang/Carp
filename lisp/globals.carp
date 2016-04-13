@@ -2,7 +2,7 @@
 (defn type-of-global [global-variable-name]
   (let [s (symbol global-variable-name)
         tt (eval (list 'type s))
-        t (if (= :ptr-to-global tt)
+        t (if (or (= :ptr tt) (= :ptr-to-global tt))
             (eval (list 'meta-get s :type))
             (match tt
               :array (list :Array :int)
