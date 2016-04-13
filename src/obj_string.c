@@ -281,8 +281,11 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
       
     Obj *type_lookup;
     //printf("o %p %p\n", o, o->void_ptr);
-      
-    if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+
+    if(o->void_ptr == NULL) {
+      obj_string_mut_append(total, "NULL");
+    }
+    else if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       //printf("type %s\n", obj_to_string(type_lookup)->s);        
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
         void *dereffed = *(void**)o->void_ptr;

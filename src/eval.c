@@ -1034,7 +1034,6 @@ void eval_list(Obj *env, Obj *o) {
     eval_internal(env, o->cdr->cdr->car);
     if(eval_error) { return; }
 
-    // TODO: Use a special tag for global variable pointers
     if(pair->cdr->tag == 'R' && pair->cdr->meta) {
       printf("Resetting a ptr-to-global.\n");
       Obj *type_meta = env_lookup(pair->cdr->meta, obj_new_keyword("type"));
@@ -1045,6 +1044,9 @@ void eval_list(Obj *env, Obj *o) {
       else {
         /* printf("No/invalid :type\n"); */
         /* pair->cdr = stack_pop(); */
+
+        // TODO: handle arrays!!!
+        
         void **pp = pair->cdr->void_ptr;
         *pp = stack_pop()->void_ptr;
       }
