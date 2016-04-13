@@ -1,0 +1,22 @@
+
+(def state 10)
+
+(defn up []
+  (reset! state (inc state)))
+
+(defn down []
+  (reset! state (dec state)))
+
+(defn print-state []
+  (println (ref (str (ref state)))))
+
+(defn glob []
+  (do
+    (print-state)
+    (up)
+    (up)
+    (print-state)
+    (down)
+    (print-state)))
+
+

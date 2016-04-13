@@ -3,18 +3,7 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
-(defn h []
-  (strlen (ref (str 123))))
 
-;;(strlen (ref (str 123)))
-
-(defn g []
-  (+ (h) (h)))
-
-(defn f []
-  (inc (g)))
-
-(enable-shared-builder!)
 
 ;;(bake f)
 

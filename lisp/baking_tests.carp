@@ -263,3 +263,19 @@
 (defn test-baking-of-pipe-first-macro []
   (do (bake baking-of-pipe-first-macro)
       (assert-eq 16 (baking-of-pipe-first-macro))))
+
+
+
+;; Shared builder
+
+(defn test-shared-builder []
+  (defn h []
+    (strlen (ref (str 123))))
+
+  (defn g []
+    (+ (h) (h)))
+  
+  (defn f []
+    (inc (g)))
+  
+  (enable-shared-builder!))

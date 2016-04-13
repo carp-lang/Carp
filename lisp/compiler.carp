@@ -401,7 +401,10 @@
   (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
 
 (defmacro bake-exe (func-symbol)
-  (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true))
+  (list 'do
+        (list 'enable-shared-builder!)
+        (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true)
+        (list 'disable-shared-builder!)))
 
 (defmacro bake* (func-symbol dependencies)
   (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
