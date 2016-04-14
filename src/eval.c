@@ -1035,7 +1035,7 @@ void eval_list(Obj *env, Obj *o) {
     if(eval_error) { return; }
 
     if(pair->cdr->tag == 'R' && pair->cdr->meta) {
-      printf("Resetting a ptr-to-global.\n");
+      //printf("Resetting a ptr-to-global.\n");
       Obj *type_meta = env_lookup(pair->cdr->meta, obj_new_keyword("type"));
       if(type_meta && obj_eq(type_meta, type_int)) {
         int *ip = pair->cdr->void_ptr;

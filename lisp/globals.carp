@@ -34,6 +34,7 @@
           (do
             (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code includes-string prototype deps false)
             ;;(add-global! variable-name prototype)
+            (when (= init-value "NULL") (eval (list 'reset! (symbol variable-name) evaled)))
             ))))))
 
 
