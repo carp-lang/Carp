@@ -416,7 +416,8 @@
         _ (bake-generic-primop-auto "str" inner-signature)
         ;;_ (println (str "inner-str-call: " inner-str-call))
         c (str proto
-               "{"
+               "{\n"
+               " printf(\"array %p count: %d\\n\", a, a->count); \n"
                " char buffer[1024];\n"
                " int pos = 0;\n"
                " int count = a->count;\n"
@@ -427,7 +428,7 @@
                "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
                "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
                "   pos += strlen(inner_str);\n"
-               "   if(i < count - 1) {"
+               "   if(i < count - 1) {\n"
                "     buffer[pos++] = ',';\n"
                "     buffer[pos++] = ' ';\n"
                "   }"
