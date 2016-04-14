@@ -6,11 +6,14 @@
 ;;(enable-shared-builder!)
 
 
-(def x [1 2 3 4 5])
-(defn grow [] (reset! x [50 23 532])) ;; (map-copy inc &x)
-(bake grow)
+(def x [[10 20] [30 40]])
+(defn grow []
+  (do
+    (reset! x [[1 2 3]])
+    (println (ref (str &x)))))
+;;(bake-exe grow)
 (grow)
-(println (ref (str &x)))
+
 
 
 

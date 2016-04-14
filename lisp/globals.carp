@@ -1,15 +1,17 @@
 
+(defn type-of-value [val]
+  (let [t (type val)]
+    (if (or (= :ptr t) (= :ptr-to-global t))
+      (meta-get val :type)
+      (match t
+        :array (list :Array (type-of-value (nth val 0)))
+        _ t))))
+
 (defn type-of-global [global-variable-name]
-  (let [s (symbol global-variable-name)
-        tt (eval (list 'type s))
-        t (if (or (= :ptr tt) (= :ptr-to-global tt))
-            (eval (list 'meta-get s :type))
-            (match tt
-              :array (list :Array :int)
-              _ tt))]
+  (let [s (symbol global-variable-name)]
     (do
       ;;(println (str "type of " global-variable-name " is " t))
-      t)))
+      (type-of-value (eval s)))))
 
 (defn bake-global [variable-name]
   (let [t (type-of-global variable-name)
