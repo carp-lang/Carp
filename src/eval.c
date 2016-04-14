@@ -1041,12 +1041,18 @@ void eval_list(Obj *env, Obj *o) {
         int *ip = pair->cdr->void_ptr;
         *ip = stack_pop()->i;
       }
+      else if(type_meta->tag == 'C' && type_meta->cdr->car && obj_eq(type_meta->car, obj_new_keyword("Array"))) {
+        printf("resetting array...\n");
+        void **pp = pair->cdr->void_ptr;
+        Obj *a = stack_pop();
+        assert_or_set_error(a->tag == 'A', "Must reset! global to array: ", o);
+        Array *carp_array = obj_array_to_carp_array(a);
+        *pp = carp_array;
+      }
       else {
         /* printf("No/invalid :type\n"); */
         /* pair->cdr = stack_pop(); */
 
-        // TODO: handle arrays!!!
-        
         void **pp = pair->cdr->void_ptr;
         *pp = stack_pop()->void_ptr;
       }

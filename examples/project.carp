@@ -9,7 +9,9 @@
 
 (def x [1 2 3 4 5])
 (defn grow [] (reset! x [50 23 532])) ;; (map-copy inc &x)
-;;(bake grow)
+(bake grow)
+(grow)
+(println (ref (str &x)))
 
 ;; (reset! x [1 2 3 4 5])
 
