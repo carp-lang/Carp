@@ -289,6 +289,8 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
       //printf("type %s\n", obj_to_string(type_lookup)->s);        
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
         void *dereffed = *(void**)o->void_ptr;
+        Array *carp_array = dereffed;
+        printf("will print array of type %s of length %d, element [0] = %d\n", obj_to_string(type_lookup)->s, carp_array->count, ((int*)carp_array->data)[0]);
         Obj *x = primitive_to_obj(dereffed, type_lookup);
         print_generic_array_or_struct(total, type_lookup, (struct Obj *)x);
       }
