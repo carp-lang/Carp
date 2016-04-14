@@ -282,30 +282,19 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     Obj *type_lookup;
     //printf("o %p %p\n", o, o->void_ptr);
 
+    obj_string_mut_append(total, "§ ");
+
     if(o->void_ptr == NULL) {
       obj_string_mut_append(total, "NULL");
     }
     else if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
       //printf("type %s\n", obj_to_string(type_lookup)->s);        
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
-        shadow_stack_push(type_lookup);
-        void *dereffed = *(void**)o->void_ptr;
-
-        Array *carp_array = dereffed;
-        printf("will print array %p of type %s of length %d, elements = %d %d %d\n",
-               carp_array,
-               obj_to_string(type_lookup)->s,
-               carp_array->count,
-               ((int*)carp_array->data)[0],
-               ((int*)carp_array->data)[1],
-               ((int*)carp_array->data)[2]
-               );
-        
+        void *dereffed = *(void**)o->void_ptr;        
         Obj *x = primitive_to_obj(dereffed, type_lookup);
         shadow_stack_push(x);
-        print_generic_array_or_struct(total, type_lookup, (struct Obj *)x);
+        obj_string_mut_append(total, obj_to_string(x)->s);
         shadow_stack_pop(); // x
-        shadow_stack_pop(); // type lookup
       }
       else if(obj_eq(type_lookup, type_int)) {
         //int i = 123;
