@@ -282,8 +282,6 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     Obj *type_lookup;
     //printf("o %p %p\n", o, o->void_ptr);
 
-    obj_string_mut_append(total, "§ ");
-
     if(o->void_ptr == NULL) {
       obj_string_mut_append(total, "NULL");
     }
@@ -322,6 +320,9 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
         /* obj_string_mut_append(total, ">"); */
       }
     }
+
+    obj_string_mut_append(total, " ; ptr-to-global");
+    
     shadow_stack_pop();
   }
   else if(o->tag == 'F') {
