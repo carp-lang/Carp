@@ -4,7 +4,9 @@
     (if (or (= :ptr t) (= :ptr-to-global t))
       (meta-get val :type)
       (match t
-        :array (list :Array (type-of-value (nth val 0)))
+        :array (if (= 0 (count val))
+                 (error (str "Can't figure out type from empty array."))
+                 (list :Array (type-of-value (nth val 0))))
         _ t))))
 
 (defn type-of-global [global-variable-name]

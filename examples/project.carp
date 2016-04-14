@@ -7,11 +7,13 @@
 
 
 (def x [[10 20] [30 40]])
+;;(def x [])
+
 (defn grow []
   (do
     (reset! x [[1 2 3]])
     (println (ref (str &x)))))
-;;(bake-exe grow)
+(bake grow)
 (grow)
 
 

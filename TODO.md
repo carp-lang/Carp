@@ -11,7 +11,6 @@ This function will delete the result from map-copy, potentially deleting things 
 
 
 # Compiler Big Features
-  - A special Obj-tag for pointers to global variables
   - Compile "and" & "or"
   - Lambdas / lambda lifting
   - Allow recompiling changed defstructs
@@ -28,13 +27,10 @@ This function will delete the result from map-copy, potentially deleting things 
 # Compiler Small Features
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
-  - Be able to compare C-array pointer to Obj with array tag
   - A deref function that can remove the ref from primitive types?
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
-  - Should delete the thing that's in a variable before setting a new value
-  - A ref to an array of non-refs shouldn't be able to get data unrestricted from the array, need to copy or get refs
   - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
   - Ownership in while loops
@@ -42,6 +38,7 @@ This function will delete the result from map-copy, potentially deleting things 
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
   - Automatic recompilation doesn't work when depending on concrete instantiation of generic function
+  - Resetting a global variable pointing to an array can be fooled by using wrong kind of array (anything goes at the moment)
   
 # Compiler efficiency
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
@@ -77,7 +74,6 @@ This function will delete the result from map-copy, potentially deleting things 
 
 # Bugs
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
-  - The paren_balance function in repl.c can be tricked by parens in strings and unmatched (), [], {}, etc.
 
 # Sanity checks
   - Ensure correctness of GC (run at every step)
