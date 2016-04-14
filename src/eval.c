@@ -1047,6 +1047,7 @@ void eval_list(Obj *env, Obj *o) {
         Obj *a = stack_pop();
         assert_or_set_error(a->tag == 'A', "Must reset! global to array: ", o);
         Array *carp_array = obj_array_to_carp_array(a);
+        printf("Setting *pp to %s\n", obj_to_string(a)->s);
         *pp = carp_array;
       }
       else {
