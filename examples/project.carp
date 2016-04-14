@@ -7,17 +7,33 @@
 
 
 (def x [[10 20] [30 40]])
-;;(def x [])
 
-(defn grow []
+;; (defn grow []
+;;   (do
+;;     (reset! x [[1 2 3]])
+;;     (println (ref (str &x)))))
+;; (bake grow)
+;; (grow)
+
+
+^ann '(:fn ((:ref :string)) :string)
+(defn vv [s]
+  @s)
+
+(defn blerf [x]
   (do
-    (reset! x [[1 2 3]])
-    (println (ref (str &x)))))
-(bake grow)
-(grow)
+    (map-copy vv x)
+    10))
 
+;;(bake blerf)
 
+(defn fool []
+  (let [m [@"erik" @"hej"]]
+    (do
+      (blerf &m)
+      (println (ref (str &m))))))
 
+(bake fool)
 
 ;; (reset! x [1 2 3 4 5])
 

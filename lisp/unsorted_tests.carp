@@ -177,12 +177,19 @@
   (call-constructor Wrap))
 (bake test-call-constructor)
 
+
+(defn rWrap [i]
+  (Wrap @i))
+
 (defn map-wrap []
-  (map-copy Wrap (ref [100 500 999])))
+  (map-copy rWrap (ref [100 500 999])))
 (bake map-wrap)
 
 
-(defn map-itof [] (map-copy itof (ref [1 2 3])))
+(defn ritof [ri]
+  (itof @ri))
+
+(defn map-itof [] (map-copy ritof (ref [1 2 3])))
 (bake map-itof)
 
 

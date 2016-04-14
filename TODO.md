@@ -25,6 +25,7 @@ This function will delete the result from map-copy, potentially deleting things 
   - Err Type (Either in Haskell)
 
 # Compiler Small Features
+  - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
   - A deref function that can remove the ref from primitive types?
