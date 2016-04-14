@@ -190,9 +190,14 @@
 
            :reset (let [expr (:expr form)
                         symbol (:value (:symbol form))
-                        result (visit-form c expr toplevel deps)]
+                        result (visit-form c expr toplevel deps)
+                        t (:type expr)]
                     (do
                       ;;(str-append! c (str (indent) "printf(\"address of " symbol " = %p\\n\", &" symbol ");\n"))
+                      (when (managed-type? t)
+                        (do
+                          (str-append! c (str (indent) "// free '" symbol "' before assigning to it:\n"))
+                          (str-append! c (free-variables (list {:name (str symbol) :type t}) deps))))
                       (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
                       {:c ""}))
 
