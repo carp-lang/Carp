@@ -6,14 +6,7 @@
 ;;(enable-shared-builder!)
 
 
-;; Must use refs in while loops, this should not compile:
-(defn fool-while []
-  (let [x @"yeah"]
-    (while true
-      (reset! x (id @&x)))
-    ))
 
-(bake fool-while)
 
 
 

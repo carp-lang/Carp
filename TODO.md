@@ -26,7 +26,6 @@
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
   - Automatic recompilation doesn't work when depending on concrete instantiation of generic function
-  - Resetting a global variable pointing to an array can be fooled by using wrong kind of array (anything goes at the moment)
   
 # Compiler efficiency
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
@@ -57,6 +56,7 @@
   - Use modules to solve problem of using same name for members in different structs
   - Use size_t where approperiate
   - Make the reader warn when the text to read is too big (repl.c)
+  - Resetting a global variable pointing to an array can be fooled by using wrong kind of array (anything goes at the moment)
   
 # Dynamic Runtime Optimization
 

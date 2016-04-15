@@ -333,3 +333,16 @@
     (println* &y)))
 
 ;; (bake-exe f)
+
+
+
+;; Must use refs in while loops, this should not compile:
+(defn fool-while []
+  (let [x @"yeah"]
+    (while true
+      (reset! x (id x)))
+    ))
+
+;;(assert-eq error-given-away (:error (catch-error (bake fool-while))))
+
+
