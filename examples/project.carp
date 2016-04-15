@@ -10,7 +10,7 @@
 (defn fool-while []
   (let [x @"yeah"]
     (while true
-      (eat-string x))
+      (reset! x (id @&x)))
     ))
 
 (bake fool-while)

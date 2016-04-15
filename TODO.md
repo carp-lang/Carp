@@ -22,7 +22,6 @@
 # Compiler Correctness
   - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
-  - Ownership in while loops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?

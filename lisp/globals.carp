@@ -54,7 +54,7 @@
 (defn bake-init-closure [func-name global-name body return-type]
   (let [func-def (list 'defn (symbol func-name) [] (list 'reset! (symbol global-name) body))]
     (do
-      (println (str "defining init closure for " global-name ": " func-def))
+      ;;(println (str "defining init closure for " global-name ": " func-def))
       (eval func-def)
       (eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
       (bake-internal func-name (eval (list 'code (symbol func-name))) () () false)

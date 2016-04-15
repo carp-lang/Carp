@@ -115,7 +115,7 @@
                   (glClear carp-gl-color-buffer-bit)
                   (glColor3f 1.0f 1.0f 1.0f)
                   (render-callback &state)
-                  (reset! state (tick state))
+                  (reset! state (tick (copy &state)))
                   (glfwSwapBuffers window)
                   (glfwPollEvents))))
             (println "Time to go.")

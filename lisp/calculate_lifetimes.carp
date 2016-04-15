@@ -243,7 +243,10 @@
                   (if (and (or is-ref-lookup (managed-type? t)) given-away)
                     (if (:global-lookup ast)
                       data
-                      (error {:error error-given-away :message (str "The variable '" var-name "' has already been given away to another function, it can't be used here.")}))
+                      (error {:error error-given-away
+                              :show-stacktrace false
+                              :message (str "Error at line " (:line ast) " in function ???"  ", "
+                                            "the variable '" var-name "' has already been given away to another function.")}))
                     (let [vars-after (if in-ref
                                        vars
                                        (remove-var-with-name vars var-name))
@@ -437,6 +440,23 @@
                 :env env-after-bindings
                 :eaten eaten-by-bindings})
 
+        :reset (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :env env :vars vars} in-ref)
+                     ;;_ (println (str "data-after-expr:\n" data-after-expr))
+                     ast-after-expr (assoc ast :expr (:ast data-after-expr))
+                     env-after-expr (:env data-after-expr)
+                     vars-after-expr (:vars data-after-expr)
+
+                     ;;_ (println (str "ast:" ast-after-expr))
+                     
+                     final-vars (let [result-name (get-maybe (:expr ast-after-expr) :result-name)]
+                                  (if (nil? result-name)
+                                    vars-after-expr
+                                    (remove-var-with-name vars-after-expr result-name)))
+                     ]
+                 {:ast ast-after-expr
+                  :env env-after-expr
+                  :vars final-vars})
+
         :while (let [data-after-expr (calculate-lifetimes-internal {:ast (:expr ast) :env env :vars vars} in-ref)
                      ;;_ (println (str "data-after-expr:\n" data-after-expr))
 
@@ -449,9 +469,11 @@
                      vars-after-body (:vars data-after-body)
                      
                      ;; Visit the body a second time, to "simulate" the loop:
-                     ;; data-after-body-2 (calculate-lifetimes-internal {:ast (:body ast-after-body) :env env :vars vars-after-body} in-ref)
-                     ;; ast-after-body-2 (:ast data-after-body-2)
-                     ;; vars-after-body-2 (:vars data-after-body-2)
+                     second-result (calculate-lifetimes-internal {:ast ast-after-body
+                                                                  :env (:env data-after-body)
+                                                                  :vars vars-after-body}
+                                                                 in-ref)
+                     ;;_ (println (str "second-result:\n" second-result))
 
                      new-ast-after-body (assoc ast-after-expr :body ast-after-body)
                      vars-after-body-and-return (remove (fn (v) (contains? vars v)) vars-after-body)
