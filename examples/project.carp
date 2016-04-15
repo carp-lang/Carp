@@ -6,13 +6,6 @@
 (enable-shared-builder!)
 
 
-(def x 10)
-(def y [1 2 3])
-
-(defn f []
-  (do
-    (println* x)
-    (println* &y)))
 
 
 

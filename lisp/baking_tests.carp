@@ -320,3 +320,16 @@
         (reset! h @"nej")
         (println (ref h))
         ))))
+
+
+;; setting global vars in main() for exe:s
+
+(def x 10)
+(def y [1 2 3])
+
+(defn f []
+  (do
+    (println* x)
+    (println* &y)))
+
+;; (bake-exe f)
