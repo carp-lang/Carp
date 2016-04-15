@@ -3,10 +3,17 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
-(enable-shared-builder!)
+;;(enable-shared-builder!)
 
 
+;; Must use refs in while loops, this should not compile:
+(defn fool-while []
+  (let [x @"yeah"]
+    (while true
+      (eat-string x))
+    ))
 
+(bake fool-while)
 
 
 

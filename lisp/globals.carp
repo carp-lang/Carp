@@ -45,8 +45,6 @@
 
 
 
-
-
 (def global-init-counter -1)
 
 (defn get-global-init-func-name []

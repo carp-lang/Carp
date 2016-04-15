@@ -20,7 +20,9 @@
                   (range 0 (inc global-init-counter)))))
 
 (defn builder-add-main-function (builder func-name)
-  (builder-add builder :main (str "int main() { \n" (call-init-closures) "\n" func-name "();\n}")))
+  (builder-add builder :main (str "int main() { \n"
+                                  (call-init-closures)
+                                  "\n" func-name "();\n}")))
 
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
@@ -203,10 +205,10 @@
                           (str-append! c (str (indent) "// free '" symbol "' before assigning to it:\n"))
                           (str-append! c (str (indent) "if(" symbol ") {\n"))
                           (indent-in!)
-                          (str-append! c (free-variables (list {:name (str symbol) :type t}) deps))
+                          (str-append! c (free-variables (list {:name (c-ify-name (str symbol)) :type t}) deps))
                           (indent-out!)
                           (str-append! c (str (indent) "}\n"))))
-                      (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
+                      (str-append! c (str (indent) (c-ify-name (str symbol)) " = " (:c result) ";\n"))
                       {:c ""}))
 
            :if (let [n (get form :result-name)

@@ -447,6 +447,11 @@
                      ;;_ (println (str "data-after-body:\n" data-after-body))
                      ast-after-body (:ast data-after-body)
                      vars-after-body (:vars data-after-body)
+                     
+                     ;; Visit the body a second time, to "simulate" the loop:
+                     ;; data-after-body-2 (calculate-lifetimes-internal {:ast (:body ast-after-body) :env env :vars vars-after-body} in-ref)
+                     ;; ast-after-body-2 (:ast data-after-body-2)
+                     ;; vars-after-body-2 (:vars data-after-body-2)
 
                      new-ast-after-body (assoc ast-after-expr :body ast-after-body)
                      vars-after-body-and-return (remove (fn (v) (contains? vars v)) vars-after-body)
