@@ -3,10 +3,26 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
-;;(enable-shared-builder!)
+(enable-shared-builder!)
 
 
-(def x [[10 20] [30 40]])
+(def x 10)
+(def y [1 2 3])
+
+(defn f []
+  (do
+    (println* x)
+    (println* &y)))
+
+
+
+
+
+
+
+
+
+;;(def x [[10 20] [30 40]])
 
 ;; (defn grow []
 ;;   (do
@@ -16,24 +32,7 @@
 ;; (grow)
 
 
-^ann '(:fn ((:ref :string)) :string)
-(defn vv [s]
-  @s)
 
-(defn blerf [x]
-  (do
-    (map-copy vv x)
-    10))
-
-;;(bake blerf)
-
-(defn fool []
-  (let [m [@"erik" @"hej"]]
-    (do
-      (blerf &m)
-      (println (ref (str &m))))))
-
-(bake fool)
 
 ;; (reset! x [1 2 3 4 5])
 
@@ -227,3 +226,33 @@
 ;; (defstruct Blaj3 [blajArr3 (:Array (:Array (:Array :int)))])
 ;; (defn h [] (str &(Blaj3 [[[10 20 30] [40 50 60 70] [80 90]]
 ;;                          [[100 200 300] [400 500 600 700] [800 900]]])))
+
+
+
+
+
+
+
+
+
+
+
+;; TRICKY SITUATION, DONT FREE ARRAY (FIXED)
+;; ^ann '(:fn ((:ref :string)) :string)
+;; (defn vv [s]
+;;   @s)
+
+;; (defn blerf [x]
+;;   (do
+;;     (map-copy vv x)
+;;     10))
+
+;; ;;(bake blerf)
+
+;; (defn fool []
+;;   (let [m [@"erik" @"hej"]]
+;;     (do
+;;       (blerf &m)
+;;       (println (ref (str &m))))))
+
+;; (bake fool)
