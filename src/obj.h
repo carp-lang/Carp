@@ -109,8 +109,20 @@ typedef struct Obj {
 } Obj;
 
 typedef struct {
+  Obj *caller;
+  Obj *callee;
+} StackTraceCallSite;
+
+typedef struct {
   struct Obj *stack[STACK_SIZE];
   int stack_pos;
+
+  Obj *shadow_stack[SHADOW_STACK_SIZE];
+  int shadow_stack_pos;
+
+  StackTraceCallSite function_trace[STACK_SIZE];
+  int function_trace_pos;
+  
   bool dead;
   struct Obj *global_env;
 } Process;

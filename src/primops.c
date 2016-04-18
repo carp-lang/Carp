@@ -266,11 +266,11 @@ Obj *p_array(Process *process, Obj** args, int arg_count) {
 
 Obj *p_str(Process *process, Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
-  shadow_stack_push(s);
+  shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
     obj_string_mut_append(s, obj_to_string_not_prn(process, args[i])->s);
   }
-  shadow_stack_pop();
+  shadow_stack_pop(process);
   return s;
 }
 
@@ -306,7 +306,7 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
     return nil;
   }
   Obj *s = obj_new_string("");
-  shadow_stack_push(s);  
+  shadow_stack_push(process, s);  
   Obj *p = args[1];
   while(p && p->car) {
     obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
@@ -315,7 +315,7 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
     }
     p = p->cdr;
   }
-  shadow_stack_pop();
+  shadow_stack_pop(process);
   return s;
 }
 
@@ -444,12 +444,12 @@ Obj *p_print(Process *process, Obj** args, int arg_count) {
 
 Obj *p_prn(Process *process, Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
-  shadow_stack_push(s);
+  shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
     Obj *s2 = obj_to_string(process, args[i]);
     obj_string_mut_append(s, s2->s);
   }
-  shadow_stack_pop(); // s
+  shadow_stack_pop(process); // s
   return s;
 }
 
@@ -479,13 +479,13 @@ Obj *p_get(Process *process, Obj** args, int arg_count) {
       return o;
     } else {
       Obj *s = obj_new_string("Can't get key '");
-      shadow_stack_push(s);
+      shadow_stack_push(process, s);
       obj_string_mut_append(s, obj_to_string(process, args[1])->s);
       obj_string_mut_append(s, "' in dict:\n");
       obj_string_mut_append(s, obj_to_string(process, args[0])->s);
       obj_string_mut_append(s, "");
       eval_error = s;
-      shadow_stack_pop();
+      shadow_stack_pop(process);
       return nil;
     }
   }
@@ -768,7 +768,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
   if(args[1]->tag == 'C') {
     Obj *p = args[1];
     Obj *list = obj_new_cons(NULL, NULL);
-    shadow_stack_push(list);
+    shadow_stack_push(process, list);
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car) {
@@ -776,28 +776,28 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
       apply(process, f, arg, 1);
       prev->car = stack_pop(process);
       Obj *new = obj_new_cons(NULL, NULL);
-      shadow_stack_push(new);
+      shadow_stack_push(process, new);
       shadow_count++;
       prev->cdr = new;
       prev = new;
       p = p->cdr;
     }
     for(int i = 0; i < shadow_count; i++) {
-      shadow_stack_pop();
+      shadow_stack_pop(process);
     }
-    shadow_stack_pop(); // list
+    shadow_stack_pop(process); // list
     return list;
   }
   else if(args[1]->tag == 'A') {
     Obj *a = args[1];
     Obj *new_a = obj_new_array(a->count);
-    shadow_stack_push(new_a);
+    shadow_stack_push(process, new_a);
     for(int i = 0; i < a->count; i++) {
       Obj *arg[1] = { a->array[i] };
       apply(process, f, arg, 1);
       new_a->array[i] = stack_pop(process);
     }
-    shadow_stack_pop(); // new_a
+    shadow_stack_pop(process); // new_a
     return new_a;
   }
 
@@ -808,7 +808,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
       Obj *inner_type = type_lookup->cdr->car;
       Array *a = o->void_ptr;
       Obj *new_a = obj_new_array(a->count);
-      shadow_stack_push(new_a);
+      shadow_stack_push(process, new_a);
       for(int i = 0; i < a->count; i++) {
         Obj *arg[1];
         if(obj_eq(process, inner_type, type_string)) {
@@ -833,7 +833,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
         apply(process, f, arg, 1);
         new_a->array[i] = stack_pop(process);
       }
-      shadow_stack_pop(); // new_a
+      shadow_stack_pop(process); // new_a
       return new_a;
     }
   }
@@ -853,7 +853,7 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
     Obj *p = args[1];
     Obj *p2 = args[2];
     Obj *list = obj_new_cons(NULL, NULL);
-    shadow_stack_push(list);
+    shadow_stack_push(process, list);
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car && p2 && p2->car) {
@@ -861,7 +861,7 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
       apply(process, f, argz, 2);
       prev->car = stack_pop(process);
       Obj *new = obj_new_cons(NULL, NULL);
-      shadow_stack_push(new);
+      shadow_stack_push(process, new);
       shadow_count++;
       prev->cdr = new;
       prev = new;
@@ -869,9 +869,9 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
       p2 = p2->cdr;
     }
     for(int i = 0; i < shadow_count; i++) {
-      shadow_stack_pop();
+      shadow_stack_pop(process);
     }
-    shadow_stack_pop(); // list
+    shadow_stack_pop(process); // list
     return list;
   }
   else if(args[1]->tag == 'A' && args[2]->tag == 'A') {
@@ -882,13 +882,13 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
     Obj *a = args[1];
     Obj *b = args[2];
     Obj *new_a = obj_new_array(a->count);
-    shadow_stack_push(new_a);
+    shadow_stack_push(process, new_a);
     for(int i = 0; i < a->count; i++) {
       Obj *fargs[2] = { a->array[i], b->array[i] };
       apply(process, f, fargs, 2);
       new_a->array[i] = stack_pop(process);
     }
-    shadow_stack_pop(); // new_a
+    shadow_stack_pop(process); // new_a
     return new_a;
   }
   else {
@@ -978,7 +978,7 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
   if(args[1]->tag == 'C') {
     Obj *p = args[1];
     Obj *list = obj_new_cons(NULL, NULL);
-    shadow_stack_push(list);
+    shadow_stack_push(process, list);
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car) {
@@ -987,7 +987,7 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
       Obj *result = stack_pop(process);
       if(is_true(result)) {
         Obj *new = obj_new_cons(NULL, NULL);
-        shadow_stack_push(new);
+        shadow_stack_push(process, new);
         shadow_count++;
         prev->car = p->car;
         prev->cdr = new;
@@ -996,9 +996,9 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
       p = p->cdr;
     }
     for(int i = 0; i < shadow_count; i++) {
-      shadow_stack_pop();
+      shadow_stack_pop(process);
     }
-    shadow_stack_pop(); // list
+    shadow_stack_pop(process); // list
     return list;
   }
   else if(args[1]->tag == 'A') {
@@ -1205,10 +1205,10 @@ Obj *p_name(Process *process, Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S' && args[0]->tag != 'Y' && args[0]->tag != 'K') {
     Obj *s = obj_new_string("Argument to 'name' must be string, keyword or symbol: ");
-    shadow_stack_push(s);
+    shadow_stack_push(process, s);
     obj_string_mut_append(s, obj_to_string(process, args[0])->s);
     eval_error = s;
-    shadow_stack_pop();
+    shadow_stack_pop(process);
     return nil;
   }
   return obj_new_string(args[0]->s);
@@ -1221,10 +1221,10 @@ Obj *p_symbol(Process *process, Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'symbol' must be string: ");
-    shadow_stack_push(s);
+    shadow_stack_push(process, s);
     obj_string_mut_append(s, obj_to_string(process, args[0])->s);
     eval_error = s;
-    shadow_stack_pop();
+    shadow_stack_pop(process);
     return nil;
   }
   return obj_new_symbol(args[0]->s);
@@ -1237,10 +1237,10 @@ Obj *p_keyword(Process *process, Obj** args, int arg_count) {
   }
   if(args[0]->tag != 'S') {
     Obj *s = obj_new_string("Argument to 'keyword' must be string: ");
-    shadow_stack_push(s);
+    shadow_stack_push(process, s);
     obj_string_mut_append(s, obj_to_string(process, args[0])->s);
     eval_error = s;
-    shadow_stack_pop();
+    shadow_stack_pop(process);
     return nil;
   }
   return obj_new_keyword(args[0]->s);
@@ -1258,10 +1258,10 @@ Obj *p_env(Process *process, Obj** args, int arg_count) {
 
 Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
   Obj *file_string = open_file(process, args[0]->s);
-  shadow_stack_push(file_string);
+  shadow_stack_push(process, file_string);
   if(file_string->tag == 'S') {
     Obj *forms = read_string(process, process->global_env, file_string->s, args[0]);
-    shadow_stack_push(forms);
+    shadow_stack_push(process, forms);
     Obj *form = forms;
     while(form && form->car) {
       eval_internal(process, process->global_env, form->car);
@@ -1269,9 +1269,9 @@ Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
       /*Obj *discarded_result = */ stack_pop(process);
       form = form->cdr;
     }
-    shadow_stack_pop(); // forms
+    shadow_stack_pop(process); // forms
   }
-  shadow_stack_pop(); // file_string
+  shadow_stack_pop(process); // file_string
   return nil;
 }
 

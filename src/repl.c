@@ -91,6 +91,6 @@ void repl(Process *process) {
 
 void pop_stacks_to_zero(Process *process) {
   process->stack_pos = 0;
-  shadow_stack_pos = 0;
-  function_trace_pos = 0;
+  process->shadow_stack_pos = 0;
+  process->function_trace_pos = 0;
 }

@@ -34,9 +34,9 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   assert(type_lookup);
   assert(arg_to_str_obj);
   
-  shadow_stack_push(total);
-  shadow_stack_push(type_lookup);
-  shadow_stack_push(arg_to_str_obj);
+  shadow_stack_push(process, total);
+  shadow_stack_push(process, type_lookup);
+  shadow_stack_push(process, arg_to_str_obj);
 	
   Obj *reffed_arg_type = obj_list(obj_new_keyword("ref"), type_lookup); // HACK: ref needed when sending arrays into str
   Obj *args_type = obj_list(reffed_arg_type);
@@ -47,9 +47,9 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 	
   Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("str"), quoted_sig);
 
-  shadow_stack_push(call_to_generic_name);
+  shadow_stack_push(process, call_to_generic_name);
   Obj *generic_name_result = eval(process, process->global_env, call_to_generic_name);
-  shadow_stack_push(generic_name_result);
+  shadow_stack_push(process, generic_name_result);
 
   if(eval_error) {
     printf("Error when calling generic-name:\n");
@@ -62,13 +62,13 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   // Also make sure this particular version of the str primop has been baked:
   Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("str"), quoted_sig);
-  shadow_stack_push(call_to_bake_generic_primop_auto);
+  shadow_stack_push(process, call_to_bake_generic_primop_auto);
   eval(process, process->global_env, call_to_bake_generic_primop_auto);
 
   if(eval_error) {
     printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
     printf("%s\n", obj_to_string(process, eval_error)->s);
-    function_trace_print();
+    function_trace_print(process);
     return;
   }
   else {
@@ -87,9 +87,9 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   //
   //   DON'T DO IT!!!
 
-  shadow_stack_push(call_to_str);
+  shadow_stack_push(process, call_to_str);
   Obj *array_to_string_result = eval(process, process->global_env, call_to_str);
-  shadow_stack_push(array_to_string_result);
+  shadow_stack_push(process, array_to_string_result);
   if(eval_error) {
     printf("Error when calling str function for void ptr of type '%s':\n", obj_to_string(process, type_lookup)->s);
     printf("%s\n", obj_to_string(process, eval_error)->s);
@@ -100,15 +100,15 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   }
   obj_string_mut_append(total, obj_to_string_not_prn(process, array_to_string_result)->s);
 
-  Obj *pop1 = shadow_stack_pop();
+  Obj *pop1 = shadow_stack_pop(process);
   assert(pop1 == array_to_string_result);
-  shadow_stack_pop();
-  shadow_stack_pop();
-  shadow_stack_pop();
-  shadow_stack_pop();
-  shadow_stack_pop();
-  shadow_stack_pop();
-  Obj *pop8 = shadow_stack_pop();
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  Obj *pop8 = shadow_stack_pop(process);
   assert(pop8 == total);
 
   return;
@@ -153,7 +153,7 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
   }
   else if(o->tag == 'A') {
     //printf("Will print Obj Array with count %d\n", o->count);
-    shadow_stack_push((struct Obj *)o);
+    shadow_stack_push(process, (struct Obj *)o);
     x++;
     //int save_x = x;
     obj_string_mut_append(total, "[");
@@ -173,11 +173,11 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       }
     }
     obj_string_mut_append(total, "]");
-    shadow_stack_pop();
+    shadow_stack_pop(process);
     x++;
   }
   else if(o->tag == 'E') {
-    shadow_stack_push((struct Obj *)o);
+    shadow_stack_push(process, (struct Obj *)o);
     obj_string_mut_append(total, "{");
     x++;
     Obj *p = o->bindings;
@@ -198,7 +198,7 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       Obj *parent_printout = obj_to_string(process, o->parent);
       obj_string_mut_append(total, parent_printout->s);
     }
-    shadow_stack_pop();
+    shadow_stack_pop(process);
   }
   else if(o->tag == 'I') {
     static char temp[64];
@@ -254,7 +254,7 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
     obj_string_mut_append(total, ">");
   }
   else if(o->tag == 'Q') {
-    shadow_stack_push((struct Obj *)o);    
+    shadow_stack_push(process, (struct Obj *)o);    
     Obj *type_lookup;
     if(o->meta && (type_lookup = env_lookup(process, o->meta, obj_new_keyword("type")))) {
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(process, type_lookup->car, obj_new_keyword("Array"))) {
@@ -275,10 +275,10 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       obj_string_mut_append(total, " of unknown type");
       obj_string_mut_append(total, ">");
     }
-    shadow_stack_pop();
+    shadow_stack_pop(process);
   }
   else if(o->tag == 'R') {
-    shadow_stack_push((struct Obj *)o);
+    shadow_stack_push(process, (struct Obj *)o);
       
     Obj *type_lookup;
     //printf("o %p %p\n", o, o->void_ptr);
@@ -291,9 +291,9 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(process, type_lookup->car, obj_new_keyword("Array"))) {
         void *dereffed = *(void**)o->void_ptr;        
         Obj *x = primitive_to_obj(process, dereffed, type_lookup);
-        shadow_stack_push(x);
+        shadow_stack_push(process, x);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
-        shadow_stack_pop(); // x
+        shadow_stack_pop(process); // x
       }
       else if(obj_eq(process, type_lookup, type_int)) {
         //int i = 123;
@@ -324,7 +324,7 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
 
     obj_string_mut_append(total, " ; ptr-to-global");
     
-    shadow_stack_pop();
+    shadow_stack_pop(process);
   }
   else if(o->tag == 'F') {
     obj_string_mut_append(total, "<ffi:");

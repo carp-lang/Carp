@@ -18,36 +18,36 @@
 
 #define LABELED_DISPATCH 0
 
-void shadow_stack_print() {
+void shadow_stack_print(Process* process) {
   printf("----- SHADOW STACK -----\n");
-  for(int i = 0; i < shadow_stack_pos - 1; i++) {
+  for(int i = 0; i < process->shadow_stack_pos - 1; i++) {
     printf("%d\t", i);
-    obj_print_cout(shadow_stack[i]);
+    obj_print_cout(process->shadow_stack[i]);
     printf("\n");
   }
   printf("-----  END  -----\n\n");
 }
 
-void shadow_stack_push(Obj *o) {
+void shadow_stack_push(Process* process, Obj *o) {
   if(LOG_SHADOW_STACK) {
     printf("Pushing to shadow stack: %p ", o);
     obj_print_cout(o);
     printf("\n");
   }
-  if(shadow_stack_pos >= SHADOW_STACK_SIZE) {
+  if(process->shadow_stack_pos >= SHADOW_STACK_SIZE) {
     printf("Shadow stack overflow.\n");
-    shadow_stack_print();
+    shadow_stack_print(process);
     exit(1);
   }
-  shadow_stack[shadow_stack_pos++] = o;
+  process->shadow_stack[process->shadow_stack_pos++] = o;
 }
 
-Obj *shadow_stack_pop() {
-  if(shadow_stack_pos <= 0) {
+Obj *shadow_stack_pop(Process* process) {
+  if(process->shadow_stack_pos <= 0) {
     printf("Shadow stack underflow.\n");
     assert(false);
   }
-  Obj *o = shadow_stack[--shadow_stack_pos];
+  Obj *o = process->shadow_stack[--process->shadow_stack_pos];
   if(LOG_SHADOW_STACK) {
     printf("Popping from shadow stack: %p ", o);
     obj_print_cout(o);
@@ -59,10 +59,10 @@ Obj *shadow_stack_pop() {
 void function_trace_print(Process *process) {
   printf(" ----------------------------------------------------------------\n");
   
-  for(int i = function_trace_pos - 1; i >= 0; i--) {
+  for(int i = process->function_trace_pos - 1; i >= 0; i--) {
     printf("%3d ", i);
 
-    StackTraceCallSite call_site = function_trace[i];
+    StackTraceCallSite call_site = process->function_trace[i];
     Obj *o = call_site.caller;
     Obj *function = call_site.callee;
     
@@ -211,13 +211,13 @@ void match(Process *process, Obj *env, Obj *value, Obj *attempts) {
   while(p && p->car) {
     //printf("\nWill match %s with value %s\n", obj_to_string(p->car)->s, obj_to_string(value)->s);
     Obj *new_env = obj_new_environment(env);
-    shadow_stack_push(new_env);
+    shadow_stack_push(process, new_env);
     bool result = obj_match(process, new_env, p->car, value);
 
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(p->cdr->car)->s); //, obj_to_string(new_env)->s);
       eval_internal(process, new_env, p->cdr->car); // eval the following form using the new environment
-      Obj *pop = shadow_stack_pop(); // new_env
+      Obj *pop = shadow_stack_pop(process); // new_env
       if(eval_error) {
         return;
       }
@@ -231,7 +231,7 @@ void match(Process *process, Obj *env, Obj *value, Obj *attempts) {
       
     p = p->cdr->cdr;
 
-    Obj *e = shadow_stack_pop(); // new_env
+    Obj *e = shadow_stack_pop(process); // new_env
     assert(e == new_env);
   }
 
@@ -370,7 +370,7 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
   }
 
   /* for(int i = 0; i < arg_count; i++) { */
-  /*   shadow_stack_pop(); */
+  /*   shadow_stack_pop(process); */
   /* } */
 }
 
@@ -429,16 +429,16 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     env_extend_with_args(process, calling_env, function, arg_count, args, allow_rest_args);
     //printf("Lambda env: %s\n", obj_to_string(calling_env)->s);
 
-    shadow_stack_push(function);
-    shadow_stack_push(calling_env);
+    shadow_stack_push(process, function);
+    shadow_stack_push(process, calling_env);
     
     eval_internal(process, calling_env, function->body);
     if(eval_error) {
       return;
     }
     
-    Obj *pop1 = shadow_stack_pop();
-    Obj *pop2 = shadow_stack_pop();
+    Obj *pop1 = shadow_stack_pop(process);
+    Obj *pop2 = shadow_stack_pop(process);
     assert(pop1 == calling_env);
     assert(pop2 == function);
   }
@@ -692,7 +692,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     void *p = malloc(struct_size);
     Obj *new_struct = obj_new_ptr(p);
 
-    shadow_stack_push(new_struct);
+    shadow_stack_push(process, new_struct);
     
     if(!new_struct->meta) {
       new_struct->meta = obj_new_environment(NULL);
@@ -770,7 +770,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
         return;
       }
     }
-    shadow_stack_pop(); // pop new_struct
+    shadow_stack_pop(process); // pop new_struct
     stack_push(process, new_struct);
   } else {
     set_error("Can't call non-function: ", function);
@@ -846,7 +846,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
   dispatch_let:;
     #endif
     Obj *let_env = obj_new_environment(env);
-    shadow_stack_push(let_env);
+    shadow_stack_push(process, let_env);
     //Obj *p = o->cdr->car;
     assert_or_set_error(o->cdr->car, "No bindings in 'let' form: ", o);
     assert_or_set_error(o->cdr->car->tag == 'A', "Bindings in 'let' form must be an array: ", o);
@@ -866,7 +866,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->cdr->car, "No body in 'let' form.", o);
     assert_or_set_error(o->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", o);
     eval_internal(process, let_env, o->cdr->cdr->car);
-    shadow_stack_pop(); // let_env
+    shadow_stack_pop(process); // let_env
   }
   else if(HEAD_EQ("not")) {
     #if LABELED_DISPATCH
@@ -1105,14 +1105,14 @@ void eval_list(Process *process, Obj *env, Obj *o) {
   dispatch_catch:;
     #endif
     assert_or_set_error(o->cdr, "Too few args to 'catch-error': ", o);
-    int shadow_stack_size_save = shadow_stack_pos;
+    int shadow_stack_size_save = process->shadow_stack_pos;
     int stack_size_save = process->stack_pos;
-    int function_trace_save = function_trace_pos;
+    int function_trace_save = process->function_trace_pos;
     eval_internal(process, env, o->cdr->car);
 
-    shadow_stack_pos = shadow_stack_size_save;
+    process->shadow_stack_pos = shadow_stack_size_save;
     process->stack_pos = stack_size_save + 1;
-    function_trace_pos = function_trace_save;
+    process->function_trace_pos = function_trace_save;
 
     if(eval_error) {      
       stack_push(process, eval_error);
@@ -1136,7 +1136,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
   dispatch_function_evaluation:;
     #endif
     
-    shadow_stack_push(o);
+    shadow_stack_push(process, o);
     
     // Lambda, primop or macro   
     eval_internal(process, env, o->car);
@@ -1144,7 +1144,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     
     Obj *function = stack_pop(process);
     assert_or_set_error(function, "Can't call NULL.", o);
-    shadow_stack_push(function);
+    shadow_stack_push(process, function);
     
     bool eval_args = function->tag != 'M'; // macros don't eval their args
     Obj *p = o->cdr;
@@ -1152,7 +1152,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     
     while(p && p->car) {
       if(eval_error) {
-        shadow_stack_pop();
+        shadow_stack_pop(process);
         return;
       }
       
@@ -1167,7 +1167,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     }
 
     if(eval_error) {
-      shadow_stack_pop();
+      shadow_stack_pop(process);
       return;
     }
 
@@ -1179,13 +1179,13 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     for(int i = 0; i < count; i++) {
       Obj *arg = stack_pop(process);
       args[count - i - 1] = arg;
-      shadow_stack_push(arg);
+      shadow_stack_push(process, arg);
     }
 
     if(function->tag == 'M') {
       Obj *calling_env = obj_new_environment(function->env);
       env_extend_with_args(process, calling_env, function, count, args, true);
-      shadow_stack_push(calling_env);
+      shadow_stack_push(process, calling_env);
       eval_internal(process, calling_env, function->body);
       if (eval_error) { free(args); return; }
       Obj *expanded = stack_pop(process);
@@ -1193,7 +1193,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
         //printf("Meta of macro: %s\n", obj_to_string(function->meta)->s);
         printf("Expanded macro: %s\n", obj_to_string(process, expanded)->s);
       }
-      shadow_stack_push(expanded);
+      shadow_stack_push(process, expanded);
       if(in_macro_expansion) {
         stack_push(process, expanded);
       } else {
@@ -1202,13 +1202,13 @@ void eval_list(Process *process, Obj *env, Obj *o) {
       if(eval_error) {
         return;
       }
-      Obj *pop1 = shadow_stack_pop(); // expanded
-      Obj *pop2 = shadow_stack_pop(); // calling_env
+      Obj *pop1 = shadow_stack_pop(process); // expanded
+      Obj *pop2 = shadow_stack_pop(process); // calling_env
       assert(pop1 == expanded);
       assert(pop2 == calling_env);
     }
     else {
-      if(function_trace_pos > STACK_SIZE - 1) {
+      if(process->function_trace_pos > STACK_SIZE - 1) {
         printf("Out of function trace stack.\n");
         stack_print(process);
         function_trace_print(process);
@@ -1220,27 +1220,27 @@ void eval_list(Process *process, Obj *env, Obj *o) {
       }
 
       StackTraceCallSite call_site = { .caller = o, .callee = function };
-      function_trace[function_trace_pos] = call_site;
-      function_trace_pos++;
+      process->function_trace[process->function_trace_pos] = call_site;
+      process->function_trace_pos++;
 
       //printf("apply start: "); obj_print_cout(function); printf("\n");
       apply(process, function, args, count);
       //printf("apply end\n");
       
       if(!eval_error) {
-        function_trace_pos--;
+        process->function_trace_pos--;
       }
     }
 
     if(!eval_error) {
       //printf("time to pop!\n");
       for(int i = 0; i < count; i++) {
-        shadow_stack_pop();
+        shadow_stack_pop(process);
       }
-      Obj *pop = shadow_stack_pop();
+      Obj *pop = shadow_stack_pop(process);
       assert(pop == function);
       
-      Obj *oo = shadow_stack_pop(); // o
+      Obj *oo = shadow_stack_pop(process); // o
       if(o != oo) {
         printf("o != oo\n");
         printf("o: %p ", o); obj_print_cout(o); printf("\n");
@@ -1283,7 +1283,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   else if(o->tag == 'E') {
     Obj *new_env = obj_copy(o);
     obj_copy_meta(new_env, o);
-    shadow_stack_push(new_env);
+    shadow_stack_push(process, new_env);
     Obj *p = new_env->bindings;
     while(p && p->car) {
       Obj *pair = p->car;
@@ -1296,13 +1296,13 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
       p = p->cdr;
     }
     stack_push(process, new_env);
-    Obj *pop = shadow_stack_pop(); // new_env
+    Obj *pop = shadow_stack_pop(process); // new_env
     assert(pop == new_env);
   }
   else if(o->tag == 'A') {
     Obj *new_array = obj_new_array(o->count);
     obj_copy_meta(new_array, o);
-    shadow_stack_push(new_array);
+    shadow_stack_push(process, new_array);
     for(int i = 0; i < o->count; i++) {
       eval_internal(process, env, o->array[i]);
       if(eval_error) {
@@ -1311,7 +1311,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
       new_array->array[i] = stack_pop(process);
     }
     stack_push(process, new_array);
-    Obj *pop = shadow_stack_pop(); // new_array
+    Obj *pop = shadow_stack_pop(process); // new_array
     assert(pop == new_array);
   }
   else if(o->tag == 'Y') {

@@ -127,12 +127,12 @@ void gc(Process *process) {
   for(int i = 0; i < process->stack_pos; i++) {
     obj_mark_alive(process->stack[i]);
   }
-  for(int i = 0; i < shadow_stack_pos; i++) {
-    obj_mark_alive(shadow_stack[i]);
+  for(int i = 0; i < process->shadow_stack_pos; i++) {
+    obj_mark_alive(process->shadow_stack[i]);
   }
-  for(int i = 0; i < function_trace_pos; i++) {
-    obj_mark_alive(function_trace[i].caller);
-    obj_mark_alive(function_trace[i].callee);
+  for(int i = 0; i < process->function_trace_pos; i++) {
+    obj_mark_alive(process->function_trace[i].caller);
+    obj_mark_alive(process->function_trace[i].callee);
   }
   gc_sweep();
 }
