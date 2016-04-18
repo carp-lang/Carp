@@ -181,6 +181,13 @@ Obj *obj_new_bool(bool b) {
   return o;
 }
 
+Obj *obj_new_bytecode(char *bytecode) {
+  Obj *o = obj_new('X');
+  o->bytecode = bytecode;
+  o->bytecode_literals = obj_new_array(0);
+  return o;
+}
+
 Obj *obj_copy(Obj *o) {
   assert(o);
   if(o->tag == 'C') {
@@ -256,6 +263,11 @@ Obj *obj_copy(Obj *o) {
   }
   else if(o->tag == 'B') {
     return obj_new_bool(o->boolean);
+  }
+  else if(o->tag == 'X') {
+    Obj *copy = obj_new_bytecode(strdup(o->bytecode));
+    copy->bytecode_literals = obj_copy(o->bytecode_literals);
+    return copy;
   }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
@@ -407,6 +419,9 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   }
   else if(a->tag == 'V') {
     return a->f32 == b->f32;
+  }
+  else if(a->tag == 'X') {
+    return a == b;
   }
   else if(a->tag == 'C') {
     Obj *pa = a;

@@ -7,6 +7,9 @@ Process *process_clone(Process *parent);
 
 Process *parallell;
 
+void process_eval(Process *process, Obj *form);
+Obj *process_tick(Process *process);
+
 void stack_print(Process *process);
 void stack_push(Process *process, Obj *o);
 Obj *stack_pop(Process *process);

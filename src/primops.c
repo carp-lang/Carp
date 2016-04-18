@@ -13,6 +13,7 @@
 #include "reader.h"
 #include "gc.h"
 #include "obj_conversions.h"
+#include "bytecode.h"
 #include "../shared/types.h"
 
 void register_primop(Process *process, char *name, Primop primop) {
@@ -1710,4 +1711,16 @@ Obj *p_parallell(Process *process, Obj** args, int arg_count) {
   parallell = process_clone(process);
   apply(parallell, args[0], NULL, 0);
   return nil;
+}
+
+Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 1, "bytecode must take 1 arguments. ", nil);
+  Obj *bytecode = form_to_bytecode(process->global_env, args[0]);
+  return bytecode;
+}
+
+Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 1, "eval-bytecode must take 1 arguments. ", nil);
+  Obj *bytecode = args[0];
+  return bytecode_eval(process, bytecode);
 }

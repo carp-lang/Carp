@@ -172,6 +172,8 @@ Process *process_new() {
   register_primop(process, "delete", p_delete);
   register_primop(process, "stop", p_stop);
   register_primop(process, "parallell", p_parallell);
+  register_primop(process, "bytecode", p_bytecode);
+  register_primop(process, "eb", p_bytecode_eval);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
@@ -237,4 +239,13 @@ Obj *stack_pop(Process *process) {
     stack_print(process);
   }
   return o;
+}
+
+void process_eval(Process *process, Obj *form) {
+  process->instruction = form;
+}
+
+Obj *process_tick(Process *process) {
+
+  return NULL;
 }

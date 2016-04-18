@@ -39,7 +39,7 @@ typedef void (*VoidFn)(void);
    U
    V = Float
    W = Double (not implemented yet)
-   X
+   X = Bytecode
    Y = Symbol
    Z
 */
@@ -82,9 +82,15 @@ typedef struct Obj {
       struct Obj *arg_types;
       struct Obj *return_type;
     };
+    // Array
     struct {
       struct Obj **array;
       int count;
+    };
+    // Bytecode
+    struct {
+      char *bytecode;
+      struct Obj *bytecode_literals;
     };
     // Dylib
     void *dylib;
@@ -150,6 +156,7 @@ Obj *obj_new_environment(Obj *parent);
 Obj *obj_new_char(char character);
 Obj *obj_new_array(int count);
 Obj *obj_new_bool(bool b);
+Obj *obj_new_bytecode(char *bytecode);
 
 Obj *obj_copy(Obj *o);
 bool obj_eq(Process *process, Obj *a, Obj *b);

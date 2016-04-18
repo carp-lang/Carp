@@ -36,6 +36,9 @@ void obj_mark_alive(Obj *o) {
     obj_mark_alive(o->arg_types);
     obj_mark_alive(o->return_type);
   }
+  else if(o->tag == 'X') {
+    obj_mark_alive(o->bytecode_literals);
+  }
 
   // TODO: remove data pointed to by void_ptr:s? (tag 'Q')
 }
@@ -58,6 +61,9 @@ void free_internal_data(Obj *dead) {
   }
   else if(dead->tag == 'A') {
     free(dead->array);
+  }
+  else if(dead->tag == 'X') {
+    free(dead->bytecode);
   }
 }
 

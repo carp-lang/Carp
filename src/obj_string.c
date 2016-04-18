@@ -384,6 +384,17 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       obj_string_mut_append(total, "false");
     }
   }
+  else if(o->tag == 'X') {
+    /* obj_string_mut_append(total, "--- Bytecode ---\n"); */
+    /* obj_string_mut_append(total, o->bytecode); */
+    /* obj_string_mut_append(total, "\nLiterals: "); */
+    /* obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s); */
+    /* obj_string_mut_append(total, "\n----------------"); */
+    obj_string_mut_append(total, "(Bytecode: ");
+    obj_string_mut_append(total, o->bytecode);
+    obj_string_mut_append(total, ") => ");
+    obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s);
+  }
   else {
     printf("obj_to_string() can't handle type tag %c (%d).\n", o->tag, o->tag);
     assert(false);
