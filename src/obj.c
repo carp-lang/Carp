@@ -88,7 +88,7 @@ Obj *obj_new_keyword(char *s) {
 
 Obj *obj_new_primop(Primop p) {
   Obj *o = obj_new('P');
-  o->primop = p;
+  o->primop = (struct Obj *(*)(struct Process *, struct Obj **, int)) p;
   return o;
 }
 
@@ -237,7 +237,7 @@ Obj *obj_copy(Obj *o) {
     return obj_new_keyword(strdup(o->s));
   }
   else if(o->tag == 'P') {
-    return obj_new_primop(o->primop);
+    return obj_new_primop((Primop)o->primop);
   }
   else if(o->tag == 'D') {
     return obj_new_dylib(o->dylib);
@@ -278,134 +278,6 @@ Obj *obj_list_internal(Obj *objs[]) {
   return list;
 }
 
-bool obj_eq(Obj *a, Obj *b) {
-  //printf("Comparing %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-
-  if(a == b) {
-    return true;
-  }
-  else if(a == NULL || b == NULL) {
-    return false;
-  }
-  else if(a->tag != b->tag) {
-    return false;
-  }
-  else if(a->tag == 'B') {
-    return a->boolean == b->boolean;
-  }
-  else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
-    return (strcmp(a->s, b->s) == 0);
-  }
-  else if(a->tag == 'Q') {
-    return a->void_ptr == b->void_ptr;
-  }
-  else if(a->tag == 'I') {
-    return a->i == b->i;
-  }
-  else if(a->tag == 'V') {
-    return a->f32 == b->f32;
-  }
-  else if(a->tag == 'C') {
-    Obj *pa = a;
-    Obj *pb = b;
-    while(1) {
-      if(obj_eq(pa->car, pb->car)) {
-	if(!pa->cdr && !pb->cdr) {
-	  return true;
-	}
-	else if(pa->cdr && !pb->cdr) {
-	  return false;
-	}
-	else if(!pa->cdr && pb->cdr) {
-	  return false;
-	}
-	else {
-	  pa = pa->cdr;
-	  pb = pb->cdr;
-	}
-      }
-      else {
-	return false;
-      }
-    }
-  }
-  else if(a->tag == 'A') {
-    if(a->count != b->count) {
-      return false;
-    }
-    else {
-      for(int i = 0; i < a->count; i++) {
-	if(!obj_eq(a->array[i], b->array[i])) {
-	  return false;
-	}
-      }
-      return true;
-    }
-  }
-  else if(a->tag == 'E') {
-    if(!obj_eq(a->parent, b->parent)) { return false; }
-    //printf("WARNING! Can't reliably compare dicts.\n");
-
-    {
-      Obj *pa = a->bindings;    
-      while(pa && pa->cdr) {
-	Obj *pair = pa->car;
-	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
-	Obj *binding = env_lookup_binding(b, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
-	  bool eq = obj_eq(pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pa = pa->cdr;
-      }
-    }
-
-    {
-      Obj *pb = b->bindings;    
-      while(pb && pb->cdr) {
-	Obj *pair = pb->car;
-	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
-	Obj *binding = env_lookup_binding(a, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
-	  bool eq = obj_eq(pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pb = pb->cdr;
-      }
-    }
-    
-    return true;
-  }
-  else {
-    char buffer[512];
-    snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-    eval_error = obj_new_string(strdup(buffer));
-    return false;
-  }
-}
-
 bool is_true(Obj *o) {
   //printf("is_true? %s\n", obj_to_string(o)->s);
   if(o->tag == 'B' && !o->boolean) {
@@ -442,6 +314,9 @@ void obj_print_cout(Obj *o) {
     }
     printf("[");
   }
+  else if(o->tag == 'B') {
+    printf("%s", o->boolean ? "true" : "false");
+  }
   else if(o->tag == 'E') {
     printf("{ ... }");
   }
@@ -453,6 +328,9 @@ void obj_print_cout(Obj *o) {
   }
   else if(o->tag == 'V') {
     printf("%f", o->f32);
+  }
+  else if(o->tag == 'W') {
+    printf("%f", o->f64);
   }
   else if(o->tag == 'S') {
     printf("\"%s\"", o->s);
@@ -488,13 +366,13 @@ void obj_print_cout(Obj *o) {
   }
 }
 
-void obj_set_line_info(Obj *o, int line, int pos, Obj *filename) {
+void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filename) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  env_assoc(o->meta, obj_new_keyword("line"), obj_new_int(line));
-  env_assoc(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
-  env_assoc(o->meta, obj_new_keyword("file"), filename);
+  env_assoc(process, o->meta, obj_new_keyword("line"), obj_new_int(line));
+  env_assoc(process, o->meta, obj_new_keyword("pos"), obj_new_int(pos));
+  env_assoc(process, o->meta, obj_new_keyword("file"), filename);
 }
 
 void obj_copy_meta(Obj *to, Obj *from) {

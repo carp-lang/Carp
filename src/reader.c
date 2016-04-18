@@ -57,7 +57,7 @@ void print_read_pos() {
   printf("Line: %d, pos: %d.\n", read_line_nr, read_line_pos);
 }
 
-Obj *read_internal(Obj *env, char *s, Obj *filename) {
+Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
   skip_whitespace(s);
 
   if(CURRENT == ')' || CURRENT == ']') {
@@ -68,7 +68,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
   }
   else if(CURRENT == '(') {
     Obj *list = obj_new_cons(NULL, NULL);
-    obj_set_line_info(list, read_line_nr, read_line_pos, filename);
+    obj_set_line_info(process, list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
     read_pos++;
     while(1) {
@@ -82,7 +82,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	read_pos++;
 	break;
       }
-      Obj *o = read_internal(env, s, filename);
+      Obj *o = read_internal(process, env, s, filename);
       Obj *new = obj_new_cons(NULL, NULL);
       prev->car = o;
       prev->cdr = new;
@@ -110,7 +110,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	read_pos++;
 	break;
       }
-      Obj *o = read_internal(env, s, filename);
+      Obj *o = read_internal(process, env, s, filename);
       temp[count] = o;
       count++;
       if(count >= MAX_COUNT) {
@@ -122,7 +122,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     for(int i = 0; i <  count; i++) {
       new_array->array[i] = temp[i];
     }
-    obj_set_line_info(new_array, line, pos, filename);
+    obj_set_line_info(process, new_array, line, pos, filename);
     return new_array;
   }
   else if(CURRENT == '{') {
@@ -142,7 +142,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	read_pos++;
 	break;
       }
-      Obj *key = read_internal(env, s, filename);
+      Obj *key = read_internal(process, env, s, filename);
 
       if(CURRENT == '}') {
 	printf("Uneven number of forms in dictionary.\n");
@@ -150,7 +150,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
 	return nil;
       }
       
-      Obj *value = read_internal(env, s, filename);
+      Obj *value = read_internal(process, env, s, filename);
       
       Obj *new = obj_new_cons(NULL, NULL);
       Obj *pair = obj_new_cons(key, value);
@@ -160,16 +160,16 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     Obj *dict = obj_new_environment(NULL);
     dict->bindings = list;
-    obj_set_line_info(dict, line, pos, filename);
+    obj_set_line_info(process, dict, line, pos, filename);
     return dict;
   }
   else if(CURRENT == '&') {
     int line = read_line_nr, pos = read_line_pos;
     read_pos++;
-    Obj *inner = read_internal(env, s, filename);
+    Obj *inner = read_internal(process, env, s, filename);
     Obj *cons2 = obj_new_cons(inner, nil);
     Obj *cons1 = obj_new_cons(obj_new_symbol("ref"), cons2);
-    obj_set_line_info(cons1, line, pos, filename);
+    obj_set_line_info(process, cons1, line, pos, filename);
     return cons1;
   }
   else if(CURRENT == '.' && s[read_pos + 1] == '.' && s[read_pos + 2] == '.') {
@@ -217,39 +217,39 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     if(has_period && !is_float) {
       double x = atof(scratch) * negator;
       Obj *new_double = obj_new_double(x);
-      obj_set_line_info(new_double, line, pos, filename);
+      obj_set_line_info(process, new_double, line, pos, filename);
       return new_double;
     } 
     else if(is_float) {
       float x = (float)atof(scratch) * negator;
       Obj *new_float = obj_new_float(x);
-      obj_set_line_info(new_float, line, pos, filename);
+      obj_set_line_info(process, new_float, line, pos, filename);
       return new_float;
     }
     else {
       int num = atoi(scratch) * negator;
       Obj *new_int = obj_new_int(num);
-      obj_set_line_info(new_int, line, pos, filename);
+      obj_set_line_info(process, new_int, line, pos, filename);
       return new_int;
     }
   }
   else if(CURRENT == '@') {
     read_pos++;
-    Obj *inner = read_internal(env, s, filename);
+    Obj *inner = read_internal(process, env, s, filename);
     Obj *cons2 = obj_new_cons(inner, nil);
     Obj *cons1 = obj_new_cons(obj_new_symbol("copy"), cons2);
     return cons1;
   }
   else if(CURRENT == '\'') {
     read_pos++;
-    Obj *inner = read_internal(env, s, filename);
+    Obj *inner = read_internal(process, env, s, filename);
     Obj *cons2 = obj_new_cons(inner, nil);
     Obj *cons1 = obj_new_cons(lisp_quote, cons2);
     return cons1;
   }
   else if(CURRENT == '`') {
     read_pos++;
-    Obj *inner = read_internal(env, s, filename);
+    Obj *inner = read_internal(process, env, s, filename);
     Obj *cons2 = obj_new_cons(inner, nil);
     Obj *cons1 = obj_new_cons(obj_new_symbol("quasiquote"), cons2);
     //printf("Read quasiquote.\n");
@@ -259,12 +259,12 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     read_pos++;
     if(CURRENT == '@') {
       read_pos++;
-      Obj *sym = read_internal(env, s, filename);
+      Obj *sym = read_internal(process, env, s, filename);
       Obj *cons2 = obj_new_cons(sym, nil);
       Obj *cons1 = obj_new_cons(obj_new_symbol("dequote-splicing"), cons2);
       return cons1;
     } else {
-      Obj *sym = read_internal(env, s, filename);
+      Obj *sym = read_internal(process, env, s, filename);
       Obj *cons2 = obj_new_cons(sym, nil);
       Obj *cons1 = obj_new_cons(obj_new_symbol("dequote"), cons2);
       return cons1;
@@ -272,7 +272,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
   }
   else if(CURRENT == '^') {
     read_pos++;
-    Obj *key_symbol = read_internal(env, s, filename);
+    Obj *key_symbol = read_internal(process, env, s, filename);
 
     if(key_symbol->tag != 'Y') {
       eval_error = obj_new_string("Invalid key for meta data.");
@@ -280,8 +280,8 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
 
     Obj *key = obj_new_keyword(key_symbol->s);
-    Obj *value = read_internal(env, s, filename);
-    Obj *form = read_internal(env, s, filename);
+    Obj *value = read_internal(process, env, s, filename);
+    Obj *form = read_internal(process, env, s, filename);
     Obj *head = obj_new_symbol("meta-set!");
     
     Obj *new_form = obj_list(head, form, key, value);
@@ -298,7 +298,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    obj_set_line_info(symbol, line, pos, filename);   
+    obj_set_line_info(process, symbol, line, pos, filename);   
     return symbol;
   }
   else if(CURRENT == ':') {
@@ -313,7 +313,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     name[i] = '\0';
 
     Obj *new_keyword = obj_new_keyword(name);
-    obj_set_line_info(new_keyword, line, pos, filename);
+    obj_set_line_info(process, new_keyword, line, pos, filename);
     return new_keyword;
   }
   else if(CURRENT == '"') {
@@ -354,7 +354,7 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
     read_pos++;
     Obj *new_string = obj_new_string(str);
     obj_new_string(str);
-    obj_set_line_info(new_string, line, pos, filename);
+    obj_set_line_info(process, new_string, line, pos, filename);
     return new_string;
   }
   else if(CURRENT == 0) {
@@ -367,14 +367,14 @@ Obj *read_internal(Obj *env, char *s, Obj *filename) {
   }
 }
 
-Obj *read_string(Obj *env, char *s, Obj *filename) {
+Obj *read_string(Process *process, Obj *env, char *s, Obj *filename) {
   read_line_nr = 1;
   read_line_pos = 0;
   read_pos = 0;
   Obj *top_forms = NULL;
   Obj *prev = NULL;
   while(s[read_pos] != '\0') {
-    Obj *o = read_internal(env, s, filename);
+    Obj *o = read_internal(process, env, s, filename);
     Obj *cons = obj_new_cons(NULL, NULL);
     cons->car = o;
     if(!top_forms) {

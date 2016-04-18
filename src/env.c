@@ -3,11 +3,11 @@
 #include "obj_string.h"
 #include "assertions.h"
 
-Obj *env_lookup(Obj *env, Obj *symbol) {
+Obj *env_lookup(Process *process, Obj *env, Obj *symbol) {
   Obj *p = env->bindings;
   while(p && p->car) {
     Obj *pair = p->car;
-    if(obj_eq(pair->car, symbol)) {
+    if(obj_eq(process, pair->car, symbol)) {
       return pair->cdr;
     }
     else {
@@ -15,18 +15,18 @@ Obj *env_lookup(Obj *env, Obj *symbol) {
     }
   }
   if(env->parent) {
-    return env_lookup(env->parent, symbol);
+    return env_lookup(process, env->parent, symbol);
   }
   else {
     return NULL;
   }
 }
 
-Obj *env_lookup_binding(Obj *env, Obj *symbol) {
+Obj *env_lookup_binding(Process *process, Obj *env, Obj *symbol) {
   Obj *p = env->bindings;
   while(p && p->car) {
     Obj *pair = p->car;
-    if(obj_eq(pair->car, symbol)) {
+    if(obj_eq(process, pair->car, symbol)) {
       return pair;
     }
     else {
@@ -34,7 +34,7 @@ Obj *env_lookup_binding(Obj *env, Obj *symbol) {
     }
   }
   if(env->parent) {
-    return env_lookup_binding(env->parent, symbol);
+    return env_lookup_binding(process, env->parent, symbol);
   }
   else {
     return nil;
@@ -52,14 +52,14 @@ Obj *env_extend(Obj *env, Obj *key, Obj *value) {
   return pair;
 }
 
-void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **args, bool allow_restargs) {
+void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int arg_count, Obj **args, bool allow_restargs) {
 
   // TODO: remove the whole 'C' branch and only allow arrays for parameters
   
   Obj *paramp = function->params;
   if(paramp->tag == 'C') {
     for(int i = 0; i < arg_count; i++) {
-      if(allow_restargs && obj_eq(paramp->car, dotdotdot)) {
+      if(allow_restargs && obj_eq(process, paramp->car, dotdotdot)) {
         printf("Found dotdotdot\n");
         if(paramp->cdr->car) {
           int rest_count = arg_count - i;
@@ -90,7 +90,7 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
 
     int i = 0;
     for(; i < arg_count; i++) {
-      if(allow_restargs && obj_eq(paramp->array[i], dotdotdot)) {
+      if(allow_restargs && obj_eq(process, paramp->array[i], dotdotdot)) {
         int rest_count = arg_count - i;
         Obj *rest_list = obj_new_cons(NULL, NULL);
         Obj *last = rest_list;
@@ -109,7 +109,7 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
     }
 
     if(i < paramp->count) {
-      if(allow_restargs && obj_eq(paramp->array[i], dotdotdot)) {
+      if(allow_restargs && obj_eq(process, paramp->array[i], dotdotdot)) {
         env_extend(calling_env, paramp->array[i + 1], obj_new_array(0));
       } else {
         set_error("Too few arguments to function/macro: ", function);
@@ -126,18 +126,18 @@ void env_extend_with_args(Obj *calling_env, Obj *function, int arg_count, Obj **
 
     
 
-void global_env_extend(Obj *key, Obj *val) {
-  assert(global_env);
-  Obj *existing_binding = env_lookup_binding(global_env, key);
+void global_env_extend(Process *process, Obj *key, Obj *val) {
+  assert(process->global_env);
+  Obj *existing_binding = env_lookup_binding(process, process->global_env, key);
   if(existing_binding->car) {
     existing_binding->cdr = val;
   } else {
-    env_extend(global_env, key, val);
+    env_extend(process->global_env, key, val);
   }
 }
 
-Obj *env_assoc(Obj *env, Obj *key, Obj *value) {
-  Obj *pair = env_lookup_binding(env, key);
+Obj *env_assoc(Process *process, Obj *env, Obj *key, Obj *value) {
+  Obj *pair = env_lookup_binding(process, env, key);
   if(pair && pair->car && pair->cdr) {
     pair->cdr = value;
   }

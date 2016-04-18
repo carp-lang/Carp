@@ -122,10 +122,10 @@ void gc_sweep() {
   }
 }
 
-void gc(Obj *env) {
-  obj_mark_alive(env);
-  for(int i = 0; i < stack_pos; i++) {
-    obj_mark_alive(stack[i]);
+void gc(Process *process) {
+  obj_mark_alive(process->global_env);
+  for(int i = 0; i < process->stack_pos; i++) {
+    obj_mark_alive(process->stack[i]);
   }
   for(int i = 0; i < shadow_stack_pos; i++) {
     obj_mark_alive(shadow_stack[i]);

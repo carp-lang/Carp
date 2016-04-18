@@ -3,6 +3,7 @@
 #include "eval.h"
 #include "gc.h"
 #include "obj_conversions.h"
+#include "process.h"
 
 bool setting_print_lambda_body = true;
 
@@ -27,7 +28,7 @@ Obj *concat_c_strings(char *a, const char *b) {
   return s;
 }
 
-void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg_to_str_obj) {
+void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_lookup, struct Obj *arg_to_str_obj) {
   assert(total);
   assert(total->tag == 'S');
   assert(type_lookup);
@@ -47,12 +48,12 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("str"), quoted_sig);
 
   shadow_stack_push(call_to_generic_name);
-  Obj *generic_name_result = eval(global_env, call_to_generic_name);
+  Obj *generic_name_result = eval(process, process->global_env, call_to_generic_name);
   shadow_stack_push(generic_name_result);
 
   if(eval_error) {
     printf("Error when calling generic-name:\n");
-    printf("%s\n", obj_to_string(eval_error)->s);
+    printf("%s\n", obj_to_string(process, eval_error)->s);
     return;
   }
   else {
@@ -62,11 +63,11 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   // Also make sure this particular version of the str primop has been baked:
   Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("str"), quoted_sig);
   shadow_stack_push(call_to_bake_generic_primop_auto);
-  eval(global_env, call_to_bake_generic_primop_auto);
+  eval(process, process->global_env, call_to_bake_generic_primop_auto);
 
   if(eval_error) {
     printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
-    printf("%s\n", obj_to_string(eval_error)->s);
+    printf("%s\n", obj_to_string(process, eval_error)->s);
     function_trace_print();
     return;
   }
@@ -74,7 +75,7 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
     //printf("%s should now exists\n", obj_to_string_not_prn(generic_name_result)->s);
   }
 
-  char *generic_name = obj_to_string_not_prn(generic_name_result)->s;
+  char *generic_name = obj_to_string_not_prn(process, generic_name_result)->s;
   //printf("generic_name 1: %s\n", generic_name);
 
   Obj *call_to_str = obj_list(obj_new_symbol(generic_name), (struct Obj *)arg_to_str_obj);
@@ -87,17 +88,17 @@ void print_generic_array_or_struct(Obj *total, Obj *type_lookup, struct Obj *arg
   //   DON'T DO IT!!!
 
   shadow_stack_push(call_to_str);
-  Obj *array_to_string_result = eval(global_env, call_to_str);
+  Obj *array_to_string_result = eval(process, process->global_env, call_to_str);
   shadow_stack_push(array_to_string_result);
   if(eval_error) {
-    printf("Error when calling str function for void ptr of type '%s':\n", obj_to_string(type_lookup)->s);
-    printf("%s\n", obj_to_string(eval_error)->s);
+    printf("Error when calling str function for void ptr of type '%s':\n", obj_to_string(process, type_lookup)->s);
+    printf("%s\n", obj_to_string(process, eval_error)->s);
     assert(false);
-    stack_pop();
+    stack_pop(process);
     obj_string_mut_append(total, "FAIL");
     return;
   }
-  obj_string_mut_append(total, obj_to_string_not_prn(array_to_string_result)->s);
+  obj_string_mut_append(total, obj_to_string_not_prn(process, array_to_string_result)->s);
 
   Obj *pop1 = shadow_stack_pop();
   assert(pop1 == array_to_string_result);
@@ -119,7 +120,7 @@ void add_indentation(Obj *total, int indent) {
   }
 }
 
-void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
+void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn, int indent) {
   assert(o);
   int x = indent;
   if(o->tag == 'C') {
@@ -128,10 +129,10 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     int save_x = x;
     const Obj *p = o;
     while(p && p->car) {
-      obj_to_string_internal(total, p->car, true, x);
+      obj_to_string_internal(process, total, p->car, true, x);
       if(p->cdr && p->cdr->tag != 'C') {
       	obj_string_mut_append(total, " . ");
-      	obj_to_string_internal(total, o->cdr, true, x);
+      	obj_to_string_internal(process, total, o->cdr, true, x);
       	break;
       }
       else if(p->cdr && p->cdr->car) {
@@ -157,7 +158,7 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     //int save_x = x;
     obj_string_mut_append(total, "[");
     for(int i = 0; i < o->count; i++) {
-      obj_to_string_internal(total, o->array[i], true, x);
+      obj_to_string_internal(process, total, o->array[i], true, x);
       if(i < o->count - 1) {
         /* if(o->array[i]->car->tag == 'Q' || o->array[i]->car->tag == 'E') { */
 	/*   obj_string_mut_append(total, "\n"); */
@@ -181,10 +182,10 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     x++;
     Obj *p = o->bindings;
     while(p && p->car) {
-      char *key_s = obj_to_string(p->car->car)->s;
+      char *key_s = obj_to_string(process, p->car->car)->s;
       obj_string_mut_append(total, key_s);
       obj_string_mut_append(total, " ");
-      obj_to_string_internal(total, p->car->cdr, true, x + (int)strlen(key_s) + 1);
+      obj_to_string_internal(process, total, p->car->cdr, true, x + (int)strlen(key_s) + 1);
       p = p->cdr;
       if(p && p->car && p->car->car) {
 	obj_string_mut_append(total, ", \n");
@@ -194,7 +195,7 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     obj_string_mut_append(total, "}");
     if(o->parent) {
       obj_string_mut_append(total, " -> \n");
-      Obj *parent_printout = obj_to_string(o->parent);
+      Obj *parent_printout = obj_to_string(process, o->parent);
       obj_string_mut_append(total, parent_printout->s);
     }
     shadow_stack_pop();
@@ -237,10 +238,10 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     snprintf(temp, 256, "%p", o->primop);
     obj_string_mut_append(total, temp);
     if(o->meta) {
-      Obj *name = env_lookup(o->meta, obj_new_keyword("name"));
+      Obj *name = env_lookup(process, o->meta, obj_new_keyword("name"));
       if(name) {
 	obj_string_mut_append(total, ":");
-	obj_string_mut_append(total, obj_to_string_not_prn(name)->s);
+	obj_string_mut_append(total, obj_to_string_not_prn(process, name)->s);
       }
     }
     obj_string_mut_append(total, ">");
@@ -255,12 +256,12 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
   else if(o->tag == 'Q') {
     shadow_stack_push((struct Obj *)o);    
     Obj *type_lookup;
-    if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
-      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
-	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+    if(o->meta && (type_lookup = env_lookup(process, o->meta, obj_new_keyword("type")))) {
+      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(process, type_lookup->car, obj_new_keyword("Array"))) {
+	print_generic_array_or_struct(process, total, type_lookup, (struct Obj *)o);
       }
       else {
-	print_generic_array_or_struct(total, type_lookup, (struct Obj *)o);
+	print_generic_array_or_struct(process, total, type_lookup, (struct Obj *)o);
 	/* obj_string_mut_append(total, "<ptr"); */
 	/* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
 	/* obj_string_mut_append(total, ">"); */
@@ -285,36 +286,36 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     if(o->void_ptr == NULL) {
       obj_string_mut_append(total, "NULL");
     }
-    else if(o->meta && (type_lookup = env_lookup(o->meta, obj_new_keyword("type")))) {
+    else if(o->meta && (type_lookup = env_lookup(process, o->meta, obj_new_keyword("type")))) {
       //printf("type %s\n", obj_to_string(type_lookup)->s);        
-      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(type_lookup->car, obj_new_keyword("Array"))) {
+      if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(process, type_lookup->car, obj_new_keyword("Array"))) {
         void *dereffed = *(void**)o->void_ptr;        
-        Obj *x = primitive_to_obj(dereffed, type_lookup);
+        Obj *x = primitive_to_obj(process, dereffed, type_lookup);
         shadow_stack_push(x);
-        obj_string_mut_append(total, obj_to_string(x)->s);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
         shadow_stack_pop(); // x
       }
-      else if(obj_eq(type_lookup, type_int)) {
+      else if(obj_eq(process, type_lookup, type_int)) {
         //int i = 123;
         void *dereffed = *(void**)o->void_ptr;
-        Obj *x = primitive_to_obj(dereffed, type_int);
-        obj_string_mut_append(total, obj_to_string(x)->s);
+        Obj *x = primitive_to_obj(process, dereffed, type_int);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
-      else if(obj_eq(type_lookup, type_float)) {
+      else if(obj_eq(process, type_lookup, type_float)) {
         //int i = 123;
         void *dereffed = *(void**)o->void_ptr;
-        Obj *x = primitive_to_obj(dereffed, type_float);
-        obj_string_mut_append(total, obj_to_string(x)->s);
+        Obj *x = primitive_to_obj(process, dereffed, type_float);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
-      else if(obj_eq(type_lookup, type_string)) {
+      else if(obj_eq(process, type_lookup, type_string)) {
         void *dereffed = *(void**)o->void_ptr;
-        Obj *x = primitive_to_obj(dereffed, type_string);
+        Obj *x = primitive_to_obj(process, dereffed, type_string);
         obj_string_mut_append(total, x->s);
       }
       else {
         void *dereffed = *(void**)o->void_ptr;
-        Obj *x = primitive_to_obj(dereffed, type_lookup);
-        print_generic_array_or_struct(total, type_lookup, (struct Obj *)x);
+        Obj *x = primitive_to_obj(process, dereffed, type_lookup);
+        print_generic_array_or_struct(process, total, type_lookup, (struct Obj *)x);
         /* obj_string_mut_append(total, "<ptr"); */
         /* obj_string_mut_append(total, obj_to_string(type_lookup)->s); */
         /* obj_string_mut_append(total, ">"); */
@@ -331,10 +332,10 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     snprintf(temp, 256, "%p", o->funptr);
     obj_string_mut_append(total, temp);
     if(o->meta) {
-      Obj *name = env_lookup(o->meta, obj_new_keyword("name"));
+      Obj *name = env_lookup(process, o->meta, obj_new_keyword("name"));
       if(name) {
 	obj_string_mut_append(total, ":");
-	obj_string_mut_append(total, obj_to_string_not_prn(name)->s);
+	obj_string_mut_append(total, obj_to_string_not_prn(process, name)->s);
       }
     }
     else {
@@ -346,9 +347,9 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     if(setting_print_lambda_body) {
       obj_string_mut_append(total, "(fn");
       obj_string_mut_append(total, " ");
-      obj_string_mut_append(total, obj_to_string(o->params)->s);
+      obj_string_mut_append(total, obj_to_string(process, o->params)->s);
       obj_string_mut_append(total, " ");
-      obj_string_mut_append(total, obj_to_string(o->body)->s);
+      obj_string_mut_append(total, obj_to_string(process, o->body)->s);
       obj_string_mut_append(total, ")");
     }
     else {
@@ -359,9 +360,9 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
     if(setting_print_lambda_body) {
       obj_string_mut_append(total, "(macro");
       obj_string_mut_append(total, " ");
-      obj_string_mut_append(total, obj_to_string(o->params)->s);
+      obj_string_mut_append(total, obj_to_string(process, o->params)->s);
       obj_string_mut_append(total, " ");
-      obj_string_mut_append(total, obj_to_string(o->body)->s);
+      obj_string_mut_append(total, obj_to_string(process, o->body)->s);
       obj_string_mut_append(total, ")");
     }
     else {
@@ -389,26 +390,26 @@ void obj_to_string_internal(Obj *total, const Obj *o, bool prn, int indent) {
   }
 }
 
-Obj *obj_to_string(const Obj *o) {
+Obj *obj_to_string(Process *process, const Obj *o) {
   Obj *s = obj_new_string("");
-  obj_to_string_internal(s, o, true, 0);
+  obj_to_string_internal(process, s, o, true, 0);
   return s;
 }
 
-Obj *obj_to_string_not_prn(const Obj *o) {
+Obj *obj_to_string_not_prn(Process *process, const Obj *o) {
   Obj *s = obj_new_string("");
-  obj_to_string_internal(s, o, false, 0);
+  obj_to_string_internal(process, s, o, false, 0);
   return s;
 }
 
-void obj_print(Obj *o) {
+void obj_print(Process *process, Obj *o) {
   assert(o);
-  Obj *s = obj_to_string(o);
+  Obj *s = obj_to_string(process, o);
   printf("%s", s->s);
 }
 
-void obj_print_not_prn(Obj *o) {
-  Obj *s = obj_to_string_not_prn(o);
+void obj_print_not_prn(Process *process, Obj *o) {
+  Obj *s = obj_to_string_not_prn(process, o);
   printf("%s", s->s);
 }
 
