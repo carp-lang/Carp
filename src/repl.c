@@ -6,6 +6,7 @@
 #include "eval.h"
 #include "env.h"
 #include "primops.h"
+#include "process.h"
 
 #define MAX_INPUT_BUFFER_SIZE (2048 * 32)
 char input[MAX_INPUT_BUFFER_SIZE];
@@ -85,8 +86,12 @@ void repl(Process *process) {
     }
     //assert(stack_pos == 0);
     //stack_print();
+
+    if(parallell) {
+      //printf("Ticked parallell process with result: %s\n", parallell->result ? obj_to_string(process, parallell->result)->s : "NULL");
+    }
   }
-  gc(process); 
+  gc(process);
 }
 
 void pop_stacks_to_zero(Process *process) {

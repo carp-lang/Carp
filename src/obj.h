@@ -122,6 +122,9 @@ typedef struct {
 
   StackTraceCallSite function_trace[STACK_SIZE];
   int function_trace_pos;
+
+  Obj *instruction;
+  Obj *result;
   
   bool dead;
   struct Obj *global_env;
@@ -149,6 +152,7 @@ Obj *obj_new_array(int count);
 Obj *obj_new_bool(bool b);
 
 Obj *obj_copy(Obj *o);
+bool obj_eq(Process *process, Obj *a, Obj *b);
 
 Obj *obj_list_internal(Obj *objs[]);
 #define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});

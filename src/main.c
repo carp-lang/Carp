@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
   /* printf("%ld %ld %ld \n", sizeof(float), sizeof(int), sizeof(void*)); */
   carp_platform_init();
   obj_total_max = 100000;
+  parallell = NULL;
 
   Process *process = process_new();
   
