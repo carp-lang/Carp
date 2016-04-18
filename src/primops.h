@@ -77,6 +77,7 @@ Obj *p_array_set(Process *process, Obj** args, int arg_count);
 //Obj *p_new(Process *process, Obj** args, int arg_count);
 Obj *p_gc(Process *process, Obj** args, int arg_count);
 Obj *p_delete(Process *process, Obj** args, int arg_count);
+Obj *p_stop(Process *process, Obj** args, int arg_count);
 
 Obj *register_ffi_internal(Process *process, char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

@@ -71,6 +71,9 @@ void repl(Process *process) {
       eval_text(process, process->global_env, input, true, obj_new_string("repl"));
       pop_stacks_to_zero(process);
       printf("\n");
+      if(process->dead) {
+        break;
+      }
     }
     else {
       //printf("Unbalanced, waiting for ending parenthesis.\n");
@@ -83,7 +86,7 @@ void repl(Process *process) {
     //assert(stack_pos == 0);
     //stack_print();
   }
-  gc_all();
+  gc(process); 
 }
 
 void pop_stacks_to_zero(Process *process) {

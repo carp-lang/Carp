@@ -111,7 +111,7 @@ typedef struct Obj {
 typedef struct {
   struct Obj *stack[STACK_SIZE];
   int stack_pos;
-
+  bool dead;
   struct Obj *global_env;
 } Process;
 

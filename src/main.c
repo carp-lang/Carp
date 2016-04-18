@@ -1,5 +1,6 @@
 #include "repl.h"
 #include "eval.h"
+#include "gc.h"
 #include "../shared/shared.h"
 
 int main(int argc, char **argv) {
@@ -12,13 +13,15 @@ int main(int argc, char **argv) {
   
   eval_text(process, process->global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false, obj_new_string("main.c"));
   
-  /* if(argc == 2) { */
-  /*   char load_file[512]; */
-  /*   snprintf(load_file, 512, "(load-lisp (str \"%s\"))", argv[1]); */
-  /*   eval_text(process, global_env, load_file, false, obj_new_string("main.c")); */
-  /* } */
+  if(argc == 2) {
+    char load_file[512];
+    snprintf(load_file, 512, "(load-lisp (str \"%s\"))", argv[1]);
+    eval_text(process, process->global_env, load_file, false, obj_new_string("main.c"));
+  }
 
   repl(process);
+
   carp_platform_shutdown();
+  gc_all();
   assert(obj_total == 0);
 }

@@ -3,6 +3,7 @@
 #include "obj.h"
 
 Process *process_new();
+Process *process_clone(Process *parent);
 
 void stack_print(Process *process);
 void stack_push(Process *process, Obj *o);

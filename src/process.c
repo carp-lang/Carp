@@ -16,8 +16,7 @@
 
 Process *process_new() {
   Process *process = malloc(sizeof(Process));
-
-  process->stack_pos = 0;
+  process->dead = false;
   pop_stacks_to_zero(process);
 
   process->global_env = obj_new_environment(NULL);
@@ -169,6 +168,7 @@ Process *process_new() {
   register_primop(process, "array-set", p_array_set);
   register_primop(process, "gc", p_gc);
   register_primop(process, "delete", p_delete);
+  register_primop(process, "stop", p_stop);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
@@ -182,6 +182,14 @@ Process *process_new() {
   //printf("Global env: %s\n", obj_to_string(env)->s);
 
   return process;
+}
+
+Process *process_clone(Process *parent) {
+  Process *clone = malloc(sizeof(Process));
+  clone->dead = false;
+  clone->global_env = parent->global_env;
+  pop_stacks_to_zero(clone);
+  return clone;
 }
 
 void stack_print(Process *process) {

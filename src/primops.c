@@ -1700,3 +1700,8 @@ Obj *p_delete(Process *process, Obj** args, int arg_count) {
   // no op?
   return nil;
 }
+
+Obj *p_stop(Process *process, Obj** args, int arg_count) {
+  process->dead = true;
+  return nil;
+}
