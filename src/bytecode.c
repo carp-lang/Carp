@@ -92,36 +92,39 @@ Obj *form_to_bytecode(Obj *env, Obj *form) {
 
 typedef struct {
   int p;
-  char *bytecode;
+  Obj *bytecodeObj;
   Obj *env;
 } BytecodeFrame;
 
-Obj *bytecode_eval(Process *process, Obj *bytecode) {
+Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
   BytecodeFrame frames[256] = {};
   int frame = 0;
   frames[frame].p = 0;
-  frames[frame].bytecode = bytecode->bytecode;
+  frames[frame].bytecodeObj = bytecodeObj;
   frames[frame].env = process->global_env;
-
-  Obj **literals_array = bytecode->bytecode_literals->array;
  
   Obj *literal, *function, *lookup;
   int arg_count, i;
   
   while(true) {
-    char c = frames[frame].bytecode[frames[frame].p];
+    //printf("frame = %d\n", frame);
+    Obj **literals_array = frames[frame].bytecodeObj->bytecode_literals->array;
+    char *bytecode = frames[frame].bytecodeObj->bytecode;
+    int p = frames[frame].p;
+    char c = bytecode[p];
+    
     switch(c) {
     case 'l':
-      i = frames[frame].bytecode[frames[frame].p + 1] - 65;
+      i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
       frames[frame].p += 2;
       break;
     case 'y':
-      i = frames[frame].bytecode[frames[frame].p + 1] - 65;
+      i = bytecode[p + 1] - 65;
       literal = literals_array[i];
-      printf("Looking up literal "); obj_print_cout(literal); printf("\n");
+      //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
       lookup = env_lookup(process, frames[frame].env, literal);
       if(!lookup) {
         set_error_return_nil("Failed to lookup ", literal);
@@ -131,7 +134,7 @@ Obj *bytecode_eval(Process *process, Obj *bytecode) {
       break;
     case 'c':
       function = stack_pop(process);
-      arg_count = frames[frame].bytecode[frames[frame].p + 1] - 65;
+      arg_count = bytecode[p + 1] - 65;
       Obj **args = NULL;
       if(arg_count > 0) {
         args = malloc(sizeof(Obj*) * arg_count);
@@ -152,7 +155,7 @@ Obj *bytecode_eval(Process *process, Obj *bytecode) {
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
         frame++;
         frames[frame].p = 0;
-        frames[frame].bytecode = function->body->bytecode;
+        frames[frame].bytecodeObj = function->body;
         frames[frame].env = calling_env;
         //printf("Pushing new stack frame with bytecode '%s'\n", frames[frame].bytecode); // and env %s\n", frames[frame].bytecode, obj_to_string(process, calling_env)->s);
       }

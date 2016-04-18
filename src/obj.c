@@ -324,10 +324,13 @@ void obj_print_cout(Obj *o) {
         printf(" ");
       }
     }
-    printf("[");
+    printf("]");
   }
   else if(o->tag == 'B') {
     printf("%s", o->boolean ? "true" : "false");
+  }
+  else if(o->tag == 'X') {
+    printf("(Bytecode %s)", o->bytecode);
   }
   else if(o->tag == 'E') {
     printf("{ ... }");
