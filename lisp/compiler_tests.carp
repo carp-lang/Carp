@@ -1,4 +1,8 @@
 ;;(println "Running compiler tests now...")
+
+;; (reset! profile-infer-time true)
+;; (reset! profile-external-compiler-time true)
+
 (load-lisp (str carp-dir "lisp/unsorted_tests.carp"))
 (load-lisp (str carp-dir "lisp/baking_tests.carp"))
 (load-lisp (str carp-dir "lisp/test_stack_trace.carp"))
