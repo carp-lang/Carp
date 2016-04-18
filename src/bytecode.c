@@ -155,6 +155,9 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
         frame++;
         frames[frame].p = 0;
+        if(function->body->tag != 'X') {
+          set_error_return_nil("The body of the lambda must be bytecode, ", function);
+        }
         frames[frame].bytecodeObj = function->body;
         frames[frame].env = calling_env;
         //printf("Pushing new stack frame with bytecode '%s'\n", frames[frame].bytecode); // and env %s\n", frames[frame].bytecode, obj_to_string(process, calling_env)->s);
