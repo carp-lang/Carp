@@ -16,8 +16,10 @@
 // 'i' if branch
 
 // 'd' def
+// 'e' local env def
 // 'r' reset!
 // 't' let
+// 's' pop one frame
 // 'o' do
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
@@ -79,6 +81,53 @@ void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   }
 }
 
+void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  
+  Obj *bindings = form->cdr->car;
+  Obj *body = form->cdr->cdr->car;
+  shadow_stack_push(process, bindings);
+  shadow_stack_push(process, body);
+
+  //printf("bindings: %s\n", obj_to_string(process, bindings)->s);
+
+  Obj *bindings_only_symbols = obj_new_array(bindings->count / 2);
+  shadow_stack_push(process, bindings_only_symbols);
+  
+  for(int i = 0; i < bindings_only_symbols->count; i++) {
+    bindings_only_symbols->array[i] = bindings->array[i * 2];
+    visit_form(process, env, bytecodeObj, position, bindings->array[i * 2 + 1]);
+  }
+  //printf("bindings_only_symbols: %s\n", obj_to_string(process, bindings_only_symbols)->s);
+
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  Obj *let_body_code = form_to_bytecode(process, env, body);
+
+  obj_array_mut_append(literals, bindings_only_symbols);
+  obj_array_mut_append(literals, let_body_code);
+  
+  bytecodeObj->bytecode[*position] = 't';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  bytecodeObj->bytecode[*position + 2] = new_literal_index + 1 + 65;
+  //bytecodeObj->bytecode[*position + 3] = 's';
+
+  *position += 3;
+
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+}
+
+void add_def(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, form->cdr->car);
+  bytecodeObj->bytecode[*position] = 'd';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   if(eval_error) {
     return;
@@ -95,6 +144,12 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("do")) {
       add_do(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("let")) {
+      add_let(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("def")) {
+      add_def(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("fn")) {
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
@@ -144,15 +199,17 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
   frames[frame].bytecodeObj = bytecodeObj;
   frames[frame].env = process->global_env;
  
-  Obj *literal, *function, *lookup;
-  int arg_count, i;
+  Obj *literal, *function, *lookup, *result, *bindings, *let_env;
+  int arg_count, i, bindings_index, body_index;
   
   while(true) {
-    //printf("frame = %d\n", frame);
+    
     Obj **literals_array = frames[frame].bytecodeObj->bytecode_literals->array;
     char *bytecode = frames[frame].bytecodeObj->bytecode;
     int p = frames[frame].p;
     char c = bytecode[p];
+    
+    //printf("frame = %d, c = %c\n", frame, c);
     
     switch(c) {
     case 'l':
@@ -161,6 +218,41 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
       frames[frame].p += 2;
+      break;
+    case 'd':
+      i = bytecode[p + 1] - 65;
+      literal = literals_array[i];
+      result = env_extend(process->global_env, literal, stack_pop(process));
+      stack_push(process, result->cdr);
+      frames[frame].p += 2;
+      break;
+    case 't':
+      //printf("entering let\n");
+      //shadow_stack_push(process, let_env);
+
+      bindings_index = bytecode[p + 1] - 65;
+      body_index = bytecode[p + 2] - 65;
+      
+      bindings = literals_array[bindings_index];
+      //printf("bindings: %s\n", obj_to_string(process, bindings)->s);
+
+      let_env = obj_new_environment(frames[frame].env);
+      for(int i = 0; i < bindings->count; i++) {
+        env_extend(let_env, bindings->array[i], stack_pop(process));
+      }
+
+      frames[frame].p += 3;
+    
+      frames[frame + 1].p = 0;
+      frames[frame + 1].bytecodeObj = literals_array[body_index];
+      frames[frame + 1].env = let_env;
+      frame++;
+
+      //printf("will now execute: %s\n", obj_to_string(process, frames[frame].bytecodeObj)->s);
+
+      break;
+    case 's':
+      frame--;
       break;
     case 'y':
       i = bytecode[p + 1] - 65;
