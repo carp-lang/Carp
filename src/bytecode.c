@@ -15,6 +15,11 @@
 // 'y' lookup
 // 'i' if branch
 
+// 'd' def
+// 'r' reset!
+// 't' let
+// 'o' do
+
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
 void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
@@ -66,6 +71,14 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   *position += 2;
 }
 
+void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  Obj *p = form->cdr;
+  while(p && p->car) {
+    visit_form(process, env, bytecodeObj, position, p->car);
+    p = p->cdr;
+  }
+}
+
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   if(eval_error) {
     return;
@@ -79,6 +92,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("if")) {
       add_if(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("do")) {
+      add_do(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("fn")) {
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
