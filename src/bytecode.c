@@ -14,13 +14,14 @@
 // 'c' call
 // 'y' lookup
 // 'i' if branch
-
 // 'd' def
-// 'e' local env def
-// 'r' reset!
 // 't' let
-// 's' pop one frame
 // 'o' do
+// 'r' reset!
+
+// 'n' not
+// 'r' or
+
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -81,6 +82,24 @@ void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   }
 }
 
+void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  
+}
+
+void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  Obj *p = form->cdr;
+  while(p && p->car) {
+    visit_form(process, env, bytecodeObj, position, p->car);
+    p = p->cdr;
+    bytecodeObj->bytecode[*position] = 'r';
+    *position += 1;
+  }
+}
+
+void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  visit_form(process, env, bytecodeObj, position, form->cdr);
+}
+
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   
   Obj *bindings = form->cdr->car;
@@ -109,7 +128,6 @@ void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   bytecodeObj->bytecode[*position] = 't';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   bytecodeObj->bytecode[*position + 2] = new_literal_index + 1 + 65;
-  //bytecodeObj->bytecode[*position + 3] = 's';
 
   *position += 3;
 
@@ -124,6 +142,16 @@ void add_def(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   char new_literal_index = literals->count;
   obj_array_mut_append(literals, form->cdr->car);
   bytecodeObj->bytecode[*position] = 'd';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
+void add_reset(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, form->cdr->car);
+  bytecodeObj->bytecode[*position] = 'r';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   *position += 2;
 }
@@ -150,6 +178,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("def")) {
       add_def(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("reset!")) {
+      add_reset(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("fn")) {
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
@@ -199,10 +230,14 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
   frames[frame].bytecodeObj = bytecodeObj;
   frames[frame].env = process->global_env;
  
-  Obj *literal, *function, *lookup, *result, *bindings, *let_env;
+  Obj *literal, *function, *lookup, *result, *bindings, *let_env, *binding;
   int arg_count, i, bindings_index, body_index;
   
   while(true) {
+
+    if(eval_error) {
+      return nil;
+    }
     
     Obj **literals_array = frames[frame].bytecodeObj->bytecode_literals->array;
     char *bytecode = frames[frame].bytecodeObj->bytecode;
@@ -224,6 +259,21 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       literal = literals_array[i];
       result = env_extend(process->global_env, literal, stack_pop(process));
       stack_push(process, result->cdr);
+      frames[frame].p += 2;
+      break;
+    case 'r':
+      i = bytecode[p + 1] - 65;
+      literal = literals_array[i];
+      binding = env_lookup_binding(process, frames[frame].env, literal);
+      if(binding->car) {
+        //printf("binding: %s\n", obj_to_string(process, binding)->s);
+        binding->cdr = stack_pop(process);
+        stack_push(process, binding->cdr);
+      } else {
+        eval_error = obj_new_string("reset! can't find variable to reset: ");
+        obj_string_mut_append(eval_error, obj_to_string(process, literal)->s);
+        return nil;
+      }      
       frames[frame].p += 2;
       break;
     case 't':
@@ -250,9 +300,6 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
 
       //printf("will now execute: %s\n", obj_to_string(process, frames[frame].bytecodeObj)->s);
 
-      break;
-    case 's':
-      frame--;
       break;
     case 'y':
       i = bytecode[p + 1] - 65;
