@@ -381,3 +381,6 @@
 
 (defn println* [x]
   (println (ref (str x))))
+
+(defmacro eb [form]
+  `(eval-bytecode (bytecode ~form)))

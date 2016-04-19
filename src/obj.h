@@ -120,6 +120,12 @@ typedef struct {
 } StackTraceCallSite;
 
 typedef struct {
+  int p;
+  Obj *bytecodeObj;
+  Obj *env;
+} BytecodeFrame;
+
+typedef struct {
   struct Obj *stack[STACK_SIZE];
   int stack_pos;
 
@@ -129,11 +135,14 @@ typedef struct {
   StackTraceCallSite function_trace[STACK_SIZE];
   int function_trace_pos;
 
-  Obj *instruction;
-  Obj *result;
+  Obj *final_result;
   
   bool dead;
   struct Obj *global_env;
+
+  Obj *bytecodeObj;
+  BytecodeFrame frames[256];
+  int frame;
 } Process;
 
 typedef Obj* (*Primop)(Process*, Obj**, int);

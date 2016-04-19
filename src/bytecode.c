@@ -87,15 +87,23 @@ void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
 }
 
 void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  Obj *p = form->cdr;
-  while(p && p->car) {
-    visit_form(process, env, bytecodeObj, position, p->car);
-    p = p->cdr;
-    bytecodeObj->bytecode[*position] = 'w';
-    *position += 1;
-  }
-  bytecodeObj->bytecode[*position] = 'w';
-  *position += 1;
+  assert(false);
+  /* char *code = malloc(512); */
+  /* Obj *or_branch = obj_new_bytecode(code); */
+
+  /* Obj *p = form->cdr; */
+  /* int pos2 = 0; */
+  /* while(p && p->car) { */
+  /*   visit_form(process, env, or_branch, &pos2, p->car); */
+  /*   p = p->cdr; */
+  /* } */
+
+  /* Obj *literals = bytecodeObj->bytecode_literals; */
+  /* char new_literal_index = literals->count; */
+  /* obj_array_mut_append(literals, or_branch); */
+  /* bytecodeObj->bytecode[*position] = 'w'; */
+  /* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; */
+  /* *position += 2; */
 }
 
 void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -224,35 +232,20 @@ Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   return bytecodeObj;
 }
 
-/* void bytecode_apply(Process *process, Obj *function, Obj **args, int arg_count) { */
-  
-/* } */
-
-typedef struct {
-  int p;
-  Obj *bytecodeObj;
-  Obj *env;
-} BytecodeFrame;
-
-Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
-  BytecodeFrame frames[256] = {};
-  int frame = 0;
-  frames[frame].p = 0;
-  frames[frame].bytecodeObj = bytecodeObj;
-  frames[frame].env = process->global_env;
- 
+// returns NULL if not done yet
+Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
   Obj *literal, *function, *lookup, *result, *bindings, *let_env, *binding;
   int arg_count, i, bindings_index, body_index;
   
-  while(true) {
+  for(int step = 0; step < steps; step++) {
 
     if(eval_error) {
       return nil;
     }
     
-    Obj **literals_array = frames[frame].bytecodeObj->bytecode_literals->array;
-    char *bytecode = frames[frame].bytecodeObj->bytecode;
-    int p = frames[frame].p;
+    Obj **literals_array = process->frames[process->frame].bytecodeObj->bytecode_literals->array;
+    char *bytecode = process->frames[process->frame].bytecodeObj->bytecode;
+    int p = process->frames[process->frame].p;
     char c = bytecode[p];
     
     //printf("frame = %d, c = %c\n", frame, c);
@@ -263,14 +256,14 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       literal = literals_array[i];
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
-      frames[frame].p += 2;
+      process->frames[process->frame].p += 2;
       break;
     case 'd':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       result = env_extend(process->global_env, literal, stack_pop(process));
       stack_push(process, result->cdr);
-      frames[frame].p += 2;
+      process->frames[process->frame].p += 2;
       break;
     case 'n':
       if(is_true(stack_pop(process))) {
@@ -278,12 +271,12 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       } else {
         stack_push(process, lisp_true);
       }
-      frames[frame].p += 1;
+      process->frames[process->frame].p += 1;
       break;
     case 'r':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
-      binding = env_lookup_binding(process, frames[frame].env, literal);
+      binding = env_lookup_binding(process, process->frames[process->frame].env, literal);
       if(binding->car) {
         //printf("binding: %s\n", obj_to_string(process, binding)->s);
         binding->cdr = stack_pop(process);
@@ -293,7 +286,7 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
         obj_string_mut_append(eval_error, obj_to_string(process, literal)->s);
         return nil;
       }      
-      frames[frame].p += 2;
+      process->frames[process->frame].p += 2;
       break;
     case 't':
       //printf("entering let\n");
@@ -305,43 +298,43 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       bindings = literals_array[bindings_index];
       //printf("bindings: %s\n", obj_to_string(process, bindings)->s);
 
-      let_env = obj_new_environment(frames[frame].env);
+      let_env = obj_new_environment(process->frames[process->frame].env);
       for(int i = 0; i < bindings->count; i++) {
         env_extend(let_env, bindings->array[i], stack_pop(process));
       }
 
-      frames[frame].p += 3;
+      process->frames[process->frame].p += 3;
     
-      frames[frame + 1].p = 0;
-      frames[frame + 1].bytecodeObj = literals_array[body_index];
-      frames[frame + 1].env = let_env;
-      frame++;
+      process->frames[process->frame + 1].p = 0;
+      process->frames[process->frame + 1].bytecodeObj = literals_array[body_index];
+      process->frames[process->frame + 1].env = let_env;
+      process->frame++;
 
-      //printf("will now execute: %s\n", obj_to_string(process, frames[frame].bytecodeObj)->s);
+      //printf("will now execute: %s\n", obj_to_string(process, process->frames[process->frame].bytecodeObj)->s);
 
       break;
     case 'y':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
-      lookup = env_lookup(process, frames[frame].env, literal);
+      lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
         set_error_return_nil("Failed to lookup ", literal);
       }
       stack_push(process, lookup);
-      frames[frame].p += 2;
+      process->frames[process->frame].p += 2;
       break;
     case 'i':
       i = bytecode[p + 1] - 65;
       if(is_true(stack_pop(process))) {
-        frames[frame].p = 0;
-        frames[frame].bytecodeObj = literals_array[i];
-        frames[frame].env = frames[frame - 1].env;
+        process->frames[process->frame].p = 0;
+        process->frames[process->frame].bytecodeObj = literals_array[i];
+        process->frames[process->frame].env = process->frames[process->frame - 1].env;
       }
       else {
-        frames[frame].p = 0;
-        frames[frame].bytecodeObj = literals_array[i + 1];
-        frames[frame].env = frames[frame - 1].env;
+        process->frames[process->frame].p = 0;
+        process->frames[process->frame].bytecodeObj = literals_array[i + 1];
+        process->frames[process->frame].env = process->frames[process->frame - 1].env;
       }
       break;
     case 'c':
@@ -356,7 +349,7 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
         args[arg_count - i - 1] = arg;
         //shadow_stack_push(process, arg);
       }
-      frames[frame].p += 2;
+      process->frames[process->frame].p += 2;
 
       if(function->tag == 'P') {
         stack_push(process, function->primop((struct Process*)process, args, arg_count));
@@ -390,14 +383,14 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
         Obj *calling_env = obj_new_environment(function->env);
         //printf("arg_count = %d\n", arg_count);
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
-        frame++;
-        frames[frame].p = 0;
+        process->frame++;
+        process->frames[process->frame].p = 0;
         if(function->body->tag != 'X') {
           set_error_return_nil("The body of the lambda must be bytecode, ", function);
         }
-        frames[frame].bytecodeObj = function->body;
-        frames[frame].env = calling_env;
-        //printf("Pushing new stack frame with bytecode '%s'\n", frames[frame].bytecode); // and env %s\n", frames[frame].bytecode, obj_to_string(process, calling_env)->s);
+        process->frames[process->frame].bytecodeObj = function->body;
+        process->frames[process->frame].env = calling_env;
+        //printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode); // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
       }
       else {
         printf("Can't handle other calling methods yet %c\n", function->tag);
@@ -406,8 +399,8 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       }      
       break;
     case 'q':
-      frame--;
-      if(frame < 0) {
+      process->frame--;
+      if(process->frame < 0) {
         goto done;
       }
       break;
@@ -419,5 +412,21 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
 
  done:;
   return stack_pop(process);
+}
+
+Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
+  shadow_stack_push(process, bytecodeObj);
+  
+  process->frames[process->frame].p = 0;
+  process->frames[process->frame].bytecodeObj = bytecodeObj;
+  process->frames[process->frame].env = process->global_env;
+
+  Obj *final_result = NULL;
+  while(!final_result) {
+    final_result = bytecode_eval_internal(process, bytecodeObj, 100);
+  }
+
+  shadow_stack_pop(process);
+  return final_result;
 }
 

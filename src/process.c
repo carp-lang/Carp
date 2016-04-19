@@ -3,6 +3,8 @@
 #include "env.h"
 #include "repl.h"
 #include "primops.h"
+#include "bytecode.h"
+#include "obj_string.h"
 
 #define define(name, value) env_extend(process->global_env, obj_new_symbol(name), value);
 
@@ -17,8 +19,8 @@
 Process *process_new() {
   Process *process = malloc(sizeof(Process));
   process->dead = false;
-  process->instruction = NULL;
-  process->result = NULL;
+  process->final_result = NULL;
+  process->frame = 0;
   pop_stacks_to_zero(process);
 
   process->global_env = obj_new_environment(NULL);
@@ -173,7 +175,7 @@ Process *process_new() {
   register_primop(process, "stop", p_stop);
   register_primop(process, "parallell", p_parallell);
   register_primop(process, "bytecode", p_bytecode);
-  register_primop(process, "eb", p_bytecode_eval);
+  register_primop(process, "eval-bytecode", p_bytecode_eval);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
@@ -193,8 +195,8 @@ Process *process_clone(Process *parent) {
   Process *clone = malloc(sizeof(Process));
   clone->dead = false;
   clone->global_env = parent->global_env;
-  clone->instruction = NULL;
-  clone->result = NULL;
+  clone->final_result = NULL;
+  clone->frame = 0;
   pop_stacks_to_zero(clone);
   return clone;
 }
@@ -242,10 +244,19 @@ Obj *stack_pop(Process *process) {
 }
 
 void process_eval(Process *process, Obj *form) {
-  process->instruction = form;
+  process->bytecodeObj = form_to_bytecode(process, process->global_env, form);
+  //printf("Process will eval bytecode: %s\n", obj_to_string(process, process->bytecodeObj)->s);
+  process->frames[process->frame].p = 0;
+  process->frames[process->frame].bytecodeObj = process->bytecodeObj;
+  process->frames[process->frame].env = process->global_env;
+  process->final_result = NULL;
+  stack_push(process, process->bytecodeObj); // make it not be GC:ed
+  return;
 }
 
 Obj *process_tick(Process *process) {
-
-  return NULL;
+  if(!process->final_result) {
+    process->final_result = bytecode_eval_internal(process, process->bytecodeObj, 100);
+  }
+  return process->final_result;
 }

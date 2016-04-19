@@ -1709,7 +1709,7 @@ Obj *p_stop(Process *process, Obj** args, int arg_count) {
 
 Obj *p_parallell(Process *process, Obj** args, int arg_count) {
   parallell = process_clone(process);
-  apply(parallell, args[0], NULL, 0);
+  process_eval(parallell, args[0]);
   return nil;
 }
 

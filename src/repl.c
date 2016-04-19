@@ -88,7 +88,11 @@ void repl(Process *process) {
     //stack_print();
 
     if(parallell) {
-      //printf("Ticked parallell process with result: %s\n", parallell->result ? obj_to_string(process, parallell->result)->s : "NULL");
+      process_tick(parallell);
+      printf("Ticked parallell process with result: %s\n", parallell->final_result ? obj_to_string(process, parallell->final_result)->s : "NULL");
+      if(parallell->final_result) {
+        parallell = NULL;
+      }
     }
   }
   gc(process);
