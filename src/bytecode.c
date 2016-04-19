@@ -5,6 +5,7 @@
 #include "env.h"
 #include "obj_string.h"
 #include "assertions.h"
+#include "eval.h"
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
@@ -148,6 +149,9 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
 
       if(function->tag == 'P') {
         stack_push(process, function->primop((struct Process*)process, args, arg_count));
+      }
+      else if(function->tag == 'F') {
+        call_foreign_function(process, function, args, arg_count);
       }
       else if(function->tag == 'L') {
         Obj *calling_env = obj_new_environment(function->env);
