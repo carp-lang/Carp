@@ -19,7 +19,7 @@
 // 'o' do
 // 'r' reset!
 // 'n' not
-// 'r' or
+// 'w' or
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -91,9 +91,11 @@ void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   while(p && p->car) {
     visit_form(process, env, bytecodeObj, position, p->car);
     p = p->cdr;
-    bytecodeObj->bytecode[*position] = 'r';
+    bytecodeObj->bytecode[*position] = 'w';
     *position += 1;
   }
+  bytecodeObj->bytecode[*position] = 'w';
+  *position += 1;
 }
 
 void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -269,6 +271,14 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       result = env_extend(process->global_env, literal, stack_pop(process));
       stack_push(process, result->cdr);
       frames[frame].p += 2;
+      break;
+    case 'n':
+      if(is_true(stack_pop(process))) {
+        stack_push(process, lisp_false);
+      } else {
+        stack_push(process, lisp_true);
+      }
+      frames[frame].p += 1;
       break;
     case 'r':
       i = bytecode[p + 1] - 65;
