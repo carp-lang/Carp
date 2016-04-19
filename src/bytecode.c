@@ -18,10 +18,8 @@
 // 't' let
 // 'o' do
 // 'r' reset!
-
 // 'n' not
 // 'r' or
-
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -83,7 +81,9 @@ void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 }
 
 void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  
+  visit_form(process, env, bytecodeObj, position, form->cdr->car);
+  bytecodeObj->bytecode[*position] = 'n';
+  *position += 1;
 }
 
 void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -97,7 +97,7 @@ void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 }
 
 void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  visit_form(process, env, bytecodeObj, position, form->cdr);
+  visit_form(process, env, bytecodeObj, position, form->cdr->car);
 }
 
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -181,6 +181,15 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("reset!")) {
       add_reset(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("ref")) {
+      add_ref(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("or")) {
+      add_or(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("not")) {
+      add_not(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("fn")) {
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
