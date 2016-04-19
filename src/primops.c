@@ -1715,7 +1715,7 @@ Obj *p_parallell(Process *process, Obj** args, int arg_count) {
 
 Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "bytecode must take 1 arguments. ", nil);
-  Obj *bytecode = form_to_bytecode(process->global_env, args[0]);
+  Obj *bytecode = form_to_bytecode(process, process->global_env, args[0]);
   return bytecode;
 }
 

@@ -13,8 +13,9 @@
 // 'l' push literal
 // 'c' call
 // 'y' lookup
+// 'i' if branch
 
-void visit_form(Obj *env, Obj *bytecodeObj, int *position, Obj *form);
+void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
 void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
   Obj *literals = bytecodeObj->bytecode_literals;
@@ -25,15 +26,15 @@ void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
   *position += 2;
 }
 
-void add_call(Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+void add_call(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   Obj *argp = form->cdr;
   int arg_count = 0;
   while(argp && argp->car) {
-    visit_form(env, bytecodeObj, position, argp->car);
+    visit_form(process, env, bytecodeObj, position, argp->car);
     argp = argp->cdr;
     arg_count++;
   }
-  visit_form(env, bytecodeObj, position, form->car); // the function position
+  visit_form(process, env, bytecodeObj, position, form->car); // the function position
   bytecodeObj->bytecode[*position] = 'c';
   bytecodeObj->bytecode[*position + 1] = arg_count + 65;
   (*position) += 2;
@@ -46,22 +47,45 @@ void add_lookup(Obj *bytecodeObj, int *position, Obj *form) {
   bytecodeObj->bytecode[*position] = 'y';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   *position += 2;
-}  
+}
 
-void visit_form(Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  if(form->tag == 'C') {
+void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'if' form: ", form);
+  assert_or_set_error(form->cdr->cdr->car, "Too few body forms in 'if' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->car, "Too few body forms in 'if' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'if' form (use explicit 'do').", form);
+  Obj *true_branch = form_to_bytecode(process, env, form->cdr->cdr->car);
+  Obj *false_branch = form_to_bytecode(process, env, form->cdr->cdr->cdr->car);
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, true_branch);
+  obj_array_mut_append(literals, false_branch);
+  visit_form(process, env, bytecodeObj, position, form->cdr->car);
+  bytecodeObj->bytecode[*position] = 'i';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
+void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  if(eval_error) {
+    return;
+  }
+  else if(form->tag == 'C') {
     if(form->car->car == NULL) {
       add_literal(bytecodeObj, position, nil);
     }
     else if(HEAD_EQ("quote")) {
       add_literal(bytecodeObj, position, form->car);
     }
+    else if(HEAD_EQ("if")) {
+      add_if(process, env, bytecodeObj, position, form);
+    }
     else if(HEAD_EQ("fn")) {
-      Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(env, form->cdr->cdr->car), env, form);
+      Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
       add_literal(bytecodeObj, position, lambda);
     }
     else {
-      add_call(env, bytecodeObj, position, form);
+      add_call(process, env, bytecodeObj, position, form);
     }
   }
   else if(form->tag == 'Y') {
@@ -77,11 +101,11 @@ void visit_form(Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   /* } */
 }
 
-Obj *form_to_bytecode(Obj *env, Obj *form) {
+Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   char *code = malloc(2048);
   Obj *bytecodeObj = obj_new_bytecode(code);
   int position = 0;
-  visit_form(env, bytecodeObj, &position, form);
+  visit_form(process, env, bytecodeObj, &position, form);
   bytecodeObj->bytecode[position++] = 'q';
   bytecodeObj->bytecode[position++] = '\0';  
   return bytecodeObj;
@@ -132,6 +156,19 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       }
       stack_push(process, lookup);
       frames[frame].p += 2;
+      break;
+    case 'i':
+      i = bytecode[p + 1] - 65;
+      if(is_true(stack_pop(process))) {
+        frames[frame].p = 0;
+        frames[frame].bytecodeObj = literals_array[i];
+        frames[frame].env = frames[frame - 1].env;
+      }
+      else {
+        frames[frame].p = 0;
+        frames[frame].bytecodeObj = literals_array[i + 1];
+        frames[frame].env = frames[frame - 1].env;
+      }
       break;
     case 'c':
       function = stack_pop(process);
