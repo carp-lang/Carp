@@ -38,7 +38,6 @@
 # Dynamic Runtime Big Features
   - Macro splicing
   - Modules 
-  - Remove globals to enable several instances of the runner in parallel
   - A Set-type with reader syntax #{}
   
 ## Modules
@@ -48,8 +47,6 @@
   - Environment (with all the bindings)
 
 # Dynamic Runtime Small Features
-  - Want to be able to send Obj-arrays to ffi functions
-  - Allow map/filter/reduce to take arguments that are boxed void pointers to arrays
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - ONLY allow [] in parameter list for function definitions
@@ -62,7 +59,8 @@
 
 # Bugs
   - Don't allow sending compiled functions of wrong type to ffi functions (check their types with 'signature')
-
+  - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
+  
 # Sanity checks
   - Ensure correctness of GC (run at every step)
   - Don't leak values returned from calling ffi functions at the repl (but how..?)
@@ -72,7 +70,6 @@
   
 # Lisp Core Libs
   - 'import' function that searches paths for carp files
-  - assert-eq shows wrong result when the assertion fails? (in ffi situations, the wrong type is produced and compared to something else)
   - shuffle (for lists)
   - Conversions between a list of pairs and dictionaries
   - 'for' macro with multiple bindings (i, j, etc...)
