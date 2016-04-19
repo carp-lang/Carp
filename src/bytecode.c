@@ -19,7 +19,8 @@
 // 'o' do
 // 'r' reset!
 // 'n' not
-// 'w' or
+// 'x' or
+// 'w' while
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -72,6 +73,21 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   *position += 2;
 }
 
+void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert(false);
+  int start = *position;
+  Obj *expression = form_to_bytecode(process, env, form->cdr->car);
+  Obj *body = form_to_bytecode(process, env, form->cdr->cdr->car);
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, expression);
+  obj_array_mut_append(literals, body);
+  bytecodeObj->bytecode[*position + 0] = 'w';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  bytecodeObj->bytecode[*position + 2] = start + 65; // index to jump to
+  *position += 3;
+}
+
 void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   Obj *p = form->cdr;
   while(p && p->car) {
@@ -101,7 +117,7 @@ void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   /* Obj *literals = bytecodeObj->bytecode_literals; */
   /* char new_literal_index = literals->count; */
   /* obj_array_mut_append(literals, or_branch); */
-  /* bytecodeObj->bytecode[*position] = 'w'; */
+  /* bytecodeObj->bytecode[*position] = 'x'; */
   /* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; */
   /* *position += 2; */
 }
@@ -179,6 +195,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("if")) {
       add_if(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("while")) {
+      add_while(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("do")) {
       add_do(process, env, bytecodeObj, position, form);
