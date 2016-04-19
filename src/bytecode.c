@@ -153,6 +153,28 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
       else if(function->tag == 'F') {
         call_foreign_function(process, function, args, arg_count);
       }
+      else if(function->tag == 'K') {
+        if(arg_count != 1) {
+          eval_error = obj_new_string("Args to keyword lookup must be a single arg.");
+        }
+        else if(args[0]->tag != 'E') {
+          eval_error = obj_new_string("Arg 0 to keyword lookup must be a dictionary: ");
+          obj_string_mut_append(eval_error, obj_to_string(process, args[0])->s);
+        }
+        else {
+          Obj *value = env_lookup(process, args[0], function);
+          if(value) {
+            stack_push(process, value);
+          } else {
+            eval_error = obj_new_string("Failed to lookup keyword '");
+            obj_string_mut_append(eval_error, obj_to_string(process, function)->s);
+            obj_string_mut_append(eval_error, "'");
+            obj_string_mut_append(eval_error, " in \n");
+            obj_string_mut_append(eval_error, obj_to_string(process, args[0])->s);
+            obj_string_mut_append(eval_error, "\n");
+          }
+        }
+      }
       else if(function->tag == 'L') {
         Obj *calling_env = obj_new_environment(function->env);
         //printf("arg_count = %d\n", arg_count);
