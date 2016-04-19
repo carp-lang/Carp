@@ -6,7 +6,15 @@
 ;;(enable-shared-builder!)
 
 
-
+(defn problem []
+  (let [s [1 2 3]
+        x 0]
+    (do
+      (while (< x 10)
+        (do
+          (reset! s (copy &s))
+          (reset! x (inc x))))
+      (println* &s))))
 
 
 
