@@ -41,6 +41,8 @@
 (defn graph/node-exists? [name]
   (not-nil? (get-maybe graph name)))
 
+(def extra-header-deps ())
+
 (defn graph/save-prototypes! ()
   (save (str out-dir "declarations.h")
         (str
@@ -55,3 +57,4 @@
          "\n\n//Functions:\n"
          (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
          "\n")))
+
