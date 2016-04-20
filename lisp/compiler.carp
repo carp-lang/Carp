@@ -200,19 +200,6 @@
     (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
     x (error (str "Can't match " x " in generic-function?"))))
 
-(def shared-builder nil)
-
-(defn enable-shared-builder! []
-  (reset! shared-builder (new-builder)))
-
-(defn disable-shared-builder! []
-  (reset! shared-builder nil))
-
-(defn get-builder []
-  (if (nil? shared-builder)
-    (new-builder)
-    shared-builder))
-
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal [func-name func-code func-annotation external-deps exe]
   (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
@@ -228,13 +215,13 @@
             (if echo-signature-after-bake
               (println (str func-name " : " s))
               nil))))
-      (bake-internal-common annotated-ast (get-builder) func-name func-code external-deps exe))))
+      (bake-internal-common annotated-ast (new-builder) func-name func-code external-deps exe))))
 
 (defn bake-generic-func-internal [func-name func-code external-deps exe func-signature]
   (let [ast-annotated (func-to-annotated-ast func-name func-code nil func-signature)]
     (if (generic-function? ast-annotated)
       (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
-      (bake-internal-common ast-annotated (get-builder) func-name func-code external-deps exe))))
+      (bake-internal-common ast-annotated (new-builder) func-name func-code external-deps exe))))
 
 (defn get-depending-funcs-recursively [func-name]
   (let [depending-funcs (get-maybe function-dependency-graph func-name)]
@@ -261,10 +248,9 @@
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
   (let [old-builder-deps (:deps builder)
         builder-result (builder-visit-ast builder ast-annotated func-name)
-        merged-builder (if (nil? shared-builder)
-                         (:builder builder-result)
-                         (assoc shared-builder :functions (union (:functions shared-builder) (:functions (:builder builder-result)))))
-        builder-with-headers (builder-add-headers merged-builder header-files)
+        builder-after-build (:builder builder-result)
+        ;;(assoc shared-builder :functions (union (:functions shared-builder) (:functions (:builder builder-result))))
+        builder-with-headers (builder-add-headers builder-after-build header-files)
         builder-deps (:deps builder-result)
         builder-final (if (and exe (not (= func-name "main")))
                         (builder-add-main-function builder-with-headers (c-ify-name func-name))
@@ -277,12 +263,7 @@
         final-builder-with-deps (reduce (fn [b dep] (builder-add b :deps dep)) builder-final total-dependencies)
         t (get ast-annotated :type)
         ]
-    (do
-      (when (not-nil? shared-builder)
-        (do
-          ;;(println (str "The builder after processing " func-name ":\n" final-builder-with-deps))
-          (reset! shared-builder final-builder-with-deps)))
-      
+    (do    
       ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
@@ -297,10 +278,7 @@
 
 ;; This will bake the function as a dylib (making it accessible in the repl) AND also add it to the shared builder if that exists
 (defn bake-c-code [func-name signature c-func-name c-file-name c-program-string includes-string proto deps false]
-  (do
-    (when (not-nil? shared-builder)
-      (reset! shared-builder (builder-add shared-builder :functions c-program-string)))
-    (save-and-compile func-name signature c-func-name c-file-name (str includes-string c-program-string) proto deps false)))
+  (save-and-compile func-name signature c-func-name c-file-name (str includes-string c-program-string) proto deps false))
 
 (defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
   (match t
@@ -338,12 +316,7 @@
   (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
 
 (defmacro bake-exe (func-symbol)
-  (list 'do
-        ;;(list 're-lambda-fy-all-functions)
-        ;;(list 'enable-shared-builder!)
-        (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true)
-        ;;(list 'disable-shared-builder!)
-        ))
+  (list 'do (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true)))
 
 (defmacro bake* (func-symbol dependencies)
   (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
