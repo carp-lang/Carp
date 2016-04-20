@@ -6,14 +6,14 @@
 ;;(enable-shared-builder!)
 
 
-;; (defn fa [] 10)
-;; (defn fb [] (fa))
-;; (defn fc [] (fa))
-;; (defn fd [] (+ (fb) (fc)))
+(defn fa [] 10)
+(defn fb [] (fa))
+(defn fc [] (fa))
+(defn fd [] (+ (fb) (fc)))
 
 ;; (bake fd)
 
-(defstruct X [xxa :int xxb :string])
+;;(defstruct X [xxa :int xxb :string])
 
 
 

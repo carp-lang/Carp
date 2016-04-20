@@ -59,3 +59,13 @@
          (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
          "\n")))
 
+(def log-unloading-of-dylibs false)
+
+;; Takes the name of a function and unloads it if it is in the list of baked functions
+(defn graph/unload [name]
+  (when-let [baked-node (get-maybe graph name)]
+    (let [dylib (get baked-node :dylib-ptr)]
+      (do (when log-unloading-of-dylibs
+            (println (str "Unloading " dylib " for function " name ".")))
+          (unload-dylib dylib)
+          (dict-remove! graph name)))))

@@ -15,19 +15,6 @@
 
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 
-(def log-unloading-of-dylibs false)
-
-;; Takes the name of a function and unloads it if it is in the list of baked functions
-(defn unload-if-necessary (func-name)
-  (let [baked-node (get-maybe graph func-name)]
-    (when (not (nil? baked-node))
-      (let [dylib (get baked-node :dylib-ptr)]
-        (do (when log-unloading-of-dylibs
-              (println (str "Unloading " dylib " for function " func-name ".")))
-            (unload-dylib dylib)
-            (dict-remove! graph func-name)
-            )))))
-
 (defn re-lambda-fy [func-name]
   (let [function-symbol (if (symbol? func-name)
                           func-name
@@ -38,52 +25,49 @@
         (do
           ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
           (eval (list 'def (symbol func-name) func-code))
-          (unload-if-necessary func-name)))
+          (graph/unload func-name)))
       (do
         ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
         :ignore))))
 
 (defn re-lambda-fy-all-functions []
-  (do
-    (map re-lambda-fy (keys graph))))
+  (map re-lambda-fy (keys graph)))
 
 (defn re-compile [func-name]
   (let [function-symbol (symbol func-name)
         func (eval function-symbol)]
-      (if (lambda? func)
-        (let [func-code (code (eval (symbol func-name)))]
-          (do
-            ;;(println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
-            (bake-internal func-name func-code (meta-get func :ann) '() false (new-builder))))
+    (if (lambda? func)
+      (let [func-code (code (eval (symbol func-name)))]
         (do
-          ;;(println (str "re-compile will ignore non-lambda: " func))
-          :ignore))))
-
-(defn unload-all-baked ()
-  (join "\n" (map (fn (x) (str (unload-dylib (:dylib-ptr x)))) (values graph))))
+          ;;(println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
+          (bake-internal func-name func-code (meta-get func :ann) '() false (new-builder))))
+      (do
+        ;;(println (str "re-compile will ignore non-lambda: " func))
+        :ignore))))
 
 (def echo-signature-after-bake false)
 
-(defn remove-non-user-defined-deps (func-deps)
-  (let [func-names (keys graph)]
-    (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
+(defn remove-non-user-defined-deps [deps]
+  (let [names (keys graph)]
+    (filter (fn (dep) (contains? names (str dep))) deps)))
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal [func-name func-code func-annotation external-deps exe builder]
   (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
     (if (generic-function? annotated-ast)
-      (do
-        ;;(println (str "bake found generic function: " func-name))
-        (let [func-def (eval (symbol func-name))]
-          (do
-            (meta-set! func-def :generic true)
-            (meta-set! func-def :signature (:type annotated-ast))
-            (def ast annotated-ast)
-            (def s (pretty-signature (:type annotated-ast)))
-            (if echo-signature-after-bake
-              (println (str func-name " : " s))
-              nil))))
+      (generesize-lambda func-name annotated-ast)
       (bake-internal-common annotated-ast builder func-name func-code external-deps exe))))
+
+(defn generesize-lambda [func-name annotated-ast]
+  (let [func-def (eval (symbol func-name))]
+    (do
+      (meta-set! func-def :generic true)
+      (meta-set! func-def :signature (:type annotated-ast))
+      (def ast annotated-ast)
+      (def s (pretty-signature (:type annotated-ast)))
+      (if echo-signature-after-bake
+        (println (str func-name " : " s))
+        nil))))
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
@@ -128,8 +112,8 @@
     (let [functions-depending-on-this-function (graph/dependers func-name)]
       (do
         ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
-        (unload-if-necessary func-name)
-        (map unload-if-necessary functions-depending-on-this-function)
+        (graph/unload func-name)
+        (map graph/unload functions-depending-on-this-function)
         (map re-lambda-fy functions-depending-on-this-function)
         (map re-compile functions-depending-on-this-function)
         (let [evaled (eval (symbol func-name))]
@@ -139,9 +123,13 @@
               :OK)
             (bake-internal func-name (code evaled) (meta-get evaled :ann) external-deps false (new-builder))))))))
 
-;; This will bake the function as a dylib (making it accessible in the repl) AND also add it to the shared builder if that exists
-(defn bake-c-code [func-name signature c-func-name c-file-name c-program-string proto deps false]
-  (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))
+(def *dry* false)
+
+;; This will bake the function as a dylib (making it accessible in the repl) AND add it to the 'graph'
+(defn bake-c-code [func-name signature c-func-name c-file-name c-program-string proto deps exe]
+  (if *dry*
+    (graph/add-node! :function func-name proto c-program-string "" nil deps)
+    (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps exe)))
 
 (defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
   (match t
@@ -149,7 +137,7 @@
                                   (graph/save-prototypes!)
                                   (save c-file-name (str "#include \"declarations.h\"\n\n" c-program-string))
                                   (run-compiler c-func-name c-file-name total-dependencies exe)
-                                  (unload-if-necessary func-name)
+                                  (graph/unload func-name)
                                   (if exe
                                     :exe-done
                                     (let [dylib-name (str out-dir c-func-name (:dylib-extension platform-specifics))]
@@ -167,7 +155,7 @@
                       (graph/save-prototypes!)
                       (save c-file-name c-program-string)
                       (run-compiler c-func-name c-file-name total-dependencies exe)
-                      (unload-if-necessary func-name)
+                      (graph/unload func-name)
                       (def out-lib (load-dylib dylib-name))
                       (register-variable out-lib c-func-name variable-type)
                       (graph/add-node! :global func-name proto c-program-string dylib-name out-lib total-dependencies)
@@ -196,5 +184,14 @@
 ;; Bake several functions using the same builder
 (defn bake-nodes [node-names]
   (let [src (join "\n\n" (map (fn [name] (get graph-src name)) node-names))]
-    src))
+    (do
+      (def src src)
+      (graph/save-prototypes!)
+      ;;(reset! *dry* true)
+      (bake-c-code "blob" nil "blob" (str out-dir "blob.c") src "" () false)
+      ;;(reset! *dry* false)
+      :OK)))
+
+(defn bake-many [func-names]
+  nil)
 
