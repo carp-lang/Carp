@@ -121,3 +121,46 @@ Obj *primitive_to_obj(Process *process, void *primitive, Obj *return_type) {
   assert(obj_result);
   return obj_result;
 }
+
+Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
+  Array *carp_array = malloc(sizeof(Array));
+  carp_array->count = obj_array->count;
+  
+  Obj **oa = obj_array->array;
+
+  if(obj_array->count == 0) {
+          
+  }
+  else if(oa[0]->tag == 'I') {
+    carp_array->data = malloc(sizeof(int) * carp_array->count);
+    int *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be integers.", nil);
+      data[i] = oa[i]->i;
+    }
+  }
+  else if(oa[0]->tag == 'Q') {
+    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    void **data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be ptr:s.", nil);
+      data[i] = oa[i]->void_ptr;
+    }
+  }
+  else if(oa[0]->tag == 'A') {
+    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    Array **data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      Array *inner_array = obj_array_to_carp_array(process, oa[i]);
+      data[i] = inner_array;
+    }
+  }
+  else {
+    eval_error = obj_new_string("Can't handle this kind of array element as argument: ");
+    obj_string_mut_append(eval_error, obj_to_string(process, oa[0])->s);
+    //printf("FAIL %s\n", obj_to_string(eval_error)->s);
+    return NULL;
+  }
+
+  return carp_array;
+}

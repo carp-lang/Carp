@@ -8,6 +8,9 @@
 
 #define define(name, value) env_extend(process->global_env, obj_new_symbol(name), value);
 
+#define LOG_STACK 0
+#define LOG_SHADOW_STACK 0
+
 #ifdef WIN32
 #define PROMPT "CARP> "
 #define PROMPT_UNFINISHED_FORM "   _> "
@@ -241,6 +244,89 @@ Obj *stack_pop(Process *process) {
     stack_print(process);
   }
   return o;
+}
+
+void shadow_stack_print(Process* process) {
+  printf("----- SHADOW STACK -----\n");
+  for(int i = 0; i < process->shadow_stack_pos - 1; i++) {
+    printf("%d\t", i);
+    obj_print_cout(process->shadow_stack[i]);
+    printf("\n");
+  }
+  printf("-----  END  -----\n\n");
+}
+
+void shadow_stack_push(Process* process, Obj *o) {
+  if(LOG_SHADOW_STACK) {
+    printf("Pushing to shadow stack: %p ", o);
+    obj_print_cout(o);
+    printf("\n");
+  }
+  if(process->shadow_stack_pos >= SHADOW_STACK_SIZE) {
+    printf("Shadow stack overflow.\n");
+    shadow_stack_print(process);
+    exit(1);
+  }
+  process->shadow_stack[process->shadow_stack_pos++] = o;
+}
+
+Obj *shadow_stack_pop(Process* process) {
+  if(process->shadow_stack_pos <= 0) {
+    printf("Shadow stack underflow.\n");
+    assert(false);
+  }
+  Obj *o = process->shadow_stack[--process->shadow_stack_pos];
+  if(LOG_SHADOW_STACK) {
+    printf("Popping from shadow stack: %p ", o);
+    obj_print_cout(o);
+    printf("\n");
+  }
+  return o;
+}
+
+void function_trace_print(Process *process) {
+  printf(" ----------------------------------------------------------------\n");
+  
+  for(int i = process->function_trace_pos - 1; i >= 0; i--) {
+    printf("%3d ", i);
+
+    StackTraceCallSite call_site = process->function_trace[i];
+    Obj *o = call_site.caller;
+    Obj *function = call_site.callee;
+    
+    if(o->meta) {
+      //printf("%s\n", obj_to_string(o->meta)->s);
+      char *func_name = "";
+      Obj *func_name_data = NULL;
+      if(function && function->meta) {
+        func_name_data = env_lookup(process, function->meta, obj_new_keyword("name"));
+      }
+      if(func_name_data) {
+        func_name = obj_to_string_not_prn(process, func_name_data)->s;
+      } else {
+        func_name = "???"; // obj_to_string(function)->s;
+      }
+      int line = env_lookup(process, o->meta, obj_new_keyword("line"))->i;
+      int pos = env_lookup(process, o->meta, obj_new_keyword("pos"))->i;
+      char *file_path = env_lookup(process, o->meta, obj_new_keyword("file"))->s;
+      char *file = file_path;
+
+      int len = (int)strlen(file_path);
+      for(int i = len - 1; i >= 0; i--) {
+        if(file_path[i] == '/') {
+          file = strdup(file_path + i + 1);
+          break;
+        }
+      }
+      printf("%-30s %s %d:%d", func_name, file, line, pos);
+    }
+    else {
+      printf("No meta data."); //"%s", obj_to_string(function)->s);
+    }
+    printf("\n");
+  }
+  
+  printf(" ----------------------------------------------------------------\n");
 }
 
 void process_eval(Process *process, Obj *form) {
