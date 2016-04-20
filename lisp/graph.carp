@@ -43,6 +43,9 @@
 
 (def extra-header-deps ())
 
+(defn graph/get-kind [kind]
+  (filter (fn [n] (= (:kind n) kind)) (values graph)))
+
 (defn graph/save-prototypes! ()
   (save (str out-dir "declarations.h")
         (str
@@ -50,13 +53,13 @@
          "\n\n//Extra headers:\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
          "\n\n//Structs:\n"
-         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :struct)) (values graph))))
+         (join "\n" (map :proto (graph/get-kind :struct)))
          "\n\n//Function types:\n"
-         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function-type)) (values graph))))
+         (join "\n" (map :proto (graph/get-kind :function-type)))
          "\n\n//Globals:\n"
-         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :global)) (values graph))))
+         (join "\n" (map :proto (graph/get-kind :global)))
          "\n\n//Functions:\n"
-         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
+         (join "\n" (map :proto (graph/get-kind :function)))
          "\n")))
 
 (def log-unloading-of-dylibs false)
@@ -69,3 +72,21 @@
             (println (str "Unloading " dylib " for function " name ".")))
           (unload-dylib dylib)
           (dict-remove! graph name)))))
+
+(defn graph/re-lambda-fy [func-name]
+  (let [function-symbol (if (symbol? func-name)
+                          func-name
+                          (symbol func-name))
+        func (eval function-symbol)]
+    (if (foreign? func)
+      (let [func-code (meta-get func :code)]
+        (do
+          ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
+          (eval (list 'def (symbol func-name) func-code))
+          (graph/unload func-name)))
+      (do
+        ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
+        :ignore))))
+
+(defn graph/re-lambda-fy-all-functions []
+  (map re-lambda-fy (graph/get-kind :function)))

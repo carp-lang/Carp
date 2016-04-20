@@ -15,24 +15,6 @@
 
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 
-(defn re-lambda-fy [func-name]
-  (let [function-symbol (if (symbol? func-name)
-                          func-name
-                          (symbol func-name))
-        func (eval function-symbol)]
-    (if (foreign? func)
-      (let [func-code (meta-get func :code)]
-        (do
-          ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
-          (eval (list 'def (symbol func-name) func-code))
-          (graph/unload func-name)))
-      (do
-        ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
-        :ignore))))
-
-(defn re-lambda-fy-all-functions []
-  (map re-lambda-fy (keys graph)))
-
 (defn re-compile [func-name]
   (let [function-symbol (symbol func-name)
         func (eval function-symbol)]
@@ -114,7 +96,7 @@
         ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
         (graph/unload func-name)
         (map graph/unload functions-depending-on-this-function)
-        (map re-lambda-fy functions-depending-on-this-function)
+        (map graph/re-lambda-fy functions-depending-on-this-function)
         (map re-compile functions-depending-on-this-function)
         (let [evaled (eval (symbol func-name))]
           (if (foreign? evaled)
