@@ -74,12 +74,6 @@
 (defn unload-all-baked ()
   (join "\n" (map (fn (x) (str (unload-dylib (:dylib-ptr x)))) (values graph))))
 
-;; (def types {})
-
-;; (defn add-type! [type-name type-definition]
-;;   (swap! types (fn (ts) (assoc ts type-name {:type-name type-name
-;;                                              :type-definition type-definition}))))
-
 ;; Saves the signatures of all the baked functions to a header file so that they can include each other
 (defn save-function-prototypes ()
   (save (str out-dir "declarations.h")

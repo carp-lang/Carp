@@ -20,7 +20,7 @@
       deps - a list of names of nodes that this node depend on
      "
 (defn graph/add-node! [kind name proto src dylib-name dylib-ptr deps]
-  (do (dict-set! graph name src)
+  (do (dict-set! graph-src name src)
       (dict-set! graph name {:kind kind
                              :name name
                              :proto proto
