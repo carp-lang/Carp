@@ -71,15 +71,20 @@
   (match t
     (:fn arg-types return-type) (let [func-type-name (str "Fn_" (join "_" (map type-build-no-star arg-types))
                                                           "_" (type-build-no-star return-type))]
-                                  (do (if (has-key? types func-type-name)
+                                  (do (if (has-key? graph func-type-name)
                                         (do ;;(println (str "Ignoring " func-type-name))
                                             func-type-name)
                                         (do ;;(println (str "Adding function type " func-type-name))
-                                            (add-type! func-type-name
-                                                       (str "typedef " (type-build return-type)
-                                                            "(*" func-type-name ")("
-                                                            (join "," (map type-build arg-types))
-                                                            "); // ensure function type " (str t)))
+                                          (graph/add-node! :function-type
+                                                           func-type-name
+                                                           (str "typedef " (type-build return-type)
+                                                                "(*" func-type-name ")("
+                                                                (join "," (map type-build arg-types))
+                                                                "); // ensure function type " (str t))
+                                                           ""
+                                                           ""
+                                                           nil
+                                                     '())
                                             func-type-name))))
 
     _ (error "Can't match t in ensure-function-type: " t)))

@@ -74,11 +74,11 @@
 (defn unload-all-baked ()
   (join "\n" (map (fn (x) (str (unload-dylib (:dylib-ptr x)))) (values graph))))
 
-(def types {})
+;; (def types {})
 
-(defn add-type! [type-name type-definition]
-  (swap! types (fn (ts) (assoc ts type-name {:type-name type-name
-                                             :type-definition type-definition}))))
+;; (defn add-type! [type-name type-definition]
+;;   (swap! types (fn (ts) (assoc ts type-name {:type-name type-name
+;;                                              :type-definition type-definition}))))
 
 ;; Saves the signatures of all the baked functions to a header file so that they can include each other
 (defn save-function-prototypes ()
@@ -86,8 +86,10 @@
         (str
          "#include <shared.h>\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
-         "\n\n//Types:\n"
-         (join "\n" (map :type-definition (reverse (values types))))
+         "\n\n//Structs:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :struct)) (values graph))))
+         "\n\n//Function types:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function-type)) (values graph))))
          "\n\n//Globals:\n"
          (join "\n" (map :proto (filter (fn [n] (= (:kind n) :global)) (values graph))))
          "\n\n//Functions:\n"

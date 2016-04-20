@@ -42,7 +42,7 @@
         type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
         ]
     (do
-      (add-type! struct-name type-definition)
+      (graph/add-node! :struct struct-name type-definition "" "" nil '())
       ;;(println (str "types:\n" types))
       (save-function-prototypes)
       (if (func-baked? constructor-name)

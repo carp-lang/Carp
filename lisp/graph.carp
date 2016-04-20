@@ -9,9 +9,9 @@
 ;; The whole graph lives in a data structure called 'graph' which is a big dictionary.
 
 (def graph {})
+(def graph-src {})
 
-
-^doc "kind - :function / :global (variable) / :struct / :module
+^doc "kind - :function / :global (variable) / :struct / :module / function-type
       name - a string, also the key in the graph dictionary
       proto - what will go into the header file
       src - what will go into the C-file
@@ -20,12 +20,12 @@
       deps - a list of names of nodes that this node depend on
      "
 (defn graph/add-node! [kind name proto src dylib-name dylib-ptr deps]
-  (dict-set! graph name {:kind kind
-                         :name name
-                         :proto proto
-                         :src src
-                         :dylib-name dylib-name
-                         :dylib-ptr dylib-ptr
-                         :deps deps}))
+  (do (dict-set! graph name src)
+      (dict-set! graph name {:kind kind
+                             :name name
+                             :proto proto
+                             :dylib-name dylib-name
+                             :dylib-ptr dylib-ptr
+                             :deps deps})))
 
 
