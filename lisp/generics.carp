@@ -36,8 +36,6 @@
     ;;(println (str "Will find generic name for " base-name " with signature " signature))
     (str base-name "--" (generic-suffix signature))))
 
-
-
 ;; Used for let polymorphism to make the generic type of a function unique (i.e. change all the "T":s to a fresh typevar)
 ;; (:fn ("T" "S") "T") becomes (:f ("t319" "t302") "t319)
 (defn uniquify-typevars [t]
@@ -58,7 +56,16 @@
         (map (fn [x] (uniquify-typevars-internal x substs)) t)
         (error (str "Can't handle t " t " of type " (type t)))))))
 
-
+(defn mark-lambda-as-generic [func-name annotated-ast]
+  (let [func-def (eval (symbol func-name))]
+    (do
+      (meta-set! func-def :generic true)
+      (meta-set! func-def :signature (:type annotated-ast))
+      (def ast annotated-ast)
+      (def s (pretty-signature (:type annotated-ast)))
+      (if echo-signature-after-bake
+        (println (str func-name " : " s))
+        nil))))
 
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))

@@ -37,19 +37,8 @@
 (defn bake-internal [func-name func-code func-annotation external-deps exe builder]
   (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
     (if (generic-function? annotated-ast)
-      (generesize-lambda func-name annotated-ast)
+      (mark-lambda-as-generic func-name annotated-ast)
       (bake-internal-common annotated-ast builder func-name func-code external-deps exe))))
-
-(defn generesize-lambda [func-name annotated-ast]
-  (let [func-def (eval (symbol func-name))]
-    (do
-      (meta-set! func-def :generic true)
-      (meta-set! func-def :signature (:type annotated-ast))
-      (def ast annotated-ast)
-      (def s (pretty-signature (:type annotated-ast)))
-      (if echo-signature-after-bake
-        (println (str func-name " : " s))
-        nil))))
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
@@ -157,9 +146,6 @@
 
 (defmacro bake-exe* (func-symbol dependencies)
   (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
-
-
-
 
 
 
