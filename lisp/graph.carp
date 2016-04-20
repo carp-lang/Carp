@@ -17,15 +17,15 @@
       src - what will go into the C-file
       dylib-name - a string, the name used to link to the partical dylib where this node is compiled
       dylib-ptr - pointer to the dylib Obj
-      deps - a list of names of nodes that this node depend on
+      depends-on - a list of names of nodes that this node depend on
      "
-(defn graph/add-node! [kind name proto src dylib-name dylib-ptr deps]
+(defn graph/add-node! [kind name proto src dylib-name dylib-ptr depends-on]
   (do (dict-set! graph-src name src)
       (dict-set! graph name {:kind kind
                              :name name
                              :proto proto
                              :dylib-name dylib-name
                              :dylib-ptr dylib-ptr
-                             :deps deps})))
+                             :depends-on depends-on})))
 
 

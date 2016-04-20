@@ -16,14 +16,12 @@
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def extra-header-deps ())
 
-(def baked-primops ())
-
 (defn func-baked? [func-name]
   (not (nil? (get-maybe graph func-name))))
 
 (defn get-func-deps-recursively [func-name]
   (if (has-key? graph (str func-name))
-    (let [deps (get-in graph (list (str func-name) :deps))]
+    (let [deps (get-in graph (list (str func-name) :depends-on))]
       (concat deps (mapcat get-func-deps-recursively deps)))
     '()))
 
