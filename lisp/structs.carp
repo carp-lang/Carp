@@ -44,7 +44,7 @@
     (do
       (graph/add-node! :struct struct-name type-definition "" "" nil '())
       ;;(println (str "types:\n" types))
-      (save-function-prototypes)
+      (graph/save-prototypes!)
       (if (graph/node-exists? constructor-name)
         (do
           ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))

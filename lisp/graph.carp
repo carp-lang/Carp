@@ -41,8 +41,17 @@
 (defn graph/node-exists? [name]
   (not-nil? (get-maybe graph name)))
 
-(defn get-func-deps-recursively [func-name]
-  (if (has-key? graph (str func-name))
-    (let [deps (get-in graph (list (str func-name) :depends-on))]
-      (concat deps (mapcat get-func-deps-recursively deps)))
-    '()))
+(defn graph/save-prototypes! ()
+  (save (str out-dir "declarations.h")
+        (str
+         "#include <shared.h>\n"
+         (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
+         "\n\n//Structs:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :struct)) (values graph))))
+         "\n\n//Function types:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function-type)) (values graph))))
+         "\n\n//Globals:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :global)) (values graph))))
+         "\n\n//Functions:\n"
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
+         "\n")))
