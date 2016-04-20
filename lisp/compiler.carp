@@ -94,13 +94,9 @@
               :OK)
             (bake-internal func-name (code evaled) (meta-get evaled :ann) external-deps false (new-builder))))))))
 
-(def *dry* false)
-
 ;; This will bake the function as a dylib (making it accessible in the repl) AND add it to the 'graph'
 (defn bake-c-code [func-name signature c-func-name c-file-name c-program-string proto deps exe]
-  (if *dry*
-    (graph/add-node! :function func-name proto c-program-string "" nil deps)
-    (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps exe)))
+  (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps exe))
 
 (defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
   (match t
@@ -149,17 +145,51 @@
 
 
 
-;; Bake several functions using the same builder
-(defn bake-nodes [node-names]
-  (let [src (join "\n\n" (map (fn [name] (get graph-src name)) node-names))]
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn compiler/bake-group [group-name code-nodes deps]
+  (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
+        c-file-name (str out-dir group-name ".c")
+        dylib-name (str out-dir group-name (:dylib-extension platform-specifics))]
     (do
+      (println (str "Compiling group '" group-name "'")) ;; " via " c-file-name " to " dylib-name))
       (def src src)
+      (map (fn [code-node]
+             ;; kind name proto src dylib-name dylib-ptr depends-on
+             (graph/add-node! :function (:name code-node) (:proto code-node) (:src code-node) dylib-name nil deps))
+           code-nodes)
       (graph/save-prototypes!)
-      ;;(reset! *dry* true)
-      (bake-c-code "blob" nil "blob" (str out-dir "blob.c") src "" () false)
-      ;;(reset! *dry* false)
+      (save c-file-name src)
+      (run-compiler group-name c-file-name deps false)
+      (def out-lib (load-dylib dylib-name))
+      (map (fn [code-node]
+             (let [c-func-name (c-ify-name (:name code-node))
+                   arg-types (:arg-types code-node)
+                   return-type (:return-type code-node)]
+               (do
+                 (register out-lib c-func-name arg-types return-type)
+                 ;; Could just update the information about dylib-ptr here:
+                 (graph/add-node! :function (:name code-node) (:proto code-node) (:src code-node) dylib-name out-lib deps))))
+           code-nodes)
       :OK)))
 
-(defn bake-many [func-names]
-  nil)
+(defn with-declarations-header [s] (str "#include \"declarations.h\"\n\n" s))
 
+(def example-descriptor-1 {:src "int f() { return 42; }"
+                           :proto "int f();"
+                           :name "f"
+                           :arg-types ()
+                           :return-type :int})
+
+(def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                           :proto "int g();"
+                           :name "g"
+                           :arg-types ()
+                           :return-type :int})
+
+(defn test-it []
+  (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ()))
