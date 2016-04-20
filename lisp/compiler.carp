@@ -11,25 +11,19 @@
 (load-lisp (str carp-dir "lisp/globals.carp"))
 (load-lisp (str carp-dir "lisp/cc.carp"))
 (load-lisp (str carp-dir "lisp/annotate.carp"))
+(load-lisp (str carp-dir "lisp/graph.carp"))
 
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def extra-header-deps ())
 
-(def baked-funcs {})
 (def baked-primops ())
 
-(defn add-func! (func-name func-proto func-dylib func-deps)
-  (swap! baked-funcs (fn (fs) (assoc fs func-name {:func-name func-name
-                                                   :func-proto func-proto
-                                                   :func-dylib func-dylib
-                                                   :func-deps func-deps}))))
-
 (defn func-baked? [func-name]
-  (not (nil? (get-maybe baked-funcs func-name))))
+  (not (nil? (get-maybe graph func-name))))
 
 (defn get-func-deps-recursively [func-name]
-  (if (has-key? baked-funcs (str func-name))
-    (let [deps (get-in baked-funcs (list (str func-name) :func-deps))]
+  (if (has-key? graph (str func-name))
+    (let [deps (get-in graph (list (str func-name) :deps))]
       (concat deps (mapcat get-func-deps-recursively deps)))
     '()))
 
@@ -37,13 +31,13 @@
 
 ;; Takes the name of a function and unloads it if it is in the list of baked functions
 (defn unload-if-necessary (func-name)
-  (let [baked-func (get-maybe baked-funcs func-name)]
-    (when (not (nil? baked-func))
-      (let [dylib (get baked-func :func-dylib)]
+  (let [baked-node (get-maybe graph func-name)]
+    (when (not (nil? baked-node))
+      (let [dylib (get baked-node :dylib-ptr)]
         (do (when log-unloading-of-dylibs
               (println (str "Unloading " dylib " for function " func-name ".")))
             (unload-dylib dylib)
-            (dict-remove! baked-funcs func-name)
+            (dict-remove! graph func-name)
             )))))
 
 (defn re-lambda-fy [func-name]
@@ -63,7 +57,7 @@
 
 (defn re-lambda-fy-all-functions []
   (do
-    (map re-lambda-fy (keys baked-funcs))))
+    (map re-lambda-fy (keys graph))))
 
 (defn re-compile [func-name]
   (let [function-symbol (symbol func-name)
@@ -78,19 +72,13 @@
           :ignore))))
 
 (defn unload-all-baked ()
-  (join "\n" (map (fn (x) (str (unload-dylib (:func-dylib x)))) (values baked-funcs))))
+  (join "\n" (map (fn (x) (str (unload-dylib (:dylib-ptr x)))) (values graph))))
 
 (def types {})
 
 (defn add-type! [type-name type-definition]
   (swap! types (fn (ts) (assoc ts type-name {:type-name type-name
                                              :type-definition type-definition}))))
-
-(def globals {})
-
-(defn add-global! [global-name global-definition]
-  (swap! globals (fn (gs) (assoc gs global-name {:global-name global-name
-                                                 :global-definition global-definition}))))
 
 ;; Saves the signatures of all the baked functions to a header file so that they can include each other
 (defn save-function-prototypes ()
@@ -101,9 +89,9 @@
          "\n\n//Types:\n"
          (join "\n" (map :type-definition (reverse (values types))))
          "\n\n//Globals:\n"
-         (join "\n" (map :global-definition (values globals)))
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :global)) (values graph))))
          "\n\n//Functions:\n"
-         (join "\n" (map :func-proto (values baked-funcs)))
+         (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
          "\n")))
 
 ;; Keys:   Names of functions (strings)
@@ -117,7 +105,7 @@
 (def echo-signature-after-bake false)
 
 (defn remove-non-user-defined-deps (func-deps)
-  (let [func-names (keys baked-funcs)]
+  (let [func-names (keys graph)]
     (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
 
 ;; Takes a function name and the list representation of the lambda
@@ -209,26 +197,27 @@
                                   (unload-if-necessary func-name)
                                   (if exe
                                     :exe-done
-                                    (do
-                                      (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
-                                      (register out-lib c-func-name arg-types return-type)
-                                      (add-func! func-name proto out-lib total-dependencies)
-                                      (let [f (eval (read func-name))
-                                            sig (signature f)]
-                                        (do (when (nil? sig) (error (str "No signature on function " f)))
-                                            (def s (pretty-signature sig))
-                                            (when echo-signature-after-bake (println (str func-name " : " s)))
-                                            f)))))
-    variable-type (do
-                    (save-function-prototypes)
-                    (save c-file-name c-program-string)
-                    (run-compiler c-func-name c-file-name total-dependencies exe)
-                    (unload-if-necessary func-name)
-                    (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
-                    (register-variable out-lib c-func-name variable-type)
-                    (add-func! func-name proto out-lib total-dependencies)
-                    (let [f (eval (read func-name))]
-                      f))
+                                    (let [dylib-name (str out-dir c-func-name (:dylib-extension platform-specifics))]
+                                      (do
+                                        (def out-lib (load-dylib dylib-name))
+                                        (register out-lib c-func-name arg-types return-type)
+                                        (graph/add-node! :function func-name proto c-program-string dylib-name out-lib total-dependencies)
+                                        (let [f (eval (read func-name))
+                                              sig (signature f)]
+                                          (do (when (nil? sig) (error (str "No signature on function " f)))
+                                              (when echo-signature-after-bake (println (str func-name " : " sig)))
+                                              f))))))
+    variable-type (let [dylib-name (str out-dir c-func-name (:dylib-extension platform-specifics))]
+                    (do
+                      (save-function-prototypes)
+                      (save c-file-name c-program-string)
+                      (run-compiler c-func-name c-file-name total-dependencies exe)
+                      (unload-if-necessary func-name)
+                      (def out-lib (load-dylib dylib-name))
+                      (register-variable out-lib c-func-name variable-type)
+                      (graph/add-node! :global func-name proto c-program-string dylib-name out-lib total-dependencies)
+                      (let [f (eval (read func-name))]
+                        f)))
     _ (error "Must bake function with type (:fn ...)")))
 
 ;; Bake a function in the current environment, just give it's symbol

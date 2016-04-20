@@ -11,3 +11,21 @@
 (def graph {})
 
 
+^doc "kind - :function / :global (variable) / :struct / :module
+      name - a string, also the key in the graph dictionary
+      proto - what will go into the header file
+      src - what will go into the C-file
+      dylib-name - a string, the name used to link to the partical dylib where this node is compiled
+      dylib-ptr - pointer to the dylib Obj
+      deps - a list of names of nodes that this node depend on
+     "
+(defn graph/add-node! [kind name proto src dylib-name dylib-ptr deps]
+  (dict-set! graph name {:kind kind
+                         :name name
+                         :proto proto
+                         :src src
+                         :dylib-name dylib-name
+                         :dylib-ptr dylib-ptr
+                         :deps deps}))
+
+
