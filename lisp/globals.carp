@@ -32,11 +32,10 @@
         ;;(println (str "Adding global named " variable-name " of type " t))
         (let [prototype (str "extern " (type-build t) " " c-variable-name ";")
               c-code (str (type-build t) " " c-variable-name " = " init-value ";")
-              includes-string "#include <shared.h>\n#include \"declarations.h\"\n\n"
               init-closure-name (get-global-init-func-name)
               deps (list)]
           (do
-            (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code includes-string prototype deps false)
+            (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code prototype deps false)
             ;;(add-global! variable-name prototype)
             (reset! deps (cons (symbol init-closure-name) deps))
             (bake-init-closure init-closure-name variable-name evaled t)

@@ -47,6 +47,7 @@
   (save (str out-dir "declarations.h")
         (str
          "#include <shared.h>\n"
+         "\n\n//Extra headers:\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
          "\n\n//Structs:\n"
          (join "\n" (map :proto (filter (fn [n] (= (:kind n) :struct)) (values graph))))

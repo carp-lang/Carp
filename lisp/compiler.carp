@@ -91,7 +91,7 @@
         builder-result (builder-visit-ast builder ast-annotated func-name)
         builder-after-build (:builder builder-result)
         ;;(assoc shared-builder :functions (union (:functions shared-builder) (:functions (:builder builder-result))))
-        builder-with-headers (builder-add-headers builder-after-build header-files)
+        builder-with-headers builder-after-build ;; (builder-add-headers builder-after-build header-files)
         builder-deps (:deps builder-result)
         builder-final (if (and exe (not (= func-name "main")))
                         (builder-add-main-function builder-with-headers (c-ify-name func-name))
@@ -140,14 +140,14 @@
             (bake-internal func-name (code evaled) (meta-get evaled :ann) external-deps false (new-builder))))))))
 
 ;; This will bake the function as a dylib (making it accessible in the repl) AND also add it to the shared builder if that exists
-(defn bake-c-code [func-name signature c-func-name c-file-name c-program-string includes-string proto deps false]
-  (save-and-compile func-name signature c-func-name c-file-name (str includes-string c-program-string) proto deps false))
+(defn bake-c-code [func-name signature c-func-name c-file-name c-program-string proto deps false]
+  (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))
 
 (defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
   (match t
     (:fn arg-types return-type) (do
                                   (graph/save-prototypes!)
-                                  (save c-file-name c-program-string)
+                                  (save c-file-name (str "#include \"declarations.h\"\n\n" c-program-string))
                                   (run-compiler c-func-name c-file-name total-dependencies exe)
                                   (unload-if-necessary func-name)
                                   (if exe
@@ -194,8 +194,7 @@
 
 
 ;; Bake several functions using the same builder
-(defn bake-many [func-descriptors]
-  (let [shared-builder (new-builder)]
-    (map (fn []
-           (bake-internal [func-name func-code func-annotation external-deps exe]))
-         func-descriptors)))
+(defn bake-nodes [node-names]
+  (let [src (join "\n\n" (map (fn [name] (get graph-src name)) node-names))]
+    src))
+

@@ -52,7 +52,6 @@
                       "CONSTRUCTOR-NAME" c-constructor-name
                       "ARG_LIST" arg-list-c
                       "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
-              includes-string "#include \"declarations.h\"\n\n"
               c-program-string (template
 "API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
@@ -64,7 +63,7 @@
               ]
           (do
             (def c c-program-string)
-            (bake-c-code constructor-name constructor-signature c-constructor-name c-file-name c-program-string includes-string proto deps false)
+            (bake-c-code constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
             ;; Compile lenses:
             (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
                   member-names
@@ -114,8 +113,7 @@
           (println (str "WARNING! Overriding lens function: " func-name))
           (unload-if-necessary func-name)))
       ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-      (let [includes-string (str "#include <shared.h>\n#include \"declarations.h\"\n")
-            c-program-string c]
+      (let [c-program-string c]
         (do
           (def c c-program-string)
           (bake-c-code func-name
@@ -123,7 +121,6 @@
                        c-func-name
                        c-file-name
                        c-program-string
-                       includes-string
                        (str proto ";")
                        deps
                        false))))))
