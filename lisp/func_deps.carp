@@ -55,7 +55,8 @@
                                                                                (code evaled)
                                                                                (meta-get evaled :ann)
                                                                                '()
-                                                                               false)
+                                                                               false
+                                                                               (new-builder))
                                                                 (reset! deps (cons symbol deps))))
                                                             (when (and (foreign? evaled))
                                                               (reset! deps (cons symbol deps)))
