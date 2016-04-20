@@ -164,7 +164,7 @@
 (defn bake-generic-primop [func-name primop-name signature]
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
-    (if (func-baked? func-name)
+    (if (graph/node-exists? func-name)
       (do
         ;;(println (str "Ignoring already baked generic primop: " func-name))
         nil)

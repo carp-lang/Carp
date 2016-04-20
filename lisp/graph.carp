@@ -37,3 +37,12 @@
                  (concat (list (:name node)) (graph/dependers (:name node)))
                  ())))
            (values graph))))
+
+(defn graph/node-exists? [name]
+  (not-nil? (get-maybe graph name)))
+
+(defn get-func-deps-recursively [func-name]
+  (if (has-key? graph (str func-name))
+    (let [deps (get-in graph (list (str func-name) :depends-on))]
+      (concat deps (mapcat get-func-deps-recursively deps)))
+    '()))

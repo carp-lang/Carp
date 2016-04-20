@@ -16,15 +16,6 @@
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def extra-header-deps ())
 
-(defn func-baked? [func-name]
-  (not (nil? (get-maybe graph func-name))))
-
-(defn get-func-deps-recursively [func-name]
-  (if (has-key? graph (str func-name))
-    (let [deps (get-in graph (list (str func-name) :depends-on))]
-      (concat deps (mapcat get-func-deps-recursively deps)))
-    '()))
-
 (def log-unloading-of-dylibs false)
 
 ;; Takes the name of a function and unloads it if it is in the list of baked functions

@@ -24,7 +24,7 @@
                      (prn evaled)
                      "NULL")
         ]
-    (if (func-baked? variable-name)
+    (if (graph/node-exists? variable-name)
       (do
         ;;(println (str "Ignoring already baked global variable: " variable-name))
         nil)

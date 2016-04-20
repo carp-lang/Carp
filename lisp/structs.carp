@@ -45,7 +45,7 @@
       (graph/add-node! :struct struct-name type-definition "" "" nil '())
       ;;(println (str "types:\n" types))
       (save-function-prototypes)
-      (if (func-baked? constructor-name)
+      (if (graph/node-exists? constructor-name)
         (do
           ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
           nil)
@@ -113,7 +113,7 @@
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
     (do
-      (when (func-baked? func-name)
+      (when (graph/node-exists? func-name)
         (do
           (println (str "WARNING! Overriding lens function: " func-name))
           (unload-if-necessary func-name)))
