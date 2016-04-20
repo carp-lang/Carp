@@ -22,17 +22,7 @@
 (load-lisp (str carp-dir "lisp/generics.carp"))
 (load-lisp (str carp-dir "lisp/structs.carp"))
 (load-lisp (str carp-dir "lisp/globals.carp"))
-
-(def platform-specifics
-  (if (windows?)
-    {:dylib-extension ".dll"
-     :link-extension ".lib"
-     :include-flag "/I"
-     :linkdir-flag "/link /NOLOGO /LIBPATH:"}
-    {:dylib-extension ".so"
-     :link-extension ".so"
-     :include-flag "-I"
-     :linkdir-flag "-L"}))
+(load-lisp (str carp-dir "lisp/cc.carp"))
 
 (defn annotate-ast (ast)
   (annotate-ast-internal ast false nil))
@@ -47,10 +37,7 @@
       (reset! total-infer-time (+ total-infer-time t)))))
 
 (def profile-infer-time false)
-(def profile-external-compiler-time false)
-
 (def total-infer-time 0.0f)
-(def total-external-compile-time 0.0f)
 
 (defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
   (let [ast-func-deps (find-func-deps ast bake-deps)
@@ -186,25 +173,6 @@
   (let [current-list (get-maybe function-dependency-graph target-function)]
     (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
 
-(defn link-libs (dependencies)
-  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) (:link-extension platform-specifics))) dependencies)))
-
-(defn include-paths ()
-  (str (:include-flag platform-specifics) "/usr/local/include " (:include-flag platform-specifics) carp-dir "/shared"))
-
-(defn lib-paths ()
-  (if (windows?)
-    ""
-    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")))
-
-(defn framework-paths ()
-  (if (windows?)
-    ""
-    "-framework OpenGL -framework Cocoa -framework IOKit"))
-
-(def out-dir (str carp-dir "out/"))
-(def exe-out-dir "./")
-(def exe-name "exe")
 (def echo-signature-after-bake false)
 
 (defn remove-non-user-defined-deps (func-deps)
@@ -268,38 +236,6 @@
       (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated (get-builder) func-name func-code external-deps exe))))
 
-(defn print-external-compiler-time [start-time func-name]
-  (let [t (/ (itof (- (now) start-time)) 1000f)]
-    (do
-      (println (str (get-console-color console-color-yellow)
-                    "External compilation for " func-name " took "
-                     t " seconds"
-                    (get-normal-console-color)))
-      (reset! total-external-compile-time (+ total-external-compile-time t)))))
-
-(defn run-compiler [c-func-name c-file-name total-dependencies exe]
-  (let [start-time (now)]
-    (do
-      (if (windows?)
-        (run-cl c-func-name c-file-name total-dependencies exe)
-        (run-clang c-func-name c-file-name total-dependencies exe))
-      (when profile-external-compiler-time
-        (print-external-compiler-time start-time c-func-name)))))
-
-(defn run-clang [c-func-name c-file-name total-dependencies exe]
-  (let [clang-command (str "clang -DAPI= "
-                           (if exe
-                             (str "-o " exe-out-dir exe-name " ")
-                             (str "-shared -g -o " out-dir c-func-name ".so "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do
-      (def cmd clang-command)
-      (system clang-command))))
-
 (defn get-depending-funcs-recursively [func-name]
   (let [depending-funcs (get-maybe function-dependency-graph func-name)]
     (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
@@ -320,22 +256,6 @@
               ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
               :OK)
             (bake-internal func-name (code evaled) (meta-get evaled :ann) external-deps false)))))))
-
-(defn run-cl [c-func-name c-file-name total-dependencies exe]
-  (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"
-        cl-command (str "cl.exe "
-                           (if exe
-                             (str common-options out-dir c-func-name ".exe ")
-                             (str "/DAPI=__declspec(dllexport) /LDd " common-options out-dir c-func-name ".dll "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do
-      (println cl-command)
-      (def cmd cl-command)
-      (system cl-command))))
 
 ;; Do the part that is common between baking normal functions and generic functions
 (defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
@@ -431,18 +351,3 @@
 (defmacro bake-exe* (func-symbol dependencies)
   (list 'bake-internal (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
 
-(defn clean ()
-  (if (windows?)
-    (do
-      (system "del declarations.h")
-      (system "del *.dll")
-      (system "del *.exp")
-      (system "del *.lib")
-      (system "del *.pdb")
-      (system "del *.ilk")
-      (system "del *.obj"))
-    (do
-      (system "rm declarations.h")
-      (system "rm *.so")
-      (system "rm *.c")
-      (system "rm -r *.dSYM"))))
