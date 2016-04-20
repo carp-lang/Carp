@@ -26,6 +26,14 @@
                              :proto proto
                              :dylib-name dylib-name
                              :dylib-ptr dylib-ptr
-                             :depends-on depends-on})))
+                             :depends-on (map str depends-on)})))
 
 
+(defn graph/dependers [name]
+  (set
+   (mapcat (fn [node]
+             (let [deps (:depends-on node)]
+               (if (contains? deps name)
+                 (concat (list (:name node)) (graph/dependers (:name node)))
+                 ())))
+           (values graph))))

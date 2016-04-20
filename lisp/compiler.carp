@@ -88,14 +88,6 @@
          (join "\n" (map :proto (filter (fn [n] (= (:kind n) :function)) (values graph))))
          "\n")))
 
-;; Keys:   Names of functions (strings)
-;; Values: A list of all the functions that depend on this particular function
-(def function-dependency-graph {})
-
-(defn add-function-dependency! [target-function name-of-depending-function]
-  (let [current-list (get-maybe function-dependency-graph target-function)]
-    (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
-
 (def echo-signature-after-bake false)
 
 (defn remove-non-user-defined-deps (func-deps)
@@ -125,14 +117,10 @@
       (error (str "Failed to concretizise generic function " func-name ":\n" ast-annotated))
       (bake-internal-common ast-annotated (new-builder) func-name func-code external-deps exe))))
 
-(defn get-depending-funcs-recursively [func-name]
-  (let [depending-funcs (get-maybe function-dependency-graph func-name)]
-    (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
-
 (defn bake-function-and-its-depending-funcs [func-name external-deps]
   (if (foreign? (eval (symbol func-name)))
     :already-baked
-    (let [functions-depending-on-this-function (set (get-depending-funcs-recursively func-name))]
+    (let [functions-depending-on-this-function (graph/dependers func-name)]
       (do
         ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
         (unload-if-necessary func-name)
@@ -170,8 +158,7 @@
       ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
       ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
       ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
-      
-      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
+
       (def ast ast-annotated)
       (def c c-program-string)
       ;;(println (str "Will save and compile: '" func-name "' with c-func-name '" c-func-name "' and signature: " t))
