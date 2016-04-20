@@ -89,3 +89,7 @@
 # Niceties
   - Built in tutorial for the language
   - Built in manual
+
+# Gotchas
+  - Unloading of function/dylib doesn't work after another function has linked to it during its compilation.
+  - Variable shadowing doesn't work properly when referencing itself

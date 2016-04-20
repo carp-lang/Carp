@@ -1,0 +1,13 @@
+;; The dependency graph
+;;
+;; Nodes are functions, groups of mutually recursive functions, modules, structs, etc.
+;; Each node can be compiled into its own dynamic library and depends on a set of other nodes.
+;; Compiling a node should be very straight forward:
+;;
+;;  (bake-node "foo")
+;;
+;; The whole graph lives in a data structure called 'graph' which is a big dictionary.
+
+(def graph {})
+
+

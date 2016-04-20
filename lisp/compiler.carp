@@ -1,16 +1,3 @@
-;; Gotchas
-;; * Unloading of function/dylib doesn't work after another function has linked to it during its compilation.
-;; * Variable shadowing doesn't work properly when referencing itself
-
-;; How to add forms
-;; 1. Make the ast generator generate a new kind of AST :node for the form (see above)
-;; 2. The AST node should generate new type vars for all places where the type is unknown
-;; 3. Make the constraint generator generate type constraints for the node
-;; 4. Extend the function (assign-types) that substitute type variables for concrete types in the AST
-;; 5. TODO: Make the borrow checker know about the node, if needed
-;; 6. Make the C generator spit out beautiful C for the AST node
-;; 7. Profit!
-
 (load-lisp (str carp-dir "lisp/error_codes.carp"))
 (load-lisp (str carp-dir "lisp/compiler_helpers.carp"))
 (load-lisp (str carp-dir "lisp/ast.carp"))
@@ -23,44 +10,7 @@
 (load-lisp (str carp-dir "lisp/structs.carp"))
 (load-lisp (str carp-dir "lisp/globals.carp"))
 (load-lisp (str carp-dir "lisp/cc.carp"))
-
-(defn annotate-ast (ast)
-  (annotate-ast-internal ast false nil))
-
-(defn print-infer-time [start-time func-name]
-  (let [t (/ (itof (- (now) start-time)) 1000f)]
-    (do
-      (println (str (get-console-color console-color-yellow)
-                    "infer-types for " func-name " took "
-                    t " seconds"
-                    (get-normal-console-color)))
-      (reset! total-infer-time (+ total-infer-time t)))))
-
-(def profile-infer-time false)
-(def total-infer-time 0.0f)
-
-(defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
-  (let [ast-func-deps (find-func-deps ast bake-deps)
-        start-time (now)
-        ast-typed (infer-types ast-func-deps func-signature-if-generic)
-        _ (when profile-infer-time (print-infer-time start-time (get-maybe ast :name)))
-        ast-named (generate-names (copy {}) ast-typed)
-        ast-lifetimes (calculate-lifetimes ast-named)
-        ast-generics (visit-generic-funcs ast-lifetimes)
-        ;;_ (println (str "ast:\n" ast-generics))
-        ]
-    ast-generics))
-
-;; WARNING: These helper functions don't know the name of the functions
-;; so they will mess upp self-recursive functions since they will think that
-;; they are refering to other functions and bake those:
-(defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
-(defn sign (lambda) (:type (ann lambda)))
-(defn con (lambda) (generate-constraints (lambda-to-ast (code lambda))))
-
-(defn check-for-ref-return (ast)
-  (let [t (:type ast)]
-    (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))
+(load-lisp (str carp-dir "lisp/annotate.carp"))
 
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def extra-header-deps ())
@@ -160,15 +110,6 @@
 ;; Values: A list of all the functions that depend on this particular function
 (def function-dependency-graph {})
 
-;; Print a nice version of the function dependency graph
-(defn graph []
-  (println (str "- FUNCTION DEPENDENCY GRAPH-\n\n"
-                (join "\n"
-                      (map2 (fn [k v] (str k " <~ " (join ", " v)))
-                            (keys function-dependency-graph)
-                            (values function-dependency-graph)))
-                "\n")))
-
 (defn add-function-dependency! [target-function name-of-depending-function]
   (let [current-list (get-maybe function-dependency-graph target-function)]
     (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
@@ -178,27 +119,6 @@
 (defn remove-non-user-defined-deps (func-deps)
   (let [func-names (keys baked-funcs)]
     (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
-;; (filter (fn [dep] (meta-get (eval dep) :user-defined)) func-deps)
-
-(defn func-to-annotated-ast (func-name func-code func-signature-if-generic func-type-annotation)
-  (let [ast (lambda-to-ast func-code)
-        ast-named (assoc ast :name func-name)
-        ast-with-type-annotation (assoc ast-named :annotation func-type-annotation)
-        ast-fully-annotated (annotate-ast-internal ast-with-type-annotation true func-signature-if-generic)
-        _ (check-for-ref-return ast-fully-annotated)]
-    ast-fully-annotated))
-
-(defn generic-type? [t]
-  (match (type t)
-    :string true
-    :keyword false
-    :list (any true? (map generic-type? t))
-    x (error (str "Invalid type in 'generic-type?': " (prn x)))))
-
-(defn generic-function? [ast]
-  (match (:type ast)
-    (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
-    x (error (str "Can't match " x " in generic-function?"))))
 
 ;; Takes a function name and the list representation of the lambda
 (defn bake-internal [func-name func-code func-annotation external-deps exe]
