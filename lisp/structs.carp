@@ -37,14 +37,11 @@
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword struct-name))
-        ;;_ (println (str constructor-signature))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
         type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
         ]
     (do
       (graph/add-node! :struct struct-name type-definition "" "" nil '())
-      ;;(println (str "types:\n" types))
-      (graph/save-prototypes!)
       (if (graph/node-exists? constructor-name)
         (do
           ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
@@ -57,8 +54,7 @@
                       "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
               includes-string "#include \"declarations.h\"\n\n"
               c-program-string (template
-                                "
-  API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+"API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
