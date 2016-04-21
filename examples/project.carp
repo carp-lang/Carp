@@ -29,8 +29,10 @@
 (defn test-bake-group []
   (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ()))
 
+(test-bake-group)
 
-
+(defn h [] (f))
+(bake h)
 
 
 

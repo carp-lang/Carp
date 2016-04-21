@@ -54,11 +54,11 @@
       (mark-lambda-as-generic func-name annotated-ast)
       (compiler/bake-ast func-name annotated-ast func-code))))
 
-(def log-deps-when-baking-ast false)
+(def log-deps-when-baking-ast true)
 
 (defn remove-non-user-defined-deps [deps]
   (let [names (keys graph)]
-    (filter (fn (dep) (contains? names (str dep))) deps)))
+    (filter (fn (dep) (if (string? dep) (contains? names dep) (error (str "dep must be string: " dep)))) deps)))
 
 (defn compiler/bake-ast [func-name ast-annotated original-code]
   (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)

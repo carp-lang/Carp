@@ -54,7 +54,7 @@
                     (let [delete-signature (list :fn (list (:type variable)) :void)
                           delete-fn-name (generic-name "delete" delete-signature)]
                       (do
-                        (dict-set! deps :mutable-value (cons (symbol delete-fn-name) (:mutable-value deps)))
+                        (dict-set! deps :mutable-value (cons delete-fn-name (:mutable-value deps)))
                         (str (indent) (c-ify-name delete-fn-name) "(" (c-ify-name (:name variable)) ");\n"))))
                   free-list))))
 
