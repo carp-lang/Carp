@@ -172,8 +172,7 @@
                    return-type (:return-type code-node)]
                (do
                  (register out-lib c-func-name arg-types return-type)
-                 ;; Could just update the information about dylib-ptr here:
-                 (graph/add-node! :function (:name code-node) (:proto code-node) (:src code-node) dylib-name out-lib deps))))
+                 (graph/update-node! (:name code-node) :dylib-ptr out-lib))))
            code-nodes)
       :OK)))
 

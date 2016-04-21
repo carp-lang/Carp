@@ -28,6 +28,9 @@
                              :dylib-ptr dylib-ptr
                              :depends-on (map str depends-on)})))
 
+(defn graph/update-node! [name key value]
+  (dict-set-in! graph (list name key) value))
+
 
 (defn graph/dependers [name]
   (set
