@@ -60,54 +60,59 @@
 }"
                                 substs)
               deps '()
-              ]
+              group (concat
+                     (list {:name constructor-name
+                            :proto proto
+                            :src c-program-string
+                            :sig constructor-signature}
+                           (let [size-signature (list :fn () :int)
+                                 size-proto (str "int size_" struct-name "()")
+                                 size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+                             (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
+                     (apply concat (map2 (fn [mem-name mem-type]
+                                    (lens-functions struct-name mem-name mem-type))
+                                  member-names
+                                  member-types)))]
           (do
-            (compiler/bake-src constructor-name proto c-program-string constructor-signature deps)
-            
-            ;; Compile lenses:
-            (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
-                  member-names
-                  member-types)
-            ;; Compile sizeof function
-            (let [size-signature (list :fn () :int)
-                  size-proto (str "int size_" struct-name "()")
-                  size-c (str size-proto " { return sizeof(" struct-name "); } ")]
-              (bake-struct-lens-function (new-builder) (str "size-" struct-name) size-signature size-proto size-c '()))
-            ))))))
+            ;;(println (str "group: " group))
+            (compiler/bake-group (str struct-name "-group") group deps)))))))
 
-(defn generate-struct-lens [struct-name member-name member-type]
+(defn lens-functions [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
-      (let [struct-type (keyword struct-name)
-            struct-t (type-build struct-type)
-            member-t (type-build member-type)
-            member-t-reffed (if (primitive-type? member-type)
-                              member-type
-                              (list :ref member-type))
-            c-member-name (c-ify-name member-name)]
-        (do
-          (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
-                getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
-                getter-c (str getter-proto "{ return x->" c-member-name "; }")]
-            (bake-struct-lens-function (new-builder) (str "get-" member-name) getter-signature getter-proto getter-c '()))
-          (let [setter-signature (list :fn (list struct-type member-type) struct-type)
-                setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
-                setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
-            (bake-struct-lens-function (new-builder) (str "set-" member-name) setter-signature setter-proto setter-c '()))
-          (let [updater-fn-type (list :fn (list member-type) member-type)
-                updater-fn-t (type-build updater-fn-type)
-                updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
-                updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
-                updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
-            (bake-struct-lens-function (new-builder) (str "update-" member-name) updater-signature updater-proto updater-c '()))
-          (let [offset-signature (list :fn () :int)
-                offset-proto (str "int offset_" (c-ify-name member-name) "()")
-                offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
-            (bake-struct-lens-function (new-builder) (str "offset-" member-name) offset-signature offset-proto offset-c '()))))))
+    (let [struct-type (keyword struct-name)
+          struct-t (type-build struct-type)
+          member-t (type-build member-type)
+          member-t-reffed (if (primitive-type? member-type)
+                            member-type
+                            (list :ref member-type))
+          c-member-name (c-ify-name member-name)]
+      (list
+       (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
+             getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
+             getter-c (str getter-proto "{ return x->" c-member-name "; }")]
+         (lens-function (str "get-" member-name) getter-proto getter-c getter-signature))
+       (let [setter-signature (list :fn (list struct-type member-type) struct-type)
+             setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
+             setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
+         (lens-function (str "set-" member-name) setter-proto setter-c setter-signature))
+       (let [updater-fn-type (list :fn (list member-type) member-type)
+             updater-fn-t (type-build updater-fn-type)
+             updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
+             updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
+             updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
+         (lens-function (str "update-" member-name) updater-proto updater-c updater-signature))
+       (let [offset-signature (list :fn () :int)
+             offset-proto (str "int offset_" (c-ify-name member-name) "()")
+             offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
+         (lens-function (str "offset-" member-name) offset-proto offset-c offset-signature))))))
 
-(defn bake-struct-lens-function [builder func-name func-signature proto c-program-string deps]
+(defn lens-function [func-name proto src func-signature]
   (do
     (when (graph/node-exists? func-name)
       (do
         (println (str "WARNING! Overriding lens function: " func-name))
         (graph/unload func-name)))
-    (compiler/bake-src func-name (str proto ";") c-program-string func-signature deps)))
+    {:name func-name
+     :proto (str proto ";")
+     :src src
+     :sig func-signature}))

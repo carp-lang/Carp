@@ -115,7 +115,8 @@
 
 ^doc "A 'group' is one unit of compilation, like a .so or .dll file.
       The 'code-node':s sent to this function are dictionaries describing
-      all the functions that go into the same group."
+      all the functions that go into the same group.
+      They must contain the keys :name :proto :src :sig"
 (defn compiler/bake-group [group-name code-nodes deps]
   (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
         c-file-name (c-ify-name (str out-dir group-name ".c"))

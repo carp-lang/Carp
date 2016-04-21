@@ -6,11 +6,13 @@
 ;;(enable-shared-builder!)
 
 
-(defn fa [] 10)
-(defn fb [] (fa))
-(defn fc [] (fa))
-(defn fd [] (+ (fb) (fc)))
+;; (defn fa [] 10)
+;; (defn fb [] (fa))
+;; (defn fc [] (fa))
+;; (defn fd [] (+ (fb) (fc)))
 
+
+(defstruct Gris [gris-x :int gris-name :string])
 
 
 
@@ -26,13 +28,15 @@
                            :name "g"
                            :sig '(:fn () :int)})
 
-(defn test-bake-group []
-  (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ()))
-
-(test-bake-group)
-
 (defn h [] (f))
-(bake h)
+
+(defn test-bake-group []
+  (do
+    (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
+    (bake h)))
+
+;;(test-bake-group)
+
 
 
 
