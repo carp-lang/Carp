@@ -214,13 +214,13 @@
                  (:fn ((:fn (a) b) (:ref (:Array a))) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
                                                                  array-of-size-sig (list :fn (list :int) (list :Array b))
                                                                  _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
-                                                                 array_of_size_call (generic-name "array-of-size" array-of-size-sig)
-                                                                 ;;_ (println array_of_size_call)
+                                                                 array-of-size-call (generic-name "array-of-size" array-of-size-sig)
+                                                                 ;;_ (println array-of-size-call)
                                                                  c (str proto
                                                                         "{ \n"
                                                                         "  int count = array->count;\n"
                                                                         "  " (type-build a) "* casted = array->data;\n"
-                                                                        "  Array* new_array = " (c-ify-name array_of_size_call) "(count);\n"
+                                                                        "  Array* new_array = " (c-ify-name array-of-size-call) "(count);\n"
                                                                         "  " (type-build b) "* new_casted = new_array->data;\n"
                                                                         "  for(int i = 0; i < count; i++) {\n"
                                                                         "    new_casted[i] = f(casted[i]);\n"
@@ -228,7 +228,7 @@
                                                                         ;;"  free(array);\n"
                                                                         "  return new_array;\n"
                                                                         "}")]
-                                                             {:proto proto :c c :deps (list array_of_size_call)})
+                                                             {:proto proto :c c :deps (list array-of-size-call)})
                  x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
@@ -374,7 +374,7 @@
               member-types (array-to-list (:member-types lookup))
               reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
               ;;_ (println (str "reffed-member-types: " reffed-member-types))
-              deps (map (fn [t] (c-ify-name (generic-name "str" (list :fn (list t) :string)))) reffed-member-types)
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "str" (list :fn (list t) :string)))) reffed-member-types))
               ;;_ (println (str "deps: " deps))
               c (str proto " {\n"
                      "  char buffer[1024];\n"
@@ -480,8 +480,9 @@
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (c-ify-name (generic-name "copy" (list :fn (list (list :ref t)) t))))
-                        (remove primitive-type? member-types))})
+           :deps (cons t-name
+                       (map (fn [t] (c-ify-name (generic-name "copy" (list :fn (list (list :ref t)) t))))
+                            (remove primitive-type? member-types)))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
@@ -557,7 +558,7 @@
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (filter managed-type? member-types))})
+           :deps (cons t-name (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (filter managed-type? member-types)))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 

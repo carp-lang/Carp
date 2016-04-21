@@ -163,20 +163,20 @@
 
 
 ;; Test that functions depending on generic functions will be recompiled when the original generic function changes
-(defn id [x] x)
+(defn idd [x] x)
 
-(defn use-id []
-  (id 5))
+(defn use-idd []
+  (idd 5))
 
 (defn use-user []
-  (use-id))
+  (use-idd))
 
 (defn test-depending-on-generic []
   (do
     (bake use-user)
-    (defn id [x] (* x 3))
-    (bake id)
-    (assert-eq :foreign (type id))
+    (defn idd [x] (* x 3))
+    (bake idd)
+    (assert-eq :foreign (type idd))
     (assert-eq 15 (use-user))))
 
 (test-depending-on-generic)

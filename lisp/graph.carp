@@ -67,14 +67,36 @@
 
 (def log-unloading-of-dylibs false)
 
-;; Takes the name of a function and unloads it if it is in the list of baked functions
+^doc "Takes the name of a function and unloads it if it is in the list of baked functions.
+      Also turns foreign functions back into lambdas through 're-lambda-fy'."
 (defn graph/unload [name]
   (when-let [baked-node (get-maybe graph name)]
     (let [dylib (get baked-node :dylib-ptr)]
       (do (when log-unloading-of-dylibs
             (println (str "Unloading " dylib " for function " name ".")))
           (unload-dylib dylib)
-          (dict-remove! graph name)))))
+          (dict-remove! graph name)
+          (graph/re-lambda-fy name)
+          ))))
+
+^doc "Unloads all nodes that use the dylib with the name of the group to unload.
+      Also unloads any node that depends on the group."
+(defn graph/unload-group [group-name]
+  (let [dylib nil]
+    (do
+      (map (fn [node]
+             (do
+               (when (= (:dylib-name node) group-name)
+                 (do (dict-remove! graph (:name node))
+                     (if (nil? dylib)
+                       (reset! dylib (:dylib-ptr node))
+                       (assert-eq dylib (:dylib-ptr node)))))
+               (when (contains? (:depends-on node) group-name)
+                 (graph/unload (:name node)))))
+           (values graph))
+      (if (nil? dylib)
+        (error (str "No dylib to unload for group " group-name))
+        (unload-dylib dylib)))))
 
 (defn graph/re-lambda-fy [func-name]
   (let [function-symbol (if (symbol? func-name)
@@ -85,11 +107,10 @@
       (let [func-code (meta-get func :code)]
         (do
           ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
-          (eval (list 'def (symbol func-name) func-code))
-          (graph/unload func-name)))
+          (eval (list 'def (symbol func-name) func-code))))
       (do
         ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
         :ignore))))
 
-(defn graph/re-lambda-fy-all-functions []
-  (map re-lambda-fy (graph/get-kind :function)))
+;; (defn graph/re-lambda-fy-all-functions []
+;;   (map re-lambda-fy (graph/get-kind :function)))

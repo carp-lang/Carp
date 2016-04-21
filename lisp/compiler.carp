@@ -26,8 +26,7 @@
       (do
         ;;(println (str "Compiler is baking '" func-name "' and its users: " (join ", " dependers)))
         (graph/unload func-name)
-        (map graph/unload dependers)
-        (map graph/re-lambda-fy dependers)
+        (map graph/unload dependers) ;; ALL the functions must be unloaded before calling try-bake on them in the next step
         (map compiler/try-bake dependers)
         (compiler/try-bake func-name)))))
 

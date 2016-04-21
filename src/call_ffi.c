@@ -65,7 +65,7 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
         char **x = args[i];
         assert(*x);
         char *new_s = strdup(*x);
-        printf("new_s: %s\n", new_s);
+        //printf("new_s: %s\n", new_s);
         obj_args[i] = obj_new_string(new_s);
       }
       else {

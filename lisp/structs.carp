@@ -13,9 +13,18 @@
          (cons 'array (map str (first names-and-types)))
          (cons 'array (map (fn [x] (list 'quote x)) (second names-and-types))))))
 
+(def log-redefining-struct false)
+
 (defn defstruct-internal [struct-name member-names member-types]
   (do
-    (when (def? (symbol struct-name)) (error (str "A struct named '" struct-name "' is already defined. Redefining structs is not implemented yet.")))
+    (when (def? (symbol struct-name))
+      (do
+        (when log-redefining-struct
+          (println (str "Note: a struct named '" struct-name "' is already defined, overriding.")))
+        ;; (let [dependers (graph/dependers struct-name)]
+        ;;   (do (println (str "Dependers on struct '" struct-name "': " dependers))
+        ;;       (map graph/unload dependers)))
+        (graph/unload-group struct-name)))
     (assert-eq (count member-names) (count member-types))
     (build-struct-group struct-name member-names member-types)
     (eval (list 'def (symbol struct-name) {:struct true
@@ -42,40 +51,40 @@
         ]
     (do
       (graph/add-node! :struct struct-name type-definition "" "" nil '())
-      (if (graph/node-exists? constructor-name)
-        (do
-          ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
-          nil)
-        (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
-              proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
-              substs {"STRUCT-NAME" struct-name
-                      "CONSTRUCTOR-NAME" c-constructor-name
-                      "ARG_LIST" arg-list-c
-                      "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
-              c-program-string (template
-"API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+      ;; (if (graph/node-exists? constructor-name)
+      ;;   (do
+      ;;     (println (str "Ignoring already baked constructor '" constructor-name "'"))
+      ;;     nil)
+      (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
+            proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
+            substs {"STRUCT-NAME" struct-name
+                    "CONSTRUCTOR-NAME" c-constructor-name
+                    "ARG_LIST" arg-list-c
+                    "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
+            c-program-string (template
+                              "API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
 }"
-                                substs)
-              deps '()
-              group (concat
-                     (list {:name constructor-name
-                            :proto proto
-                            :src c-program-string
-                            :sig constructor-signature}
-                           (let [size-signature (list :fn () :int)
-                                 size-proto (str "int size_" struct-name "()")
-                                 size-c (str size-proto " { return sizeof(" struct-name "); } ")]
-                             (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
-                     (apply concat (map2 (fn [mem-name mem-type]
-                                    (lens-functions struct-name mem-name mem-type))
-                                  member-names
-                                  member-types)))]
-          (do
-            ;;(println (str "group: " group))
-            (compiler/bake-group (str struct-name "-group") group deps)))))))
+                              substs)
+            deps '()
+            group (concat
+                   (list {:name constructor-name
+                          :proto proto
+                          :src c-program-string
+                          :sig constructor-signature}
+                         (let [size-signature (list :fn () :int)
+                               size-proto (str "int size_" struct-name "()")
+                               size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+                           (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
+                   (apply concat (map2 (fn [mem-name mem-type]
+                                         (lens-functions struct-name mem-name mem-type))
+                                       member-names
+                                       member-types)))]
+        (do
+          ;;(println (str "group: " group))
+          (compiler/bake-group struct-name group deps))))))
 
 (defn lens-functions [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
@@ -111,7 +120,8 @@
     (when (graph/node-exists? func-name)
       (do
         (println (str "WARNING! Overriding lens function: " func-name))
-        (graph/unload func-name)))
+        ;;(graph/unload func-name)
+        ))
     {:name func-name
      :proto (str proto ";")
      :src src
