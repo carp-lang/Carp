@@ -55,7 +55,7 @@
       (mark-lambda-as-generic func-name annotated-ast)
       (compiler/bake-ast func-name annotated-ast func-code))))
 
-(def log-deps-when-baking-ast true)
+(def log-deps-when-baking-ast false)
 
 (defn remove-non-user-defined-deps [deps]
   (let [names (keys graph)]
