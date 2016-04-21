@@ -9,6 +9,12 @@
 (defstruct A [a-member :int])
 (defstruct B [b-member :A])
 
+;;(graph/unload-group A)
+
+;;(defstruct C [c-member-1 :A c-member-2 :B])
+
+
+
 ;; (defn fa [] 10)
 ;; (defn fb [] (fa))
 ;; (defn fc [] (fa))

@@ -87,6 +87,7 @@
 (defn graph/unload-group [group-name]
   (let [dylib nil]
     (do
+      (println (str "Will unload group '" group-name "'"))
       (map (fn [node]
              (do
                (when (= (:dylib-name node) group-name)

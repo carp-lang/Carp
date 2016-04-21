@@ -26,7 +26,12 @@
         ;;       (map graph/unload dependers)))
         (graph/unload-group struct-name)))
     (assert-eq (count member-names) (count member-types))
-    (build-struct-group struct-name member-names member-types (calculate-dependency-level member-types))
+    (build-struct-group struct-name
+                        member-names
+                        member-types
+                        (calculate-dependency-level member-types)
+                        (map name (filter struct-type? (array-to-list member-types))))
+    
     (eval (list 'def (symbol struct-name) {:struct true
                                            :generic false
                                            :name struct-name
@@ -38,15 +43,22 @@
                                            :member-count (count member-names)
                                            }))))
 
+(defn struct-type? [t]
+  (if (list? t)
+    (any struct-type? t)
+    (let [x (symbol (name t))
+          lookup (if (def? x) (eval x) nil)]
+      (and (dict? lookup) (key-is-true? lookup :struct)))))
+
 (defn calculate-dependency-level [member-types]
   (if (empty? member-types)
     0
-    (+ 1 (maximum (map (fn [t] (if (or (primitive-type? t) (= :string t))
-                                 -1
-                                 (calculate-dependency-level (:member-types (eval (symbol (name t)))))))
+    (+ 1 (maximum (map (fn [t] (if (struct-type? t)
+                                 (calculate-dependency-level (:member-types (eval (symbol (name t)))))
+                                 -1))
                        member-types)))))
 
-(defn build-struct-group [struct-name member-names member-types dependency-level]
+(defn build-struct-group [struct-name member-names member-types dependency-level deps]
   (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
         member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
@@ -73,7 +85,6 @@
   return new_struct;
 }"
                               substs)
-            deps '()
             group (concat
                    (list {:name constructor-name
                           :proto proto
