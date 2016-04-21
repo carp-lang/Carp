@@ -6,27 +6,7 @@
 ;;(enable-shared-builder!)
 
 
-(defn a-function-as-argument [x y]
-  (itos (+ x y)))
 
-(defn generic-function-calling-generic-functions [prob-f prob-a prob-b]
-  (prob-f prob-a prob-b))
-
-(defn try-it-out [] (generic-function-calling-generic-functions a-function-as-argument 10 20))
-
-;;(bake try-it-out)
-
-
-
-(defn id [x] x)
-
-(defn use-id []
-  (id 5))
-
-(defn use-user []
-  (use-id))
-
-;;(bake use-user)
 
 
 ;; (defn fa [] 10)

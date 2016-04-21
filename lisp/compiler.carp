@@ -47,14 +47,17 @@
         extra-deps (list original-func-name)]
     (if (generic-function? annotated-ast)
       (error (str "Failed to concretize generic function " generic-func-name ":\n" annotated-ast))
-      (compiler/bake-ast generic-func-name annotated-ast func-code extra-deps))))
+      (do
+        (compiler/bake-ast generic-func-name annotated-ast func-code)
+        (graph/update-node! generic-func-name :depends-on
+                            (cons original-func-name (get-maybe (get graph generic-func-name) :depends-on)))))))
 
 ^doc "Will convert an s-expression to an ast and then compile it in the same way as 'bake-ast'."
 (defn compiler/bake-code [func-name func-code func-type-annotation]
   (let [annotated-ast (func-to-annotated-ast func-name func-code nil func-type-annotation)]
     (if (generic-function? annotated-ast)
       (mark-lambda-as-generic func-name annotated-ast)
-      (compiler/bake-ast func-name annotated-ast func-code '()))))
+      (compiler/bake-ast func-name annotated-ast func-code))))
 
 (def log-deps-when-baking-ast false)
 
@@ -74,14 +77,14 @@
        deps))
 
 ^doc "Will find all the dependencies of the ast and compile it to a dylib using 'compiler/bake-group'."
-(defn compiler/bake-ast [func-name ast-annotated original-code extra-deps]
+(defn compiler/bake-ast [func-name ast-annotated original-code]
   (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)
         builder-deps (:deps build-result) ;; dependencies on destructors found during the builder phase
         c-program-string (builder-merge-to-c (:builder build-result))
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        all-deps (remove-non-user-defined-deps (set (concat (:func-deps ast-annotated) builder-deps extra-deps)))
+        all-deps (remove-non-user-defined-deps (set (concat (:func-deps ast-annotated) builder-deps)))
         final-deps (deps-by-group all-deps)
         func-signature (get ast-annotated :type)]
     (do
@@ -90,7 +93,7 @@
           (println (str "\n- '" func-name "' -"))
           (println (str "Func deps from ast: " (join ", " (:func-deps ast-annotated))))
           (println (str "Builder deps: " (join ", " builder-deps)))
-          (println (str "Extra deps: " (join ", " all-deps)))
+          ;;(println (str "Extra deps: " (join ", " all-deps)))
           (println (str "All deps (after pruning): " (join ", " all-deps)))
           (println (str "Final deps (by group): " (join ", " final-deps)))
           (println "")))

@@ -162,6 +162,26 @@
 
 
 
+;; Test that functions depending on generic functions will be recompiled when the original generic function changes
+(defn id [x] x)
+
+(defn use-id []
+  (id 5))
+
+(defn use-user []
+  (use-id))
+
+(defn test-depending-on-generic []
+  (do
+    (bake use-user)
+    (defn id [x] (* x 3))
+    (bake id)
+    (assert-eq :foreign (type id))
+    (assert-eq 15 (use-user))))
+
+(test-depending-on-generic)
+
+
 
 
 ;; DELETE FUNCTION (shouldn't be used in user code really... but you can!)
