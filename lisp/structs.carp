@@ -17,7 +17,7 @@
   (do
     (when (def? (symbol struct-name)) (error (str "A struct named '" struct-name "' is already defined. Redefining structs is not implemented yet.")))
     (assert-eq (count member-names) (count member-types))
-    (build-constructor struct-name member-names member-types)
+    (build-struct-group struct-name member-names member-types)
     (eval (list 'def (symbol struct-name) {:struct true
                                            :generic false
                                            :name struct-name
@@ -29,7 +29,7 @@
                                            :member-count (count member-names)}))))
 
 
-(defn build-constructor [struct-name member-names member-types]
+(defn build-struct-group [struct-name member-names member-types]
   (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
         member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
