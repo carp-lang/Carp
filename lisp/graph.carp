@@ -91,8 +91,7 @@
           (graph/re-lambda-fy name)
           ))))
 
-^doc "Unloads all nodes that use the dylib with the name of the group to unload.
-      Not recursive, but returns depending groups!"
+^doc "Removes all nodes belonging to a group and unloads their dylib. Not recursive, but returns depending groups."
 (defn graph/unload-group [group-name]
   (let [dylib nil
         depending-groups '()]
