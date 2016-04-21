@@ -35,7 +35,7 @@
               init-closure-name (get-global-init-func-name)
               deps (list)]
           (do
-            (bake-c-code variable-name t c-variable-name (str out-dir c-variable-name ".c") c-code prototype deps false)
+            (compiler/bake-src variable-name prototype c-code t deps)
             ;;(add-global! variable-name prototype)
             (reset! deps (cons (symbol init-closure-name) deps))
             (bake-init-closure init-closure-name variable-name evaled t)
@@ -56,5 +56,5 @@
       ;;(println (str "defining init closure for " global-name ": " func-def))
       (eval func-def)
       (eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
-      (bake-internal func-name (eval (list 'code (symbol func-name))) () () false (new-builder))
+      (compiler/bake-function-and-its-dependers func-name)
       )))

@@ -11,6 +11,29 @@
 (defn fc [] (fa))
 (defn fd [] (+ (fb) (fc)))
 
+
+
+
+
+
+(def example-descriptor-1 {:src "int f() { return 42; }"
+                           :proto "int f();"
+                           :name "f"
+                           :sig '(:fn () :int)})
+
+(def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                           :proto "int g();"
+                           :name "g"
+                           :sig '(:fn () :int)})
+
+(defn test-bake-group []
+  (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ()))
+
+
+
+
+
+
 ;; (bake fd)
 
 ;;(defstruct X [xxa :int xxb :string])

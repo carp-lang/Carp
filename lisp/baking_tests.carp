@@ -19,7 +19,7 @@
   (+ (- (fib x) 100) 7))
 
 (defn test-foo ()
-  (do (bake* foo '(fib))
+  (do (bake foo)
       (assert-eq (foo 6) -80)
       (assert-eq (type foo) :foreign)
       :foo-is-ok))

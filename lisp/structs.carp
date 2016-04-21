@@ -62,8 +62,8 @@
               deps '()
               ]
           (do
-            (def c c-program-string)
-            (bake-c-code constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
+            (compiler/bake-src constructor-name proto c-program-string constructor-signature deps)
+            
             ;; Compile lenses:
             (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
                   member-names
@@ -104,23 +104,10 @@
                 offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
             (bake-struct-lens-function (new-builder) (str "offset-" member-name) offset-signature offset-proto offset-c '()))))))
 
-(defn bake-struct-lens-function [builder func-name func-signature proto c deps]
-  (let [c-func-name (c-ify-name func-name)
-        c-file-name (str out-dir c-func-name ".c")]
-    (do
-      (when (graph/node-exists? func-name)
-        (do
-          (println (str "WARNING! Overriding lens function: " func-name))
-          (unload-if-necessary func-name)))
-      ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-      (let [c-program-string c]
-        (do
-          (def c c-program-string)
-          (bake-c-code func-name
-                       func-signature
-                       c-func-name
-                       c-file-name
-                       c-program-string
-                       (str proto ";")
-                       deps
-                       false))))))
+(defn bake-struct-lens-function [builder func-name func-signature proto c-program-string deps]
+  (do
+    (when (graph/node-exists? func-name)
+      (do
+        (println (str "WARNING! Overriding lens function: " func-name))
+        (graph/unload func-name)))
+    (compiler/bake-src func-name (str proto ";") c-program-string func-signature deps)))
