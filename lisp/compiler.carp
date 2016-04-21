@@ -151,15 +151,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro compiler/bake (func-symbol)
+  (list 'compiler/bake-function-and-its-dependers (str func-symbol)))
+
+(defn compiler/bake-function-and-its-dependers [func-name]
+  (if (foreign? (eval (symbol func-name)))
+    :already-baked
+    (let [dependers (graph/dependers func-name)]
+      (do
+        (println (str "Compiler is baking '" func-name "' and its users: " (join ", " dependers)))
+        (graph/unload func-name)
+        (map graph/unload dependers)
+        (map graph/re-lambda-fy dependers)
+        (map compiler/try-bake dependers)
+        (compiler/try-bake func-name)))))
+
+^doc "If it's a lambda this will either bake it or mark it as generic. If it's not a lambda it will be ignored."
+(defn compiler/try-bake [func-name]
+  (let [func (eval (symbol func-name))]
+    (if (lambda? func)
+      (let [annotated-ast (func-to-annotated-ast func-name (code func) nil (meta-get func :ann))]
+        (if (generic-function? annotated-ast)
+          (mark-lambda-as-generic func-name annotated-ast)
+          (compiler/bake-ast annotated-ast func-name (code func))))
+      (println (str "compiler/try-bake will ignore non-lambda '" func-name "'")))))
+
+^doc "Compile a generic lambda to a specific, fully typed version by providing a signature with the types needed."
+(defn compiler/concretize [func-name func-code func-signature]
+  (let [annotated-ast (func-to-annotated-ast func-name func-code func-signature nil)]
+    (if (generic-function? annotated-ast)
+      (error (str "Failed to concretize generic function " func-name ":\n" annotated-ast))
+      (compiler/bake-ast annotated-ast func-name func-code))))
+
+(def log-deps-when-baking-ast false)
+
+(defn compiler/bake-ast [ast-annotated func-name original-code]
+  (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)
+        builder-deps (:deps build-result) ;; dependencies on destructors found during the builder phase
+        c-program-string (builder-merge-to-c (:builder build-result))
+        proto (get-function-prototype ast-annotated func-name)
+        c-func-name (c-ify-name func-name)
+        c-file-name (str out-dir c-func-name ".c")
+        total-deps (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) builder-deps))
+        func-signature (get ast-annotated :type)]
+    (do
+      (when log-deps-when-baking-ast
+        (do
+          (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
+          (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
+          (println (str "Total deps for " func-name ": " (join ", " total-deps)))))
+      (def c c-program-string)
+      (compiler/bake-group func-name
+                           (list {:name func-name
+                                  :proto proto
+                                  :src c-program-string
+                                  :sig func-signature})
+                           total-deps)
+      (meta-set! (eval (symbol func-name)) :code original-code))))
+
+^doc "A 'group' is one unit of compilation, like a .so or .dll file.
+      The 'code-node':s sent to this function are dictionaries describing
+      all the functions that go into the same group."
 (defn compiler/bake-group [group-name code-nodes deps]
   (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
         c-file-name (str out-dir group-name ".c")
         dylib-name (str out-dir group-name (:dylib-extension platform-specifics))]
     (do
-      (println (str "Compiling group '" group-name "'")) ;; " via " c-file-name " to " dylib-name))
+      (println (str "Compiling group '" group-name "'."))
       (def src src)
       (map (fn [code-node]
-             ;; kind name proto src dylib-name dylib-ptr depends-on
              (graph/add-node! :function (:name code-node) (:proto code-node) (:src code-node) dylib-name nil deps))
            code-nodes)
       (graph/save-prototypes!)
@@ -168,8 +228,8 @@
       (def out-lib (load-dylib dylib-name))
       (map (fn [code-node]
              (let [c-func-name (c-ify-name (:name code-node))
-                   arg-types (:arg-types code-node)
-                   return-type (:return-type code-node)]
+                   arg-types (nth (:sig code-node) 1)
+                   return-type (nth (:sig code-node) 2)]
                (do
                  (register out-lib c-func-name arg-types return-type)
                  (graph/update-node! (:name code-node) :dylib-ptr out-lib))))
@@ -181,14 +241,12 @@
 (def example-descriptor-1 {:src "int f() { return 42; }"
                            :proto "int f();"
                            :name "f"
-                           :arg-types ()
-                           :return-type :int})
+                           :sig '(:fn () :int)})
 
 (def example-descriptor-2 {:src "int g() { return f() + f(); }"
                            :proto "int g();"
                            :name "g"
-                           :arg-types ()
-                           :return-type :int})
+                           :sig '(:fn () :int)})
 
 (defn test-it []
   (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ()))
