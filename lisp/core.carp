@@ -384,3 +384,9 @@
 
 (defmacro eb [form]
   `(eval-bytecode (bytecode ~form)))
+
+(defn maximum [xs]
+  (match (count xs)
+    0 (error "Can't find maximum value in empy list")
+    1 (nth xs 0)
+    _ (reduce max (nth xs 0) xs)))

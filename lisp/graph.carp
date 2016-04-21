@@ -49,6 +49,9 @@
 (defn graph/get-kind [kind]
   (filter (fn [n] (= (:kind n) kind)) (values graph)))
 
+(defn compare-order [a b]
+  (< (:order a) (:order b)))
+
 (defn graph/save-prototypes! ()
   (save (str out-dir "declarations.h")
         (str
@@ -56,7 +59,7 @@
          "\n\n//Extra headers:\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
          "\n\n//Structs:\n"
-         (join "\n" (map :proto (graph/get-kind :struct)))
+         (join "\n" (map :proto (sort-by compare-order (graph/get-kind :struct))))
          "\n\n//Function types:\n"
          (join "\n" (map :proto (graph/get-kind :function-type)))
          "\n\n//Globals:\n"

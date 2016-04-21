@@ -6,8 +6,8 @@
 ;;(enable-shared-builder!)
 
 
-
-
+(defstruct A [a-member :int])
+(defstruct B [b-member :A])
 
 ;; (defn fa [] 10)
 ;; (defn fb [] (fa))
