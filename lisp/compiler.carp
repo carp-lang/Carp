@@ -173,7 +173,7 @@
       (let [annotated-ast (func-to-annotated-ast func-name (code func) nil (meta-get func :ann))]
         (if (generic-function? annotated-ast)
           (mark-lambda-as-generic func-name annotated-ast)
-          (compiler/bake-ast annotated-ast func-name (code func))))
+          (compiler/bake-ast func-name annotated-ast (code func))))
       (println (str "compiler/try-bake will ignore non-lambda '" func-name "'")))))
 
 ^doc "Compile a generic lambda to a specific, fully typed version by providing a signature with the types needed."
@@ -181,11 +181,11 @@
   (let [annotated-ast (func-to-annotated-ast func-name func-code func-signature nil)]
     (if (generic-function? annotated-ast)
       (error (str "Failed to concretize generic function " func-name ":\n" annotated-ast))
-      (compiler/bake-ast annotated-ast func-name func-code))))
+      (compiler/bake-ast func-name annotated-ast func-code))))
 
 (def log-deps-when-baking-ast false)
 
-(defn compiler/bake-ast [ast-annotated func-name original-code]
+(defn compiler/bake-ast [func-name ast-annotated original-code]
   (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)
         builder-deps (:deps build-result) ;; dependencies on destructors found during the builder phase
         c-program-string (builder-merge-to-c (:builder build-result))
@@ -208,6 +208,14 @@
                                   :sig func-signature})
                            total-deps)
       (meta-set! (eval (symbol func-name)) :code original-code))))
+
+(defn compiler/bake-src [func-name proto src func-signature deps]
+  (compiler/bake-group func-name
+                       (list {:name func-name
+                              :proto proto
+                              :src src
+                              :sig func-signature})
+                       deps))
 
 ^doc "A 'group' is one unit of compilation, like a .so or .dll file.
       The 'code-node':s sent to this function are dictionaries describing
