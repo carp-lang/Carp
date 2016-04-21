@@ -16,10 +16,10 @@
 
     (let [dependers (graph/depending-groups struct-name)]
       (do
-        (println (str "defstruct! Dependers for '" struct-name "': " dependers))
+        ;;(println (str "defstruct! Dependers for '" struct-name "': " dependers))
         (graph/unload-group struct-name)
         (map graph/unload-group dependers)
-        (println (str "graph nodes: " (keys graph)))
+        ;;(println (str "graph nodes: " (keys graph)))
         
         (build-struct-group struct-name
                             member-names
@@ -39,15 +39,18 @@
                                                }))
         
         ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
-        (map redef-struct dependers)        
+        (map restore dependers)        
         ))))
 
-(defn redef-struct [struct-name]
-  (let [description (eval (symbol struct-name))]
-    (if (and (dict? description) (key-is-true? description :struct))
-      (defstruct-internal struct-name (:member-names description) (:member-types description))
-      :ignore-non-struct ;;(error (str "Can't redef '" struct-name "' because it's not a struct."))
-      )))
+(defn restore [name]
+  (let [x (eval (symbol name))]
+    (cond
+      (foreign? x) (graph/re-lambda-fy name) ;; todo: bake again?
+      (and (dict? x) (key-is-true? x :struct)) (defstruct-internal
+                                                 name
+                                                 (:member-names x)
+                                                 (:member-types x))
+      _ (error (str "Can't restore " name)))))
 
 (defn struct-type? [t]
   (if (list? t)

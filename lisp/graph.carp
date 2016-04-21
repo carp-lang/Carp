@@ -97,7 +97,7 @@
   (let [dylib nil
         depending-groups '()]
     (do
-      (println (str "Will unload group '" group-name "'"))
+      ;;(println (str "Will unload group '" group-name "'"))
       (map (fn [node]
              (do
                (when (= (:dylib-name node) group-name)
@@ -106,8 +106,7 @@
                        (reset! dylib (:dylib-ptr node))
                        (assert-eq dylib (:dylib-ptr node)))))
                (when (contains? (:depends-on node) group-name)
-                 (reset! depending-groups (cons (:dylib-name node) depending-groups)))
-               ))
+                 (reset! depending-groups (cons (:dylib-name node) depending-groups)))))
            (values graph))
       (do (if (nil? dylib)
             :no-dylib-to-unload
