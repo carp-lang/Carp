@@ -346,3 +346,24 @@
 ;;(assert-eq error-given-away (:error (catch-error (bake fool-while))))
 
 
+
+
+
+
+;; Baking of groups
+(def example-descriptor-1 {:src "int f() { return 42; }"
+                           :proto "int f();"
+                           :name "f"
+                           :sig '(:fn () :int)})
+
+(def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                           :proto "int g();"
+                           :name "g"
+                           :sig '(:fn () :int)})
+
+(defn h [] (f))
+
+(defn test-bake-group []
+  (do
+    (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
+    (bake h)))

@@ -90,7 +90,7 @@
                                    (let [n (generic-name lookup-sym t)]
                                      (do
                                        ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                       (compiler/concretize n (code global-lookup) t)
+                                       (compiler/concretize (str lookup-sym) n (code global-lookup) t)
                                        (reset! deps (cons n deps))
                                        (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
                                          ast0))))
