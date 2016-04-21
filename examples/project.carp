@@ -8,6 +8,7 @@
 
 (defstruct A [a-member :int])
 (defstruct B [b-member :A])
+(defstruct C [c-member :B])
 
 ;;(graph/unload-group A)
 

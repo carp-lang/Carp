@@ -1,17 +1,9 @@
 
-(defn split-every-second [xs]
-  (match xs
-    () (list () ())
-    (_) (error "split-every-second needs an even number of arguments")
-    (a b ... misc) (let [inside (split-every-second misc)]
-                     (list (cons a (first inside))
-                         (cons b (second inside))))))
-
 (defmacro defstruct (struct-name struct-members)
   (let [names-and-types (split-every-second (array-to-list struct-members))]
-   (list 'defstruct-internal (str struct-name)
-         (cons 'array (map str (first names-and-types)))
-         (cons 'array (map (fn [x] (list 'quote x)) (second names-and-types))))))
+    (list 'defstruct-internal (str struct-name)
+          (cons 'array (map str (first names-and-types)))
+          (cons 'array (map (fn [x] (list 'quote x)) (second names-and-types))))))
 
 (def log-redefining-struct false)
 
@@ -20,26 +12,42 @@
     (assert-eq (count member-names) (count member-types))
     
     (when (def? (symbol struct-name))
-      (do
-        (when log-redefining-struct (println (str "Note: a struct named '" struct-name "' is already defined, overriding.")))
-        (graph/unload-group struct-name)))    
+      (when log-redefining-struct (println (str "Note: a struct named '" struct-name "' is already defined, overriding."))))
 
-    (build-struct-group struct-name
-                        member-names
-                        member-types
-                        (calculate-dependency-level member-types)
-                        (map name (filter struct-type? (array-to-list member-types))))
-    
-    (eval (list 'def (symbol struct-name) {:struct true
-                                           :generic false
-                                           :name struct-name
-                                           :member-names member-names
-                                           :member-types (list 'quote member-types)
-                                           :size (eval (list (symbol (str "size-" struct-name))))
-                                           :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
-                                                                member-names)
-                                           :member-count (count member-names)
-                                           }))))
+    (let [dependers (graph/depending-groups struct-name)]
+      (do
+        (println (str "defstruct! Dependers for '" struct-name "': " dependers))
+        (graph/unload-group struct-name)
+        (map graph/unload-group dependers)
+        (println (str "graph nodes: " (keys graph)))
+        
+        (build-struct-group struct-name
+                            member-names
+                            member-types
+                            (calculate-dependency-level member-types)
+                            (map name (filter struct-type? (array-to-list member-types))))
+        
+        (eval (list 'def (symbol struct-name) {:struct true
+                                               :generic false
+                                               :name struct-name
+                                               :member-names member-names
+                                               :member-types (list 'quote member-types)
+                                               :size (eval (list (symbol (str "size-" struct-name))))
+                                               :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                                    member-names)
+                                               :member-count (count member-names)
+                                               }))
+        
+        ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
+        (map redef-struct dependers)        
+        ))))
+
+(defn redef-struct [struct-name]
+  (let [description (eval (symbol struct-name))]
+    (if (and (dict? description) (key-is-true? description :struct))
+      (defstruct-internal struct-name (:member-names description) (:member-types description))
+      :ignore-non-struct ;;(error (str "Can't redef '" struct-name "' because it's not a struct."))
+      )))
 
 (defn struct-type? [t]
   (if (list? t)

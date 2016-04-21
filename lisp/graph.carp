@@ -41,6 +41,15 @@
                  ())))
            (values graph))))
 
+(defn graph/depending-groups [name]
+  (set
+   (mapcat (fn [node]
+             (let [deps (:depends-on node)]
+               (if (contains? deps name)
+                 (concat (list (:dylib-name node)) (graph/depending-groups (:dylib-name node)))
+                 ())))
+           (values graph))))
+
 (defn graph/node-exists? [name]
   (not-nil? (get-maybe graph name)))
 
@@ -83,9 +92,10 @@
           ))))
 
 ^doc "Unloads all nodes that use the dylib with the name of the group to unload.
-      Also unloads any node that depends on the group."
+      Not recursive, but returns depending groups!"
 (defn graph/unload-group [group-name]
-  (let [dylib nil]
+  (let [dylib nil
+        depending-groups '()]
     (do
       (println (str "Will unload group '" group-name "'"))
       (map (fn [node]
@@ -96,11 +106,13 @@
                        (reset! dylib (:dylib-ptr node))
                        (assert-eq dylib (:dylib-ptr node)))))
                (when (contains? (:depends-on node) group-name)
-                 (graph/unload (:name node)))))
+                 (reset! depending-groups (cons (:dylib-name node) depending-groups)))
+               ))
            (values graph))
-      (if (nil? dylib)
-        (error (str "No dylib to unload for group " group-name))
-        (unload-dylib dylib)))))
+      (do (if (nil? dylib)
+            :no-dylib-to-unload
+            (unload-dylib dylib))
+          depending-groups))))
 
 (defn graph/re-lambda-fy [func-name]
   (let [function-symbol (if (symbol? func-name)
