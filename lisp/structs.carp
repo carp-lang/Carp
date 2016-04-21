@@ -39,10 +39,12 @@
                                            }))))
 
 (defn calculate-dependency-level [member-types]
-  (+ 1 (maximum (map (fn [t] (if (primitive-type? t)
-                               -1
-                               (calculate-dependency-level (:member-types (eval (symbol (name t)))))))
-                     member-types))))
+  (if (empty? member-types)
+    0
+    (+ 1 (maximum (map (fn [t] (if (or (primitive-type? t) (= :string t))
+                                 -1
+                                 (calculate-dependency-level (:member-types (eval (symbol (name t)))))))
+                       member-types)))))
 
 (defn build-struct-group [struct-name member-names member-types dependency-level]
   (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!

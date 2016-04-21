@@ -390,3 +390,6 @@
     0 (error "Can't find maximum value in empy list")
     1 (nth xs 0)
     _ (reduce max (nth xs 0) xs)))
+
+(defn empty? [xs]
+  (= 0 (count xs)))
