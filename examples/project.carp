@@ -1,30 +1,30 @@
-(reset! echo-signature-after-bake true)
-(reset! log-unloading-of-dylibs true)
+;;(reset! echo-signature-after-bake true)
+;;(reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
 ;;(enable-shared-builder!)
 
 
-;; (defstruct A [a-member :int])
-;; (defstruct B [b-member :A])
-;; (defstruct C [c-member :B])
+(defstruct A [a-member :int])
+(defstruct B [b-member :A])
+(defstruct C [c-member :B])
 
-;; (defn f [] (A 10))
-;; (bake f)
+(defn f [] (B (A 10)))
+(bake f)
 
 ;;(defstruct A [])
 
-(defstruct Prime [prime-x :int])
-(defn f [p]
-  (get-prime-x p))
-(bake f)
-(assert-eq "10" (str (f (Prime 10))))
+;; (defstruct Prime [prime-x :int])
+;; (defn f [p]
+;;   (get-prime-x p))
+;; (bake f)
+;; (assert-eq "10" (str (f (Prime 10))))
 
-(defstruct Prime [prime-x :int prime-y :int])
-(assert-eq "20" (str (f (Prime 20 30))))
-(bake f)
-(assert-eq "40" (str (f (Prime 40 50))))
+;; (defstruct Prime [prime-x :int prime-y :int])
+;; (assert-eq "20" (str (f (Prime 20 30))))
+;; (bake f)
+;; (assert-eq "40" (str (f (Prime 40 50))))
 
 
 
