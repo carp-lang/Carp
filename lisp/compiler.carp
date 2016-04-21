@@ -81,16 +81,19 @@
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        all-deps (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) builder-deps extra-deps))
+        all-deps (remove-non-user-defined-deps (set (concat (:func-deps ast-annotated) builder-deps extra-deps)))
         final-deps (deps-by-group all-deps)
         func-signature (get ast-annotated :type)]
     (do
       (when log-deps-when-baking-ast
         (do
-          (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
-          (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
-          (println (str "All deps for " func-name ": " (join ", " all-deps)))
-          (println (str "Final deps for " func-name ": " (join ", " final-deps)))))
+          (println (str "\n- '" func-name "' -"))
+          (println (str "Func deps from ast: " (join ", " (:func-deps ast-annotated))))
+          (println (str "Builder deps: " (join ", " builder-deps)))
+          (println (str "Extra deps: " (join ", " all-deps)))
+          (println (str "All deps (after pruning): " (join ", " all-deps)))
+          (println (str "Final deps (by group): " (join ", " final-deps)))
+          (println "")))
       (def c c-program-string)
       (compiler/bake-group func-name
                            (list {:name func-name
