@@ -48,6 +48,7 @@
       (error (str "Failed to concretize generic function " func-name ":\n" annotated-ast))
       (compiler/bake-ast func-name annotated-ast func-code))))
 
+^doc ""
 (defn compiler/bake-code [func-name func-code func-type-annotation]
   (let [annotated-ast (func-to-annotated-ast func-name func-code nil func-type-annotation)]
     (if (generic-function? annotated-ast)
@@ -63,6 +64,15 @@
                         (error (str "dep must be string: " dep))))
             deps)))
 
+^doc "Will look into the 'graph' and find what actual dylib the function is compiled into"
+(defn deps-by-group [deps]
+  (map (fn [dep]
+         (if-let [node (get-maybe graph dep)]
+           (:dylib-name node)
+           dep))
+       deps))
+
+^doc ""
 (defn compiler/bake-ast [func-name ast-annotated original-code]
   (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)
         builder-deps (:deps build-result) ;; dependencies on destructors found during the builder phase
@@ -70,23 +80,26 @@
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        total-deps (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) builder-deps))
+        all-deps (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) builder-deps))
+        final-deps (deps-by-group all-deps)
         func-signature (get ast-annotated :type)]
     (do
       (when log-deps-when-baking-ast
         (do
           (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
           (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
-          (println (str "Total deps for " func-name ": " (join ", " total-deps)))))
+          (println (str "All deps for " func-name ": " (join ", " all-deps)))
+          (println (str "Final deps for " func-name ": " (join ", " final-deps)))))
       (def c c-program-string)
       (compiler/bake-group func-name
                            (list {:name func-name
                                   :proto proto
                                   :src c-program-string
                                   :sig func-signature})
-                           total-deps)
+                           final-deps)
       (meta-set! (eval (symbol func-name)) :code original-code))))
 
+^doc ""
 (defn compiler/bake-src [func-name proto src func-signature deps]
   (compiler/bake-group func-name
                        (list {:name func-name
@@ -106,17 +119,17 @@
 (defn compiler/bake-group [group-name code-nodes deps]
   (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
         c-file-name (c-ify-name (str out-dir group-name ".c"))
-        dylib-name (c-ify-name (str out-dir group-name (:dylib-extension platform-specifics)))]
+        dylib-full-path (c-ify-name (str out-dir group-name (:dylib-extension platform-specifics)))]
     (do
       ;;(println (str "Compiling group '" group-name "'."))
       (def src src)
       (map (fn [code-node]
-             (graph/add-node! (kind-of-node code-node) (:name code-node) (:proto code-node) (:src code-node) dylib-name nil deps))
+             (graph/add-node! (kind-of-node code-node) (:name code-node) (:proto code-node) (:src code-node) group-name nil deps))
            code-nodes)
       (graph/save-prototypes!)
       (save c-file-name src)
       (run-compiler (c-ify-name group-name) c-file-name deps false)
-      (def out-lib (load-dylib dylib-name))
+      (def out-lib (load-dylib dylib-full-path))
       (map (fn [code-node]
              (let [name (:name code-node)
                    c-name (c-ify-name name)]
