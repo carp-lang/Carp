@@ -3,13 +3,17 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
-(def x [1 2 3])
+
+(def x 42)
+(def me "erik")
+(def stuff [1 2 3])
+(defstruct A [])
+(def more [(A) (A) (A)])
 
 (defn f []
-  (println* &x))
+  stuff)
 
-(defn g []
-  (f))
+;;(while true (bake-global "more" ()))
 
 ;;(enable-shared-builder!)
 

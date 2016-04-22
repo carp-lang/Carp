@@ -409,7 +409,9 @@ Obj *obj_to_string(Process *process, const Obj *o) {
 
 Obj *obj_to_string_not_prn(Process *process, const Obj *o) {
   Obj *s = obj_new_string("");
+  shadow_stack_push(process, s);
   obj_to_string_internal(process, s, o, false, 0);
+  shadow_stack_pop(process);
   return s;
 }
 

@@ -186,10 +186,17 @@
      :original-form expr
      :value expr} ;; change key to :name ..?
     {:node :literal
-     :type (let [t (type expr)] (if (= :string t) '(:ref :string) t)) ; Literal strings are refs
+     :type (type-of-literal expr)
      :line (meta-get expr :line)
      :original-form (prn expr)
      :value expr}))
+
+(defn type-of-literal [expr]
+  (let [t (type expr)]
+    (cond
+      (= :string t) '(:ref :string) ; Literal strings are refs
+      (= :ptr t) (gen-typevar)
+      :else t)))
 
 (defn is-struct-constructor? [form]
   (and (dict? form) (true? (get-maybe form :struct))))

@@ -20,6 +20,7 @@
 
 (defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
   (let [ast-func-deps (find-func-deps ast bake-deps)
+        ;;_ (println (str "ast-func-deps: " ast-func-deps))
         start-time (now)
         ast-typed (infer-types ast-func-deps func-signature-if-generic)
         _ (when profile-infer-time (print-infer-time start-time (get-maybe ast :name)))

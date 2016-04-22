@@ -269,7 +269,13 @@ Obj *p_str(Process *process, Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
   shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
+    shadow_stack_push(process, args[i]);
+  }
+  for(int i = 0; i < arg_count; i++) {
     obj_string_mut_append(s, obj_to_string_not_prn(process, args[i])->s);
+  }
+  for(int i = 0; i < arg_count; i++) {
+    shadow_stack_pop(process); // args
   }
   shadow_stack_pop(process);
   return s;
@@ -447,8 +453,14 @@ Obj *p_prn(Process *process, Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
   shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
+    shadow_stack_push(process, args[i]);
+  }
+  for(int i = 0; i < arg_count; i++) {
     Obj *s2 = obj_to_string(process, args[i]);
     obj_string_mut_append(s, s2->s);
+  }
+  for(int i = 0; i < arg_count; i++) {
+    shadow_stack_pop(process);
   }
   shadow_stack_pop(process); // s
   return s;
@@ -1341,8 +1353,10 @@ Obj *p_read_many(Process *process, Obj** args, int arg_count) {
 
 Obj *p_eval(Process *process, Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'eval'"); return nil; }
+  shadow_stack_push(process, args[0]);
   eval_internal(process, process->global_env, args[0]);
   Obj *result = stack_pop(process);
+  shadow_stack_pop(process);
   return result;
 }
 
