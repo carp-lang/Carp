@@ -71,7 +71,7 @@
 (defn deps-by-group [deps]
   (map (fn [dep]
          (if-let [node (get-maybe graph dep)]
-           (:dylib-name node)
+           (:group node)
            dep))
        deps))
 

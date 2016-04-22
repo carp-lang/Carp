@@ -15,22 +15,21 @@
       name - a string, also the key in the graph dictionary
       proto - what will go into the header file
       src - what will go into the C-file
-      dylib-name - a string, the name used to link to the partical dylib where this node is compiled
+      group - a string, the name used for the particular dylib where this node is compiled
       dylib-ptr - pointer to the dylib Obj
       depends-on - a list of names of nodes that this node depend on
      "
-(defn graph/add-node! [kind name proto src dylib-name dylib-ptr depends-on]
+(defn graph/add-node! [kind name proto src group dylib-ptr depends-on]
   (do (dict-set! graph-src name src)
       (dict-set! graph name {:kind kind
                              :name name
                              :proto proto
-                             :dylib-name dylib-name
+                             :group group
                              :dylib-ptr dylib-ptr
                              :depends-on (map str depends-on)})))
 
 (defn graph/update-node! [name key value]
   (dict-set-in! graph (list name key) value))
-
 
 (defn graph/dependers [name]
   (set
@@ -46,7 +45,7 @@
    (mapcat (fn [node]
              (let [deps (:depends-on node)]
                (if (contains? deps name)
-                 (concat (list (:dylib-name node)) (graph/depending-groups (:dylib-name node)))
+                 (concat (list (:group node)) (graph/depending-groups (:group node)))
                  ())))
            (values graph))))
 
@@ -99,7 +98,7 @@
       ;;(println (str "Will unload group '" group-name "'"))
       (map (fn [node]
              (do
-               (when (= (:dylib-name node) group-name)
+               (when (= (:group node) group-name)
                  (do (dict-remove! graph (:name node))
                      (if (nil? dylib)
                        (reset! dylib (:dylib-ptr node))
@@ -107,7 +106,7 @@
                          :ignore
                          (assert-eq dylib (:dylib-ptr node))))))
                (when (contains? (:depends-on node) group-name)
-                 (reset! depending-groups (cons (:dylib-name node) depending-groups)))))
+                 (reset! depending-groups (cons (:group node) depending-groups)))))
            (values graph))
       (do (if (nil? dylib)
             :no-dylib-to-unload
@@ -130,3 +129,6 @@
 
 ;; (defn graph/re-lambda-fy-all-functions []
 ;;   (map re-lambda-fy (graph/get-kind :function)))
+
+(defn graph/print []
+  (println (str (keys graph))))
