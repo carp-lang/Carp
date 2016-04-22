@@ -103,7 +103,9 @@
                  (do (dict-remove! graph (:name node))
                      (if (nil? dylib)
                        (reset! dylib (:dylib-ptr node))
-                       (assert-eq dylib (:dylib-ptr node)))))
+                       (if (nil? (:dylib-ptr node))
+                         :ignore
+                         (assert-eq dylib (:dylib-ptr node))))))
                (when (contains? (:depends-on node) group-name)
                  (reset! depending-groups (cons (:dylib-name node) depending-groups)))))
            (values graph))

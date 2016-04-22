@@ -17,6 +17,7 @@
     (let [dependers (graph/depending-groups struct-name)]
       (do
         ;;(println (str "defstruct! Dependers for '" struct-name "': " dependers))
+        ;;(dict-remove! graph struct-name)
         (graph/unload-group struct-name)
         (map graph/unload-group dependers)
         ;;(println (str "graph nodes: " (keys graph)))

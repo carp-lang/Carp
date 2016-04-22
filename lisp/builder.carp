@@ -84,7 +84,8 @@
                                                            ""
                                                            ""
                                                            nil
-                                                     '())
+                                                           '() ;; TODO: attempt at making function types depend on their types (set (map name (filter struct-type? (cons return-type arg-types))))
+                                                           )
                                             func-type-name))))
 
     _ (error "Can't match t in ensure-function-type: " t)))

@@ -1,17 +1,17 @@
-;;(reset! echo-signature-after-bake true)
-;;(reset! log-unloading-of-dylibs true)
+(reset! echo-signature-after-bake true)
+(reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
 ;;(enable-shared-builder!)
 
-
 (defstruct A [a-member :int])
 (defstruct B [b-member :A])
 (defstruct C [c-member :B])
+;;(graph/unload-group "A")
 
-(defn f [] (B (A 10)))
-(bake f)
+;; (defn f [] (B (A 10)))
+;; (bake f)
 
 ;;(defstruct A [])
 
