@@ -42,7 +42,7 @@
                 (TypografGlyph [1 8 7 6 5])         ;; c
                 (TypografGlyph [2 3 7 6 5 4 3])     ;; d
                 (TypografGlyph [7 3 2 1 8 6 5 4])   ;; e
-                (TypografGlyph [2 1 0 7 0 3 0 5])     ;; f
+                (TypografGlyph [2 1 0 7 0 3 0 5])   ;; f
                 (TypografGlyph [2 1 8 7 6 5 4 3 0]) ;; g
                 (TypografGlyph [8 7 6 7 3 2 4])     ;; h
                 (TypografGlyph [])
