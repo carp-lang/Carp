@@ -19,7 +19,7 @@
 (defn bake-global [variable-name deps]
   (let [t (type-of-global variable-name)
         evaled (eval (symbol variable-name))
-        ;;_ (println (str "Global " variable-name " to bake has type " t " and value " evaled)) ;; <- BUG!!!
+        _ (println (str "Global " variable-name " to bake has type " t " and value " evaled)) ;; <- BUG!!!
         c-variable-name (c-ify-name variable-name)
         init-value (if (contains? '(:int :float :double :string) t)
                      (prn evaled)
@@ -39,8 +39,10 @@
             (compiler/bake-src variable-name prototype c-code t deps)
             (reset! deps (cons (symbol init-closure-name) deps))
             (when (= "NULL" init-value)
-              (bake-init-closure init-closure-name variable-name evaled t))
-            (when (= init-value "NULL") (eval (list 'reset! (symbol variable-name) evaled)))
+              (do
+                (bake-init-closure init-closure-name variable-name evaled t)
+                ;;(eval (list 'reset! (symbol variable-name) evaled))
+                ))
             :baked))))))
 
 (defn bake-init-closure [func-name global-name body return-type]
@@ -48,7 +50,7 @@
     (do
       ;;(println (str "Defining init closure for " global-name ": " func-def))
       (eval func-def)
-      (eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
+      ;;(eval (list 'meta-set! (symbol func-name) :signature (list 'quote (list :fn () return-type))))
       (compiler/bake-function-and-its-dependers func-name)
       (graph/update-node! func-name :is-init-closure true)
       )))
