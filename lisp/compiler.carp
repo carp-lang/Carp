@@ -156,13 +156,13 @@
        (join "\n\n" (values graph-src))
        "\n\n"
        "int main() {\n"
-       "  " (call-init-closures) "\n"
+       (call-init-closures) "\n"
        "  " starting-function-name "();\n"
        "}\n"))
 
 (defn call-init-closures []
   (join "\n" (map (fn [node]
-                    (str (c-ify-name (:name node)) "();"))
+                    (str "  " (c-ify-name (:name node)) "();"))
                   (filter is-init-closure? (values graph)))))
 
 (defn is-init-closure? [node]
