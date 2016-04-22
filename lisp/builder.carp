@@ -80,15 +80,25 @@
                                                            (str "typedef " (type-build return-type)
                                                                 "(*" func-type-name ")("
                                                                 (join "," (map type-build arg-types))
-                                                                "); // ensure function type " (str t))
-                                                           ""
-                                                           ""
-                                                           nil
-                                                           '() ;; TODO: attempt at making function types depend on their types (set (map name (filter struct-type? (cons return-type arg-types))))
+                                                                ");"
+                                                                ;;" // ensure function type " (str t)
+                                                                )
+                                                           "" ;; no body
+                                                           "" ;; group
+                                                           nil ;; dylib ptr
+                                                           () ;; (struct-groups-in-type t) ;; deps
+                                                           (calculate-dependency-level t) ;; (log (str func-type-name " dep lvl: ")
                                                            )
                                             func-type-name))))
 
     _ (error "Can't match t in ensure-function-type: " t)))
+
+(defn struct-groups-in-type [t]
+  (if (list? t)
+    (set (mapcat struct-groups-in-type t))
+    (if (struct-type? t)
+      (list (name t))
+      ())))
 
 (defn type-build (t)
   (type-build-internal t true))

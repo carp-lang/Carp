@@ -131,7 +131,7 @@
       ;;(println (str "Compiling group '" group-name "'."))
       (def src src)
       (map (fn [code-node]
-             (graph/add-node! (kind-of-node code-node) (:name code-node) (:proto code-node) (:src code-node) group-name nil deps))
+             (graph/add-node! (kind-of-node code-node) (:name code-node) (:proto code-node) (:src code-node) group-name nil deps 0))
            code-nodes)
       (graph/save-prototypes!)
       (save c-file-name src)

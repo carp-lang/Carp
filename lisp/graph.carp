@@ -19,14 +19,15 @@
       dylib-ptr - pointer to the dylib Obj
       depends-on - a list of names of nodes that this node depend on
      "
-(defn graph/add-node! [kind name proto src group dylib-ptr depends-on]
+(defn graph/add-node! [kind name proto src group dylib-ptr depends-on order]
   (do (dict-set! graph-src name src)
       (dict-set! graph name {:kind kind
                              :name name
                              :proto proto
                              :group group
                              :dylib-ptr dylib-ptr
-                             :depends-on (map str depends-on)})))
+                             :depends-on (map str depends-on)
+                             :order order})))
 
 (defn graph/update-node! [name key value]
   (dict-set-in! graph (list name key) value))
@@ -41,13 +42,12 @@
            (values graph))))
 
 (defn graph/depending-groups [name]
-  (set
-   (mapcat (fn [node]
-             (let [deps (:depends-on node)]
-               (if (contains? deps name)
-                 (concat (list (:group node)) (graph/depending-groups (:group node)))
-                 ())))
-           (values graph))))
+  (mapcat (fn [node]
+            (let [deps (:depends-on node)]
+              (if (contains? deps name)
+                (concat (list node) (graph/depending-groups (:group node)))
+                ())))
+          (values graph)))
 
 (defn graph/node-exists? [name]
   (not-nil? (get-maybe graph name)))
@@ -66,10 +66,9 @@
          "#include <shared.h>\n"
          "\n\n//Extra headers:\n"
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
-         "\n\n//Structs:\n"
-         (join "\n" (map :proto (sort-by compare-order (graph/get-kind :struct))))
-         "\n\n//Function types:\n"
-         (join "\n" (map :proto (graph/get-kind :function-type)))
+         "\n\n//Structs & function types:\n"
+         (join "\n" (map :proto (sort-by compare-order (concat (graph/get-kind :struct)
+                                                               (graph/get-kind :function-type)))))
          "\n\n//Globals:\n"
          (join "\n" (map :proto (graph/get-kind :global)))
          "\n\n//Functions:\n"

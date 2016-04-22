@@ -426,6 +426,9 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag == 'X') {
     return a == b;
   }
+  else if(a->tag == 'D') {
+    return a->dylib == b->dylib;
+  }
   else if(a->tag == 'C') {
     Obj *pa = a;
     Obj *pb = b;

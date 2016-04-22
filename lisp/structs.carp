@@ -16,10 +16,9 @@
 
     (let [dependers (graph/depending-groups struct-name)]
       (do
-        ;;(println (str "defstruct! Dependers for '" struct-name "': " dependers))
-        ;;(dict-remove! graph struct-name)
+        ;;(println (str "defstruct! Dependers for '" struct-name "': " (map :name dependers)))
         (graph/unload-group struct-name)
-        (map graph/unload-group dependers)
+        (map graph/unload-group (set (map :group dependers)))
         ;;(println (str "graph nodes: " (keys graph)))
         
         (build-struct-group struct-name
@@ -40,8 +39,9 @@
                                                }))
         
         ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
-        (map restore dependers)        
-        ))))
+        (map restore (set (map :group (sort-by compare-order dependers))))
+
+        (keyword struct-name)))))
 
 (defn restore [name]
   (let [x (eval (symbol name))]
@@ -51,7 +51,7 @@
                                                  name
                                                  (:member-names x)
                                                  (:member-types x))
-      _ (error (str "Can't restore " name)))))
+      _ (error (str "Can't restore '" name "'.")))))
 
 (defn struct-type? [t]
   (if (list? t)
@@ -61,11 +61,14 @@
       (and (dict? lookup) (key-is-true? lookup :struct)))))
 
 (defn calculate-dependency-level [member-types]
-  (if (empty? member-types)
+  (if (or (= [] member-types) (nil? member-types))
     0
-    (+ 1 (maximum (map (fn [t] (if (struct-type? t)
-                                 (calculate-dependency-level (:member-types (eval (symbol (name t)))))
-                                 -1))
+    (+ 1 (maximum (map (fn [t]
+                         (if (list? t)
+                           (calculate-dependency-level t)
+                           (if (struct-type? t)
+                             (calculate-dependency-level (:member-types (eval (symbol (name t)))))
+                             -1)))
                        member-types)))))
 
 (defn build-struct-group [struct-name member-names member-types dependency-level deps]
@@ -78,10 +81,10 @@
         constructor-signature (list :fn member-types (keyword struct-name))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
         type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
+        group-name "" ;; struct-name
         ]
     (do
-      (graph/add-node! :struct struct-name type-definition "" "" nil '())
-      (graph/update-node! struct-name :order dependency-level) ;; make struct defintions appear in the right order in .h-files
+      (graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
       (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
             proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
             substs {"STRUCT-NAME" struct-name
