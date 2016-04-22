@@ -15,15 +15,6 @@
           builder
           files))
 
-(defn call-init-closures []
-  (join "\n" (map (fn [i] (str "global_init_" i "();"))
-                  (range 0 (inc global-init-counter)))))
-
-(defn builder-add-main-function (builder func-name)
-  (builder-add builder :main (str "int main() { \n"
-                                  (call-init-closures)
-                                  "\n" func-name "();\n}")))
-
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
   (let [funcs (:functions builder)

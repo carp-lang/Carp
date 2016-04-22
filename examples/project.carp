@@ -3,11 +3,19 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 
+(def x [1 2 3])
+
+(defn f []
+  (println* &x))
+
+(defn g []
+  (f))
+
 ;;(enable-shared-builder!)
 
-(defstruct A [a-member :int])
-(defstruct B [b-member :A])
-(defstruct C [c-member :B])
+;; (defstruct A [a-member :int])
+;; (defstruct B [b-member :A])
+;; (defstruct C [c-member :B])
 ;;(graph/unload-group "A")
 
 ;; (defn f [] (B (A 10)))

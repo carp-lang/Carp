@@ -151,3 +151,33 @@
 
 (defn with-declarations-header [s] (str "#include \"declarations.h\"\n\n" s))
 
+(defn complete-main-src [starting-function-name]
+  (str "#include \"declarations.h\"\n\n"
+       (join "\n\n" (values graph-src))
+       "\n\n"
+       "int main() {\n"
+       "  " (call-init-closures) "\n"
+       "  " starting-function-name "();\n"
+       "}\n"))
+
+(defn call-init-closures []
+  (join "\n" (map (fn [node]
+                    (str (c-ify-name (:name node)) "();"))
+                  (filter is-init-closure? (values graph)))))
+
+(defn is-init-closure? [node]
+  (key-is-true? node :is-init-closure))
+
+(defn bake-exe-internal [starting-function-name]
+  (do
+    (compiler/bake-function-and-its-dependers starting-function-name)
+    (let [src (complete-main-src starting-function-name)
+          c-file-name (str out-dir "main.c")
+          no-dependencies ()]
+      (do
+        (def mainc src)
+        (save c-file-name src)
+        (run-compiler "-whatever-" c-file-name no-dependencies true)))))
+
+(defmacro bake-exe [starting-function-symbol]
+  (list 'bake-exe-internal (str starting-function-symbol)))
