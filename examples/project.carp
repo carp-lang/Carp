@@ -11,7 +11,8 @@
 (def more [(A) (A) (A)])
 
 (defn f []
-  stuff)
+  more)
+
 
 ;;(while true (bake-global "more" ()))
 

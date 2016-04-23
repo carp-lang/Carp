@@ -279,6 +279,11 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
   }
   else if(o->tag == 'R') {
     shadow_stack_push(process, (struct Obj *)o);
+
+    if(!o->void_ptr) {
+      eval_error = obj_new_string("Pointer to global is NULL.\n");
+      return;
+    }
       
     Obj *type_lookup;
     //printf("o %p %p\n", o, o->void_ptr);
@@ -289,7 +294,8 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
     else if(o->meta && (type_lookup = env_lookup(process, o->meta, obj_new_keyword("type")))) {
       //printf("type %s\n", obj_to_string(type_lookup)->s);        
       if(type_lookup->tag == 'C' && type_lookup->cdr->car && obj_eq(process, type_lookup->car, obj_new_keyword("Array"))) {
-        void *dereffed = *(void**)o->void_ptr;        
+        void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_lookup);
         shadow_stack_push(process, x);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
@@ -298,22 +304,26 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
       else if(obj_eq(process, type_lookup, type_int)) {
         //int i = 123;
         void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_int);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
       else if(obj_eq(process, type_lookup, type_float)) {
         //int i = 123;
         void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_float);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
       else if(obj_eq(process, type_lookup, type_string)) {
         void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_string);
         obj_string_mut_append(total, x->s);
       }
       else {
         void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_lookup);
         print_generic_array_or_struct(process, total, type_lookup, (struct Obj *)x);
         /* obj_string_mut_append(total, "<ptr"); */
