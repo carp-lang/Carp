@@ -71,7 +71,7 @@
   {:node :array
    :type (list :Array (gen-typevar))
    :line (meta-get a :line)
-   :original-form a
+   :original-form (prn a)
    :values (map form-to-ast (array-to-list a))})
 
 (defn list-to-ast [l]

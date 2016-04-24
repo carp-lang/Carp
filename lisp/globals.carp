@@ -19,7 +19,7 @@
 (defn bake-global [variable-name deps]
   (let [t (type-of-global variable-name)
         evaled (eval (symbol variable-name))
-        _ (println (str "Global " variable-name " to bake has type " t " and value " evaled)) ;; <- BUG!!!
+        ;;_ (println (str "Global " variable-name " to bake has type " t " and value " evaled))
         c-variable-name (c-ify-name variable-name)
         init-value (if (contains? '(:int :float :double :string) t)
                      (prn evaled)
@@ -42,9 +42,7 @@
               (do
                 ;; OBS! Must set the value of the global after baking it since the bake leaves it set to NULL
                 (eval (list 'reset! (symbol variable-name) evaled))
-                ;;(println "baking...")
                 (bake-init-closure init-closure-name variable-name evaled t)
-                ;;(println "baked!")
                 ))
             :baked))))))
 
@@ -53,6 +51,7 @@
     (do
       (println (str "Defining init closure for " global-name ": " func-def))
       (eval func-def)
+      ;;(println (str "ast: " (eval (list 'lambda-to-ast (list 'code (symbol func-name))))))
       (compiler/bake-function-and-its-dependers func-name)
       (graph/update-node! func-name :is-init-closure true)
       )))
