@@ -210,7 +210,7 @@
                       (when (managed-type? t)
                         (do
                           (str-append! c (str (indent) "// free '" symbol "' before assigning to it:\n"))
-                          (str-append! c (str (indent) "if(" symbol ") {\n"))
+                          (str-append! c (str (indent) "if(" (c-ify-name (str symbol)) ") {\n"))
                           (indent-in!)
                           (str-append! c (free-variables (list {:name (c-ify-name (str symbol)) :type t}) deps))
                           (indent-out!)
@@ -321,7 +321,7 @@
                         arg-vars (map :c arg-results)]
                     (do (str-append! c (str (indent) "Array* " n " = malloc(sizeof(Array));\n"
                                             (indent) n "->count = " (count vals) ";\n"
-                                            (indent) n "->data = malloc(sizeof(" t-no-star ") * " (count vals) ");\n"
+                                            (indent) n "->data = malloc(sizeof(" t ") * " (count vals) ");\n"
                                             (indent) t " *casted" n " = " n "->data;\n"
                                             (join "\n" (map2 (fn [arg-name index]
                                                                (str (indent) "casted" n "[" index "] = " arg-name ";"))

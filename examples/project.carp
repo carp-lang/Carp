@@ -6,11 +6,23 @@
 
 
 
+(defn test-free-things-sent-to-ref []
+  nil)
 
 
 
 
 
+;; (defstruct A [])
+
+;; (defn g []
+;;   (let []
+;;     (println* (ref [(A) (A)]))))
+
+;; (defn f []
+;;   (while true (g)))
+
+;; (bake-exe f)
 
 
 
@@ -301,16 +313,6 @@
 ;;       (println (ref (str &m))))))
 
 ;; (bake fool)
-
-
-
-
-;; (defstruct A [])
-;; (def more [(A) (A) (A)])
-;; (defn f []
-;;   (println* &more))
-;; (bake f)
-;; (bake-exe f)
 
 
 

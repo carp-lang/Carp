@@ -367,3 +367,16 @@
   (do
     (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
     (bake h)))
+
+
+
+
+(defn test-global-with-array-of-structs []
+  (do
+    (defstruct A [])
+    (def some-a [(A) (A) (A)])
+    (defn use-some-a []
+      (println* &some-a))
+    (bake use-some-a)))
+
+(test-global-with-array-of-structs)
