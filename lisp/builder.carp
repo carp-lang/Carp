@@ -312,7 +312,7 @@
 
            :null {:c "NULL"}
 
-           :array (let [n (:array-expr-name form)
+           :array (let [n (:result-name form)
                         inner-type (nth (:type form) 1)
                         t (type-build inner-type)
                         t-no-star (c-ify-name (type-build-no-star inner-type))

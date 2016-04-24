@@ -5,22 +5,27 @@
 ;;(reset! log-deps-when-baking-ast true)
 
 
+(defn free-the-thing []
+  (println (ref (str (ref [1 2 3]))))
+  ;;(let [x [1 2 3]] (println (ref (str (ref x)))))
+  )
+
+(def free-ast (lambda-to-ast (code free-the-thing)))
+(def free-asta (annotate-ast free-ast))
 
 (defn test-free-things-sent-to-ref []
-  nil)
+  ;;(bake free-the-thing)
+  (println (str (ownership-analyze free-the-thing)))
+  )
 
-
+(test-free-things-sent-to-ref)
 
 
 
 ;; (defstruct A [])
 
-;; (defn g []
-;;   (let []
-;;     (println* (ref [(A) (A)]))))
-
 ;; (defn f []
-;;   (while true (g)))
+;;   (while true (println* (ref [(A) (A)]))))
 
 ;; (bake-exe f)
 

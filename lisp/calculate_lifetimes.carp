@@ -500,6 +500,18 @@
                :vars final-vars
                :env env
                :eaten final-eaten})
+
+        :array (let [;; TODO: visit every form inside the array!!!
+                     final-ast ast
+                     final-vars (cons {:name (:result-name ast)
+                                       :type (:type ast)
+                                       :doc "array ret val"}
+                                      vars)
+                     ]
+                 {:ast final-ast
+                  :vars final-vars
+                  :env env
+                  })
         
         _ data))))
 

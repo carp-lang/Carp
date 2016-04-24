@@ -157,7 +157,7 @@
        "\n\n"
        "int main() {\n"
        (call-init-closures) "\n"
-       "  " starting-function-name "();\n"
+       "  " (c-ify-name starting-function-name) "();\n"
        "}\n"))
 
 (defn call-init-closures []
