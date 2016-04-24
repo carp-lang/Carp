@@ -4,35 +4,6 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
-(defstruct A [])
-
-;; (def x 42)
-;; (def me "erik")
-;; (def stuff [1 2 3])
-(def more [(A) (A) (A)])
-
-(defn f []
-  (println* &more))
-
-(bake f)
-(bake-exe f)
-
-;;(def x (A))
-
-;; (defn aha []
-;;   a)
-
-;; (reset! a (A))
-
-;;(bake-global "x" ())
-
-;; (def aha-ast (lambda-to-ast (code aha)))
-;; (def aha-con (gencon aha-ast))
-;;(def aha-asta (annotate-ast aha-ast))
-
-
-;; (defn f []
-;;   (reset! x (A)))
 
 
 
@@ -47,13 +18,6 @@
 
 
 
-
-
-
-
-;;(while true (bake-global "more" ()))
-
-;;(enable-shared-builder!)
 
 ;; (defstruct A [a-member :int])
 ;; (defstruct B [b-member :A])
@@ -341,6 +305,15 @@
 
 
 
+;; (defstruct A [])
+;; (def more [(A) (A) (A)])
+;; (defn f []
+;;   (println* &more))
+;; (bake f)
+;; (bake-exe f)
+
+
+
 
 
 (defn problem []
@@ -352,3 +325,6 @@
           (reset! s (copy &s))
           (reset! x (inc x))))
       (println* &s))))
+
+
+

@@ -2,8 +2,6 @@
 # Compiler Big Features
   - Compile "and" & "or"
   - Lambdas / lambda lifting
-  - Allow recompiling changed defstructs
-  - Structs refering to other structs
   - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
     
