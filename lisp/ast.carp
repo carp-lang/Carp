@@ -195,7 +195,13 @@
   (let [t (type expr)]
     (cond
       (= :string t) '(:ref :string) ; Literal strings are refs
-      (= :ptr t) (gen-typevar)
+      (= :ptr t) (do
+                   (println (str "expr " expr " is a ptr of type: " (meta-get expr :type) " with value " (eval expr)))
+                   ;;(gen-typevar)
+                   (if-let [real-type (meta-get expr :type)]
+                     real-type
+                     (error (str "No type on expr: " expr)))
+                   )
       :else t)))
 
 (defn is-struct-constructor? [form]

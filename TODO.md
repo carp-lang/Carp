@@ -1,3 +1,4 @@
+
 # Compiler Big Features
   - Compile "and" & "or"
   - Lambdas / lambda lifting
@@ -20,6 +21,7 @@
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
+  - Variables named the same thing as a struct can override the dylib generated for the struct group.
   - Not allow putting refs into an array
   - Use 'generic-name' when concretesizing generic primops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)

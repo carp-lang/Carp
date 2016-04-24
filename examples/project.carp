@@ -2,16 +2,53 @@
 (reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
+;;(reset! log-deps-when-baking-ast true)
 
-
-(def x 42)
-(def me "erik")
-(def stuff [1 2 3])
 (defstruct A [])
+
+;; (def x 42)
+;; (def me "erik")
+;; (def stuff [1 2 3])
 (def more [(A) (A) (A)])
 
 (defn f []
-  more)
+  (println* &more))
+
+(bake f)
+(bake-exe f)
+
+;;(def x (A))
+
+;; (defn aha []
+;;   a)
+
+;; (reset! a (A))
+
+;;(bake-global "x" ())
+
+;; (def aha-ast (lambda-to-ast (code aha)))
+;; (def aha-con (gencon aha-ast))
+;;(def aha-asta (annotate-ast aha-ast))
+
+
+;; (defn f []
+;;   (reset! x (A)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ;;(while true (bake-global "more" ()))

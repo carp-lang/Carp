@@ -46,7 +46,7 @@
                                                                 (reset! deps (cons symbol-name deps))))
                                                             (when is-constructor
                                                               (do
-                                                                ;;(println (str "found constructor " symbol-name))
+                                                                ;;(println (str "Found constructor '" symbol-name "'"))
                                                                 (reset! deps (cons symbol-name deps))))
                                                             (when (and is-lambda bake-deps) ;; Bake, then add to deps
                                                               (do
