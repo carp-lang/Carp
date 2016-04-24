@@ -322,6 +322,23 @@
 
 
 
+(defn free-the-thing []
+  (println (ref (str (ref [1 2 3])))))
+
+(defn test-free-things-sent-to-ref []
+  (assert-eq '{:node :function, 
+               :free ({:name "_result_1", 
+                       :type :string}
+                      {:name "_array_0", 
+                       :type (:Array :int)}), 
+               :body ()}
+             (ownership-analyze free-the-thing)))
+
+(test-free-things-sent-to-ref)
+
+
+
+
 
 (defn dont-allow-let-ref []
   (copy (let [x [1 2 3]
