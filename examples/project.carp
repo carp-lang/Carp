@@ -5,15 +5,21 @@
 ;;(reset! log-deps-when-baking-ast true)
 
 
+(defn ownership-of-things-inside-array-1 []
+  (let [x @"hej"
+        arr [1 2 3]]
+    (println (ref (str (ref [x (str 10) (str &arr)]))))))
+
+(println (str (ownership-analyze ownership-of-things-inside-array-1)))
+(bake ownership-of-things-inside-array-1)
 
 
+(defstruct AAA [])
 
-;; (defstruct A [])
+(defn f []
+  (while true (println* (ref [(AAA) (AAA)]))))
 
-;; (defn f []
-;;   (while true (println* (ref [(A) (A)]))))
-
-;; (bake-exe f)
+(bake-exe f)
 
 
 

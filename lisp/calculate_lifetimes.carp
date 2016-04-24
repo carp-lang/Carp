@@ -175,6 +175,36 @@
                         :eaten new-eaten}]
       new-app-data)))
 
+(defn calc-lifetime-for-array (data form-ast)
+  (do
+    (let [ast (:ast data)
+          vars (:vars data)
+          pos (:pos data)
+          env (:env data)
+          eaten (get-maybe data :eaten)
+
+          data-after-visited-form (calculate-lifetimes-internal {:ast form-ast
+                                                                 :vars vars
+                                                                 :env env 
+                                                                 :eaten eaten} false)
+          
+          vars-after-visited-form (:vars data-after-visited-form)
+          vars-after-visited-form-removed-result (if-let [result-name (get-maybe form-ast :result-name)]
+                                                   (remove-var-with-name vars-after-visited-form result-name)
+                                                   vars-after-visited-form)
+          
+          form-ast-after-visited-form  (:ast  data-after-visited-form)
+
+          new-ast (assoc-in ast (list :values pos) form-ast-after-visited-form)
+          new-eaten (get-maybe data-after-visited-form :eaten)
+          
+          new-app-data {:ast new-ast
+                        :vars vars-after-visited-form-removed-result
+                        :pos (inc pos)
+                        :env env
+                        :eaten new-eaten}]
+      new-app-data)))
+
 (defn calculate-lifetimes-internal (data in-ref)
   (do
     ;;(println (str "CALC: " (:node (:ast data))))
@@ -501,16 +531,30 @@
                :env env
                :eaten final-eaten})
 
-        :array (let [;; TODO: visit every form inside the array!!!
-                     final-ast ast
-                     final-vars (cons {:name (:result-name ast)
-                                       :type (:type ast)
-                                       :doc "array ret val"}
-                                      vars)
+        :array (let [;;_ (println (str "vars before:\n" vars))
+                     ;;_ (println (str "values:\n" (:values ast)))
+                     
+                     init-data (assoc data :pos 0)
+                     data-after-forms (reduce calc-lifetime-for-array init-data (:values ast))
+                     
+                     ast-after-forms (:ast data-after-forms)
+                     eaten-after-forms (get-maybe data-after-forms :eaten)
+                     vars-after-forms (:vars data-after-forms)
+
+                     ;;_ (println (str "vars-after-forms:\n" vars-after-forms))
+                     ;;_ (println (str "eaten-after-forms: " eaten-after-forms))
+                     
+                     vars-after-array-expr (cons {:name (:result-name ast)
+                                                  :type (:type ast)
+                                                  :doc "array ret val"}
+                                                 vars-after-forms)
+
+                     ;;_ (println (str "final vars:\n" vars-after-array-expr))
                      ]
-                 {:ast final-ast
-                  :vars final-vars
+                 {:ast ast-after-forms
+                  :vars vars-after-array-expr
                   :env env
+                  :eaten eaten-after-forms
                   })
         
         _ data))))
