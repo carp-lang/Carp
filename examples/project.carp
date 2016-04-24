@@ -4,14 +4,38 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
+(defn dd [x] (inc x))
 
-(defn ownership-of-things-inside-array-1 []
-  (let [x @"hej"
-        arr [1 2 3]]
-    (println (ref (str (ref [x (str 10) (str &arr)]))))))
+(defn test-faster-unification []
+  (for (i 0 10)
+    (do
+      (defn f []
+        (let [x (dd 100)
+              a [(dd 1) (dd 2) (dd 3) (dd 4) (dd 5)]
+              b [(dd 3) (dd (inc 5)) (dd (dec 5))]
+              c (map inc [x])]
+          (copy &[@&a @&b @&c @&a @&b @&c a b c])))
+      (time (bake f)))))
 
-(println (str (ownership-analyze ownership-of-things-inside-array-1)))
-(bake ownership-of-things-inside-array-1)
+;;(test-faster-unification)
+
+
+
+;;(def fast (lambda-to-ast (code f)))
+;;(def cs (gencon fast))
+;;(time (annotate-ast (assoc fast :name "f")))
+
+
+
+
+;; (defn ownership-of-things-inside-array-1 []
+;;   (let [x @"hej"
+;;         arr [1 2 3]]
+;;     (println (ref (str (ref [x (str 10) (str &arr)]))))))
+
+;; (println (str (ownership-analyze ownership-of-things-inside-array-1)))
+;; (bake ownership-of-things-inside-array-1)
+
 
 
 ;; (defstruct AAA [])
