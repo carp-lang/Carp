@@ -14,12 +14,12 @@
 (bake ownership-of-things-inside-array-1)
 
 
-(defstruct AAA [])
+;; (defstruct AAA [])
 
-(defn f []
-  (while true (println* (ref [(AAA) (AAA)]))))
+;; (defn f []
+;;   (while true (println* (ref [(AAA) (AAA)]))))
 
-(bake-exe f)
+;; (bake-exe f)
 
 
 
