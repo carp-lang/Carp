@@ -1,0 +1,35 @@
+
+(def tester/tests ())
+
+(defn tester/add-test! [test-name]
+  (reset! tester/tests (cons test-name tester/tests)))
+
+(defn tester/run-tests []
+  (let [failed-count 0]
+    (do (map (fn [test-name]
+               (let [test-func (eval (symbol test-name))
+                     e (catch-error (test-func))]
+                 (if (nil? e)
+                   nil
+                   (do
+                     (println (str (get-console-color console-color-red)
+                                   (inc failed-count) "."
+                                   " Error in test '" test-name "' \n"
+                                   (get-normal-console-color)
+                                   e "\n"))
+                     (swap! failed-count inc)))))
+             tester/tests)
+        (println (str (if (= 0 failed-count)
+                        (get-console-color console-color-green)
+                        (get-console-color console-color-red))
+                      "Performed " (count tester/tests) " tests, " failed-count " of them failed."
+                      (get-normal-console-color))))))
+
+(defmacro deftest [name body]
+  (list 'do
+        (list 'defn name [] body)
+        (list 'tester/add-test! (prn name))))
+
+(deftest t1 (assert-eq 2 3))
+(deftest t2 (assert-eq 3 3))
+(deftest t3 (assert-eq 12 3))

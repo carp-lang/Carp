@@ -17,6 +17,7 @@
 (load-lisp (str carp-dir "lisp/core.carp"))
 (load-lisp (str carp-dir "lisp/builtins.carp"))
 (load-lisp (str carp-dir "lisp/signatures.carp"))
+(load-lisp (str carp-dir "lisp/tester.carp"))
 
 (when carp-dev
   (load-lisp (str carp-dir "lisp/core_tests.carp")))
