@@ -1,10 +1,10 @@
-;; OWNERSHIP
+(tester/set-suite! "ownership")
 
 
 (defn own-1 (s)
   (eat-string s))
 
-(defn test-own-1 ()
+(deftest test-own-1
   (do
     (assert-eq '(:fn (:string) :void)
                (sign own-1))
@@ -13,14 +13,11 @@
                 :body ()}
                (ownership-analyze own-1))))
 
-(test-own-1)
-
-
 
 (defn own-2 (s)
   (string-copy s))
 
-(defn test-own-2 ()
+(deftest test-own-2
   (do
     (assert-eq '(:fn ((:ref :string)) :string)
                (sign own-2))
@@ -29,14 +26,11 @@
                 :body ()}
                (ownership-analyze own-2))))
 
-(test-own-2)
-
-
 
 (defn own-3 ()
   (string-copy (ref (string-copy "CARP"))))
 
-(defn test-own-3 ()
+(deftest test-own-3
   (do
     (assert-eq '(:fn () :string)
                (sign own-3))
@@ -45,15 +39,12 @@
                 :body ()}
                (ownership-analyze own-3))))
 
-(test-own-3)
-
-
 
 (defn own-4 ()
   (let [s (string-copy "CARP1")]
     (string-copy "CARP2")))
 
-(defn test-own-4 ()
+(deftest test-own-4
   (do
     (assert-eq '(:fn () :string)
                (sign own-4))
@@ -65,16 +56,13 @@
                         :body ()}}
                (ownership-analyze own-4))))
 
-(test-own-4)
-
-
 
 (defn own-5 ()
   (let [s1 (string-copy "CARP1")
         s2 (string-copy (ref s1))]
     0))
 
-(defn test-own-5 ()
+(deftest test-own-5
   (do
     (assert-eq '(:fn () :int)
                (sign own-5))
@@ -88,16 +76,13 @@
                         :body ()}}
                (ownership-analyze own-5))))
 
-(test-own-5)
-
-
 
 (defn own-6 ()
   (let [s1 (string-copy "CARP")]
     (let [s2 (string-copy (ref s1))]
       0)))
 
-(defn test-own-6 ()
+(deftest test-own-6
   (do
     (assert-eq '(:fn () :int)
                (sign own-6))
@@ -112,9 +97,6 @@
                                :body ()}}}
                (ownership-analyze own-6))))
 
-(test-own-6)
-
-
 
 (defn own-7 ()
   (let [s1 (string-copy "CARP")]
@@ -122,11 +104,8 @@
       (eat-string s1)
       (eat-string s1))))
 
-(defn test-own-7 ()
+(deftest test-own-7
   (assert-error error-given-away (ownership-analyze own-7)))
-
-(test-own-7)
-
 
 
 (defn own-8 ()
@@ -135,7 +114,7 @@
       s
       (string-copy "CARP2"))))
 
-(defn test-own-8 ()
+(deftest test-own-8
   (do
     (assert-eq '(:fn () :string)
                (sign own-8))
@@ -151,10 +130,6 @@
                                :body-right ()}}}
                (ownership-analyze own-8))))
 
-(test-own-8)
-
-
-
 
 (defn own-9 ()
   (let [s (string-copy "CARP1")]
@@ -162,7 +137,7 @@
       s
       s)))
 
-(defn test-own-9 ()
+(deftest test-own-9
   (do
     (assert-eq '(:fn () :string)
                (sign own-9))
@@ -177,10 +152,6 @@
                                :body-right ()}}}
                (ownership-analyze own-9))))
 
-(test-own-9)
-
-
-
 
 (defn own-10 ()
   (let [s (string-copy "CARP1")]
@@ -188,7 +159,7 @@
       10
       20)))
 
-(defn test-own-10 ()
+(deftest test-own-10
   (do
     (assert-eq '(:fn () :int)
                (sign own-10))
@@ -204,9 +175,6 @@
                                :body-right ()}}}
                (ownership-analyze own-10))))
 
-(test-own-10)
-
-
 
 (defn own-11 ()
   (let [s1 (string-copy "CARP1")
@@ -215,7 +183,7 @@
       s1
       s2)))
 
-(defn test-own-11 ()
+(deftest test-own-11
   (do
     (assert-eq '(:fn () :string)
                (sign own-11))
@@ -232,9 +200,6 @@
                                :body-right ()}}}
                (ownership-analyze own-11))))
 
-(test-own-11)
-
-
 
 (defn own-12 (s1)
   (let []
@@ -242,7 +207,7 @@
       (itos (strlen (ref s1)))
       s1)))
 
-(defn test-own-12 ()
+(deftest test-own-12
   (do
     (assert-eq '(:fn (:string) :string)
                (sign own-12))
@@ -258,10 +223,6 @@
                                :body-right ()}}}
                (ownership-analyze own-12))))
 
-(test-own-12)
-
-
-
 
 (defn own-13 ()
   (let [s (string-copy "CARP")
@@ -270,7 +231,7 @@
       (strlen r)
       (eat-string s))))
 
-(defn test-own-13 ()
+(deftest test-own-13
   (do
     (assert-eq '(:fn () :void)
                (sign own-13))
@@ -281,9 +242,6 @@
                         :body ()}}
                (ownership-analyze own-13))))
 
-(test-own-13)
-
-
 
 (defn own-14 ()
   (let [s (string-copy "CARP")
@@ -292,12 +250,8 @@
       (eat-string s)
       (strlen r))))
 
-(defn test-own-14 ()
+(deftest test-own-14
   (assert-error error-given-away (ownership-analyze own-14)))
-
-(test-own-14)
-
-
 
 
 (defn own-15 (s1)
@@ -305,7 +259,7 @@
     (do (eat-string s1) (string-copy "eaten"))
     s1))
 
-(defn test-own-15 ()
+(deftest test-own-15
   (do
     (assert-eq '(:fn (:string) :string)
                (sign own-15))
@@ -318,14 +272,11 @@
                         :body-right ()}}
                (ownership-analyze own-15))))
 
-(test-own-15)
-
-
 
 (defn free-the-thing []
   (println (ref (str (ref [1 2 3])))))
 
-(defn test-free-things-sent-to-ref []
+(deftest test-free-things-sent-to-ref
   (assert-eq '{:node :function, 
                :free ({:name "_result_1", 
                        :type :string}
@@ -334,11 +285,6 @@
                :body ()}
              (ownership-analyze free-the-thing)))
 
-(test-free-things-sent-to-ref)
-
-
-
-
 
 (defn dont-allow-let-ref []
   (copy (let [x [1 2 3]
@@ -346,8 +292,8 @@
           r)))
 
 
-
 ;; This one is weird:
 (defn own-string-weird (s)
   (ref s))
 
+(tester/run-suite "ownership")

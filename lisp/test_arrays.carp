@@ -1,30 +1,23 @@
-
-;; Generic Arrays
+(tester/set-suite! "arrays")
 
 (defn array-literal []
   [10 20 30])
 
-(defn test-array-literal []
+(deftest test-array-literal
   (bake array-literal))
-
-(test-array-literal)
-
 
 
 (defn get-a-float [xs]
   (* 2.0f (copy (nth xs 0))))
 
-(defn test-get-a-float []
+(deftest test-get-a-float
   (do
     (bake get-a-float)))
 
 
-
-(defn test-int-array []
-  (+ 100 (copy (nth (array-of-size 3) 0))))
-
-;; (test-int-array) ;; FAILS...
-
+;; Problematic...
+;; (deftest test-int-array
+;;   (+ 100 (copy (nth (array-of-size 3) 0))))
 
 
 (defn small-array []
@@ -39,7 +32,6 @@
 ;; (def small-con (gencon small-ast))
 ;; (def small-sol (solve-constraints small-con))
 ;; (def small-asta (annotate-ast small-ast))
-
 
 
 (defn small-array-2 []
@@ -58,13 +50,10 @@
 ;; (def small-2-asta (annotate-ast small-2-ast))
 
 
-
-
 (defn array-literal []
   [10 20 30])
 
 (bake array-literal)
-
 
 
 (defn array-literal-2 []
@@ -73,47 +62,38 @@
 (bake array-literal-2)
 
 
-
 (defn array-of-arrays []
   [(array-literal) (array-literal)])
 
 (bake array-of-arrays)
 
 
-
 (defstruct Vector
   [vectorX :int
    vectorY :int])
 
-(defn test-print-array-of-vector []
+(deftest test-print-array-of-vector
   (let [vecs [(Vector 1001 1002)
               (Vector 1003 1004)
               (Vector 1005 1006)]]
     (assert-eq "[(Vector 1001 1002) (Vector 1003 1004) (Vector 1005 1006)]" (str vecs))))
 
-(test-print-array-of-vector)
-
 
 ;; Nested arrays
-
 (defn nesting []
   [[(copy "hej")]])
-
 (bake nesting)
-
 
 
 (defn copy-an-array-1 []
   (let [a [100]]
     (copy (ref a))))
 
-(defn test-copy-an-array-1 []
+(deftest test-copy-an-array-1
   (do
     (bake copy-an-array-1)
     (assert-eq (str [100]) (str (copy-an-array-1)))
     ))
-
-(test-copy-an-array-1)
 
 ;; (def copy-ast (lambda-to-ast (code copy-an-array-1)))
 ;; (def copy-con (generate-constraints copy-ast))
@@ -126,7 +106,7 @@
         b (copy (ref a))]
     b))
 
-(defn test-copy-an-array-2 []
+(deftest test-copy-an-array-2
   (do
     (bake copy-an-array-2)
     (assert-eq [[1] [2]] (copy-an-array-2))
@@ -137,7 +117,4 @@
 ;; (def copy-2-sol (solve-constraints copy-2-con))
 ;; (def copy-2-asta (annotate-ast copy-2-ast))
 
-;; THIS TEST IS SUPER SLOW AT THE MOMENT
-
-(test-copy-an-array-2)
-
+(tester/run-suite "arrays")
