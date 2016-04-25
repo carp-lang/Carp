@@ -410,6 +410,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     if(eval_error) { return; }
 
     if(pair->cdr->tag == 'R' && pair->cdr->meta) {
+      //pair->cdr->given_to_ffi = true; // needed?
       //printf("Resetting a ptr-to-global.\n");
       Obj *type_meta = env_lookup(process, pair->cdr->meta, obj_new_keyword("type"));
       if(type_meta && obj_eq(process, type_meta, type_int)) {
@@ -431,6 +432,10 @@ void eval_list(Process *process, Obj *env, Obj *o) {
       else if(type_meta && obj_eq(process, type_meta, type_bool)) {
         bool *bp = pair->cdr->void_ptr;
         *bp = stack_pop(process)->boolean;
+      }
+      else if(type_meta && obj_eq(process, type_meta, type_string)) {
+        char **sp = pair->cdr->void_ptr;
+        *sp = strdup(stack_pop(process)->s); // OBS! strdup!!! Without this the string will get GC:ed though...
       }
       else if(type_meta->tag == 'C' && type_meta->cdr->car && obj_eq(process, type_meta->car, obj_new_keyword("Array"))) {
         void **pp = pair->cdr->void_ptr;

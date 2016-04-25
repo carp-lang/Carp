@@ -30,7 +30,7 @@
         (map compiler/try-bake dependers)
         (compiler/try-bake func-name)))))
 
-;;(def log-ignores true)
+(def log-ignores false)
 
 ^doc "If it's a lambda this will either bake it or mark it as generic. If it's not a lambda it will be ignored."
 (defn compiler/try-bake [symbol-name]
