@@ -94,8 +94,15 @@
     ;;(reset! gstate 65)
     (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
 
+(defn update [x]
+  nil)
+
+;; (if (< gstate (+ 65 25))
+;;     (reset! gstate (inc gstate))
+;;     (reset! gstate 65))
+
 (defn typograf []
-  (glfw-app "Typograf" setup id draw on-keys))
+  (glfw-app "Typograf" setup update draw on-keys))
 
 ;;(bake-exe typograf)
 ;;(bake typograf)
