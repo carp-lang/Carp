@@ -14,6 +14,7 @@
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
+  - reset! will not eat the symbol it sets (see 'str*' in core.carp)
   - Variables named the same thing as a struct can override the dylib generated for the struct group.
   - Not allow putting refs into an array
   - Delete content of global var when resetting from repl

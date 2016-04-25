@@ -407,3 +407,9 @@
 ^doc "A shorter name for 'meta-get-all'"
 (defn meta [x]
   (meta-get-all x))
+
+(defn str* [strings]
+  (let [s @""]
+    (do (for (i 0 (count strings))
+          (reset! s (string-append &s (nth strings i))))
+        s)))
