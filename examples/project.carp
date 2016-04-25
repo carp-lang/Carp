@@ -83,6 +83,36 @@
 ;; Evaluating form (bake f) took 5394ms.
 
 
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1834ms.
+;; Unloading <dylib:0x7fc60be79600> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1058ms.
+;; Unloading <dylib:0x7fc60eb1d290> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1107ms.
+;; Unloading <dylib:0x7fc611ccdba0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1144ms.
+;; Unloading <dylib:0x7fc60da5f3c0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1094ms.
+;; Unloading <dylib:0x7fc6119e2bc0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1046ms.
+;; Unloading <dylib:0x7fc612f92a70> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1061ms.
+;; Unloading <dylib:0x7fc6127b3990> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1000ms.
+;; Unloading <dylib:0x7fc613b491a0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1032ms.
+;; Unloading <dylib:0x7fc614c37a40> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1022ms.
+
 
 
 

@@ -1849,3 +1849,35 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
   
   return mut_substs;
 }
+
+Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 2, "types-exactly-eq? must take 2 arguments. ", nil);
+  Obj *a = args[0];
+  Obj *b = args[1];
+  if(a->tag == 'C' && b->tag == 'C') {
+    Obj *p = a;
+    Obj *p2 = b;
+    while(p && p->car) {
+      if(!p2 || !p2->car) {
+        return lisp_false;
+      }
+      Obj *inner_args[2] = { p->car, p2->car };
+      Obj *result = p_types_exactly_eq(process, inner_args, 2);
+      if(result == lisp_false) {
+        return lisp_false;
+      }
+      p = p->cdr;
+      p2 = p2->cdr;
+    }
+    return lisp_true;
+  }
+  else if(a->tag == 'K' && strcmp(a->s, "any") == 0) {
+    return lisp_true;
+  }
+  else if(b->tag == 'K' && strcmp(b->s, "any") == 0) {
+    return lisp_true;
+  }
+  else {
+    return obj_eq(process, a, b) ? lisp_true : lisp_false;
+  }
+}

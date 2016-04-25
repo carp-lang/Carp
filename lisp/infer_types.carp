@@ -339,16 +339,16 @@
 ;;                   (keys substs)
 ;;                   (values substs)))))
 
-(defn typevar? (x) (string? x))
+;; (defn types-exactly-eq? (a b)
+;;   (if (and (list? a) (list? b))
+;;     (all? true? (map2 types-exactly-eq? a b))
+;;     (if (= :any a)
+;;       true
+;;       (if (= :any b)
+;;         true
+;;         (= a b)))))
 
-(defn types-exactly-eq? (a b)
-  (if (and (list? a) (list? b))
-    (all? true? (map2 types-exactly-eq? a b))
-    (if (= :any a)
-      true
-      (if (= :any b)
-        true
-        (= a b)))))
+(defn typevar? (x) (string? x))
 
 (def log-substs false)
 
