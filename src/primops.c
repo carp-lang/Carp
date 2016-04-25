@@ -1738,3 +1738,66 @@ Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
   Obj *bytecode = args[0];
   return bytecode_eval(process, bytecode);
 }
+
+Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 2, "lookup-in-substs-fast must take 2 arguments. ", nil);
+  Obj *substs = args[0];
+  Obj *b = args[1];
+
+  if(substs->tag == 'K' && strcmp(substs->s, "fail")) {
+    return substs;
+  }
+  else if(substs->tag == 'E') {
+    if(b->tag == 'C') {
+      Obj *list = obj_new_cons(NULL, NULL);
+      shadow_stack_push(process, list);
+      Obj *prev = list;
+      int shadow_count = 0;
+      Obj *p = b;
+      while(p && p->car) {
+        Obj *args[2] = { substs, p->car };
+        prev->car = p_lookup_in_substs_fast(process, args, 2);
+        Obj *new = obj_new_cons(NULL, NULL);
+        shadow_stack_push(process, new);
+        shadow_count++;
+        prev->cdr = new;
+        prev = new;
+        p = p->cdr;
+      }
+      for(int i = 0; i < shadow_count; i++) {
+        shadow_stack_pop(process);
+      }
+      shadow_stack_pop(process); // list
+      return list;
+    }
+    else {
+      Obj *result = NULL;
+      shadow_stack_push(process, substs);
+      shadow_stack_push(process, b);      
+      Obj *lookup = env_lookup(process, substs, b);      
+      if(lookup) {
+        if(obj_eq(process, b, lookup)) {
+          result = lookup;
+        }
+        else {
+          if(lookup->tag == 'S') {
+            Obj *args[2] = { substs, lookup };
+            result = p_lookup_in_substs_fast(process, args, 2);
+          } else {
+            result = lookup;
+          }
+        }
+      } else {
+        result = b;
+      }
+      shadow_stack_pop(process);
+      shadow_stack_pop(process);
+      return result;
+    }
+  }
+  else {
+    set_error_return_nil("First arg to lookup-in-substs-fast must be a dictionary: ", substs);
+  }
+  assert(false);
+}
+

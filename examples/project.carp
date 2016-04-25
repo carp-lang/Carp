@@ -13,11 +13,44 @@
         (let [x (dd 100)
               a [(dd 1) (dd 2) (dd 3) (dd 4) (dd 5)]
               b [(dd 3) (dd (inc 5)) (dd (dec 5))]
-              c (map inc [x])]
-          (copy &[@&a @&b @&c @&a @&b @&c a b c])))
+              c (map inc [x])
+              d (map dec (map dec (map dec [x x x x x x x x x x x])))]
+          (copy &[@&a @&b @&c @&d @&a @&b @&c @&d a b c d])))
       (time (bake f)))))
 
-;;(test-faster-unification)
+(test-faster-unification)
+
+
+
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 6993ms.
+;; Unloading <dylib:0x7f8880c408a0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5979ms.
+;; Unloading <dylib:0x7f8883f79ad0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5642ms.
+;; Unloading <dylib:0x7f88833df480> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5419ms.
+;; Unloading <dylib:0x7f88881b2270> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5613ms.
+;; Unloading <dylib:0x7f885d8566f0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5441ms.
+;; Unloading <dylib:0x7f8862b48990> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5616ms.
+;; Unloading <dylib:0x7f886121a770> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5660ms.
+;; Unloading <dylib:0x7f886802a810> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5646ms.
+;; Unloading <dylib:0x7f886e4bd1f0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5484ms.
 
 
 

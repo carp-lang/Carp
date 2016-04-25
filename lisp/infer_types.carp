@@ -288,7 +288,7 @@
 
 
 
-(defn lookup (substs b)
+(defn lookup-OLD (substs b)
   (if (= :fail substs)
     :fail
     (if (list? b)
@@ -359,7 +359,7 @@
                        (println (str "Try extend " lhs " => " value))))
     (if (= :fail substs)
       :fail
-      (let [value-lookup (lookup substs value)]
+      (let [value-lookup (lookup-in-substs-fast substs value)]
         (if (typevar? lhs)
           (let [existing (get-maybe substs lhs)]
             (if (= nil existing)
@@ -399,7 +399,7 @@
                                   )))))))))
           ;; Not a typevar:
           (if (list? lhs)
-            (let [value-lookup (lookup substs value)]
+            (let [value-lookup (lookup-in-substs-fast substs value)]
               (if (list? value-lookup)
                 (do
                   ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))

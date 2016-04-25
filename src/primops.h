@@ -81,6 +81,7 @@ Obj *p_stop(Process *process, Obj** args, int arg_count);
 Obj *p_parallell(Process *process, Obj** args, int arg_count);
 Obj *p_bytecode(Process *process, Obj** args, int arg_count);
 Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count);
+Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count);
 
 Obj *register_ffi_internal(Process *process, char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

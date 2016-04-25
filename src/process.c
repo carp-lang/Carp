@@ -179,6 +179,7 @@ Process *process_new() {
   register_primop(process, "parallell", p_parallell);
   register_primop(process, "bytecode", p_bytecode);
   register_primop(process, "eval-bytecode", p_bytecode_eval);
+  register_primop(process, "lookup-in-substs-fast", p_lookup_in_substs_fast);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
