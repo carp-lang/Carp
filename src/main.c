@@ -22,14 +22,13 @@ void signal_handler(int sig) {
   case SIGSEGV:
     printf("SIGSEGV\n");
     printf("\e[0m");
-    //printf("Will try to resume...\n");
     longjmp(jumpbuffer, 0);
     break;
   case SIGTERM:
     printf("SIGTERM\n");
     break;
   default:
-    printf("Unhandled signal: %d\n", sig);
+    printf("Unhandled %d\n", sig);
   }
   exit(-1);
 }
