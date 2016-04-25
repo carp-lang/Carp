@@ -180,6 +180,7 @@ Process *process_new() {
   register_primop(process, "bytecode", p_bytecode);
   register_primop(process, "eval-bytecode", p_bytecode_eval);
   register_primop(process, "lookup-in-substs-fast", p_lookup_in_substs_fast);
+  register_primop(process, "replace-subst-from-right-fast", p_replace_subst_from_right_fast);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);

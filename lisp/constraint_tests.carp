@@ -1,17 +1,17 @@
 ;; CONSTRAINTS
 
-(defn test-replace-in-list ()
-  (assert-eq (replace-in-list '(10 20 30) 20 "hej") '(10 "hej" 30)))
+;; (defn test-replace-in-list ()
+;;   (assert-eq (replace-in-list '(10 20 30) 20 "hej") '(10 "hej" 30)))
 
-(test-replace-in-list)
+;; (test-replace-in-list)
 
-(defn test-replace-from-right ()
-  (do
-    (assert-eq (replace-subst-from-right {:a :b :c :d} :b :e) {:a :e :c :d})
-    (assert-eq (replace-subst-from-right {:a :b :c :b} :b :e) {:a :e :c :e})
-    (assert-eq (replace-subst-from-right {:a (list :b :b) :c :d} :b :f) {:a (list :f :f) :c :d})))
+;; (defn test-replace-from-right ()
+;;   (do
+;;     (assert-eq (replace-subst-from-right {:a :b :c :d} :b :e) {:a :e :c :d})
+;;     (assert-eq (replace-subst-from-right {:a :b :c :b} :b :e) {:a :e :c :e})
+;;     (assert-eq (replace-subst-from-right {:a (list :b :b) :c :d} :b :f) {:a (list :f :f) :c :d})))
 
-(test-replace-from-right)
+;; (test-replace-from-right)
 
 (defn test-constraint-solving-1 ()
   (let [;;_ (println "\n- Constraint solving 1 -")
@@ -110,10 +110,10 @@
                            "t3" :int})
       (assert-eq solution solution-backwards))))
 
-(defn test-subst-in-nested-list []
-  (assert-eq
-   {"a" '(:foo (:goo :int))}
-   (replace-subst-from-right {"a" '(:foo (:goo "b"))} "b" :int)))
+;; (defn test-subst-in-nested-list []
+;;   (assert-eq
+;;    {"a" '(:foo (:goo :int))}
+;;    (replace-subst-from-right {"a" '(:foo (:goo "b"))} "b" :int)))
 
 (defn test-constraint-solving-9 ()
   (let [;;_ (println "\n- Constraint solving 8 -")
@@ -169,6 +169,6 @@
 (test-constraint-solving-6)
 (test-constraint-solving-7)
 (test-constraint-solving-8)
-(test-subst-in-nested-list)
+;;(test-subst-in-nested-list)
 (test-constraint-solving-9)
 (test-constraint-solving-10)

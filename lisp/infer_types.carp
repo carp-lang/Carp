@@ -303,41 +303,41 @@
               val))) ; found the actual type
         ))))
 
-;; Replacement function for replacing "from the right" in an associative map
-;; Example usage:
-;; (replace-subst-from-right {:a :b, :c :d} :d :e)
-;; =>
-;; {:c :e, 
-;;  :a :b}
-(defn replace-in-list (l replace-this with-this)
-  (do
-    ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
-    (match l
-      () ()
-      (x ... xs) (if (= x replace-this)
-                   (cons with-this (replace-in-list xs replace-this with-this))
-                   (if (list? x)
-                     (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
-                     (cons x (replace-in-list xs replace-this with-this)))))))
+;; ;; Replacement function for replacing "from the right" in an associative map
+;; ;; Example usage:
+;; ;; (replace-subst-from-right {:a :b, :c :d} :d :e)
+;; ;; =>
+;; ;; {:c :e, 
+;; ;;  :a :b}
+;; (defn replace-in-list (l replace-this with-this)
+;;   (do
+;;     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
+;;     (match l
+;;       () ()
+;;       (x ... xs) (if (= x replace-this)
+;;                    (cons with-this (replace-in-list xs replace-this with-this))
+;;                    (if (list? x)
+;;                      (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
+;;                      (cons x (replace-in-list xs replace-this with-this)))))))
 
-(defn maybe-replace-binding (key value replace-this with-this)
-  (do
-    ;;(println (str "maybe-replace-binding   key: " key ", value: " value ", replace: " replace-this ", with: " with-this))
-    (if (list? value)
-      {:key key :value (replace-in-list value replace-this with-this)}
-      (if (= replace-this value)
-        {:key key :value with-this}
-        {:key key :value value}))))
+;; (defn maybe-replace-binding (key value replace-this with-this)
+;;   (do
+;;     ;;(println (str "maybe-replace-binding   key: " key ", value: " value ", replace: " replace-this ", with: " with-this))
+;;     (if (list? value)
+;;       {:key key :value (replace-in-list value replace-this with-this)}
+;;       (if (= replace-this value)
+;;         {:key key :value with-this}
+;;         {:key key :value value}))))
 
-(defn replace-subst-from-right (substs existing b)
-  (do
-    ;;(println (str "replace-substs-from-right " substs existing b))
-    (reduce (fn (new-substs pair) (assoc new-substs (:key pair) (:value pair)))
-            {}
-            (map2 (fn (k v)
-                    (maybe-replace-binding k v existing b))
-                  (keys substs)
-                  (values substs)))))
+;; (defn replace-subst-from-right (substs existing b)
+;;   (do
+;;     ;;(println (str "replace-substs-from-right " substs existing b))
+;;     (reduce (fn (new-substs pair) (assoc new-substs (:key pair) (:value pair)))
+;;             {}
+;;             (map2 (fn (k v)
+;;                     (maybe-replace-binding k v existing b))
+;;                   (keys substs)
+;;                   (values substs)))))
 
 (defn typevar? (x) (string? x))
 
@@ -365,7 +365,7 @@
             (if (= nil existing)
               (let [new-substs (assoc substs lhs value-lookup)
                     ;;_ (println (str "new-substs:\n" new-substs))
-                    substs-replaced-from-right (replace-subst-from-right new-substs lhs value-lookup)
+                    substs-replaced-from-right (replace-subst-from-right-fast new-substs lhs value-lookup)
                     ;;_ (println (str "substs-replaced-from-right:\n" substs-replaced-from-right))
                     ]
                 (do (when log-substs (println (str "No existing binding, set " lhs " to " value-lookup
@@ -384,7 +384,7 @@
                         substs))
                     (if (typevar? existing)
                       (do (when log-substs (println (str "The existing binding is a typevar, will replace " existing " with " value-lookup " from right")))
-                          (let [result (replace-subst-from-right substs existing value-lookup)]
+                          (let [result (replace-subst-from-right-fast substs existing value-lookup)]
                             (do ;;(println (str "result: " result))
                               result)))
                       (do (when log-substs (println "The existing binding is not a typevar"))

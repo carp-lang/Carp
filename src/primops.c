@@ -1801,3 +1801,51 @@ Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
   assert(false);
 }
 
+void replace_from_right_in_list(Process *process, Obj *list, Obj *existing, Obj *new_value) {
+  Obj *listp = list;
+  while(listp && listp->car) {
+    Obj *value = listp->car;
+
+    if(value->tag == 'C') {
+      replace_from_right_in_list(process, value, existing, new_value);
+    }
+    else if(obj_eq(process, value, existing)) {
+      listp->car = new_value;
+    }
+    else {
+      // do nothing
+    }
+    
+    listp = listp->cdr;
+  }
+}
+
+Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "replace-substs-from-right-fast must take 3 arguments. ", nil);
+  assert_or_set_error_return_nil(args[0]->tag == 'E', "First argument to lookup-in-substs-fast must be dictionary. ", args[0]);
+  
+  Obj *mut_substs = obj_copy(args[0]); // COPY!
+  Obj *existing = args[1];
+  Obj *new_value = args[2];  
+
+  Obj *bindings = mut_substs->bindings;
+  Obj *p = bindings;
+  while(p && p->car) {
+    Obj *pair = p->car;
+    Obj *value = pair->cdr;
+
+    if(value->tag == 'C') {
+      replace_from_right_in_list(process, value, existing, new_value);
+    }
+    else if(obj_eq(process, value, existing)) {
+      pair->cdr = new_value;
+    }
+    else {
+      // do nothing
+    }
+    
+    p = p->cdr;
+  }
+  
+  return mut_substs;
+}

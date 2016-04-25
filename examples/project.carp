@@ -18,7 +18,7 @@
           (copy &[@&a @&b @&c @&d @&a @&b @&c @&d a b c d])))
       (time (bake f)))))
 
-(test-faster-unification)
+;;(test-faster-unification)
 
 
 
@@ -51,6 +51,40 @@
 ;; Unloading <dylib:0x7f886e4bd1f0> for function f.
 ;; f : () -> Array Array int
 ;; Evaluating form (bake f) took 5484ms.
+
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 7030ms.
+;; Unloading <dylib:0x7fd708dca370> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5902ms.
+;; Unloading <dylib:0x7fd70df5ffb0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5640ms.
+;; Unloading <dylib:0x7fd70fb386b0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5630ms.
+;; Unloading <dylib:0x7fd6e4800000> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5219ms.
+;; Unloading <dylib:0x7fd6e8e4e930> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5575ms.
+;; Unloading <dylib:0x7fd6e7d0ec10> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5460ms.
+;; Unloading <dylib:0x7fd6ee35a140> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5142ms.
+;; Unloading <dylib:0x7fd6ef895520> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5131ms.
+;; Unloading <dylib:0x7fd6f5f253e0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5394ms.
+
+
+
+
 
 
 
