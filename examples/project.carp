@@ -20,6 +20,11 @@
 
 ;;(test-faster-unification)
 
+;;(sort-by < (list 4 3 5 1 7))
+
+;; (def nums (range 1 500))
+;; (def sorted (time (sort-by > nums)))
+;; (println (str sorted))
 
 
 ;; (defn own-1 (s)

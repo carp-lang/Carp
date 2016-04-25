@@ -183,6 +183,7 @@ Process *process_new() {
   register_primop(process, "replace-subst-from-right-fast", p_replace_subst_from_right_fast);
   register_primop(process, "types-exactly-eq?", p_types_exactly_eq);
   register_primop(process, "extend-substitutions-fast", p_extend_substitutions_fast);
+  register_primop(process, "sort-by-fast", p_sort_by);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);

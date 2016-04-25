@@ -2056,3 +2056,117 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
     return result;
   }
 }
+
+
+Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
+  Obj *left = obj_new_cons(NULL, NULL);
+  Obj *right = obj_new_cons(NULL, NULL);
+  Obj *left_prev = left;
+  Obj *right_prev = right;
+  Obj *sorted = NULL;
+
+  if(!xs->car) {
+    printf("nil\n");
+    return nil;
+  }
+  else if(xs->cdr == NULL) {
+    //printf("will print\n");
+    printf("single value: %s\n", obj_to_string(process, xs->car)->s);
+    //printf("did print\n");
+    return xs->car;
+  }
+
+  shadow_stack_push(process, left);
+  shadow_stack_push(process, right);
+  
+  Obj *mid = xs->car;
+  //printf("mid: %s\n", obj_to_string(process, xs->car)->s);
+  
+  Obj *p = xs->cdr;
+  while(p && p->car) {
+        
+    Obj *arg[2] = { p->car, mid };
+    apply(process, f, arg, 2);
+    Obj *result = stack_pop(process);
+    Obj *new = obj_new_cons(NULL, NULL);
+
+    printf("p->car: %s\n", obj_to_string(process, p->car)->s);
+
+    if(is_true(result)) {
+      left_prev->car = p->car;
+      left_prev->cdr = new;
+      left_prev = new;
+    } else {
+      right_prev->car = p->car;
+      right_prev->cdr = new;
+      right_prev = new;
+    }
+    
+    p = p->cdr;
+  }
+
+  shadow_stack_push(process, left);
+  shadow_stack_push(process, right);
+  
+  /* printf("left: %s\n", obj_to_string(process, left)->s); */
+  /* printf("right: %s\n", obj_to_string(process, right)->s); */
+
+  Obj *sorted_left = sort_internal(process, f, left);
+  Obj *sorted_right = sort_internal(process, f, right);
+
+  /* printf("sorted_left: %s\n", obj_to_string(process, sorted_left)->s); */
+  /* printf("sorted_right: %s\n", obj_to_string(process, sorted_right)->s); */
+
+  //printf("%c %c\n", sorted_left->tag, sorted_right->tag);
+
+  shadow_stack_push(process, sorted_left);
+  shadow_stack_push(process, sorted_right);
+
+  Obj *args[3] = { sorted_left, obj_new_cons(mid, nil), sorted_right };
+
+  assert_or_set_error_return_nil(sorted_left->tag == 'C', "sorted left is not list: ", sorted_left);
+  assert_or_set_error_return_nil(sorted_right->tag == 'C', "sorted right is not list: ", sorted_right);
+  
+  sorted = p_concat(process, args, 3);
+
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+                    
+  assert(sorted);
+  return sorted;
+}
+
+Obj *p_sort_by(Process *process, Obj** args, int arg_count) {
+  if(arg_count != 2) {
+    eval_error = obj_new_string("Wrong argument count to 'sort-by'.");
+    return nil;
+  }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'sort-by' requires arg 0 to be a function or lambda: \n", args[0]);
+  }
+  Obj *f = args[0];
+  Obj *xs = args[1];
+  Obj *result = sort_internal(process, f, xs);
+  return result;
+}
+
+
+
+      /* shadow_stack_push(process, list); */
+      
+      /* int shadow_count = 0; */
+      /* Obj *p = b; */
+      /* while(p && p->car) { */
+      /*   Obj *args[2] = { substs, p->car }; */
+      /*   prev->car = p_lookup_in_substs_fast(process, args, 2); */
+      /*   Obj *new = obj_new_cons(NULL, NULL); */
+      /*   shadow_stack_push(process, new); */
+      /*   shadow_count++; */
+      /*   prev->cdr = new; */
+      /*   prev = new; */
+      /*   p = p->cdr; */
+      /* } */
