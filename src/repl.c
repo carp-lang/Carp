@@ -52,6 +52,10 @@ int paren_balance(char *s) {
 
 void repl(Process *process) {
   while(1) {
+
+    /* int r = */ setjmp(jumpbuffer);
+    //printf("r = %d\n", r);
+    
     if(GC_COLLECT_BEFORE_REPL_INPUT) {
       if(LOG_GC_POINTS) {
 	printf("Running GC before taking REPL input:\n");

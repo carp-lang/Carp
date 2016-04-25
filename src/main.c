@@ -3,7 +3,46 @@
 #include "gc.h"
 #include "../shared/shared.h"
 
+void signal_handler(int sig) {
+  printf("\e[31m");
+  printf("Got signal: ");
+  switch(sig) {
+  case SIGABRT:
+    printf("SIGABRT\n");
+    break;
+  case SIGFPE:
+    printf("SIGFPE\n");
+    break;
+  case SIGILL:
+    printf("SIGILL\n");
+    break;
+  case SIGINT:
+    printf("SIGINT\n");
+    break;
+  case SIGSEGV:
+    printf("SIGSEGV\n");
+    printf("\e[0m");
+    //printf("Will try to resume...\n");
+    longjmp(jumpbuffer, 0);
+    break;
+  case SIGTERM:
+    printf("SIGTERM\n");
+    break;
+  default:
+    printf("Unhandled signal: %d\n", sig);
+  }
+  exit(-1);
+}
+
 int main(int argc, char **argv) {
+
+  signal(SIGABRT, signal_handler);
+  signal(SIGFPE, signal_handler);
+  signal(SIGILL, signal_handler);
+  signal(SIGSEGV, signal_handler);
+  signal(SIGTERM, signal_handler);
+  //signal(SIGINT, signal_handler);
+  
   /* printf("%ld %ld %ld \n", sizeof(float), sizeof(int), sizeof(void*)); */
   carp_platform_init();
   obj_total_max = 100000;

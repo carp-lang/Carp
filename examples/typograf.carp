@@ -95,7 +95,7 @@
     (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
 
 (defn update [x]
-  nil)
+  x)
 
 ;; (if (< gstate (+ 65 25))
 ;;     (reset! gstate (inc gstate))
