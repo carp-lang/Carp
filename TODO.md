@@ -21,6 +21,7 @@
 # Compiler Correctness
   - Variables named the same thing as a struct can override the dylib generated for the struct group.
   - Not allow putting refs into an array
+  - Delete content of global var when resetting from repl
   - Use 'generic-name' when concretesizing generic primops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
