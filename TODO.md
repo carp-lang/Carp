@@ -1,16 +1,11 @@
-
 # Compiler Big Features
   - Compile "and" & "or"
   - Lambdas / lambda lifting
   - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
-    
-## Tagged Unions
   - Compile match statements
   - Generic structs
-  - Option Type (Maybe in Haskell)
-  - Err Type (Either in Haskell)
-
+  
 # Compiler Small Features
   - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
@@ -34,6 +29,7 @@
   - Clean up the awful 'list-to-ast' function
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Write a unifier function in C instead
+
 
 
 # Dynamic Runtime Big Features
