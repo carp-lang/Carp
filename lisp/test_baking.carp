@@ -43,7 +43,7 @@
     ))
 
 ;; This does NOT work!
-(defn shadow (x)
+(defn shadow [x]
   (let [x (* x 3)]
     x))
 ;; (def shadowast (lambda-to-ast (code shadow)))
@@ -51,17 +51,6 @@
 ;; (def shadowasta (annotate-ast shadowast))
 
 
-
-(defn non-baked (x) (* x 10))
-(defn deps-1 () (non-baked 3))
-
-(def deps-1-ast (lambda-to-ast (code deps-1)))
-(def deps-1-deps (find-func-deps deps-1-ast true))
-(def deps-1-con (gencon deps-1-ast))
-(def deps-1-asta (annotate-ast deps-1-ast))
-
-
-;; Auto chain bake
 (deftest test-auto-chain-bake-1
   (do
     (defn f1 () 100)
@@ -81,8 +70,6 @@
     (bake f6)
     (assert-eq (f6) 101)))
 (test-auto-chain-bake-2)
-
-
 
 
 (deftest test-unloading-depending-functions
@@ -112,29 +99,26 @@
     (assert-eq 200 (f10))
     ))
 
-(test-unloading-depending-functions)
-
-
 
 ;; COMPILE TIME MACROS
-(defn macro-1 ()
-  (if-not true
-    10
-    20))
 
 (deftest test-macro-1
-  (do (bake macro-1)
+  (do (defn macro-1 ()
+        (if-not true
+          10
+          20))
+      (bake macro-1)
       (assert-eq (macro-1) 20)))
 
 
 ;; RESET
-(defn reset-1 ()
-  (let [x 0]
-    (do (reset! x 123)
-        x)))
 
 (deftest test-reset-1
-  (do (bake reset-1)
+  (do (defn reset-1 ()
+        (let [x 0]
+          (do (reset! x 123)
+              x)))
+      (bake reset-1)
       (assert-eq (reset-1) 123)))
 
 ;; (def reset-1-ast (lambda-to-ast (code reset-1)))
@@ -144,68 +128,52 @@
 
 
 ;; LET BINDINGS
-(defn recursive-let ()
-  (let [;; The other definition order should get caught by compiler, not clang:
-        y "whaaaaaaat"
-        x (string-append "hej" (ref (itos (strlen y))))
-        ]
-    x))
-
-(bake recursive-let)
-
+(deftest test-recursive-let
+  (do
+    (defn recursive-let ()
+      (let [;; The other definition order should get caught by compiler, not clang:
+            y "whaaaaaaat"
+            x (string-append "hej" (ref (itos (strlen y))))
+            ]
+        x))
+    (bake recursive-let)))
 
 
 ;; FUNCTION POINTERS
-
-(defn call-twice (f)
-  (do (strlen (ref (f))) (f)))
-
-(def twice-ast (lambda-to-ast (code call-twice)))
-(def twice-deps (find-func-deps twice-ast false))
-(def twice-con (gencon twice-ast))
-(def twice-asta (annotate-ast twice-ast))
-
-(defn call-me ()
-  (string-copy "CARP!"))
-
 (deftest test-call-twice
-  (do (bake call-twice)
+  (do (defn call-twice (f)
+        (do (strlen (ref (f))) (f)))
+      (defn call-me ()
+        (string-copy "CARP!"))
+      (bake call-twice)
       (bake call-me)
       (assert-eq "CARP!" (call-twice call-me))))
 
 
-
 ;; CHARS
-
 (defn gimme-char ()
   \e)
 
 
-
 ;; PIPE MACROS
-
-(defn baking-of-pipe-last-macro []
-  (->> [10 20 30]
-       (map inc)))
-
 (deftest test-baking-of-pipe-last-macro
-  (do (bake baking-of-pipe-last-macro)
+  (do (defn baking-of-pipe-last-macro []
+        (->> [10 20 30]
+             (map inc)))
+      (bake baking-of-pipe-last-macro)
       (assert-eq "[11 21 31]" (str (baking-of-pipe-last-macro)))))
 
 
-(defn baking-of-pipe-first-macro []
-  (-> 10
-      (- 2)
-      (* 2)))
-
 (deftest test-baking-of-pipe-first-macro
-  (do (bake baking-of-pipe-first-macro)
+  (do (defn baking-of-pipe-first-macro []
+        (-> 10
+            (- 2)
+            (* 2)))
+      (bake baking-of-pipe-first-macro)
       (assert-eq 16 (baking-of-pipe-first-macro))))
 
 
-
 ;; Global variables
-
 (deftest test-global-variables
   (do
     (defstruct Foo [foox :int])
@@ -241,32 +209,12 @@
         ))))
 
 
-;; setting global vars in main() for exe:s
-
-(def x 10)
-(def y [1 2 3])
-
-(defn f []
-  (do
-    (println* x)
-    (println* &y)))
-
-;; (bake-exe f)
-
-
-
 ;; Must use refs in while loops, this should not compile:
 (defn fool-while []
   (let [x @"yeah"]
     (while true
-      (reset! x (id x)))
-    ))
-
+      (reset! x (id x)))))
 ;;(assert-eq error-given-away (:error (catch-error (bake fool-while))))
-
-
-
-
 
 
 ;; Baking of groups
@@ -280,10 +228,9 @@
                            :name "g"
                            :sig '(:fn () :int)})
 
-(defn h [] (f))
-
 (deftest test-bake-group
   (do
+    (defn h [] (f)) ;; uses f in 'efgroup'
     (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
     (bake h)))
 
