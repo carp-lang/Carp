@@ -12,6 +12,7 @@
 (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
 (register glfw "glfwSetWindowShouldClose" '((:ref :GLFWwindow) :bool) :void)
 (register glfw "glfwGetTime" '() :double)
+(register glfw "glfwDestroyWindow" '((:ref :GLFWwindow)) :void)
 
 (def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
 (register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
