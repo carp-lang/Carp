@@ -1,0 +1,84 @@
+;; A dynamic font
+(import gl)
+
+(def gstate 65)
+
+(defn mid-x [] 256f)
+(defn mid-y [] 256f)
+
+(defn em [] 100f)
+(defn en [] 70f)
+
+(defn point-for-id [i]
+  (copy
+   (nth
+    (ref [(Vec2 (mid-x) (mid-y))
+          (Vec2 (mid-x) (- (mid-y) (em)))
+          (Vec2 (+ (mid-x) (em)) (- (mid-y) (en)))
+          (Vec2 (+ (mid-x) (em)) (mid-y))
+          (Vec2 (+ (mid-x) (em)) (+ (mid-y) (en)))
+          (Vec2 (mid-x) (+ (mid-y) (em)))
+          (Vec2 (- (mid-x) (em)) (+ (mid-y) (en)))
+          (Vec2 (- (mid-x) (em)) (mid-y))
+          (Vec2 (- (mid-x) (em)) (- (mid-y) (en)))])
+    @i)))
+
+;;      1 
+;;   /     \
+;;  8       2
+;;  |       |
+;;  7   0   3
+;;  |       |
+;;  6       4
+;;   \    /
+;;     5
+
+(defstruct TypografGlyph
+  [point-ids (:Array :int)])
+
+(defn int->glyph [x]
+  (let [glyphs [(TypografGlyph [8 1 2 3 7 6 5 4 3]) ;; a
+                (TypografGlyph [8 7 6 5 4 3 7])     ;; b
+                (TypografGlyph [1 8 7 6 5])         ;; c
+                (TypografGlyph [2 3 7 6 5 4 3])     ;; d
+                (TypografGlyph [7 3 2 1 8 6 5 4])   ;; e
+                (TypografGlyph [2 1 0 7 0 3 0 5])   ;; f
+                (TypografGlyph [2 1 8 7 6 5 4 3 0]) ;; g
+                (TypografGlyph [8 7 6 7 3 2 4])     ;; h
+                (TypografGlyph [])
+                ]
+        i (- x 65)]
+    (if (< i (count &glyphs))
+      (copy (nth &glyphs i))
+      (TypografGlyph []))))
+
+(defn draw-glyph [glyph]
+  (let [ids (get-point-ids glyph)
+        points (map-copy point-for-id ids)]
+    (draw-lines &points)))
+
+(defn draw [whatever]
+  (let [glyph (int->glyph gstate)]
+    (do
+      (glColor3f 0.3f 0.2f 0.2f)
+      (draw-line 0f 256f 512f 256f)
+      (glColor3f 1f 1f 1f)
+      (draw-glyph &glyph))))
+
+^ann glfw-key-callback-type
+(defn on-keys [window key scancode action mods]
+  (if (= key-esc key)
+    (glfwSetWindowShouldClose window true)
+    (reset! gstate key)))
+
+(defn setup []
+  (do
+    ;;(reset! gstate 65)
+    (glOrtho 0.0 512.0 512.0 0.0 1.0 -1.0) 0))
+
+(defn typograf []
+  (glfw-app "Typograf" setup id draw on-keys))
+
+;;(bake-exe typograf)
+;;(bake typograf)
+;;(typograf)

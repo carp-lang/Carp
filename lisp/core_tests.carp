@@ -1,4 +1,27 @@
 
+(defn test-pipe-first []
+  (assert-eq (list 7 8 9 10 11 12)
+             (-> 10
+                 (- 3)
+                 (range 13))))
+
+(defn test-pipe-last []
+  (assert-eq 20
+             (->> [3 4 5 6]
+                  (reduce (fn [a b] (+ a b)) 0)
+                  (- 38))))
+
+(defn test-sort []
+  (let [nums '(4 5 6 2 3 7 1)]
+    (do
+      (assert-eq '(1 2 3 4 5 6 7) (sort nums))
+      (assert-eq '(7 6 5 4 3 2 1) (sort-by > nums)))))
+
+(defn test-doubles []
+  (let [x 3.0d
+        y 5.0d]
+    (assert (< 14.0d (* x y) 16.0d))))
+
 (defn test-bind-to-function-in-let []
   (do (defn misbind []
         (let [(fn [] nil) 123]
@@ -118,10 +141,10 @@
       (do
         (assert-eq false (< x y))
         (assert-eq true (< y x))
-        (assert-approx-eq 5.5 (+ x y))
-        (assert-approx-eq 7.0 (* x y))
-        (assert-approx-eq 1.5 (- x y))
-        (assert-approx-eq 1.75 (/ x y))
+        (assert-approx-eq 5.5f (+ x y))
+        (assert-approx-eq 7.0f (* x y))
+        (assert-approx-eq 1.5f (- x y))
+        (assert-approx-eq 1.75f (/ x y))
         ))))
 
 (defn test-shadowing ()
@@ -400,6 +423,10 @@
     (test-match-array)
     (test-template)
     (test-bind-to-function-in-let)
+    (test-doubles)
+    (test-sort)
+    (test-pipe-first)
+    (test-pipe-last)
     ))
 
 (run-core-tests)

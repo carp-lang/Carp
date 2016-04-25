@@ -25,6 +25,7 @@
   (list 'do
         (list 'def name (list 'fn args body))
         (list 'meta-set! name :line (meta-get name :line))
+        (list 'meta-set! name :name (str name))
         (list 'meta-set! name :user-defined true)))
 
 (defn quasiquote-internal [form]  
@@ -62,12 +63,22 @@
 ;; (defmacro quasiquote (form)
 ;;   (list 'quote (map replace-dequotes form)))
 
+(defmacro assert (x)
+  (list 'assert-eq true x))
+
 (defn assert-approx-eq (target x)
   (do
-    (assert-eq true (< x (+ target 0.1)))
-    (assert-eq true (< (- target 0.1) x))))
+    (assert-eq true (< x (+ target 0.1f)))
+    (assert-eq true (< (- target 0.1f) x))))
 
 (defn id (x) x)
+
+^doc "Returns true if the key exists on the dictionary AND it is set to true."
+(defn key-is-true? [dict key]
+  (let [x (get-maybe dict key)]
+    (if (nil? x)
+      false
+      x)))
 
 (defn get-in (dict keys)
   (if (= () keys)
@@ -98,12 +109,6 @@
     (do 
       (dict-set-in! new keys val)
       new)))
-
-(defn join (separator xs)
-  (match (count xs)
-    0 ""
-    1 (str (first xs))
-    _ (str (first xs) separator (join separator (rest xs)))))
 
 (defn replicate (thing times)
   (if (< times 1)
@@ -140,6 +145,10 @@
 (defn inc (x) (+ x 1))
 (defn dec (x) (- x 1))
 
+(defn > [x y]
+  (not (= x y)
+       (< x y)))
+
 (defn contains? (items item)
   (match items
     () false
@@ -163,6 +172,7 @@
 
 (defn int? (x) (= :int (type x)))
 (defn float? (x) (= :float (type x)))
+(defn double? (x) (= :double (type x)))
 (defn string? (x) (= :string (type x)))
 (defn symbol? (x) (= :symbol (type x)))
 (defn keyword? (x) (= :keyword (type x)))
@@ -174,6 +184,7 @@
 (defn lambda? (x) (= :lambda (type x)))
 (defn foreign? (x) (= :foreign (type x)))
 (defn primop? (x) (= :primop (type x)))
+(defn ptr? [x] (= :ptr (type x)))
 
 (defn function? (x) (or (lambda? x)
                         (foreign? x)
@@ -246,6 +257,16 @@
                  (cons x (intersection xs ys))
                  (intersection xs ys))))
 
+(defn sort-by [f xs]
+  (match xs
+    () ()
+    (y ... ys) (concat (sort-by f (filter (fn [x] (f x y)) ys))
+                       (list y)
+                       (sort-by f (filter (fn [x] (not (f x y))) ys)))))
+
+(defn sort [xs]
+  (sort-by < xs))
+
 (defmacro for (b body)
   (match b
     (sym start limit) (list 'let [sym start]
@@ -259,6 +280,9 @@
   (for (i 0 (count xs))
     (f (nth xs i))))
 
+(defmacro str-ref (x)
+  (list 'ref (list 'str x)))
+
 (defn second [xs]
   (nth xs 1))
 
@@ -268,6 +292,47 @@
 (defn doc [x]
   (meta-get x :doc))
 
+(defn thread-first-internal [start-value forms]
+  (match forms
+    ()                    start-value
+    ((f ... args) ... xs) (concat (list f (thread-first-internal start-value xs)) args)
+    (x ... xs)            (list x (thread-first-internal start-value xs))))
+
+(defmacro -> [start-value ... forms]
+  (thread-first-internal start-value (reverse forms)))
+
+(defn thread-last-internal [start-value forms]
+  (match forms
+    ()                    start-value
+    ((f ... args) ... xs) (concat (list f) args (list (thread-last-internal start-value xs)))
+    (x ... xs)            (list x (thread-last-internal start-value xs))))
+
+(defmacro ->> [start-value ... forms]
+  (thread-last-internal start-value (reverse forms)))
+
+(defmacro if-let [binding a b]
+  (match binding
+    [var-name expr] (list 'let [var-name expr]
+                          (list 'if (list 'nil? var-name)
+                                b
+                                a))
+    x (error (str "Incorrect binding in if-let:" x))))
+
+(defmacro when-let [binding a]
+  (match binding
+    [var-name expr] (list 'let [var-name expr]
+                          (list 'if (list 'nil? var-name)
+                                nil
+                                a))
+    x (error (str "Incorrect binding in when-let:" x))))
+
+(defn cond-internal [forms]
+  (match forms
+    () (list 'error "No condition was true in 'cond' macro.")
+    (expr body ... xs) (list 'if expr body (cond-internal xs))))
+
+(defmacro cond [... forms]
+  (cond-internal forms))
 
 (defn template [text substitutions]
   (reduce (fn [t pair] (str-replace t (first pair) (str (second pair))))
@@ -302,3 +367,37 @@
 
 (defn import-internal [module-name]
   (load-lisp (str carp-dir "lisp/" module-name ".carp")))
+
+(def console-color-black 0)
+(def console-color-red 1)
+(def console-color-green 2)
+(def console-color-yellow 3)
+(def console-color-blue 4)
+(def console-color-magenta 5)
+(def console-color-cyan 6)
+(def console-color-white 7)
+
+(def pi 3.14159265)
+
+(defn println* [x]
+  (println (ref (str x))))
+
+(defmacro eb [form]
+  `(eval-bytecode (bytecode ~form)))
+
+(defn maximum [xs]
+  (match (count xs)
+    0 (error "Can't find maximum value in empy list")
+    1 (nth xs 0)
+    _ (reduce max (nth xs 0) xs)))
+
+(defn empty? [xs]
+  (= 0 (count xs)))
+
+(defn split-every-second [xs]
+  (match xs
+    () (list () ())
+    (_) (error "split-every-second needs an even number of arguments")
+    (a b ... misc) (let [inside (split-every-second misc)]
+                     (list (cons a (first inside))
+                         (cons b (second inside))))))

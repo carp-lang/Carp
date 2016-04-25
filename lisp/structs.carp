@@ -1,35 +1,77 @@
 
-(defn split-every-second [xs]
-  (match xs
-    () (list () ())
-    (_) (error "split-every-second needs an even number of arguments")
-    (a b ... misc) (let [inside (split-every-second misc)]
-                     (list (cons a (first inside))
-                         (cons b (second inside))))))
-
 (defmacro defstruct (struct-name struct-members)
   (let [names-and-types (split-every-second (array-to-list struct-members))]
     (list 'defstruct-internal (str struct-name)
           (cons 'array (map str (first names-and-types)))
-          (cons 'array (second names-and-types)))))
+          (cons 'array (map (fn [x] (list 'quote x)) (second names-and-types))))))
+
+(def log-redefining-struct false)
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
-    (when (def? (symbol struct-name)) (error (str "A struct named '" struct-name "' is already defined. Redefining structs is not implemented yet.")))
     (assert-eq (count member-names) (count member-types))
-    (build-constructor struct-name member-names member-types)
-    (eval (list 'def (symbol struct-name) {:struct true
-                                           :generic false
-                                           :name struct-name
-                                           :member-names member-names
-                                           :member-types member-types
-                                           :size (eval (list (symbol (str "size-" struct-name))))
-                                           :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
-                                                                member-names)
-                                           :member-count (count member-names)}))))
+    
+    (when (def? (symbol struct-name))
+      (when log-redefining-struct (println (str "Note: a struct named '" struct-name "' is already defined, overriding."))))
 
+    (let [dependers (graph/depending-groups struct-name)]
+      (do
+        ;;(println (str "defstruct! Dependers for '" struct-name "': " (map :name dependers)))
+        (graph/unload-group struct-name)
+        (map graph/unload-group (set (map :group dependers)))
+        ;;(println (str "graph nodes: " (keys graph)))
+        
+        (build-struct-group struct-name
+                            member-names
+                            member-types
+                            (calculate-dependency-level member-types)
+                            (map name (filter struct-type? (array-to-list member-types))))
+        
+        (eval (list 'def (symbol struct-name) {:struct true
+                                               :generic false
+                                               :name struct-name
+                                               :member-names member-names
+                                               :member-types (list 'quote member-types)
+                                               :size (eval (list (symbol (str "size-" struct-name))))
+                                               :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                                    member-names)
+                                               :member-count (count member-names)
+                                               }))
+        
+        ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
+        (map restore (set (map :group (sort-by compare-order dependers))))
 
-(defn build-constructor [struct-name member-names member-types]
+        (keyword struct-name)))))
+
+(defn restore [name]
+  (let [x (eval (symbol name))]
+    (cond
+      (foreign? x) (graph/re-lambda-fy name) ;; todo: bake again?
+      (and (dict? x) (key-is-true? x :struct)) (defstruct-internal
+                                                 name
+                                                 (:member-names x)
+                                                 (:member-types x))
+      _ (error (str "Can't restore '" name "'.")))))
+
+(defn struct-type? [t]
+  (if (list? t)
+    (any struct-type? t)
+    (let [x (symbol (name t))
+          lookup (if (def? x) (eval x) nil)]
+      (and (dict? lookup) (key-is-true? lookup :struct)))))
+
+(defn calculate-dependency-level [member-types]
+  (if (or (= [] member-types) (nil? member-types))
+    0
+    (+ 1 (maximum (map (fn [t]
+                         (if (list? t)
+                           (calculate-dependency-level t)
+                           (if (struct-type? t)
+                             (calculate-dependency-level (:member-types (eval (symbol (name t)))))
+                             -1)))
+                       member-types)))))
+
+(defn build-struct-group [struct-name member-names member-types dependency-level deps]
   (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
         member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
@@ -37,94 +79,79 @@
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword struct-name))
-        ;;_ (println (str constructor-signature))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
         type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
+        group-name "" ;; struct-name
         ]
     (do
-      (add-type! struct-name type-definition)
-      ;;(println (str "types:\n" types))
-      (save-function-prototypes)
-      (if (func-baked? constructor-name)
-        (do
-          ;;(println (str "Ignoring already baked constructor '" constructor-name "'"))
-          nil)
-        (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
-              proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
-              substs {"STRUCT-NAME" struct-name
-                      "CONSTRUCTOR-NAME" c-constructor-name
-                      "ARG_LIST" arg-list-c
-                      "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
-              c-program-string (template
-                                "
-  #include \"functions.h\"\n\nAPI STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
+      (graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
+      (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
+            proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
+            substs {"STRUCT-NAME" struct-name
+                    "CONSTRUCTOR-NAME" c-constructor-name
+                    "ARG_LIST" arg-list-c
+                    "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
+            c-program-string (template
+                              "API STRUCT-NAME *CONSTRUCTOR-NAME(ARG_LIST) {
   STRUCT-NAME *new_struct = malloc(sizeof(STRUCT-NAME));
   SETTERS
   return new_struct;
 }"
-                                substs)
-              deps '()
-              ]
-          (do
-            (def c c-program-string)
-            (save-and-compile constructor-name constructor-signature c-constructor-name c-file-name c-program-string proto deps false)
-            ;; Compile lenses:
-            (map2 (fn [mem-name mem-type] (generate-struct-lens struct-name mem-name mem-type))
-                  member-names
-                  member-types)
-            ;; Compile sizeof function
-            (let [size-signature (list :fn () :int)
-                  size-proto (str "int size_" struct-name "()")
-                  size-c (str size-proto " { return sizeof(" struct-name "); } ")]
-              (bake-struct-lens-function (new-builder) (str "size-" struct-name) size-signature size-proto size-c '()))
-            ))))))
+                              substs)
+            group (concat
+                   (list {:name constructor-name
+                          :proto proto
+                          :src c-program-string
+                          :sig constructor-signature}
+                         (let [size-signature (list :fn () :int)
+                               size-proto (str "int size_" struct-name "()")
+                               size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+                           (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
+                   (apply concat (map2 (fn [mem-name mem-type]
+                                         (lens-functions struct-name mem-name mem-type))
+                                       member-names
+                                       member-types)))]
+        (do
+          ;;(println (str "group: " group))
+          (compiler/bake-group struct-name group deps))))))
 
-(defn generate-struct-lens [struct-name member-name member-type]
+(defn lens-functions [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
-      (let [struct-type (keyword struct-name)
-            struct-t (type-build struct-type)
-            member-t (type-build member-type)
-            member-t-reffed (if (primitive-type? member-type)
-                              member-type
-                              (list :ref member-type))
-            c-member-name (c-ify-name member-name)]
-        (do
-          (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
-                getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
-                getter-c (str getter-proto "{ return x->" c-member-name "; }")]
-            (bake-struct-lens-function (new-builder) (str "get-" member-name) getter-signature getter-proto getter-c '()))
-          (let [setter-signature (list :fn (list struct-type member-type) struct-type)
-                setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
-                setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
-            (bake-struct-lens-function (new-builder) (str "set-" member-name) setter-signature setter-proto setter-c '()))
-          (let [updater-fn-type (list :fn (list member-type) member-type)
-                updater-fn-t (type-build updater-fn-type)
-                updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
-                updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
-                updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
-            (bake-struct-lens-function (new-builder) (str "update-" member-name) updater-signature updater-proto updater-c '()))
-          (let [offset-signature (list :fn () :int)
-                offset-proto (str "int offset_" (c-ify-name member-name) "()")
-                offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
-            (bake-struct-lens-function (new-builder) (str "offset-" member-name) offset-signature offset-proto offset-c '()))))))
+    (let [struct-type (keyword struct-name)
+          struct-t (type-build struct-type)
+          member-t (type-build member-type)
+          member-t-reffed (if (primitive-type? member-type)
+                            member-type
+                            (list :ref member-type))
+          c-member-name (c-ify-name member-name)]
+      (list
+       (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
+             getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
+             getter-c (str getter-proto "{ return x->" c-member-name "; }")]
+         (lens-function (str "get-" member-name) getter-proto getter-c getter-signature))
+       (let [setter-signature (list :fn (list struct-type member-type) struct-type)
+             setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
+             setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
+         (lens-function (str "set-" member-name) setter-proto setter-c setter-signature))
+       (let [updater-fn-type (list :fn (list member-type) member-type)
+             updater-fn-t (type-build updater-fn-type)
+             updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
+             updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
+             updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
+         (lens-function (str "update-" member-name) updater-proto updater-c updater-signature))
+       (let [offset-signature (list :fn () :int)
+             offset-proto (str "int offset_" (c-ify-name member-name) "()")
+             offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
+         (lens-function (str "offset-" member-name) offset-proto offset-c offset-signature))))))
 
-(defn bake-struct-lens-function [builder func-name func-signature proto c deps]
-  (let [c-func-name (c-ify-name func-name)
-        c-file-name (str out-dir c-func-name ".c")]
-    (do
-      (when (func-baked? func-name)
-        (do
-          (println (str "WARNING! Overriding lens function: " func-name))
-          (unload-if-necessary func-name)))
-      ;;(println (str "Baking struct lens: " func-name " / " c-func-name " with signature " func-signature))
-      (let [c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" c)]
-        (do
-          (def c c-program-string)
-          (save-and-compile func-name
-                            func-signature
-                            c-func-name
-                            c-file-name
-                            c-program-string
-                            (str proto ";")
-                            deps
-                            false))))))
+(defn lens-function [func-name proto src func-signature]
+  (do
+    (when (graph/node-exists? func-name)
+      (do
+        (println (str "WARNING! Overriding lens function: " func-name))
+        ;;(graph/unload func-name)
+        ))
+    {:name func-name
+     :proto (str proto ";")
+     :src src
+     :sig func-signature}))

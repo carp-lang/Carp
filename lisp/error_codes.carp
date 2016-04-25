@@ -2,4 +2,5 @@
 (def error-given-away 1)
 (def error-test-failed 2)
 (def error-binding-to-non-symbol 3)
-
+(def error-failed-typechecking 4)
+(def error-return-ref 5)

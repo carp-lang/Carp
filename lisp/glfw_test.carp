@@ -9,9 +9,9 @@
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
               (do
-                (glClearColor 0.6 0.85f 0.85f 1.0f)
+                (glClearColor 0.6f 0.85f 0.85f 1.0f)
                 (glClear carp-gl-color-buffer-bit)
-                (glColor3f 1.0 0.9f 0.2f)
+                (glColor3f 1.0f 0.9f 0.2f)
                 (draw-rect -0.5f -0.5f 1.0f 1.0f)              
                 (glfwSwapBuffers window)
                 (glfwPollEvents)))
@@ -27,5 +27,5 @@
 ;;(bake* gl-demo '(draw-rect))
 ;;(bake-gl-exe)
 
-(bake-exe gl-demo)
+(bake gl-demo)
 

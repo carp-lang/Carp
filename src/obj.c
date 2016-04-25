@@ -41,6 +41,12 @@ Obj *obj_new_float(float x) {
   return o;
 }
 
+Obj *obj_new_double(double x) {
+  Obj *o = obj_new('W');
+  o->f64 = x;
+  return o;
+}
+
 Obj *obj_new_string(char *s) {
   Obj *o = obj_new('S');
   o->s = strdup(s);
@@ -82,7 +88,7 @@ Obj *obj_new_keyword(char *s) {
 
 Obj *obj_new_primop(Primop p) {
   Obj *o = obj_new('P');
-  o->primop = p;
+  o->primop = (struct Obj *(*)(struct Process *, struct Obj **, int)) p;
   return o;
 }
 
@@ -94,6 +100,12 @@ Obj *obj_new_dylib(void *dylib) {
 
 Obj *obj_new_ptr(void *ptr) {
   Obj *o = obj_new('Q');
+  o->void_ptr = ptr;
+  return o;
+}
+
+Obj *obj_new_ptr_to_global(void *ptr) {
+  Obj *o = obj_new('R');
   o->void_ptr = ptr;
   return o;
 }
@@ -130,7 +142,7 @@ Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code) {
 
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code) {
   assert(params);
-  assert(params->tag == 'C');
+  assert(params->tag == 'C' || params->tag == 'A');
   assert(body);
   assert(env);
   assert(env->tag == 'E');
@@ -150,9 +162,9 @@ Obj *obj_new_environment(Obj *parent) {
   return o;
 }
 
-Obj *obj_new_char(char b) {
-  Obj *o = obj_new('B');
-  o->b = b;
+Obj *obj_new_char(char character) {
+  Obj *o = obj_new('T');
+  o->character = character;
   return o;
 }
 
@@ -160,6 +172,19 @@ Obj *obj_new_array(int count) {
   Obj *o = obj_new('A');
   o->array = calloc(sizeof(Obj*), count);
   o->count = count;
+  return o;
+}
+
+Obj *obj_new_bool(bool b) {
+  Obj *o = obj_new('B');
+  o->boolean = b;
+  return o;
+}
+
+Obj *obj_new_bytecode(char *bytecode) {
+  Obj *o = obj_new('X');
+  o->bytecode = bytecode;
+  o->bytecode_literals = obj_new_array(0);
   return o;
 }
 
@@ -206,6 +231,9 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'V') {
     return obj_new_float(o->f32);
   }
+  else if(o->tag == 'W') {
+    return obj_new_float(o->f64);
+  }
   else if(o->tag == 'S') {
     return obj_new_string(strdup(o->s));
   }
@@ -216,7 +244,7 @@ Obj *obj_copy(Obj *o) {
     return obj_new_keyword(strdup(o->s));
   }
   else if(o->tag == 'P') {
-    return obj_new_primop(o->primop);
+    return obj_new_primop((Primop)o->primop);
   }
   else if(o->tag == 'D') {
     return obj_new_dylib(o->dylib);
@@ -230,8 +258,16 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'M') {
     return o;
   }
+  else if(o->tag == 'T') {
+    return obj_new_char(o->character);
+  }
   else if(o->tag == 'B') {
-    return obj_new_char(o->b);
+    return obj_new_bool(o->boolean);
+  }
+  else if(o->tag == 'X') {
+    Obj *copy = obj_new_bytecode(strdup(o->bytecode));
+    copy->bytecode_literals = obj_copy(o->bytecode_literals);
+    return copy;
   }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
@@ -254,134 +290,9 @@ Obj *obj_list_internal(Obj *objs[]) {
   return list;
 }
 
-bool obj_eq(Obj *a, Obj *b) {
-  //printf("Comparing %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-
-  if(a == b) {
-    return true;
-  }
-  else if(a == NULL || b == NULL) {
-    return false;
-  }
-  else if(a->tag != b->tag) {
-    return false;
-  }
-  else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
-    return (strcmp(a->s, b->s) == 0);
-  }
-  else if(a->tag == 'Q') {
-    return a->void_ptr == b->void_ptr;
-  }
-  else if(a->tag == 'I') {
-    return a->i == b->i;
-  }
-  else if(a->tag == 'V') {
-    return a->f32 == b->f32;
-  }
-  else if(a->tag == 'C') {
-    Obj *pa = a;
-    Obj *pb = b;
-    while(1) {
-      if(obj_eq(pa->car, pb->car)) {
-	if(!pa->cdr && !pb->cdr) {
-	  return true;
-	}
-	else if(pa->cdr && !pb->cdr) {
-	  return false;
-	}
-	else if(!pa->cdr && pb->cdr) {
-	  return false;
-	}
-	else {
-	  pa = pa->cdr;
-	  pb = pb->cdr;
-	}
-      }
-      else {
-	return false;
-      }
-    }
-  }
-  else if(a->tag == 'A') {
-    if(a->count != b->count) {
-      return false;
-    }
-    else {
-      for(int i = 0; i < a->count; i++) {
-	if(!obj_eq(a->array[i], b->array[i])) {
-	  return false;
-	}
-      }
-      return true;
-    }
-  }
-  else if(a->tag == 'E') {
-    if(!obj_eq(a->parent, b->parent)) { return false; }
-    //printf("WARNING! Can't reliably compare dicts.\n");
-
-    {
-      Obj *pa = a->bindings;    
-      while(pa && pa->cdr) {
-	Obj *pair = pa->car;
-	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
-	Obj *binding = env_lookup_binding(b, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
-	  bool eq = obj_eq(pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pa = pa->cdr;
-      }
-    }
-
-    {
-      Obj *pb = b->bindings;    
-      while(pb && pb->cdr) {
-	Obj *pair = pb->car;
-	//printf("Will lookup %s\n", obj_to_string(pair->car)->s);
-	Obj *binding = env_lookup_binding(a, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(binding)->s);
-	  bool eq = obj_eq(pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(pair->cdr)->s, obj_to_string(binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pb = pb->cdr;
-      }
-    }
-    
-    return true;
-  }
-  else {
-    char buffer[512];
-    snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(a)->s, obj_to_string(b)->s);
-    eval_error = obj_new_string(strdup(buffer));
-    return false;
-  }
-}
-
 bool is_true(Obj *o) {
   //printf("is_true? %s\n", obj_to_string(o)->s);
-  if(o == lisp_false || (o->tag == 'Y' && strcmp(o->s, "false") == 0)) {
+  if(o->tag == 'B' && !o->boolean) {
     return false;
   }
   else {
@@ -413,7 +324,13 @@ void obj_print_cout(Obj *o) {
         printf(" ");
       }
     }
-    printf("[");
+    printf("]");
+  }
+  else if(o->tag == 'B') {
+    printf("%s", o->boolean ? "true" : "false");
+  }
+  else if(o->tag == 'X') {
+    printf("(Bytecode %s)", o->bytecode);
   }
   else if(o->tag == 'E') {
     printf("{ ... }");
@@ -426,6 +343,9 @@ void obj_print_cout(Obj *o) {
   }
   else if(o->tag == 'V') {
     printf("%f", o->f32);
+  }
+  else if(o->tag == 'W') {
+    printf("%f", o->f64);
   }
   else if(o->tag == 'S') {
     printf("\"%s\"", o->s);
@@ -461,17 +381,151 @@ void obj_print_cout(Obj *o) {
   }
 }
 
-void obj_set_line_info(Obj *o, int line, int pos, Obj *filename) {
+void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filename) {
   if(!o->meta) {
     o->meta = obj_new_environment(NULL);
   }
-  env_assoc(o->meta, obj_new_keyword("line"), obj_new_int(line));
-  env_assoc(o->meta, obj_new_keyword("pos"), obj_new_int(pos));
-  env_assoc(o->meta, obj_new_keyword("file"), filename);
+  env_assoc(process, o->meta, obj_new_keyword("line"), obj_new_int(line));
+  env_assoc(process, o->meta, obj_new_keyword("pos"), obj_new_int(pos));
+  env_assoc(process, o->meta, obj_new_keyword("file"), filename);
 }
 
 void obj_copy_meta(Obj *to, Obj *from) {
   if(from->meta) {
     to->meta = obj_copy(from->meta);
+  }
+}
+
+bool obj_eq(Process *process, Obj *a, Obj *b) {
+  //printf("Comparing %s with %s.\n", obj_to_string(process, a)->s, obj_to_string(process, b)->s);
+
+  if(a == b) {
+    return true;
+  }
+  else if(a == NULL || b == NULL) {
+    return false;
+  }
+  else if(a->tag != b->tag) {
+    return false;
+  }
+  else if(a->tag == 'B') {
+    return a->boolean == b->boolean;
+  }
+  else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
+    return (strcmp(a->s, b->s) == 0);
+  }
+  else if(a->tag == 'Q') {
+    return a->void_ptr == b->void_ptr;
+  }
+  else if(a->tag == 'I') {
+    return a->i == b->i;
+  }
+  else if(a->tag == 'V') {
+    return a->f32 == b->f32;
+  }
+  else if(a->tag == 'X') {
+    return a == b;
+  }
+  else if(a->tag == 'D') {
+    return a->dylib == b->dylib;
+  }
+  else if(a->tag == 'C') {
+    Obj *pa = a;
+    Obj *pb = b;
+    while(1) {
+      if(obj_eq(process, pa->car, pb->car)) {
+	if(!pa->cdr && !pb->cdr) {
+	  return true;
+	}
+	else if(pa->cdr && !pb->cdr) {
+	  return false;
+	}
+	else if(!pa->cdr && pb->cdr) {
+	  return false;
+	}
+	else {
+	  pa = pa->cdr;
+	  pb = pb->cdr;
+	}
+      }
+      else {
+	return false;
+      }
+    }
+  }
+  else if(a->tag == 'A') {
+    if(a->count != b->count) {
+      return false;
+    }
+    else {
+      for(int i = 0; i < a->count; i++) {
+	if(!obj_eq(process, a->array[i], b->array[i])) {
+	  return false;
+	}
+      }
+      return true;
+    }
+  }
+  else if(a->tag == 'E') {
+    if(!obj_eq(process, a->parent, b->parent)) { return false; }
+    //printf("WARNING! Can't reliably compare dicts.\n");
+
+    {
+      Obj *pa = a->bindings;    
+      while(pa && pa->cdr) {
+	Obj *pair = pa->car;
+	//printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
+	Obj *binding = env_lookup_binding(process, b, pair->car);
+	if(binding) {
+	  //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
+	  bool eq = obj_eq(process, pair->cdr, binding->cdr);
+	  if(!binding->car) {
+	    //printf("binding->car was NULL\n");
+	    return false;
+	  }
+	  else if(!eq) {
+	    //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
+	    return false;
+	  }
+	}
+	else {
+	  return false;
+	}
+	pa = pa->cdr;
+      }
+    }
+
+    {
+      Obj *pb = b->bindings;    
+      while(pb && pb->cdr) {
+	Obj *pair = pb->car;
+	//printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
+	Obj *binding = env_lookup_binding(process, a, pair->car);
+	if(binding) {
+	  //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
+	  bool eq = obj_eq(process, pair->cdr, binding->cdr);
+	  if(!binding->car) {
+	    //printf("binding->car was NULL\n");
+	    return false;
+	  }
+	  else if(!eq) {
+	    //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
+	    return false;
+	  }
+	}
+	else {
+	  return false;
+	}
+	pb = pb->cdr;
+      }
+    }
+    
+    return true;
+  }
+  else {
+    char buffer[512];
+    snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(process, a)->s, obj_to_string(process, b)->s);
+    eval_error = obj_new_string(strdup(buffer));
+    return false;
   }
 }

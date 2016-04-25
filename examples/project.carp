@@ -1,5 +1,161 @@
 (reset! echo-signature-after-bake true)
 (reset! log-unloading-of-dylibs true)
+;;(reset! profile-infer-time true)
+;;(reset! profile-external-compiler-time true)
+;;(reset! log-deps-when-baking-ast true)
+
+(defn dd [x] (inc x))
+
+(defn test-faster-unification []
+  (for (i 0 10)
+    (do
+      (defn f []
+        (let [x (dd 100)
+              a [(dd 1) (dd 2) (dd 3) (dd 4) (dd 5)]
+              b [(dd 3) (dd (inc 5)) (dd (dec 5))]
+              c (map inc [x])
+              d (map dec (map dec (map dec [x x x x x x x x x x x])))]
+          (copy &[@&a @&b @&c @&d @&a @&b @&c @&d a b c d])))
+      (time (bake f)))))
+
+;;(test-faster-unification)
+
+
+
+;; (defn own-1 (s)
+;;   (eat-string s))
+
+;; (def s1 '({:a (:fn ("a") "b"), 
+;;            :b (:fn (:string) :void)}
+;;           {:a "a", 
+;;            :b "c"}))
+
+;; (solve-constraints s1)
+
+
+
+;;(solve-constraints (con own-1))
+
+
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 6993ms.
+;; Unloading <dylib:0x7f8880c408a0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5979ms.
+;; Unloading <dylib:0x7f8883f79ad0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5642ms.
+;; Unloading <dylib:0x7f88833df480> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5419ms.
+;; Unloading <dylib:0x7f88881b2270> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5613ms.
+;; Unloading <dylib:0x7f885d8566f0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5441ms.
+;; Unloading <dylib:0x7f8862b48990> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5616ms.
+;; Unloading <dylib:0x7f886121a770> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5660ms.
+;; Unloading <dylib:0x7f886802a810> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5646ms.
+;; Unloading <dylib:0x7f886e4bd1f0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5484ms.
+
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 7030ms.
+;; Unloading <dylib:0x7fd708dca370> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5902ms.
+;; Unloading <dylib:0x7fd70df5ffb0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5640ms.
+;; Unloading <dylib:0x7fd70fb386b0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5630ms.
+;; Unloading <dylib:0x7fd6e4800000> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5219ms.
+;; Unloading <dylib:0x7fd6e8e4e930> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5575ms.
+;; Unloading <dylib:0x7fd6e7d0ec10> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5460ms.
+;; Unloading <dylib:0x7fd6ee35a140> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5142ms.
+;; Unloading <dylib:0x7fd6ef895520> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5131ms.
+;; Unloading <dylib:0x7fd6f5f253e0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 5394ms.
+
+
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1834ms.
+;; Unloading <dylib:0x7fc60be79600> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1058ms.
+;; Unloading <dylib:0x7fc60eb1d290> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1107ms.
+;; Unloading <dylib:0x7fc611ccdba0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1144ms.
+;; Unloading <dylib:0x7fc60da5f3c0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1094ms.
+;; Unloading <dylib:0x7fc6119e2bc0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1046ms.
+;; Unloading <dylib:0x7fc612f92a70> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1061ms.
+;; Unloading <dylib:0x7fc6127b3990> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1000ms.
+;; Unloading <dylib:0x7fc613b491a0> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1032ms.
+;; Unloading <dylib:0x7fc614c37a40> for function f.
+;; f : () -> Array Array int
+;; Evaluating form (bake f) took 1022ms.
+
+
+
+
+
+
+;;(def fast (lambda-to-ast (code f)))
+;;(def cs (gencon fast))
+;;(time (annotate-ast (assoc fast :name "f")))
+
+
+
+
+;; (defn ownership-of-things-inside-array-1 []
+;;   (let [x @"hej"
+;;         arr [1 2 3]]
+;;     (println (ref (str (ref [x (str 10) (str &arr)]))))))
+
+;; (println (str (ownership-analyze ownership-of-things-inside-array-1)))
+;; (bake ownership-of-things-inside-array-1)
+
+
+
+;; (defstruct AAA [])
+
+;; (defn f []
+;;   (while true (println* (ref [(AAA) (AAA)]))))
+
+;; (bake-exe f)
 
 
 
@@ -8,18 +164,143 @@
 
 
 
+;; (defstruct A [a-member :int])
+;; (defstruct B [b-member :A])
+;; (defstruct C [c-member :B])
+;;(graph/unload-group "A")
+
+;; (defn f [] (B (A 10)))
+;; (bake f)
+
+;;(defstruct A [])
+
+;; (defstruct Prime [prime-x :int])
+;; (defn f [p]
+;;   (get-prime-x p))
+;; (bake f)
+;; (assert-eq "10" (str (f (Prime 10))))
+
+;; (defstruct Prime [prime-x :int prime-y :int])
+;; (assert-eq "20" (str (f (Prime 20 30))))
+;; (bake f)
+;; (assert-eq "40" (str (f (Prime 40 50))))
+
+
+
+;;(graph/unload-group A)
+
+;;(defstruct C [c-member-1 :A c-member-2 :B])
+
+
+
+;; (defn fa [] 10)
+;; (defn fb [] (fa))
+;; (defn fc [] (fa))
+;; (defn fd [] (+ (fb) (fc)))
+
+
+;;(defstruct Gris [gris-x :int gris-name :string])
 
 
 
 
 
 
+;; (bake fd)
+
+;;(defstruct X [xxa :int xxb :string])
+
+
+
+;;(def x [[10 20] [30 40]])
+
+;; (defn grow []
+;;   (do
+;;     (reset! x [[1 2 3]])
+;;     (println (ref (str &x)))))
+;; (bake grow)
+;; (grow)
 
 
 
 
+;; (reset! x [1 2 3 4 5])
 
 
+
+
+;; (defn p []
+;;   (println (ref (str (ref 2.3f)))))
+
+;;(bake f)
+
+
+;; (defn arr-1 [x]
+;;   [x 5])
+
+;; (defn arr-2 [x]
+;;   [x x])
+
+;; (defn arr-3 [x]
+;;   [(copy x) (copy x) (copy x)])
+
+;; (defn arr-4 [x]
+;;   [x x x x])
+
+;; (defn arr-5 [x]
+;;   [x x x x x])
+
+;; (defn arr-6 [x]
+;;   [x x x x x x])
+
+;; (defn arr-10 [x]
+;;   [x x x x x
+;;    x x x x 5])
+
+;; 8 + n * 6
+
+
+
+
+;;(defn mk-arr-2 [] [[1] [2]])
+;;(bake mk-arr-2)
+;;(count (mk-arr-2))
+
+
+;;(defstruct Foo [x :int])
+
+
+;; (defn fold [f x xs]
+;;   (do (for (i 0 (count xs))
+;;         (reset! x (f &x (nth xs i))))
+;;       x))
+
+;; (defn add [x y]
+;;   (+ (copy x) (copy y)))
+
+
+
+;; (defn f [] (fold add 0 &[1 2 3]))
+
+;; (defn f [i]
+;;   (println (ref (str (copy i)))))
+
+;; (defn f [i]
+;;   (println (ref (itos (copy i)))))
+
+;; ^ann '(:fn ((:ref :int)) :void)
+;; (defn f [x]
+;;   (println (str-ref (copy x))))
+
+;; (defn draws [state]
+;;   (domap f state))
+
+;; (defn run-app [draw-fn]
+;;   (let [state [10 20 30]]
+;;     (draw-fn &state)))
+
+;; (defn app []
+;;   (run-app draws))
 
 
 
@@ -77,3 +358,108 @@
 
 ;;(when (not carp-dev) (load-lisp (str carp-dir "lisp/examples.carp")))
 ;;(defn tricky-let [] ((id id) 2))
+
+
+
+;; (def CON {:a "t3", 
+;;           :b :int, 
+;;           :prio 20, 
+;;           :location {:a {:line 11, 
+;;                          :node :lookup, 
+;;                          :original-form "strlen"}, 
+;;                      :b {:line 11, 
+;;                          :node :literal, 
+;;                          :original-form "10"}}, 
+;;           :constraint-kind :app-arg, 
+;;           :arg-index 0, 
+;;           :head-name "strlen", 
+;;           :doc "app-arg t3 vs :int"})
+
+;; (def CON2 {:a "t3"
+;;            :b :BLORF
+;;            :constraint-kind :whatevs})
+
+;; (def CONS (list CON2 CON))
+
+;; (defn test-CON []
+;;   (solve-constraints CONS))
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; Creating structs with nested arr-2ay members, from the repl
+
+;; (defstruct A [a :int])
+;; (defstruct B [as (:Array :A)])
+;; (println (str (B [(A 2) (A 3) (A 4)])))
+
+;; (defstruct C [ass (:Array (:Array :A))])
+;; ;;(println (ref (str (ref (C [[(A 2) (A 3) (A 4)] [(A 3) (A 4) (A 5)]])))))
+
+;; (defstruct Blaj [blajArr (:Array :int)])
+;; (defn f [] (str &(Blaj [1 2 3])))
+
+
+;; (defstruct Blaj2 [blajArr2 (:Array (:Array :int))])
+;; (defn g [] (str &(Blaj2 [[10 20 30] [40 50 60 70] [80 90]])))
+
+
+;; (defstruct Blaj3 [blajArr3 (:Array (:Array (:Array :int)))])
+;; (defn h [] (str &(Blaj3 [[[10 20 30] [40 50 60 70] [80 90]]
+;;                          [[100 200 300] [400 500 600 700] [800 900]]])))
+
+
+
+
+
+
+
+
+
+
+
+;; TRICKY SITUATION, DONT FREE ARRAY (FIXED)
+;; ^ann '(:fn ((:ref :string)) :string)
+;; (defn vv [s]
+;;   @s)
+
+;; (defn blerf [x]
+;;   (do
+;;     (map-copy vv x)
+;;     10))
+
+;; ;;(bake blerf)
+
+;; (defn fool []
+;;   (let [m [@"erik" @"hej"]]
+;;     (do
+;;       (blerf &m)
+;;       (println (ref (str &m))))))
+
+;; (bake fool)
+
+
+
+
+
+(defn problem []
+  (let [s [1 2 3]
+        x 0]
+    (do
+      (while (< x 10)
+        (do
+          (reset! s (copy &s))
+          (reset! x (inc x))))
+      (println* &s))))
+
+
+

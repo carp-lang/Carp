@@ -25,10 +25,6 @@
   (while true
     (println "eternal")))
 
-(defn nullf ()
-  (let [x (fake)]
-    (null? x)))
-
 (defn slimmer (x s)
   (+ x (* (strlen s) (- x 1))))
 

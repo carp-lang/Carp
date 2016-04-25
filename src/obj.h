@@ -11,12 +11,13 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include "constants.h"
 
 typedef void (*VoidFn)(void);
 
 /* Type tags
    A = Array
-   B = Char
+   B = Bool
    C = Cons cell
    D = Dylib
    E = Environment
@@ -32,16 +33,18 @@ typedef void (*VoidFn)(void);
    O
    P = Primop / raw C function pointer
    Q = Void pointer
-   R 
+   R = Global variable
    S = String
-   T
+   T = Char
    U
    V = Float
    W = Double (not implemented yet)
-   X
+   X = Bytecode
    Y = Symbol
    Z
 */
+
+struct Process;
 
 typedef struct Obj {
   union {
@@ -69,8 +72,8 @@ typedef struct Obj {
       struct Obj *parent;
       struct Obj *bindings;
     };
-    // Primitive C function pointer f(arglist, argcount)
-    struct Obj* (*primop)(struct Obj**, int);
+    // Primitive C function pointer f(process, arglist, argcount)
+    struct Obj* (*primop)(struct Process*, struct Obj**, int);
     // Libffi function
     struct {
       ffi_cif *cif;
@@ -79,18 +82,28 @@ typedef struct Obj {
       struct Obj *arg_types;
       struct Obj *return_type;
     };
+    // Array
     struct {
       struct Obj **array;
       int count;
     };
+    // Bytecode
+    struct {
+      char *bytecode;
+      struct Obj *bytecode_literals;
+    };
     // Dylib
     void *dylib;
-    // Void pointer
+    // Void pointer / global variable
     void *void_ptr;
     // Float
     float f32;
+    // Double
+    double f64;
     // Char
-    char b;
+    char character;
+    // Bool
+    bool boolean;
   };
   struct Obj *meta;
   // GC
@@ -101,32 +114,67 @@ typedef struct Obj {
   char tag;
 } Obj;
 
-typedef Obj* (*Primop)(Obj**, int);
+typedef struct {
+  Obj *caller;
+  Obj *callee;
+} StackTraceCallSite;
+
+typedef struct {
+  int p;
+  Obj *bytecodeObj;
+  Obj *env;
+} BytecodeFrame;
+
+typedef struct {
+  struct Obj *stack[STACK_SIZE];
+  int stack_pos;
+
+  Obj *shadow_stack[SHADOW_STACK_SIZE];
+  int shadow_stack_pos;
+
+  StackTraceCallSite function_trace[STACK_SIZE];
+  int function_trace_pos;
+
+  Obj *final_result;
+  
+  bool dead;
+  struct Obj *global_env;
+
+  Obj *bytecodeObj;
+  BytecodeFrame frames[256];
+  int frame;
+} Process;
+
+typedef Obj* (*Primop)(Process*, Obj**, int);
 
 Obj *obj_new_cons(Obj *car, Obj *cdr);
 Obj *obj_new_int(int i);
 Obj *obj_new_float(float x);
+Obj *obj_new_double(double x);
 Obj *obj_new_string(char *s);
 Obj *obj_new_symbol(char *s);
 Obj *obj_new_keyword(char *s);
 Obj *obj_new_primop(Primop p);
 Obj *obj_new_dylib(void *dylib);
 Obj *obj_new_ptr(void *ptr);
+Obj *obj_new_ptr_to_global(void *ptr);
 Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
-Obj *obj_new_char(char b);
+Obj *obj_new_char(char character);
 Obj *obj_new_array(int count);
+Obj *obj_new_bool(bool b);
+Obj *obj_new_bytecode(char *bytecode);
 
 Obj *obj_copy(Obj *o);
+bool obj_eq(Process *process, Obj *a, Obj *b);
 
 Obj *obj_list_internal(Obj *objs[]);
 #define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});
 
-void obj_set_line_info(Obj *o, int line, int pos, Obj *filename);
+void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filename);
 
-bool obj_eq(Obj *a, Obj *b);
 bool is_true(Obj *o);
 
 void obj_print_cout(Obj *o);
@@ -136,7 +184,6 @@ Obj *obj_latest;
 int obj_total;
 int obj_total_max;
 
-Obj *global_env;
 Obj *eval_error;
 
 Obj *nil;
@@ -162,10 +209,12 @@ Obj *type_symbol;
 Obj *type_macro;
 Obj *type_void;
 Obj *type_float;
+Obj *type_double;
 Obj *type_ptr;
 Obj *type_ref;
 Obj *type_char;
 Obj *type_array;
+Obj *type_ptr_to_global;
 
 Obj *prompt;
 Obj *prompt_unfinished_form;

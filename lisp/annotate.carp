@@ -1,0 +1,52 @@
+;; Annotating is the process of taking a very simple AST and adding more information to it.
+
+(defn func-to-annotated-ast (func-name func-code func-signature-if-generic func-type-annotation)
+  (let [ast (lambda-to-ast func-code)
+        ;;_ (println (str "ast: " ast))
+        ast-named (assoc ast :name func-name)
+        ;;_ (println (str "ast-named: " ast-named))
+        ast-with-type-annotation (assoc ast-named :annotation func-type-annotation)
+        ast-fully-annotated (annotate-ast-internal ast-with-type-annotation true func-signature-if-generic)
+        _ (check-for-ref-return ast-fully-annotated)]
+    ast-fully-annotated))
+
+(defn check-for-ref-return (ast)
+  (let [t (:type ast)]
+    (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))
+
+(defn annotate-ast (ast)
+  (annotate-ast-internal ast false nil))
+
+(def profile-infer-time false)
+(def total-infer-time 0.0f)
+
+(defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
+  (let [ast-func-deps (find-func-deps ast bake-deps)
+        ;;_ (println (str "ast-func-deps: " ast-func-deps))
+        start-time (now)
+        ast-typed (infer-types ast-func-deps func-signature-if-generic)
+        _ (when profile-infer-time (print-infer-time start-time (get-maybe ast :name)))
+        ast-named (generate-names (copy {}) ast-typed)
+        ast-lifetimes (calculate-lifetimes ast-named)
+        ast-generics (visit-generic-funcs ast-lifetimes)
+        ;;_ (println (str "ast:\n" ast-generics))
+        ]
+    ast-generics))
+
+(defn print-infer-time [start-time func-name]
+  (let [t (/ (itof (- (now) start-time)) 1000f)]
+    (do
+      (println (str (get-console-color console-color-yellow)
+                    "infer-types for " func-name " took "
+                    t " seconds"
+                    (get-normal-console-color)))
+      (reset! total-infer-time (+ total-infer-time t)))))
+
+;; WARNING: These helper functions don't know the name of the functions
+;; so they will mess upp self-recursive functions since they will think that
+;; they are refering to other functions and bake those:
+
+(defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
+(defn sign (lambda) (:type (ann lambda)))
+(defn con (lambda) (generate-constraints (lambda-to-ast (code lambda))))
+

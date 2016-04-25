@@ -1,0 +1,45 @@
+
+;; Examples of type checking failures, to demo the error reporting in various cases.
+
+
+;; Sending an in int to a string-ref argument
+(defn fail-1 []
+  (strlen 10))
+
+;; Return value doesn't match argument type
+(defn fail-2 []
+  (sinf (strlen "hej")))
+
+;; Two type errors in the same function
+(defn fail-3 [x]
+  (string-append "hej" (strlen 3)))
+
+;; Calling function with too many args
+(defn fail-4 []
+  (inc 1 2 3))
+
+;; Calling function with too few args
+(defn fail-5 []
+  (println))
+
+;; Using non-bool in if statement
+(defn fail-6 []
+  (if "yeah" 10 20))
+
+;; Mismatched types of true/false branch in if
+(defn fail-7 []
+  (if true 300 4.523))
+
+;; Wrong type of let statement
+(defn fail-8 []
+  (strlen (let [x 10]
+            x)))
+
+;; Wrong type of while expression
+(defn fail-9 []
+  (while 1 (println "CARP")))
+
+;; Wrong type in reset!
+(defn fail-10 []
+  (let [x 3.2]
+    (reset! x 100)))

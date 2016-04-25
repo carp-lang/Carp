@@ -36,8 +36,6 @@
     ;;(println (str "Will find generic name for " base-name " with signature " signature))
     (str base-name "--" (generic-suffix signature))))
 
-
-
 ;; Used for let polymorphism to make the generic type of a function unique (i.e. change all the "T":s to a fresh typevar)
 ;; (:fn ("T" "S") "T") becomes (:f ("t319" "t302") "t319)
 (defn uniquify-typevars [t]
@@ -58,7 +56,16 @@
         (map (fn [x] (uniquify-typevars-internal x substs)) t)
         (error (str "Can't handle t " t " of type " (type t)))))))
 
-
+(defn mark-lambda-as-generic [func-name annotated-ast]
+  (let [func-def (eval (symbol func-name))]
+    (do
+      (meta-set! func-def :generic true)
+      (meta-set! func-def :signature (:type annotated-ast))
+      (def ast annotated-ast)
+      (def s (pretty-signature (:type annotated-ast)))
+      (if echo-signature-after-bake
+        (println (str func-name " : " s))
+        nil))))
 
 (defn visit-generic-funcs [ast]
   (let [deps (copy (:func-deps ast))
@@ -77,18 +84,14 @@
                                    ]
                                (if (and (lambda? global-lookup) is-generic)
                                  (if (generic-type? t)
-                                   (do ;;(println (str "Lambda with missing type information, can't compile concrete version: " t))
+                                   (do
+                                     ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
                                      ast)
                                    (let [n (generic-name lookup-sym t)]
                                      (do
                                        ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                       (bake-generic-func-internal (new-builder)
-                                                                   n
-                                                                   (code global-lookup)
-                                                                   '()
-                                                                   false
-                                                                   t)
-                                       (reset! deps (cons (symbol n) deps))
+                                       (compiler/concretize (str lookup-sym) n (code global-lookup) t)
+                                       (reset! deps (cons n deps))
                                        (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
                                          ast0))))
                                  (if (and (primop? global-lookup) is-generic)
@@ -99,11 +102,10 @@
                                        (do
                                          ;;(println (str "Found a generic primop to bake: " lookup-sym))
                                          ;; (println (str "Final name will be " n))
-                                         (bake-generic-primop (new-builder)
-                                                              n
+                                         (bake-generic-primop n
                                                               (str lookup-sym)
                                                               t)
-                                         (reset! deps (cons (symbol n) deps))
+                                         (reset! deps (cons n deps))
                                          (assoc-in ast '(:value) (symbol n)))))
                                    ast)))
                              ast))))
@@ -144,6 +146,8 @@
 
                                          :null ast
 
+                                         :array (update-in ast '(:values) (fn [vals] (map visit-generic-funcs-internal vals)))
+
                                          :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
                                          
                                          x (error (str "visit-generic can't handle node type " x))))]
@@ -155,31 +159,30 @@
 ;;  (bake-generic-primop-auto "nth" '(:fn ((:ref (:Array :float)) :int) :float))
 ;; This will generate the function nth--RefTo-ArrayOf-float-int-float of type (&Array float, int) -> float
 (defn bake-generic-primop-auto [primop-name signature]
-  (let [builder (new-builder)
-        func-name (generic-name (symbol primop-name) signature)]
-    (bake-generic-primop builder func-name primop-name signature)))
+  (let [func-name (generic-name (symbol primop-name) signature)]
+    (bake-generic-primop func-name primop-name signature)))
 
 
 ;; Used by the visit-generic-func algorithm to generate and register baked version of generic primops
-(defn bake-generic-primop [builder func-name primop-name signature]
+(defn bake-generic-primop [func-name primop-name signature]
   (let [c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")]
-    (if (func-baked? func-name)
+    (if (graph/node-exists? func-name)
       (do
         ;;(println (str "Ignoring already baked generic primop: " func-name))
         nil)
       (let [result (build-generic-primop c-func-name primop-name signature)
-            c-program-string (str "#include <shared.h>\n#include \"functions.h\"\n" (:c result))
+            c-program-string (:c result)
             proto (str (:proto result) ";")
             deps (:deps result)
             ]
         (do
           (def c c-program-string)
-          ;; (println (str "Baking generic primop " func-name))
+          ;;(println (str "Baking generic primop " func-name))
           ;; (println (str "Prototype for " func-name ":\n" proto))
           ;; (println (str "C-code for " func-name ":\n" c-program-string))
-          (save-and-compile func-name signature c-func-name c-file-name c-program-string proto deps false))))))
-
+          (compiler/bake-src func-name proto c-program-string signature deps)
+          )))))
 
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
@@ -208,32 +211,37 @@
 
     ;; TODO: can this be a normal function now?
     "map-copy" (match signature
-                 (:fn ((:fn (a) b) (:Array a)) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
+                 (:fn ((:fn (a) b) (:ref (:Array a))) (:Array b)) (let [proto (str "API " (type-build (list :Array b)) " " c-func-name "(" (type-build (list :fn (list a) b)) " f, Array *array)")
                                                                  array-of-size-sig (list :fn (list :int) (list :Array b))
                                                                  _ (bake-generic-primop-auto "array-of-size" array-of-size-sig)
-                                                                 array_of_size_call (generic-name "array-of-size" array-of-size-sig)
-                                                                 _ (println array_of_size_call)
+                                                                 array-of-size-call (generic-name "array-of-size" array-of-size-sig)
+                                                                 ;;_ (println array-of-size-call)
                                                                  c (str proto
                                                                         "{ \n"
                                                                         "  int count = array->count;\n"
                                                                         "  " (type-build a) "* casted = array->data;\n"
-                                                                        "  Array* new_array = " (c-ify-name array_of_size_call) "(count);\n"
+                                                                        "  Array* new_array = " (c-ify-name array-of-size-call) "(count);\n"
                                                                         "  " (type-build b) "* new_casted = new_array->data;\n"
                                                                         "  for(int i = 0; i < count; i++) {\n"
                                                                         "    new_casted[i] = f(casted[i]);\n"
                                                                         "  }\n"
-                                                                        "  free(array);\n"
+                                                                        ;;"  free(array);\n"
                                                                         "  return new_array;\n"
                                                                         "}")]
-                                                             {:proto proto :c c :deps (list array_of_size_call)})
+                                                             {:proto proto :c c :deps (list array-of-size-call)})
                  x (error (str "Invalid type for call to 'map-copy': " x)))
     
     "str" (do
             ;;(println (str "Calling str for signature: " signature))
             (match signature
 
+              (:fn ((:ref :Array)) :string) (error "Can't instantiate 'str' for :Array with no type variable.")
+
               (:fn ((:ref (:Array t))) :string) (instantiate-str-for-array c-func-name t)
-              
+
+              (:fn ((:ref :int)) :string) (let [proto (str "API string " c-func-name "(int x)")
+                                                c (str proto " { return itos(x); }")]
+                                            {:proto proto :c c :deps ()})
               (:fn (:int) :string) (let [proto (str "API string " c-func-name "(int x)")
                                          c (str proto " { return itos(x); }")]
                                      {:proto proto :c c :deps ()})
@@ -242,7 +250,19 @@
                                           c (str proto " { string s = malloc(3); s[0] = '\\\\'; s[1] = x; return s; }")]
                                       {:proto proto :c c :deps ()})
 
+              (:fn (:bool) :string) (let [proto (str "API string " c-func-name "(bool b)")
+                                          c (str proto " { if(b) { return strdup(\"true\"); } else { return strdup(\"false\"); } }")]
+                                      {:proto proto :c c :deps ()})
+
               (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
+                                           c (str proto " { "
+                                                  " char output[50];"
+                                                  " snprintf(output, 50, \"%f\", x);"
+                                                  " return strdup(output);"
+                                                  "}")]
+                                       {:proto proto :c c :deps ()})
+
+              (:fn (:double) :string) (let [proto (str "API string " c-func-name "(double x)")
                                            c (str proto " { "
                                                   " char output[50];"
                                                   " snprintf(output, 50, \"%f\", x);"
@@ -299,6 +319,16 @@
                         {:proto proto :c c :deps ()})
                       x (error (str "Invalid type for call to 'array-of-size': " x)))
 
+    ;; "reduce" (match signature
+    ;;            (:fn ((:fn ("a" "b") "a") "a" (:Array "b")) "a")
+    ;;            (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(f, a, bs)")
+    ;;                  c (str proto
+    ;;                         "{\n"
+    ;;                         "  return a;\n"
+    ;;                         "}\n")]
+    ;;              {:proto proto :c c :deps ()})
+    ;;            x (error (str "Invalid type for call to 'reduce': " x)))
+
     
     "array-set" (match signature
                   (:fn ((:Array t) :int t) (:Array t))
@@ -344,8 +374,7 @@
               member-types (array-to-list (:member-types lookup))
               reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
               ;;_ (println (str "reffed-member-types: " reffed-member-types))
-              ;;_ (build-constructor t-name member-names member-types) ;; build the constructor type to make it accessible to this function
-              deps (map (fn [t] (c-ify-name (generic-name "str" (list :fn (list t) :string)))) reffed-member-types)
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "str" (list :fn (list t) :string)))) reffed-member-types))
               ;;_ (println (str "deps: " deps))
               c (str proto " {\n"
                      "  char buffer[1024];\n"
@@ -360,7 +389,7 @@
                                          ;;(println (str "t: " t))
                                          (bake-generic-primop-auto "str" (list :fn (list t) :string))
                                          (str "
-  s = " (c-ify-name (generic-name "str" (list :fn (list t) :string))) "(x->" n "); 
+  s = " (c-ify-name (generic-name "str" (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
   snprintf(buffer + pos, 1000, \"%s\", s);
   pos += strlen(s);
   buffer[pos++] = ' ';")))
@@ -388,7 +417,7 @@
         _ (bake-generic-primop-auto "str" inner-signature)
         ;;_ (println (str "inner-str-call: " inner-str-call))
         c (str proto
-               "{"
+               "{\n"
                " char buffer[1024];\n"
                " int pos = 0;\n"
                " int count = a->count;\n"
@@ -399,11 +428,12 @@
                "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
                "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
                "   pos += strlen(inner_str);\n"
-               "   if(i < count - 1) {"
+               "   if(i < count - 1) {\n"
                "     buffer[pos++] = ',';\n"
                "     buffer[pos++] = ' ';\n"
-               "   }"
-               " }"
+               "   }\n"
+               "   free(inner_str);\n"
+               " }\n"
                " buffer[pos++] = ']';\n"
                " buffer[pos++] = '\\0';\n"
                " return strdup(buffer);\n"
@@ -439,19 +469,21 @@
                      "  " (type-build maybe-struct-type) " x_copy = calloc(1, sizeof(" t-name "));\n"
                      (join " " (map2 (fn [t n]
                                        (if (primitive-type? t)
-                                         (str "  x_copy->" n " = x->" n ";\n")
+                                         (str "  x_copy->" (c-ify-name n) " = x->" (c-ify-name n) ";\n")
                                          (let [inner-copy-sig (list :fn (list (list :ref t)) t)
-                                               copy-function-c-name (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))]
+                                               copy-function-c-name (c-ify-name (generic-name "copy" inner-copy-sig))]
                                            (do
                                              (bake-generic-primop-auto "copy" inner-copy-sig)
-                                             (str "x_copy->" n " = " copy-function-c-name "(x->" n ");\n")))))                                           
+                                             (str "x_copy->" (c-ify-name n) " = " copy-function-c-name "(x->" (c-ify-name n) ");\n")))))                                           
                                      member-types
                                      member-names))
                      "  return x_copy;\n"
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "copy__" (c-ify-name (generic-safe-name (list :ref t))) "_" (type-build t))) (remove primitive-type? member-types))})
+           :deps (cons t-name
+                       (map (fn [t] (c-ify-name (generic-name "copy" (list :fn (list (list :ref t)) t))))
+                            (remove primitive-type? member-types)))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
@@ -513,21 +545,21 @@
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
               c (str proto " {\n"
-                     (join " " (map2 (fn [t n]
-                                       (if (primitive-type? t)
-                                         (str "  /* no need to delete the member '" n "' */\n")
-                                         (let [inner-delete-sig (list :fn (list t) :void)
-                                               delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
-                                           (do
-                                             (bake-generic-primop-auto "delete" inner-delete-sig)
-                                             (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))))
-                                     member-types
-                                     member-names))
+                     (join "" (map2 (fn [t n]
+                                      (if (managed-type? t)
+                                        (let [inner-delete-sig (list :fn (list t) :void)
+                                              delete-function-c-name (str "delete__" (c-ify-name (generic-safe-name t)) "_void")]
+                                          (do
+                                            (bake-generic-primop-auto "delete" inner-delete-sig)
+                                            (str "  " delete-function-c-name "(x->" (c-ify-name n) ");\n")))
+                                        (str "  /* no need to delete " t " member '" n "' */\n")))
+                                    member-types
+                                    member-names))
                      "  free(x);\n"
                      "}\n")]
           {:proto proto
            :c c
-           :deps (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (remove primitive-type? member-types))})
+           :deps (cons t-name (map (fn [t] (str "delete__" (c-ify-name (generic-safe-name t)) "_void")) (filter managed-type? member-types)))})
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 

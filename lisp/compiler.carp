@@ -1,16 +1,3 @@
-;; Gotchas
-;; * Unloading of function/dylib doesn't work after another function has linked to it during its compilation.
-;; * Variable shadowing doesn't work properly when referencing itself
-
-;; How to add forms
-;; 1. Make the ast generator generate a new kind of AST :node for the form (see above)
-;; 2. The AST node should generate new type vars for all places where the type is unknown
-;; 3. Make the constraint generator generate type constraints for the node
-;; 4. Extend the function (assign-types) that substitute type variables for concrete types in the AST
-;; 5. TODO: Make the borrow checker know about the node, if needed
-;; 6. Make the C generator spit out beautiful C for the AST node
-;; 7. Profit!
-
 (load-lisp (str carp-dir "lisp/error_codes.carp"))
 (load-lisp (str carp-dir "lisp/compiler_helpers.carp"))
 (load-lisp (str carp-dir "lisp/ast.carp"))
@@ -21,335 +8,176 @@
 (load-lisp (str carp-dir "lisp/func_deps.carp"))
 (load-lisp (str carp-dir "lisp/generics.carp"))
 (load-lisp (str carp-dir "lisp/structs.carp"))
+(load-lisp (str carp-dir "lisp/globals.carp"))
+(load-lisp (str carp-dir "lisp/cc.carp"))
+(load-lisp (str carp-dir "lisp/annotate.carp"))
+(load-lisp (str carp-dir "lisp/graph.carp"))
 
-(def platform-specifics
-  (if (windows?)
-    {:dylib-extension ".dll"
-     :link-extension ".lib"
-     :include-flag "/I"
-     :linkdir-flag "/link /NOLOGO /LIBPATH:"}
-    {:dylib-extension ".so"
-     :link-extension ".so"
-     :include-flag "-I"
-     :linkdir-flag "-L"}))
-
-(defn annotate-ast (ast)
-  (annotate-ast-internal ast false nil))
-
-(defn annotate-ast-internal (ast bake-deps func-signature-if-generic)
-  (let [ast-func-deps (find-func-deps ast bake-deps)
-        ast-typed (infer-types ast-func-deps func-signature-if-generic)
-        ast-named (generate-names (copy {}) ast-typed)
-        ast-lifetimes (calculate-lifetimes ast-named)
-        ast-generics (visit-generic-funcs ast-lifetimes)
-        ;;_ (println (str "ast:\n" ast-generics))
-        ]
-    ast-generics))
-
-;; WARNING: These two helper functions don't know the name of the functions
-;; so they will mess upp self-recursive functions since they will think that
-;; they are refering to other functions and bake those:
-(defn ann (lambda) (annotate-ast (lambda-to-ast (code lambda))))
-(defn sign (lambda) (:type (ann lambda)))
-
-(defn check-for-ref-return (ast)
-  (let [t (:type ast)]
-    (when (ref? (nth t 2)) (error (str "Return type of function '" (:name ast) "' is a reference: " (pretty-signature t))))))
-
-(def header-files (list "\"functions.h\"" "\"shared.h\""))
-(def extra-header-deps ())
-
-(def baked-funcs {})
-(def baked-primops ())
-
-(defn add-func! (func-name func-proto func-dylib)
-  (swap! baked-funcs (fn (fs) (assoc fs func-name {:func-name func-name
-                                                   :func-proto func-proto
-                                                   :func-dylib func-dylib}))))
-
-(defn func-baked? [func-name]
-  (not (nil? (get-maybe baked-funcs func-name))))
-
-(def log-unloading-of-dylibs false)
-
-;; Takes the name of a function and unloads it if it is in the list of baked functions
-(defn unload-if-necessary (func-name)
-  (let [baked-func (get-maybe baked-funcs func-name)]
-    (when (not (nil? baked-func))
-      (let [dylib (get baked-func :func-dylib)]
-        (do (when log-unloading-of-dylibs
-              (println (str "Unloading " dylib " for function " func-name ".")))
-            (unload-dylib dylib)
-            (dict-remove! baked-funcs func-name)
-            )))))
-
-(defn re-lambda-fy [func-name]
-  (let [function-symbol (symbol func-name)
-        func (eval function-symbol)]
-    (if (foreign? func)
-      (let [func-code (meta-get func :code)]
-        (do
-          ;;(println (str "re-lambda-fy:ing baked function '" func-name "' using original code: " func-code))
-          (eval (list 'def (symbol func-name) func-code))
-          ))
-      (do
-        ;;(println (str "re-lambda-fy will ignore non-baked function: " func-name))
-        :ignore))))
-
-(defn re-compile [func-name]
-  (let [function-symbol (symbol func-name)
-        func (eval function-symbol)]
-      (if (lambda? func)
-        (let [func-code (code (eval (symbol func-name)))]
-          (do
-            ;;(println (str "Compiling dynamic (lambda) function '" func-name "' using its code: " func-code))
-            (bake-internal (new-builder) func-name func-code (meta-get func :ann) '() false)))
-        (do
-          ;;(println (str "re-compile will ignore non-lambda: " func))
-          :ignore))))
-
-(defn unload-all-baked ()
-  (join "\n" (map (fn (x) (str (unload-dylib (:func-dylib x)))) (values baked-funcs))))
-
-(def types {})
-
-(defn add-type! [type-name type-definition]
-  (swap! types (fn (ts) (assoc ts type-name {:type-name type-name
-                                             :type-definition type-definition}))))
-
-(def globals {})
-
-(defn add-global! [global-name global-definition]
-  (swap! globals (fn (gs) (assoc gs global-name {:global-name global-name
-                                                 :global-definition global-definition}))))
-
-;; Saves the signatures of all the baked functions to a header file so that they can include each other
-(defn save-function-prototypes ()
-  (save (str out-dir "functions.h")
-        (str
-         "#include <shared.h>\n"
-         (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
-         "\n//Types:\n"
-         (join "\n" (map :type-definition (reverse (values types))))
-         "\n//Globals:\n"
-         (join "\n" (map :global-definition (values globals)))
-         "\n\n//Functions:\n"
-         (join "\n" (map :func-proto (values baked-funcs))))))
-
-;; Keys:   Names of functions (strings)
-;; Values: A list of all the functions that depend on this particular function
-(def function-dependency-graph {})
-
-;; Print a nice version of the function dependency graph
-(defn graph []
-  (println (str "- FUNCTION DEPENDENCY GRAPH-\n\n"
-                (join "\n"
-                      (map2 (fn [k v] (str k " <~ " (join ", " v)))
-                            (keys function-dependency-graph)
-                            (values function-dependency-graph)))
-                "\n")))
-
-(defn add-function-dependency! [target-function name-of-depending-function]
-  (let [current-list (get-maybe function-dependency-graph target-function)]
-    (reset! function-dependency-graph (assoc function-dependency-graph target-function (cons name-of-depending-function current-list)))))
-
-(defn link-libs (dependencies)
-  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) (:link-extension platform-specifics))) dependencies)))
-
-(defn include-paths ()
-  (str (:include-flag platform-specifics) "/usr/local/include " (:include-flag platform-specifics) carp-dir "/shared"))
-
-(defn lib-paths ()
-  (if (windows?)
-    ""
-    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")))
-
-(defn framework-paths ()
-  (if (windows?)
-    ""
-    "-framework OpenGL -framework Cocoa -framework IOKit"))
-
-(def out-dir (str carp-dir "out/"))
+(def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def echo-signature-after-bake false)
 
-(defn remove-non-user-defined-deps (func-deps)
-  (let [func-names (keys baked-funcs)]
-    (filter (fn (dep) (contains? func-names (str dep))) func-deps)))
-;; (filter (fn [dep] (meta-get (eval dep) :user-defined)) func-deps)
+(defmacro bake (func-symbol)
+  (list 'compiler/bake-function-and-its-dependers (str func-symbol)))
 
-(defn func-to-annotated-ast (func-name func-code func-signature-if-generic func-type-annotation)
-  (let [ast (lambda-to-ast func-code)
-        ast-named (assoc ast :name func-name)
-        ast-with-type-annotation (assoc ast-named :annotation func-type-annotation)
-        ast-fully-annotated (annotate-ast-internal ast-with-type-annotation true func-signature-if-generic)
-        _ (check-for-ref-return ast-fully-annotated)]
-    ast-fully-annotated))
-
-(defn generic-type? [t]
-  (match (type t)
-    :string true
-    :keyword false
-    :list (any true? (map generic-type? t))
-    x (error (str "Invalid type in 'generic-type?': " (prn x)))))
-
-(defn generic-function? [ast]
-  (match (:type ast)
-    (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
-    x (error (str "Can't match " x " in generic-function?"))))
-
-;; Takes a function name and the list representation of the lambda
-(defn bake-internal [builder func-name func-code func-annotation external-deps exe]
-  (let [annotated-ast (func-to-annotated-ast func-name func-code func-annotation nil)]
-    (if (generic-function? annotated-ast)
-      (do
-        ;;(println (str "bake found generic function: " func-name))
-        (let [func-def (eval (symbol func-name))]
-          (do
-            (meta-set! func-def :generic true)
-            (meta-set! func-def :signature (:type annotated-ast))
-            (def ast annotated-ast)
-            (def s (pretty-signature (:type annotated-ast)))
-            (if echo-signature-after-bake
-              (println (str func-name " : " s))
-              nil))))
-      (bake-internal-common annotated-ast builder func-name func-code external-deps exe))))
-
-(defn bake-generic-func-internal [builder func-name func-code external-deps exe func-signature]
-  (let [ast-annotated (func-to-annotated-ast func-name func-code nil func-signature)]
-    (if (generic-function? ast-annotated)
-      (error (str "Failed to concretize generic function " func-name ":\n" ast-annotated))
-      (bake-internal-common ast-annotated builder func-name func-code external-deps exe))))
-
-(defn run-compiler [c-func-name c-file-name total-dependencies exe]
-  (if (windows?)
-    (run-cl c-func-name c-file-name total-dependencies exe)
-    (run-clang c-func-name c-file-name total-dependencies exe)))
-
-(defn run-clang [c-func-name c-file-name total-dependencies exe]
-  (let [clang-command (str "clang -DAPI= "
-                           (if exe
-                             (str "-o " out-dir "exe ")
-                             (str "-shared -g -o " out-dir c-func-name ".so "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do
-      (def cmd clang-command)
-      (system clang-command))))
-
-(defn get-depending-funcs-recursively [func-name]
-  (let [depending-funcs (get-maybe function-dependency-graph func-name)]
-    (concat depending-funcs (mapcat get-depending-funcs-recursively depending-funcs))))
-
-(defn bake-function-and-its-depending-funcs [func-name external-deps]
+(defn compiler/bake-function-and-its-dependers [func-name]
   (if (foreign? (eval (symbol func-name)))
     :already-baked
-    (let [functions-depending-on-this-function (set (get-depending-funcs-recursively func-name))]
+    (let [dependers (graph/dependers func-name)]
       (do
-        ;;(println (str "Baking '" func-name "' and its users: " (join ", " functions-depending-on-this-function)))
-        (unload-if-necessary func-name)
-        (map unload-if-necessary functions-depending-on-this-function)
-        (map re-lambda-fy functions-depending-on-this-function)
-        (map re-compile functions-depending-on-this-function)
-        (let [evaled (eval (symbol func-name))]
-          (if (foreign? evaled)
-            (do
-              ;;(println (str "The functions depending on " func-name " already made it recompile, no need to bake again."))
-              :OK)
-            (bake-internal (new-builder) func-name (code evaled) (meta-get evaled :ann) external-deps false)))))))
+        ;;(println (str "Compiler is baking '" func-name "' and its users: " (join ", " dependers)))
+        (graph/unload func-name)
+        (map graph/unload dependers) ;; ALL the functions must be unloaded before calling try-bake on them in the next step
+        (map compiler/try-bake dependers)
+        (compiler/try-bake func-name)))))
 
-(defn run-cl [c-func-name c-file-name total-dependencies exe]
-  (let [common-options "/nologo /DWIN32 /Od /Zi /MDd /Fe"
-        cl-command (str "cl.exe "
-                           (if exe
-                             (str common-options out-dir c-func-name ".exe ")
-                             (str "/DAPI=__declspec(dllexport) /LDd " common-options out-dir c-func-name ".dll "))
-                           c-file-name " "
-                           (include-paths)  " "
-                           (lib-paths) " "
-                           (framework-paths) " "
-                           (link-libs total-dependencies))]
-    (do
-      (println cl-command)
-      (def cmd cl-command)
-      (system cl-command))))
+(def log-ignores false)
 
-;; Do the part that is common between baking normal functions and generic functions
-(defn bake-internal-common [ast-annotated builder func-name func-code external-deps exe]
-  (let [builder-with-headers (builder-add-headers builder header-files)
-        builder-result (builder-visit-ast builder-with-headers ast-annotated func-name)
-        builder-funcs (:funcs builder-result)
-        builder-deps (:deps builder-result)
-        builder-final (if (and exe (not (= func-name "main")))
-                        (builder-add-main-function builder-funcs (c-ify-name func-name))
-                        builder-funcs)
-        c-program-string (builder-merge-to-c builder-final)
+^doc "If it's a lambda this will either bake it or mark it as generic. If it's not a lambda it will be ignored."
+(defn compiler/try-bake [func-name]
+  (let [func (eval (symbol func-name))]
+    (if (lambda? func)
+      (compiler/bake-code func-name (code func) (meta-get func :ann))
+      (do (when log-ignores (println (str "compiler/try-bake will ignore non-lambda '" func-name "' of type " (type func))))
+          :ignored))))
+
+^doc "Compile a generic lambda to a specific, fully typed version by providing a signature with the types needed."
+(defn compiler/concretize [original-func-name generic-func-name func-code func-signature]
+  (let [annotated-ast (func-to-annotated-ast generic-func-name func-code func-signature nil)
+        extra-deps (list original-func-name)]
+    (if (generic-function? annotated-ast)
+      (error (str "Failed to concretize generic function " generic-func-name ":\n" annotated-ast))
+      (do
+        (compiler/bake-ast generic-func-name annotated-ast func-code)
+        (graph/update-node! generic-func-name :depends-on
+                            (cons original-func-name (get-maybe (get graph generic-func-name) :depends-on)))))))
+
+^doc "Will convert an s-expression to an ast and then compile it in the same way as 'bake-ast'."
+(defn compiler/bake-code [func-name func-code func-type-annotation]
+  (let [annotated-ast (func-to-annotated-ast func-name func-code nil func-type-annotation)]
+    (if (generic-function? annotated-ast)
+      (mark-lambda-as-generic func-name annotated-ast)
+      (compiler/bake-ast func-name annotated-ast func-code))))
+
+(def log-deps-when-baking-ast false)
+
+(defn remove-non-user-defined-deps [deps]
+  (let [names (keys graph)]
+    (filter (fn (dep) (if (string? dep)
+                        (contains? names dep)
+                        (error (str "dep must be string: " dep))))
+            deps)))
+
+^doc "Will look into the 'graph' and find what actual dylib the function is compiled into."
+(defn deps-by-group [deps]
+  (map (fn [dep]
+         (if-let [node (get-maybe graph dep)]
+           (:group node)
+           dep))
+       deps))
+
+^doc "Will find all the dependencies of the ast and compile it to a dylib using 'compiler/bake-group'."
+(defn compiler/bake-ast [func-name ast-annotated original-code]
+  (let [build-result (builder-visit-ast (new-builder) ast-annotated func-name)
+        builder-deps (:deps build-result) ;; dependencies on destructors found during the builder phase
+        c-program-string (builder-merge-to-c (:builder build-result))
         proto (get-function-prototype ast-annotated func-name)
         c-func-name (c-ify-name func-name)
         c-file-name (str out-dir c-func-name ".c")
-        total-dependencies (set (concat (remove-non-user-defined-deps (:func-deps ast-annotated)) external-deps builder-deps))
-        t (get ast-annotated :type)
-        ]
+        all-deps (remove-non-user-defined-deps (set (concat (:func-deps ast-annotated) builder-deps)))
+        final-deps (deps-by-group all-deps)
+        func-signature (get ast-annotated :type)]
     (do
-      ;; (println (str "External deps for " func-name ": " (join ", " external-deps)))
-      ;; (println (str "Func deps for " func-name ": " (join ", " (:func-deps ast-annotated))))
-      ;; (println (str "Builder deps for " func-name ": " (join ", " builder-deps)))
-      ;; (println (str "Total deps for " func-name ": " (join ", " total-dependencies)))
-      (map (fn [dep] (add-function-dependency! (str dep) func-name)) total-dependencies)
-      (def ast ast-annotated)
+      (when log-deps-when-baking-ast
+        (do
+          (println (str "\n- '" func-name "' -"))
+          (println (str "Func deps from ast: " (join ", " (:func-deps ast-annotated))))
+          (println (str "Builder deps: " (join ", " builder-deps)))
+          ;;(println (str "Extra deps: " (join ", " all-deps)))
+          (println (str "All deps (after pruning): " (join ", " all-deps)))
+          (println (str "Final deps (by group): " (join ", " final-deps)))
+          (println "")))
       (def c c-program-string)
-      ;;(println (str "Will save and compile: '" func-name "' with c-func-name '" c-func-name "' and signature: " t))
-      (save-and-compile func-name t c-func-name c-file-name c-program-string proto total-dependencies exe)
-      (meta-set! (eval (symbol func-name)) :code func-code))))
+      (compiler/bake-group func-name
+                           (list {:name func-name
+                                  :proto proto
+                                  :src c-program-string
+                                  :sig func-signature})
+                           final-deps)
+      (meta-set! (eval (symbol func-name)) :code original-code))))
 
-(defn save-and-compile [func-name t c-func-name c-file-name c-program-string proto total-dependencies exe]
-  (match t
-    (:fn arg-types return-type) (do
-                                  (save-function-prototypes)
-                                  (save c-file-name c-program-string)
-                                  (run-compiler c-func-name c-file-name total-dependencies exe)
-                                  (unload-if-necessary func-name)
-                                  (if exe
-                                    :exe-done
-                                    (do
-                                      (def out-lib (load-dylib (str out-dir c-func-name (:dylib-extension platform-specifics))))
-                                      (register out-lib c-func-name arg-types return-type)
-                                      (add-func! func-name proto out-lib)
-                                      (let [f (eval (read func-name))
-                                            sig (signature f)]
-                                        (do (when (nil? sig) (error (str "No signature on function " f)))
-                                            (def s (pretty-signature sig))
-                                            (when echo-signature-after-bake (println (str func-name " : " s)))
-                                            f)))))
-    _ (error "Must bake function with type (:fn ...)")))
+^doc ""
+(defn compiler/bake-src [func-name proto src func-signature deps]
+  (compiler/bake-group func-name
+                       (list {:name func-name
+                              :proto proto
+                              :src src
+                              :sig func-signature})
+                       deps))
 
-;; Bake a function in the current environment, just give it's symbol
-(defmacro bake (func-symbol)
-  (list 'bake-function-and-its-depending-funcs (str func-symbol) '()))
+(defn kind-of-node [code-node]
+  (match (:sig code-node)
+    (:fn _ _) :function
+    t         :global))
 
-(defmacro bake-exe (func-symbol)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) '() true))
-
-(defmacro bake* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies false))
-
-(defmacro bake-exe* (func-symbol dependencies)
-  (list 'bake-internal (new-builder) (str func-symbol) (list 'code func-symbol) (list 'meta-get func-symbol :ann) dependencies true))
-
-(defn clean ()
-  (if (windows?)
+^doc "A 'group' is one unit of compilation, like a .so or .dll file.
+      The 'code-node':s sent to this function are dictionaries describing
+      all the functions that go into the same group.
+      They must contain the keys :name :proto :src :sig"
+(defn compiler/bake-group [group-name code-nodes deps]
+  (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
+        c-file-name (c-ify-name (str out-dir group-name ".c"))
+        dylib-full-path (c-ify-name (str out-dir group-name (:dylib-extension platform-specifics)))]
     (do
-      (system "del functions.h")
-      (system "del *.dll")
-      (system "del *.exp")
-      (system "del *.lib")
-      (system "del *.pdb")
-      (system "del *.ilk")
-      (system "del *.obj"))
-    (do
-      (system "rm functions.h")
-      (system "rm *.so")
-      (system "rm *.c")
-      (system "rm -r *.dSYM"))))
+      ;;(println (str "Compiling group '" group-name "'."))
+      (def src src)
+      (map (fn [code-node]
+             (graph/add-node! (kind-of-node code-node) (:name code-node) (:proto code-node) (:src code-node) group-name nil deps 0))
+           code-nodes)
+      (graph/save-prototypes!)
+      (save c-file-name src)
+      (run-compiler (c-ify-name group-name) c-file-name deps false)
+      (def out-lib (load-dylib dylib-full-path))
+      (map (fn [code-node]
+             (let [name (:name code-node)
+                   c-name (c-ify-name name)]
+               (do
+                 (match (:sig code-node)
+                   (:fn arg-types return-type) (register out-lib c-name arg-types return-type)
+                   t                           (register-variable out-lib c-name t))
+                 (graph/update-node! name :dylib-ptr out-lib)
+                 (when echo-signature-after-bake (println (str name " : " (pretty-signature (:sig code-node))))))))
+           code-nodes)
+      :OK)))
+
+(defn with-declarations-header [s] (str "#include \"declarations.h\"\n\n" s))
+
+(defn complete-main-src [starting-function-name]
+  (str "#include \"declarations.h\"\n\n"
+       (join "\n\n" (values graph-src))
+       "\n\n"
+       "int main() {\n"
+       (call-init-closures) "\n"
+       "  " (c-ify-name starting-function-name) "();\n"
+       "}\n"))
+
+(defn call-init-closures []
+  (join "\n" (map (fn [node]
+                    (str "  " (c-ify-name (:name node)) "();"))
+                  (filter is-init-closure? (values graph)))))
+
+(defn is-init-closure? [node]
+  (key-is-true? node :is-init-closure))
+
+(defn bake-exe-internal [starting-function-name]
+  (do
+    (compiler/bake-function-and-its-dependers starting-function-name)
+    (let [src (complete-main-src starting-function-name)
+          c-file-name (str out-dir "main.c")
+          no-dependencies ()]
+      (do
+        (def mainc src)
+        (save c-file-name src)
+        (run-compiler "-whatever-" c-file-name no-dependencies true)))))
+
+(defmacro bake-exe [starting-function-symbol]
+  (list 'bake-exe-internal (str starting-function-symbol)))

@@ -19,7 +19,7 @@
   (+ (- (fib x) 100) 7))
 
 (defn test-foo ()
-  (do (bake* foo '(fib))
+  (do (bake foo)
       (assert-eq (foo 6) -80)
       (assert-eq (type foo) :foreign)
       :foo-is-ok))
@@ -32,7 +32,7 @@
 
 (defn test-hypo ()
   (do (bake hypo)
-      (assert-approx-eq (hypo 3.0 4.0) 5.0)
+      (assert-approx-eq (hypo 3.0f 4.0f) 5.0f)
       (assert-eq (type hypo) :foreign)
       :hypo-is-ok))
 
@@ -242,3 +242,141 @@
 (defn gimme-char ()
   \e)
 
+
+
+;; PIPE MACROS
+
+(defn baking-of-pipe-last-macro []
+  (->> [10 20 30]
+       (map inc)))
+
+(defn test-baking-of-pipe-last-macro []
+  (do (bake baking-of-pipe-last-macro)
+      (assert-eq "[11, 21, 31]" (str (baking-of-pipe-last-macro)))))
+
+
+(defn baking-of-pipe-first-macro []
+  (-> 10
+      (- 2)
+      (* 2)))
+
+(defn test-baking-of-pipe-first-macro []
+  (do (bake baking-of-pipe-first-macro)
+      (assert-eq 16 (baking-of-pipe-first-macro))))
+
+
+
+;; Shared builder
+
+(defn test-shared-builder []
+  (do
+    (defn h []
+      (strlen (ref (str 123))))
+
+    (defn g []
+      (+ (h) (h)))
+    
+    (defn f []
+      (inc (g)))
+    
+    (enable-shared-builder!)))
+
+
+
+
+
+;; Global variables
+
+(defn test-global-variables []
+  (do
+    (defstruct Foo [foox :int])
+
+    (def f (Foo 100))
+
+    (defn del1 []
+      (do
+        (reset! f (Foo 200))
+        (println (ref (str &f)))
+        (reset! f (Foo 300))
+        (println (ref (str &f)))
+        ))
+
+    (def g [1 2 3])
+
+    (defn del2 []
+      (do
+        (reset! g [4 5 6])
+        (println (ref (str &g)))
+        (reset! g [7 8 9])
+        (println (ref (str &g)))
+        ))
+
+    (def h @"hej")
+
+    (defn del3 []
+      (do
+        (reset! h @"svej")
+        (println (ref h))
+        (reset! h @"nej")
+        (println (ref h))
+        ))))
+
+
+;; setting global vars in main() for exe:s
+
+(def x 10)
+(def y [1 2 3])
+
+(defn f []
+  (do
+    (println* x)
+    (println* &y)))
+
+;; (bake-exe f)
+
+
+
+;; Must use refs in while loops, this should not compile:
+(defn fool-while []
+  (let [x @"yeah"]
+    (while true
+      (reset! x (id x)))
+    ))
+
+;;(assert-eq error-given-away (:error (catch-error (bake fool-while))))
+
+
+
+
+
+
+;; Baking of groups
+(def example-descriptor-1 {:src "int f() { return 42; }"
+                           :proto "int f();"
+                           :name "f"
+                           :sig '(:fn () :int)})
+
+(def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                           :proto "int g();"
+                           :name "g"
+                           :sig '(:fn () :int)})
+
+(defn h [] (f))
+
+(defn test-bake-group []
+  (do
+    (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
+    (bake h)))
+
+
+
+
+(defn test-global-with-array-of-structs []
+  (do
+    (defstruct A [])
+    (def some-a [(A) (A) (A)])
+    (defn use-some-a []
+      (println* &some-a))
+    (bake use-some-a)))
+
+(test-global-with-array-of-structs)

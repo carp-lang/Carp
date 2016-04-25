@@ -1,0 +1,220 @@
+
+(def topics '(me motivation inspiration features future))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def me {:name "Erik Svedäng"
+         :job "Game Designer"
+         :age (* pi (sqrt 89.0))
+         :web "http://www.eriksvedang.com"
+         :twitter "@e_svedang"
+         :work ["Blueberry Garden"
+                "Kometen"
+                "Shot Shot Shoot"
+                "Tri Tri Triobelisk"
+                "Clairvoyance"
+                "Else Heart.Break()"]})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def motivation
+  {:a "Lisp är AWESOME ...men funkar dåligt för spel (GC, dynamiskt)"
+   :b "C/C++ har bristfälliga abstraktioner och inget stöd live-utveckling (repl)"})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(def inspiration
+  {1 :Rust
+   2 :ML
+   3 :Clojure
+   4 :Emacs})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(defn features []
+  (do
+    (println "1. Ingen Garbage Collector")
+    (println "2. Automatiskt (statiskt) uträknade typer")
+    (println "3. Bra stöd för live-kodning")
+    (println "4. Kompilerar till läsbar C")))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(system "open https://github.com/eriksvedang/Carp")

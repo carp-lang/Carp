@@ -1,0 +1,6 @@
+
+(defn greatest [xs]
+  (domap println &(map-copy str xs)))
+
+(defn try-it []
+  (greatest [1 2 3]))

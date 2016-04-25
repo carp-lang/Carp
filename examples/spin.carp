@@ -1,0 +1,24 @@
+(import gl)
+
+(defn init []
+  0f)
+
+(defn tick [state]
+  (+ state 0.15f))
+
+(defn draw [state]
+  (let [t @state
+        steps 100
+        step (/ 1f (itof steps))]
+    (for (i 0 steps)
+      (let [r (* step (itof i))
+            r2 (+ r step)]
+        (draw-line (* r (cosf (* t r)))
+                   (* r (sinf (* t r)))
+                   (* r2 (cosf (* t r2)))
+                   (* r2 (sinf (* t r2))))))))
+
+(defn spin []
+  (glfw-app "Spin" init tick draw default-on-keys))
+
+(spin)

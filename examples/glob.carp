@@ -1,0 +1,47 @@
+
+(def state 10)
+
+(defn up []
+  (reset! state (inc state)))
+
+(defn down []
+  (reset! state (dec state)))
+
+(defn print-state []
+  (println (ref (str (ref state)))))
+
+(defn glob []
+  (do
+    (print-state)
+    (up)
+    (up)
+    (print-state)
+    (down)
+    (print-state)))
+
+
+(defn upp []
+  (do (reset! state (inc state))
+      (println (ref (str &state)))))
+
+(defn f []
+  (reset! state 100))
+
+
+
+;; (defn setup []
+;;   nil)
+
+;; (defn draw [s]
+;;   nil)
+
+;; (import gl)
+
+;; ^ann glfw-key-callback-type
+;; (defn on-keys [window key scancode action mods]
+;;   (if (= key-esc key)
+;;     (glfwSetWindowShouldClose window true)
+;;     (reset! state 123)))
+
+;; (defn globapp []
+;;   (glfw-app "GLOB" setup id draw on-keys))

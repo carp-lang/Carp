@@ -1,15 +1,10 @@
 ;; CONSTRAINTS
 
-(defn test-replace-in-list ()
-  (assert-eq (replace-in-list '(10 20 30) 20 "hej") '(10 "hej" 30)))
-
-(test-replace-in-list)
-
 (defn test-replace-from-right ()
   (do
-    (assert-eq (replace-subst-from-right {:a :b :c :d} :b :e) {:a :e :c :d})
-    (assert-eq (replace-subst-from-right {:a :b :c :b} :b :e) {:a :e :c :e})
-    (assert-eq (replace-subst-from-right {:a (list :b :b) :c :d} :b :f) {:a (list :f :f) :c :d})))
+    (assert-eq (replace-subst-from-right-fast {:a :b :c :d} :b :e) {:a :e :c :d})
+    (assert-eq (replace-subst-from-right-fast {:a :b :c :b} :b :e) {:a :e :c :e})
+    (assert-eq (replace-subst-from-right-fast {:a (list :b :b) :c :d} :b :f) {:a (list :f :f) :c :d})))
 
 (test-replace-from-right)
 
@@ -113,7 +108,7 @@
 (defn test-subst-in-nested-list []
   (assert-eq
    {"a" '(:foo (:goo :int))}
-   (replace-subst-from-right {"a" '(:foo (:goo "b"))} "b" :int)))
+   (replace-subst-from-right-fast {"a" '(:foo (:goo "b"))} "b" :int)))
 
 (defn test-constraint-solving-9 ()
   (let [;;_ (println "\n- Constraint solving 8 -")
@@ -132,6 +127,35 @@
       (assert-eq solution solution-backwards)
       )))
 
+
+
+(defn test-constraint-solving-10 ()
+  (let [;;_ (println "\n- Constraint solving 10 -")
+        constraints (list
+              
+              {:a "x", 
+               :b '(:BLURG :FLORP)}
+              
+              {:a '("y" "c"), 
+               :b '(("a" "b") "a")}
+
+              {:a "x"
+               :b "y"}
+              
+              )
+        solution (solve-constraints constraints)
+        ;;_ (println "\n- Backwards -")
+        solution-backwards (solve-constraints (reverse constraints))]
+    (do
+      (assert-eq solution {"a" :BLURG
+                           "b" :FLORP
+                           "c" :BLURG
+                           "x" '(:BLURG :FLORP)
+                           "y" '(:BLURG :FLORP)})
+      (assert-eq solution solution-backwards))))
+
+
+
 (test-constraint-solving-1)
 (test-constraint-solving-2)
 (test-constraint-solving-3)
@@ -142,3 +166,4 @@
 (test-constraint-solving-8)
 (test-subst-in-nested-list)
 (test-constraint-solving-9)
+(test-constraint-solving-10)

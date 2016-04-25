@@ -36,6 +36,11 @@ void obj_mark_alive(Obj *o) {
     obj_mark_alive(o->arg_types);
     obj_mark_alive(o->return_type);
   }
+  else if(o->tag == 'X') {
+    obj_mark_alive(o->bytecode_literals);
+  }
+
+  // TODO: remove data pointed to by void_ptr:s? (tag 'Q')
 }
 
 void free_internal_data(Obj *dead) {
@@ -57,6 +62,9 @@ void free_internal_data(Obj *dead) {
   else if(dead->tag == 'A') {
     free(dead->array);
   }
+  else if(dead->tag == 'X') {
+    free(dead->bytecode);
+  }
 }
 
 void gc_sweep() {
@@ -77,35 +85,35 @@ void gc_sweep() {
       free_internal_data(dead);
 
       //memset(dead, 0, sizeof(Obj));
-      //free(dead);
+      free(dead);
       
-      if(dead->tag == 'A') free(dead);
-      else if(dead->tag == 'B') free(dead);
-      else if(dead->tag == 'C') free(dead);
-      else if(dead->tag == 'D') free(dead);
-      else if(dead->tag == 'E') free(dead);
-      else if(dead->tag == 'F') free(dead);
-      else if(dead->tag == 'G') free(dead);
-      else if(dead->tag == 'H') free(dead);
-      else if(dead->tag == 'I') free(dead);
-      else if(dead->tag == 'K') free(dead);
-      else if(dead->tag == 'L') free(dead);
-      else if(dead->tag == 'M') free(dead);
-      else if(dead->tag == 'N') free(dead);
-      else if(dead->tag == 'O') free(dead);
-      else if(dead->tag == 'P') free(dead);
-      else if(dead->tag == 'Q') free(dead);
-      else if(dead->tag == 'R') free(dead);
-      else if(dead->tag == 'S') free(dead);
-      else if(dead->tag == 'T') free(dead);
-      else if(dead->tag == 'U') free(dead);
-      else if(dead->tag == 'V') free(dead);
-      else if(dead->tag == 'X') free(dead);
-      else if(dead->tag == 'Y') free(dead);
-      else if(dead->tag == 'Z') free(dead);
-      else {
-	printf("Can't free object with invalid tag: %c\n", dead->tag);
-      }
+      /* if(dead->tag == 'A') free(dead); */
+      /* else if(dead->tag == 'B') free(dead); */
+      /* else if(dead->tag == 'C') free(dead); */
+      /* else if(dead->tag == 'D') free(dead); */
+      /* else if(dead->tag == 'E') free(dead); */
+      /* else if(dead->tag == 'F') free(dead); */
+      /* else if(dead->tag == 'G') free(dead); */
+      /* else if(dead->tag == 'H') free(dead); */
+      /* else if(dead->tag == 'I') free(dead); */
+      /* else if(dead->tag == 'K') free(dead); */
+      /* else if(dead->tag == 'L') free(dead); */
+      /* else if(dead->tag == 'M') free(dead); */
+      /* else if(dead->tag == 'N') free(dead); */
+      /* else if(dead->tag == 'O') free(dead); */
+      /* else if(dead->tag == 'P') free(dead); */
+      /* else if(dead->tag == 'Q') free(dead); */
+      /* else if(dead->tag == 'R') free(dead); */
+      /* else if(dead->tag == 'S') free(dead); */
+      /* else if(dead->tag == 'T') free(dead); */
+      /* else if(dead->tag == 'U') free(dead); */
+      /* else if(dead->tag == 'V') free(dead); */
+      /* else if(dead->tag == 'X') free(dead); */
+      /* else if(dead->tag == 'Y') free(dead); */
+      /* else if(dead->tag == 'Z') free(dead); */
+      /* else { */
+      /*   printf("Can't free object with invalid tag: %c\n", dead->tag); */
+      /* } */
       
       obj_total--;
       kill_count++;
@@ -120,17 +128,17 @@ void gc_sweep() {
   }
 }
 
-void gc(Obj *env) {
-  obj_mark_alive(env);
-  for(int i = 0; i < stack_pos; i++) {
-    obj_mark_alive(stack[i]);
+void gc(Process *process) {
+  obj_mark_alive(process->global_env);
+  for(int i = 0; i < process->stack_pos; i++) {
+    obj_mark_alive(process->stack[i]);
   }
-  for(int i = 0; i < shadow_stack_pos; i++) {
-    obj_mark_alive(shadow_stack[i]);
+  for(int i = 0; i < process->shadow_stack_pos; i++) {
+    obj_mark_alive(process->shadow_stack[i]);
   }
-  for(int i = 0; i < function_trace_pos; i++) {
-    obj_mark_alive(function_trace[i].caller);
-    obj_mark_alive(function_trace[i].callee);
+  for(int i = 0; i < process->function_trace_pos; i++) {
+    obj_mark_alive(process->function_trace[i].caller);
+    obj_mark_alive(process->function_trace[i].callee);
   }
   gc_sweep();
 }

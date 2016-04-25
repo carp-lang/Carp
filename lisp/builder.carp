@@ -3,26 +3,28 @@
 ;; Creates a C code builder which allows for out-of-order generation of C from the AST
 (defn new-builder ()
   {:headers ()
-   :functions ()})
+   :functions ()
+   :deps ()
+   :main ()})
 
 (defn builder-add (builder category block)
-  (update-in builder (list category) (fn (blocks) (cons-last blocks block))))
+  (update-in builder (list category) (fn (blocks) (set (cons-last blocks block)))))
 
 (defn builder-add-headers (builder files)
   (reduce (fn (b file) (builder-add b :headers (str "#include " file)))
           builder
           files))
 
-(defn builder-add-main-function (builder func-name)
-  (builder-add builder :functions (str "int main() { " func-name "(); }")))
-
 ;; Takes a completed C code builder and returns its string with C code
 (defn builder-merge-to-c (builder)
-  (let [funcs (get builder :functions)
-        headers (get builder :headers)]
-    (join "\n\n"
-          (list (join "\n" headers)
-                (join "\n" funcs)))))
+  (let [funcs (:functions builder)
+        headers (:headers builder)
+        main (:main builder)]
+    (str (join "\n\n"
+               (list (join "\n" headers)
+                     (join "\n\n" funcs)
+                     (join "\n\n" main)))
+         "\n")))
 
 (def indent-level 1)
 
@@ -43,7 +45,7 @@
                     (let [delete-signature (list :fn (list (:type variable)) :void)
                           delete-fn-name (generic-name "delete" delete-signature)]
                       (do
-                        (dict-set! deps :mutable-value (cons (symbol delete-fn-name) (:mutable-value deps)))
+                        (dict-set! deps :mutable-value (cons delete-fn-name (:mutable-value deps)))
                         (str (indent) (c-ify-name delete-fn-name) "(" (c-ify-name (:name variable)) ");\n"))))
                   free-list))))
 
@@ -60,18 +62,34 @@
   (match t
     (:fn arg-types return-type) (let [func-type-name (str "Fn_" (join "_" (map type-build-no-star arg-types))
                                                           "_" (type-build-no-star return-type))]
-                                  (do (if (has-key? types func-type-name)
+                                  (do (if (has-key? graph func-type-name)
                                         (do ;;(println (str "Ignoring " func-type-name))
                                             func-type-name)
                                         (do ;;(println (str "Adding function type " func-type-name))
-                                            (add-type! func-type-name
-                                                       (str "typedef " (type-build return-type)
-                                                            "(*" func-type-name ")("
-                                                            (join "," (map type-build arg-types))
-                                                            "); // ensure function type " (str t)))
+                                          (graph/add-node! :function-type
+                                                           func-type-name
+                                                           (str "typedef " (type-build return-type)
+                                                                "(*" func-type-name ")("
+                                                                (join "," (map type-build arg-types))
+                                                                ");"
+                                                                ;;" // ensure function type " (str t)
+                                                                )
+                                                           "" ;; no body
+                                                           "" ;; group
+                                                           nil ;; dylib ptr
+                                                           () ;; (struct-groups-in-type t) ;; deps
+                                                           (calculate-dependency-level t) ;; (log (str func-type-name " dep lvl: ")
+                                                           )
                                             func-type-name))))
 
     _ (error "Can't match t in ensure-function-type: " t)))
+
+(defn struct-groups-in-type [t]
+  (if (list? t)
+    (set (mapcat struct-groups-in-type t))
+    (if (struct-type? t)
+      (list (name t))
+      ())))
 
 (defn type-build (t)
   (type-build-internal t true))
@@ -89,6 +107,7 @@
            (:ref r) (type-build-internal r star)
            (:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
            :float "float"
+           :double "double"
            :int "int"
            :char "char"
            :bool "bool"
@@ -107,10 +126,9 @@
       (map (fn (arg) (visit-arg-explicit c arg deps)) args)
       (map (fn (arg) {:c (:arg-name arg)}) args))))
 
-
 (defn inlined-literal? (ast)
   (and (= :literal (:node ast))
-       (contains? '(:int :float :bool (:ref :string)) (:type ast))))
+       (contains? '(:int :float :double :bool (:ref :string)) (:type ast))))
 
 (defn inlined-lookup? (ast)
   (= :lookup (:node ast)))
@@ -184,10 +202,21 @@
                   result)
 
            :reset (let [expr (:expr form)
-                        symbol (:symbol form)
-                        result (visit-form c expr toplevel deps)]
-                    (do (str-append! c (str (indent) symbol " = " (:c result) ";\n"))
-                        {:c ""}))
+                        symbol (:value (:symbol form))
+                        result (visit-form c expr toplevel deps)
+                        t (:type expr)]
+                    (do
+                      ;;(str-append! c (str (indent) "printf(\"address of " symbol " = %p\\n\", &" symbol ");\n"))
+                      (when (managed-type? t)
+                        (do
+                          (str-append! c (str (indent) "// free '" symbol "' before assigning to it:\n"))
+                          (str-append! c (str (indent) "if(" (c-ify-name (str symbol)) ") {\n"))
+                          (indent-in!)
+                          (str-append! c (free-variables (list {:name (c-ify-name (str symbol)) :type t}) deps))
+                          (indent-out!)
+                          (str-append! c (str (indent) "}\n"))))
+                      (str-append! c (str (indent) (c-ify-name (str symbol)) " = " (:c result) ";\n"))
+                      {:c ""}))
 
            :if (let [n (get form :result-name)
                      if-expr (visit-form c (get form :expr) true deps)]
@@ -282,6 +311,24 @@
                      {:c (:code form)})
 
            :null {:c "NULL"}
+
+           :array (let [n (:result-name form)
+                        inner-type (nth (:type form) 1)
+                        t (type-build inner-type)
+                        t-no-star (c-ify-name (type-build-no-star inner-type))
+                        vals (:values form)
+                        arg-results (map (fn (arg) (visit-arg-slim c arg deps)) vals)
+                        arg-vars (map :c arg-results)]
+                    (do (str-append! c (str (indent) "Array* " n " = malloc(sizeof(Array));\n"
+                                            (indent) n "->count = " (count vals) ";\n"
+                                            (indent) n "->data = malloc(sizeof(" t ") * " (count vals) ");\n"
+                                            (indent) t " *casted" n " = " n "->data;\n"
+                                            (join "\n" (map2 (fn [arg-name index]
+                                                               (str (indent) "casted" n "[" index "] = " arg-name ";"))
+                                                             arg-vars
+                                                             (range 0 (count arg-vars))))
+                                            "\n"))
+                        {:c n}))
            
            x (error (str "visit-form failed to match " x)))))
 
@@ -312,7 +359,7 @@
                         "" ;; no return
                         (str (indent) "return " result-var-name ";\n"))
                       "}")]
-        {:funcs (builder-add builder :functions code)
+        {:builder (builder-add builder :functions code)
          :deps (:mutable-value deps)}))))
 
 (defn get-function-prototype (ast func-name)

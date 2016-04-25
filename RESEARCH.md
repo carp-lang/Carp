@@ -4,10 +4,12 @@ https://www.iar.com/support/resources/articles/advanced-preprocessor-tips-and-tr
 http://jvns.ca/blog/2016/03/01/a-few-notes-on-the-stack/
 https://www.recurse.com/blog/7-understanding-c-by-learning-assembly
 http://msm.runhello.com/p/1003
+http://stackoverflow.com/questions/2505385/classes-and-static-variables-in-shared-libraries
 
 # OWNERSHIP & BORROWING
 http://blog.piston.rs/2016/01/23/dynamo/
 http://evincarofautumn.blogspot.se/2016/01/thoughts-on-using-fractional-types-to.html
+http://andrewbrinker.github.io/blog/2016/03/27/string-types-in-rust/
 
 # MODULES & FUNCTORS
 http://homepages.inf.ed.ac.uk/mfourman/teaching/mlCourse/notes/sml-modules.html
@@ -27,6 +29,8 @@ https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
 http://alex-charlton.com/posts/Prototype_to_polish_Making_games_in_CHICKEN_Scheme_with_Hypergiant/
 http://beautifulracket.com/first-lang.html
 http://stackoverflow.com/questions/4899113/fixed-point-combinator-for-mutually-recursive-functions/5272086#5272086
+http://klisp.org
+http://gliese1337.blogspot.se/2012/04/schrodingers-equation-of-software.html
 
 # LANGUAGE DESIGN
 http://www.complang.tuwien.ac.at/kps2015/proceedings/KPS_2015_submission_29.pdf

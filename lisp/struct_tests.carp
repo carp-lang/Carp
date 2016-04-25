@@ -58,3 +58,23 @@
       (assert-eq 101 (get-yy (updater-1)))))
 
 (test-updater-1)
+
+
+
+(defn test-redefining-struct []
+  (do
+    (defstruct Prime [prime-x :int])
+    (defstruct Prime2 [prime2-member :Prime])
+    (defstruct Prime3 [prime3-member :Prime2])
+    (defn f [p]
+      (get-prime-x p))
+    (bake f)
+    (assert-eq "10" (str (f (Prime 10))))
+
+    (defstruct Prime [prime-x :int prime-y :int])
+    (assert-eq "20" (str (f (Prime 20 30))))
+    (bake f)
+    (assert-eq "40" (str (f (Prime 40 50))))
+    (assert-eq "(Prime3 (Prime2 (Prime 1000 2000)))" (str (Prime3 (Prime2 (Prime 1000 2000)))))))
+
+(test-redefining-struct)
