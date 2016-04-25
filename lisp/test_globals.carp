@@ -65,4 +65,13 @@
       (gc)
       (assert-eq "(TheStruct 600) ; ptr-to-global" (str the-struct))))
 
+(deftest global-complex
+  (do (defstruct ComplexStruct [complex (:Array :int)])
+      (def the-complex [(ComplexStruct [1 2 3]) (ComplexStruct [4 5 6])])
+      (bake the-complex)
+      (assert-eq "[(ComplexStruct [1, 2, 3]) (ComplexStruct [4, 5, 6])] ; ptr-to-global" (str the-complex))
+      (reset! the-complex [(ComplexStruct [7 8 9])])
+      (gc)
+      (assert-eq "[(ComplexStruct [7, 8, 9])] ; ptr-to-global" (str the-complex))))
+
 (tester/run-suite "globals")
