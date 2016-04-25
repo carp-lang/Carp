@@ -22,6 +22,21 @@
 
 
 
+;; (defn own-1 (s)
+;;   (eat-string s))
+
+;; (def s1 '({:a (:fn ("a") "b"), 
+;;            :b (:fn (:string) :void)}
+;;           {:a "a", 
+;;            :b "c"}))
+
+;; (solve-constraints s1)
+
+
+
+;;(solve-constraints (con own-1))
+
+
 ;; f : () -> Array Array int
 ;; Evaluating form (bake f) took 6993ms.
 ;; Unloading <dylib:0x7f8880c408a0> for function f.

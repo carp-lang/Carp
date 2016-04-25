@@ -1826,7 +1826,9 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
   
   Obj *mut_substs = obj_copy(args[0]); // COPY!
   Obj *existing = args[1];
-  Obj *new_value = args[2];  
+  Obj *new_value = args[2];
+
+  shadow_stack_push(process, mut_substs);
 
   Obj *bindings = mut_substs->bindings;
   Obj *p = bindings;
@@ -1846,6 +1848,8 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
     
     p = p->cdr;
   }
+
+  shadow_stack_pop(process); // mut_substs
   
   return mut_substs;
 }
@@ -1879,5 +1883,176 @@ Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count) {
   }
   else {
     return obj_eq(process, a, b) ? lisp_true : lisp_false;
+  }
+}
+
+Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
+  assert_or_set_error_return_nil(arg_count == 3, "extend-substitutions-fast must take 3 arguments. ", nil);
+
+  Obj *substs = args[0];
+  Obj *lhs = args[1];
+  Obj *value = args[2];
+
+  if(substs->tag == 'K' && strcmp(substs->s, "fail")) {
+    printf("FAIL\n");
+    return substs;
+  }
+  else {
+    Obj *result = NULL;
+    //printf("substs: %s\n", obj_to_string(process, substs)->s);
+    Obj *lookup_args[2] = { substs, value };
+    Obj *lookup = p_lookup_in_substs_fast(process, lookup_args, 2);
+
+    shadow_stack_push(process, lookup);
+    shadow_stack_push(process, lhs);
+    shadow_stack_push(process, value);
+    
+    /* printf("Will extend %s with %s, lookup: %s, substs:\n%s\n\n", */
+    /*        obj_to_string(process, lhs)->s, */
+    /*        obj_to_string(process, value)->s, */
+    /*        obj_to_string(process, lookup)->s, */
+    /*        obj_to_string(process, substs)->s); */
+    
+    if(lhs->tag == 'S') {
+      //printf("lhs is a typevar\n");
+      Obj *existing = env_lookup(process, substs, lhs);
+      if(existing == NULL) {
+        //printf("not existing\n");
+        Obj *new_substs = env_assoc(process, substs, lhs, lookup);
+        Obj *replace_args[3] = { new_substs, existing, lookup };
+        result = p_replace_subst_from_right_fast(process, replace_args, 3);
+      }
+      else {
+        //printf("lhs exists\n");
+
+        if(existing->tag == 'C') {
+          //printf("existing is a list\n");
+          
+          if(lookup->tag == 'C') {
+            //printf("lookup is a list\n");
+            
+            Obj *final_substs = substs;
+            Obj *p1 = existing;
+            Obj *p2 = lookup;
+            while(p1 && p1->car) {
+              assert(p2);
+              assert(p2->car);
+
+              if(final_substs->tag == 'K' && strcmp(final_substs->s, "fail") == 0) {
+                result = final_substs;
+                break;
+              }
+              
+              Obj *extend_args[3] = { final_substs, p1->car, p2->car };
+              final_substs = p_extend_substitutions_fast(process, extend_args, 3);
+                
+              p1 = p1->cdr;
+              p2 = p2->cdr;
+            }
+            result = final_substs;
+          } else {
+            //printf("lookup is not a list\n");            
+            result = substs;
+          }
+        }
+        else if(existing->tag == 'S') {
+          //printf("existing is a typevar\n");
+          Obj *replace_args[3] = { substs, existing, lookup };
+          result = p_replace_subst_from_right_fast(process, replace_args, 3);
+        }
+        else if(lookup->s) {
+          result = substs;
+        }
+        else if(lhs->tag == 'K' && strcmp(lhs->s, "any") == 0) {
+          result = substs;
+        }
+        else {
+          //printf("existing is a not a typevar or list\n");
+          // The existing binding is not a typevar, must match exactly or the unification will fail
+          Obj *exactly_eq_args[2] = { existing, lookup };
+          Obj *are_eq = p_types_exactly_eq(process, exactly_eq_args, 2);
+          if(are_eq == lisp_true) {
+            result = substs;
+          }
+          else {
+            //printf("FAIL in typevar, else\n");
+            result = obj_new_keyword("fail");
+          }
+        }
+        
+      }
+    }
+    else {
+      // lhs is not a typevar
+      //printf("lhs is not a typevar: %s\n", obj_to_string(process, lhs)->s);
+      
+      if(lhs->tag == 'C') {
+        //printf("lhs is a list\n");
+        
+        if(lookup->tag == 'C') {
+          //printf("lookup is a list\n");
+          
+          Obj *final_substs = substs;
+          Obj *p1 = lhs;
+          Obj *p2 = lookup;
+
+          /* printf("substs: %s\n", obj_to_string(process, final_substs)->s); */
+          /* printf("p1: %s\n", obj_to_string(process, p1)->s); */
+          /* printf("p2: %s\n", obj_to_string(process, p2)->s); */
+          
+          while(p1 && p1->car) {
+            assert(p2);
+            assert(p2->car);
+
+            if(final_substs->tag == 'K' && strcmp(final_substs->s, "fail") == 0) {
+              result = final_substs;
+              break;
+            }
+
+            // (extend-substitutions-fast {"b" (list "t0" "t1")} (list :int "x") "b")
+            
+            Obj *extend_args[3] = { final_substs, p1->car, p2->car };
+            final_substs = p_extend_substitutions_fast(process, extend_args, 3);
+
+            //shadow_stack_push(process, final_substs);
+            //printf("new final substs: %s %c\n", obj_to_string(process, final_substs)->s, final_substs->tag);
+                
+            p1 = p1->cdr;
+            p2 = p2->cdr;
+          }
+          result = final_substs;          
+        }
+        else {
+          //printf("lookup is NOT a list\n");
+          result = substs;
+        }
+      } else {
+        //printf("lhs is NOT a list\n");
+        
+        if(obj_eq(process, lhs, lookup)) {
+          result = substs;
+        }
+        else if(lookup->tag == 'S') {
+          result = substs; // WHY IS THIS CASE NECESSARY?! make it not so...
+        }
+        else if(lookup->tag == 'K' && strcmp(lookup->s, "any") == 0) {
+          result = substs;
+        }
+        else if(lhs->tag == 'K' && strcmp(lhs->s, "any") == 0) {
+          result = substs;
+        }          
+        else {
+          //printf("FAIL in not typevar, not list\n");
+          result = obj_new_keyword("fail");
+        }
+      }      
+    }
+
+    shadow_stack_pop(process); // value
+    shadow_stack_pop(process); // lhs
+    shadow_stack_pop(process); // lookup
+
+    //printf("result = %s\n", obj_to_string(process, result)->s);
+    return result;
   }
 }

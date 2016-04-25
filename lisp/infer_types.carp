@@ -399,8 +399,7 @@
                                   )))))))))
           ;; Not a typevar:
           (if (list? lhs)
-            (let [value-lookup (lookup-in-substs-fast substs value)]
-              (if (list? value-lookup)
+            (if (list? value-lookup)
                 (do
                   ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))
                   (reduce (fn (s m2) (let [s1 (extend-substitutions s (:t m2) (:v m2))]
@@ -408,8 +407,8 @@
                           substs (map2 (fn (t v) {:t t :v v}) lhs value-lookup)))
                 (do
                   ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
-                  substs)))
-            (do (when log-substs (println (str "lhs " lhs " is not a tvar or list.")))
+                  substs))
+            (do (when log-substs (println (str "lhs " lhs " is not a tvar or list, value lookup: " value-lookup)))
                 (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
                   substs
                   :fail
