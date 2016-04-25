@@ -315,6 +315,18 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
         Obj *x = primitive_to_obj(process, dereffed, type_float);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
+      else if(obj_eq(process, type_lookup, type_double)) {
+        void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
+        Obj *x = primitive_to_obj(process, dereffed, type_double);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
+      }
+      else if(obj_eq(process, type_lookup, type_bool)) {
+        void *dereffed = *(void**)o->void_ptr;
+        // can't assert since false == NULL
+        Obj *x = primitive_to_obj(process, dereffed, type_bool);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
+      }
       else if(obj_eq(process, type_lookup, type_string)) {
         void *dereffed = *(void**)o->void_ptr;
         assert(dereffed);

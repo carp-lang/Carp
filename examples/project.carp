@@ -4,6 +4,14 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
+
+(load-lisp (str carp-dir "lisp/test_globals.carp"))
+
+
+
+
+
+
 (defn dd [x] (inc x))
 
 (defn test-faster-unification []

@@ -2,6 +2,46 @@
 
 ;; char int float double bool string array struct
 
-(deftest global-)
+(deftest global-int
+  (do (def the-int 100)
+      (bake the-int)
+      (assert-eq "100 ; ptr-to-global" (str the-int))
+      (reset! the-int 200)
+      (assert-eq "200 ; ptr-to-global" (str the-int))))
+
+(deftest global-float
+  (do (def the-float 3.14f)
+      (bake the-float)
+      (assert-eq "3.140000f ; ptr-to-global" (str the-float))
+      (reset! the-float 6.2f)
+      (assert-eq "6.200000f ; ptr-to-global" (str the-float))))
+
+(deftest global-double
+  (do (def the-double 10.0)
+      (bake the-double)
+      (assert-eq "10.000000 ; ptr-to-global" (str the-double))
+      (reset! the-double 20.0)
+      (assert-eq "20.000000 ; ptr-to-global" (str the-double))))
+
+(deftest global-bool
+  (do (def the-bool true)
+      (bake the-bool)
+      (assert-eq "true ; ptr-to-global" (str the-bool))
+      (reset! the-bool false)
+      (assert-eq "false ; ptr-to-global" (str the-bool))))
+
+(deftest global-string
+  (do (def the-string @"CrAP")
+      (bake the-string)
+      (assert-eq "CrAP ; ptr-to-global" (str the-string))
+      (reset! the-string @"CARP!")
+      (assert-eq "CARP! ; ptr-to-global" (str the-string))))
+
+;; (deftest global-char
+;;   (do (def the-char \e)
+;;       (bake the-char)
+;;       (assert-eq "e" (str the-char))
+;;       (reset! the-char \f)
+;;       (assert-eq "f" (str the-char))))
 
 (tester/run-suite "globals")

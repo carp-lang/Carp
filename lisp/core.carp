@@ -185,6 +185,7 @@
 (defn foreign? (x) (= :foreign (type x)))
 (defn primop? (x) (= :primop (type x)))
 (defn ptr? [x] (= :ptr (type x)))
+(defn ptr-to-global? [x] (= :ptr-to-global (type x)))
 
 (defn function? (x) (or (lambda? x)
                         (foreign? x)
@@ -402,3 +403,7 @@
     (a b ... misc) (let [inside (split-every-second misc)]
                      (list (cons a (first inside))
                          (cons b (second inside))))))
+
+^doc "A shorter name for 'meta-get-all'"
+(defn meta [x]
+  (meta-get-all x))

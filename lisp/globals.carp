@@ -21,8 +21,8 @@
         evaled (eval (symbol variable-name))
         ;;_ (println (str "Global " variable-name " to bake has type " t " and value " evaled))
         c-variable-name (c-ify-name variable-name)
-        init-value (if (contains? '(:int :float :double :string) t)
-                     (prn evaled)
+        init-value (if (contains? '(:int :float :double :string :char :bool) t)
+                     (c-prn evaled)
                      "NULL")
         ]
     (if (graph/node-exists? variable-name)

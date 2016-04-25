@@ -7,7 +7,7 @@
 
 (defn tester/add-test! [test-name]
   (let [existing-tests (get-maybe tester/test-suites *active-test-suite*)]
-    (reset! tester/test-suites (assoc tester/test-suites *active-test-suite* (cons test-name existing-tests)))))
+    (reset! tester/test-suites (assoc tester/test-suites *active-test-suite* (cons-last existing-tests test-name)))))
 
 (defn tester/run-suite [test-suite-name]
   (let [tests (get tester/test-suites test-suite-name)
