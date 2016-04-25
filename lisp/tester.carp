@@ -1,35 +1,54 @@
+(def *active-test-suite* "")
 
-(def tester/tests ())
+(defn tester/set-suite! [test-suite-name]
+  (reset! *active-test-suite* test-suite-name))
+
+(def tester/test-suites {})
 
 (defn tester/add-test! [test-name]
-  (reset! tester/tests (cons test-name tester/tests)))
+  (let [existing-tests (get-maybe tester/test-suites *active-test-suite*)]
+    (reset! tester/test-suites (assoc tester/test-suites *active-test-suite* (cons test-name existing-tests)))))
 
-(defn tester/run-tests []
-  (let [failed-count 0]
-    (do (map (fn [test-name]
-               (let [test-func (eval (symbol test-name))
-                     e (catch-error (test-func))]
-                 (if (nil? e)
-                   nil
-                   (do
-                     (println (str (get-console-color console-color-red)
-                                   (inc failed-count) "."
-                                   " Error in test '" test-name "' \n"
-                                   (get-normal-console-color)
-                                   e "\n"))
-                     (swap! failed-count inc)))))
-             tester/tests)
-        (println (str (if (= 0 failed-count)
-                        (get-console-color console-color-green)
-                        (get-console-color console-color-red))
-                      "Performed " (count tester/tests) " tests, " failed-count " of them failed."
-                      (get-normal-console-color))))))
+(defn tester/run-suite [test-suite-name]
+  (let [tests (get tester/test-suites test-suite-name)
+        failed-count 0]
+    (if (= 0 (count tests))
+      (println (str (get-console-color console-color-yellow)
+                    "No tests to run in test suite '" test-suite-name "'."
+                    (get-normal-console-color)))
+      (do (map (fn [test-name]
+                 (let [test-func (eval (symbol test-name))
+                       e (catch-error (test-func))]
+                   (if (nil? e)
+                     :success
+                     (do
+                       (println (str (get-console-color console-color-red)
+                                     (inc failed-count) "."
+                                     " Error in test '" test-name "' \n"
+                                     (get-normal-console-color)
+                                     e "\n"))
+                       (swap! failed-count inc)))))
+               tests)
+          (println (str (if (= 0 failed-count)
+                          (get-console-color console-color-green)
+                          (get-console-color console-color-red))
+                        "Ran " (count tests) " tests in test suite '" test-suite-name "', " failed-count " of them failed."
+                        (get-normal-console-color)))))))
 
 (defmacro deftest [name body]
   (list 'do
         (list 'defn name [] body)
         (list 'tester/add-test! (prn name))))
 
-(deftest t1 (assert-eq 2 3))
-(deftest t2 (assert-eq 3 3))
-(deftest t3 (assert-eq 12 3))
+;; Example usage:
+;; (tester/set-suite! "foo")
+;; (deftest t1 (assert-eq 2 2))
+;; (deftest t2 (assert-eq 3 3))
+;; (deftest t3 (assert-eq 12 12))
+;; (tester/run-suite "foo")
+
+;; (defmacro in-test-suite [test-suite-name forms]
+;;   (list 'do
+;;         (list 'reset! *active-test-suite* (prn test-suite-name))
+;;         forms
+;;         (list 'reset! *active-test-suite* (prn ""))))
