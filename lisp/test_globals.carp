@@ -1,0 +1,7 @@
+(tester/set-suite! "globals")
+
+;; char int float double bool string array struct
+
+(deftest global-)
+
+(tester/run-suite "globals")

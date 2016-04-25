@@ -21,6 +21,9 @@ To start the Carp compiler in development mode (which will run its test suite), 
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
 * ```prompt``` The prompt displayed in the repl
 * ```profile-infer-time``` Set to true if you want to know the time it takes to infer the types for each function
+* ```profile-external-compiler-time``` Set to true if you want to know the time it takes to run the external C compiler
+* ```log-unloading-of-dylibs``` Should the compiler log when it unloads dynamic libraries?
+* ```log-deps-when-baking-ast``` Should the compiler log the libraries it links to?
 
 ### Special Files
 If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.

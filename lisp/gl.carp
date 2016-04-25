@@ -16,6 +16,9 @@
 (def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
 (register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
 
+(def glfw-cursor-callback-type '(:fn ((:ref :GLFWwindow) :double :double) :void))
+(register glfw "glfwSetCursorPosCallback" (list '(:ref :GLFWwindow) glfw-cursor-callback-type) :void)
+
 (register glfw "glClearColor" '(:float :float :float :float) :void)
 (register glfw "glClear" '(:int) :void)
 (register glfw "glColor3f" '(:float :float :float) :void)
