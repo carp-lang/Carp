@@ -1,105 +1,43 @@
-;; BAKING
+(tester/set-suite! "baking")
 
-(defn fib (n)
-  (if (< n 2)
-    1
-    (+ (fib (- n 2)) (fib (- n 1)))))
-
-(defn test-fib ()
+(deftest test-fib
   (do
+    (defn fib (n)
+      (if (< n 2)
+        1
+        (+ (fib (- n 2)) (fib (- n 1)))))
     (bake fib)
     (assert-eq (fib 6) 13)
     (assert-eq (type fib) :foreign)
     :fib-is-ok))
 
-(test-fib)
-
-
-(defn foo [x]
-  (+ (- (fib x) 100) 7))
-
-(defn test-foo ()
-  (do (bake foo)
-      (assert-eq (foo 6) -80)
-      (assert-eq (type foo) :foreign)
-      :foo-is-ok))
-
-(test-foo)
-
-
-(defn hypo [x y]
-  (sqrtf (+ (* x x) (* y y))))
-
-(defn test-hypo ()
-  (do (bake hypo)
+(deftest test-hypo
+  (do (defn hypo [x y]
+        (sqrtf (+ (* x x) (* y y))))
+      (bake hypo)
       (assert-approx-eq (hypo 3.0f 4.0f) 5.0f)
       (assert-eq (type hypo) :foreign)
       :hypo-is-ok))
 
-(test-hypo)
-
-
-(defn f [s]
-  (strlen s))
-
-(defn g (x s)
-  (* x (f s)))
-
-(defn h (x)
-  (if false "Hej" x))
-
-(def fast (lambda-to-ast (code f)))
-(def fcon (gencon fast))
-(def fasta (annotate-ast fast))
-
-(def hast (lambda-to-ast (code h)))
-(def hcon (gencon hast))
-(def hasta (annotate-ast hast))
-
-(defn fail-1 ()
-  (+ "hej" 23))
-
-(def fail-1-ast (lambda-to-ast (code fail-1)))
-(def fail-1-con (gencon fail-1-ast))
-;;(def fail-1-asta (annotate-ast fail-1-ast))
-
-(defn mix (x y z)
-  (if (< (strlen z) 3) (* (itof y) x) x))
-
-;; (def mixast (lambda-to-ast (code mix)))
-;; (def mixcon (gencon mixast))
-;; (def mixasta (annotate-ast mixast))
-
-(defn monad ()
-  (do (strlen "hej")
-      (strlen "svej")
-      (strlen "yay")))
-
-(def monast (lambda-to-ast (code monad)))
-(def moncon (gencon monast))
-(def monasta (annotate-ast monast))
-
-
-
-(defn test-loading ()
+(deftest test-loading
   (do
-    (save "out/out.c" "int f() { return 100; }")
-    (system "clang -shared -o out/f.so out/out.c")
-    (def flib (load-dylib "out/f.so"))
+    (save (str carp-dir "out/out.c") "int f() { return 100; }")
+    (system (str "clang -shared -o " carp-dir "out/f.so " carp-dir "out/out.c"))
+    (def flib (load-dylib (str carp-dir "out/f.so")))
     (register flib "f" () :int)
     (assert-eq 100 (f))
     
-    (save "out/out.c" "int g() { return 150; }")
-    (system "clang -shared -o out/g.so out/out.c")
-    (def glib (load-dylib "out/g.so"))
+    (save (str carp-dir "out/out.c") "int g() { return 150; }")
+    (system (str "clang -shared -o " carp-dir "out/g.so " carp-dir "out/out.c"))
+    (def glib (load-dylib (str carp-dir "out/g.so")))
     (register glib "g" () :int)
     (assert-eq 150 (g))
     
     (unload-dylib flib)
     
-    (save "out/out.c" "int f() { return 200; }")
-    (system "clang -shared -o out/f.so out/out.c")
-    (def flib (load-dylib "out/f.so"))
+    (save (str carp-dir "out/out.c") "int f() { return 200; }")
+    (system (str "clang -shared -o " carp-dir "out/f.so " carp-dir "out/out.c"))
+    (def flib (load-dylib (str carp-dir "out/f.so")))
     (register flib "f" () :int)
     (assert-eq 200 (f))
     ))
@@ -124,7 +62,7 @@
 
 
 ;; Auto chain bake
-(defn test-auto-chain-bake-1 ()
+(deftest test-auto-chain-bake-1
   (do
     (defn f1 () 100)
     (defn f2 () 200)
@@ -134,7 +72,7 @@
 (test-auto-chain-bake-1)
 
 
-(defn test-auto-chain-bake-2 ()
+(deftest test-auto-chain-bake-2
   (do
     (defn f4 () 100)
     (defn f5 (x) (+ x 1))
@@ -147,7 +85,7 @@
 
 
 
-(defn test-unloading-depending-functions []
+(deftest test-unloading-depending-functions
   (do
     (defn f7 [] 100)
     (bake f7)
@@ -183,26 +121,26 @@
   (if-not true
     10
     20))
-(defn test-macro-1 ()
+
+(deftest test-macro-1
   (do (bake macro-1)
       (assert-eq (macro-1) 20)))
-(test-macro-1)
+
 
 ;; RESET
 (defn reset-1 ()
   (let [x 0]
     (do (reset! x 123)
         x)))
-(defn test-reset-1 ()
+
+(deftest test-reset-1
   (do (bake reset-1)
       (assert-eq (reset-1) 123)))
-;;(test-reset-1)
 
-
-(def reset-1-ast (lambda-to-ast (code reset-1)))
-(def reset-1-deps (find-func-deps reset-1-ast false))
-(def reset-1-con (gencon reset-1-ast))
-(def reset-1-asta (annotate-ast reset-1-ast))
+;; (def reset-1-ast (lambda-to-ast (code reset-1)))
+;; (def reset-1-deps (find-func-deps reset-1-ast false))
+;; (def reset-1-con (gencon reset-1-ast))
+;; (def reset-1-asta (annotate-ast reset-1-ast))
 
 
 ;; LET BINDINGS
@@ -212,6 +150,7 @@
         x (string-append "hej" (ref (itos (strlen y))))
         ]
     x))
+
 (bake recursive-let)
 
 
@@ -229,12 +168,11 @@
 (defn call-me ()
   (string-copy "CARP!"))
 
-(defn test-call-twice ()
+(deftest test-call-twice
   (do (bake call-twice)
       (bake call-me)
       (assert-eq "CARP!" (call-twice call-me))))
 
-(test-call-twice)
 
 
 ;; CHARS
@@ -250,9 +188,9 @@
   (->> [10 20 30]
        (map inc)))
 
-(defn test-baking-of-pipe-last-macro []
+(deftest test-baking-of-pipe-last-macro
   (do (bake baking-of-pipe-last-macro)
-      (assert-eq "[11, 21, 31]" (str (baking-of-pipe-last-macro)))))
+      (assert-eq "[11 21 31]" (str (baking-of-pipe-last-macro)))))
 
 
 (defn baking-of-pipe-first-macro []
@@ -260,34 +198,15 @@
       (- 2)
       (* 2)))
 
-(defn test-baking-of-pipe-first-macro []
+(deftest test-baking-of-pipe-first-macro
   (do (bake baking-of-pipe-first-macro)
       (assert-eq 16 (baking-of-pipe-first-macro))))
 
 
 
-;; Shared builder
-
-(defn test-shared-builder []
-  (do
-    (defn h []
-      (strlen (ref (str 123))))
-
-    (defn g []
-      (+ (h) (h)))
-    
-    (defn f []
-      (inc (g)))
-    
-    (enable-shared-builder!)))
-
-
-
-
-
 ;; Global variables
 
-(defn test-global-variables []
+(deftest test-global-variables
   (do
     (defstruct Foo [foox :int])
 
@@ -363,15 +282,12 @@
 
 (defn h [] (f))
 
-(defn test-bake-group []
+(deftest test-bake-group
   (do
     (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
     (bake h)))
 
-
-
-
-(defn test-global-with-array-of-structs []
+(deftest test-global-with-array-of-structs
   (do
     (defstruct A [])
     (def some-a [(A) (A) (A)])
@@ -379,4 +295,4 @@
       (println* &some-a))
     (bake use-some-a)))
 
-(test-global-with-array-of-structs)
+(tester/run-suite "baking")
