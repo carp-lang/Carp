@@ -2,15 +2,6 @@
 
 ;; char int float double bool string array struct
 
-(deftest global-struct
-  (do (defstruct TheStruct [theStructValue :int])
-      (def the-struct (TheStruct 500))
-      (bake the-struct)
-      (assert-eq "(TheStruct 500) ; ptr-to-global" (str the-struct))
-      (reset! the-struct (TheStruct 600))
-      (gc)
-      (assert-eq "(TheStruct 600) ; ptr-to-global" (str the-struct))))
-
 (deftest global-int
   (do (def the-int 100)
       (bake the-int)
@@ -51,11 +42,27 @@
       (gc)
       (assert-eq "CARP! ; ptr-to-global" (str the-string))))
 
-;; (deftest global-char
-;;   (do (def the-char \e)
-;;       (bake the-char)
-;;       (assert-eq "\\e ; ptr-to-global" (str the-char))
-;;       (reset! the-char \f)
-;;       (assert-eq "\\f ; ptr-to-global" (str the-char))))
+(deftest global-char
+  (do (def the-char \e)
+      (bake the-char)
+      (assert-eq "\\e ; ptr-to-global" (str the-char))
+      (reset! the-char \f)
+      (assert-eq "\\f ; ptr-to-global" (str the-char))))
+
+(deftest global-array
+  (do (def the-array [1 2 3])
+      (bake the-array)
+      (assert-eq "[1 2 3] ; ptr-to-global" (str the-array))
+      (reset! the-array [4 5 6])
+      (assert-eq "[4 5 6] ; ptr-to-global" (str the-array))))
+
+(deftest global-struct
+  (do (defstruct TheStruct [theStructValue :int])
+      (def the-struct (TheStruct 500))
+      (bake the-struct)
+      (assert-eq "(TheStruct 500) ; ptr-to-global" (str the-struct))
+      (reset! the-struct (TheStruct 600))
+      (gc)
+      (assert-eq "(TheStruct 600) ; ptr-to-global" (str the-struct))))
 
 (tester/run-suite "globals")
