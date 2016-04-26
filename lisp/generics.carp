@@ -342,8 +342,14 @@
 
     x (error (str "Can't build generic primop for '" x "'"))))
 
-
 (defn instantiate-str-for-string [c-func-name]
+  (let [proto (str "API string " c-func-name "(string s)")
+        c (str proto "{ return strdup(s); }\n")]
+    {:proto proto
+     :c c
+     :deps ()}))
+
+(defn instantiate-prn-for-string [c-func-name]
   (let [proto (str "API string " c-func-name "(string s)")
         c (str proto " {\n"
                ;;" printf(\"calling str on string '%s'\\n\", s);\n"

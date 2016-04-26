@@ -408,8 +408,11 @@
 (defn meta [x]
   (meta-get-all x))
 
-(defn str* [strings]
+(defn str-internal [strings]
   (let [s @""]
     (do (for (i 0 (count strings))
           (reset! s (string-append &s (nth strings i))))
         s)))
+
+(defmacro str* [... strings]
+  (list 'str-internal (list 'ref (apply array (map (fn [s] (list 'str s)) strings)))))

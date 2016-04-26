@@ -6,37 +6,8 @@
 
 
 
-
-
-
-;; (defn q []
-;;   (let [s @"Data!"]
-;;     (while true
-;;       (reset! s (id s)))))
-
-;; (defn q2 []
-;;   (let [s @"Data!"]
-;;     (do
-;;       (reset! s (id @&s))
-;;       s)))
-
-;; (bake q)
-
-
-(defn qq [strings]
-  (let [s @""]
-    (do (for (i 0 (count strings))
-          (reset! s (string-append &s (nth strings i))))
-        s)))
-
-(defn qmain []
-  (println &(qq &[@"hej" @"svej" @"!"])))
-
-;;(bake-exe qmain)
-
-^ann '(:fn ((:Array :string)) :void)
-(defn strs [strings]
-  (println (ref (str (ref strings)))))
+(defn f []
+  (str* "hej" "san" "svej" "san" "!"))
 
 
 
