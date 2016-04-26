@@ -6,7 +6,7 @@
 
 
 
-(defn f []
+(defn fsdfdsf []
   (str* "hej" "san" "svej" "san" "!"))
 
 
