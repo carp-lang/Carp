@@ -242,4 +242,14 @@
       (println* &some-a))
     (bake use-some-a)))
 
+(deftest reset-in-while-loop-1
+  (let [s [1 2 3]
+        x 0]
+    (do
+      (while (< x 10)
+        (do
+          (reset! s (copy &s))
+          (reset! x (inc x))))
+      (println* &s))))
+
 (tester/run-suite "baking")

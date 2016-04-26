@@ -43,7 +43,7 @@
 (register-builtin "file_existsQMARK" '((:ref :string)) :bool)
 
 ;; System
-(register-builtin "panic" '((:ref :string)) "T")
+(register-builtin "panicBANG" '((:ref :string)) "T")
 (register-builtin "sleep" '(:int) :void)
 (register-builtin "async" '((:fn () :void)) :void)
 

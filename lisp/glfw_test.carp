@@ -4,7 +4,7 @@
   (if (glfwInit)
     (let [window (glfwCreateWindow 640 480 "Yeah!" NULL NULL)]
       (if (null? window)
-        (panic "No window.")
+        (panic! "No window.")
         (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (while (not (glfwWindowShouldClose window))
@@ -17,7 +17,7 @@
                 (glfwPollEvents)))
             (println "Time to go.")
             (glfwTerminate))))
-    (panic "Failed to initialize glfw.")))
+    (panic! "Failed to initialize glfw.")))
 
 ;;(bake draw-rect)
 

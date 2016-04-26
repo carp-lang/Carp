@@ -47,7 +47,7 @@ EXPORT bool not(bool x) {
   return !x;
 }
 
-EXPORT void panic(string msg) {
+EXPORT void panicBANG(string msg) {
   printf("Error: %s\n", msg);
   exit(1);
 }
@@ -109,7 +109,7 @@ EXPORT int last_index_of(string s, char c) {
 
 EXPORT string substring(string s, int index) {
   if(index >= strlen(s)) {
-    panic("substring out of bounds");
+    panicBANG("substring out of bounds");
   }
   const char *sub = s + index;
   return strdup(sub);

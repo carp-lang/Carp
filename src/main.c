@@ -1,7 +1,12 @@
 #include "repl.h"
 #include "eval.h"
 #include "gc.h"
+#include <stdio.h>
+#include <unistd.h>
 #include "../shared/shared.h"
+#include "../shared/platform.h"
+
+#define HANDLE_SIGNALS 1
 
 void signal_handler(int sig) {
   printf("\e[31m");
@@ -22,6 +27,8 @@ void signal_handler(int sig) {
   case SIGSEGV:
     printf("SIGSEGV\n");
     printf("\e[0m");
+    printf("Will try to resume in 1 second...\n");
+    sleep(1);
     longjmp(jumpbuffer, 0);
     break;
   case SIGTERM:
@@ -35,12 +42,14 @@ void signal_handler(int sig) {
 
 int main(int argc, char **argv) {
 
-  signal(SIGABRT, signal_handler);
-  signal(SIGFPE, signal_handler);
-  signal(SIGILL, signal_handler);
-  signal(SIGSEGV, signal_handler);
-  signal(SIGTERM, signal_handler);
-  //signal(SIGINT, signal_handler);
+  if(HANDLE_SIGNALS) {
+    signal(SIGABRT, signal_handler);
+    signal(SIGFPE, signal_handler);
+    signal(SIGILL, signal_handler);
+    signal(SIGSEGV, signal_handler);
+    signal(SIGTERM, signal_handler);
+    //signal(SIGINT, signal_handler);
+  }
   
   /* printf("%ld %ld %ld \n", sizeof(float), sizeof(int), sizeof(void*)); */
   carp_platform_init();

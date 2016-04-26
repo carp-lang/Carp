@@ -202,9 +202,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         values[i] = &args[i]->s;
       }
       else {
-        /* printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", */
-        /*        obj_to_string(p->car)->s, */
-        /*        args[i]->tag); */         
+        //printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);         
           
         if(args[i]->tag == 'Q' /* || args[i]->tag == 'R' */) {
 
@@ -234,6 +232,10 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         else if(args[i]->tag == 'A') {
           // TODO: Do some type checking here!!!
           Array *a = obj_array_to_carp_array(process, args[i]);
+          if(eval_error) {
+            return;
+          }
+          assert(a);
           values[i] = &a;            
         }
         else if(args[i]->tag == 'F') {
