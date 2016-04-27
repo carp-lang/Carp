@@ -381,9 +381,6 @@
 (def pi 3.14159265)
 (def two-pi (* pi 2.0))
 
-(defn println* [x]
-  (println (ref (str x))))
-
 (defmacro eb [form]
   `(eval-bytecode (bytecode ~form)))
 
@@ -416,3 +413,6 @@
 
 (defmacro str* [... strings]
   (list 'str-internal (list 'ref (apply array (map (fn [s] (list 'str s)) strings)))))
+
+(defmacro println* [... forms]
+  (list 'println (list 'ref (list 'str-internal (list 'ref (apply array (map (fn [s] (list 'str s)) forms)))))))
