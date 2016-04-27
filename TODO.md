@@ -1,10 +1,10 @@
 # Compiler Big Features
   - Compile "and" & "or"
-  - Lambdas / lambda lifting
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements
   - All types should have capital first letter
+  - Lambdas / lambda lifting
   
 # Compiler Small Features
   - instantiate 'prn' for all the types that have 'str'
