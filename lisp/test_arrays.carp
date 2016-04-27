@@ -117,4 +117,16 @@
 ;; (def copy-2-sol (solve-constraints copy-2-con))
 ;; (def copy-2-asta (annotate-ast copy-2-ast))
 
+
+(deftest disallow-refs-in-array
+  (do
+    (defn refs-in-array-func []
+      (let [a ["bleh"]]
+        a))
+    (let [caught (catch-error (bake refs-in-array-func))]
+      (assert-eq error-ref-in-array
+                 (:error caught)))))
+
+
 (tester/run-suite "arrays")
+

@@ -658,6 +658,10 @@
                  ;;_ (println (str "inner-type: " inner-type))
                  looked-up-inner-type (get-type substs inner-type)
                  ;;_ (println (str "looked-up-inner-type: " looked-up-inner-type))
+                 _ (when (ref? looked-up-inner-type)
+                     (error {:error error-ref-in-array
+                             :message (str "The type of the elements in the array " (:original-form ast) " on line " (:line ast) " is not owned.\n")
+                             :show-stacktrace false}))
                  x0 (assoc ast :type (list :Array looked-up-inner-type))
                  x1 (assoc x0 :values (map (fn (x) (assign-types x substs)) (:values ast)))]
              x1)

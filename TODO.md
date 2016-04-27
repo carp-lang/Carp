@@ -3,8 +3,8 @@
   - Lambdas / lambda lifting
   - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Compile match statements
   - Generic structs
+  - Compile match statements
   
 # Compiler Small Features
   - instantiate 'prn' for all the types that have 'str'
@@ -15,9 +15,7 @@
   - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
-  - reset! will not eat the symbol it sets (see 'str*' in core.carp)
   - Variables named the same thing as a struct can override the dylib generated for the struct group.
-  - Not allow putting refs into an array
   - Delete content of global var when resetting from repl
   - Use 'generic-name' when concretesizing generic primops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)

@@ -6,11 +6,14 @@
 
 
 
-(defn fsdfdsf []
-  (str* "hej" "san" "svej" "san" "!"))
+;;(defn fsdfdsf [] (str* "hej" "san" "svej" "san" "!"))
 
 
 
+
+
+
+;;(tester/run-suite "")
 
 
 
