@@ -21,4 +21,28 @@
     (bake use-and*)
     (assert-eq false (use-and*))))
 
+;; (deftest test-or-1
+;;   (do
+;;     (defn use-or-1 []
+;;       (or true false))
+;;     (bake use-or-1)
+;;     (assert-eq true (use-or-1))))
+
+;; (deftest test-or-2
+;;   (do
+;;     (defn use-or-2 []
+;;       (or false false))
+;;     (bake use-or-2)
+;;     (assert-eq false (use-or-2))))
+
+;; (deftest test-or*
+;;   (do
+;;     (defn dont-evaluate-this []
+;;       (do (println "don't evaluate this")
+;;           false))
+;;     (defn use-or* []
+;;       (or* false false false true false (dont-evaluate-this)))
+;;     (bake use-or*)
+;;     (assert-eq true (use-or*))))
+
 (tester/run-suite "binops")

@@ -5,10 +5,7 @@
 ;;(reset! log-deps-when-baking-ast true)
 
 
-;; (defn use-and []
-;;   (if (and* true true false true)
-;;     @"YES"
-;;     @"NO"))
+
 
 ;; (bake use-and)
 

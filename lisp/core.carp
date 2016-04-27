@@ -424,3 +424,11 @@
 
 (defmacro and* [... forms]
   (and-internal forms))
+
+(defn or-internal [forms]
+  (match forms
+    (a b) (list 'or a b)
+    (a ... xs) (list 'or a (or-internal xs))))
+
+(defmacro or* [... forms]
+  (or-internal forms))

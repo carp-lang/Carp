@@ -42,9 +42,9 @@
   (if (binop? l)
     (match l
       (op left right) {:node :binop
-                       :type (if (= op 'and)
-                               :bool
-                               (gen-typevar))
+                       :type (cond
+                               (= op 'and) :bool
+                               :else (gen-typevar))
                        :op op
                        :left (form-to-ast left)
                        :right (form-to-ast right)})
