@@ -42,5 +42,25 @@
       (bake prn-a-char)
       (assert-eq "\\y" (prn-a-char))))
 
+(deftest str-struct-dynamic
+  (do (defstruct StrMe [str-me-string :string])
+      (assert-eq "(StrMe \"yeah\")" (str (StrMe "yeah")))))
+
+(deftest prn-struct-dynamic
+  (do (defstruct PrnMe [prn-me-string :string])
+      (assert-eq "(PrnMe \"yeah\")" (prn (PrnMe "yeah")))))
+
+(deftest str-struct-compiled
+  (do (defstruct StrMe2 [str-me-2-string :string])
+      (defn str-me []
+        (str &(StrMe2 @"yeah")))
+      (bake str-me)
+      (assert-eq "(StrMe2 \"yeah\")" (str-me))))
+
+(deftest prn-struct-compiled
+  (do (defstruct PrnMe2 [prn-me-2-string :string])
+      (defn prn-me []
+        (prn &(PrnMe2 @"yeah")))
+      (assert-eq "(PrnMe2 \"yeah\")" (prn-me))))
 
 (tester/run-suite "printing")

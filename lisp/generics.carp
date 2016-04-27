@@ -274,7 +274,7 @@
 
               (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
 
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type false)
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
               
               x (error (str "Invalid (non-ref?) type for call to 'str': " x))))
 
@@ -305,7 +305,7 @@
 
               (:fn ((:ref :string)) :string) (instantiate-prn-for-string c-func-name)
 
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type true)
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
               
               x (error (str "Invalid (non-ref?) type for call to 'prn': " x))))
 
@@ -472,7 +472,7 @@
     t
     (list :ref t)))
 
-(defn instantiate-str-or-prn-for-struct [c-func-name maybe-struct-type should-prn]
+(defn instantiate-str-or-prn-for-struct [c-func-name maybe-struct-type]
   (if (keyword? maybe-struct-type)
     (let [_ (when (or (= :string maybe-struct-type)
                       (primitive-type? maybe-struct-type))
@@ -485,7 +485,7 @@
               member-types (array-to-list (:member-types lookup))
               reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
               ;;_ (println (str "reffed-member-types: " reffed-member-types))
-              deps (cons t-name (map (fn [t] (c-ify-name (generic-name (if should-prn "prn" "str") (list :fn (list t) :string)))) reffed-member-types))
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "prn" (list :fn (list t) :string)))) reffed-member-types))
               ;;_ (println (str "deps: " deps))
               c (str proto " {\n"
                      "  char buffer[1024];\n"
@@ -498,9 +498,9 @@
                      (join " " (map2 (fn [t n]
                                        (do
                                          ;;(println (str "t: " t))
-                                         (bake-generic-primop-auto (if should-prn "prn" "str") (list :fn (list t) :string))
+                                         (bake-generic-primop-auto "prn" (list :fn (list t) :string))
                                          (str "
-  s = " (c-ify-name (generic-name (if should-prn "prn" "str") (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
+  s = " (c-ify-name (generic-name "prn" (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
   snprintf(buffer + pos, 1000, \"%s\", s);
   pos += strlen(s);
   buffer[pos++] = ' ';")))
