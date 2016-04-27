@@ -52,30 +52,6 @@
         b))
     (bake polylet-2)))
 
-(deftest test-istr
-  (do
-    (defn istr []
-      (str 42))
-    (bake istr)))
-
-(deftest test-star
-  (do 
-    (defn star []
-      (str (ref [7 3 4])))
-    (bake star)))
-
-(deftest star-f
-  (do
-    (defn star-f []
-      (str (ref [7.2 3.1 4.2])))
-    (bake star-f)))
-
-(deftest star-s
-  (do
-    (defn star-s []
-      (str (ref [(string-copy "yeah") (string-copy "oh")])))
-    (bake star-s)))
-
 (deftest test-generic-function-calling
   (do
     (defn a-function-as-argument [x y]
@@ -130,36 +106,5 @@
     (bake idd)
     (assert-eq :foreign (type idd))
     (assert-eq 15 (use-user))))
-
-
-;; DELETE FUNCTIONS (shouldn't be used in user code really... but you can!)
-
-;; These are problematic now for some reason..?!
-
-;; (defn delete-1 []
-;;   (delete (copy "CARP")))
-
-;; (bake delete-1)
-
-
-;; (defstruct DeleteMe [deleteThisMember :int])
-
-;; (defn delete-2 []
-;;   (delete (DeleteMe 10000)))
-
-;; (bake delete-2)
-
-
-;; (defn delete-3 []
-;;   (delete [1 2 3]))
-
-;; (bake delete-3)
-
-
-;; (defn delete-4 []
-;;   (delete [[] [1] [1 2] [1 2 3]]))
-
-;; (bake delete-4)
-
 
 (tester/run-suite "generics")
