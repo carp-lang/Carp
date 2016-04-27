@@ -83,4 +83,12 @@
     (bake prn-an-array)
     (assert-eq "[\"a\" \"b\" \"c\"]" (prn-an-array))))
 
+(deftest test-improved-str
+  (do
+    (defstruct Woah [woah-name :string])
+    (defn use-str []
+      (str* "x = " 10 ", name = " "ERIK " &(Woah @"bleh") " ... " &[@"a" @"b" @"c"]))
+    (bake use-str)
+    (assert-eq "x = 10, name = ERIK (Woah \"bleh\") ... [\"a\" \"b\" \"c\"]" (use-str))))
+
 (tester/run-suite "printing")
