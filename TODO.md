@@ -1,5 +1,6 @@
 # Compiler Big Features
   - Compile "or"
+  - Bounds checking on arrays
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements
