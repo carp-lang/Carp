@@ -9,6 +9,8 @@
 #include "types.h"
 #include "platform.h"
 
+#define and &&
+
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)
 #else

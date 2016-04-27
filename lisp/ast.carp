@@ -25,7 +25,7 @@
 
 (defn binop? [form]
   (match form
-    (x ... _) (contains? '(+ - * / <) x)
+    (x ... _) (contains? '(+ - * / < and) x)
     _ false))
 
 (defn gen-fn-type [arg-count]
@@ -42,7 +42,9 @@
   (if (binop? l)
     (match l
       (op left right) {:node :binop
-                       :type (gen-typevar)
+                       :type (if (= op 'and)
+                               :bool
+                               (gen-typevar))
                        :op op
                        :left (form-to-ast left)
                        :right (form-to-ast right)})

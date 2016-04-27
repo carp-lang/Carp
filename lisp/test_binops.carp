@@ -1,0 +1,17 @@
+(tester/set-suite! "binops")
+
+(deftest test-and-1
+  (do
+    (defn use-and-1 []
+      (and true false))
+    (bake use-and-1)
+    (assert-eq false (use-and-1))))
+
+(deftest test-and-2
+  (do
+    (defn use-and-2 []
+      (and true true))
+    (bake use-and-2)
+    (assert-eq true (use-and-2))))
+
+(tester/run-suite "binops")

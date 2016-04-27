@@ -34,7 +34,7 @@
   - Macro splicing
   - Modules 
   - A Set-type with reader syntax #{}
-  - Instantiate generic functions like '=' for primitive types
+  - Instantiate generic functions like '=' for primitive types when calling them
   
 ## Modules
   - Name
