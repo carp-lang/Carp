@@ -1,0 +1,74 @@
+(tester/set-suite! "equality")
+
+(deftest test-eq-int
+  (do
+    (defn eq-int []
+      (if (= 5 5)
+        @"yes"
+        @"no"))
+    (bake eq-int)
+    (assert-eq "yes" (eq-int))))
+
+(deftest test-eq-bool
+  (do
+    (defn eq-bool []
+      (if (= true true)
+        @"yes"
+        @"no"))
+    (defn eq-bool-2 []
+      (if (= true false)
+        @"yes"
+        @"no"))
+    (bake eq-bool)
+    (bake eq-bool-2)
+    (assert-eq "yes" (eq-bool))
+    (assert-eq "no" (eq-bool-2))))
+
+(deftest test-eq-char
+  (do
+    (defn eq-char []
+      (if (= \a \a)
+        @"yes"
+        @"no"))
+    (defn eq-char-2 []
+      (if (= \a \b)
+        @"yes"
+        @"no"))
+    (bake eq-char)
+    (bake eq-char-2)
+    (assert-eq "yes" (eq-char))
+    (assert-eq "no" (eq-char-2))))
+
+(deftest test-eq-array
+  (do
+    (defn eq-array []
+      (if (= &[1 2 3] &[1 2 3])
+        @"yes"
+        @"no"))
+    (defn eq-array-2 []
+      (if (= &[1 2 3] &[1 2 4])
+        @"yes"
+        @"no"))
+    (bake eq-array)
+    (bake eq-array-2)
+    (assert-eq "yes" (eq-array))
+    (assert-eq "no" (eq-array-2))))
+
+(deftest test-eq-struct
+  (do
+    (defstruct CompareMe [compare-me-x :int
+                          compare-me-y :int])
+    (defn eq-struct []
+      (if (= &(CompareMe 2 3) &(CompareMe 2 3))
+        @"yes"
+        @"no"))
+    (defn eq-struct-2 []
+      (if (= &(CompareMe 2 3) &(CompareMe 2 4))
+        @"yes"
+        @"no"))
+    (bake eq-struct)
+    (bake eq-struct-2)
+    (assert-eq "yes" (eq-struct))
+    (assert-eq "no" (eq-struct-2))))
+
+(tester/run-suite! "")

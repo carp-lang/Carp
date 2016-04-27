@@ -20,3 +20,13 @@
   (match (:type ast)
     (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
     x (error (str "Can't match " x " in generic-function?"))))
+
+(defn c-ify-name (lisp-name)
+  (let [x0 (str-replace lisp-name "-" "_")
+        x1 (str-replace x0 "?" "QMARK")
+        x2 (str-replace x1 "!" "BANG")
+        x3 (str-replace x2 "*" "PTR")
+        x4 (str-replace x3 "<" "LT")
+        x5 (str-replace x4 ">" "GT")
+        x6 (str-replace x5 "=" "EQ")]
+    x6))

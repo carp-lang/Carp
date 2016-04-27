@@ -49,15 +49,6 @@
                         (str (indent) (c-ify-name delete-fn-name) "(" (c-ify-name (:name variable)) ");\n"))))
                   free-list))))
 
-(defn c-ify-name (lisp-name)
-  (let [x0 (str-replace lisp-name "-" "_")
-        x1 (str-replace x0 "?" "QMARK")
-        x2 (str-replace x1 "!" "BANG")
-        x3 (str-replace x2 "*" "PTR")
-        x4 (str-replace x3 "<" "LT")
-        x5 (str-replace x4 ">" "GT")]
-    x5))
-
 (defn ensure-function-type [t]
   (match t
     (:fn arg-types return-type) (let [func-type-name (str "Fn_" (join "_" (map type-build-no-star arg-types))

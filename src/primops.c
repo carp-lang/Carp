@@ -1415,12 +1415,14 @@ char *lispify(char *name) {
   char *s3 = str_replace(s2, "PTR", "*");
   char *s4 = str_replace(s3, "LT", "<");
   char *s5 = str_replace(s4, "GT", ">");
+  char *s6 = str_replace(s5, "EQ", "=");
   free(s0);
   free(s1);
   free(s2);
   free(s3);
   free(s4);
-  return s5;
+  free(s5);
+  return s6;
 }
 
 ffi_type **make_arg_type_array(Process *process, Obj *args, int arg_count, char *func_name) {

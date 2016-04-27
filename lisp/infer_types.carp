@@ -7,12 +7,6 @@
                 (map2 list (map :name args) (map :type args)))
         new-env)))
 
-;; (defn is-self-recursive? (type-env app-f-name)
-;;   (let [x (get-maybe type-env app-f-name)]
-;;     (do
-;;       ;;(println (str "app-f: " app-f-name ", x: " x))
-;;       (= x :self))))
-
 (defn get-type-of-symbol (type-env symbol)
   (let [lookup (get-maybe type-env symbol)]
     (if (nil? lookup)

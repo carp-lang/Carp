@@ -5,6 +5,7 @@
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements
+  - All types should have capital first letter
   
 # Compiler Small Features
   - instantiate 'prn' for all the types that have 'str'

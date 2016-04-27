@@ -82,12 +82,7 @@
                      :op op
                      :left (form-to-ast left)
                      :right (form-to-ast right)})
-    (match l
-           ('= left right) {:node :binop
-                            :type :bool
-                            :op '==
-                            :left (form-to-ast left)
-                            :right (form-to-ast right)}
+    (match l          
 
            (x ... xs) (if (def? x)
                         (let [evaled (eval x)]

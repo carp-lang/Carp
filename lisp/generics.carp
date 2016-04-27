@@ -339,8 +339,78 @@
                     {:proto proto :c c :deps ()})
                   _ (error "Invalid type for call to 'array-set'"))
 
+    "=" (match signature
+          (:fn (:int :int) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
+          (:fn (:bool :bool) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
+          (:fn (:char :char) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+          (:fn ((:ref (:Array a)) (:ref (:Array a))) :bool) (instantiate-eq-for-array c-func-name a)
+          (:fn ((:ref maybe-struct-type) (:ref maybe-struct-type)) :bool) (instantiate-eq-for-struct c-func-name maybe-struct-type)
+          _ (error (str "Invalid signature for call to '=': " (pretty-signature signature))))
 
     x (error (str "Can't build generic primop for '" x "'"))))
+
+
+(defn instantiate-eq-for-primitive-type [c-func-name t]
+  (let [proto (str "bool " c-func-name "(" (type-build t) " a, " (type-build t) " b)")
+        c (str proto " { return ((a) == (b)); }\n")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-eq-for-array [c-func-name inner-t]
+  (let [proto (str "bool " c-func-name "(Array *a, Array *b)")
+
+        inner-arg-type (if (primitive-type? inner-t) inner-t (list :ref inner-t))
+        inner-signature (list :fn (list inner-arg-type inner-arg-type) :bool)
+        inner-eq-call (c-ify-name (generic-name (symbol "=") inner-signature))
+        _ (bake-generic-primop-auto "=" inner-signature)
+        
+        c (str proto " "
+               "{\n"
+               "  if(a->count != b->count) { return false; }\n"
+               "  " (type-build inner-t) " *casted_a = a->data;\n"
+               "  " (type-build inner-t) " *casted_b = b->data;\n"
+               "  for(int i = 0; i < a->count; i++) {\n"
+               "    if(!" inner-eq-call "(casted_a[i], casted_b[i])) { return false; }\n"
+               "  }\n"
+               "  return true;\n"
+               "}\n")]
+    {:proto proto :c c :deps (list inner-eq-call)}))
+
+(defn instantiate-eq-for-struct [c-func-name maybe-struct-type]
+  (if (keyword? maybe-struct-type)
+    (let [_ (when (or (= :string maybe-struct-type)
+                      (primitive-type? maybe-struct-type))
+              (error (str "Primitive type sent to '=' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
+          lookup (eval (symbol (name maybe-struct-type)))]
+      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+        (let [t-name (name maybe-struct-type)
+              proto (str "bool " c-func-name "(" t-name " *a, " t-name " *b)")
+              member-names (array-to-list (:member-names lookup))
+              member-types (array-to-list (:member-types lookup))
+              reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "=" (list :fn (list t t) :bool)))) reffed-member-types))
+              ;;_ (println (str c-func-name " deps: " deps))
+              c (str proto " {\n"
+                     "if(a == b) { return true; }\n"
+                     "  "
+                     (join "  " (map2 (fn [t n]
+                                       (do
+                                         (println (str "t: " t))
+                                         (let [inner-signature (list :fn (list t t) :bool)
+                                               _ (bake-generic-primop-auto "=" inner-signature)
+                                               inner-name (c-ify-name (generic-name "=" inner-signature))
+                                               cn (c-ify-name n)]
+                                           (str "if(!" inner-name "(a->" cn ", b->" cn ")) { return false; }\n"))))
+                                     reffed-member-types
+                                     member-names))
+                     "  return true;\n"
+                     "}\n")]
+          {:proto proto
+           :c c
+           :deps deps})
+        (error (str "Invalid (non-struct) type for call to '=': " maybe-struct-type "\n" lookup))))
+    (error (str "Invalid type for call to '=': " maybe-struct-type))))
+
+
 
 
 
