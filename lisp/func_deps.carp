@@ -1,6 +1,5 @@
-
 ;; vars-in-scope is a list of symbols
-;; deps is a list of symbols refering to the functions that has to be baked for this function to work
+;; deps is a list of strings refering to the functions that has to be baked for this function to work
 
 (defn global? (vars-in-scope symbol)
   (not (contains? vars-in-scope symbol)))
@@ -67,9 +66,7 @@
                                                ast1)
                                         
                                         :function (let [args (:args ast)
-                                                        new-vars (union (map :name args) vars-in-scope)
-                                                        ;;_ (println (str "new-vars: " new-vars))
-                                                        ]
+                                                        new-vars (union (map :name args) vars-in-scope)]
                                                     (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
 
                                         :if (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
@@ -90,25 +87,17 @@
                                         :do (let [new-ast (update-in ast '(:forms) (fn (a) (find-deps-in-list a vars-in-scope)))]
                                               new-ast)
 
-                                        :let (let [;;_ (println (str "ast:\n" ast))
-                                                   bindings (:bindings ast)
+                                        :let (let [bindings (:bindings ast)
                                                    new-vars (union (map :name bindings) vars-in-scope)
-                                                   ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))
-                                                   ;;_ (println (str "ast0:\n" ast0))
-                                                   ]
+                                                   ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))]
                                                (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a new-vars))))
 
                                         :ref (let [ast0 (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))]
                                                ast0)
 
-                                        ;; (if (= :lookup (get-in ast0 '(:expr :node)))
-                                        ;;          (assoc ast0 :ref-dep (str (get-in ast0 '(:expr :value)))) ;; this ref is depending on another variable
-                                        ;;          ast0)
-
                                         :null ast
 
-                                        :array (let [;;_ (println (str ":array " ast))
-                                                     ast0 (update-in ast '(:values) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                        :array (let [ast0 (update-in ast '(:values) (fn (a) (find-deps-in-list a vars-in-scope)))]
                                                  ast0)
 
                                         x (error (str "find-func-deps can't handle node: " x))
