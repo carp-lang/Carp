@@ -11,5 +11,6 @@
 (load-lisp (str carp-dir "lisp/test_ownership.carp"))
 (load-lisp (str carp-dir "lisp/test_arrays.carp"))
 
+;; These tests are for manual inspections:
 (load-lisp (str carp-dir "lisp/test_stack_trace.carp"))
 (load-lisp (str carp-dir "lisp/test_line_numbers.carp"))

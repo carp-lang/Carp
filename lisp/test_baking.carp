@@ -42,15 +42,6 @@
     (assert-eq 200 (f))
     ))
 
-;; This does NOT work!
-(defn shadow [x]
-  (let [x (* x 3)]
-    x))
-;; (def shadowast (lambda-to-ast (code shadow)))
-;; (def shadowcon (gencon shadowast))
-;; (def shadowasta (annotate-ast shadowast))
-
-
 (deftest test-auto-chain-bake-1
   (do
     (defn f1 () 100)
@@ -60,17 +51,15 @@
     (assert-eq (f3) 300)))
 (test-auto-chain-bake-1)
 
-
 (deftest test-auto-chain-bake-2
   (do
     (defn f4 () 100)
     (defn f5 (x) (+ x 1))
     (defn f6 () (let [z (f5 (f4))]
-                   z))
+                  z))
     (bake f6)
     (assert-eq (f6) 101)))
 (test-auto-chain-bake-2)
-
 
 (deftest test-unloading-depending-functions
   (do
@@ -96,35 +85,7 @@
     (assert-eq 200 (f7))
     (assert-eq 200 (f8))
     (assert-eq 200 (f9))
-    (assert-eq 200 (f10))
-    ))
-
-
-;; COMPILE TIME MACROS
-
-(deftest test-macro-1
-  (do (defn macro-1 ()
-        (if-not true
-          10
-          20))
-      (bake macro-1)
-      (assert-eq (macro-1) 20)))
-
-
-;; RESET
-
-(deftest test-reset-1
-  (do (defn reset-1 ()
-        (let [x 0]
-          (do (reset! x 123)
-              x)))
-      (bake reset-1)
-      (assert-eq (reset-1) 123)))
-
-;; (def reset-1-ast (lambda-to-ast (code reset-1)))
-;; (def reset-1-deps (find-func-deps reset-1-ast false))
-;; (def reset-1-con (gencon reset-1-ast))
-;; (def reset-1-asta (annotate-ast reset-1-ast))
+    (assert-eq 200 (f10))))
 
 
 ;; LET BINDINGS
@@ -150,9 +111,14 @@
       (assert-eq "CARP!" (call-twice call-me))))
 
 
-;; CHARS
-(defn gimme-char ()
-  \e)
+;; COMPILE TIME MACROS
+(deftest test-macro-1
+  (do (defn macro-1 ()
+        (if-not true
+          10
+          20))
+      (bake macro-1)
+      (assert-eq (macro-1) 20)))
 
 
 ;; PIPE MACROS
@@ -173,83 +139,29 @@
       (assert-eq 16 (baking-of-pipe-first-macro))))
 
 
-;; Global variables
-(deftest test-global-variables
-  (do
-    (defstruct Foo [foox :int])
-
-    (def f (Foo 100))
-
-    (defn del1 []
-      (do
-        (reset! f (Foo 200))
-        (println (ref (str &f)))
-        (reset! f (Foo 300))
-        (println (ref (str &f)))
-        ))
-
-    (def g [1 2 3])
-
-    (defn del2 []
-      (do
-        (reset! g [4 5 6])
-        (println (ref (str &g)))
-        (reset! g [7 8 9])
-        (println (ref (str &g)))
-        ))
-
-    (def h @"hej")
-
-    (defn del3 []
-      (do
-        (reset! h @"svej")
-        (println (ref h))
-        (reset! h @"nej")
-        (println (ref h))
-        ))))
-
-
-;; Must use refs in while loops, this should not compile:
-(defn fool-while []
-  (let [x @"yeah"]
-    (while true
-      (reset! x (id x)))))
-;;(assert-eq error-given-away (:error (catch-error (bake fool-while))))
-
-
-;; Baking of groups
-(def example-descriptor-1 {:src "int f() { return 42; }"
-                           :proto "int f();"
-                           :name "f"
-                           :sig '(:fn () :int)})
-
-(def example-descriptor-2 {:src "int g() { return f() + f(); }"
-                           :proto "int g();"
-                           :name "g"
-                           :sig '(:fn () :int)})
-
+;; BAKING OF GROUPS
 (deftest test-bake-group
   (do
+    (def example-descriptor-1 {:src "int f() { return 42; }"
+                               :proto "int f();"
+                               :name "f"
+                               :sig '(:fn () :int)})
+
+    (def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                               :proto "int g();"
+                               :name "g"
+                               :sig '(:fn () :int)})
     (defn h [] (f)) ;; uses f in 'efgroup'
     (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
     (bake h)))
 
-(deftest test-global-with-array-of-structs
-  (do
-    (defstruct A [])
-    (def some-a [(A) (A) (A)])
-    (defn use-some-a []
-      (println* &some-a))
-    (bake use-some-a)))
-
-(deftest reset-in-while-loop-1
-  (do (defn while-loop-function []
-        (let [s [1 2 3]
-              x 0]
-          (while (< x 10)
-              (do
-                (reset! s (copy &s))
-                (reset! x (inc x))))))
-      (bake while-loop-function)))
-
 (tester/run-suite "baking")
+
+
+;; This does NOT work!
+(defn shadow [x]
+  (let [x (* x 3)]
+    x))
+;; (def shadowast (lambda-to-ast (code shadow)))
+;; (def shadowcon (gencon shadowast))
+;; (def shadowasta (annotate-ast shadowast))

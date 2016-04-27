@@ -265,6 +265,31 @@
          r)))
     (assert-error error-return-ref (bake let-returning-ref))))
 
+(deftest ownership-in-while-loop
+  (do
+    (defn fool-while []
+      (let [x @"yeah"]
+        (while true
+          (reset! x (id x)))))
+    (assert-error error-given-away (bake fool-while))))
+
+(deftest reset-in-while-loop-ok
+  (do (defn while-loop-function []
+        (let [s [1 2 3]
+              x 0]
+          (while (< x 10)
+            (do
+              (reset! s (copy &s))
+              (reset! x (inc x))))))
+      (bake while-loop-function)))
+
+(deftest reset-in-while-loop-fail
+  (do (defn while-loop-function-fail []
+        (let [s [1 2 3]]
+          (while true
+            (reset! s (id s)))))
+      (assert-error error-given-away (bake while-loop-function-fail))))
+
 ;; This one is weird:
 (defn own-string-weird (s)
   (ref s))
