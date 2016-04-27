@@ -1,0 +1,46 @@
+(tester/set-suite! "printing")
+
+(deftest test-str-of-objs
+  (do
+    (assert-eq "hej" (str "hej"))
+    (assert-eq "a" (str \a))
+    (assert-eq "123" (str 123))
+    (assert-eq "3.140000f" (str 3.14f))
+    (assert-eq "10.500000" (str 10.5))
+    (assert-eq "true" (str true))
+    (assert-eq "false" (str false))))
+
+(deftest test-prn-of-objs
+  (do
+    (assert-eq "\"hej\"" (prn "hej"))
+    (assert-eq "\\a" (prn \a))
+    (assert-eq "123" (prn 123))
+    (assert-eq "3.140000f" (prn 3.14f))
+    (assert-eq "10.500000" (prn 10.5))
+    (assert-eq "true" (prn true))
+    (assert-eq "false" (prn false))))
+
+(deftest test-baked-strs
+  (do (defn str-a-string []
+        (str "hej"))
+      (bake str-a-string)
+      (assert-eq "hej" (str-a-string))
+
+      (defn str-a-char []
+        (str \y))
+      (bake str-a-char)
+      (assert-eq "y" (str-a-char))))
+
+(deftest test-baked-prns
+  (do (defn prn-a-string []
+        (prn "hej"))
+      (bake prn-a-string)
+      (assert-eq "\"hej\"" (prn-a-string))
+
+      (defn prn-a-char []
+        (prn \y))
+      (bake prn-a-char)
+      (assert-eq "\\y" (prn-a-char))))
+
+
+(tester/run-suite "printing")

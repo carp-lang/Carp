@@ -71,4 +71,4 @@
     (assert-eq "yes" (eq-struct))
     (assert-eq "no" (eq-struct-2))))
 
-(tester/run-suite! "")
+(tester/run-suite "equality")

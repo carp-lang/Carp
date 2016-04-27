@@ -45,7 +45,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   //printf("quoted_sig: %s\n", obj_to_string(quoted_sig)->s);
 	
-  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("str"), quoted_sig);
+  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("prn"), quoted_sig);
 
   shadow_stack_push(process, call_to_generic_name);
   Obj *generic_name_result = eval(process, process->global_env, call_to_generic_name);
@@ -61,7 +61,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   }
 
   // Also make sure this particular version of the str primop has been baked:
-  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("str"), quoted_sig);
+  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("prn"), quoted_sig);
   shadow_stack_push(process, call_to_bake_generic_primop_auto);
   eval(process, process->global_env, call_to_bake_generic_primop_auto);
 

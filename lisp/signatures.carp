@@ -19,5 +19,6 @@
 (set-signature! copy           (:fn ((:ref "T"))                    "T"          ))
 (set-signature! delete         (:fn ("T")                           :void        ))
 (set-signature! str            (:fn ("a")                           :string      ))
+(set-signature! prn            (:fn ("a")                           :string      ))
 
 (set-signature! =              (:fn ("a", "a")                      :bool        ))
