@@ -1,13 +1,13 @@
 
-;; The type env is bindings from variable names to types or variables, i.e. {:x :int, :y "t10"}
-(defn type-env-extend (type-env args)
+^doc "The type env is bindings from variable names to types or variables, i.e. {:x :int, :y \"t10\"}."
+(defn type-env-extend [type-env args]
   (let [new-env (copy type-env)]
     (do (reduce (fn (_ pair) (dict-set! new-env (nth pair 0) (nth pair 1)))
                 nil
                 (map2 list (map :name args) (map :type args)))
         new-env)))
 
-(defn get-type-of-symbol (type-env symbol)
+(defn get-type-of-symbol [type-env symbol]
   (let [lookup (get-maybe type-env symbol)]
     (if (nil? lookup)
       (let [global-lookup (eval symbol)
@@ -29,12 +29,12 @@
           _ t))
       lookup)))
 
-(defn math-op? (op)
+(defn math-op? [op]
   (contains? '(+ - * /) op))
 
 (def log-chaining false)
 
-;; Generates a dictionary with location data used when type unification fails
+^doc "Generates a dictionary with location data used when type unification fails."
 (defn location [ast-a ast-b]
   (do
     ;;(println (str "ast-a: " ast-a "\n" "ast-b: " ast-b))
@@ -56,7 +56,7 @@
 (def prio-app-arg-constraint 20)
 (def prio-binop 30)
 
-(defn generate-constraints-internal (constraints ast type-env)
+(defn generate-constraints-internal [constraints ast type-env]
   (do
     ;;(println (str "gen constrs: \n" ast))
     (match (get ast :node)
@@ -71,7 +71,7 @@
                                        :b (get-in ast '(:body :type))
                                        :prio prio-func-ret-constr
                                        :doc (str "func-ret-constr")}
-                      func-arg-constrs (map2 (fn (a b) {:a a
+                      func-arg-constrs (map2 (fn [a b] {:a a
                                                         :b b
                                                         :prio prio-func-arg-constr
                                                         :doc "func-arg"})
@@ -102,7 +102,7 @@
                                    (get-in ast '(:head :type 1))
                                    (:tail ast))
                  head-constrs (generate-constraints-internal '() (:head ast) type-env)
-                 tail-constrs (reduce (fn (constrs tail-form) (generate-constraints-internal constrs tail-form type-env))
+                 tail-constrs (reduce (fn [constrs tail-form] (generate-constraints-internal constrs tail-form type-env))
                                       '() (:tail ast))
                  new-constraints (concat tail-constrs head-constrs (cons ret-constr arg-constrs))]
              (concat new-constraints constraints))
@@ -206,9 +206,8 @@
                         left-result-constr
                         right-result-constr)))
 
-      :do (let [x0 (reduce (fn (constrs form) (generate-constraints-internal constrs form type-env))
+      :do (let [x0 (reduce (fn [constrs form] (generate-constraints-internal constrs form type-env))
                            constraints (:forms ast))
-                ;;_ (log "count: " (count x0))
                 n (count (:forms ast))
                 _ (when (= 0 n) (error (str "do-form must have at least one statement.")))
                 ret-constr {:a (:type ast)
@@ -218,13 +217,13 @@
             (cons ret-constr x0))
 
       :let (let [bindings (:bindings ast)
-                 extended-type-env (reduce (fn (e b) (assoc e (:name b) (get-in b '(:value :type)))) type-env bindings)
+                 extended-type-env (reduce (fn [e b] (assoc e (:name b) (get-in b '(:value :type)))) type-env bindings)
                  ;;_ (println "Extended type env: " extended-type-env)
                  let-constr {:a (:type ast)
                              :b (get-in ast '(:body :type))
                              :prio prio-default
                              :doc "let-constr"}
-                 bindings-constr (mapcat (fn (binding) (let [bind-constr {:a (:type binding)
+                 bindings-constr (mapcat (fn [binding] (let [bind-constr {:a (:type binding)
                                                                           :b (get-in binding '(:value :type))
                                                                           :doc (str "let-bind-constr")
                                                                           :prio prio-default}
@@ -273,80 +272,18 @@
 ;;    refering to a particular function that this function is dependant on
 ;;    It could be better to generate the func deps in a separate step before generating
 ;;    the constraints, keeping things more separated, but this works too.
-(defn generate-constraints (ast)
+(defn generate-constraints [ast]
   (let [constraints '()]
     (generate-constraints-internal constraints ast {})))
 
 ;; A shorter name:
 (def gencon generate-constraints)
 
-
-
-(defn lookup-OLD (substs b)
-  (if (= :fail substs)
-    :fail
-    (if (list? b)
-      (map (fn [x] (lookup substs x)) b)
-      (let [val (get-maybe substs b)]
-        (if (= () val)
-          b
-          (if (= b val)
-            val
-            (if (= :string (type val))
-              (lookup substs val) ; keep looking
-              val))) ; found the actual type
-        ))))
-
-;; ;; Replacement function for replacing "from the right" in an associative map
-;; ;; Example usage:
-;; ;; (replace-subst-from-right {:a :b, :c :d} :d :e)
-;; ;; =>
-;; ;; {:c :e, 
-;; ;;  :a :b}
-;; (defn replace-in-list (l replace-this with-this)
-;;   (do
-;;     ;;(println (str "replace-in-list " l ", replace: " replace-this ", with: " with-this))
-;;     (match l
-;;       () ()
-;;       (x ... xs) (if (= x replace-this)
-;;                    (cons with-this (replace-in-list xs replace-this with-this))
-;;                    (if (list? x)
-;;                      (cons (replace-in-list x replace-this with-this) (replace-in-list xs replace-this with-this))
-;;                      (cons x (replace-in-list xs replace-this with-this)))))))
-
-;; (defn maybe-replace-binding (key value replace-this with-this)
-;;   (do
-;;     ;;(println (str "maybe-replace-binding   key: " key ", value: " value ", replace: " replace-this ", with: " with-this))
-;;     (if (list? value)
-;;       {:key key :value (replace-in-list value replace-this with-this)}
-;;       (if (= replace-this value)
-;;         {:key key :value with-this}
-;;         {:key key :value value}))))
-
-;; (defn replace-subst-from-right (substs existing b)
-;;   (do
-;;     ;;(println (str "replace-substs-from-right " substs existing b))
-;;     (reduce (fn (new-substs pair) (assoc new-substs (:key pair) (:value pair)))
-;;             {}
-;;             (map2 (fn (k v)
-;;                     (maybe-replace-binding k v existing b))
-;;                   (keys substs)
-;;                   (values substs)))))
-
-;; (defn types-exactly-eq? (a b)
-;;   (if (and (list? a) (list? b))
-;;     (all? true? (map2 types-exactly-eq? a b))
-;;     (if (= :any a)
-;;       true
-;;       (if (= :any b)
-;;         true
-;;         (= a b)))))
-
-(defn typevar? (x) (string? x))
+(defn typevar? [x] (string? x))
 
 (def log-substs false)
 
-(defn extend-substitutions (substs lhs value)
+(defn extend-substitutions [substs lhs value]
   (do
     (when log-substs (do
                        (println (str "\nSubsts:\n" substs))
@@ -369,9 +306,9 @@
                   (if (list? existing)
                     (if (list? value-lookup)
                       (let [_ (when log-substs (println "The existing binding is a list"))
-                            new-substs (reduce (fn (s m2) (extend-substitutions s (:e m2) (:l m2)))
+                            new-substs (reduce (fn [s m2] (extend-substitutions s (:e m2) (:l m2)))
                                                substs
-                                               (map2 (fn (e l) {:e e :l l}) existing value-lookup))
+                                               (map2 (fn [e l] {:e e :l l}) existing value-lookup))
                             _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
                         new-substs)
                       (do
@@ -394,14 +331,14 @@
           ;; Not a typevar:
           (if (list? lhs)
             (if (list? value-lookup)
-                (do
-                  ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))
-                  (reduce (fn (s m2) (let [s1 (extend-substitutions s (:t m2) (:v m2))]
-                                       (extend-substitutions s1 (:v m2) (:t m2))))
-                          substs (map2 (fn (t v) {:t t :v v}) lhs value-lookup)))
-                (do
-                  ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
-                  substs))
+              (do
+                ;;(println (str "Both lhs and value-lookup are lists: " lhs ", " value-lookup))
+                (reduce (fn [s m2] (let [s1 (extend-substitutions s (:t m2) (:v m2))]
+                                     (extend-substitutions s1 (:v m2) (:t m2))))
+                        substs (map2 (fn [t v] {:t t :v v}) lhs value-lookup)))
+              (do
+                ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
+                substs))
             (do (when log-substs (println (str "lhs " lhs " is not a tvar or list, value lookup: " value-lookup)))
                 (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
                   substs
@@ -409,21 +346,13 @@
                   ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))
                   ))))))))
 
-(defn solve-list (substs-and-errors a-list b-list constraint flipped)
+(defn solve-list [substs-and-errors a-list b-list constraint flipped]
   (match (list a-list b-list)
     (() ()) substs-and-errors
     ((a ... as) (b ... bs)) (solve (solve substs-and-errors a b constraint false) as bs constraint true)
     _ (error "Shouldn't happen")))
 
-;; (assoc substs-and-errors :type-errors (cons {:type-error true
-;;                                                    :description "List lengths not matching"
-;;                                                    :constraint (assoc constraint :constraint-kind :arg-list-length-mismatch) ;; OVERRIDE :constraint-kind
-;;                                                    :a (if flipped b-list a-list)
-;;                                                    :b (if flipped a-list b-list)
-;;                                                    :loc (get-maybe constraint :location)}
-;;                                                   (:type-errors substs-and-errors)))
-
-(defn solve (substs-and-errors a b constraint flipped)
+(defn solve [substs-and-errors a b constraint flipped]
   (do
     ;;(println (str "\nsolve:\n" substs-and-errors))
     (let [substs (:substs substs-and-errors)
@@ -540,14 +469,13 @@
    ")"
    ))
 
-
-(defn solve-constraint-internal (substs-and-errors constraint)
+(defn solve-constraint-internal [substs-and-errors constraint]
   (let [a (:a constraint)
         b (:b constraint)]
     (solve (solve substs-and-errors a b constraint false) b a constraint true))) ; Solving from both directions! TODO: is this needed?
 
 ;; Returns a substitution map from type variables to actual types
-(defn solve-constraints (constraints)
+(defn solve-constraints [constraints]
   (let [result (reduce solve-constraint-internal {:substs {} :type-errors ()} constraints)
         final-substs (:substs result)
         type-errors (:type-errors result)]
@@ -566,16 +494,14 @@
 (defn sort-constraints [constraints]
   (sort-by compare-constraints constraints))
 
-
-
-(defn make-type-list (substs typevars)
-  (map (fn (t) (if (string? t) (get-type substs t)
+(defn make-type-list [substs typevars]
+  (map (fn [t] (if (string? t) (get-type substs t)
                    (if (list? t)
                      (make-type-list substs t)
                      t)))
        typevars))
 
-(defn get-type (substs typevar)
+(defn get-type [substs typevar]
   (if (list? typevar)
     (make-type-list substs typevar)
     (let [maybe-type (get-maybe substs typevar)]
@@ -583,15 +509,15 @@
         typevar ;; lookup failed, there is no substitution for this type variable (= it's generic)
         maybe-type))))
 
-(defn assign-types-to-list (asts substs)
+(defn assign-types-to-list [asts substs]
   (map (fn (x) (assign-types x substs)) asts))
 
-(defn assign-types-to-binding (b substs)
+(defn assign-types-to-binding [b substs]
   (let [x0 (assoc b :type (get-type substs (:type b)))
         x1 (assoc x0 :value (assign-types (:value b) substs))]
     x1))
 
-(defn assign-types (ast substs)
+(defn assign-types [ast substs]
   (match (:node ast)
     :function (let [a (assoc ast :type (get-type substs (:type ast)))
                     b (assoc a :body (assign-types (:body ast) substs))
@@ -601,7 +527,7 @@
     :app (let [app-ret-type (get-type substs (:type ast))]
            (assoc (assoc (assoc ast :type app-ret-type)
                          :head (assign-types (:head ast) substs))
-                  :tail (map (fn (x) (assign-types x substs)) (:tail ast))))
+                  :tail (map (fn [x] (assign-types x substs)) (:tail ast))))
 
     :literal ast
     
@@ -627,11 +553,11 @@
               x3 (assoc x2 :expr (assign-types (:expr ast) substs))]
           x3)
 
-    :do (let [x0 (assoc ast :forms (map (fn (x) (assign-types x substs)) (:forms ast)))
+    :do (let [x0 (assoc ast :forms (map (fn [x] (assign-types x substs)) (:forms ast)))
               x1 (assoc x0 :type (get-type substs (:type ast)))]
           x1)
 
-    :let (let [x0 (assoc ast :bindings (map (fn (b) (assign-types-to-binding b substs)) (:bindings ast)))
+    :let (let [x0 (assoc ast :bindings (map (fn [b] (assign-types-to-binding b substs)) (:bindings ast)))
                x1 (assoc x0 :body (assign-types (:body x0) substs))
                let-ret-type (get-type substs (:type x1))
                _ (when (ref? let-ret-type)
@@ -649,26 +575,22 @@
     :null ast
 
     :array (let [inner-type (nth (:type ast) 1)
-                 ;;_ (println (str "inner-type: " inner-type))
                  looked-up-inner-type (get-type substs inner-type)
-                 ;;_ (println (str "looked-up-inner-type: " looked-up-inner-type))
                  _ (when (ref? looked-up-inner-type)
                      (error {:error error-ref-in-array
                              :message (str "The type of the elements in the array " (:original-form ast) " on line " (:line ast) " is not owned.\n")
                              :show-stacktrace false}))
                  x0 (assoc ast :type (list :Array looked-up-inner-type))
-                 x1 (assoc x0 :values (map (fn (x) (assign-types x substs)) (:values ast)))]
+                 x1 (assoc x0 :values (map (fn [x] (assign-types x substs)) (:values ast)))]
              x1)
 
     :c-code (assoc ast :type (get-type substs (:type ast)))
 
     _ (error (str "Can't assign types to ast node " ast))))
 
-;; x1 (assoc-in x0 '(:body :type) (get-type substs (get-in x0 '(:body :type))))
+(defn func-dep? [constraint] (has-key? constraint :func-dep))
 
-(defn func-dep? (constraint) (has-key? constraint :func-dep))
-
-(defn infer-types (ast func-signature-if-generic)
+(defn infer-types [ast func-signature-if-generic]
   (let [type-constraints (generate-constraints ast)
         func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic
                                                                                   :b (:type ast)
