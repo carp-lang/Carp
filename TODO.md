@@ -1,7 +1,6 @@
 # Compiler Big Features
   - Compile "and" & "or"
   - Lambdas / lambda lifting
-  - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements
@@ -36,6 +35,7 @@
   - Macro splicing
   - Modules 
   - A Set-type with reader syntax #{}
+  - Instantiate generic functions like '=' for primitive types
   
 ## Modules
   - Name
