@@ -2,7 +2,7 @@
 See [lisp/core.carp](lisp/core.carp), proper docs are coming soon!
 
 # The C standard library (wrapped)
-See [lisp/core.carp](lisp/builtins.carp)
+See [lisp/builtins.carp](lisp/builtins.carp)
 
 # OpenGL
 See [lisp/gl.carp](lisp/gl.carp)
