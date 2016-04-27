@@ -5,14 +5,6 @@
 ;;(reset! log-deps-when-baking-ast true)
 
 
-;; (defn and-internal [forms]
-;;   (match forms
-;;     (a b) (list 'and-binary a b)
-;;     (a ... xs) (list 'and-binary a (and-internal xs))))
-
-;; (defmacro and* [... forms]
-;;   (and-internal forms))
-
 ;; (defn use-and []
 ;;   (if (and* true true false true)
 ;;     @"YES"

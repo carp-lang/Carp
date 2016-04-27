@@ -416,3 +416,11 @@
 
 (defmacro println* [... forms]
   (list 'println (list 'ref (list 'str-internal (list 'ref (apply array (map (fn [s] (list 'str s)) forms)))))))
+
+(defn and-internal [forms]
+  (match forms
+    (a b) (list 'and a b)
+    (a ... xs) (list 'and a (and-internal xs))))
+
+(defmacro and* [... forms]
+  (and-internal forms))

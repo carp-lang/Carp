@@ -14,4 +14,11 @@
     (bake use-and-2)
     (assert-eq true (use-and-2))))
 
+(deftest test-and*
+  (do
+    (defn use-and* []
+      (and* true true true false true))
+    (bake use-and*)
+    (assert-eq false (use-and*))))
+
 (tester/run-suite "binops")
