@@ -123,9 +123,7 @@
     (defn refs-in-array-func []
       (let [a ["bleh"]]
         a))
-    (let [caught (catch-error (bake refs-in-array-func))]
-      (assert-eq error-ref-in-array
-                 (:error caught)))))
+      (assert-error error-ref-in-array (bake refs-in-array-func))))
 
 
 (tester/run-suite "arrays")

@@ -11,8 +11,6 @@
 
 
 
-
-
 ;;(tester/run-suite "")
 
 
@@ -130,3 +128,11 @@
 ;; f : () -> Array Array int
 ;; Evaluating form (bake f) took 1022ms.
 
+
+;; (defmacro assert-error [e form]
+;;   (list 'let ['error-result (list 'catch-error form)]
+;;         (list 'if (list '= e 'error-result)
+;;               :OK
+;;               (list 'if (list 'nil? 'error-result)
+;;                     (list 'error "No error caught")
+;;                     (list 'error (list 'str "Wrong error caught: " 'error-result))))))
