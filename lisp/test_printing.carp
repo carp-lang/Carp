@@ -63,4 +63,24 @@
         (prn &(PrnMe2 @"yeah")))
       (assert-eq "(PrnMe2 \"yeah\")" (prn-me))))
 
+(deftest str-array-dynamic
+  (assert-eq "[1 2 3]" (str [1 2 3])))
+
+(deftest prn-array-dynamic
+  (assert-eq "[1 2 3]" (prn [1 2 3])))
+
+(deftest str-array-compiled
+  (do
+    (defn str-an-array []
+      (str &[@"a" @"b" @"c"]))
+    (bake str-an-array)
+    (assert-eq "[\"a\" \"b\" \"c\"]" (str-an-array))))
+
+(deftest prn-array-compiled
+  (do
+    (defn prn-an-array []
+      (prn &[@"a" @"b" @"c"]))
+    (bake prn-an-array)
+    (assert-eq "[\"a\" \"b\" \"c\"]" (prn-an-array))))
+
 (tester/run-suite "printing")
