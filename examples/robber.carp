@@ -6,7 +6,7 @@
     (= @c \e) (str c)
     (= @c \i) (str c)
     (= @c \y) (str c)
-    ;;true (str* c "o" c)
+    true (str* c "o" c)
     ))
 
 (defn robber [text]
