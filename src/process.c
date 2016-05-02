@@ -129,7 +129,7 @@ Process *process_new() {
   register_primop(process, "print", p_print);
   register_primop(process, "println", p_println);
   register_primop(process, "prn", p_prn);
-  register_primop(process, "system", p_system);
+  //register_primop(process, "system", p_system);
   register_primop(process, "get", p_get);
   register_primop(process, "get-maybe", p_get_maybe);
   register_primop(process, "dict-set!", p_dict_set_bang);

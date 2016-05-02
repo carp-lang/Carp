@@ -378,9 +378,16 @@
                   _ (error "Invalid type for call to 'array-set'"))
 
     "=" (match signature
+          (:fn (:int :int) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
+          (:fn (:bool :bool) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
+          (:fn (:char :char) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+          
           (:fn ((:ref :int) (:ref :int)) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
           (:fn ((:ref :bool) (:ref :bool)) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
           (:fn ((:ref :char) (:ref :char)) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+
+          ;; float and double can't be compared using '='
+          
           (:fn ((:ref :string) (:ref :string)) :bool) (instantiate-eq-for-string c-func-name)
           (:fn ((:ref (:Array a)) (:ref (:Array a))) :bool) (instantiate-eq-for-array c-func-name a)
           (:fn ((:ref maybe-struct-type) (:ref maybe-struct-type)) :bool) (instantiate-eq-for-struct c-func-name maybe-struct-type)

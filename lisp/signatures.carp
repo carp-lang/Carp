@@ -14,13 +14,20 @@
 (set-signature! map-copy       (:fn ((:fn ((:ref "a")) "b") (:ref (:Array "a")))  (:Array "b") ))
 
 (set-signature! reduce         (:fn ((:fn ("a" "b") "a") "a" (:Array "b"))   "a"          ))
-(set-signature! filter         (:fn ((:fn ("a") :bool) (:Array "a"))         (:Array "a") ))
+(set-signature! filter         (:fn ((:fn ("a") :bool) (:Array "a"))         (:Array "a") )) ;; lambda should take ref?!
 
 (set-signature! copy           (:fn ((:ref "T"))                    "T"          ))
 (set-signature! delete         (:fn ("T")                           :void        ))
 (set-signature! str            (:fn ("a")                           :string      ))
 (set-signature! prn            (:fn ("a")                           :string      ))
 
-(set-signature! =              (:fn ((:ref "a"), (:ref "a"))                      :bool        ))
+(set-signature! =              (:fn ("a", "a")                      :bool        ))
 
 (set-signature! error          (:fn ((:ref :string))                "T"          ))
+
+;; str-replace
+;; concat (arrays)
+;; map2
+;; reduce
+;; sort-by
+

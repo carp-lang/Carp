@@ -45,6 +45,7 @@
 (register-builtin "file_existsQMARK" '((:ref :string)) :bool)
 
 ;; System
+(register-builtin "system" '((:ref :string)) :void)
 (register-builtin "sleep" '(:int) :void)
 (register-builtin "async" '((:fn () :void)) :void)
 

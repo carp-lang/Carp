@@ -3,7 +3,7 @@
 (deftest test-eq-int
   (do
     (defn eq-int []
-      (if (= &5 &5)
+      (if (= 5 5)
         @"yes"
         @"no"))
     (bake eq-int)
@@ -12,11 +12,11 @@
 (deftest test-eq-bool
   (do
     (defn eq-bool []
-      (if (= &true &true)
+      (if (= true true)
         @"yes"
         @"no"))
     (defn eq-bool-2 []
-      (if (= &true &false)
+      (if (= true false)
         @"yes"
         @"no"))
     (bake eq-bool)
@@ -27,11 +27,11 @@
 (deftest test-eq-char
   (do
     (defn eq-char []
-      (if (= &\a &\a)
+      (if (= \a \a)
         @"yes"
         @"no"))
     (defn eq-char-2 []
-      (if (= &\a &\b)
+      (if (= \a \b)
         @"yes"
         @"no"))
     (bake eq-char)
