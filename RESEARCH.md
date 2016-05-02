@@ -10,6 +10,7 @@ http://stackoverflow.com/questions/2505385/classes-and-static-variables-in-share
 http://blog.piston.rs/2016/01/23/dynamo/
 http://evincarofautumn.blogspot.se/2016/01/thoughts-on-using-fractional-types-to.html
 http://andrewbrinker.github.io/blog/2016/03/27/string-types-in-rust/
+http://www.pipeline.com/~hbaker1/LinearLisp.html
 
 # MODULES & FUNCTORS
 http://homepages.inf.ed.ac.uk/mfourman/teaching/mlCourse/notes/sml-modules.html
