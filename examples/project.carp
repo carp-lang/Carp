@@ -12,3 +12,11 @@
 
 (defn g []
   (println (ref (f "hej"))))
+
+
+
+(defn add [a b]
+  (+ a b))
+
+(defn h []
+  (reduce add 0 [1 2 3 4 5]))
