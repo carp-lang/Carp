@@ -333,7 +333,11 @@
     "nth" (match signature
             (:fn ((:ref (:Array t)) :int) (:ref t))
             (let [proto (str "API " (type-build t) " " c-func-name "(Array *a, int index)")
-                  c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
+                  c (str proto
+                         " {\n"
+                         "if(index < 0 || index >= a->count) { printf(\"Array index out of bounds: %d\\n\", index); raise(SIGSEGV); }\n"
+                         "return ((" (type-build t) "*)(a->data))[index];\n"
+                         "}\n")]
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to 'nth'"))
 

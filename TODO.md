@@ -1,7 +1,6 @@
 # Compiler Big Features
-  - Equality for strings
+  - Allow non-ref types for all generic primops IF the type is builtin and don't need managing.
   - Compile "or"
-  - Bounds checking on arrays
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements
