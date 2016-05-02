@@ -5,6 +5,13 @@
 ;;(reset! log-deps-when-baking-ast true)
 
 
+(defn f [s]
+  (if (= s "hej")
+    @"Hello!"
+    @"What..?"))
+
+(defn g []
+  (println (ref (f "hej"))))
 
 
 ;; (bake use-and)

@@ -374,9 +374,10 @@
                   _ (error "Invalid type for call to 'array-set'"))
 
     "=" (match signature
-          (:fn (:int :int) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
-          (:fn (:bool :bool) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
-          (:fn (:char :char) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+          (:fn ((:ref :int) (:ref :int)) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
+          (:fn ((:ref :bool) (:ref :bool)) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
+          (:fn ((:ref :char) (:ref :char)) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+          (:fn ((:ref :string) (:ref :string)) :bool) (instantiate-eq-for-string c-func-name)
           (:fn ((:ref (:Array a)) (:ref (:Array a))) :bool) (instantiate-eq-for-array c-func-name a)
           (:fn ((:ref maybe-struct-type) (:ref maybe-struct-type)) :bool) (instantiate-eq-for-struct c-func-name maybe-struct-type)
           _ (error (str "Invalid signature for call to '=': " (pretty-signature signature))))
@@ -403,10 +404,15 @@
         c (str proto " { return ((a) == (b)); }\n")]
     {:proto proto :c c :deps ()}))
 
+(defn instantiate-eq-for-string [c-func-name]
+  (let [proto (str "bool " c-func-name "(string a, string b)")
+        c (str proto " { return strcmp(a, b) == 0; }\n")]
+    {:proto proto :c c :deps ()}))
+
 (defn instantiate-eq-for-array [c-func-name inner-t]
   (let [proto (str "bool " c-func-name "(Array *a, Array *b)")
 
-        inner-arg-type (if (primitive-type? inner-t) inner-t (list :ref inner-t))
+        inner-arg-type (list :ref inner-t) ;; (if (primitive-type? inner-t) inner-t (list :ref inner-t))
         inner-signature (list :fn (list inner-arg-type inner-arg-type) :bool)
         inner-eq-call (c-ify-name (generic-name (symbol "=") inner-signature))
         _ (bake-generic-primop-auto "=" inner-signature)
@@ -434,7 +440,7 @@
               proto (str "bool " c-func-name "(" t-name " *a, " t-name " *b)")
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
-              reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
+              reffed-member-types (map (fn [mt] (list :ref mt)) member-types) ;;(map (fn [mt] (ref-or-no-ref mt)) member-types)
               deps (cons t-name (map (fn [t] (c-ify-name (generic-name "=" (list :fn (list t t) :bool)))) reffed-member-types))
               ;;_ (println (str c-func-name " deps: " deps))
               c (str proto " {\n"

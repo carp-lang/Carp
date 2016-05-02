@@ -1,5 +1,4 @@
 # Compiler Big Features
-  - Remove 'panic!', make it possible to compile 'error'
   - Equality for strings
   - Compile "or"
   - Bounds checking on arrays
