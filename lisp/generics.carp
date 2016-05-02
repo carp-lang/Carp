@@ -313,6 +313,10 @@
                  (:fn (maybe-struct-type) :void) (instantiate-delete-for-struct c-func-name maybe-struct-type)
                  x (error (str "Invalid type for call to 'delete': " x))))
 
+    "error" (match signature
+              (:fn ((:ref :string)) :int) (instantiate-error c-func-name :int)
+              (:fn ((:ref :string)) t) (instantiate-error c-func-name t))
+
     "copy" (do
              (match signature
                (:fn ((:ref :float)) :float) (instantiate-copy-for-primitive-type c-func-name :float) ;; These are no-ops
@@ -378,6 +382,20 @@
           _ (error (str "Invalid signature for call to '=': " (pretty-signature signature))))
 
     x (error (str "Can't build generic primop for '" x "'"))))
+
+(defn instantiate-error [c-func-name t]
+  (let [proto (str "API " (type-build t) " " c-func-name "(string msg)")
+        c     (str proto " { printf(\"ERROR: %s\\n\", msg); raise(SIGSEGV); return "
+                   (match t
+                     :int "0"
+                     :float "0.0f"
+                     :double "0.0"
+                     :bool "false"
+                     :char "'0'"
+                     :string "\"\""
+                     _ "NULL")
+                   "; }")]
+    {:proto proto :c c :deps ()}))
 
 (defn instantiate-eq-for-primitive-type [c-func-name t]
   (let [proto (str "bool " c-func-name "(" (type-build t) " a, " (type-build t) " b)")

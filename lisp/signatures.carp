@@ -22,3 +22,5 @@
 (set-signature! prn            (:fn ("a")                           :string      ))
 
 (set-signature! =              (:fn ("a", "a")                      :bool        ))
+
+(set-signature! error          (:fn ((:ref :string))                "T"          ))

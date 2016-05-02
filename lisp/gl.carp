@@ -114,7 +114,7 @@
   (if (glfwInit)
     (let [window (glfwCreateWindow 512 512 title NULL NULL)]
       (if (null? window)
-        (panic! "No window.")
+        (error "No window.")
         (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (glfwSetKeyCallback window on-key-callback)
@@ -131,4 +131,4 @@
                   (glfwPollEvents))))
             (println "Time to go.")
             (glfwTerminate))))
-    (panic! "Failed to initialize glfw.")))
+    (error "Failed to initialize glfw.")))

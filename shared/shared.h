@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <signal.h>
 #include "types.h"
 #include "platform.h"
 
@@ -47,11 +48,6 @@ EXPORT bool nullQMARK(void *p) {
 
 EXPORT bool not(bool x) {
   return !x;
-}
-
-EXPORT void panicBANG(string msg) {
-  printf("Error: %s\n", msg);
-  exit(1);
 }
 
 EXPORT void print(string msg) {
@@ -111,7 +107,8 @@ EXPORT int last_index_of(string s, char c) {
 
 EXPORT string substring(string s, int index) {
   if(index >= strlen(s)) {
-    panicBANG("substring out of bounds");
+    printf("Substring out of bounds.\n");
+    exit(-1);
   }
   const char *sub = s + index;
   return strdup(sub);

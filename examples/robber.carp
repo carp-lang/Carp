@@ -1,8 +1,13 @@
-
 (defn expand-char [c]
-  (if (= c \a)
-    (str c)
-    (str* c "o" c)))
+  (cond
+    (= @c \a) (str c)
+    (= @c \o) (str c)
+    (= @c \u) (str c)
+    (= @c \e) (str c)
+    (= @c \i) (str c)
+    (= @c \y) (str c)
+    ;;true (str* c "o" c)
+    ))
 
 (defn robber [text]
   (string-join "" &(map-copy expand-char &(chars text))))
