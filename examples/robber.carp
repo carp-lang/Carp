@@ -1,0 +1,12 @@
+
+(defn expand-char [c]
+  (if (= c \a)
+    (str c)
+    (str* c "o" c)))
+
+(defn robber [text]
+  (string-join "" &(map-copy expand-char &(chars text))))
+
+(defn robber-main []
+  (while true
+    (robber "erik")))

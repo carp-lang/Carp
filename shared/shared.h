@@ -159,3 +159,35 @@ EXPORT string get_console_color(int x) {
   return strdup(buffer);
   #endif
 }
+
+Array *chars(string s) {
+  Array *a = malloc(sizeof(Array));
+  a->count = strlen(s);
+  a->data = strdup(s);
+  return a;
+}
+
+string string_join(string separator, Array *array_of_strings) {
+  string *casted = (string*)array_of_strings->data;
+  int separator_len = strlen(separator);
+  int total_length = 0;
+  int count = array_of_strings->count;
+  for(int i = 0; i < count; i++) {
+    total_length += strlen(casted[i]);
+    total_length += separator_len;
+  }
+  total_length -= separator_len; // last separator not included
+  total_length += 1; // room for '\0'
+  string result = malloc(total_length);
+  char *pos = result;
+  for(int i = 0; i < count; i++) {
+    sprintf(pos, "%s", casted[i]);
+    pos += strlen(casted[i]);
+    if(i < count - 1) {
+      sprintf(pos, "%s", separator);
+    }
+    pos += separator_len;
+  }
+  *pos = '\0';
+  return result;
+}

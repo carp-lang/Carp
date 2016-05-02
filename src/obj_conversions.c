@@ -33,6 +33,12 @@ Obj *primitive_array_to_obj_array(Process *process, Array *carp_array, Obj *inne
       new_array->array[i] = obj_new_bool(int_array[i]);
     }
   }
+  else if(obj_eq(process, inner_type, type_char)) {
+    char *char_array = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      new_array->array[i] = obj_new_char(char_array[i]);
+    }
+  }
   else if(obj_eq(process, inner_type, type_string)) {
     char **int_array = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {

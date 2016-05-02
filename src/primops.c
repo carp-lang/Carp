@@ -308,22 +308,38 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
     eval_error = obj_new_string("First arg to 'join' must be a string");
     return nil;
   }
-  if(args[1]->tag != 'C') {
+  
+  if(args[1]->tag == 'C') {
+    Obj *s = obj_new_string("");
+    shadow_stack_push(process, s);  
+    Obj *p = args[1];
+    while(p && p->car) {
+      obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
+      if(p->cdr && p->cdr->cdr) {
+        obj_string_mut_append(s, args[0]->s);
+      }
+      p = p->cdr;
+    }
+    shadow_stack_pop(process);
+    return s;
+  }
+  else if(args[1]->tag == 'A') {
+    Obj *s = obj_new_string("");
+    shadow_stack_push(process, s);  
+    Obj *a = args[1];
+    for(int i = 0; i < a->count; i++) {
+      obj_string_mut_append(s, obj_to_string_not_prn(process, a->array[i])->s);
+      if(i < a->count - 1) {
+        obj_string_mut_append(s, args[0]->s);
+      }
+    }
+    shadow_stack_pop(process);
+    return s;
+  }
+  else {
     eval_error = obj_new_string("Second arg to 'join' must be a list");
     return nil;
   }
-  Obj *s = obj_new_string("");
-  shadow_stack_push(process, s);  
-  Obj *p = args[1];
-  while(p && p->car) {
-    obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
-    if(p->cdr && p->cdr->cdr) {
-      obj_string_mut_append(s, args[0]->s);
-    }
-    p = p->cdr;
-  }
-  shadow_stack_pop(process);
-  return s;
 }
 
 char *str_replace(const char *str, const char *old, const char *new) {

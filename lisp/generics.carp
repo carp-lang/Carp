@@ -316,7 +316,10 @@
     "copy" (do
              (match signature
                (:fn ((:ref :float)) :float) (instantiate-copy-for-primitive-type c-func-name :float) ;; These are no-ops
-               (:fn ((:ref :int)) :int) (instantiate-copy-for-primitive-type c-func-name :int) ;; These are no-ops
+               (:fn ((:ref :double)) :double) (instantiate-copy-for-primitive-type c-func-name :double)
+               (:fn ((:ref :bool)) :bool) (instantiate-copy-for-primitive-type c-func-name :bool)
+               (:fn ((:ref :int)) :int) (instantiate-copy-for-primitive-type c-func-name :int)
+               (:fn ((:ref :char)) :char) (instantiate-copy-for-primitive-type c-func-name :char)
                (:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
                (:fn ((:ref :string)) :string) (instantiate-copy-for-string c-func-name)
                ;;(:fn (:string) :string) (instantiate-copy-for-string c-func-name)

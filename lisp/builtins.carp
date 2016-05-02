@@ -30,6 +30,8 @@
 (register-builtin "last_index_of" '(:string :char) :int)
 (register-builtin "substring" '(:string :int) :string)
 (register-builtin "file_path_component" '(:string) :string)
+(register-builtin "chars" '((:ref :string)) '(:Array :char))
+(register-builtin "string_join" '((:ref :string) (:ref (:Array :string))) :string)
 
 ;; IO
 (register-builtin "printf" '((:ref :string)) :void)
