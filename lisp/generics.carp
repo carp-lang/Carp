@@ -385,16 +385,17 @@
 
 (defn instantiate-error [c-func-name t]
   (let [proto (str "API " (type-build t) " " c-func-name "(string msg)")
-        c     (str proto " { printf(\"ERROR: %s\\n\", msg); raise(SIGSEGV); return "
+        c     (str proto " { printf(\"ERROR: %s\\n\", msg); raise(SIGSEGV);"
                    (match t
-                     :int "0"
-                     :float "0.0f"
-                     :double "0.0"
-                     :bool "false"
-                     :char "'0'"
-                     :string "\"\""
+                     :int "return 0;"
+                     :float "return 0.0f;"
+                     :double "return 0.0;"
+                     :bool "return false;"
+                     :char "return '0';"
+                     :string "return \"\";"
+                     :void ""
                      _ "NULL")
-                   "; }")]
+                   " }")]
     {:proto proto :c c :deps ()}))
 
 (defn instantiate-eq-for-primitive-type [c-func-name t]
