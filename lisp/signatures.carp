@@ -13,7 +13,7 @@
 (set-signature! map            (:fn ((:fn ("a") "a") (:Array "a")) (:Array "a")))
 (set-signature! map-copy       (:fn ((:fn ((:ref "a")) "b") (:ref (:Array "a"))) (:Array "b") ))
 
-(set-signature! reduce         (:fn ((:fn ("a" "b") "a") "a" (:Array "b")) "a"))
+(set-signature! reduce         (:fn ((:fn ((:ref "a") (:ref "b")) "a") "a" (:ref (:Array "b"))) "a"))
 (set-signature! filter         (:fn ((:fn ("a") :bool) (:Array "a")) (:Array "a"))) ;; lambda should take ref?!
 
 (set-signature! copy           (:fn ((:ref "T"))                    "T"          ))

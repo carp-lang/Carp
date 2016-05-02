@@ -306,9 +306,11 @@
                   (if (list? existing)
                     (if (list? value-lookup)
                       (let [_ (when log-substs (println "The existing binding is a list"))
+                            pairs (map2 (fn [e l] {:e e :l l}) existing value-lookup)
+                            _ (when log-substs (println (str "pairs:\n" pairs)))
                             new-substs (reduce (fn [s m2] (extend-substitutions s (:e m2) (:l m2)))
                                                substs
-                                               (map2 (fn [e l] {:e e :l l}) existing value-lookup))
+                                               pairs)
                             _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
                         new-substs)
                       (do
@@ -354,7 +356,7 @@
 
 (defn solve [substs-and-errors a b constraint flipped]
   (do
-    ;;(println (str "\nsolve:\n" substs-and-errors))
+    ;;(println (str "\nsolve:\n" substs-and-errors "\na:\n" a "\nb:\n" b))
     (let [substs (:substs substs-and-errors)
           type-errors (:type-errors substs-and-errors)]
       (let [result (if (and (list? a) (list? b))

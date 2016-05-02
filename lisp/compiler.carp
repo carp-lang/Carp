@@ -41,6 +41,7 @@
                             :ignored)
       (ptr-to-global? evaled) (do (when log-ignores (println (str "compiler/try-bake will ignore ptr-to-global '" symbol-name "'")))
                                   :ignored)
+      (primop? evaled) (error (str "Trying to bake primop: " evaled))
       :else (bake-global symbol-name '()))))
 
 ^doc "Compile a generic lambda to a specific, fully typed version by providing a signature with the types needed."

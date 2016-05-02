@@ -361,7 +361,7 @@
                       x (error (str "Invalid type for call to 'array-of-size': " x)))
 
     "reduce" (match signature
-               (:fn ((:fn (a b) a) a (:Array b)) a)
+               (:fn ((:fn (a b) a) a (:ref (:Array b))) a)
                (let [proto (str "API " (type-build a) " " c-func-name "(" (type-build (list :fn (list a b) a)) " f, " (type-build a) " a, " (type-build (list :Array b))" bs)")
                      c (str proto
                             " {\n"

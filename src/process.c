@@ -270,6 +270,8 @@ void shadow_stack_push(Process* process, Obj *o) {
   if(process->shadow_stack_pos >= SHADOW_STACK_SIZE) {
     printf("Shadow stack overflow.\n");
     shadow_stack_print(process);
+    printf("\n\nNormal stack:\n\n");
+    stack_print(process);
     exit(1);
   }
   process->shadow_stack[process->shadow_stack_pos++] = o;
