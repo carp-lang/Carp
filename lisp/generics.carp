@@ -273,7 +273,9 @@
 
               (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
               
-              x (error (str "Invalid (non-ref?) type for call to 'str': " x))))
+              x (error {:error error-invalid-arg-type-to-generic
+                        :show-stacktrace false
+                        :message (str "Invalid (non-ref?) type for call to 'str': " x)})))
 
     "prn" (do
             ;;(println (str "Calling prn for signature: " signature))
@@ -304,7 +306,9 @@
 
               (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
               
-              x (error (str "Invalid (non-ref?) type for call to 'prn': " x))))
+              x (error {:error error-invalid-arg-type-to-generic
+                        :show-stacktrace false
+                        :message (str "Invalid (non-ref?) type for call to 'prn': " x)})))
 
     "delete" (do
                (match signature
@@ -361,6 +365,7 @@
                       x (error (str "Invalid type for call to 'array-of-size': " x)))
 
     "reduce" (match signature
+               ;;(:fn ((:fn (a b) a) a (:ref (:Array b))) a)
                (:fn ((:fn (a b) a) a (:ref (:Array b))) a)
                (let [proto (str "API " (type-build a) " " c-func-name "(" (type-build (list :fn (list a b) a)) " f, " (type-build a) " a, " (type-build (list :Array b))" bs)")
                      c (str proto
@@ -368,9 +373,9 @@
                             "  " (type-build b) " *casted = bs->data;\n"
                             "  " (type-build a) " result = a;\n"
                             "  for(int i = 0; i < bs->count; i++) {\n"
-                            "    a = f(a, casted[i]);\n"
+                            "    result = f(result, casted[i]);\n"
                             "  }\n"
-                            "  return a;\n"
+                            "  return result;\n"
                             "}\n")]
                  {:proto proto :c c :deps ()})
                x (error (str "Invalid type for call to 'reduce': " x)))
