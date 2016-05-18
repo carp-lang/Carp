@@ -425,6 +425,15 @@
 (defmacro and* [... forms]
   (and-internal forms))
 
+(defmacro or [a b]
+  (list 'if a true b))
+
+;; (list 'let ['or-result a]
+;;         (list 'if
+;;               'or-result
+;;               'or-result
+;;               b))
+
 (defn or-internal [forms]
   (match forms
     (a b) (list 'or a b)
