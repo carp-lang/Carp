@@ -9,6 +9,7 @@
   
 # Compiler Small Features
   - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
+  - alternatively allow ref:ed value types to be coerced into non-ref:ed types
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
   - A deref function that can remove the ref from primitive types?
@@ -20,7 +21,6 @@
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
-  - Automatic recompilation doesn't work when depending on concrete instantiation of generic function
   
 # Compiler efficiency
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
