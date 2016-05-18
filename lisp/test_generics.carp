@@ -107,4 +107,32 @@
     (assert-eq :foreign (type idd))
     (assert-eq 15 (use-user))))
 
+;; Should put tests of realized generic primops into separate file?!
+(deftest test-reduce-struct
+  (do
+    (defstruct Bleh [bleh-x :int])
+
+    (defn add-bleh [b1 b2]
+      (let [x (get-bleh-x &b1)]
+        (set-bleh-x b1 (+ x (get-bleh-x b2)))))
+
+    ;;(update-bleh-x b1 (fn [x] (+ x (get-bleh-x b2))))
+
+    ;; (Bleh (+ (get-bleh-x &b1)
+    ;;            (get-bleh-x b2)))
+
+    (defn reduce-over-bleh []
+      (let [stuff [(Bleh 10) (Bleh 20) (Bleh 30)]
+            a (reduce add-bleh (Bleh 0) &stuff)
+            b (reduce add-bleh (Bleh 100) &stuff)
+            c (reduce add-bleh (Bleh 2000) &stuff)]
+        (println* &[a b c])))))
+
+(deftest test-reduce-int
+  (do
+    (defn add [a b]
+      (+ a @b))
+    (defn r1 []
+      (reduce add 0 &[1 2 3 4 5]))))
+
 (tester/run-suite "generics")
