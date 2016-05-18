@@ -24,6 +24,7 @@ Process *process_new() {
   process->dead = false;
   process->final_result = NULL;
   process->frame = 0;
+  process->bytecodeObj = NULL;
   pop_stacks_to_zero(process);
 
   process->global_env = obj_new_environment(NULL);

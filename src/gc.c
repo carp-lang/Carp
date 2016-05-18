@@ -140,6 +140,16 @@ void gc(Process *process) {
     obj_mark_alive(process->function_trace[i].caller);
     obj_mark_alive(process->function_trace[i].callee);
   }
+
+  // WHAT NEEDS TO BE ROOTED?!
+  /* if(process->bytecodeObj) { */
+  /*   obj_mark_alive(process->bytecodeObj); */
+  /* } */
+  for(int i = 0; i < process->frame; i++) {
+    obj_mark_alive(process->frames[i].bytecodeObj);
+    obj_mark_alive(process->frames[i].env);
+    //obj_mark_alive(process->frames[i].);
+  }
   gc_sweep();
 }
 

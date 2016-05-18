@@ -6,7 +6,7 @@
 #include "../shared/shared.h"
 #include "../shared/platform.h"
 
-#define HANDLE_SIGNALS 1
+#define HANDLE_SIGNALS 0
 
 void signal_handler(int sig) {
   printf("\e[31m");
