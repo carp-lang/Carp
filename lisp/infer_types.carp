@@ -285,9 +285,10 @@
 
 (defn extend-substitutions [substs lhs value]
   (do
-    (when log-substs (do
-                       (println (str "\nSubsts:\n" substs))
-                       (println (str "Try extend " lhs " => " value))))
+    (when log-substs
+      (do
+        (println (str "\nSubsts:\n" substs))
+        (println (str "Try extend " lhs " => " value))))
     (if (= :fail substs)
       :fail
       (let [value-lookup (lookup-in-substs-fast substs value)]
@@ -308,7 +309,10 @@
                       (let [_ (when log-substs (println "The existing binding is a list"))
                             pairs (map2 (fn [e l] {:e e :l l}) existing value-lookup)
                             _ (when log-substs (println (str "pairs:\n" pairs)))
-                            new-substs (reduce (fn [s m2] (extend-substitutions s (:e m2) (:l m2)))
+                            new-substs (reduce (fn [s m2]
+                                                 (if (= (:e m2) lhs)
+                                                   s ;; Don't try to extend because it will lead to infinite loop!!!
+                                                   (extend-substitutions s (:e m2) (:l m2))))
                                                substs
                                                pairs)
                             _ (when log-substs (println (str "\nBack from list, new substs: " new-substs)))]
