@@ -13,16 +13,16 @@ Carp borrows its looks from Clojure but the runtime semantics are much closer to
 This compiles to the following C program:
 ```C
 void say_hi(string text) {
-  bool while_expr_601 = 1;
-  while(while_expr_601) {
-    int strlen_result_604 = strlen(text);
-    bool if_expr_603 = strlen_result_604 < 10;
-    if(if_expr_603) {
+  bool while_expr_1 = 1;
+  while(while_expr_1) {
+    int strlen_result_2 = strlen(text);
+    bool if_expr_3 = strlen_result_2 < 10;
+    if(if_expr_3) {
       println("Too short!");
     } else {
       println(text);
     }
-    while_expr_601 = 1;
+    while_expr_1 = 1;
   }
 }
 ```
@@ -74,7 +74,8 @@ To know whether a function takes over the responsibility of freeing some memory 
 ### Data Literals
 ```clojure
 100 ; int
-3.14 ; float
+3.14f ; float
+10.0 ; double
 true ; bool
 "hello" ; string
 \e ; char
@@ -82,7 +83,7 @@ true ; bool
 ```
 
 ### Dynamic-only Data Literals
-Right now these data types are only available in non-compiled code.
+Right now the following data types are only available for manipulation in non-compiled code.
 
 ```clojure
 (1 2 3) ; list
@@ -103,6 +104,12 @@ foo ; symbol
 (reset! variable value)
 ```
 
+### Reader macros
+```clojure
+&x ; same as (ref x)
+@x ; same as (copy x)
+```
+
 ### Dynamic-only Special Forms
 ```
 (quote x)
@@ -113,12 +120,12 @@ foo ; symbol
 ```clojure
 (defstruct Vector2 [x :float, y :float])
 
-(def my-pos (Vector2 102.2 210.3))
+(def my-pos (Vector2 102.2f 210.3f))
 
 ;; A 'lens' is automatically generated for each member:
-(get-x my-pos) ;; => 102.2
-(set-x my-pos 3.0) ;; => (Vector2 10.2 3.0)
-(update-x my-pos inc) ;; => (Vector2 10.2 4.0)
+(get-x my-pos) ;; => 102.2f
+(set-x my-pos 3.0f) ;; => (Vector2 10.2f 3.0f)
+(update-x my-pos inc) ;; => (Vector2 10.2f 4.0f)
 ```
 
 ### Algebraic Data Types (not implemented)
@@ -132,7 +139,7 @@ foo ; symbol
 
 Omit the name tag to create a data constructor with the same name as the type:
 ```clojure
-(defdata Vector3 [x :float, y :float, z :float])
+(defdata Vector3 [x :double, y :double, z :double])
 
 (def position (Vector3 4.0 5.0 -2.0))
 (def x-position (.x position)

@@ -1,0 +1,89 @@
+(def defmacro (macro (name args body)
+                     (list 'do
+                           (list 'def name (list 'macro args body))
+                           (list 'meta-set! name :name (str name)))))
+
+(defmacro when (expr a) (list 'if expr a nil))
+(defmacro if-not (expr a b) (list 'if (list 'not expr) a b))
+(defmacro comment (form) nil)
+
+(defmacro assert-eq (a b)
+  (list 'if-not (list '= a b)
+	(list 'error (list 'str "assert-eq fail:\n" (str a) " \n=>\n" a "\n\n - VS - \n\n" (str b) " \n=>\n" b))
+	nil))
+
+(defmacro assert-error (error-code form)
+  (list 'let ['result (list 'catch-error form)]
+        (list 'if (list 'nil? 'result)
+              (list 'error (list 'str "No error!\n" (str form) "\n=>\n" 'result))
+              (list 'if-not (list '= error-code (list :error 'result))
+                    (list 'error (list 'str "assert-error failed, expected error code " error-code " but got " (list :error 'result)))
+                    :OK))))
+
+(defmacro defn (name args body)
+  (list 'do
+        (list 'def name (list 'fn args body))
+        (list 'meta-set! name :line (meta-get name :line))
+        (list 'meta-set! name :name (str name))
+        (list 'meta-set! name :user-defined true)))
+
+(defn quasiquote-internal [form]  
+  (match form
+    ('dequote x) x
+
+    ;; (x ... xs) (match x
+    ;;              ('dequote-splicing inner-x) (concat (quasiquote-internal (eval inner-x)) (quasiquote-internal xs))
+    ;;              _ (cons (quasiquote-internal x) (quasiquote-internal xs)))
+
+    x (if (list? x)
+        (cons 'list (map quasiquote-internal x))
+        (list 'quote x))
+    ))
+
+(defmacro quasiquote (form)
+  (quasiquote-internal form))
+
+;; (defn quasiquote-internal [form]
+;;   (do
+;;     (println (str "form: " form))
+;;     (if (list? form)
+;;       (match form
+;;         ('dequote x) x
+;;         _ (map quasiquote-internal form))
+;;       form)))
+
+;; (defn replace-dequotes [form]
+;;   (match form
+;;     () ()
+;;     ('dequote x) x
+;;     (x ... xs) (cons (replace-dequotes x) (replace-dequotes xs))
+;;     x x))
+
+;; (defmacro quasiquote (form)
+;;   (list 'quote (map replace-dequotes form)))
+
+
+
+;; AND
+(defmacro and [a b] (list 'if a b false))
+
+(defn and-internal [forms]
+  (match forms
+    (a) a
+    (a b) (list 'and a b)
+    (a ... xs) (list 'and a (and-internal xs))))
+
+(defmacro and* [... forms]
+  (and-internal forms))
+
+;; OR
+(defmacro or [a b]
+  (list 'if a true b))
+
+(defn or-internal [forms]
+  (match forms
+    (a b) (list 'or a b)
+    (a ... xs) (list 'or a (or-internal xs))))
+
+(defmacro or* [... forms]
+  (or-internal forms))

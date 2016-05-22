@@ -4,3 +4,6 @@
 (def error-binding-to-non-symbol 3)
 (def error-failed-typechecking 4)
 (def error-return-ref 5)
+(def error-ref-in-array 6)
+(def error-invalid-arg-type-to-generic 7)
+

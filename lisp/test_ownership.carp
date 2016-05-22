@@ -1,11 +1,9 @@
-;; OWNERSHIP
+(tester/set-suite! "ownership")
 
-
-(defn own-1 (s)
-  (eat-string s))
-
-(defn test-own-1 ()
+(deftest test-own-1
   (do
+    (defn own-1 (s)
+      (eat-string s))
     (assert-eq '(:fn (:string) :void)
                (sign own-1))
     (assert-eq {:node :function, 
@@ -13,15 +11,10 @@
                 :body ()}
                (ownership-analyze own-1))))
 
-(test-own-1)
-
-
-
-(defn own-2 (s)
-  (string-copy s))
-
-(defn test-own-2 ()
+(deftest test-own-2
   (do
+    (defn own-2 (s)
+      (string-copy s))
     (assert-eq '(:fn ((:ref :string)) :string)
                (sign own-2))
     (assert-eq {:node :function, 
@@ -29,15 +22,10 @@
                 :body ()}
                (ownership-analyze own-2))))
 
-(test-own-2)
-
-
-
-(defn own-3 ()
-  (string-copy (ref (string-copy "CARP"))))
-
-(defn test-own-3 ()
+(deftest test-own-3
   (do
+    (defn own-3 ()
+      (string-copy (ref (string-copy "CARP"))))
     (assert-eq '(:fn () :string)
                (sign own-3))
     (assert-eq {:node :function, 
@@ -45,16 +33,11 @@
                 :body ()}
                (ownership-analyze own-3))))
 
-(test-own-3)
-
-
-
-(defn own-4 ()
-  (let [s (string-copy "CARP1")]
-    (string-copy "CARP2")))
-
-(defn test-own-4 ()
+(deftest test-own-4
   (do
+    (defn own-4 ()
+      (let [s (string-copy "CARP1")]
+        (string-copy "CARP2")))
     (assert-eq '(:fn () :string)
                (sign own-4))
     (assert-eq '{:node :function, 
@@ -65,17 +48,12 @@
                         :body ()}}
                (ownership-analyze own-4))))
 
-(test-own-4)
-
-
-
-(defn own-5 ()
-  (let [s1 (string-copy "CARP1")
-        s2 (string-copy (ref s1))]
-    0))
-
-(defn test-own-5 ()
+(deftest test-own-5
   (do
+    (defn own-5 ()
+      (let [s1 (string-copy "CARP1")
+            s2 (string-copy (ref s1))]
+        0))
     (assert-eq '(:fn () :int)
                (sign own-5))
     (assert-eq '{:node :function, 
@@ -88,17 +66,12 @@
                         :body ()}}
                (ownership-analyze own-5))))
 
-(test-own-5)
-
-
-
-(defn own-6 ()
-  (let [s1 (string-copy "CARP")]
-    (let [s2 (string-copy (ref s1))]
-      0)))
-
-(defn test-own-6 ()
+(deftest test-own-6
   (do
+    (defn own-6 ()
+      (let [s1 (string-copy "CARP")]
+        (let [s2 (string-copy (ref s1))]
+          0)))
     (assert-eq '(:fn () :int)
                (sign own-6))
     (assert-eq '{:node :function, 
@@ -112,31 +85,22 @@
                                :body ()}}}
                (ownership-analyze own-6))))
 
-(test-own-6)
-
-
-
-(defn own-7 ()
-  (let [s1 (string-copy "CARP")]
-    (do
-      (eat-string s1)
-      (eat-string s1))))
-
-(defn test-own-7 ()
-  (assert-error error-given-away (ownership-analyze own-7)))
-
-(test-own-7)
-
-
-
-(defn own-8 ()
-  (let [s (string-copy "CARP1")]
-    (if true
-      s
-      (string-copy "CARP2"))))
-
-(defn test-own-8 ()
+(deftest test-own-7
   (do
+    (defn own-7 ()
+      (let [s1 (string-copy "CARP")]
+        (do
+          (eat-string s1)
+          (eat-string s1))))
+    (assert-error error-given-away (ownership-analyze own-7))))
+
+(deftest test-own-8
+  (do
+    (defn own-8 ()
+      (let [s (string-copy "CARP1")]
+        (if true
+          s
+          (string-copy "CARP2"))))
     (assert-eq '(:fn () :string)
                (sign own-8))
     (assert-eq '{:node :function, 
@@ -151,19 +115,13 @@
                                :body-right ()}}}
                (ownership-analyze own-8))))
 
-(test-own-8)
-
-
-
-
-(defn own-9 ()
-  (let [s (string-copy "CARP1")]
-    (if true
-      s
-      s)))
-
-(defn test-own-9 ()
+(deftest test-own-9
   (do
+    (defn own-9 ()
+      (let [s (string-copy "CARP1")]
+        (if true
+          s
+          s)))
     (assert-eq '(:fn () :string)
                (sign own-9))
     (assert-eq '{:node :function, 
@@ -177,19 +135,13 @@
                                :body-right ()}}}
                (ownership-analyze own-9))))
 
-(test-own-9)
-
-
-
-
-(defn own-10 ()
-  (let [s (string-copy "CARP1")]
-    (if true
-      10
-      20)))
-
-(defn test-own-10 ()
+(deftest test-own-10
   (do
+    (defn own-10 ()
+      (let [s (string-copy "CARP1")]
+        (if true
+          10
+          20)))
     (assert-eq '(:fn () :int)
                (sign own-10))
     (assert-eq '{:node :function, 
@@ -204,19 +156,14 @@
                                :body-right ()}}}
                (ownership-analyze own-10))))
 
-(test-own-10)
-
-
-
-(defn own-11 ()
-  (let [s1 (string-copy "CARP1")
-        s2 (string-copy "CARP2")]
-    (if true
-      s1
-      s2)))
-
-(defn test-own-11 ()
+(deftest test-own-11
   (do
+    (defn own-11 ()
+      (let [s1 (string-copy "CARP1")
+            s2 (string-copy "CARP2")]
+        (if true
+          s1
+          s2)))
     (assert-eq '(:fn () :string)
                (sign own-11))
     (assert-eq '{:node :function, 
@@ -232,18 +179,13 @@
                                :body-right ()}}}
                (ownership-analyze own-11))))
 
-(test-own-11)
-
-
-
-(defn own-12 (s1)
-  (let []
-    (if true
-      (itos (strlen (ref s1)))
-      s1)))
-
-(defn test-own-12 ()
+(deftest test-own-12
   (do
+    (defn own-12 (s1)
+      (let []
+        (if true
+          (itos (strlen (ref s1)))
+          s1)))
     (assert-eq '(:fn (:string) :string)
                (sign own-12))
     (assert-eq '{:node :function, 
@@ -258,20 +200,14 @@
                                :body-right ()}}}
                (ownership-analyze own-12))))
 
-(test-own-12)
-
-
-
-
-(defn own-13 ()
-  (let [s (string-copy "CARP")
-        r (ref s)]
-    (do
-      (strlen r)
-      (eat-string s))))
-
-(defn test-own-13 ()
+(deftest test-own-13
   (do
+    (defn own-13 ()
+      (let [s (string-copy "CARP")
+            r (ref s)]
+        (do
+          (strlen r)
+          (eat-string s))))
     (assert-eq '(:fn () :void)
                (sign own-13))
     (assert-eq '{:node :function, 
@@ -281,32 +217,22 @@
                         :body ()}}
                (ownership-analyze own-13))))
 
-(test-own-13)
-
-
-
-(defn own-14 ()
-  (let [s (string-copy "CARP")
-        r (ref s)]
-    (do
-      (eat-string s)
-      (strlen r))))
-
-(defn test-own-14 ()
-  (assert-error error-given-away (ownership-analyze own-14)))
-
-(test-own-14)
-
-
-
-
-(defn own-15 (s1)
-  (if true
-    (do (eat-string s1) (string-copy "eaten"))
-    s1))
-
-(defn test-own-15 ()
+(deftest test-own-14
   (do
+    (defn own-14 ()
+      (let [s (string-copy "CARP")
+            r (ref s)]
+        (do
+          (eat-string s)
+          (strlen r))))
+    (assert-error error-given-away (ownership-analyze own-14))))
+
+(deftest test-own-15
+  (do
+    (defn own-15 (s1)
+      (if true
+        (do (eat-string s1) (string-copy "eaten"))
+        s1))
     (assert-eq '(:fn (:string) :string)
                (sign own-15))
     (assert-eq '{:node :function, 
@@ -318,36 +244,54 @@
                         :body-right ()}}
                (ownership-analyze own-15))))
 
-(test-own-15)
+(deftest test-free-things-sent-to-ref
+  (do
+    (defn free-the-thing []
+      (println (ref (str (ref [1 2 3])))))
+    (assert-eq '{:node :function, 
+                 :free ({:name "_result_1", 
+                         :type :string}
+                        {:name "_array_0", 
+                         :type (:Array :int)}), 
+                 :body ()}
+               (ownership-analyze free-the-thing))))
 
+(deftest dont-allow-let-ref
+  (do
+    (defn let-returning-ref []
+      (copy
+       (let [x [1 2 3]
+             r &x]
+         r)))
+    (assert-error error-return-ref (bake let-returning-ref))))
 
+(deftest ownership-in-while-loop
+  (do
+    (defn fool-while []
+      (let [x @"yeah"]
+        (while true
+          (reset! x (id x)))))
+    (assert-error error-given-away (bake fool-while))))
 
-(defn free-the-thing []
-  (println (ref (str (ref [1 2 3])))))
+(deftest reset-in-while-loop-ok
+  (do (defn while-loop-function []
+        (let [s [1 2 3]
+              x 0]
+          (while (< x 10)
+            (do
+              (reset! s (copy &s))
+              (reset! x (inc x))))))
+      (bake while-loop-function)))
 
-(defn test-free-things-sent-to-ref []
-  (assert-eq '{:node :function, 
-               :free ({:name "_result_1", 
-                       :type :string}
-                      {:name "_array_0", 
-                       :type (:Array :int)}), 
-               :body ()}
-             (ownership-analyze free-the-thing)))
-
-(test-free-things-sent-to-ref)
-
-
-
-
-
-(defn dont-allow-let-ref []
-  (copy (let [x [1 2 3]
-              r &x]
-          r)))
-
-
+(deftest reset-in-while-loop-fail
+  (do (defn while-loop-function-fail []
+        (let [s [1 2 3]]
+          (while true
+            (reset! s (id s)))))
+      (assert-error error-given-away (bake while-loop-function-fail))))
 
 ;; This one is weird:
 (defn own-string-weird (s)
   (ref s))
 
+(tester/run-suite "ownership")

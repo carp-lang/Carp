@@ -117,6 +117,7 @@ void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int
     }
 
     if(arg_count > paramp->count) {
+      printf("arguments: %s\n", obj_to_string(process, paramp)->s);
       set_error("Too many arguments (A) to function/macro: ", function);
     }
     

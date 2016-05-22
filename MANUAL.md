@@ -21,8 +21,16 @@ To start the Carp compiler in development mode (which will run its test suite), 
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
 * ```prompt``` The prompt displayed in the repl
 * ```profile-infer-time``` Set to true if you want to know the time it takes to infer the types for each function
+* ```profile-external-compiler-time``` Set to true if you want to know the time it takes to run the external C compiler
+* ```log-unloading-of-dylibs``` Should the compiler log when it unloads dynamic libraries?
+* ```log-deps-when-baking-ast``` Should the compiler log the libraries it links to?
 
 ### Special Files
 If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
 
 If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded). This files is intended for setting up the build process of this particular project, for example by loading the correct source files, configuring the compiler variables, etc.
+
+### Recovering from errors
+If an error occurs at the REPL, Carp will intercept the error signal and try to recover. Sometimes this does not work (because of memory corruption or similar) and your only option is to restart the process. Quite often it works though, so make sure to try it before resorting to a hard reset.
+
+When working with glfw windows a crash will not close the window, and creating a new one will not work either. To be able to continue, call ```(glfwTerminate)``` first. This will clear everything related to the window and allow you to start anew. A similar process is probably worth working out for other kind or resources that gets lost when a crash happens. Also make sure you fix the problematic code or state that caused the error or you will just crash again immediately.

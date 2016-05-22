@@ -1,0 +1,167 @@
+(tester/set-suite! "baking")
+
+(deftest test-fib
+  (do
+    (defn fib (n)
+      (if (< n 2)
+        1
+        (+ (fib (- n 2)) (fib (- n 1)))))
+    (bake fib)
+    (assert-eq (fib 6) 13)
+    (assert-eq (type fib) :foreign)
+    :fib-is-ok))
+
+(deftest test-hypo
+  (do (defn hypo [x y]
+        (sqrtf (+ (* x x) (* y y))))
+      (bake hypo)
+      (assert-approx-eq (hypo 3.0f 4.0f) 5.0f)
+      (assert-eq (type hypo) :foreign)
+      :hypo-is-ok))
+
+(deftest test-loading
+  (do
+    (save (str carp-dir "out/out.c") "int f() { return 100; }")
+    (system (str "clang -shared -o " carp-dir "out/f.so " carp-dir "out/out.c"))
+    (def flib (load-dylib (str carp-dir "out/f.so")))
+    (register flib "f" () :int)
+    (assert-eq 100 (f))
+    
+    (save (str carp-dir "out/out.c") "int g() { return 150; }")
+    (system (str "clang -shared -o " carp-dir "out/g.so " carp-dir "out/out.c"))
+    (def glib (load-dylib (str carp-dir "out/g.so")))
+    (register glib "g" () :int)
+    (assert-eq 150 (g))
+    
+    (unload-dylib flib)
+    
+    (save (str carp-dir "out/out.c") "int f() { return 200; }")
+    (system (str "clang -shared -o " carp-dir "out/f.so " carp-dir "out/out.c"))
+    (def flib (load-dylib (str carp-dir "out/f.so")))
+    (register flib "f" () :int)
+    (assert-eq 200 (f))
+    ))
+
+(deftest test-auto-chain-bake-1
+  (do
+    (defn f1 () 100)
+    (defn f2 () 200)
+    (defn f3 () (+ (f1) (f2)))
+    (bake f3)
+    (assert-eq (f3) 300)))
+(test-auto-chain-bake-1)
+
+(deftest test-auto-chain-bake-2
+  (do
+    (defn f4 () 100)
+    (defn f5 (x) (+ x 1))
+    (defn f6 () (let [z (f5 (f4))]
+                  z))
+    (bake f6)
+    (assert-eq (f6) 101)))
+(test-auto-chain-bake-2)
+
+(deftest test-unloading-depending-functions
+  (do
+    (defn f7 [] 100)
+    (bake f7)
+    (assert-eq 100 (f7))
+
+    (defn f8 [] (f7))
+    (bake f8)
+    (assert-eq 100 (f8))
+
+    (defn f9 [] (f7))
+    (bake f9)
+    (assert-eq 100 (f9))
+
+    (defn f10 [] (f9))
+    (bake f10)
+    (assert-eq 100 (f10))
+
+    (defn f7 [] 200)
+    (bake f7)
+
+    (assert-eq 200 (f7))
+    (assert-eq 200 (f8))
+    (assert-eq 200 (f9))
+    (assert-eq 200 (f10))))
+
+
+;; LET BINDINGS
+(deftest test-recursive-let
+  (do
+    (defn recursive-let ()
+      (let [;; The other definition order should get caught by compiler, not clang:
+            y "whaaaaaaat"
+            x (string-append "hej" (ref (itos (strlen y))))
+            ]
+        x))
+    (bake recursive-let)))
+
+
+;; FUNCTION POINTERS
+(deftest test-call-twice
+  (do (defn call-twice (f)
+        (do (strlen (ref (f))) (f)))
+      (defn call-me ()
+        (string-copy "CARP!"))
+      (bake call-twice)
+      (bake call-me)
+      (assert-eq "CARP!" (call-twice call-me))))
+
+
+;; COMPILE TIME MACROS
+(deftest test-macro-1
+  (do (defn macro-1 ()
+        (if-not true
+          10
+          20))
+      (bake macro-1)
+      (assert-eq (macro-1) 20)))
+
+
+;; PIPE MACROS
+(deftest test-baking-of-pipe-last-macro
+  (do (defn baking-of-pipe-last-macro []
+        (->> [10 20 30]
+             (map inc)))
+      (bake baking-of-pipe-last-macro)
+      (assert-eq "[11 21 31]" (str (baking-of-pipe-last-macro)))))
+
+
+(deftest test-baking-of-pipe-first-macro
+  (do (defn baking-of-pipe-first-macro []
+        (-> 10
+            (- 2)
+            (* 2)))
+      (bake baking-of-pipe-first-macro)
+      (assert-eq 16 (baking-of-pipe-first-macro))))
+
+
+;; BAKING OF GROUPS
+(deftest test-bake-group
+  (do
+    (def example-descriptor-1 {:src "int f() { return 42; }"
+                               :proto "int f();"
+                               :name "f"
+                               :sig '(:fn () :int)})
+
+    (def example-descriptor-2 {:src "int g() { return f() + f(); }"
+                               :proto "int g();"
+                               :name "g"
+                               :sig '(:fn () :int)})
+    (defn h [] (f)) ;; uses f in 'efgroup'
+    (compiler/bake-group "efgroup" (list example-descriptor-1 example-descriptor-2) ())
+    (bake h)))
+
+(tester/run-suite "baking")
+
+
+;; This does NOT work!
+(defn shadow [x]
+  (let [x (* x 3)]
+    x))
+;; (def shadowast (lambda-to-ast (code shadow)))
+;; (def shadowcon (gencon shadowast))
+;; (def shadowasta (annotate-ast shadowast))

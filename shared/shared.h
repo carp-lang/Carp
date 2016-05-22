@@ -6,8 +6,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <signal.h>
 #include "types.h"
 #include "platform.h"
+
+#define and &&
 
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)
@@ -45,11 +48,6 @@ EXPORT bool nullQMARK(void *p) {
 
 EXPORT bool not(bool x) {
   return !x;
-}
-
-EXPORT void panic(string msg) {
-  printf("Error: %s\n", msg);
-  exit(1);
 }
 
 EXPORT void print(string msg) {
@@ -109,7 +107,8 @@ EXPORT int last_index_of(string s, char c) {
 
 EXPORT string substring(string s, int index) {
   if(index >= strlen(s)) {
-    panic("substring out of bounds");
+    printf("Substring out of bounds.\n");
+    exit(-1);
   }
   const char *sub = s + index;
   return strdup(sub);
@@ -156,4 +155,36 @@ EXPORT string get_console_color(int x) {
   snprintf(buffer, 16, "\e[3%dm", x);
   return strdup(buffer);
   #endif
+}
+
+Array *chars(string s) {
+  Array *a = malloc(sizeof(Array));
+  a->count = strlen(s);
+  a->data = strdup(s);
+  return a;
+}
+
+string string_join(string separator, Array *array_of_strings) {
+  string *casted = (string*)array_of_strings->data;
+  int separator_len = strlen(separator);
+  int total_length = 0;
+  int count = array_of_strings->count;
+  for(int i = 0; i < count; i++) {
+    total_length += strlen(casted[i]);
+    total_length += separator_len;
+  }
+  total_length -= separator_len; // last separator not included
+  total_length += 1; // room for '\0'
+  string result = malloc(total_length);
+  char *pos = result;
+  for(int i = 0; i < count; i++) {
+    sprintf(pos, "%s", casted[i]);
+    pos += strlen(casted[i]);
+    if(i < count - 1) {
+      sprintf(pos, "%s", separator);
+    }
+    pos += separator_len;
+  }
+  *pos = '\0';
+  return result;
 }

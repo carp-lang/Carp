@@ -19,7 +19,7 @@
 // 'o' do
 // 'r' reset!
 // 'n' not
-// 'x' or
+//  // 'x' or REMOVED
 // 'w' while
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
@@ -102,25 +102,25 @@ void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   *position += 1;
 }
 
-void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  assert(false);
-  /* char *code = malloc(512); */
-  /* Obj *or_branch = obj_new_bytecode(code); */
+/* void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) { */
+/*   assert(false); */
+/*   /\* char *code = malloc(512); *\/ */
+/*   /\* Obj *or_branch = obj_new_bytecode(code); *\/ */
 
-  /* Obj *p = form->cdr; */
-  /* int pos2 = 0; */
-  /* while(p && p->car) { */
-  /*   visit_form(process, env, or_branch, &pos2, p->car); */
-  /*   p = p->cdr; */
-  /* } */
+/*   /\* Obj *p = form->cdr; *\/ */
+/*   /\* int pos2 = 0; *\/ */
+/*   /\* while(p && p->car) { *\/ */
+/*   /\*   visit_form(process, env, or_branch, &pos2, p->car); *\/ */
+/*   /\*   p = p->cdr; *\/ */
+/*   /\* } *\/ */
 
-  /* Obj *literals = bytecodeObj->bytecode_literals; */
-  /* char new_literal_index = literals->count; */
-  /* obj_array_mut_append(literals, or_branch); */
-  /* bytecodeObj->bytecode[*position] = 'x'; */
-  /* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; */
-  /* *position += 2; */
-}
+/*   /\* Obj *literals = bytecodeObj->bytecode_literals; *\/ */
+/*   /\* char new_literal_index = literals->count; *\/ */
+/*   /\* obj_array_mut_append(literals, or_branch); *\/ */
+/*   /\* bytecodeObj->bytecode[*position] = 'x'; *\/ */
+/*   /\* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; *\/ */
+/*   /\* *position += 2; *\/ */
+/* } */
 
 void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   visit_form(process, env, bytecodeObj, position, form->cdr->car);
@@ -214,9 +214,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     else if(HEAD_EQ("ref")) {
       add_ref(process, env, bytecodeObj, position, form);
     }
-    else if(HEAD_EQ("or")) {
-      add_or(process, env, bytecodeObj, position, form);
-    }
+    /* else if(HEAD_EQ("or")) { */
+    /*   add_or(process, env, bytecodeObj, position, form); */
+    /* } */
     else if(HEAD_EQ("not")) {
       add_not(process, env, bytecodeObj, position, form);
     }
@@ -434,6 +434,11 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
 }
 
 Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
+
+  if(bytecodeObj->tag != 'X') {
+    set_error_return_nil("The code to eval must be bytecode, ", bytecodeObj);
+  }
+  
   shadow_stack_push(process, bytecodeObj);
   
   process->frames[process->frame].p = 0;

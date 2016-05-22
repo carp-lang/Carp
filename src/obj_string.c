@@ -45,7 +45,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   //printf("quoted_sig: %s\n", obj_to_string(quoted_sig)->s);
 	
-  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("str"), quoted_sig);
+  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("prn"), quoted_sig);
 
   shadow_stack_push(process, call_to_generic_name);
   Obj *generic_name_result = eval(process, process->global_env, call_to_generic_name);
@@ -61,7 +61,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   }
 
   // Also make sure this particular version of the str primop has been baked:
-  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("str"), quoted_sig);
+  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("prn"), quoted_sig);
   shadow_stack_push(process, call_to_bake_generic_primop_auto);
   eval(process, process->global_env, call_to_bake_generic_primop_auto);
 
@@ -313,6 +313,18 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
         void *dereffed = *(void**)o->void_ptr;
         assert(dereffed);
         Obj *x = primitive_to_obj(process, dereffed, type_float);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
+      }
+      else if(obj_eq(process, type_lookup, type_double)) {
+        void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
+        Obj *x = primitive_to_obj(process, dereffed, type_double);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
+      }
+      else if(obj_eq(process, type_lookup, type_bool)) {
+        void *dereffed = *(void**)o->void_ptr;
+        // can't assert since false == NULL
+        Obj *x = primitive_to_obj(process, dereffed, type_bool);
         obj_string_mut_append(total, obj_to_string(process, x)->s);
       }
       else if(obj_eq(process, type_lookup, type_string)) {

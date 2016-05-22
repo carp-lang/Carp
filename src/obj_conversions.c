@@ -1,4 +1,5 @@
 #include "obj_conversions.h"
+#include "assertions.h"
 #include "env.h"
 #include "obj_string.h"
 
@@ -30,6 +31,12 @@ Obj *primitive_array_to_obj_array(Process *process, Array *carp_array, Obj *inne
     bool *int_array = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
       new_array->array[i] = obj_new_bool(int_array[i]);
+    }
+  }
+  else if(obj_eq(process, inner_type, type_char)) {
+    char *char_array = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      new_array->array[i] = obj_new_char(char_array[i]);
     }
   }
   else if(obj_eq(process, inner_type, type_string)) {
@@ -129,21 +136,61 @@ Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
   Obj **oa = obj_array->array;
 
   if(obj_array->count == 0) {
-          
+
   }
   else if(oa[0]->tag == 'I') {
     carp_array->data = malloc(sizeof(int) * carp_array->count);
     int *data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
-      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be integers.", nil);
+      assert_or_set_error_return_null(oa[i]->tag == 'I', "All elements in array must be integers: ", oa[i]);
       data[i] = oa[i]->i;
+    }
+  }
+  else if(oa[0]->tag == 'V') {
+    carp_array->data = malloc(sizeof(int) * carp_array->count);
+    int *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      assert_or_set_error_return_null(oa[i]->tag == 'V', "All elements in array must be floats: ", oa[i]);
+      data[i] = oa[i]->f32;
+    }
+  }
+  else if(oa[0]->tag == 'W') {
+    carp_array->data = malloc(sizeof(float) * carp_array->count);
+    int *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      assert_or_set_error_return_null(oa[i]->tag == 'W', "All elements in array must be doubles: ", oa[i]);
+      data[i] = oa[i]->f64;
+    }
+  }
+  else if(oa[0]->tag == 'B') {
+    carp_array->data = malloc(sizeof(double) * carp_array->count);
+    bool *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      assert_or_set_error_return_null(oa[i]->tag == 'B', "All elements in array must be booleans: ", oa[i]);
+      data[i] = oa[i]->boolean;
+    }
+  }
+  else if(oa[0]->tag == 'T') {
+    carp_array->data = malloc(sizeof(char) * carp_array->count);
+    char *data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      assert_or_set_error_return_null(oa[i]->tag == 'T', "All elements in array must be chars: ", oa[i]);
+      data[i] = oa[i]->character;
+    }
+  }
+  else if(oa[0]->tag == 'S') {
+    carp_array->data = malloc(sizeof(char*) * carp_array->count);
+    char **data = carp_array->data;
+    for(int i = 0; i < carp_array->count; i++) {
+      assert_or_set_error_return_null(oa[i]->tag == 'S', "All elements in array must be strings: ", oa[i]);
+      data[i] = strdup(oa[i]->s); // strdup!
     }
   }
   else if(oa[0]->tag == 'Q') {
     carp_array->data = malloc(sizeof(void*) * carp_array->count);
     void **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
-      //assert_or_set_error(oa[i]->tag == 'I', "All elements in array must be ptr:s.", nil);
+      assert_or_set_error_return_null(oa[i]->tag == 'Q', "All elements in array must be ptr:s ", oa[i]);
       data[i] = oa[i]->void_ptr;
     }
   }
@@ -152,6 +199,9 @@ Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
     Array **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
       Array *inner_array = obj_array_to_carp_array(process, oa[i]);
+      if(eval_error) {
+        return NULL;
+      }
       data[i] = inner_array;
     }
   }

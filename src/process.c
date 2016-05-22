@@ -24,6 +24,7 @@ Process *process_new() {
   process->dead = false;
   process->final_result = NULL;
   process->frame = 0;
+  process->bytecodeObj = NULL;
   pop_stacks_to_zero(process);
 
   process->global_env = obj_new_environment(NULL);
@@ -129,7 +130,7 @@ Process *process_new() {
   register_primop(process, "print", p_print);
   register_primop(process, "println", p_println);
   register_primop(process, "prn", p_prn);
-  register_primop(process, "system", p_system);
+  //register_primop(process, "system", p_system);
   register_primop(process, "get", p_get);
   register_primop(process, "get-maybe", p_get_maybe);
   register_primop(process, "dict-set!", p_dict_set_bang);
@@ -183,6 +184,7 @@ Process *process_new() {
   register_primop(process, "replace-subst-from-right-fast", p_replace_subst_from_right_fast);
   register_primop(process, "types-exactly-eq?", p_types_exactly_eq);
   register_primop(process, "extend-substitutions-fast", p_extend_substitutions_fast);
+  register_primop(process, "sort-by-fast", p_sort_by);
   
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
@@ -269,6 +271,8 @@ void shadow_stack_push(Process* process, Obj *o) {
   if(process->shadow_stack_pos >= SHADOW_STACK_SIZE) {
     printf("Shadow stack overflow.\n");
     shadow_stack_print(process);
+    printf("\n\nNormal stack:\n\n");
+    stack_print(process);
     exit(1);
   }
   process->shadow_stack[process->shadow_stack_pos++] = o;

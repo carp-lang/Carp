@@ -1,0 +1,27 @@
+;; Code from SICP
+
+(defn solver/unify []
+  (solver/internal-unify p1 p2 {}))
+
+(defn solver/internal-unify [p1 p2 bindings]
+  (cond (= bindings :fail) :fail
+        (= p1 p2) bindings
+        (typevar? p1) (solver/extend-if-possible p1 p2 bindings)
+        (typevar? p2) (solver/extend-if-possible p2 p1 bindings)
+        (and (list? p1) (list? p2)) (solver/internal-unify (first p1) (first p2)
+                                                           (solver/internal-unify (rest p1) (rest p2)))
+        :else :fail))
+
+(defn solver/extend-if-possible [var val bindings]
+  (let [binding (get-maybe bindings var)]
+    (cond
+      (not-nil? binding) (solver/internal-unify binding val bindings)
+      
+      (typevar? val) (if-let [b2 (get-maybe bindings val)]
+                       (solver/internal-unify var b2 bindings)
+                       (assoc bindings var val))
+
+      :else (assoc bindings var val))))
+
+(def constr1 (list {:a 10 :b "b"}))
+

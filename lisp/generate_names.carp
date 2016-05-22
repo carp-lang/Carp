@@ -1,6 +1,6 @@
 ;; These names are used for temp variables when emitting the C-code.
 
-(defn gen-var-name (var-name-counters base-name)
+(defn gen-var-name [var-name-counters base-name]
   (let [maybe-counter (get-maybe var-name-counters base-name)]
     (do (when (nil? maybe-counter)
           (dict-set! var-name-counters base-name 0))
@@ -8,7 +8,7 @@
           (do (dict-set! var-name-counters base-name (inc counter))
               (str "_" base-name "_" counter))))))  
 
-(defn generate-names (var-name-counters ast)
+(defn generate-names [var-name-counters ast]
   (do
     ;;(println (str "\ngenerate-names:\n" (:node ast)))
     (match (:node ast)
@@ -31,7 +31,7 @@
                ast3)
       
       :let (let [let-result-name (gen-var-name var-name-counters "let_result")
-                 ast1 (assoc ast :bindings (map (fn (x) (generate-names var-name-counters x)) (:bindings ast)))
+                 ast1 (assoc ast :bindings (map (fn [x] (generate-names var-name-counters x)) (:bindings ast)))
                  ast2 (assoc ast1 :body (generate-names var-name-counters (:body ast)))
                  ast3 (assoc ast2 :result-name let-result-name)]
              ast3)
@@ -45,13 +45,13 @@
                  app-result-name (gen-var-name var-name-counters (str "result"))
 
                  args (:tail ast)
-                 arg-names (repeatedly (fn () (gen-var-name var-name-counters "arg")) (count args))
+                 arg-names (repeatedly (fn [] (gen-var-name var-name-counters "arg")) (count args))
                  
                  ast1 (assoc ast :head (generate-names var-name-counters (:head ast)))
-                 ast2 (assoc ast1 :tail (map (fn (node) (generate-names var-name-counters node)) (:tail ast1)))
+                 ast2 (assoc ast1 :tail (map (fn [node] (generate-names var-name-counters node)) (:tail ast1)))
                  ast3 (assoc ast2 :result-name app-result-name)
                  
-                 ast4 (assoc ast3 :tail (map2 (fn (arg arg-name) (assoc arg :arg-name arg-name)) (:tail ast3) arg-names))
+                 ast4 (assoc ast3 :tail (map2 (fn [arg arg-name] (assoc arg :arg-name arg-name)) (:tail ast3) arg-names))
                  ]
              ast4)
 
@@ -59,16 +59,14 @@
                    ast2 (assoc ast1 :right (generate-names var-name-counters (:right ast)))]
                ast2)
       
-      :do (let [named-forms (map (fn (x) (generate-names var-name-counters x)) (:forms ast))
+      :do (let [named-forms (map (fn [x] (generate-names var-name-counters x)) (:forms ast))
                 ast1 (assoc ast :forms named-forms)]
             ast1)
       
       :literal (assoc ast :result-name (gen-var-name var-name-counters "lit"))
 
       :ref (let [named-expr (generate-names var-name-counters (:expr ast))
-                 ast1 (assoc ast :expr named-expr)
-                 ;;ast2 (assoc ast1 :result-name (str "ref_" (gen-name)))
-                 ]
+                 ast1 (assoc ast :expr named-expr)]
              ast1)
 
       :reset (let [named-expr (generate-names var-name-counters (:expr ast))]
@@ -78,11 +76,11 @@
 
       :null ast
 
-      :array (let [ast1 (update-in ast '(:values) (fn [vals] (map (fn (node) (generate-names var-name-counters node)) vals)))
+      :array (let [ast1 (update-in ast '(:values) (fn [vals] (map (fn [node] (generate-names var-name-counters node)) vals)))
                    ast2 (assoc ast1 :result-name (gen-var-name var-name-counters "array"))
                    vals (:values ast1)
-                   arg-names (repeatedly (fn () (gen-var-name var-name-counters "arg")) (count vals))
-                   ast3 (assoc ast2 :values (map2 (fn (arg arg-name) (assoc arg :arg-name arg-name)) vals arg-names))]
+                   arg-names (repeatedly (fn [] (gen-var-name var-name-counters "arg")) (count vals))
+                   ast3 (assoc ast2 :values (map2 (fn [arg arg-name] (assoc arg :arg-name arg-name)) vals arg-names))]
                ast3)
       
       _ (error (str "Can't generate name for node " ast))

@@ -21,7 +21,8 @@
 
 (defn draw [state]
   (do
-    (draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
+    ;;(draw-line 300f 200f (+ 300f (* 100.0f (sinf (t)))) (+ 200f (* 100.0f (cosf (t)))))
+    (draw-circle 200f 200f 100f)
     (let [ships state]
       (domap draw-ship ships))))
 

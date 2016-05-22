@@ -1,44 +1,38 @@
+# The Big 'ref' debacle
+  - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
+  - alternatively allow ref:ed value types to be coerced into non-ref:ed types
+  - Allow non-ref types for all generic primops IF the type is builtin and don't need managing.
+  - A deref function that can remove the ref from primitive types?
 
 # Compiler Big Features
-  - Compile "and" & "or"
-  - Lambdas / lambda lifting
-  - Equality
   - Special handling of POD structs (stack allocated, not sent by pointer)
-    
-## Tagged Unions
-  - Compile match statements
   - Generic structs
-  - Option Type (Maybe in Haskell)
-  - Err Type (Either in Haskell)
-
+  - Compile match statements (or should it be a macro?)
+  - All types should have capital first letter
+  - Lambdas / lambda lifting
+  
 # Compiler Small Features
-  - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
-  - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument)
   - Shorter names for concrete versions of generic functions
-  - A deref function that can remove the ref from primitive types?
-  - Use the new key-is-true function instead of has-key? in lots of places
 
 # Compiler Correctness
-  - Variables named the same thing as a struct can override the dylib generated for the struct group.
-  - Not allow putting refs into an array
+  - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Use 'generic-name' when concretesizing generic primops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
-  - Automatic recompilation doesn't work when depending on concrete instantiation of generic function
   
-# Compiler efficiency
+# Compiler efficiency / beauty
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
-  - Clean up the awful 'list-to-ast' function
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
-  - Write a unifier function in C instead
+  - Use the new key-is-true function instead of has-key? in lots of places
 
 
 # Dynamic Runtime Big Features
   - Macro splicing
   - Modules 
   - A Set-type with reader syntax #{}
+  - Instantiate generic functions like '=' for primitive types when calling them
   
 ## Modules
   - Name
@@ -47,6 +41,7 @@
   - Environment (with all the bindings)
 
 # Dynamic Runtime Small Features
+  - Delete content of global var when resetting from repl
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - ONLY allow [] in parameter list for function definitions
@@ -85,6 +80,7 @@
   - :when clauses in match?
   - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
+  - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument) ?
 
 # Niceties
   - Built in tutorial for the language

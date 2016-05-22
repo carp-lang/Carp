@@ -1,11 +1,10 @@
-
 ;; vars-in-scope is a list of symbols
-;; deps is a list of symbols refering to the functions that has to be baked for this function to work
+;; deps is a list of strings refering to the functions that has to be baked for this function to work
 
-(defn global? (vars-in-scope symbol)
+(defn global? [vars-in-scope symbol]
   (not (contains? vars-in-scope symbol)))
 
-(defn find-func-deps (ast bake-deps)
+(defn find-func-deps [ast bake-deps]
   (let [deps (copy '())
 
         _ (when (not (dict? ast)) (error (str "ast is not a dict: " ast)))
@@ -13,13 +12,13 @@
         
         func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
 
-        find-deps-in-list (fn (asts vars-in-scope)
-                            (reduce (fn (result a) (cons-last result (find-func-deps-internal a vars-in-scope))) '() asts))
+        find-deps-in-list (fn [asts vars-in-scope]
+                            (reduce (fn [result a] (cons-last result (find-func-deps-internal a vars-in-scope))) '() asts))
 
-        find-deps-in-bindings (fn (bindings vars-in-scope)
-                                (reduce (fn (result binding) (cons-last result (update-in binding '(:value) (fn (bv) (find-func-deps-internal bv vars-in-scope))))) '() bindings))
+        find-deps-in-bindings (fn [bindings vars-in-scope]
+                                (reduce (fn [result binding] (cons-last result (update-in binding '(:value) (fn [bv] (find-func-deps-internal bv vars-in-scope))))) '() bindings))
 
-        find-func-deps-internal (fn (ast vars-in-scope)
+        find-func-deps-internal (fn [ast vars-in-scope]
                                   (do ;;(println (str "visit: " (:node ast)))
                                       (match (:node ast)
 
@@ -58,57 +57,47 @@
                                                             )))                                                      
                                                       (assoc ast :global-lookup is-global-lookup))))
 
-                                        :reset (let [ast0 (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
+                                        :reset (let [ast0 (update-in ast '(:expr) (fn [a] (find-func-deps-internal a vars-in-scope)))
                                                      ast1 (update-in ast0 '(:symbol) (fn [a] (find-func-deps-internal a vars-in-scope)))]
                                                  ast1)
 
-                                        :app (let [ast0 (update-in ast '(:head) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                   ast1 (update-in ast0 '(:tail) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                        :app (let [ast0 (update-in ast '(:head) (fn [a] (find-func-deps-internal a vars-in-scope)))
+                                                   ast1 (update-in ast0 '(:tail) (fn [a] (find-deps-in-list a vars-in-scope)))]
                                                ast1)
                                         
                                         :function (let [args (:args ast)
-                                                        new-vars (union (map :name args) vars-in-scope)
-                                                        ;;_ (println (str "new-vars: " new-vars))
-                                                        ]
-                                                    (update-in ast '(:body) (fn (a) (find-func-deps-internal a new-vars))))
+                                                        new-vars (union (map :name args) vars-in-scope)]
+                                                    (update-in ast '(:body) (fn [a] (find-func-deps-internal a new-vars))))
 
-                                        :if (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                  ast1 (update-in ast0 '(:if-true) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                  ast2 (update-in ast1 '(:if-false) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                        :if (let [ast0 (update-in ast  '(:expr) (fn [a] (find-func-deps-internal a vars-in-scope)))
+                                                  ast1 (update-in ast0 '(:if-true) (fn [a] (find-func-deps-internal a vars-in-scope)))
+                                                  ast2 (update-in ast1 '(:if-false) (fn [a] (find-func-deps-internal a vars-in-scope)))]
                                               ast2)
 
-                                        :while (let [ast0 (update-in ast  '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                     ast1 (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                        :while (let [ast0 (update-in ast  '(:expr) (fn [a] (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:body) (fn [a] (find-func-deps-internal a vars-in-scope)))]
                                               ast1)
 
-                                        :binop (let [ast0 (update-in ast  '(:left) (fn (a) (find-func-deps-internal a vars-in-scope)))
-                                                     ast1 (update-in ast0 '(:right) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                        :binop (let [ast0 (update-in ast  '(:left) (fn [a] (find-func-deps-internal a vars-in-scope)))
+                                                     ast1 (update-in ast0 '(:right) (fn [a] (find-func-deps-internal a vars-in-scope)))]
                                                  ast1)
 
                                         :literal ast
 
-                                        :do (let [new-ast (update-in ast '(:forms) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                        :do (let [new-ast (update-in ast '(:forms) (fn [a] (find-deps-in-list a vars-in-scope)))]
                                               new-ast)
 
-                                        :let (let [;;_ (println (str "ast:\n" ast))
-                                                   bindings (:bindings ast)
+                                        :let (let [bindings (:bindings ast)
                                                    new-vars (union (map :name bindings) vars-in-scope)
-                                                   ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))
-                                                   ;;_ (println (str "ast0:\n" ast0))
-                                                   ]
-                                               (update-in ast0 '(:body) (fn (a) (find-func-deps-internal a new-vars))))
+                                                   ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))]
+                                               (update-in ast0 '(:body) (fn [a] (find-func-deps-internal a new-vars))))
 
-                                        :ref (let [ast0 (update-in ast '(:expr) (fn (a) (find-func-deps-internal a vars-in-scope)))]
+                                        :ref (let [ast0 (update-in ast '(:expr) (fn [a] (find-func-deps-internal a vars-in-scope)))]
                                                ast0)
-
-                                        ;; (if (= :lookup (get-in ast0 '(:expr :node)))
-                                        ;;          (assoc ast0 :ref-dep (str (get-in ast0 '(:expr :value)))) ;; this ref is depending on another variable
-                                        ;;          ast0)
 
                                         :null ast
 
-                                        :array (let [;;_ (println (str ":array " ast))
-                                                     ast0 (update-in ast '(:values) (fn (a) (find-deps-in-list a vars-in-scope)))]
+                                        :array (let [ast0 (update-in ast '(:values) (fn [a] (find-deps-in-list a vars-in-scope)))]
                                                  ast0)
 
                                         x (error (str "find-func-deps can't handle node: " x))

@@ -414,6 +414,9 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
     return (strcmp(a->s, b->s) == 0);
   }
+  else if(a->tag == 'T') {
+    return a->character == b->character;
+  }
   else if(a->tag == 'Q') {
     return a->void_ptr == b->void_ptr;
   }

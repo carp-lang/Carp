@@ -1,0 +1,22 @@
+(import gl)
+
+(defn init [window]
+  (do
+    (glfwSetCursorPosCallback window on-cursor)
+    0))
+
+(defn on-cursor (x y)
+  (println (ref (str x))))
+
+;;(str "x: " x ", y: " y)
+
+(defn draw [state]
+  (do
+    (glColor3f 1f 1f 0f)
+    (draw-circle 0f 0f 0.9f)))
+
+(defn mouse []
+  (glfw-app "Mouse" init id draw default-on-keys))
+
+(bake mouse)
+;;(mouse)

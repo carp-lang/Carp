@@ -12,9 +12,13 @@
 (register glfw "glfwSwapBuffers" '((:ref :GLFWwindow)) :void)
 (register glfw "glfwSetWindowShouldClose" '((:ref :GLFWwindow) :bool) :void)
 (register glfw "glfwGetTime" '() :double)
+(register glfw "glfwDestroyWindow" '((:ref :GLFWwindow)) :void)
 
 (def glfw-key-callback-type '(:fn ((:ref :GLFWwindow) :int :int :int :int) :void))
 (register glfw "glfwSetKeyCallback" (list '(:ref :GLFWwindow) glfw-key-callback-type) :void)
+
+(def glfw-cursor-callback-type '(:fn ((:ref :GLFWwindow) :double :double) :void))
+(register glfw "glfwSetCursorPosCallback" (list '(:ref :GLFWwindow) glfw-cursor-callback-type) :void)
 
 (register glfw "glClearColor" '(:float :float :float :float) :void)
 (register glfw "glClear" '(:int) :void)
@@ -46,10 +50,10 @@
 ;; glfwSetCursorPosCallback(window, cursor_pos_callback);
 ;; static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 
-(defn set-clear-color ()
+(defn set-clear-color []
   (glClearColor 0.0f 0.95f 0.75f 1.0f))
 
-(defn draw-rect (x y w h)
+(defn draw-rect [x y w h]
   (do (glBegin carp-gl-triangles)
       (glVertex3f x y 0.0f)
       (glVertex3f (+ x w) y 0.0f)
@@ -59,10 +63,17 @@
       (glVertex3f x y 0.0f)
       (glEnd)))
 
-(defn draw-line (x1 y1 x2 y2)
+(defn draw-line [x1 y1 x2 y2]
   (do (glBegin carp-gl-lines)
       (glVertex3f x1 y1 0.0f)
       (glVertex3f x2 y2 0.0f)
+      (glEnd)))
+
+(defn draw-circle [x y r]
+  (do (glBegin carp-gl-line-strip)
+      (for (i 0 65)
+        (let [v (* (dtof two-pi) (/ (itof i) 64f))]
+          (glVertex3f (+ x (* r (cosf v))) (+ y (* r (sinf v))) 0.0f)))
       (glEnd)))
 
 (defstruct Vec2 [V2X :float V2Y :float])
@@ -103,7 +114,7 @@
   (if (glfwInit)
     (let [window (glfwCreateWindow 512 512 title NULL NULL)]
       (if (null? window)
-        (panic "No window.")
+        (error "No window.")
         (do (println "Window OK.")
             (glfwMakeContextCurrent window)
             (glfwSetKeyCallback window on-key-callback)
@@ -120,4 +131,4 @@
                   (glfwPollEvents))))
             (println "Time to go.")
             (glfwTerminate))))
-    (panic "Failed to initialize glfw.")))
+    (error "Failed to initialize glfw.")))

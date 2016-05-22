@@ -1,0 +1,55 @@
+(tester/set-suite! "binops")
+
+(deftest test-and-1
+  (do
+    (defn use-and-1 []
+      (and true false))
+    (bake use-and-1)
+    (assert-eq false (use-and-1))))
+
+(deftest test-and-2
+  (do
+    (defn use-and-2 []
+      (and true true))
+    (bake use-and-2)
+    (assert-eq true (use-and-2))))
+
+(deftest test-and*
+  (do
+    (defn use-and* []
+      (and* true true true false true))
+    (bake use-and*)
+    (assert-eq false (use-and*))))
+
+(deftest test-or-1
+  (do
+    (defn use-or-1 []
+      (or true false))
+    (bake use-or-1)
+    (assert-eq true (use-or-1))))
+
+(deftest test-or-2
+  (do
+    (defn use-or-2 []
+      (or false false))
+    (bake use-or-2)
+    (assert-eq false (use-or-2))))
+
+(deftest test-or*
+  (do
+    (defn dont-evaluate-this []
+      (do (println "don't evaluate this")
+          false))
+    (defn use-or* []
+      (or* false false false true false (dont-evaluate-this)))
+    (bake use-or*)
+    (assert-eq true (use-or*))))
+
+(deftest test-short-circuit
+  (do
+    (defn failsafe []
+      (or true (error "fail!!!")))
+    (bake failsafe)
+    (assert-eq true (failsafe))))
+
+(tester/run-suite "binops")

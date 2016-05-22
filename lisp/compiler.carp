@@ -33,12 +33,16 @@
 (def log-ignores false)
 
 ^doc "If it's a lambda this will either bake it or mark it as generic. If it's not a lambda it will be ignored."
-(defn compiler/try-bake [func-name]
-  (let [func (eval (symbol func-name))]
-    (if (lambda? func)
-      (compiler/bake-code func-name (code func) (meta-get func :ann))
-      (do (when log-ignores (println (str "compiler/try-bake will ignore non-lambda '" func-name "' of type " (type func))))
-          :ignored))))
+(defn compiler/try-bake [symbol-name]
+  (let [evaled (eval (symbol symbol-name))]
+    (cond
+      (lambda? evaled) (compiler/bake-code symbol-name (code evaled) (meta-get evaled :ann))
+      (foreign? evaled) (do (when log-ignores (println (str "compiler/try-bake will ignore foreign function '" symbol-name "'")))
+                            :ignored)
+      (ptr-to-global? evaled) (do (when log-ignores (println (str "compiler/try-bake will ignore ptr-to-global '" symbol-name "'")))
+                                  :ignored)
+      (primop? evaled) (error (str "Trying to bake primop: " evaled))
+      :else (bake-global symbol-name '()))))
 
 ^doc "Compile a generic lambda to a specific, fully typed version by providing a signature with the types needed."
 (defn compiler/concretize [original-func-name generic-func-name func-code func-signature]

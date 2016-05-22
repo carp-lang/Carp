@@ -22,7 +22,8 @@ The key features of Carp are the following:
 * [Installation](INSTALL.md) - how to build the Carp compiler
 * [The Compiler Manual](MANUAL.md) - how to compile code and configure your projects
 * [Carp Language Guide](LANGUAGE.md) - syntax and semantics of the language
-* [game.carp](/examples/game.carp) - a more complex example
+* [Libraries](LIBRARIES.md) - the various libraries that come built-in to Carp
+* [typograf.carp](/examples/typograf.carp) - a more complex example
 
 
 ## A Small OpenGL/GLFW Example

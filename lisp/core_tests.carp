@@ -1,48 +1,49 @@
+(tester/set-suite! "core")
 
-(defn test-pipe-first []
+(deftest test-pipe-first
   (assert-eq (list 7 8 9 10 11 12)
              (-> 10
                  (- 3)
                  (range 13))))
 
-(defn test-pipe-last []
+(deftest test-pipe-last
   (assert-eq 20
              (->> [3 4 5 6]
                   (reduce (fn [a b] (+ a b)) 0)
                   (- 38))))
 
-(defn test-sort []
+(deftest test-sort
   (let [nums '(4 5 6 2 3 7 1)]
     (do
       (assert-eq '(1 2 3 4 5 6 7) (sort nums))
       (assert-eq '(7 6 5 4 3 2 1) (sort-by > nums)))))
 
-(defn test-doubles []
+(deftest test-doubles
   (let [x 3.0d
         y 5.0d]
     (assert (< 14.0d (* x y) 16.0d))))
 
-(defn test-bind-to-function-in-let []
+(deftest test-bind-to-function-in-let
   (do (defn misbind []
         (let [(fn [] nil) 123]
           :fail))
       (assert-eq (catch-error (misbind)) "Trying to bind to non-symbol in let form: (fn [] nil)")))
 
-(defn test-template []
+(deftest test-template
   (assert-eq "cAr123" (template "carp" {"a" "A" "p" 123})))
 
-(defn test-for-macro ()
+(deftest test-for-macro
   (let [sum 0]
     (do (for (i 0 5)
           (reset! sum (+ sum i)))
         (assert-eq 10 sum))))
 
-(defn test-catch-error ()
+(deftest test-catch-error
   (do
     (assert-eq nil (catch-error ((fn () "no error"))))
     (assert-eq (catch-error ((fn () (error "error!")))) "error!")))
 
-(defn test-dict-eq ()
+(deftest test-dict-eq
   (do
     (let [d1 {:x 10 :y 20}
           d2 {:x 10}
@@ -54,7 +55,7 @@
         (assert-eq d3 (assoc d2 :y 20))
         (assert-eq false (= d1 (assoc d3 :z 30)))))))
 
-(defn test-set ()
+(deftest test-set
   (do
     (let [s1 (set '())]
       (do
@@ -67,7 +68,7 @@
         (assert-eq true (contains? s1 2))
         (assert-eq true (contains? s1 3))))))
 
-(defn test-intersection ()
+(deftest test-intersection
   (do
     (let [s1 '(1 2 3 4 5)
           s2 '()
@@ -87,7 +88,7 @@
         (assert-eq true (contains? (intersection s1 s5) 3)) ))))
 
 
-(defn test-union ()
+(deftest test-union
   (do
     (let [u1 (union '() '(5 5 5))]
       (do
@@ -106,22 +107,22 @@
         (assert-eq true (contains? u1 2))
         (assert-eq true (contains? u1 3))))))
 
-(defn test-negative-numbers ()
+(deftest test-negative-numbers
   (do
     (assert-eq (- 10) -10)
     (assert-eq 123 (- 0 -123))))
 
-(defn test-str-replace ()
+(deftest test-str-replace
   (do
     (assert-eq "Erik" (str-replace "erik" "e" "E"))))
 
-(defn test-all-predicate ()
+(deftest test-all-predicate
   (do
     (assert-eq true (all? even? (list 2 4 6 8)))
     (assert-eq false (all? even? (list 2 4 6 9)))
     (assert-eq true (all? even? ()))))
 
-(defn test-while-loop ()
+(deftest test-while-loop
   (let [x 0
         s ""]
     (do
@@ -131,10 +132,10 @@
           (swap! x inc)))
       (assert-eq "0123456789" s))))
 
-(defn test-mapcat ()
+(deftest test-mapcat
   (assert-eq '(1 2 3 1 2 3 4 1 2 3 4 5) (mapcat (fn (x) (range 1 (inc x))) '(3 4 5))))
 
-(defn test-floats ()
+(deftest test-floats
   (do
     (let [x 3.5f
           y 2.0f]
@@ -147,7 +148,7 @@
         (assert-approx-eq 1.75f (/ x y))
         ))))
 
-(defn test-shadowing ()
+(deftest test-shadowing
   (let [x 100
         shadow-fn (fn (x)
                     (do
@@ -157,29 +158,29 @@
       (shadow-fn 0)
       (assert-eq 100 x))))
 
-(defn test-keyword-in-list-in-match ()
+(deftest test-keyword-in-list-in-match
   (assert-eq (match true
                     true '(:a :b (:c) :d))
              (list :a :b (list :c) :d)))
 
-(defn test-varable-capture ()
+(deftest test-varable-capture
   (let [x 3
         capture (fn ()
                   (fn (y) (* x y)))
         captured (capture)]
     (assert-eq (captured 4) 12)))
 
-(defn test-cons-last ()
+(deftest test-cons-last
   (assert-eq '(100 200 300 400 500) (cons-last '(100 200 300 400) 500)))
 
-(defn test-match-2 ()
+(deftest test-match-2
   (assert-eq (match '(hej du)
                     ('blargh _) :error
                     ('hej _) :correct
                     _ :also-error)
              :correct))
 
-(defn test-match-with-nil ()
+(deftest test-match-with-nil
   (assert-eq (match '(1 2 3)
                () :b
                '(1 2 7) :c
@@ -187,40 +188,40 @@
                _ :e)
              :d))
 
-(defn test-assoc ()
+(deftest test-assoc
   (let [m {:a 10}]
     (do
       (assert-eq 100 (get (assoc m :a 100) :a))
       (assert-eq 200 (get (assoc m :b 200) :b))
       (assert-eq 10 (get m :a)))))
 
-(defn test-has-key ()
+(deftest test-has-key
   (do
     (assert-eq true (has-key? {:a 10 :b 20} :a))
     (assert-eq true (has-key? {:a 10 :b 20} :b))
     (assert-eq false (has-key? {:a 10 :b 20} :c))))
 
-(defn test-keyword-lookup ()
+(deftest test-keyword-lookup
   (assert-eq 20 (:b {:a 10 :b 20 :c 30})))
 
-(defn test-range ()
+(deftest test-range
   (do
     (assert-eq '(3 4 5 6) (range 3 7))
     (assert-eq () (range 20 10))))
 
-(defn test-assoc-in ()
+(deftest test-assoc-in
   (let [m2 {:a {:b 20}}]
     (do
       (assert-eq 200 (get-in (assoc-in m2 '(:a :b) 200) '(:a :b))) ; change local copy
       (assert-eq 20 (get-in m2 '(:a :b)))))) ; unchanged)
 
-(defn test-swap ()
+(deftest test-swap
   (let [x 10]
     (do
       (swap! x inc)
       (assert-eq 11 x))))
 
-(defn test-str-append ()
+(deftest test-str-append
   (let [greeting "hej"]
     (do
       (str-append! greeting "!")
@@ -228,23 +229,23 @@
       (str-append! greeting "!")
       (assert-eq "hej!!!" greeting))))
 
-(defn test-str-join ()
+(deftest test-str-join
   (do
     (assert-eq "" (join "," '()))
     (assert-eq "10" (join "," '(10)))
     (assert-eq "10,20,30" (join "," '(10 20 30)))))
 
-(defn test-apply-str ()
+(deftest test-apply-str
   (assert-eq "erikisaksvedang" (apply str (list "erik" "isak" "svedang"))))
 
-(defn test-contains ()
+(deftest test-contains
   (do
     (assert-eq true (contains? (list 10 20 30) 20))
     (assert-eq true (contains? '(30) 30))
     (assert-eq false (contains? (list 10 20 30) 50))
     (assert-eq false (contains? () 100))))
 
-(defn test-fib ()
+(deftest test-fib
   (let [fib (fn (n)
               (match n
                      0 0
@@ -253,7 +254,7 @@
                      x (+ (fib (- x 2)) (fib (- x 1)))))]
     (assert-eq '(1 1 2 3 5 8 13 21 34) (map fib '(1 2 3 4 5 6 7 8 9)))))
 
-(defn test-dictionary-mutation ()
+(deftest test-dictionary-mutation
   (let [stuff {:a 100 :b 200 :c 300 123 102030 :d () :e (+ 2 3)}
         gruff (list "hej" :boo 'nice)
         tree {:a 10 :b {:a 20 :b 30} :c {:a 40 :b 50}}]
@@ -269,7 +270,7 @@
           (assert-eq (get-in tree '(:c :a)) 40000)
           (assert-eq (get-in tree-2 '(:c :a)) 39999))))))
 
-(defn test-dictionary-copy ()
+(deftest test-dictionary-copy
   (let [a {:x 100}
         b (copy a)
         c a]
@@ -280,7 +281,7 @@
       (assert-eq 200 (get c :x)) ; changed, just an alias
       )))
 
-(defn test-dictionary-evaluation ()
+(deftest test-dictionary-evaluation
   ;; Evaluation of dictionaries should not modify the literal
   (let [self-destruct ( fn  (x)
                        {:x x}
@@ -288,19 +289,19 @@
                        (self-destruct 10))]
     (assert-eq (str (fn (x) {:x x})) (str self-destruct))))
 
-(defn test-map ()
+(deftest test-map
   (assert-eq (map (fn (x) (* x x)) '(1 2 3 4 5))
              (list 1 4 9 16 25)))
 
-(defn test-filter ()
+(deftest test-filter
   (assert-eq (filter even? '(1 2 3 4 5 6))
              (list 2 4 6)))
 
-(defn test-reduce ()
+(deftest test-reduce
   (assert-eq (reduce + 0 '(1 2 3 4 5))
              15))
 
-(defn test-match ()
+(deftest test-match
   (do
     (assert-eq 123 (match 123 x x))
     (assert-eq (match 20
@@ -318,7 +319,7 @@
           me-2 (match me (name age) {:name name :age age})]
       (assert-eq (get me-2 :age) 29))))
 
-(defn test-not ()
+(deftest test-not
     (do
       (assert-eq true (not false))
       (assert-eq true (not (not true)))
@@ -327,11 +328,11 @@
       (assert-eq false (not true))
       (assert-eq false (not (not false)))))
 
-(defn test-misc ()
+(deftest test-misc
   (do
     (assert-eq 10 (id 10))))
 
-(defn test-concat ()
+(deftest test-concat
   (do
     (assert-eq (concat '(1 2) '(3 4)) '(1 2 3 4))
     (assert-eq (concat '(1 ) '(2 3 4)) '(1 2 3 4))
@@ -344,7 +345,7 @@
     (assert-eq (concat '() '()) '())
     (assert-eq (concat '() '() '()) '())))
 
-(defn test-reset ()
+(deftest test-reset
   (let [temp ""
         abc (fn (x)
               (do
@@ -356,7 +357,7 @@
       (assert-eq "hej" (abc "hej"))
       (assert-eq "Ole, dole, doff!" temp))))
 
-(defn test-self-destruct-2 ()
+(deftest test-self-destruct-2
   ;; Doesn't work when pretty printing of lambda bodies is turned off
   (do
     (defn self-destruct-2 (x)
@@ -364,72 +365,21 @@
     (assert-eq "(fn (x) (list 1 2 x 4 5))" (str self-destruct-2))
     (self-destruct-2 10)
     (assert-eq "(fn (x) (list 1 2 x 4 5))" (str self-destruct-2))
-    (reset! print-lambda-body before)))
+    ;;(reset! print-lambda-body before)
+    ))
 
-(defn test-dict-set-in-array ()
+(deftest test-dict-set-in-array
   (do
     (let [xs '(1 2 3)]
       (do (dict-set-in! xs '(1) "hejsan")
           (assert-eq '(1 "hejsan" 3) xs)))))
 
-(defn test-match-array ()
+(deftest test-match-array
   (assert-eq (match [3 4 5]
                (x y z) :fail
                [a b c] (* a (+ b c))
                _ :also-fail)
              27))
-
-(defn run-core-tests ()
-  (do
-    (test-keyword-in-list-in-match)
-    (test-shadowing)
-    (test-varable-capture)
-    (test-str-append)
-    (test-str-join)
-    (test-apply-str)
-    (test-not)
-    (test-misc)
-    (test-map)
-    (test-filter)
-    (test-reduce)
-    (test-match)
-    (test-concat)
-    (test-contains)
-    (test-fib)
-    (test-dictionary-mutation)
-    (test-dictionary-copy)
-    (test-dictionary-evaluation)
-    (test-reset)
-    (test-swap)
-    (test-assoc)
-    (test-has-key)
-    (test-keyword-lookup)
-    (test-range)
-    (test-assoc-in)
-    (test-cons-last)
-    (test-match-2)
-    (test-floats)
-    (test-mapcat)
-    (test-while-loop)
-    (test-all-predicate)
-    (test-str-replace)
-    (test-negative-numbers)
-    (test-set)
-    (test-union)
-    (test-intersection)
-    (test-catch-error)
-    (test-for-macro)
-    (test-match-with-nil)
-    (test-match-array)
-    (test-template)
-    (test-bind-to-function-in-let)
-    (test-doubles)
-    (test-sort)
-    (test-pipe-first)
-    (test-pipe-last)
-    ))
-
-(run-core-tests)
 
 ;; Can't test this inside a function:
 (defn define-at-toplevel ()
@@ -437,3 +387,4 @@
 (define-at-toplevel)
 (assert-eq :mountain-high top-var)
 
+(tester/run-suite "core")

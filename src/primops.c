@@ -308,22 +308,38 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
     eval_error = obj_new_string("First arg to 'join' must be a string");
     return nil;
   }
-  if(args[1]->tag != 'C') {
+  
+  if(args[1]->tag == 'C') {
+    Obj *s = obj_new_string("");
+    shadow_stack_push(process, s);  
+    Obj *p = args[1];
+    while(p && p->car) {
+      obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
+      if(p->cdr && p->cdr->cdr) {
+        obj_string_mut_append(s, args[0]->s);
+      }
+      p = p->cdr;
+    }
+    shadow_stack_pop(process);
+    return s;
+  }
+  else if(args[1]->tag == 'A') {
+    Obj *s = obj_new_string("");
+    shadow_stack_push(process, s);  
+    Obj *a = args[1];
+    for(int i = 0; i < a->count; i++) {
+      obj_string_mut_append(s, obj_to_string_not_prn(process, a->array[i])->s);
+      if(i < a->count - 1) {
+        obj_string_mut_append(s, args[0]->s);
+      }
+    }
+    shadow_stack_pop(process);
+    return s;
+  }
+  else {
     eval_error = obj_new_string("Second arg to 'join' must be a list");
     return nil;
   }
-  Obj *s = obj_new_string("");
-  shadow_stack_push(process, s);  
-  Obj *p = args[1];
-  while(p && p->car) {
-    obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
-    if(p->cdr && p->cdr->cdr) {
-      obj_string_mut_append(s, args[0]->s);
-    }
-    p = p->cdr;
-  }
-  shadow_stack_pop(process);
-  return s;
 }
 
 char *str_replace(const char *str, const char *old, const char *new) {
@@ -1415,12 +1431,14 @@ char *lispify(char *name) {
   char *s3 = str_replace(s2, "PTR", "*");
   char *s4 = str_replace(s3, "LT", "<");
   char *s5 = str_replace(s4, "GT", ">");
+  char *s6 = str_replace(s5, "EQ", "=");
   free(s0);
   free(s1);
   free(s2);
   free(s3);
   free(s4);
-  return s5;
+  free(s5);
+  return s6;
 }
 
 ffi_type **make_arg_type_array(Process *process, Obj *args, int arg_count, char *func_name) {
@@ -2056,3 +2074,117 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
     return result;
   }
 }
+
+
+Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
+  Obj *left = obj_new_cons(NULL, NULL);
+  Obj *right = obj_new_cons(NULL, NULL);
+  Obj *left_prev = left;
+  Obj *right_prev = right;
+  Obj *sorted = NULL;
+
+  if(!xs->car) {
+    printf("nil\n");
+    return nil;
+  }
+  else if(xs->cdr == NULL) {
+    //printf("will print\n");
+    printf("single value: %s\n", obj_to_string(process, xs->car)->s);
+    //printf("did print\n");
+    return xs->car;
+  }
+
+  shadow_stack_push(process, left);
+  shadow_stack_push(process, right);
+  
+  Obj *mid = xs->car;
+  //printf("mid: %s\n", obj_to_string(process, xs->car)->s);
+  
+  Obj *p = xs->cdr;
+  while(p && p->car) {
+        
+    Obj *arg[2] = { p->car, mid };
+    apply(process, f, arg, 2);
+    Obj *result = stack_pop(process);
+    Obj *new = obj_new_cons(NULL, NULL);
+
+    printf("p->car: %s\n", obj_to_string(process, p->car)->s);
+
+    if(is_true(result)) {
+      left_prev->car = p->car;
+      left_prev->cdr = new;
+      left_prev = new;
+    } else {
+      right_prev->car = p->car;
+      right_prev->cdr = new;
+      right_prev = new;
+    }
+    
+    p = p->cdr;
+  }
+
+  shadow_stack_push(process, left);
+  shadow_stack_push(process, right);
+  
+  /* printf("left: %s\n", obj_to_string(process, left)->s); */
+  /* printf("right: %s\n", obj_to_string(process, right)->s); */
+
+  Obj *sorted_left = sort_internal(process, f, left);
+  Obj *sorted_right = sort_internal(process, f, right);
+
+  /* printf("sorted_left: %s\n", obj_to_string(process, sorted_left)->s); */
+  /* printf("sorted_right: %s\n", obj_to_string(process, sorted_right)->s); */
+
+  //printf("%c %c\n", sorted_left->tag, sorted_right->tag);
+
+  shadow_stack_push(process, sorted_left);
+  shadow_stack_push(process, sorted_right);
+
+  Obj *args[3] = { sorted_left, obj_new_cons(mid, nil), sorted_right };
+
+  assert_or_set_error_return_nil(sorted_left->tag == 'C', "sorted left is not list: ", sorted_left);
+  assert_or_set_error_return_nil(sorted_right->tag == 'C', "sorted right is not list: ", sorted_right);
+  
+  sorted = p_concat(process, args, 3);
+
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+  shadow_stack_pop(process);
+                    
+  assert(sorted);
+  return sorted;
+}
+
+Obj *p_sort_by(Process *process, Obj** args, int arg_count) {
+  if(arg_count != 2) {
+    eval_error = obj_new_string("Wrong argument count to 'sort-by'.");
+    return nil;
+  }
+  if(!is_callable(args[0])) {
+    set_error_return_nil("'sort-by' requires arg 0 to be a function or lambda: \n", args[0]);
+  }
+  Obj *f = args[0];
+  Obj *xs = args[1];
+  Obj *result = sort_internal(process, f, xs);
+  return result;
+}
+
+
+
+      /* shadow_stack_push(process, list); */
+      
+      /* int shadow_count = 0; */
+      /* Obj *p = b; */
+      /* while(p && p->car) { */
+      /*   Obj *args[2] = { substs, p->car }; */
+      /*   prev->car = p_lookup_in_substs_fast(process, args, 2); */
+      /*   Obj *new = obj_new_cons(NULL, NULL); */
+      /*   shadow_stack_push(process, new); */
+      /*   shadow_count++; */
+      /*   prev->cdr = new; */
+      /*   prev = new; */
+      /*   p = p->cdr; */
+      /* } */

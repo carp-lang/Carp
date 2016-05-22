@@ -25,47 +25,11 @@
 
 (defn binop? [form]
   (match form
-         (x ... _) (contains? '(+ - * / <) x)
-         _ false))
+    (x ... _) (contains? '(+ - * / < and) x)
+    _ false))
 
 (defn gen-fn-type [arg-count]
   (list :fn (repeatedly gen-typevar arg-count) (gen-typevar)))
-
-(defn nest-calls-to-array-set [a index array-name-symbol]
-  (match a
-    [] (literal-or-lookup-to-ast array-name-symbol)
-    [x ... xs]
-    (do
-      ;;(println (str "nest-calls-to-array-set x & xs: " x " & " xs))
-      (let [array-set-signature (list :fn (list (list :Array (gen-typevar)) :int (gen-typevar)) (list :Array (gen-typevar)))]
-        {:node :app
-         :type (gen-typevar)
-         :head (assoc (literal-or-lookup-to-ast 'array-set) :type array-set-signature)
-         :tail (list (nest-calls-to-array-set xs (inc index) array-name-symbol) (literal-or-lookup-to-ast index) (form-to-ast x))}))))
-
-(def array-to-ast-var-name-counters (copy {}))
-
-(defn array-to-ast-OLD [a]
-  (let [a-count (count a)
-        array-name-symbol (symbol (gen-var-name array-to-ast-var-name-counters "array"))
-        nested-calls (nest-calls-to-array-set a 0 array-name-symbol)
-        ;; array-form (list 'let [array-name-symbol (list 'array-of-size a-count)]
-        ;;                  nested-calls)
-        ;;array-setup-ast (form-to-ast array-form)
-        array-setup-ast {:node :let
-                         :type (gen-typevar)
-                         :bindings (list {:node :binding
-                                          :type (gen-typevar)
-                                          :name array-name-symbol
-                                          :value (form-to-ast (list 'array-of-size a-count))})
-                         :line (meta-get a :line)
-                         :original-form a
-                         :body nested-calls}
-        ]
-    (do
-      ;;(println (str "\narray-setup-ast:\n" array-setup-ast))
-      ;;(println (str "\narray-form:\n" array-form))
-      array-setup-ast)))
 
 (defn array-to-ast [a]
   {:node :array
@@ -77,50 +41,46 @@
 (defn list-to-ast [l]
   (if (binop? l)
     (match l
-           (op left right) {:node :binop
-                     :type (gen-typevar)
-                     :op op
-                     :left (form-to-ast left)
-                     :right (form-to-ast right)})
+      (op left right) {:node :binop
+                       :type (cond
+                               (= op 'and) :bool
+                               :else (gen-typevar))
+                       :op op
+                       :left (form-to-ast left)
+                       :right (form-to-ast right)})
     (match l
-           ('= left right) {:node :binop
-                            :type :bool
-                            :op '==
-                            :left (form-to-ast left)
-                            :right (form-to-ast right)}
-
-           (x ... xs) (if (def? x)
-                        (let [evaled (eval x)]
-                          (if (and (symbol? x) (macro? evaled))
-                            (expand-macro l)
-                            (app-to-ast x xs l)))
-                        (app-to-ast x xs l))
-           
-           nil {:node :literal :type :any :value ""})))
+      (x ... xs) (if (def? x)
+                   (let [evaled (eval x)]
+                     (if (and (symbol? x) (macro? evaled))
+                       (expand-macro l)
+                       (app-to-ast x xs l)))
+                   (app-to-ast x xs l))
+      
+      nil {:node :literal :type :any :value ""})))
 
 (defn app-to-ast [x xs original-form]
   (do ;;(println (str "app-to-ast: " x ", " xs))
-      {:node :app
-       :type (gen-typevar)
-       :line (meta-get x :line)
-       :original-form original-form
-       :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
-       :tail (map2 (fn [form n] (assoc form :arg-index n)) (map form-to-ast xs) (range 0 (count xs)))}))
+    {:node :app
+     :type (gen-typevar)
+     :line (meta-get x :line)
+     :original-form original-form
+     :head (assoc (form-to-ast x) :type (gen-fn-type (count xs)))
+     :tail (map2 (fn [form n] (assoc form :arg-index n)) (map form-to-ast xs) (range 0 (count xs)))}))
 
 (defn expand-macro [form]
   (do ;;(println (str "expand:\n" form))
-      (let [macro (code (eval (first form)))
-            mlam (eval (list 'fn (nth macro 1) (nth macro 2))) ;; convert macro to lambda... this is a strange way to do it
-            ;;_ (println (str "macro-lambda: " mlam ", type: " (type mlam)))
-            args (rest form)
-            ;;_ (println (str "args: " args))
-            called-macro (apply mlam args)
-            ;;called-macro-forms (eval called-macro)
-            expanded-ast (form-to-ast called-macro)
-            ;;_ (println (str "expanded-ast: " expanded-ast))
-            ]
-        ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
-        expanded-ast)))
+    (let [macro (code (eval (first form)))
+          mlam (eval (list 'fn (nth macro 1) (nth macro 2))) ;; convert macro to lambda... this is a strange way to do it
+          ;;_ (println (str "macro-lambda: " mlam ", type: " (type mlam)))
+          args (rest form)
+          ;;_ (println (str "args: " args))
+          called-macro (apply mlam args)
+          ;;called-macro-forms (eval called-macro)
+          expanded-ast (form-to-ast called-macro)
+          ;;_ (println (str "expanded-ast: " expanded-ast))
+          ]
+      ;;(println (str "called-macro:\n" called-macro ", type: " (type called-macro)))
+      expanded-ast)))
 
 (defn if-to-ast [expr if-true if-false]
   {:node :if
@@ -195,13 +155,11 @@
   (let [t (type expr)]
     (cond
       (= :string t) '(:ref :string) ; Literal strings are refs
-      (= :ptr t) (do
+      (= :ptr t) (do ;; TODO: is this cond-clause ever used?
                    (println (str "expr " expr " is a ptr of type: " (meta-get expr :type) " with value " (eval expr)))
-                   ;;(gen-typevar)
                    (if-let [real-type (meta-get expr :type)]
                      real-type
-                     (error (str "No type on expr: " expr)))
-                   )
+                     (error (str "No type on expr: " expr))))
       :else t)))
 
 (defn is-struct-constructor? [form]
@@ -212,7 +170,6 @@
         struct-type (keyword struct-name)
         arg-count (:member-count struct-description)]
     (do
-      ;;(println (str "found struct constructor: ") struct-name)
       {:node :lookup
        :constructor true
        :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
@@ -222,8 +179,7 @@
        :value (str "new-" struct-name)})))
 
 (defn form-to-ast [form]
-  (match form
-    
+  (match form    
     ('if expr a b) (if-to-ast expr a b)
     ('if ... _) (error (str "'if' needs exactly two branches. Compiler got:\n" form))
 
@@ -242,14 +198,16 @@
     ('reset! ... _) (error (str "'reset' needs exactly two inner form, a symbol and an expression. Compiler got:\n" form))
     
     ('include-c-code s) {:node :c-code :code s :type (gen-typevar)}
+    
     'NULL {:node :null :type (gen-typevar)}
     'true {:node :literal :type :bool :value 1}
     'false {:node :literal :type :bool :value 0}
+    
     x (if (list? x)
         (list-to-ast x)
         (if (array? x)
           (array-to-ast x)
-          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x))) ;; (log (str "def? : " (type x) " ") x)
+          (if (and (symbol? x) (def? x) (is-struct-constructor? (eval x)))
             (struct-constructor-ast (eval x))
             (literal-or-lookup-to-ast x))))))
 
@@ -260,9 +218,9 @@
 (defn lambda-to-ast [form]
   (do (assert-eq :list (type form))
       (match form
-             ('fn args body) {:node :function
-                              :type (gen-fn-type (count args))
-                              :annotation nil
-                              :args (arg-list-to-ast (if (array? args) (array-to-list args) args))
-                              :body (body-to-ast body)}
-             _ (error (str "Failed to match lambda form: " form)))))
+        ('fn args body) {:node :function
+                         :type (gen-fn-type (count args))
+                         :annotation nil
+                         :args (arg-list-to-ast (if (array? args) (array-to-list args) args))
+                         :body (body-to-ast body)}
+        _ (error (str "Failed to match lambda form: " form)))))

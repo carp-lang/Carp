@@ -153,7 +153,6 @@
                                          x (error (str "visit-generic can't handle node type " x))))]
     (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
 
-
 ;; The easy version of bake-generic-primop, used to ensure that a certain instance of a generic function exists
 ;; For example, to ensure that 'nth' (a primop) exists for float arrays, call this function like this:
 ;;  (bake-generic-primop-auto "nth" '(:fn ((:ref (:Array :float)) :int) :float))
@@ -161,7 +160,6 @@
 (defn bake-generic-primop-auto [primop-name signature]
   (let [func-name (generic-name (symbol primop-name) signature)]
     (bake-generic-primop func-name primop-name signature)))
-
 
 ;; Used by the visit-generic-func algorithm to generate and register baked version of generic primops
 (defn bake-generic-primop [func-name primop-name signature]
@@ -181,8 +179,7 @@
           ;;(println (str "Baking generic primop " func-name))
           ;; (println (str "Prototype for " func-name ":\n" proto))
           ;; (println (str "C-code for " func-name ":\n" c-program-string))
-          (compiler/bake-src func-name proto c-program-string signature deps)
-          )))))
+          (compiler/bake-src func-name proto c-program-string signature deps))))))
 
 (defn build-generic-primop [c-func-name primop-name signature]
   (match primop-name
@@ -237,31 +234,33 @@
 
               (:fn ((:ref :Array)) :string) (error "Can't instantiate 'str' for :Array with no type variable.")
 
-              (:fn ((:ref (:Array t))) :string) (instantiate-str-for-array c-func-name t)
+              (:fn ((:ref (:Array t))) :string) (instantiate-str-or-prn-for-array c-func-name t)
 
-              (:fn ((:ref :int)) :string) (let [proto (str "API string " c-func-name "(int x)")
-                                                c (str proto " { return itos(x); }")]
-                                            {:proto proto :c c :deps ()})
+              (:fn ((:ref :int)) :string) (build-generic-primop c-func-name "str" '(:fn (:int) :string))
               (:fn (:int) :string) (let [proto (str "API string " c-func-name "(int x)")
                                          c (str proto " { return itos(x); }")]
                                      {:proto proto :c c :deps ()})
 
+              (:fn ((:ref :char)) :string) (build-generic-primop c-func-name "str" '(:fn (:char) :string))
               (:fn (:char) :string) (let [proto (str "API string " c-func-name "(char x)")
-                                          c (str proto " { string s = malloc(3); s[0] = '\\\\'; s[1] = x; return s; }")]
+                                          c (str proto " { string s = malloc(2); s[0] = x; s[1] = '\\0'; return s; }")]
                                       {:proto proto :c c :deps ()})
 
+              (:fn ((:ref :bool)) :string) (build-generic-primop c-func-name "str" '(:fn (:bool) :string))
               (:fn (:bool) :string) (let [proto (str "API string " c-func-name "(bool b)")
                                           c (str proto " { if(b) { return strdup(\"true\"); } else { return strdup(\"false\"); } }")]
                                       {:proto proto :c c :deps ()})
 
+              (:fn ((:ref :float)) :string) (build-generic-primop c-func-name "str" '(:fn (:float) :string))
               (:fn (:float) :string) (let [proto (str "API string " c-func-name "(float x)")
                                            c (str proto " { "
                                                   " char output[50];"
-                                                  " snprintf(output, 50, \"%f\", x);"
+                                                  " snprintf(output, 50, \"%ff\", x);"
                                                   " return strdup(output);"
                                                   "}")]
                                        {:proto proto :c c :deps ()})
 
+              (:fn ((:ref :double)) :string) (build-generic-primop c-func-name "str" '(:fn (:double) :string))
               (:fn (:double) :string) (let [proto (str "API string " c-func-name "(double x)")
                                            c (str proto " { "
                                                   " char output[50];"
@@ -272,9 +271,44 @@
 
               (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
 
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-for-struct c-func-name maybe-struct-type)
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
               
-              x (error (str "Invalid (non-ref?) type for call to 'str': " x))))
+              x (error {:error error-invalid-arg-type-to-generic
+                        :show-stacktrace false
+                        :message (str "Invalid (non-ref?) type for call to 'str': " x)})))
+
+    "prn" (do
+            ;;(println (str "Calling prn for signature: " signature))
+            (match signature
+
+              (:fn ((:ref :Array)) :string) (error "Can't instantiate 'prn' for :Array with no type variable.")
+
+              (:fn ((:ref (:Array t))) :string) (instantiate-str-or-prn-for-array c-func-name t)
+
+              (:fn ((:ref :int)) :string) (build-generic-primop c-func-name "str" '(:fn (:int) :string))
+              (:fn (:int) :string)        (build-generic-primop c-func-name "str" '(:fn (:int) :string))
+
+              (:fn ((:ref :char)) :string) (build-generic-primop c-func-name "prn" '(:fn (:char) :string))
+              (:fn (:char) :string)        (let [proto (str "API string " c-func-name "(char x)")
+                                                 c (str proto " { string s = malloc(3); s[0] = '\\\\'; s[1] = x; s[2] = '\\0'; return s; }")]
+                                             {:proto proto :c c :deps ()})
+
+              (:fn ((:ref :bool)) :string) (build-generic-primop c-func-name "str" '(:fn (:bool) :string))
+              (:fn (:bool) :string)        (build-generic-primop c-func-name "str" '(:fn (:bool) :string))
+
+              (:fn ((:ref :float)) :string) (build-generic-primop c-func-name "str" '(:fn (:float) :string))
+              (:fn (:float) :string)        (build-generic-primop c-func-name "str" '(:fn (:float) :string))
+
+              (:fn ((:ref :double)) :string) (build-generic-primop c-func-name "str" '(:fn (:double) :string))
+              (:fn (:double) :string)        (build-generic-primop c-func-name "str" '(:fn (:double) :string))
+
+              (:fn ((:ref :string)) :string) (instantiate-prn-for-string c-func-name)
+
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
+              
+              x (error {:error error-invalid-arg-type-to-generic
+                        :show-stacktrace false
+                        :message (str "Invalid (non-ref?) type for call to 'prn': " x)})))
 
     "delete" (do
                (match signature
@@ -283,10 +317,17 @@
                  (:fn (maybe-struct-type) :void) (instantiate-delete-for-struct c-func-name maybe-struct-type)
                  x (error (str "Invalid type for call to 'delete': " x))))
 
+    "error" (match signature
+              (:fn ((:ref :string)) :int) (instantiate-error c-func-name :int)
+              (:fn ((:ref :string)) t) (instantiate-error c-func-name t))
+
     "copy" (do
              (match signature
                (:fn ((:ref :float)) :float) (instantiate-copy-for-primitive-type c-func-name :float) ;; These are no-ops
-               (:fn ((:ref :int)) :int) (instantiate-copy-for-primitive-type c-func-name :int) ;; These are no-ops
+               (:fn ((:ref :double)) :double) (instantiate-copy-for-primitive-type c-func-name :double)
+               (:fn ((:ref :bool)) :bool) (instantiate-copy-for-primitive-type c-func-name :bool)
+               (:fn ((:ref :int)) :int) (instantiate-copy-for-primitive-type c-func-name :int)
+               (:fn ((:ref :char)) :char) (instantiate-copy-for-primitive-type c-func-name :char)
                (:fn ((:ref (:Array t))) t) (instantiate-copy-for-array c-func-name t)
                (:fn ((:ref :string)) :string) (instantiate-copy-for-string c-func-name)
                ;;(:fn (:string) :string) (instantiate-copy-for-string c-func-name)
@@ -296,7 +337,11 @@
     "nth" (match signature
             (:fn ((:ref (:Array t)) :int) (:ref t))
             (let [proto (str "API " (type-build t) " " c-func-name "(Array *a, int index)")
-                  c (str proto " { return ((" (type-build t) "*)(a->data))[index]; }")]
+                  c (str proto
+                         " {\n"
+                         "if(index < 0 || index >= a->count) { printf(\"Array index out of bounds: %d\\n\", index); raise(SIGSEGV); }\n"
+                         "return ((" (type-build t) "*)(a->data))[index];\n"
+                         "}\n")]
               {:proto proto :c c :deps ()})
             _ (error "Invalid type for call to 'nth'"))
 
@@ -319,16 +364,21 @@
                         {:proto proto :c c :deps ()})
                       x (error (str "Invalid type for call to 'array-of-size': " x)))
 
-    ;; "reduce" (match signature
-    ;;            (:fn ((:fn ("a" "b") "a") "a" (:Array "b")) "a")
-    ;;            (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(f, a, bs)")
-    ;;                  c (str proto
-    ;;                         "{\n"
-    ;;                         "  return a;\n"
-    ;;                         "}\n")]
-    ;;              {:proto proto :c c :deps ()})
-    ;;            x (error (str "Invalid type for call to 'reduce': " x)))
-
+    "reduce" (match signature
+               ;;(:fn ((:fn (a b) a) a (:ref (:Array b))) a)
+               (:fn ((:fn (a b) a) a (:ref (:Array b))) a)
+               (let [proto (str "API " (type-build a) " " c-func-name "(" (type-build (list :fn (list a b) a)) " f, " (type-build a) " a, " (type-build (list :Array b))" bs)")
+                     c (str proto
+                            " {\n"
+                            "  " (type-build b) " *casted = bs->data;\n"
+                            "  " (type-build a) " result = a;\n"
+                            "  for(int i = 0; i < bs->count; i++) {\n"
+                            "    result = f(result, casted[i]);\n"
+                            "  }\n"
+                            "  return result;\n"
+                            "}\n")]
+                 {:proto proto :c c :deps ()})
+               x (error (str "Invalid type for call to 'reduce': " x)))
     
     "array-set" (match signature
                   (:fn ((:Array t) :int t) (:Array t))
@@ -337,11 +387,112 @@
                     {:proto proto :c c :deps ()})
                   _ (error "Invalid type for call to 'array-set'"))
 
+    "=" (match signature
+          (:fn (:int :int) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
+          (:fn (:bool :bool) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
+          (:fn (:char :char) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+          
+          (:fn ((:ref :int) (:ref :int)) :bool) (instantiate-eq-for-primitive-type c-func-name :int)
+          (:fn ((:ref :bool) (:ref :bool)) :bool) (instantiate-eq-for-primitive-type c-func-name :bool)
+          (:fn ((:ref :char) (:ref :char)) :bool) (instantiate-eq-for-primitive-type c-func-name :char)
+
+          ;; float and double can't be compared using '='
+          
+          (:fn ((:ref :string) (:ref :string)) :bool) (instantiate-eq-for-string c-func-name)
+          (:fn ((:ref (:Array a)) (:ref (:Array a))) :bool) (instantiate-eq-for-array c-func-name a)
+          (:fn ((:ref maybe-struct-type) (:ref maybe-struct-type)) :bool) (instantiate-eq-for-struct c-func-name maybe-struct-type)
+          _ (error (str "Invalid signature for call to '=': " (pretty-signature signature))))
 
     x (error (str "Can't build generic primop for '" x "'"))))
 
+(defn instantiate-error [c-func-name t]
+  (let [proto (str "API " (type-build t) " " c-func-name "(string msg)")
+        c     (str proto " { printf(\"ERROR: %s\\n\", msg); raise(SIGSEGV);"
+                   (match t
+                     :int "return 0;"
+                     :float "return 0.0f;"
+                     :double "return 0.0;"
+                     :bool "return false;"
+                     :char "return '0';"
+                     :string "return \"\";"
+                     :void ""
+                     _ "NULL")
+                   " }")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-eq-for-primitive-type [c-func-name t]
+  (let [proto (str "bool " c-func-name "(" (type-build t) " a, " (type-build t) " b)")
+        c (str proto " { return ((a) == (b)); }\n")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-eq-for-string [c-func-name]
+  (let [proto (str "bool " c-func-name "(string a, string b)")
+        c (str proto " { return strcmp(a, b) == 0; }\n")]
+    {:proto proto :c c :deps ()}))
+
+(defn instantiate-eq-for-array [c-func-name inner-t]
+  (let [proto (str "bool " c-func-name "(Array *a, Array *b)")
+
+        inner-arg-type (list :ref inner-t) ;; (if (primitive-type? inner-t) inner-t (list :ref inner-t))
+        inner-signature (list :fn (list inner-arg-type inner-arg-type) :bool)
+        inner-eq-call (c-ify-name (generic-name (symbol "=") inner-signature))
+        _ (bake-generic-primop-auto "=" inner-signature)
+        
+        c (str proto " "
+               "{\n"
+               "  if(a->count != b->count) { return false; }\n"
+               "  " (type-build inner-t) " *casted_a = a->data;\n"
+               "  " (type-build inner-t) " *casted_b = b->data;\n"
+               "  for(int i = 0; i < a->count; i++) {\n"
+               "    if(!" inner-eq-call "(casted_a[i], casted_b[i])) { return false; }\n"
+               "  }\n"
+               "  return true;\n"
+               "}\n")]
+    {:proto proto :c c :deps (list inner-eq-call)}))
+
+(defn instantiate-eq-for-struct [c-func-name maybe-struct-type]
+  (if (keyword? maybe-struct-type)
+    (let [_ (when (or (= :string maybe-struct-type)
+                      (primitive-type? maybe-struct-type))
+              (error (str "Primitive type sent to '=' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
+          lookup (eval (symbol (name maybe-struct-type)))]
+      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+        (let [t-name (name maybe-struct-type)
+              proto (str "bool " c-func-name "(" t-name " *a, " t-name " *b)")
+              member-names (array-to-list (:member-names lookup))
+              member-types (array-to-list (:member-types lookup))
+              reffed-member-types (map (fn [mt] (list :ref mt)) member-types) ;;(map (fn [mt] (ref-or-no-ref mt)) member-types)
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "=" (list :fn (list t t) :bool)))) reffed-member-types))
+              ;;_ (println (str c-func-name " deps: " deps))
+              c (str proto " {\n"
+                     "if(a == b) { return true; }\n"
+                     "  "
+                     (join "  " (map2 (fn [t n]
+                                       (do
+                                         ;;(println (str "t: " t))
+                                         (let [inner-signature (list :fn (list t t) :bool)
+                                               _ (bake-generic-primop-auto "=" inner-signature)
+                                               inner-name (c-ify-name (generic-name "=" inner-signature))
+                                               cn (c-ify-name n)]
+                                           (str "if(!" inner-name "(a->" cn ", b->" cn ")) { return false; }\n"))))
+                                     reffed-member-types
+                                     member-names))
+                     "  return true;\n"
+                     "}\n")]
+          {:proto proto
+           :c c
+           :deps deps})
+        (error (str "Invalid (non-struct) type for call to '=': " maybe-struct-type "\n" lookup))))
+    (error (str "Invalid type for call to '=': " maybe-struct-type))))
 
 (defn instantiate-str-for-string [c-func-name]
+  (let [proto (str "API string " c-func-name "(string s)")
+        c (str proto "{ return strdup(s); }\n")]
+    {:proto proto
+     :c c
+     :deps ()}))
+
+(defn instantiate-prn-for-string [c-func-name]
   (let [proto (str "API string " c-func-name "(string s)")
         c (str proto " {\n"
                ;;" printf(\"calling str on string '%s'\\n\", s);\n"
@@ -361,7 +512,7 @@
     t
     (list :ref t)))
 
-(defn instantiate-str-for-struct [c-func-name maybe-struct-type]
+(defn instantiate-str-or-prn-for-struct [c-func-name maybe-struct-type]
   (if (keyword? maybe-struct-type)
     (let [_ (when (or (= :string maybe-struct-type)
                       (primitive-type? maybe-struct-type))
@@ -374,7 +525,7 @@
               member-types (array-to-list (:member-types lookup))
               reffed-member-types (map (fn [mt] (ref-or-no-ref mt)) member-types)
               ;;_ (println (str "reffed-member-types: " reffed-member-types))
-              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "str" (list :fn (list t) :string)))) reffed-member-types))
+              deps (cons t-name (map (fn [t] (c-ify-name (generic-name "prn" (list :fn (list t) :string)))) reffed-member-types))
               ;;_ (println (str "deps: " deps))
               c (str proto " {\n"
                      "  char buffer[1024];\n"
@@ -387,9 +538,9 @@
                      (join " " (map2 (fn [t n]
                                        (do
                                          ;;(println (str "t: " t))
-                                         (bake-generic-primop-auto "str" (list :fn (list t) :string))
+                                         (bake-generic-primop-auto "prn" (list :fn (list t) :string))
                                          (str "
-  s = " (c-ify-name (generic-name "str" (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
+  s = " (c-ify-name (generic-name "prn" (list :fn (list t) :string))) "(x->" (c-ify-name n) "); 
   snprintf(buffer + pos, 1000, \"%s\", s);
   pos += strlen(s);
   buffer[pos++] = ' ';")))
@@ -408,14 +559,14 @@
         (error (str "Invalid (non-struct) type for call to 'str': " maybe-struct-type "\n" lookup))))
     (error (str "Invalid type for call to 'str': " maybe-struct-type))))
 
-(defn instantiate-str-for-array [c-func-name t]
+(defn instantiate-str-or-prn-for-array [c-func-name t]
   (let [proto (str "API string " c-func-name "(Array *a)")
         ;; Call str without ref for primitive types, otherwise use ref
         inner-arg-type (if (primitive-type? t) t (list :ref t))
         inner-signature (list :fn (list inner-arg-type) :string)
-        inner-str-call (c-ify-name (generic-name (symbol "str") inner-signature))
-        _ (bake-generic-primop-auto "str" inner-signature)
-        ;;_ (println (str "inner-str-call: " inner-str-call))
+        inner-prn-call (c-ify-name (generic-name (symbol "prn") inner-signature))
+        _ (bake-generic-primop-auto "prn" inner-signature)
+        ;;_ (println (str "inner-prn-call: " inner-prn-call))
         c (str proto
                "{\n"
                " char buffer[1024];\n"
@@ -425,11 +576,11 @@
                " " (type-build t) " *casted_data = a->data;\n"
                " for(int i = 0; i < count; i++) {\n"
                ;;"   printf(\"%d \", casted_data[i]);\n"
-               "   char *inner_str = " inner-str-call "(casted_data[i]);\n"
+               "   char *inner_str = " inner-prn-call "(casted_data[i]);\n"
                "   snprintf(buffer + pos, 1024 - pos - 1,\"%s\", inner_str);\n"
                "   pos += strlen(inner_str);\n"
                "   if(i < count - 1) {\n"
-               "     buffer[pos++] = ',';\n"
+               ;;"     buffer[pos++] = ',';\n"
                "     buffer[pos++] = ' ';\n"
                "   }\n"
                "   free(inner_str);\n"
@@ -438,9 +589,7 @@
                " buffer[pos++] = '\\0';\n"
                " return strdup(buffer);\n"
                "}")]
-    {:proto proto :c c :deps (list inner-str-call)}))
-
-
+    {:proto proto :c c :deps (list inner-prn-call)}))
 
 (defn instantiate-copy-for-string [c-func-name]
   (let [;;_ (println (str "instantiate " c-func-name))
@@ -520,12 +669,6 @@
              '()
              (list inner-copy-call))}))
 
-
-
-
-
-
-
 (defn instantiate-delete-for-string [c-func-name]
   (let [proto (str "API void " c-func-name "(string s)")
         c (str proto " { free(s); }")]
@@ -589,4 +732,3 @@
      :deps (if (primitive-type? t)
              '()
              (list inner-delete-call))}))
-

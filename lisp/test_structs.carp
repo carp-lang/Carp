@@ -1,3 +1,4 @@
+(tester/set-suite! "structs")
 
 ;; (defstruct Vec2 [x :float y :float])
 
@@ -41,11 +42,9 @@
   (let [v (AnotherVector 100 100)]
     (set-xx v 666)))
 
-(defn test-setter-1 []
+(deftest test-setter-1
   (do (bake setter-1)
       (assert-eq 666 (get-xx (setter-1)))))
-
-(test-setter-1)
 
 
 
@@ -53,28 +52,26 @@
   (let [v (AnotherVector 100 100)]
     (update-yy v inc)))
 
-(defn test-updater-1 []
+(deftest test-updater-1
   (do (bake updater-1)
       (assert-eq 101 (get-yy (updater-1)))))
 
-(test-updater-1)
 
 
-
-(defn test-redefining-struct []
+(deftest test-redefining-struct
   (do
     (defstruct Prime [prime-x :int])
     (defstruct Prime2 [prime2-member :Prime])
     (defstruct Prime3 [prime3-member :Prime2])
-    (defn f [p]
+    (defn farao [p]
       (get-prime-x p))
-    (bake f)
-    (assert-eq "10" (str (f (Prime 10))))
+    (bake farao)
+    (assert-eq "10" (str (farao (Prime 10))))
 
     (defstruct Prime [prime-x :int prime-y :int])
-    (assert-eq "20" (str (f (Prime 20 30))))
-    (bake f)
-    (assert-eq "40" (str (f (Prime 40 50))))
+    (assert-eq "20" (str (farao (Prime 20 30))))
+    (bake farao)
+    (assert-eq "40" (str (farao (Prime 40 50))))
     (assert-eq "(Prime3 (Prime2 (Prime 1000 2000)))" (str (Prime3 (Prime2 (Prime 1000 2000)))))))
 
-(test-redefining-struct)
+(tester/run-suite "structs")
