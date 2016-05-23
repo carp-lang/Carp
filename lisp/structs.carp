@@ -20,28 +20,39 @@
         (graph/unload-group struct-name)
         (map graph/unload-group (set (map :group dependers)))
         ;;(println (str "graph nodes: " (keys graph)))
-        
-        (build-struct-group struct-name
-                            member-names
-                            member-types
-                            (calculate-dependency-level member-types)
-                            (map name (filter struct-type? (array-to-list member-types))))
-        
-        (eval (list 'def (symbol struct-name) {:struct true
-                                               :generic false
-                                               :name struct-name
-                                               :member-names member-names
-                                               :member-types (list 'quote member-types)
-                                               :size (eval (list (symbol (str "size-" struct-name))))
-                                               :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
-                                                                    member-names)
-                                               :member-count (count member-names)
-                                               }))
-        
-        ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
-        (map restore (set (map :group (sort-by compare-order dependers))))
 
-        (keyword struct-name)))))
+        (if (any generic-type? (array-to-list member-types))
+          (do
+            (eval (list 'def (symbol struct-name) {:struct true
+                                                   :generic true
+                                                   :name struct-name
+                                                   :member-names member-names
+                                                   :member-types (list 'quote member-types)
+                                                   }))
+            :generic-struct)
+          
+          (do            
+            (build-struct-group struct-name
+                                member-names
+                                member-types
+                                (calculate-dependency-level member-types)
+                                (map name (filter struct-type? (array-to-list member-types))))
+            
+            (eval (list 'def (symbol struct-name) {:struct true
+                                                   :generic false
+                                                   :name struct-name
+                                                   :member-names member-names
+                                                   :member-types (list 'quote member-types)
+                                                   :size (eval (list (symbol (str "size-" struct-name))))
+                                                   :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                                        member-names)
+                                                   :member-count (count member-names)
+                                                   }))
+            
+            ;; Finally we can add back the structs that were removed by 'unload-struct-deps'
+            (map restore (set (map :group (sort-by compare-order dependers))))
+
+            (keyword struct-name)))))))
 
 (defn restore [name]
   (let [x (eval (symbol name))]

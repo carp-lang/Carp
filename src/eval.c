@@ -180,7 +180,14 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     }
   } 
   else if(function->tag == 'E' && obj_eq(process, env_lookup(process, function, obj_new_keyword("struct")), lisp_true)) {
-    call_struct_constructor(process, function, args, arg_count);
+    //printf("Calling struct: %s\n", obj_to_string(process, function)->s);
+    if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
+      printf("Calling generic struct constructor.\n");
+      //eval_internal(process, process->global_env, );
+      stack_push(process, nil);
+    } else {
+      call_struct_constructor(process, function, args, arg_count);
+    }
   } else {
     set_error("Can't call non-function: ", function);
   }
