@@ -16,13 +16,13 @@
 
 # Compiler Correctness
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
-  - Use 'generic-name' when concretesizing generic primops
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
   
 # Compiler efficiency / beauty
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
+  - Use 'generic-name' when concretesizing generic primops
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Use the new key-is-true function instead of has-key? in lots of places
