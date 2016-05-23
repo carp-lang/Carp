@@ -333,6 +333,12 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
         Obj *x = primitive_to_obj(process, dereffed, type_string);
         obj_string_mut_append(total, x->s);
       }
+      else if(obj_eq(process, type_lookup, type_char)) {
+        void *dereffed = *(void**)o->void_ptr;
+        assert(dereffed);
+        Obj *x = primitive_to_obj(process, dereffed, type_char);
+        obj_string_mut_append(total, obj_to_string(process, x)->s);
+      }
       else {
         void *dereffed = *(void**)o->void_ptr;
         assert(dereffed);

@@ -4,9 +4,16 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
-(deftest test-and-1
-  (do
-    (defn use-and-1 []
-      (and true false))
-    (bake use-and-1)
-    (assert-eq false (use-and-1))))
+;; (deftest test-and-1
+;;   (do
+;;     (defn use-and-1 []
+;;       (and true false))
+;;     (bake use-and-1)
+;;     (assert-eq false (use-and-1))))
+
+(deftest global-char
+  (do (def the-char \e)
+      (bake the-char)
+      (assert-eq "\\e ; ptr-to-global" (str the-char))
+      (reset! the-char \f)
+      (assert-eq "\\f ; ptr-to-global" (str the-char))))

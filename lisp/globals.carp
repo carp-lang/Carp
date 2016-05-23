@@ -38,6 +38,7 @@
               init-closure-def (list 'defn (symbol init-closure-name) [] (list 'reset! (symbol variable-name) init-value-safe))
               ]
           (do
+            (def c c-code)
             (compiler/bake-src variable-name prototype c-code t '())
             ;;(reset! mutable-deps (cons (symbol init-closure-name) mutable-deps))
             
