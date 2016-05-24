@@ -30,3 +30,27 @@
         x5 (str-replace x4 ">" "GT")
         x6 (str-replace x5 "=" "EQ")]
     x6))
+
+(defn type-build [t]
+  (type-build-internal t true))
+
+(defn type-build-no-star [t]
+  (type-build-internal t false))
+
+(defn type-build-internal [t star]
+  (if (string? t)
+    ;;(error (str "Can't build type from unresolved typevar '" t "'"))
+    "typevar"
+    (match t
+           :? "unknown"
+           (:fn _ _) (ensure-function-type t)
+           (:ref r) (type-build-internal r star)
+           (:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
+           :float "float"
+           :double "double"
+           :int "int"
+           :char "char"
+           :bool "bool"
+           :string "string"
+           :void "void"
+           x (str (c-ify-name (name x)) (if star "*" "")))))

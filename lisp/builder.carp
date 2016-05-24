@@ -1,22 +1,22 @@
 (def slim-code-generation true)
 
 ;; Creates a C code builder which allows for out-of-order generation of C from the AST
-(defn new-builder ()
+(defn new-builder []
   {:headers ()
    :functions ()
    :deps ()
    :main ()})
 
-(defn builder-add (builder category block)
+(defn builder-add [builder category block]
   (update-in builder (list category) (fn (blocks) (set (cons-last blocks block)))))
 
-(defn builder-add-headers (builder files)
+(defn builder-add-headers [builder files]
   (reduce (fn (b file) (builder-add b :headers (str "#include " file)))
           builder
           files))
 
 ;; Takes a completed C code builder and returns its string with C code
-(defn builder-merge-to-c (builder)
+(defn builder-merge-to-c [builder]
   (let [funcs (:functions builder)
         headers (:headers builder)
         main (:main builder)]
@@ -28,16 +28,16 @@
 
 (def indent-level 1)
 
-(defn indent ()
+(defn indent []
   (join "" (replicate "  " indent-level)))
 
-(defn indent-in! ()
+(defn indent-in! []
   (swap! indent-level inc))
 
-(defn indent-out! ()
+(defn indent-out! []
   (swap! indent-level dec))
 
-(defn free-variables (free-list deps)
+(defn free-variables [free-list deps]
   (do
     ;;(println (str "free-list: " free-list))
     (map (fn [t] (bake-generic-primop-auto "delete" (list :fn (list t) :void))) (map :type free-list))
@@ -82,59 +82,35 @@
       (list (name t))
       ())))
 
-(defn type-build (t)
-  (type-build-internal t true))
-
-(defn type-build-no-star (t)
-  (type-build-internal t false))
-
-(defn type-build-internal (t star)
-  (if (string? t)
-    ;;(error (str "Can't build type from unresolved typevar '" t "'"))
-    "typevar"
-    (match t
-           :? "unknown"
-           (:fn _ _) (ensure-function-type t)
-           (:ref r) (type-build-internal r star)
-           (:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
-           :float "float"
-           :double "double"
-           :int "int"
-           :char "char"
-           :bool "bool"
-           :string "string"
-           :void "void"
-           x (str (c-ify-name (name x)) (if star "*" "")))))
-
-(defn visit-arg-explicit (c arg deps)
+(defn visit-arg-explicit [c arg deps]
   (let [result (visit-form c arg true deps)]
     (str-append! c (str (indent) (type-build (:type arg)) " " (c-ify-name (:arg-name arg)) " = " (get result :c) ";\n"))))
 
-(defn visit-args-explicit (c args deps)
+(defn visit-args-explicit [c args deps]
   (let []
     (do
       ;;(println "visit args:" args)
       (map (fn (arg) (visit-arg-explicit c arg deps)) args)
       (map (fn (arg) {:c (:arg-name arg)}) args))))
 
-(defn inlined-literal? (ast)
+(defn inlined-literal? [ast]
   (and (= :literal (:node ast))
        (contains? '(:int :float :double :bool (:ref :string)) (:type ast))))
 
-(defn inlined-lookup? (ast)
+(defn inlined-lookup? [ast]
   (= :lookup (:node ast)))
 
-(defn inlined-binop? (ast)
+(defn inlined-binop? [ast]
   (= :binop (:node ast)))
 
 ;; Print Objs in a way that the C compiler accepts
-(defn c-prn (x)
+(defn c-prn [x]
   (match (type x)
     :char (str "'" x "'") ;; chars are written like this in Carp: \e but like this: 'e' in C.
     _ (prn x)))
 
 ;; New version of visit arg that generates slimmer code (no intermediate arg variables)
-(defn visit-arg-slim (c arg deps)
+(defn visit-arg-slim [c arg deps]
   (let [arg-name (:arg-name arg)
         arg-type (:type arg)
         result (visit-form c arg true deps)]
@@ -154,7 +130,7 @@
 
       )))
 
-(defn visit-args-slim (c args deps)
+(defn visit-args-slim [c args deps]
   (let []
     (do
       ;(println (str "visit args slim:\n" args))
@@ -165,7 +141,7 @@
                  (str-append! c (str (indent) (type-build (:type b)) " " (c-ify-name (str (:name b))) " = " (:c value-result) ";\n"))))
        bindings))
 
-(defn visit-form (c form toplevel deps)
+(defn visit-form [c form toplevel deps]
   (do
     ;;(println (str "\nvisit-form:\n" form))
     (match (get form :node)
@@ -323,10 +299,10 @@
            
            x (error (str "visit-form failed to match " x)))))
 
-(defn arg-list-build (args)
+(defn arg-list-build [args]
   (join ", " (map (fn (arg) (str (type-build (get arg :type)) " " (c-ify-name (str (:name arg)))))args)))
 
-(defn visit-function (builder ast func-name)
+(defn visit-function [builder ast func-name]
   (let [t (:type ast)
         _ (when (not (list? t)) (error "Can't generate code for function, it's type is not a list."))
         return-type (nth t 2)
@@ -353,13 +329,13 @@
         {:builder (builder-add builder :functions code)
          :deps (:mutable-value deps)}))))
 
-(defn get-function-prototype (ast func-name)
+(defn get-function-prototype [ast func-name]
   (let [t (get ast :type)
         return-type (nth t 2)
         args (get ast :args)]
     (str "API " (type-build return-type) " " (c-ify-name func-name) "(" (arg-list-build args) ");")))
 
-(defn builder-visit-ast (builder ast func-name)
+(defn builder-visit-ast [builder ast func-name]
   (match (get ast :node)
          :function (visit-function builder ast func-name)
          x (error (str "Can't match :ast '" x "' in builder-visit-ast."))))
