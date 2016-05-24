@@ -7,6 +7,7 @@ http://msm.runhello.com/p/1003
 http://stackoverflow.com/questions/2505385/classes-and-static-variables-in-shared-libraries
 http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter15_Runtime_Compiled_C++_for_Rapid_AI_Development.pdf
 https://fsharpforfunandprofit.com/posts/fsharp-decompiled/
+http://kristerw.blogspot.se/2016/05/type-based-aliasing-in-c.html
 
 # OWNERSHIP & BORROWING
 http://blog.piston.rs/2016/01/23/dynamo/
