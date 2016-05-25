@@ -136,7 +136,11 @@
       :lookup (if (has-key? ast :constructor)
                 (let [member-types (array-to-list (:member-types ast))
                       t (:type ast)
-                      constructor-return-constr {:a (keyword (:struct-name ast))
+                      is-generic (:generic ast)
+                      struct-type (keyword (:struct-name ast))
+                      constructor-return-constr {:a (if is-generic
+                                                      (list struct-type "t") ;; add the type variables to the end of a list, like (Foo :int :int)
+                                                      struct-type)
                                                  :b (nth t 2)
                                                  :prio prio-default
                                                  :doc "constructor-return-value"}
