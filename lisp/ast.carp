@@ -172,6 +172,7 @@
     (do
       {:node :lookup
        :constructor true
+       :generic (any generic-type? (array-to-list (:member-types struct-description)))
        :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
        :member-types (:member-types struct-description)
        :member-names (:member-names struct-description)

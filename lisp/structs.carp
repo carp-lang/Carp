@@ -28,6 +28,7 @@
                                                    :name struct-name
                                                    :member-names member-names
                                                    :member-types (list 'quote member-types)
+                                                   :member-count (count member-names)
                                                    }))
             :generic-struct)
           
@@ -83,7 +84,8 @@
                        member-types)))))
 
 (defn build-struct-group [struct-name member-names member-types dependency-level deps]
-  (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
+  (let [c-struct-name (c-ify-name struct-name)
+        member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
         member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
         constructor-name (str "new-" struct-name)
@@ -91,14 +93,14 @@
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword struct-name))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
-        type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
+        type-definition (str "typedef struct { " type-def-c " } " c-struct-name ";")
         group-name "" ;; struct-name
         ]
     (do
       (graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
       (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
-            proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
-            substs {"STRUCT-NAME" struct-name
+            proto (str c-struct-name " *" c-constructor-name "(" arg-list-c ");")
+            substs {"STRUCT-NAME" c-struct-name
                     "CONSTRUCTOR-NAME" c-constructor-name
                     "ARG_LIST" arg-list-c
                     "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
@@ -115,8 +117,8 @@
                           :src c-program-string
                           :sig constructor-signature}
                          (let [size-signature (list :fn () :int)
-                               size-proto (str "int size_" struct-name "()")
-                               size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+                               size-proto (str "int size_" c-struct-name "()")
+                               size-c (str size-proto " { return sizeof(" c-struct-name "); } ")]
                            (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
                    (apply concat (map2 (fn [mem-name mem-type]
                                          (lens-functions struct-name mem-name mem-type))
@@ -152,7 +154,7 @@
          (lens-function (str "update-" member-name) updater-proto updater-c updater-signature))
        (let [offset-signature (list :fn () :int)
              offset-proto (str "int offset_" (c-ify-name member-name) "()")
-             offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
+             offset-c (str offset-proto "{ return offsetof(" (c-ify-name struct-name) ", " c-member-name "); }")]
          (lens-function (str "offset-" member-name) offset-proto offset-c offset-signature))))))
 
 (defn lens-function [func-name proto src func-signature]
@@ -166,3 +168,16 @@
      :proto (str proto ";")
      :src src
      :sig func-signature}))
+
+(defn concretize-struct [struct-name generic-name signature]
+  (do
+    (println (str "concretize-struct: " struct-name ", generic-name: " generic-name ", signature: " signature))
+    (let [struct-description (eval (symbol struct-name))
+          _ (println (str "struct-description: " struct-description))
+          member-names (:member-names struct-description)
+          member-types (:member-types struct-description)]
+      (build-struct-group generic-name
+                          member-names
+                          member-types
+                          (calculate-dependency-level member-types)
+                          (map name (filter struct-type? (array-to-list member-types)))))))

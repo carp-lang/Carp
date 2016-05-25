@@ -107,7 +107,14 @@
                                                               t)
                                          (reset! deps (cons n deps))
                                          (assoc-in ast '(:value) (symbol n)))))
-                                   ast)))
+
+                                   (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
+                                     (let [n (generic-name (:struct-name ast) t)]
+                                       (do
+                                         (concretize-struct (:struct-name ast) n t)
+                                         (assoc-in ast '(:value) (symbol n))))
+                                     ast)
+                                   )))
                              ast))))
 
         visit-generic-funcs-internal (fn [ast]
