@@ -56,5 +56,5 @@
            :string "string"
            :void "void"
            x (if (list? x)
-               (str (join "" (map (fn [inner-t] (type-build-internal inner-t false)) x)) (if star "*" ""))
+               (str (type-build-internal (first x) false) "LT" (join "" (map (fn [inner-t] (type-build-internal inner-t false)) (rest x))) "GT" (if star "*" ""))
                (str (c-ify-name (name x)) (if star "*" ""))))))
