@@ -168,16 +168,23 @@
 (defn struct-constructor-ast [struct-description]
   (let [struct-name (:name struct-description)
         struct-type (keyword struct-name)
-        arg-count (:member-count struct-description)]
+        arg-count (:member-count struct-description)
+        member-types (:member-types struct-description)
+        ]
     (do
       {:node :lookup
        :constructor true
-       :generic (any generic-type? (array-to-list (:member-types struct-description)))
+       :generic (any generic-type? (array-to-list member-types))
+       :typevars (typevars-from-member-types member-types)
        :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
-       :member-types (:member-types struct-description)
+       :member-types member-types
        :member-names (:member-names struct-description)
        :struct-name struct-name
        :value (str "new-" struct-name)})))
+
+(defn typevars-from-member-types [types]
+  ;; Hack to make the order be correct:
+  (reverse (set (filter generic-type? (array-to-list types)))))
 
 (defn form-to-ast [form]
   (match form    

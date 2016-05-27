@@ -9,15 +9,16 @@
 
 (defstruct Pair
   [a "t"
-   b "t"])
+   b "u"])
 
 (defn f []
-  (Pair 2 3))
+  (Pair 2 @"hej"))
 
 (bake f)
 
 
-(defn g []
-  (Pair true false))
 
-(bake g)
+;; (defn g []
+;;   (Pair true false))
+
+;; (bake g)

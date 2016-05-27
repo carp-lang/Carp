@@ -139,7 +139,7 @@
                       is-generic (:generic ast)
                       struct-type (keyword (:struct-name ast))
                       constructor-return-constr {:a (if is-generic
-                                                      (list struct-type "t") ;; add the type variables to the end of a list, like (Foo :int :int)
+                                                      (cons struct-type (:typevars ast))
                                                       struct-type)
                                                  :b (nth t 2)
                                                  :prio prio-default

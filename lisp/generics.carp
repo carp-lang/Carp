@@ -96,9 +96,10 @@
                                            _ (println (str "concrete-struct-type: " concrete-struct-type))
                                            concrete-struct-name (generic-safe-name concrete-struct-type)
                                            constructor-name (str "new-" concrete-struct-name)
+                                           typevars (:typevars ast)
                                            ]
                                        (do
-                                         (concretize-struct struct-name concrete-struct-name concrete-struct-type)
+                                         (concretize-struct struct-name concrete-struct-name concrete-struct-type typevars)
                                          (reset! deps (cons constructor-name deps))
                                          (assoc-in ast '(:value) (symbol constructor-name))))
                                      ast)
