@@ -45,7 +45,7 @@
                                                    :member-names member-names
                                                    :member-types (list 'quote member-types)
                                                    :size (eval (list (symbol (str "size-" struct-name))))
-                                                   :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                   :member-offsets (map (fn [member] (eval (list (symbol (str struct-name "-offset-" member)))))
                                                                         member-names)
                                                    :member-count (count member-names)
                                                    }))
@@ -130,7 +130,8 @@
 
 (defn lens-functions [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
-    (let [struct-type (keyword struct-name)
+    (let [c-struct-name (c-ify-name struct-name)
+          struct-type (keyword struct-name)
           struct-t (type-build struct-type)
           member-t (type-build member-type)
           member-t-reffed (if (primitive-type? member-type)
@@ -139,23 +140,23 @@
           c-member-name (c-ify-name member-name)]
       (list
        (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
-             getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
+             getter-proto (str member-t " " c-struct-name "_get_" (c-ify-name member-name) "(" struct-t " x)")
              getter-c (str getter-proto "{ return x->" c-member-name "; }")]
-         (lens-function (str "get-" member-name) getter-proto getter-c getter-signature))
+         (lens-function (str struct-name "-get-" member-name) getter-proto getter-c getter-signature))
        (let [setter-signature (list :fn (list struct-type member-type) struct-type)
-             setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
+             setter-proto (str struct-t " " c-struct-name "_set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
              setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
-         (lens-function (str "set-" member-name) setter-proto setter-c setter-signature))
+         (lens-function (str struct-name "-set-" member-name) setter-proto setter-c setter-signature))
        (let [updater-fn-type (list :fn (list member-type) member-type)
              updater-fn-t (type-build updater-fn-type)
              updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
-             updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
+             updater-proto (str struct-t " " c-struct-name "_update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
              updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
-         (lens-function (str "update-" member-name) updater-proto updater-c updater-signature))
+         (lens-function (str struct-name "-update-" member-name) updater-proto updater-c updater-signature))
        (let [offset-signature (list :fn () :int)
-             offset-proto (str "int offset_" (c-ify-name member-name) "()")
+             offset-proto (str "int " c-struct-name "_offset_" (c-ify-name member-name) "()")
              offset-c (str offset-proto "{ return offsetof(" (c-ify-name struct-name) ", " c-member-name "); }")]
-         (lens-function (str "offset-" member-name) offset-proto offset-c offset-signature))))))
+         (lens-function (str struct-name "-offset-" member-name) offset-proto offset-c offset-signature))))))
 
 (defn lens-function [func-name proto src func-signature]
   (do

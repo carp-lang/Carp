@@ -1,3 +1,8 @@
+# Generic structs 
+ - Make them instantiate just by calling one of their lens functions
+ - Give lens functions correct name
+ - Make lens functions work in non-compiled code
+
 # The Big 'ref' debacle
   - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
   - alternatively allow ref:ed value types to be coerced into non-ref:ed types

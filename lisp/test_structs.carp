@@ -40,21 +40,21 @@
 
 (defn setter-1 []
   (let [v (AnotherVector 100 100)]
-    (set-xx v 666)))
+    (AnotherVector-set-xx v 666)))
 
 (deftest test-setter-1
   (do (bake setter-1)
-      (assert-eq 666 (get-xx (setter-1)))))
+      (assert-eq 666 (AnotherVector-get-xx (setter-1)))))
 
 
 
 (defn updater-1 []
   (let [v (AnotherVector 100 100)]
-    (update-yy v inc)))
+    (AnotherVector-update-yy v inc)))
 
 (deftest test-updater-1
   (do (bake updater-1)
-      (assert-eq 101 (get-yy (updater-1)))))
+      (assert-eq 101 (AnotherVector-get-yy (updater-1)))))
 
 
 
@@ -64,7 +64,7 @@
     (defstruct Prime2 [prime2-member :Prime])
     (defstruct Prime3 [prime3-member :Prime2])
     (defn farao [p]
-      (get-prime-x p))
+      (Prime-get-prime-x p))
     (bake farao)
     (assert-eq "10" (str (farao (Prime 10))))
 
