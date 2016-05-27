@@ -9,10 +9,14 @@
 
 (defstruct Pair
   [a "t"
-   b "u"])
+   b "t"])
+
+;; ^ann '(:fn ((:Pair :int)) :int)
+;; (defn f [p]
+;;   (Pair-get-a p))
 
 (defn f []
-  (Pair 2 @"hej"))
+  (Pair 10 20))
 
 (bake f)
 

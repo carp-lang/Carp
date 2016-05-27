@@ -35,6 +35,9 @@
                                                    :member-types (list 'quote member-types)
                                                    :member-count (count member-names)
                                                    }))
+
+            (define-generic-lens-stubs struct-name member-names member-types)
+            
             :generic-struct)
           
           (do            
@@ -175,16 +178,16 @@
      :src src
      :sig func-signature}))
 
-(defn concretize-struct [struct-name generic-name signature typevars]
+(defn concretize-struct [struct-name generic-name concrete-types typevars]
   (do
-    (println (str "concretize-struct: " struct-name ", generic-name: " generic-name ", signature: " signature))
+    (println (str "concretize-struct: " struct-name ", generic-name: " generic-name ", concrete-types: " concrete-types))
     (let [struct-description (eval (symbol struct-name))
           _ (println (str "struct-description: " struct-description))
           member-names (:member-names struct-description)
           generic-member-types (:member-types struct-description)
           mapping (reduce (fn [the-map key-value-pair] (assoc the-map (first key-value-pair) (second key-value-pair)))
                           {}
-                          (map2 (fn [k v] (list k v)) typevars (rest signature)))
+                          (map2 (fn [k v] (list k v)) typevars concrete-types))
           concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
           ]
       (do
@@ -195,3 +198,19 @@
         ;;                     (map name (filter struct-type? (array-to-list concrete-member-types))))
         (defstruct-internal generic-name member-names concrete-member-types)
         ))))
+
+(defn define-generic-lens-stubs [struct-name member-names member-types]
+  (do
+    (println (str "Defining generic lens stubs for " struct-name))
+    (map2 (fn [n t]
+            (let [sym (symbol (str struct-name "-get-" n))
+                  ;;struct-base-type (keyword struct-name)
+                  ]
+              (do
+                (eval (list 'defn sym ['o] nil))
+                (eval (list 'meta-set! sym :generic-lens-stub true))
+                (eval (list 'meta-set! sym :struct struct-name))
+                )))
+          member-names
+          member-types)))
+

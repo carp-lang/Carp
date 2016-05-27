@@ -163,7 +163,7 @@
                (match signature
                  (:fn ((:Array t)) :void) (instantiate-delete-for-array c-func-name t)
                  (:fn (:string) :void) (instantiate-delete-for-string c-func-name)
-                 (:fn (maybe-struct-type) :void) (instantiate-delete-for-struct c-func-name maybe-struct-type)
+                 (:fn (maybe-struct-type) :void) (instantiate-delete-for-struct c-func-name (fix-generic-struct-name maybe-struct-type))
                  x (error (str "Invalid type for call to 'delete': " x))))
 
     "error" (match signature

@@ -541,7 +541,17 @@
 
     :literal ast
     
-    :lookup (assoc ast :type (get-type substs (:type ast)))
+    :lookup (do
+              ;; At this point we have the types to be able to concretize a struct used by lens functions              
+              (when (key-is-true? ast :generic-lens-stub)
+                (let [t (get-type substs (nth (:type ast) 2))
+                      ;;substituted (map (fn []))
+                      ]
+                  (do
+                    (println (str "Concretizing " (:value ast) " t: " t))
+                    (concretize-struct (:value ast)))))
+
+              (assoc ast :type (get-type substs (:type ast))))
 
     :arg (assoc ast :type (get-type substs (:type ast)))
 

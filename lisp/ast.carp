@@ -142,6 +142,7 @@
   (if (symbol? expr)
     {:node :lookup
      :type (gen-typevar)
+     :generic-lens-stub (and (def? expr) (is-generic-lens-stub? (eval (list 'meta expr))))
      :line (meta-get expr :line)
      :original-form expr
      :value expr} ;; change key to :name ..?
@@ -161,6 +162,11 @@
                      real-type
                      (error (str "No type on expr: " expr))))
       :else t)))
+
+(defn is-generic-lens-stub? [form]
+  (if (nil? form)
+    false
+    (key-is-true? form :generic-lens-stub)))
 
 (defn is-struct-constructor? [form]
   (and (dict? form) (true? (get-maybe form :struct))))
