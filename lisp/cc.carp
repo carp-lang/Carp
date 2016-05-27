@@ -53,7 +53,7 @@
         (print-external-compiler-time start-time c-func-name)))))
 
 (defn run-clang [c-func-name c-file-name total-dependencies exe]
-  (let [clang-command (str "clang -DAPI= "
+  (let [clang-command (str "clang -g -DAPI= "
                            (if exe
                              (str "-o " exe-out-dir exe-name " ")
                              (str "-shared -g -o " out-dir c-func-name ".so "))

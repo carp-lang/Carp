@@ -15,6 +15,7 @@
   - Shorter names for concrete versions of generic functions
 
 # Compiler Correctness
+  - Sending a global variable to a function that takes ownership of it will lead to disaster
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)

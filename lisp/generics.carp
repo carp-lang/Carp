@@ -109,10 +109,17 @@
                                          (assoc-in ast '(:value) (symbol n)))))
 
                                    (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
-                                     (let [n (generic-name (:struct-name ast) t)]
+                                     (let [_ (println (str "AST:\n" ast))
+                                           struct-name (:struct-name ast)
+                                           concrete-struct-type (nth t 2)
+                                           _ (println (str "concrete-struct-type: " concrete-struct-type))
+                                           concrete-struct-name (type-build-no-star concrete-struct-type)
+                                           constructor-name (str "new-" concrete-struct-name)
+                                           ]
                                        (do
-                                         (concretize-struct (:struct-name ast) n t)
-                                         (assoc-in ast '(:value) (symbol n))))
+                                         (concretize-struct struct-name concrete-struct-name concrete-struct-type)
+                                         (reset! deps (cons constructor-name deps))
+                                         (assoc-in ast '(:value) (symbol constructor-name))))
                                      ast)
                                    )))
                              ast))))
@@ -278,7 +285,9 @@
 
               (:fn ((:ref :string)) :string) (instantiate-str-for-string c-func-name)
 
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct
+                                                        c-func-name
+                                                        (fix-generic-struct-name maybe-struct-type))
               
               x (error {:error error-invalid-arg-type-to-generic
                         :show-stacktrace false
@@ -311,7 +320,9 @@
 
               (:fn ((:ref :string)) :string) (instantiate-prn-for-string c-func-name)
 
-              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct c-func-name maybe-struct-type)
+              (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct
+                                                        c-func-name
+                                                        (fix-generic-struct-name maybe-struct-type))
               
               x (error {:error error-invalid-arg-type-to-generic
                         :show-stacktrace false
@@ -739,3 +750,8 @@
      :deps (if (primitive-type? t)
              '()
              (list inner-delete-call))}))
+
+(defn fix-generic-struct-name [t]
+  (if (list? t)
+    (keyword (type-build-no-star t))
+    t))

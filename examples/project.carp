@@ -4,6 +4,9 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
+;; (defstruct Poo
+;;   [a :int])
+
 (defstruct Pair
   [a "t"
    b "t"])
@@ -11,3 +14,4 @@
 (defn f []
   (Pair 2 3))
 
+(bake f)
