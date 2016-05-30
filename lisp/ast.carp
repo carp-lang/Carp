@@ -140,12 +140,16 @@
 
 (defn literal-or-lookup-to-ast [expr]
   (if (symbol? expr)
-    {:node :lookup
-     :type (gen-typevar)
-     :generic-lens-stub (and (def? expr) (is-generic-lens-stub? (eval (list 'meta expr))))
-     :line (meta-get expr :line)
-     :original-form expr
-     :value expr} ;; change key to :name ..?
+    (let [is-generic-lens-stub (and (def? expr) (is-generic-lens-stub? (eval (list 'meta expr))))
+          node {:node :lookup
+                :type (gen-typevar)
+                :generic-lens-stub is-generic-lens-stub
+                :line (meta-get expr :line)
+                :original-form expr
+                :value expr}] ;; change key to :name ..?
+      (if is-generic-lens-stub
+        (assoc node :struct (eval (list 'meta-get expr :struct)))
+        node)) 
     {:node :literal
      :type (type-of-literal expr)
      :line (meta-get expr :line)
