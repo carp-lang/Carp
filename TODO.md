@@ -10,11 +10,14 @@
   - A deref function that can remove the ref from primitive types?
 
 # Compiler Big Features
+  - Live Reloading (threads, bytecode interpreter, etc)
+  - Windows + Linux support
   - Special handling of POD structs (stack allocated, not sent by pointer)
   - Generic structs
   - Compile match statements (or should it be a macro?)
   - All types should have capital first letter
   - Lambdas / lambda lifting
+  - Compile dictionaries (requires hashing function)
   
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions

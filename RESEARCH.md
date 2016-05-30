@@ -32,6 +32,9 @@ http://www.scheme.com/tspl4/examples.html#./examples:h10
 # CSP
 http://reaktor.com/blog/why-csp-matters-ii-how-do-i-know-sync-works/
 
+# GC
+http://prl.ccs.neu.edu/blog/2016/05/24/measuring-gc-latencies-in-haskell-ocaml-racket/
+
 # OTHER LISPS
 https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
 http://alex-charlton.com/posts/Prototype_to_polish_Making_games_in_CHICKEN_Scheme_with_Hypergiant/

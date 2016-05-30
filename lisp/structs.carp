@@ -199,11 +199,15 @@
     (map2 (fn [n t]
             (let [sym (symbol (str struct-name "-get-" n))
                   ;;struct-base-type (keyword struct-name)
+                  s (list :fn (list (list (keyword struct-name) "t")) "t")
+                  ;;_ (println (str "s: " s))
                   ]
               (do
                 (eval (list 'defn sym ['o] nil))
                 (eval (list 'meta-set! sym :generic-lens-stub true))
                 (eval (list 'meta-set! sym :struct struct-name))
+                (eval (list 'meta-set! sym :generic true))
+                (eval (list 'meta-set! sym :signature (list 'quote s)))
                 )))
           member-names
           member-types)))

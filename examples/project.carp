@@ -11,14 +11,22 @@
   [a "t"
    b "t"])
 
+;; (defn foo [] (Pair 10 20))
+;; (bake foo)
+
 ;; ^ann '(:fn ((:Pair :int)) :int)
 ;; (defn f [p]
 ;;   (Pair-get-a p))
 
-;; (defn f []
+;; (defn g []
+;;   (f (Pair 10 20)))
+
+;;(bake g)
+
+;; (defn h []
 ;;   (Pair 10 20))
 
-;;(bake f)
+;; (bake h)
 
 
 
