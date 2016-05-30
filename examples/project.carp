@@ -11,12 +11,12 @@
   [a "t"
    b "t"])
 
-^ann '(:fn ((:Pair :int)) :int)
-(defn f [p]
-  (Pair-get-a p))
+;; ^ann '(:fn ((:Pair :int)) :int)
+;; (defn f [p]
+;;   (Pair-get-a p))
 
-;; (defn f []
-;;   (Pair 10 20))
+(defn f []
+  (Pair 10 20))
 
 ;;(bake f)
 

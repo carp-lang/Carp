@@ -546,15 +546,14 @@
               (when (key-is-true? ast :generic-lens-stub)
                 (let [t (get-type substs (nth (:type ast) 2))
                       ;;substituted (map (fn []))
-                      struct-description (eval (symbol (:struct ast)))
+                      struct-description (eval (:struct ast))
                       member-types (:member-types struct-description)
                       struct-name (:name struct-description)
                       ]
                   (do
-                    (println (str "Concretizing " (:value ast) " t: " t " struct description:\n" struct-description)) ;; " ast:\n" ast))
-                    ;; (concretize-struct struct-name generic-name concrete-types typevars)
+                    (println (str "Concretizing " (:value ast) " t: " t " struct description:\n" struct-description "\n\nast:\n" ast))
                     (error "Can't concretize generic struct based on just lookup of lens function.")
-                    (concretize-struct struct-name )
+                    ;;(concretize-struct struct-name )
                     )))
 
               (assoc ast :type (get-type substs (:type ast))))

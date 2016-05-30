@@ -90,17 +90,13 @@
                                          (assoc-in ast '(:value) (symbol n)))))
 
                                    (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
-                                     (let [_ (println (str "AST:\n" ast))
-                                           struct-name (:struct-name ast)
+                                     (let [struct-name (:struct-name ast)
                                            concrete-struct-type (nth t 2)
-                                           _ (println (str "concrete-struct-type: " concrete-struct-type))
                                            concrete-struct-name (generic-safe-name concrete-struct-type)
                                            constructor-name (str "new-" concrete-struct-name)
-                                           typevars (:typevars ast)
-                                           concrete-types (rest concrete-struct-type)
-                                           ]
+                                           concrete-types (rest concrete-struct-type)]
                                        (do
-                                         (concretize-struct struct-name concrete-struct-name concrete-types typevars)
+                                         (concretize-struct struct-name concrete-struct-name concrete-types)
                                          (reset! deps (cons constructor-name deps))
                                          (assoc-in ast '(:value) (symbol constructor-name))))
                                      ast)

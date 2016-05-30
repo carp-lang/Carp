@@ -178,26 +178,20 @@
      :src src
      :sig func-signature}))
 
-(defn concretize-struct [struct-name generic-name concrete-types typevars]
+(defn concretize-struct [struct-name concrete-struct-name concrete-types]
   (do
-    (println (str "concretize-struct: " struct-name ", generic-name: " generic-name ", concrete-types: " concrete-types))
+    ;;(println (str "concretize-struct: " struct-name ", concrete-types: " concrete-types))
     (let [struct-description (eval (symbol struct-name))
-          _ (println (str "struct-description: " struct-description))
+          ;;_ (println (str "struct-description: " struct-description))
           member-names (:member-names struct-description)
           generic-member-types (:member-types struct-description)
+          typevars (typevars-from-member-types generic-member-types)
           mapping (reduce (fn [the-map key-value-pair] (assoc the-map (first key-value-pair) (second key-value-pair)))
                           {}
                           (map2 (fn [k v] (list k v)) typevars concrete-types))
           concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
           ]
-      (do
-        ;; (build-struct-group generic-name
-        ;;                     member-names
-        ;;                     concrete-member-types
-        ;;                     (calculate-dependency-level concrete-member-types)
-        ;;                     (map name (filter struct-type? (array-to-list concrete-member-types))))
-        (defstruct-internal generic-name member-names concrete-member-types)
-        ))))
+      (defstruct-internal concrete-struct-name member-names concrete-member-types))))
 
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
