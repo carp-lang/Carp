@@ -195,7 +195,7 @@
 
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
-    (println (str "Defining generic lens stubs for " struct-name))
+    ;;(println (str "Defining generic lens stubs for " struct-name))
     (map2 (fn [n t]
             (let [sym (symbol (str struct-name "-get-" n))
                   ;;struct-base-type (keyword struct-name)

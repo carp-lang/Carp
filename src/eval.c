@@ -182,21 +182,23 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   else if(function->tag == 'E' && obj_eq(process, env_lookup(process, function, obj_new_keyword("struct")), lisp_true)) {
     //printf("Calling struct: %s\n", obj_to_string(process, function)->s);
     if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
-      printf("Calling generic struct constructor.\n");
+      //printf("Calling generic struct constructor.\n");
+      eval_error = obj_new_string("Can't call generic struct constructor.\n");
+      return;
 
-      Obj *struct_name = env_lookup(process, function, obj_new_keyword("name"));
-      printf("Struct name: %s\n", obj_to_string(process, struct_name)->s);
+      /* Obj *struct_name = env_lookup(process, function, obj_new_keyword("name")); */
+      /* printf("Struct name: %s\n", obj_to_string(process, struct_name)->s); */
 
-      Obj *concrete_types = obj_list(type_int, type_int);
+      /* Obj *concrete_types = obj_list(type_int, type_int); */
       
-      // struct-name generic-name concrete-types
-      Obj *call_to_concretize_struct = obj_list(obj_new_symbol("concretize-struct"),
-                                                struct_name,
-                                                concrete_types);                                                
+      /* // struct-name generic-name concrete-types */
+      /* Obj *call_to_concretize_struct = obj_list(obj_new_symbol("concretize-struct"), */
+      /*                                           struct_name, */
+      /*                                           concrete_types);                                                 */
       
-      eval_internal(process, process->global_env, call_to_concretize_struct);
+      /* eval_internal(process, process->global_env, call_to_concretize_struct); */
       
-      stack_push(process, nil);
+      /* stack_push(process, nil); */
     } else {
       call_struct_constructor(process, function, args, arg_count);
     }
