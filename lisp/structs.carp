@@ -193,6 +193,16 @@
           ]
       (defstruct-internal concrete-struct-name member-names concrete-member-types))))
 
+;; struct-type is an list of concrete types,
+;; beginning with the type of the generic struct
+;; i.e. (:Pair :int)
+(defn concretize-struct-simple [struct-type]
+  (let [struct-base-type (first struct-type)
+        struct-concrete-types (rest struct-type)
+        struct-base-name (name struct-base-type)
+        struct-concrete-name (generic-safe-name struct-type)]
+    (concretize-struct struct-base-name struct-concrete-name struct-concrete-types)))
+
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
     ;;(println (str "Defining generic lens stubs for " struct-name))
@@ -203,7 +213,16 @@
                   ;;_ (println (str "s: " s))
                   ]
               (do
-                (eval (list 'defn sym ['o] nil))
+                (eval (list 'defn sym ['o] (list 'do
+                                                 (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                 (list 'eval (list 'list
+                                                                   (list 'symbol (list 'str
+                                                                                       (list 'generic-safe-name
+                                                                                             (list :type (list 'meta 'o)))
+                                                                                       "-get-"
+                                                                                       n))
+                                                                   'o)
+                                                       ))))
                 (eval (list 'meta-set! sym :generic-lens-stub true))
                 (eval (list 'meta-set! sym :struct struct-name))
                 (eval (list 'meta-set! sym :generic true))

@@ -9,18 +9,18 @@
    b "t"])
 
 ;;^ann '(:fn ((:Pair :int)) :int)
-(defn f [p]
-  (Pair-get-a p))
+;; (defn f [p]
+;;   (Pair-get-a p))
 
 ;;(bake f)
 
-(defn g []
-  (f (Pair 10 20)))
+;; (defn g []
+;;   (Pair 10 20))
 
-;;(bake g)
+;; (bake g)
 
 (defn h []
   (Pair @"a" @"b"))
 
-;; (bake h)
+(bake h)
 
