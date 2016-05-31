@@ -18,12 +18,12 @@
 (defn f [p]
   (Pair-get-a p))
 
-(bake f)
+;;(bake f)
 
 (defn g []
   (f (Pair 10 20)))
 
-(bake g)
+;;(bake g)
 
 ;; (defn h []
 ;;   (Pair 10 20))
