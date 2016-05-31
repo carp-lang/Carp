@@ -534,29 +534,16 @@
                     c (assoc b :args (assign-types-to-list (:args ast) substs))]
                 c)
 
-    :app (let [app-ret-type (get-type substs (:type ast))]
-           (assoc (assoc (assoc ast :type app-ret-type)
-                         :head (assign-types (:head ast) substs))
-                  :tail (map (fn [x] (assign-types x substs)) (:tail ast))))
-
+    :app (let [head (:head ast)
+               app-ret-type (get-type substs (:type ast))
+               ast0 (assoc ast :type app-ret-type)
+               ast1 (assoc ast0 :head (assign-types (:head ast0) substs))
+               ast2 (assoc ast1 :tail (map (fn [x] (assign-types x substs)) (:tail ast1)))]
+           ast2)
+    
     :literal ast
     
-    :lookup (do
-              ;; At this point we have the types to be able to concretize a struct used by lens functions              
-              (when (key-is-true? ast :generic-lens-stub)
-                (let [;;_ (println (str "ast type: " (:type ast) " substs: \n" substs))
-                      t (get-type substs (nth (:type ast) 2))
-                      struct-description (eval (:struct ast))
-                      member-types (:member-types struct-description)
-                      struct-name (:name struct-description)
-                      ]
-                  (do
-                    (println (str "Concretizing " (:value ast) " t: " t " struct description:\n" struct-description "\n\nast:\n" ast))
-                    (error "Can't concretize generic struct based on just lookup of lens function.")
-                    ;;(concretize-struct struct-name )
-                    )))
-
-              (assoc ast :type (get-type substs (:type ast))))
+    :lookup (assoc ast :type (get-type substs (:type ast)))
 
     :arg (assoc ast :type (get-type substs (:type ast)))
 

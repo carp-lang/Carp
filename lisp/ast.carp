@@ -148,7 +148,8 @@
                 :original-form expr
                 :value expr}] ;; change key to :name ..?
       (if is-generic-lens-stub
-        (assoc node :struct (symbol (eval (list 'meta-get expr :struct))))
+        (assoc (assoc node :struct (symbol (eval (list 'meta-get expr :struct))))
+               :stub-ending (eval (list 'meta-get expr :stub-ending)))
         node)) 
     {:node :literal
      :type (type-of-literal expr)

@@ -107,9 +107,32 @@
         visit-generic-funcs-internal (fn [ast]
                                        (match (:node ast)
                                          :function (update-in ast '(:body) visit-generic-funcs-internal)
-                                         :app (let [ast0 (update-in ast '(:head) visit-generic-funcs-internal) ;; todo: use a here
-                                                    ast1 (update-in ast0 '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
-                                                ast1)
+                                         
+                                         :app (let [head (:head ast)
+                                                    ast0 (update-in ast '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
+                                                (if (key-is-true? head :generic-lens-stub)
+                                                  (let [struct-t (get-in (:type head) '(1 0))
+                                                        struct-description (eval (:struct head))
+                                                        member-types (:member-types struct-description)
+                                                        struct-name (:name struct-description)
+                                                        concrete-struct-name (generic-safe-name struct-t)
+                                                        stub-ending (:stub-ending head)
+                                                        concrete-stub-name (str concrete-struct-name stub-ending)
+                                                        ]
+                                                    (do
+                                                      (println (str "Concretizing " (:value head)
+                                                                    " struct-t: " struct-t
+                                                                    " struct-name: " struct-name
+                                                                    " concrete-struct-name: " concrete-struct-name
+                                                                    " struct description:\n" struct-description
+                                                                    "\n\nhead:\n" head))
+                                                      ;;(error "Can't concretize generic struct based on just lookup of lens function.")
+                                                      (concretize-struct struct-name concrete-struct-name (rest struct-t))
+                                                      (reset! deps (cons concrete-stub-name deps))
+                                                      (assoc-in ast0 '(:head :value) (symbol concrete-stub-name))))
+
+                                                  (update-in ast0 '(:head) visit-generic-funcs-internal)))
+                                         
                                          :lookup (visit-lookup ast)
 
                                          :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)

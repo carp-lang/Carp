@@ -208,6 +208,7 @@
                 (eval (list 'meta-set! sym :struct struct-name))
                 (eval (list 'meta-set! sym :generic true))
                 (eval (list 'meta-set! sym :signature (list 'quote s)))
+                (eval (list 'meta-set! sym :stub-ending (str "-get-" n)))
                 )))
           member-names
           member-types)))
