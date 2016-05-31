@@ -4,17 +4,11 @@
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 
-;; (defstruct Poo
-;;   [a :int])
-
 (defstruct Pair
   [a "t"
    b "t"])
 
-;; (defn foo [] (Pair 10 20))
-;; (bake foo)
-
-^ann '(:fn ((:Pair :int)) :int)
+;;^ann '(:fn ((:Pair :int)) :int)
 (defn f [p]
   (Pair-get-a p))
 
@@ -25,14 +19,8 @@
 
 ;;(bake g)
 
-;; (defn h []
-;;   (Pair 10 20))
+(defn h []
+  (Pair @"a" @"b"))
 
 ;; (bake h)
 
-
-
-;; (defn g []
-;;   (Pair true false))
-
-;; (bake g)
