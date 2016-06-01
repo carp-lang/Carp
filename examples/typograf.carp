@@ -70,7 +70,7 @@
       (TypografGlyph []))))
 
 (defn draw-glyph [glyph]
-  (let [ids (get-point-ids glyph)
+  (let [ids (TypografGlyph-get-point-ids glyph)
         points (map-copy point-for-id ids)]
     (draw-lines &points)))
 

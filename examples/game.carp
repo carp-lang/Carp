@@ -1,13 +1,13 @@
 (import gl)
 
 (defn draw-ship [ship]
-  (let [pos (get-shipPos ship)]
-    (draw-rect (get-V2X pos)
-               (get-V2Y pos)
+  (let [pos (Ship-get-pos ship)]
+    (draw-rect (Vec2-get-x pos)
+               (Vec2-get-y pos)
                10f
                10f)))
 
-(defstruct Ship [shipPos :Vec2])
+(defstruct Ship [pos :Vec2])
 
 (defn generate-ships []
   [(Ship (Vec2 100f 300f))
@@ -29,11 +29,11 @@
 (defn speed [] 1.0f)
 
 (defn move-vec2 [v]
-  (let [x (get-V2Y &v)]
-    (set-V2Y v (+ (speed) x))))
+  (let [x (Vec2-get-y &v)]
+    (Vec2-set-y v (+ (speed) x))))
 
 (defn move [ship]
-  (update-shipPos ship move-vec2))
+  (Ship-update-pos ship move-vec2))
 
 (defn update [state]
   (map move state))

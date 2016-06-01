@@ -76,10 +76,10 @@
           (glVertex3f (+ x (* r (cosf v))) (+ y (* r (sinf v))) 0.0f)))
       (glEnd)))
 
-(defstruct Vec2 [V2X :float V2Y :float])
+(defstruct Vec2 [x :float y :float])
 
 (defn draw-vec2 [v]
-  (glVertex3f (get-V2X v) (get-V2Y v) 0.0f))
+  (glVertex3f (Vec2-get-x v) (Vec2-get-y v) 0.0f))
 
 (defn draw-lines (positions)
   (do (glBegin carp-gl-line-strip)
@@ -87,10 +87,10 @@
       (glEnd)))
 
 (defn draw-line-vec2 [p1 p2]
-  (let [x1 (get-V2X p1)
-        y1 (get-V2Y p1)
-        x2 (get-V2X p2)
-        y2 (get-V2Y p2)]
+  (let [x1 (Vec2-get-x p1)
+        y1 (Vec2-get-y p1)
+        x2 (Vec2-get-x p2)
+        y2 (Vec2-get-y p2)]
     (draw-line x1 y1 x2 y2)))
 
 ^ann glfw-key-callback-type
