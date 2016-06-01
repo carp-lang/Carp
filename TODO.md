@@ -14,6 +14,7 @@
   - Compile match statements (or should it be a macro?)
   - All types should have capital first letter
   - Lambdas / lambda lifting
+  - Compile modules (when they exist in the dynamic runtime...)
   - Compile dictionaries (requires hashing function)
   
 # Compiler Small Features
