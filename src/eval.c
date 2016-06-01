@@ -197,16 +197,8 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
                                                 function,
                                                 carp_array);
       
-      //shadow_stack_push(process, function_call_symbol);
-      /* shadow_stack_push(process, function_copy); */
-      /* shadow_stack_push(process, carp_array); */
-      /* shadow_stack_push(process, carp_array_copy); */
       shadow_stack_push(process, call_to_concretize_struct);
       eval_internal(process, process->global_env, call_to_concretize_struct);
-      //shadow_stack_pop(process);
-      /* shadow_stack_pop(process); */
-      /* shadow_stack_pop(process); */
-      /* shadow_stack_pop(process); */
       shadow_stack_pop(process);
     } else {
       call_struct_constructor(process, function, args, arg_count);

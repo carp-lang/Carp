@@ -9,9 +9,14 @@
   [a "t"
    b "t"])
 
-(defstruct HPair
-  [a "t"
-   b "u"])
+(defstruct Tuple2
+  [a "a"
+   b "b"])
+
+(defstruct Tuple3
+  [a "a"
+   b "b"
+   c "c"])
 
 ;;^ann '(:fn ((:Pair :int)) :int)
 ;; (defn f [p]
