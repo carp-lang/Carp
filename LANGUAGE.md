@@ -128,6 +128,18 @@ foo ; symbol
 (update-x my-pos inc) ;; => (Vector2 10.2f 4.0f)
 ```
 
+Structs can also contain members of one or more generic types:
+
+```clojure
+(defstruct Pair
+  [a "t"
+   b "t"])
+
+(defstruct Tuple
+  [a "a"
+   b "b"])
+```
+
 ### Algebraic Data Types (not implemented)
 ```clojure
 (defdata Color 
