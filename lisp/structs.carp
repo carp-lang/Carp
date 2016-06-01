@@ -248,27 +248,61 @@
   (do
     ;;(println (str "Defining generic lens stubs for " struct-name))
     (map2 (fn [n t]
-            (let [sym (symbol (str struct-name "-get-" n))
-                  ;;struct-base-type (keyword struct-name)
-                  s (list :fn (list (list (keyword struct-name) "t")) "t")
-                  ;;_ (println (str "s: " s))
+            (let [get-sym (symbol (str struct-name "-get-" n))
+                  set-sym (symbol (str struct-name "-set-" n))
+                  update-sym (symbol (str struct-name "-update-" n))
+                  get-s (list :fn (list (list (keyword struct-name) "t")) "t")
+                  set-s (list :fn (list (list (keyword struct-name) "t") "t") :void)
+                  update-s (list :fn (list (list (keyword struct-name) "t") (list :fn (list "t") "t")) (list (keyword struct-name) "t"))
                   ]
               (do
-                (eval (list 'defn sym ['o] (list 'do
+                ;; GETTER
+                (eval (list 'defn get-sym ['o] (list 'do
                                                  (list 'concretize-struct-simple (list :type (list 'meta 'o)))
                                                  (list 'eval (list 'list
                                                                    (list 'symbol (list 'str
-                                                                                       (list 'generic-safe-name
-                                                                                             (list :type (list 'meta 'o)))
-                                                                                       "-get-"
-                                                                                       n))
-                                                                   'o)
-                                                       ))))
-                (eval (list 'meta-set! sym :generic-lens-stub true))
-                (eval (list 'meta-set! sym :struct struct-name))
-                (eval (list 'meta-set! sym :generic true))
-                (eval (list 'meta-set! sym :signature (list 'quote s)))
-                (eval (list 'meta-set! sym :stub-ending (str "-get-" n)))
+                                                                                    (list 'generic-safe-name
+                                                                                          (list :type (list 'meta 'o)))
+                                                                                    "-get-"
+                                                                                    n))
+                                                                   'o)))))
+                (eval (list 'meta-set! get-sym :generic-lens-stub true))
+                (eval (list 'meta-set! get-sym :struct struct-name))
+                (eval (list 'meta-set! get-sym :generic true))
+                (eval (list 'meta-set! get-sym :signature (list 'quote get-s)))
+                (eval (list 'meta-set! get-sym :stub-ending (str "-get-" n)))
+
+                ;; SETTER
+                (eval (list 'defn set-sym ['o 'v] (list 'do
+                                                        (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                        (list 'eval (list 'list
+                                                                          (list 'symbol (list 'str
+                                                                                           (list 'generic-safe-name
+                                                                                                 (list :type (list 'meta 'o)))
+                                                                                           "-set-"
+                                                                                           n))
+                                                                          'o 'v)))))
+                (eval (list 'meta-set! set-sym :generic-lens-stub true))
+                (eval (list 'meta-set! set-sym :struct struct-name))
+                (eval (list 'meta-set! set-sym :generic true))
+                (eval (list 'meta-set! set-sym :signature (list 'quote set-s)))
+                (eval (list 'meta-set! set-sym :stub-ending (str "-set-" n)))
+
+                ;; UPDATER
+                (eval (list 'defn update-sym ['o 'f] (list 'do
+                                                           (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                           (list 'eval (list 'list
+                                                                             (list 'symbol (list 'str
+                                                                                                 (list 'generic-safe-name
+                                                                                                       (list :type (list 'meta 'o)))
+                                                                                                 "-update-"
+                                                                                                 n))
+                                                                             'o 'f)))))
+                (eval (list 'meta-set! update-sym :generic-lens-stub true))
+                (eval (list 'meta-set! update-sym :struct struct-name))
+                (eval (list 'meta-set! update-sym :generic true))
+                (eval (list 'meta-set! update-sym :signature (list 'quote update-s)))
+                (eval (list 'meta-set! update-sym :stub-ending (str "-update-" n)))
                 )))
           member-names
           member-types)))
