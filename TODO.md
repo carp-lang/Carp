@@ -1,7 +1,5 @@
 # Generic structs 
- - Make them instantiate just by calling one of their lens functions
- - Give lens functions correct name
- - Make lens functions work in non-compiled code
+  - unload all concretized structs when the "parent" struct is redefined
 
 # The Big 'ref' debacle
   - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
@@ -13,7 +11,6 @@
   - Live Reloading (threads, bytecode interpreter, etc)
   - Windows + Linux support
   - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Generic structs
   - Compile match statements (or should it be a macro?)
   - All types should have capital first letter
   - Lambdas / lambda lifting

@@ -186,10 +186,16 @@
           ;;_ (println (str "struct-description: " struct-description))
           member-names (:member-names struct-description)
           generic-member-types (:member-types struct-description)
+          significant-type-indexes (:significant-type-indexes struct-description)
+          typevar-values (reduce (fn [coll i] (cons-last coll(nth concrete-types i)))
+                                 '()
+                                 significant-type-indexes)
           typevars (typevars-from-member-types generic-member-types)
+          ;;_ (println (str "typevars: " typevars " typevar-values: " typevar-values))
           mapping (reduce (fn [the-map key-value-pair] (assoc the-map (first key-value-pair) (second key-value-pair)))
                           {}
-                          (map2 (fn [k v] (list k v)) typevars concrete-types))
+                          (map2 (fn [k v] (list k v)) typevars typevar-values))
+          ;;_ (println (str "mapping: " mapping))
           concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
           ]
       (if (def? (symbol concrete-struct-name))
@@ -238,9 +244,13 @@
           ;; (println (str struct-description))
           ;; (println (str "struct-name: " struct-name
           ;;               " concrete-struct-name: " concrete-struct-name
-          ;;               " concrete-types: " concrete-types))
+          ;;               " concrete-types: " concrete-types
+          ;;               " significant-types: " significant-types
+          ;;               ))
           (concretize-struct struct-name concrete-struct-name concrete-types)))
-      (let [struct-instance (eval (cons (symbol concrete-struct-name) arg-list))]
+      (let [constructor-call (cons (symbol concrete-struct-name) arg-list)
+            ;;_ (println (str "constructor-call: " constructor-call))
+            struct-instance (eval constructor-call)]
         (do (meta-set! struct-instance :type struct-type)
             struct-instance)))))
 
@@ -252,7 +262,7 @@
                   set-sym (symbol (str struct-name "-set-" n))
                   update-sym (symbol (str struct-name "-update-" n))
                   get-s (list :fn (list (list (keyword struct-name) "t")) "t")
-                  set-s (list :fn (list (list (keyword struct-name) "t") "t") :void)
+                  set-s (list :fn (list (list (keyword struct-name) "t") "t") (list (keyword struct-name) "t"))
                   update-s (list :fn (list (list (keyword struct-name) "t") (list :fn (list "t") "t")) (list (keyword struct-name) "t"))
                   ]
               (do

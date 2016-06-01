@@ -116,7 +116,7 @@
                                      (let [struct-name (:struct-name ast)
                                            concrete-struct-type (nth t 2)
                                            concrete-struct-name (generic-safe-name concrete-struct-type)
-                                           _ (println (str "concrete-struct-name: " concrete-struct-name))
+                                           ;;_ (println (str "concrete-struct-name: " concrete-struct-name))
                                            constructor-name (str "new-" concrete-struct-name)
                                            concrete-types (rest concrete-struct-type)]
                                        (do

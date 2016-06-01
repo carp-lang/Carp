@@ -3,37 +3,6 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
-(reset! log-redefining-struct true)
+;;(reset! log-redefining-struct true)
 
-(defstruct Pair
-  [a "t"
-   b "t"])
-
-(defstruct Tuple2
-  [a "a"
-   b "b"])
-
-(defstruct Tuple3
-  [a "a"
-   b "b"
-   c "c"])
-
-;;^ann '(:fn ((:Pair :int)) :int)
-(defn f [p]
-  (Pair-get-a p))
-
-(defn f1 []
-  (f (Pair 2 3)))
-
-;;(bake f)
-
-(defn g []
-  (Pair 10 20))
-
-(bake g)
-
-;; (defn h []
-;;   (Pair @"a" @"b"))
-
-;; (bake h)
 
