@@ -24,10 +24,10 @@
 
 ;;(bake f)
 
-;; (defn g []
-;;   (Pair 10 20))
+(defn g []
+  (Pair 10 20))
 
-;; (bake g)
+(bake g)
 
 ;; (defn h []
 ;;   (Pair @"a" @"b"))

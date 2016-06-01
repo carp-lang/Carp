@@ -240,7 +240,9 @@
           ;;               " concrete-struct-name: " concrete-struct-name
           ;;               " concrete-types: " concrete-types))
           (concretize-struct struct-name concrete-struct-name concrete-types)))
-      (eval (cons (symbol concrete-struct-name) arg-list)))))
+      (let [struct-instance (eval (cons (symbol concrete-struct-name) arg-list))]
+        (do (meta-set! struct-instance :type struct-type)
+            struct-instance)))))
 
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
