@@ -19,8 +19,11 @@
    c "c"])
 
 ;;^ann '(:fn ((:Pair :int)) :int)
-;; (defn f [p]
-;;   (Pair-get-a p))
+(defn f [p]
+  (Pair-get-a p))
+
+(defn f1 []
+  (f (Pair 2 3)))
 
 ;;(bake f)
 

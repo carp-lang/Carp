@@ -68,64 +68,63 @@
                                    is-generic-lens-stub (key-is-true? ast :generic-lens-stub)
                                    ]
 
-                               (if is-generic-lens-stub
-                                 (let [struct-t (get-in (:type ast) '(1 0))
-                                       struct-description (eval (:struct ast))
-                                       member-types (:member-types struct-description)
-                                       struct-name (:name struct-description)
-                                       concrete-struct-name (generic-safe-name struct-t)
-                                       stub-ending (:stub-ending ast)
-                                       concrete-stub-name (str concrete-struct-name stub-ending)
-                                       ]
+                               (if (and (lambda? global-lookup) is-generic)
+                                 (if (generic-type? t)
                                    (do
-                                     ;; (println (str "Concretizing " (:value ast)
-                                     ;;               " struct-t: " struct-t
-                                     ;;               " struct-name: " struct-name
-                                     ;;               " concrete-struct-name: " concrete-struct-name
-                                     ;;               " struct description:\n" struct-description))
-                                     (concretize-struct struct-name concrete-struct-name (rest struct-t))
-                                     (reset! deps (cons concrete-stub-name deps))
-                                     (assoc-in ast '(:value) (symbol concrete-stub-name))))
-                                 
-                                 (if (and (lambda? global-lookup) is-generic)
-                                   (if (generic-type? t)
-                                     (do
-                                       ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
-                                       ast)
+                                     ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
+                                     ast)
+                                   (if is-generic-lens-stub
+                                     (let [struct-t (get-in (:type ast) '(1 0))
+                                           struct-description (eval (:struct ast))
+                                           member-types (:member-types struct-description)
+                                           struct-name (:name struct-description)
+                                           concrete-struct-name (generic-safe-name struct-t)
+                                           stub-ending (:stub-ending ast)
+                                           concrete-stub-name (str concrete-struct-name stub-ending)
+                                           ]
+                                       (do
+                                         ;; (println (str "Concretizing " (:value ast)
+                                         ;;               " struct-t: " struct-t
+                                         ;;               " struct-name: " struct-name
+                                         ;;               " concrete-struct-name: " concrete-struct-name
+                                         ;;               " struct description:\n" struct-description))
+                                         (concretize-struct struct-name concrete-struct-name (rest struct-t))
+                                         (reset! deps (cons concrete-stub-name deps))
+                                         (assoc-in ast '(:value) (symbol concrete-stub-name))))
                                      (let [n (generic-name lookup-sym t)]
                                        (do
                                          ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
                                          (compiler/concretize (str lookup-sym) n (code global-lookup) t)
                                          (reset! deps (cons n deps))
                                          (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
-                                           ast0))))
-                                   (if (and (primop? global-lookup) is-generic)
-                                     (if (generic-type? t)
-                                       (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
-                                         ast)
-                                       (let [n (generic-name lookup-sym t)]
-                                         (do
-                                           ;;(println (str "Found a generic primop to bake: " lookup-sym))
-                                           ;; (println (str "Final name will be " n))
-                                           (bake-generic-primop n
-                                                                (str lookup-sym)
-                                                                t)
-                                           (reset! deps (cons n deps))
-                                           (assoc-in ast '(:value) (symbol n)))))
-
-                                     (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
-                                       (let [struct-name (:struct-name ast)
-                                             concrete-struct-type (nth t 2)
-                                             concrete-struct-name (generic-safe-name concrete-struct-type)
-                                             _ (println (str "concrete-struct-name: " concrete-struct-name))
-                                             constructor-name (str "new-" concrete-struct-name)
-                                             concrete-types (rest concrete-struct-type)]
-                                         (do
-                                           (concretize-struct struct-name concrete-struct-name concrete-types)
-                                           (reset! deps (cons constructor-name deps))
-                                           (assoc-in ast '(:value) (symbol constructor-name))))
+                                           ast0)))))
+                                 (if (and (primop? global-lookup) is-generic)
+                                   (if (generic-type? t)
+                                     (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
                                        ast)
-                                     ))))
+                                     (let [n (generic-name lookup-sym t)]
+                                       (do
+                                         ;;(println (str "Found a generic primop to bake: " lookup-sym))
+                                         ;; (println (str "Final name will be " n))
+                                         (bake-generic-primop n
+                                                              (str lookup-sym)
+                                                              t)
+                                         (reset! deps (cons n deps))
+                                         (assoc-in ast '(:value) (symbol n)))))
+
+                                   (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
+                                     (let [struct-name (:struct-name ast)
+                                           concrete-struct-type (nth t 2)
+                                           concrete-struct-name (generic-safe-name concrete-struct-type)
+                                           _ (println (str "concrete-struct-name: " concrete-struct-name))
+                                           constructor-name (str "new-" concrete-struct-name)
+                                           concrete-types (rest concrete-struct-type)]
+                                       (do
+                                         (concretize-struct struct-name concrete-struct-name concrete-types)
+                                         (reset! deps (cons constructor-name deps))
+                                         (assoc-in ast '(:value) (symbol constructor-name))))
+                                     ast)
+                                   )))
                              ast))))
 
         visit-generic-funcs-internal (fn [ast]
