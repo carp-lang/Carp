@@ -1,7 +1,7 @@
 
 (defstruct Enemy
-  [enemy-name :string
-   enemy-hp   :int])
+  [name :string
+   hp   :int])
 
 (defn make-some-enemies []
   [(Enemy @"Voldemort" 200)
@@ -11,8 +11,8 @@
 (def player-damage 50)
 
 (defn attack-enemy [enemy]
-  (let [current-hp (get-enemy-hp &enemy)]
-    (set-enemy-hp enemy (- current-hp player-damage))))
+  (let [current-hp (Enemy-get-hp &enemy)]
+    (Enemy-set-hp enemy (- current-hp player-damage))))
 
 (defn battle [enemies]
   (map attack-enemy enemies))
