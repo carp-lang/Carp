@@ -206,13 +206,29 @@
         struct-concrete-name (generic-safe-name struct-type)]
     (concretize-struct struct-base-name struct-concrete-name struct-concrete-types)))
 
+(defn significant-arg-indexes [types]
+  (map first
+       (reduce
+        (fn [indexes pair]
+          (if (and (typevar? (second pair))
+                   (not (contains? (map second indexes) (second pair))))
+            (cons-last indexes pair)
+            indexes))
+        '()
+        (map2 (fn [i t] (list i t)) (range 0 (count types)) types))))
+
 (defn concretize-struct-via-constructor-call [struct-description args]
   (let [struct-name (:name struct-description)
         arg-list (array-to-list args)
         concrete-types (map type arg-list)
         member-types (:member-types struct-description)
         unique-typevars (typevars-from-member-types member-types)
-        struct-type (list (keyword struct-name) (first concrete-types))
+        significants (significant-arg-indexes (array-to-list member-types))
+        ;; _ (println (str "significants: " significants))
+        ;; _ (println (str "arg-list: " arg-list))
+        significant-types (map (fn [i] (nth concrete-types i)) significants)
+        ;;_ (println (str "significant-types: " significant-types))
+        struct-type (cons (keyword struct-name) significant-types)
         concrete-struct-name (generic-safe-name struct-type)]
     (do
       (when (not (def? (symbol concrete-struct-name)))

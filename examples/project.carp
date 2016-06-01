@@ -9,6 +9,10 @@
   [a "t"
    b "t"])
 
+(defstruct HPair
+  [a "t"
+   b "u"])
+
 ;;^ann '(:fn ((:Pair :int)) :int)
 ;; (defn f [p]
 ;;   (Pair-get-a p))
