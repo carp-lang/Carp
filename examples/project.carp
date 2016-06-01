@@ -3,6 +3,7 @@
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
+(reset! log-redefining-struct true)
 
 (defstruct Pair
   [a "t"
@@ -19,8 +20,8 @@
 
 ;; (bake g)
 
-(defn h []
-  (Pair @"a" @"b"))
+;; (defn h []
+;;   (Pair @"a" @"b"))
 
-(bake h)
+;; (bake h)
 

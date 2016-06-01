@@ -191,7 +191,10 @@
                           (map2 (fn [k v] (list k v)) typevars concrete-types))
           concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
           ]
-      (defstruct-internal concrete-struct-name member-names concrete-member-types))))
+      (if (def? (symbol concrete-struct-name))
+        (do ;;(println (str "Will not concretize " concrete-struct-name " again."))
+            :ignore)
+        (defstruct-internal concrete-struct-name member-names concrete-member-types)))))
 
 ;; struct-type is an list of concrete types,
 ;; beginning with the type of the generic struct
@@ -202,6 +205,24 @@
         struct-base-name (name struct-base-type)
         struct-concrete-name (generic-safe-name struct-type)]
     (concretize-struct struct-base-name struct-concrete-name struct-concrete-types)))
+
+(defn concretize-struct-via-constructor-call [struct-description args]
+  (let [struct-name (:name struct-description)
+        arg-list (array-to-list args)
+        concrete-types (map type arg-list)
+        member-types (:member-types struct-description)
+        unique-typevars (typevars-from-member-types member-types)
+        struct-type (list (keyword struct-name) (first concrete-types))
+        concrete-struct-name (generic-safe-name struct-type)]
+    (do
+      (when (not (def? (symbol concrete-struct-name)))
+        (do
+          (println (str struct-description))
+          (println (str "struct-name: " struct-name
+                        " concrete-struct-name: " concrete-struct-name
+                        " concrete-types: " concrete-types))
+          (concretize-struct struct-name concrete-struct-name concrete-types)))
+      (eval (cons (symbol concrete-struct-name) arg-list)))))
 
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
