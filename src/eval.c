@@ -182,15 +182,17 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   else if(function->tag == 'E' && obj_eq(process, env_lookup(process, function, obj_new_keyword("struct")), lisp_true)) {
     //printf("Calling struct: %s\n", obj_to_string(process, function)->s);
     if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
-      printf("Calling generic struct constructor.\n");      
-      //Obj *struct_name = env_lookup(process, function, obj_new_keyword("name"));
+      //printf("Calling generic struct constructor.\n");
       Obj *carp_array = obj_new_array(arg_count);
-      carp_array->array = args;      
-      Obj *call_to_concretize_struct = obj_list(obj_new_symbol("concretize-struct-via-constructor-call"),
-                                                //obj_new_keyword(struct_name->s),
+      carp_array->array = args;
+      Obj *call_to_concretize_struct = obj_list(obj_new_symbol("dynamic-generic-constructor-call"),
                                                 function,
-                                                carp_array);      
+                                                carp_array);
+      shadow_stack_push(process, carp_array);
+      shadow_stack_push(process, call_to_concretize_struct);
       eval_internal(process, process->global_env, call_to_concretize_struct);
+      shadow_stack_pop(process);
+      shadow_stack_pop(process);
     } else {
       call_struct_constructor(process, function, args, arg_count);
     }
