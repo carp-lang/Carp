@@ -1,27 +1,221 @@
-;; Code from SICP
+;; Most of the code is from SICP
 
-(defn solver/unify []
-  (solver/internal-unify p1 p2 {}))
-
-(defn solver/internal-unify [p1 p2 bindings]
-  (cond (= bindings :fail) :fail
-        (= p1 p2) bindings
-        (typevar? p1) (solver/extend-if-possible p1 p2 bindings)
-        (typevar? p2) (solver/extend-if-possible p2 p1 bindings)
-        (and (list? p1) (list? p2)) (solver/internal-unify (first p1) (first p2)
-                                                           (solver/internal-unify (rest p1) (rest p2)))
-        :else :fail))
+(defn solver/unify [p1 p2 bindings]
+  (do
+    ;;(println (str "p1: " p1 " p2: " p2))
+    (cond (= bindings :fail) :fail
+          (= p1 p2) bindings
+          (typevar? p1) (solver/extend-if-possible p1 p2 bindings)
+          (typevar? p2) (solver/extend-if-possible p2 p1 bindings)
+          (= :any p1) bindings
+          (= :any p2) bindings
+          (and (list? p1) (list? p2)) (solver/unify (first p1) (first p2)
+                                                    (solver/unify (rest p1) (rest p2) bindings))
+          :else :fail)))
 
 (defn solver/extend-if-possible [var val bindings]
   (let [binding (get-maybe bindings var)]
     (cond
-      (not-nil? binding) (solver/internal-unify binding val bindings)
+      (not-nil? binding) (solver/unify binding val bindings)
       
       (typevar? val) (if-let [b2 (get-maybe bindings val)]
-                       (solver/internal-unify var b2 bindings)
+                       (solver/unify var b2 bindings)
                        (assoc bindings var val))
 
       :else (assoc bindings var val))))
 
-(def constr1 (list {:a 10 :b "b"}))
+(defn recursive-lookup [bindings x]
+  (cond
+    (list? x) (map (fn [x0] (recursive-lookup bindings x0)) x)
+    (string? x) (let [result (get-maybe bindings x)]
+                  (cond
+                    (nil? result) x
+                    (string? result) (recursive-lookup bindings result)
+                    :else result))
+    :else x))
 
+(defn solver/solve-constraints [constraints]
+  (let [basic-bindings (reduce (fn [bindings constr]
+                                 (if (= :fail bindings)
+                                   :fail
+                                   (solver/unify (:a constr) (:b constr) bindings)))
+                               {}
+                               constraints)
+        _ (println (str "basic-bindings: " basic-bindings))
+        fixed-bindings (if (= :fail basic-bindings)
+                         (error ":fail")
+                         (reduce (fn [bindings variable]
+                                   (assoc bindings variable (recursive-lookup basic-bindings variable)))
+                                 {}
+                                 (keys basic-bindings)))]
+    (log "fixed-bindings: " fixed-bindings)))
+
+
+;; (solver/solve-constraints (list {:a :int :b "b"}))
+
+;; (solver/solve-constraints (list {:a :int :b "b"}
+;;                                 {:a "b"  :b :int}))
+
+;; (solver/solve-constraints (list {:a :int :b "b"}
+;;                                 {:a "a"  :b "b"
+;;                                  :a :int :b "a"}))
+
+;; (solver/solve-constraints (list {:a "a"  :b "b"}
+;;                                 {:a :int :b "b"}))
+
+;; (solver/solve-constraints (list {:a '(:int :int) :b '("a" "a")}))
+
+;; (solver/solve-constraints (list {:a '("b" :int) :b '(:float "a")}))
+
+;; (solver/solve-constraints (list {:a '("b" :int) :b '(:float "a")}))
+
+
+
+
+;; (tester/set-suite! "new-constraints")
+
+;; (deftest test-constraint-solving-1
+;;   (let [;;_ (println "\n- Constraint solving 1 -")
+;;         constraints (list {:a :int :b "t0"})
+;;         solution (solver/solve-constraints constraints)
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :int})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-2
+;;   (let [;;_ (println "\n- Constraint solving 2 -")
+;;         constraints (list {:a :int :b "t0"}
+;;                           {:a "t1" :b "t0"})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :int "t1" :int})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-3
+;;   (let [;;_ (println "\n- Constraint solving 3 -")
+;;         constraints (list {:a (list :bool :float) :b (list "t0" "t1")})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :bool "t1" :float})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-4
+;;   (let [;;_ (println "\n- Constraint solving 4 -")
+;;         constraints (list {:a (list :ref "t0") :b (list :ref :string)})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :string})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-5
+;;   (let [;;_ (println "\n- Constraint solving 5 -")
+;;         constraints (list {:a (list :ref "t0") :b "t1"}
+;;                           {:a "t1" :b (list :ref :int)})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :int
+;;                            "t1" (list :ref :int)})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-6
+;;   (let [;;_ (println "\n- Constraint solving 6 -")
+;;         constraints (list {:a "t0" :b "t0"}
+;;                           {:a "t0" :b "t1"}
+;;                           {:a "t1" :b :float}
+;;                           {:a "t1" :b "t1"})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :float
+;;                            "t1" :float})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-7
+;;   (let [;;_ (println "\n- Constraint solving 7 -")
+;;         constraints (list {:a "t0" :b "t1"}
+;;                           {:a '(:Array "t1") :b '(:Array "t2")}
+;;                           {:a "t2" :b :int})
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"t0" :int
+;;                            "t1" :int
+;;                            "t2" :int})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-constraint-solving-8
+;;   (let [;;_ (println "\n- Constraint solving 8 -")
+;;         constraints (list 
+;;                           {:a '(:fn (:Array "t3")) :b "t2"}
+;;                           {:a '(:fn (:Array "t1")) :b "t2"}
+;;                           {:a "t3" :b :int}
+;;                           )
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {
+;;                            "t1" :int
+;;                            "t2" '(:fn (:Array :int))
+;;                            "t3" :int})
+;;       (assert-eq solution solution-backwards))))
+
+;; (deftest test-subst-in-nested-list
+;;   (assert-eq
+;;    {"a" '(:foo (:goo :int))}
+;;    (replace-subst-from-right-fast {"a" '(:foo (:goo "b"))} "b" :int)))
+
+;; (deftest test-constraint-solving-9
+;;   (let [;;_ (println "\n- Constraint solving 8 -")
+;;         constraints (list 
+;;                      {:a "t3" :b :int}
+;;                      {:a '(:fn (:Array "t3")) :b '(:fn "t2")}
+;;                      )
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))
+;;         ]
+;;     (do
+;;       (assert-eq solution {
+;;                            "t2" '(:Array :int)
+;;                            "t3" :int})
+;;       (assert-eq solution solution-backwards)
+;;       )))
+
+;; (deftest test-constraint-solving-10
+;;   (let [;;_ (println "\n- Constraint solving 10 -")
+;;         constraints (list
+              
+;;               {:a "x", 
+;;                :b '(:BLURG :FLORP)}
+              
+;;               {:a '("y" "c"), 
+;;                :b '(("a" "b") "a")}
+
+;;               {:a "x"
+;;                :b "y"}
+              
+;;               )
+;;         solution (solver/solve-constraints constraints)
+;;         ;;_ (println "\n- Backwards -")
+;;         solution-backwards (solver/solve-constraints (reverse constraints))]
+;;     (do
+;;       (assert-eq solution {"a" :BLURG
+;;                            "b" :FLORP
+;;                            "c" :BLURG
+;;                            "x" '(:BLURG :FLORP)
+;;                            "y" '(:BLURG :FLORP)})
+;;       (assert-eq solution solution-backwards))))
+
+;; (tester/run-suite "new-constraints")
