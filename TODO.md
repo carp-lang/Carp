@@ -1,35 +1,38 @@
 # Generic structs 
-  - unload all concretized structs when the "parent" struct is redefined
+  - unload all concretized structs when the parent struct is redefined
 
-# The Big 'ref' debacle
-  - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
-  - alternatively allow ref:ed value types to be coerced into non-ref:ed types
-  - Allow non-ref types for all generic primops IF the type is builtin and don't need managing.
-  - A deref function that can remove the ref from primitive types?
+# The Big 'ref' debacle - alternatives:
+  1. Allow ref:ed value types to be coerced into non-ref:ed types
+  2. A deref function that can remove the ref from primitive types
+  3. A 'map-primitive' that can map a function that takes non-refs as argument 
+     since it's annying to not be able to use functions like 'itos' directly with 'map-copy' 
+     (it requires a fn of type &a -> b)
 
 # Compiler Big Features
-  - Live Reloading (threads, bytecode interpreter, etc)
-  - Windows + Linux support
-  - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Compile match statements (or should it be a macro?)
-  - All types should have capital first letter
-  - Lambdas / lambda lifting
+  - Live Reloading (requires threads and bytecode interpreter)
+  - Windows support
+  - Linux support
+  - Special handling of POD structs (stack allocated, referenced by pointer)
+  - Lambdas
+  - Compile match statements (should it be a macro?)
   - Compile modules (when they exist in the dynamic runtime...)
   - Compile dictionaries (requires hashing function)
   
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
+  - All types should have capital first letter?
 
 # Compiler Correctness
   - Sending a global variable to a function that takes ownership of it will lead to disaster
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
-  - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Turn binops into normal funcs?
+  - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Or turn binops into normal funcs?
   
 # Compiler efficiency / beauty
   - Avoid creating unique typevars for multiple calls with the same types to a generic function?
-  - Use 'generic-name' when concretesizing generic primops
+  - Use 'sicp unifier' instead of the current mess
+  - Use 'generic-name' when concretizing generic primops
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Use the new key-is-true function instead of has-key? in lots of places
@@ -52,7 +55,6 @@
   - Be able to mark symbols/modules as "frozen" (with meta data) so that they can't be overriden by user
   - Better error handling and input validation for primops, clean up the C error/assertion macros
   - ONLY allow [] in parameter list for function definitions
-  - Use modules to solve problem of using same name for members in different structs
   - Use size_t where approperiate
   - Make the reader warn when the text to read is too big (repl.c)
   - Resetting a global variable pointing to an array can be fooled by using wrong kind of array (anything goes at the moment)
@@ -88,6 +90,7 @@
   - Use a more generalized method for generating 'str' function when inspecting ptr:s at the REPL (some kind of "hook" system)
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument) ?
+  - Use modules to solve problem of using same name for members in different structs?
 
 # Niceties
   - Built in tutorial for the language
