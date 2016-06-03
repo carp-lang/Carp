@@ -1,3 +1,14 @@
+
+Buggar
+------------------
+
+(defstruct s2 [ett "T" tva "T"]) ;; bake break:ar
+(def instance (s2 10 20)) ;; bake break:ar
+
+------------------
+
+
+
 # Generic structs 
   - unload all concretized structs when the parent struct is redefined
 
@@ -21,6 +32,7 @@
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
   - All types should have capital first letter?
+  - Be able to save concretized struct types for type checking etc
 
 # Compiler Correctness
   - Sending a global variable to a function that takes ownership of it will lead to disaster
