@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <assert.h>
 #include "constants.h"
+#include "../shared/types.h"
 
 typedef void (*VoidFn)(void);
 

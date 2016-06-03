@@ -1,5 +1,13 @@
 #pragma once
 
+#ifdef bool
+#undef bool
+#endif
+
+typedef char bool;
+#define true 1
+#define false 0
+
 typedef struct carp_thread* carp_thread_t;
 typedef void(*carp_thread_routine)(void* arg);
 
