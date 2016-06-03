@@ -113,3 +113,4 @@ Buggar
   - Unloading of function/dylib doesn't work after another function has linked to it during its compilation.
   - Variable shadowing doesn't work properly when referencing itself
   - Size of bool is undefined
+  - Must mark global variables on windows as __declspec(dllimport) when using them and __declspec(dllexport) when providing for others
