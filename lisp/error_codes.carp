@@ -6,4 +6,5 @@
 (def error-return-ref 5)
 (def error-ref-in-array 6)
 (def error-invalid-arg-type-to-generic 7)
+(def error-struct-with-ref-members 8)
 

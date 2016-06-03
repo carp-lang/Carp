@@ -83,7 +83,7 @@
     (defn copy-2 []
       (copy (ref (CopyMe 666))))
     (bake copy-2)
-    (assert-eq 666 (get-copyMeMember (copy-2)))))
+    (assert-eq 666 (CopyMe-get-copyMeMember (copy-2)))))
 
 (deftest test-copy-3
   (do

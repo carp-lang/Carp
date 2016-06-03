@@ -3,11 +3,13 @@
     (:fn args ret) (str "(" (join ", " (map pretty-signature args)) ") -> " (pretty-signature ret))
     (:ref r) (str "&" (pretty-signature r) "")
     (:Array a) (str "Array " (pretty-signature a))
-    x (if (keyword? t)
-        (name t)
-        (if (string? t)
-          t
-          (error (str "Can't prettify type signature: " t))))))
+    x (if (list? x)
+        (join " " (map pretty-signature x))
+        (if (keyword? t)
+          (name t)
+          (if (string? t)
+            t
+            (error (str "Can't prettify type signature: " t)))))))
 
 (defn generic-type? [t]
   (match (type t)
@@ -53,4 +55,6 @@
            :bool "bool"
            :string "string"
            :void "void"
-           x (str (c-ify-name (name x)) (if star "*" "")))))
+           x (if (list? x)
+               (str (type-build-internal (first x) false) "LT" (join "_" (map (fn [inner-t] (type-build-internal inner-t false)) (rest x))) "GT" (if star "*" ""))
+               (str (c-ify-name (name x)) (if star "*" ""))))))

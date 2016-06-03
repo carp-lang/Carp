@@ -7,6 +7,7 @@ http://msm.runhello.com/p/1003
 http://stackoverflow.com/questions/2505385/classes-and-static-variables-in-shared-libraries
 http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter15_Runtime_Compiled_C++_for_Rapid_AI_Development.pdf
 https://fsharpforfunandprofit.com/posts/fsharp-decompiled/
+http://kristerw.blogspot.se/2016/05/type-based-aliasing-in-c.html
 
 # OWNERSHIP & BORROWING
 http://blog.piston.rs/2016/01/23/dynamo/
@@ -30,6 +31,9 @@ http://www.scheme.com/tspl4/examples.html#./examples:h10
 
 # CSP
 http://reaktor.com/blog/why-csp-matters-ii-how-do-i-know-sync-works/
+
+# GC
+http://prl.ccs.neu.edu/blog/2016/05/24/measuring-gc-latencies-in-haskell-ocaml-racket/
 
 # OTHER LISPS
 https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure

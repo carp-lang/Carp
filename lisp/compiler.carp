@@ -12,6 +12,8 @@
 (load-lisp (str carp-dir "lisp/cc.carp"))
 (load-lisp (str carp-dir "lisp/annotate.carp"))
 (load-lisp (str carp-dir "lisp/graph.carp"))
+(load-lisp (str carp-dir "lisp/concretize.carp"))
+(load-lisp (str carp-dir "lisp/sicp_solver.carp"))
 
 (def header-files (list "\"declarations.h\"" "\"shared.h\""))
 (def echo-signature-after-bake false)

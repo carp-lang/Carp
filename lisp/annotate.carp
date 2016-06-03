@@ -2,10 +2,8 @@
 
 (defn func-to-annotated-ast (func-name func-code func-signature-if-generic func-type-annotation)
   (let [ast (lambda-to-ast func-code)
-        ;;_ (println (str "ast: " ast))
-        ast-named (assoc ast :name func-name)
-        ;;_ (println (str "ast-named: " ast-named))
-        ast-with-type-annotation (assoc ast-named :annotation func-type-annotation)
+        ast-with-name (assoc ast :name func-name)
+        ast-with-type-annotation (assoc ast-with-name :annotation func-type-annotation)
         ast-fully-annotated (annotate-ast-internal ast-with-type-annotation true func-signature-if-generic)
         _ (check-for-ref-return ast-fully-annotated)]
     ast-fully-annotated))

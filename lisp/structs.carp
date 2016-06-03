@@ -10,6 +10,11 @@
 (defn defstruct-internal [struct-name member-names member-types]
   (do
     (assert-eq (count member-names) (count member-types))
+
+    (when (not (= 0 (count (filter ref? member-types))))
+      (error {:error error-struct-with-ref-members
+              :message (str "Problem with '" struct-name "', structs can't have reference member(s) of type: " (join ", " (filter ref? member-types)))
+              :show-stacktrace false}))
     
     (when (def? (symbol struct-name))
       (when log-redefining-struct (println (str "Note: a struct named '" struct-name "' is already defined, overriding."))))
@@ -28,7 +33,12 @@
                                                    :name struct-name
                                                    :member-names member-names
                                                    :member-types (list 'quote member-types)
+                                                   :member-count (count member-names)
+                                                   :significant-type-indexes (cons 'array (significant-type-indexes (array-to-list member-types)))
                                                    }))
+
+            (define-generic-lens-stubs struct-name member-names member-types)
+            
             :generic-struct)
           
           (do            
@@ -44,7 +54,7 @@
                                                    :member-names member-names
                                                    :member-types (list 'quote member-types)
                                                    :size (eval (list (symbol (str "size-" struct-name))))
-                                                   :member-offsets (map (fn [member] (eval (list (symbol (str "offset-" member)))))
+                                                   :member-offsets (map (fn [member] (eval (list (symbol (str struct-name "-offset-" member)))))
                                                                         member-names)
                                                    :member-count (count member-names)
                                                    }))
@@ -83,7 +93,8 @@
                        member-types)))))
 
 (defn build-struct-group [struct-name member-names member-types dependency-level deps]
-  (let [member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
+  (let [c-struct-name (c-ify-name struct-name)
+        member-names (if (array? member-names) (array-to-list member-names) member-names) ;; TODO: This conversion is UGGLY!
         c-member-names (map c-ify-name member-names)
         member-types (if (array? member-types) (array-to-list member-types) member-types) ;; TODO: This one too!!!
         constructor-name (str "new-" struct-name)
@@ -91,14 +102,14 @@
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword struct-name))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
-        type-definition (str "typedef struct { " type-def-c " } " struct-name ";")
+        type-definition (str "typedef struct { " type-def-c " } " c-struct-name ";")
         group-name "" ;; struct-name
         ]
     (do
       (graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
       (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
-            proto (str struct-name " *" c-constructor-name "(" arg-list-c ");")
-            substs {"STRUCT-NAME" struct-name
+            proto (str c-struct-name " *" c-constructor-name "(" arg-list-c ");")
+            substs {"STRUCT-NAME" c-struct-name
                     "CONSTRUCTOR-NAME" c-constructor-name
                     "ARG_LIST" arg-list-c
                     "SETTERS" (join "\n  " (map (fn [n] (str "new_struct->" n " = " n ";")) c-member-names))}
@@ -115,8 +126,8 @@
                           :src c-program-string
                           :sig constructor-signature}
                          (let [size-signature (list :fn () :int)
-                               size-proto (str "int size_" struct-name "()")
-                               size-c (str size-proto " { return sizeof(" struct-name "); } ")]
+                               size-proto (str "int size_" c-struct-name "()")
+                               size-c (str size-proto " { return sizeof(" c-struct-name "); } ")]
                            (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
                    (apply concat (map2 (fn [mem-name mem-type]
                                          (lens-functions struct-name mem-name mem-type))
@@ -128,7 +139,8 @@
 
 (defn lens-functions [struct-name member-name member-type]
   (do ;;(println (str "Generating lens for '" struct-name "'-member '" member-name "' of type " member-type ))
-    (let [struct-type (keyword struct-name)
+    (let [c-struct-name (c-ify-name struct-name)
+          struct-type (keyword struct-name)
           struct-t (type-build struct-type)
           member-t (type-build member-type)
           member-t-reffed (if (primitive-type? member-type)
@@ -137,23 +149,23 @@
           c-member-name (c-ify-name member-name)]
       (list
        (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
-             getter-proto (str member-t " get_" (c-ify-name member-name) "(" struct-t " x)")
+             getter-proto (str member-t " " c-struct-name "_get_" (c-ify-name member-name) "(" struct-t " x)")
              getter-c (str getter-proto "{ return x->" c-member-name "; }")]
-         (lens-function (str "get-" member-name) getter-proto getter-c getter-signature))
+         (lens-function (str struct-name "-get-" member-name) getter-proto getter-c getter-signature))
        (let [setter-signature (list :fn (list struct-type member-type) struct-type)
-             setter-proto (str struct-t " set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
+             setter-proto (str struct-t " " c-struct-name "_set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
              setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
-         (lens-function (str "set-" member-name) setter-proto setter-c setter-signature))
+         (lens-function (str struct-name "-set-" member-name) setter-proto setter-c setter-signature))
        (let [updater-fn-type (list :fn (list member-type) member-type)
              updater-fn-t (type-build updater-fn-type)
              updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
-             updater-proto (str struct-t " update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
+             updater-proto (str struct-t " " c-struct-name "_update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
              updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
-         (lens-function (str "update-" member-name) updater-proto updater-c updater-signature))
+         (lens-function (str struct-name "-update-" member-name) updater-proto updater-c updater-signature))
        (let [offset-signature (list :fn () :int)
-             offset-proto (str "int offset_" (c-ify-name member-name) "()")
-             offset-c (str offset-proto "{ return offsetof(" struct-name ", " c-member-name "); }")]
-         (lens-function (str "offset-" member-name) offset-proto offset-c offset-signature))))))
+             offset-proto (str "int " c-struct-name "_offset_" (c-ify-name member-name) "()")
+             offset-c (str offset-proto "{ return offsetof(" (c-ify-name struct-name) ", " c-member-name "); }")]
+         (lens-function (str struct-name "-offset-" member-name) offset-proto offset-c offset-signature))))))
 
 (defn lens-function [func-name proto src func-signature]
   (do
@@ -166,3 +178,142 @@
      :proto (str proto ";")
      :src src
      :sig func-signature}))
+
+(defn concretize-struct [struct-name concrete-struct-name concrete-types]
+  (do
+    ;;(println (str "concretize-struct: " struct-name ", concrete-types: " concrete-types))
+    (let [struct-description (eval (symbol struct-name))
+          ;;_ (println (str "struct-description: " struct-description))
+          member-names (:member-names struct-description)
+          generic-member-types (:member-types struct-description)
+          significant-type-indexes (:significant-type-indexes struct-description)
+          typevar-values (reduce (fn [coll i] (cons-last coll(nth concrete-types i)))
+                                 '()
+                                 significant-type-indexes)
+          typevars (typevars-from-member-types generic-member-types)
+          ;;_ (println (str "typevars: " typevars " typevar-values: " typevar-values))
+          mapping (reduce (fn [the-map key-value-pair] (assoc the-map (first key-value-pair) (second key-value-pair)))
+                          {}
+                          (map2 (fn [k v] (list k v)) typevars typevar-values))
+          ;;_ (println (str "mapping: " mapping))
+          concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
+          ]
+      (if (def? (symbol concrete-struct-name))
+        (do ;;(println (str "Will not concretize " concrete-struct-name " again."))
+            :ignore)
+        (defstruct-internal concrete-struct-name member-names concrete-member-types)))))
+
+;; struct-type is an list of concrete types,
+;; beginning with the type of the generic struct
+;; i.e. (:Pair :int)
+(defn concretize-struct-simple [struct-type]
+  (let [struct-base-type (first struct-type)
+        struct-concrete-types (rest struct-type)
+        struct-base-name (name struct-base-type)
+        struct-concrete-name (generic-safe-name struct-type)]
+    (concretize-struct struct-base-name struct-concrete-name struct-concrete-types)))
+
+;; Returns the indexes of the first occurence of each typevar in a list of types
+;; Example 1 - ("a" "a" "b" "b") => [0 2]
+;; Example 2 - (:int :int "t" "s" "t") => [2 3]
+;; Example 3 - ("x" "y" "z") => [0 1 2]
+(defn significant-type-indexes [types]
+  (map first
+       (reduce
+        (fn [indexes pair]
+          (if (and (typevar? (second pair))
+                   (not (contains? (map second indexes) (second pair))))
+            (cons-last indexes pair)
+            indexes))
+        '()
+        (map2 (fn [i t] (list i t)) (range 0 (count types)) types))))
+
+(defn dynamic-generic-constructor-call [struct-description args]
+  (let [struct-name (:name struct-description)
+        arg-list (array-to-list args)
+        concrete-types (map type arg-list)
+        member-types (:member-types struct-description)
+        unique-typevars (typevars-from-member-types member-types)
+        significants (:significant-type-indexes struct-description)
+        significant-types (array-to-list (map (fn [i] (nth concrete-types i)) significants))
+        struct-type (cons (keyword struct-name) significant-types)
+        concrete-struct-name (generic-safe-name struct-type)]
+    (do
+      (when (not (def? (symbol concrete-struct-name)))
+        (do
+          ;; (println (str struct-description))
+          ;; (println (str "struct-name: " struct-name
+          ;;               " concrete-struct-name: " concrete-struct-name
+          ;;               " concrete-types: " concrete-types
+          ;;               " significant-types: " significant-types
+          ;;               ))
+          (concretize-struct struct-name concrete-struct-name concrete-types)))
+      (let [constructor-call (cons (symbol concrete-struct-name) arg-list)
+            ;;_ (println (str "constructor-call: " constructor-call))
+            struct-instance (eval constructor-call)]
+        (do (meta-set! struct-instance :type struct-type)
+            struct-instance)))))
+
+(defn define-generic-lens-stubs [struct-name member-names member-types]
+  (do
+    ;;(println (str "Defining generic lens stubs for " struct-name))
+    (map2 (fn [n t]
+            (let [get-sym (symbol (str struct-name "-get-" n))
+                  set-sym (symbol (str struct-name "-set-" n))
+                  update-sym (symbol (str struct-name "-update-" n))
+                  get-s (list :fn (list (list (keyword struct-name) "t")) "t")
+                  set-s (list :fn (list (list (keyword struct-name) "t") "t") (list (keyword struct-name) "t"))
+                  update-s (list :fn (list (list (keyword struct-name) "t") (list :fn (list "t") "t")) (list (keyword struct-name) "t"))
+                  ]
+              (do
+                ;; GETTER
+                (eval (list 'defn get-sym ['o] (list 'do
+                                                 (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                 (list 'eval (list 'list
+                                                                   (list 'symbol (list 'str
+                                                                                    (list 'generic-safe-name
+                                                                                          (list :type (list 'meta 'o)))
+                                                                                    "-get-"
+                                                                                    n))
+                                                                   'o)))))
+                (eval (list 'meta-set! get-sym :generic-lens-stub true))
+                (eval (list 'meta-set! get-sym :struct struct-name))
+                (eval (list 'meta-set! get-sym :generic true))
+                (eval (list 'meta-set! get-sym :signature (list 'quote get-s)))
+                (eval (list 'meta-set! get-sym :stub-ending (str "-get-" n)))
+
+                ;; SETTER
+                (eval (list 'defn set-sym ['o 'v] (list 'do
+                                                        (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                        (list 'eval (list 'list
+                                                                          (list 'symbol (list 'str
+                                                                                           (list 'generic-safe-name
+                                                                                                 (list :type (list 'meta 'o)))
+                                                                                           "-set-"
+                                                                                           n))
+                                                                          'o 'v)))))
+                (eval (list 'meta-set! set-sym :generic-lens-stub true))
+                (eval (list 'meta-set! set-sym :struct struct-name))
+                (eval (list 'meta-set! set-sym :generic true))
+                (eval (list 'meta-set! set-sym :signature (list 'quote set-s)))
+                (eval (list 'meta-set! set-sym :stub-ending (str "-set-" n)))
+
+                ;; UPDATER
+                (eval (list 'defn update-sym ['o 'f] (list 'do
+                                                           (list 'concretize-struct-simple (list :type (list 'meta 'o)))
+                                                           (list 'eval (list 'list
+                                                                             (list 'symbol (list 'str
+                                                                                                 (list 'generic-safe-name
+                                                                                                       (list :type (list 'meta 'o)))
+                                                                                                 "-update-"
+                                                                                                 n))
+                                                                             'o 'f)))))
+                (eval (list 'meta-set! update-sym :generic-lens-stub true))
+                (eval (list 'meta-set! update-sym :struct struct-name))
+                (eval (list 'meta-set! update-sym :generic true))
+                (eval (list 'meta-set! update-sym :signature (list 'quote update-s)))
+                (eval (list 'meta-set! update-sym :stub-ending (str "-update-" n)))
+                )))
+          member-names
+          member-types)))
+

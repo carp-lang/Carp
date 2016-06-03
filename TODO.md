@@ -1,3 +1,6 @@
+# Generic structs 
+  - unload all concretized structs when the "parent" struct is redefined
+
 # The Big 'ref' debacle
   - a 'map-primitive' that can map a function that takes non-refs as argument since it's annying to not be able to use functions like 'itos' directly with 'map-copy' (it requires a fn of type &a -> b)
   - alternatively allow ref:ed value types to be coerced into non-ref:ed types
@@ -5,16 +8,20 @@
   - A deref function that can remove the ref from primitive types?
 
 # Compiler Big Features
+  - Live Reloading (threads, bytecode interpreter, etc)
+  - Windows + Linux support
   - Special handling of POD structs (stack allocated, not sent by pointer)
-  - Generic structs
   - Compile match statements (or should it be a macro?)
   - All types should have capital first letter
   - Lambdas / lambda lifting
+  - Compile modules (when they exist in the dynamic runtime...)
+  - Compile dictionaries (requires hashing function)
   
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
 
 # Compiler Correctness
+  - Sending a global variable to a function that takes ownership of it will lead to disaster
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)

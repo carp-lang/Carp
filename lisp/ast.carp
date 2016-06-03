@@ -140,11 +140,17 @@
 
 (defn literal-or-lookup-to-ast [expr]
   (if (symbol? expr)
-    {:node :lookup
-     :type (gen-typevar)
-     :line (meta-get expr :line)
-     :original-form expr
-     :value expr} ;; change key to :name ..?
+    (let [is-generic-lens-stub (and (def? expr) (is-generic-lens-stub? (eval (list 'meta expr))))
+          node {:node :lookup
+                :type (gen-typevar)
+                :generic-lens-stub is-generic-lens-stub
+                :line (meta-get expr :line)
+                :original-form expr
+                :value expr}] ;; change key to :name ..?
+      (if is-generic-lens-stub
+        (assoc (assoc node :struct (symbol (eval (list 'meta-get expr :struct))))
+               :stub-ending (eval (list 'meta-get expr :stub-ending)))
+        node)) 
     {:node :literal
      :type (type-of-literal expr)
      :line (meta-get expr :line)
@@ -162,21 +168,34 @@
                      (error (str "No type on expr: " expr))))
       :else t)))
 
+(defn is-generic-lens-stub? [form]
+  (if (nil? form)
+    false
+    (key-is-true? form :generic-lens-stub)))
+
 (defn is-struct-constructor? [form]
   (and (dict? form) (true? (get-maybe form :struct))))
 
 (defn struct-constructor-ast [struct-description]
   (let [struct-name (:name struct-description)
         struct-type (keyword struct-name)
-        arg-count (:member-count struct-description)]
+        arg-count (:member-count struct-description)
+        member-types (:member-types struct-description)
+        ]
     (do
       {:node :lookup
        :constructor true
+       :generic (any generic-type? (array-to-list member-types))
+       :typevars (typevars-from-member-types member-types)
        :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
-       :member-types (:member-types struct-description)
+       :member-types member-types
        :member-names (:member-names struct-description)
        :struct-name struct-name
        :value (str "new-" struct-name)})))
+
+(defn typevars-from-member-types [types]
+  ;; Hack to make the order be correct:
+  (reverse (set (filter generic-type? (array-to-list types)))))
 
 (defn form-to-ast [form]
   (match form    
