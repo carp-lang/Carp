@@ -31,7 +31,7 @@
         :ignored)
       (do
         ;;(println (str "Adding global named " variable-name " of type " t))
-        (let [prototype (str "extern " (type-build t) " " c-variable-name ";")
+        (let [prototype (str "extern API " (type-build t) " " c-variable-name ";")
               c-code (str "API " (type-build t) " " c-variable-name " = " init-value ";")
               init-closure-name (str variable-name "-init-closure")
               init-value-safe (read (prn evaled)) ;; this removes bugs with ptrs to structs!!!
