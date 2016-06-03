@@ -103,6 +103,7 @@ Buggar
   - Ownership tracking to enable returning refs from functions (it's forbidden at the moment)
   - Reorder arguments to "set"/"update"-lens to make them less problematic for borrow checking (the main structure is given away to the first argument) ?
   - Use modules to solve problem of using same name for members in different structs?
+  - Create a carp_bool type with defined size
 
 # Niceties
   - Built in tutorial for the language
@@ -111,3 +112,4 @@ Buggar
 # Gotchas
   - Unloading of function/dylib doesn't work after another function has linked to it during its compilation.
   - Variable shadowing doesn't work properly when referencing itself
+  - Size of bool is undefined
