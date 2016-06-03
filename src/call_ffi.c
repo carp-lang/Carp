@@ -15,7 +15,8 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
   int arg_count = cif->nargs;
   //printf("arg count: %d\n", arg_count);
 
-  Obj *obj_args[arg_count];
+  Obj **obj_args = malloc(sizeof(Obj*) * arg_count);
+  //Obj *obj_args[arg_count];
   Obj *lambda_type_signature = lambda_and_its_type->signature; // TODO: shadow stack?!
   Obj *lambda_return_type = lambda_type_signature->cdr->cdr->car;
   Obj *lambda_arg_type_list_p = lambda_type_signature->cdr->car;
@@ -85,6 +86,7 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
 
   apply(process, lambda_and_its_type->lambda, obj_args, cif->nargs);
   Obj *result = stack_pop(process);
+  free(obj_args);
 
   // unwrap ref
   if(lambda_return_type->tag == 'C' && lambda_return_type->car && lambda_return_type->cdr && lambda_return_type->cdr->car && obj_eq(process, lambda_return_type->car, obj_new_keyword("ref"))) {
@@ -245,7 +247,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
           if(ALLOW_SENDING_LAMBDA_TO_FFI) {
             //printf("Will call unbaked lambda from ffi function. Lambda should have types: %s\n", obj_to_string(type_obj)->s);
 	    
-            ffi_type *closure_args[0];
+            ffi_type *closure_args[1];
             ffi_closure *closure;  
             void (*closure_fun_ptr)();
             closure = ffi_closure_alloc(sizeof(ffi_closure), (void**)&closure_fun_ptr);

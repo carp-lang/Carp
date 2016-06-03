@@ -108,7 +108,7 @@
     (do
       (graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
       (let [arg-list-c (join ", " (map2 (fn [t n] (str (type-build t) " " n)) member-types c-member-names))
-            proto (str c-struct-name " *" c-constructor-name "(" arg-list-c ");")
+            proto (str "API " c-struct-name " *" c-constructor-name "(" arg-list-c ");")
             substs {"STRUCT-NAME" c-struct-name
                     "CONSTRUCTOR-NAME" c-constructor-name
                     "ARG_LIST" arg-list-c
@@ -126,7 +126,7 @@
                           :src c-program-string
                           :sig constructor-signature}
                          (let [size-signature (list :fn () :int)
-                               size-proto (str "int size_" c-struct-name "()")
+                               size-proto (str "API int size_" c-struct-name "()")
                                size-c (str size-proto " { return sizeof(" c-struct-name "); } ")]
                            (lens-function (str "size-" struct-name) size-proto size-c size-signature)))
                    (apply concat (map2 (fn [mem-name mem-type]
@@ -149,21 +149,21 @@
           c-member-name (c-ify-name member-name)]
       (list
        (let [getter-signature (list :fn (list (list :ref struct-type)) member-t-reffed)
-             getter-proto (str member-t " " c-struct-name "_get_" (c-ify-name member-name) "(" struct-t " x)")
+             getter-proto (str "API " member-t " " c-struct-name "_get_" (c-ify-name member-name) "(" struct-t " x)")
              getter-c (str getter-proto "{ return x->" c-member-name "; }")]
          (lens-function (str struct-name "-get-" member-name) getter-proto getter-c getter-signature))
        (let [setter-signature (list :fn (list struct-type member-type) struct-type)
-             setter-proto (str struct-t " " c-struct-name "_set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
+             setter-proto (str "API " struct-t " " c-struct-name "_set_" (c-ify-name member-name) "(" struct-t " x, " member-t " value)")
              setter-c (str setter-proto "{ x->" c-member-name " = value; return x; }")]
          (lens-function (str struct-name "-set-" member-name) setter-proto setter-c setter-signature))
        (let [updater-fn-type (list :fn (list member-type) member-type)
              updater-fn-t (type-build updater-fn-type)
              updater-signature (list :fn (list struct-type updater-fn-type) struct-type)
-             updater-proto (str struct-t " " c-struct-name "_update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
+             updater-proto (str "API " struct-t " " c-struct-name "_update_" (c-ify-name member-name) "(" struct-t " x, " updater-fn-t " f)")
              updater-c (str updater-proto "{ x->" c-member-name " = f(x->" c-member-name "); return x; }")]
          (lens-function (str struct-name "-update-" member-name) updater-proto updater-c updater-signature))
        (let [offset-signature (list :fn () :int)
-             offset-proto (str "int " c-struct-name "_offset_" (c-ify-name member-name) "()")
+             offset-proto (str "API " "int " c-struct-name "_offset_" (c-ify-name member-name) "()")
              offset-c (str offset-proto "{ return offsetof(" (c-ify-name struct-name) ", " c-member-name "); }")]
          (lens-function (str struct-name "-offset-" member-name) offset-proto offset-c offset-signature))))))
 

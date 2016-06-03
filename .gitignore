@@ -24,3 +24,9 @@ a.out
 /build/
 /examples/exe
 /src/TAGS
+
+sourcetree.license
+
+.idea/
+temp/
+

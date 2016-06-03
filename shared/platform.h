@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <dlfcn.h>
+#include <unistd.h>
 
 /* Init/shutdown */
 
@@ -233,7 +234,7 @@ int carp_unload_library(carp_library_t lib) {
 	remove_module_from_list(carp_loaded_modules, lib->module);
 	BOOL result = FreeLibrary(lib->module);
 	free(lib);
-	return (int)result;
+	return !result;
 }
 
 void* carp_find_symbol(carp_library_t lib, const char * name) {

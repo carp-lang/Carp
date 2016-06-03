@@ -78,7 +78,7 @@
                            (framework-paths) " "
                            (link-libs total-dependencies))]
     (do
-      (println cl-command)
+      ;;(println cl-command)
       (def cmd cl-command)
       (system cl-command))))
 

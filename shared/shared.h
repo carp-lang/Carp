@@ -157,14 +157,14 @@ EXPORT string get_console_color(int x) {
   #endif
 }
 
-Array *chars(string s) {
+EXPORT Array *chars(string s) {
   Array *a = malloc(sizeof(Array));
   a->count = strlen(s);
   a->data = strdup(s);
   return a;
 }
 
-string string_join(string separator, Array *array_of_strings) {
+EXPORT string string_join(string separator, Array *array_of_strings) {
   string *casted = (string*)array_of_strings->data;
   int separator_len = strlen(separator);
   int total_length = 0;

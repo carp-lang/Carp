@@ -8,6 +8,8 @@
 #include "primops.h"
 #include "process.h"
 
+jmp_buf jumpbuffer;
+
 #define MAX_INPUT_BUFFER_SIZE (2048 * 32)
 char input[MAX_INPUT_BUFFER_SIZE];
 
