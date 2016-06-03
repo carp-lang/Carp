@@ -5,4 +5,4 @@
 
 void repl(Process *process);
 
-jmp_buf jumpbuffer;
+extern jmp_buf jumpbuffer;

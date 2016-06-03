@@ -2,7 +2,6 @@
 #include "eval.h"
 #include "gc.h"
 #include <stdio.h>
-#include <unistd.h>
 #include "../shared/shared.h"
 #include "../shared/platform.h"
 

@@ -26,3 +26,7 @@ a.out
 /src/TAGS
 
 sourcetree.license
+
+.idea/
+temp/
+
