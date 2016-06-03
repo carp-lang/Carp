@@ -265,17 +265,6 @@
       _ constraints
       )))
 
-
-;; This function will generate a list with two kinds of constraints: type-constraints and func-deps
-;;
-;; 1. Type constraints have three keys called :a, :b & :doc.
-;;    The a and b keys hold types that should get unified.
-;;    The doc key is just a string telling you in what form the constraint was generated.
-;;
-;; 2. Func deps only have one key (:func-dep) and it holds the symbol
-;;    refering to a particular function that this function is dependant on
-;;    It could be better to generate the func deps in a separate step before generating
-;;    the constraints, keeping things more separated, but this works too.
 (defn generate-constraints [ast]
   (let [constraints '()]
     (generate-constraints-internal constraints ast {})))
@@ -600,8 +589,6 @@
 
     _ (error (str "Can't assign types to ast node " ast))))
 
-(defn func-dep? [constraint] (has-key? constraint :func-dep))
-
 (defn infer-types [ast func-signature-if-generic]
   (let [type-constraints (generate-constraints ast)
         func-signature-constraint (if (nil? func-signature-if-generic) '() (list {:a func-signature-if-generic
@@ -610,5 +597,6 @@
                                                                                   :doc "generic-constr"}))
         sorted-constraints (sort-constraints (concat func-signature-constraint type-constraints))
         substs (solve-constraints sorted-constraints)
+        ;;substs (solver/solve sorted-constraints)
         ast-typed (assign-types ast substs)]
     ast-typed))
