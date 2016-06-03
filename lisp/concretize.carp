@@ -270,17 +270,17 @@
     {:proto proto :c c :deps ()}))
 
 (defn instantiate-eq-for-primitive-type [c-func-name t]
-  (let [proto (str "bool " c-func-name "(" (type-build t) " a, " (type-build t) " b)")
+  (let [proto (str "API bool " c-func-name "(" (type-build t) " a, " (type-build t) " b)")
         c (str proto " { return ((a) == (b)); }\n")]
     {:proto proto :c c :deps ()}))
 
 (defn instantiate-eq-for-string [c-func-name]
-  (let [proto (str "bool " c-func-name "(string a, string b)")
+  (let [proto (str "API bool " c-func-name "(string a, string b)")
         c (str proto " { return strcmp(a, b) == 0; }\n")]
     {:proto proto :c c :deps ()}))
 
 (defn instantiate-eq-for-array [c-func-name inner-t]
-  (let [proto (str "bool " c-func-name "(Array *a, Array *b)")
+  (let [proto (str "API bool " c-func-name "(Array *a, Array *b)")
 
         inner-arg-type (list :ref inner-t) ;; (if (primitive-type? inner-t) inner-t (list :ref inner-t))
         inner-signature (list :fn (list inner-arg-type inner-arg-type) :bool)
@@ -307,7 +307,7 @@
           lookup (eval (symbol (name maybe-struct-type)))]
       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
-              proto (str "bool " c-func-name "(" t-name " *a, " t-name " *b)")
+              proto (str "API bool " c-func-name "(" t-name " *a, " t-name " *b)")
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))
               reffed-member-types (map (fn [mt] (list :ref mt)) member-types) ;;(map (fn [mt] (ref-or-no-ref mt)) member-types)
