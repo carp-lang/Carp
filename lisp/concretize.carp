@@ -532,7 +532,7 @@
           lookup (eval (symbol (name maybe-struct-type)))]
       (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
-              proto (str "void " c-func-name "(" t-name " *x)")
+              proto (str "API void " c-func-name "(" t-name " *x)")
               ;;_ (println (str "proto for struct delete function: " proto))
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))

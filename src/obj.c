@@ -48,6 +48,7 @@ Obj *obj_new_double(double x) {
 }
 
 Obj *obj_new_string(char *s) {
+  assert(s);
   Obj *o = obj_new('S');
   o->s = strdup(s);
   return o;
