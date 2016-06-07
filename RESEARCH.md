@@ -16,6 +16,7 @@ http://andrewbrinker.github.io/blog/2016/03/27/string-types-in-rust/
 http://www.pipeline.com/~hbaker1/LinearLisp.html
 http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/
 https://doc.rust-lang.org/book/deref-coercions.html
+http://ticki.github.io/blog/lambda_crabs_1/
 
 # MODULES & FUNCTORS
 http://homepages.inf.ed.ac.uk/mfourman/teaching/mlCourse/notes/sml-modules.html
