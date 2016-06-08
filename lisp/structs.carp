@@ -9,7 +9,7 @@
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
-    (println (str "defstruct-internal: " struct-name " " member-names " " member-types))
+    ;;(println (str "defstruct-internal: " struct-name " " member-names " " member-types))
     
     (assert-eq (count member-names) (count member-types))
 
@@ -243,7 +243,7 @@
         (map2 (fn [i t] (list i t)) (range 0 (count types)) types))))
 
 (defn dynamic-generic-constructor-call [struct-description args]
-  (let [_ (println (str "dynamic-generic-constructor-call:\n" struct-description "\nargs: " args))
+  (let [;;_ (println (str "dynamic-generic-constructor-call:\n" struct-description "\nargs: " args))
         struct-name (:name struct-description)
         arg-list (array-to-list args)
         concrete-types (map type-of-value arg-list)
