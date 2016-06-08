@@ -14,10 +14,10 @@
   - Windows support
   - Linux support
   - Special handling of POD structs (stack allocated, referenced by pointer)
-  - Lambdas
   - Compile match statements (should it be a macro?)
   - Compile modules (when they exist in the dynamic runtime...)
   - Compile dictionaries (requires hashing function)
+  - Lambdas?
   
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
@@ -38,7 +38,6 @@
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Use the new key-is-true function instead of has-key? in lots of places
-
 
 # Dynamic Runtime Big Features
   - Macro splicing
@@ -71,8 +70,6 @@
   - Ensure correctness of GC (run at every step)
   - Don't leak values returned from calling ffi functions at the repl (but how..?)
   - Profile the evaluator
-  
-  
   
 # Lisp Core Libs
   - 'import' function that searches paths for carp files
