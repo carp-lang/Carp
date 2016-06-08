@@ -46,7 +46,7 @@
                                 member-names
                                 member-types
                                 (calculate-dependency-level member-types)
-                                (map name (filter struct-type? (array-to-list member-types))))
+                                (calculate-dependencies member-types))
             
             (eval (list 'def (symbol struct-name) {:struct true
                                                    :generic false
@@ -91,6 +91,17 @@
                              (calculate-dependency-level (:member-types (eval (symbol (name t)))))
                              -1)))
                        member-types)))))
+
+;; Takes a list of types and returns a list of strings with the name of the depencies
+(defn calculate-dependencies [member-types]
+  (map type-to-dependency-name (filter struct-type? (array-to-list member-types))))
+
+(defn type-to-dependency-name [x]
+  (cond
+    (nil? x) (error "Can't convert nil to dependency")
+    (keyword? x) (name x)
+    (list? x) (type-to-dependency-name (first x))
+    :else (error (str "Can't handle: " x))))
 
 (defn build-struct-group [struct-name member-names member-types dependency-level deps]
   (let [c-struct-name (c-ify-name struct-name)

@@ -1,14 +1,3 @@
-
-Buggar
-------------------
-
-(defstruct s2 [ett "T" tva "T"]) ;; bake break:ar
-(def instance (s2 10 20)) ;; bake break:ar
-
-------------------
-
-
-
 # Generic structs 
   - unload all concretized structs when the parent struct is redefined
 
@@ -20,6 +9,7 @@ Buggar
      (it requires a fn of type &a -> b)
 
 # Compiler Big Features
+  - Bake generic structs in global variables
   - Live Reloading (requires threads and bytecode interpreter)
   - Windows support
   - Linux support
@@ -56,7 +46,7 @@ Buggar
   - A Set-type with reader syntax #{}
   - Instantiate generic functions like '=' for primitive types when calling them
   
-## Modules
+# Modules
   - Name
   - List of imported modules (with the name used for importation)
   - List of opened modules

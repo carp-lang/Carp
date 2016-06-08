@@ -1,4 +1,4 @@
-(defn pretty-signature (t)
+(defn pretty-signature [t]
   (match t
     (:fn args ret) (str "(" (join ", " (map pretty-signature args)) ") -> " (pretty-signature ret))
     (:ref r) (str "&" (pretty-signature r) "")
@@ -23,7 +23,7 @@
     (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
     x (error (str "Can't match " x " in generic-function?"))))
 
-(defn c-ify-name (lisp-name)
+(defn c-ify-name [lisp-name]
   (let [x0 (str-replace lisp-name "-" "_")
         x1 (str-replace x0 "?" "QMARK")
         x2 (str-replace x1 "!" "BANG")
