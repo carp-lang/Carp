@@ -58,7 +58,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 
 ### Contributors
 
-* Erik Svedäng
+* Erik Svedäng [@e_svedang](https://twitter.com/e_svedang)
 * Markus Gustavsson
 * Fyodor Shchukin
 
