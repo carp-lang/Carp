@@ -153,6 +153,14 @@
        c "u"])
     (assert-eq "(TestWeirdTuple<char-char> \\a true \\c)" (str (TestWeirdTuple \a true \c)))))
 
-
+(deftest struct-with-inner-struct
+  (do
+    (defstruct InnerStruct
+      [foo :int])
+    (defstruct SomeGenericStruct
+      [x "t"])
+    (assert-eq "(SomeGenericStruct<int> 10)" (str (SomeGenericStruct 10)))
+    (assert-eq "(SomeGenericStruct<Array<int>> [1 2 3])" (str (SomeGenericStruct [1 2 3])))
+    (assert-eq "(SomeGenericStruct<InnerStruct> (InnerStruct 123))" (str (SomeGenericStruct (InnerStruct 123))))))
 
 (tester/run-suite "structs")

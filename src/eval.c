@@ -188,6 +188,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
       Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
       for(int i = 0; i < arg_count; i++) {
         copied_args[i] = obj_copy(args[i]);
+        copied_args[i]->meta = obj_copy(args[i]->meta);
       }
       
       Obj *carp_array = obj_new_array(arg_count);

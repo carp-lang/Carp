@@ -9,6 +9,7 @@
      (it requires a fn of type &a -> b)
 
 # Compiler Big Features
+  - Allow structs/arrays as concretizations of generic struct members
   - Bake generic structs in global variables
   - Live Reloading (requires threads and bytecode interpreter)
   - Windows support

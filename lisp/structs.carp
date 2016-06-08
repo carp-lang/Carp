@@ -9,6 +9,8 @@
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
+    (println (str "defstruct-internal: " struct-name " " member-names " " member-types))
+    
     (assert-eq (count member-names) (count member-types))
 
     (when (not (= 0 (count (filter ref? member-types))))
@@ -112,6 +114,7 @@
         c-constructor-name (c-ify-name constructor-name)
         c-file-name (str out-dir constructor-name ".c")
         constructor-signature (list :fn member-types (keyword struct-name))
+        ;;_ (println (str "member-types: " member-types))
         type-def-c (join " " (map2 (fn [t n] (str (type-build t) " " n ";")) member-types c-member-names))
         type-definition (str "typedef struct { " type-def-c " } " c-struct-name ";")
         group-name "" ;; struct-name
@@ -240,9 +243,10 @@
         (map2 (fn [i t] (list i t)) (range 0 (count types)) types))))
 
 (defn dynamic-generic-constructor-call [struct-description args]
-  (let [struct-name (:name struct-description)
+  (let [_ (println (str "dynamic-generic-constructor-call:\n" struct-description "\nargs: " args))
+        struct-name (:name struct-description)
         arg-list (array-to-list args)
-        concrete-types (map type arg-list)
+        concrete-types (map type-of-value arg-list)
         member-types (:member-types struct-description)
         unique-typevars (typevars-from-member-types member-types)
         significants (:significant-type-indexes struct-description)
