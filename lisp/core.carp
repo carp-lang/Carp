@@ -94,6 +94,13 @@
                  true
                  (contains? xs item))))
 
+(defn array-contains? [xs x]
+  (let [result false]
+    (do (for (i 0 (count xs))
+          (when (= (nth xs i) x)
+            (reset! result true)))
+        result)))
+
 (defn any (pred xs)
   (contains? (map pred xs) true))
 

@@ -96,7 +96,8 @@
 
 ;; Takes a list of types and returns a list of strings with the name of the depencies
 (defn calculate-dependencies [member-types]
-  (map type-to-dependency-name (filter struct-type? (array-to-list member-types))))
+  (remove (fn [n] (= n "Array")) ;; <- this is a temporary hack!
+          (map type-to-dependency-name (filter struct-type? (array-to-list member-types)))))
 
 (defn type-to-dependency-name [x]
   (cond

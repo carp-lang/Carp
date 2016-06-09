@@ -25,6 +25,7 @@
   - Be able to save concretized struct types for type checking etc
 
 # Compiler Correctness
+  - Structs sent to mutating "pure" lenses will modify global vars in place
   - Sending a global variable to a function that takes ownership of it will lead to disaster
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
