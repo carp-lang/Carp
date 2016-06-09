@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef CARP_TYPES_H
+#define CARP_TYPES_H
+
 #ifdef bool
 #undef bool
 #endif
@@ -57,3 +60,5 @@ typedef struct {
   void *data;
 } Array;
 
+
+#endif

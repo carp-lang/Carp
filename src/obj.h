@@ -11,7 +11,7 @@
 #include <string.h>
 #include <assert.h>
 #include "constants.h"
-#include "../shared/types.h"
+#include "types.h"
 
 typedef void (*VoidFn)(void);
 

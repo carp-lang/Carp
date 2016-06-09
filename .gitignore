@@ -1,5 +1,12 @@
 *.dSYM
 a.out
+
+
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+
 .DS_Store
 
 /gl-constants/gl_constants.o
