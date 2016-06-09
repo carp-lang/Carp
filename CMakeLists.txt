@@ -27,7 +27,7 @@ link_directories(${LIBFFI_LIBRARY_PATH})
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_h} ${${PROJECT_NAME}_c})
 
-target_link_libraries(${PROJECT_NAME} ffi)
+target_link_libraries(${PROJECT_NAME} ffi m)
 
 set_target_properties(${PROJECT_NAME}
     PROPERTIES
