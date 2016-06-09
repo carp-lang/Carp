@@ -20,8 +20,7 @@ pkg_check_modules(LIBFFI libffi)
 
 mark_as_advanced(LIBFFI_INCLUDE_DIR LIBFFI_LIBRARIES )
 
-include_directories(shared ${LIBFFI_INCLUDE_DIR})
-
+include_directories(shared ${LIBFFI_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_h} ${${PROJECT_NAME}_c})
 
