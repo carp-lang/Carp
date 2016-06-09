@@ -1,12 +1,9 @@
-#include "platform.h"
-#include "shared.h"
+#include "../shared/platform.h"
+#include "../shared/shared.h"
 #include "repl.h"
 #include "eval.h"
 #include "gc.h"
 #include <stdio.h>
-
-#include <unistd.h>
-#include <signal.h>
 
 #define HANDLE_SIGNALS 0
 

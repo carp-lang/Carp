@@ -4,7 +4,7 @@
 #include "assertions.h"
 #include "obj_conversions.h"
 #include "primops.h"
-#include "types.h"
+#include "../shared/types.h"
 
 #define ALLOW_SENDING_LAMBDA_TO_FFI 1
 #define LABELED_DISPATCH 0
