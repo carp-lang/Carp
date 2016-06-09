@@ -26,9 +26,17 @@ find_library(M_LIB m)
 find_package(PkgConfig)
 pkg_check_modules(LIBFFI libffi)
 mark_as_advanced(LIBFFI_INCLUDE_DIR LIBFFI_LIBRARIES )
+<<<<<<< HEAD
 include_directories(shared ${LIBFFI_INCLUDE_DIR})
 
 # Add libraries to the target
+=======
+
+include_directories(shared ${LIBFFI_INCLUDE_DIRS})
+
+add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_h} ${${PROJECT_NAME}_c})
+
+>>>>>>> 4ffd6364635dde216d2d37062c964c9beb07413f
 target_link_libraries(${PROJECT_NAME} ${LIBFFI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${M_LIB} ${CMAKE_DL_LIBS})
 
 
