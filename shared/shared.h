@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,8 +86,8 @@ EXPORT bool file_existsQMARK(char *filename) {
   return result;
 }
 
-EXPORT int inc(x) { return x + 1; }
-EXPORT int dec(x) { return x - 1; }
+EXPORT int inc(int x) { return x + 1; }
+EXPORT int dec(int x) { return x - 1; }
 
 EXPORT void async(void *f) {
   //printf("Async starting.\n");

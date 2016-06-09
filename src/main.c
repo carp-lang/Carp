@@ -4,6 +4,7 @@
 #include "eval.h"
 #include "gc.h"
 #include <stdio.h>
+#include <unistd.h>
 
 #define HANDLE_SIGNALS 0
 
