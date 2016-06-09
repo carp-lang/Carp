@@ -7,7 +7,7 @@
 #include "obj.h"
 #include "obj_conversions.h"
 #include "constants.h"
-#include "types.h"
+#include "../shared/types.h"
 #include "match.h"
 
 #define LOG_EVAL 0

@@ -14,7 +14,7 @@
 #include "gc.h"
 #include "obj_conversions.h"
 #include "bytecode.h"
-#include "types.h"
+#include "../shared/types.h"
 
 void register_primop(Process *process, char *name, Primop primop) {
   Obj *o = obj_new_primop(primop);
