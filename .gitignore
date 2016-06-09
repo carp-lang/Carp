@@ -1,5 +1,8 @@
 *.dSYM
 a.out
+
+Makefile
+
 .DS_Store
 
 /gl-constants/gl_constants.o
