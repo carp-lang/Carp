@@ -10,18 +10,17 @@
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
 // 'q' stop
-// 'l' push literal
-// 'c' call
-// 'y' lookup
-// 'i' if branch
-// 'd' def
+// 'l' push <literal>
+// 'p' push nil
+// 'c' call <argcount>
+// 'y' lookup <literal>
+// 'd' def <literal>
 // 't' let
 // 'o' do
 // 'r' reset!
 // 'n' not
-//  // 'x' or REMOVED
-// 'w' while
-// 'j' jump
+// 'i' jump if false
+// 'j' jump (no matter what)
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -62,34 +61,64 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   assert_or_set_error(form->cdr->cdr->car, "Too few body forms in 'if' form: ", form);
   assert_or_set_error(form->cdr->cdr->cdr->car, "Too few body forms in 'if' form: ", form);
   assert_or_set_error(form->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'if' form (use explicit 'do').", form);
-  Obj *true_branch = form_to_bytecode(process, env, form->cdr->cdr->car);
-  Obj *false_branch = form_to_bytecode(process, env, form->cdr->cdr->cdr->car);
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, true_branch);
-  obj_array_mut_append(literals, false_branch);
-  visit_form(process, env, bytecodeObj, position, form->cdr->car);
-  bytecodeObj->bytecode[*position] = 'i';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+
+  visit_form(process, env, bytecodeObj, position, form->cdr->car); // expression
+  bytecodeObj->bytecode[*position] = 'i'; // if
+  *position += 1;
+
+  int jump_to_false_pos = *position;
+  bytecodeObj->bytecode[*position] = '?'; // amount to jump when expression is false
+  *position += 1;
+  
+  visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car); // true branch
+
+  int jump_from_true_pos = *position + 1;
+  bytecodeObj->bytecode[*position + 0] = 'j';
+  bytecodeObj->bytecode[*position + 1] = '?'; // amount to jump when true is done
   *position += 2;
+
+  // Now we know where the false branch begins, jump here if the expression is true:
+  bytecodeObj->bytecode[jump_to_false_pos] = *position + 65;
+  
+  visit_form(process, env, bytecodeObj, position, form->cdr->cdr->cdr->car); // false branch
+
+  // Now we know where the whole block ends, jump here when true branch is done:
+  bytecodeObj->bytecode[jump_from_true_pos] = *position + 65;
+  
+  /* Obj *true_branch = form_to_bytecode(process, env, form->cdr->cdr->car); */
+  /* Obj *false_branch = form_to_bytecode(process, env, form->cdr->cdr->cdr->car); */
+  /* Obj *literals = bytecodeObj->bytecode_literals; */
+
+  /* char new_literal_index = literals->count; */
+  /* obj_array_mut_append(literals, true_branch); */
+  /* obj_array_mut_append(literals, false_branch); */
+  /* visit_form(process, env, bytecodeObj, position, form->cdr->car); */
+  /* bytecodeObj->bytecode[*position] = 'i'; */
+  /* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; */
+  /* *position += 2; */
 }
 
 void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  //assert(false);
   int start = *position;
-  Obj *expression = form_to_bytecode(process, env, form->cdr->car);
-  Obj *body = form_to_bytecode(process, env, form->cdr->cdr->car);
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, expression);
-  obj_array_mut_append(literals, body);
 
-  bytecodeObj->bytecode[*position + 0] = new_literal_index + 65;
-  bytecodeObj->bytecode[*position + 1] = 'w';  
-  bytecodeObj->bytecode[*position + 2] = start + 65; // index to jump to
-  *position += 3;
+  visit_form(process, env, bytecodeObj, position, form->cdr->car);
+  bytecodeObj->bytecode[*position] = 'i'; // if
+  *position += 1;
+  int jump_pos = *position;
+  bytecodeObj->bytecode[*position] = '?'; // amount to jump
+  *position += 1;
+  
+  visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
 
-  // (while true (println "erik")) => lAwlB
+  bytecodeObj->bytecode[*position + 0] = 'j'; // go back to start
+  bytecodeObj->bytecode[*position + 1] = start + 65;
+  *position += 2;
+
+  // Now we know where to jump to if the while expression is false:
+  bytecodeObj->bytecode[jump_pos] = *position + 65;
+
+  bytecodeObj->bytecode[*position + 0] = 'p'; // the while loop produces nil as a value
+  *position += 1;
 }
 
 void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -275,9 +304,13 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
     int p = process->frames[process->frame].p;
     char c = bytecode[p];
     
-    //printf("frame = %d, c = %c\n", process->frame, c);
+    //printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
     
     switch(c) {
+    case 'p':
+      stack_push(process, nil);
+      process->frames[process->frame].p += 1;
+      break;
     case 'l':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
@@ -352,24 +385,20 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       process->frames[process->frame].p += 2;
       break;
     case 'i':
-      i = bytecode[p + 1] - 65;
       if(is_true(stack_pop(process))) {
-        process->frames[process->frame].p = 0;
-        process->frames[process->frame].bytecodeObj = literals_array[i];
-        process->frames[process->frame].env = process->frames[process->frame - 1].env;
-      }
-      else {
-        process->frames[process->frame].p = 0;
-        process->frames[process->frame].bytecodeObj = literals_array[i + 1];
-        process->frames[process->frame].env = process->frames[process->frame - 1].env;
+        //printf("don't jump\n");
+        // don't jump, just skip over the next instruction (which is the length of the jump)
+        process->frames[process->frame].p += 2;
+      } else {
+        //printf("jump!\n");
+        // jump if false!
+        int i = bytecode[p + 1] - 65;
+        process->frames[process->frame].p = i;
       }
       break;
-    case 'w':
-      printf("Will execute 'while' instruction\n");
-
-      
-      stack_push(process, nil);
-      break;      
+    case 'j':
+      process->frames[process->frame].p = bytecode[p + 1] - 65;
+      break;
     case 'c':
       function = stack_pop(process);     
       arg_count = bytecode[p + 1] - 65;
@@ -462,7 +491,7 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
 
   Obj *final_result = NULL;
   while(!final_result) {
-    final_result = bytecode_eval_internal(process, bytecodeObj, 100);
+    final_result = bytecode_eval_internal(process, bytecodeObj, 1000);
   }
 
   shadow_stack_pop(process);

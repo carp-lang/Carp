@@ -23,7 +23,7 @@
 # Bytecode
   - handle array literals
   - handle (list ...)
-  - 
+  - inline bytecode for if statements
 
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions

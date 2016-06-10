@@ -10,3 +10,8 @@
 ;;(eb '(map (fn [x] (* x x)) (list 1 2 3)))
 ;;(eb '(while true (println "loop")))
 ;;(eb '(while true false))
+
+;;(eb '(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t))))))
+
+(eb '(if true 10 20))
+
