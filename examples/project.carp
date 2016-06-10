@@ -13,5 +13,5 @@
 
 ;;(eb '(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t))))))
 
-(eb '(if true 10 20))
+;;(eb '(if true 10 20))
 
