@@ -14,7 +14,7 @@ The key features of Carp are the following:
 * Live reloading of code, REPL-driven development, a fun and helpful workflow
 * Ownership tracking enables a functional programming style while still using mutation of cache friendly data structures under the hood
 * No hidden performance penalties – allocation and copying is explicit
-* Very good integration with exisiting C code
+* Very good integration with existing C code
 
 
 ## Learn more
