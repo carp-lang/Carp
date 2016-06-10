@@ -23,6 +23,8 @@
 # Bytecode
   - handle array literals
   - handle (list ...)
+  - inline 'do'
+  - inline 'let'
 
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions

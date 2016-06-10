@@ -15,3 +15,14 @@
 
 ;;(eb '(if true 10 20))
 
+
+;; (eb '(do (def MAP (fn [f xs]
+;;                     (let [i 0
+;;                           result (copy xs)]
+;;                       (do
+;;                         (while (< i (count xs))
+;;                           (do (array-set! result i (f (nth xs i)))
+;;                               (reset! i (inc i))))
+;;                         result))))
+;;          (MAP inc (array 1 2 3))))
+

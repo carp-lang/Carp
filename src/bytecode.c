@@ -84,18 +84,6 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 
   // Now we know where the whole block ends, jump here when true branch is done:
   bytecodeObj->bytecode[jump_from_true_pos] = *position + 65;
-  
-  /* Obj *true_branch = form_to_bytecode(process, env, form->cdr->cdr->car); */
-  /* Obj *false_branch = form_to_bytecode(process, env, form->cdr->cdr->cdr->car); */
-  /* Obj *literals = bytecodeObj->bytecode_literals; */
-
-  /* char new_literal_index = literals->count; */
-  /* obj_array_mut_append(literals, true_branch); */
-  /* obj_array_mut_append(literals, false_branch); */
-  /* visit_form(process, env, bytecodeObj, position, form->cdr->car); */
-  /* bytecodeObj->bytecode[*position] = 'i'; */
-  /* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; */
-  /* *position += 2; */
 }
 
 void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -134,26 +122,6 @@ void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   bytecodeObj->bytecode[*position] = 'n';
   *position += 1;
 }
-
-/* void add_or(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) { */
-/*   assert(false); */
-/*   /\* char *code = malloc(512); *\/ */
-/*   /\* Obj *or_branch = obj_new_bytecode(code); *\/ */
-
-/*   /\* Obj *p = form->cdr; *\/ */
-/*   /\* int pos2 = 0; *\/ */
-/*   /\* while(p && p->car) { *\/ */
-/*   /\*   visit_form(process, env, or_branch, &pos2, p->car); *\/ */
-/*   /\*   p = p->cdr; *\/ */
-/*   /\* } *\/ */
-
-/*   /\* Obj *literals = bytecodeObj->bytecode_literals; *\/ */
-/*   /\* char new_literal_index = literals->count; *\/ */
-/*   /\* obj_array_mut_append(literals, or_branch); *\/ */
-/*   /\* bytecodeObj->bytecode[*position] = 'x'; *\/ */
-/*   /\* bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; *\/ */
-/*   /\* *position += 2; *\/ */
-/* } */
 
 void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   visit_form(process, env, bytecodeObj, position, form->cdr->car);
@@ -250,9 +218,6 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     else if(HEAD_EQ("ref")) {
       add_ref(process, env, bytecodeObj, position, form);
     }
-    /* else if(HEAD_EQ("or")) { */
-    /*   add_or(process, env, bytecodeObj, position, form); */
-    /* } */
     else if(HEAD_EQ("not")) {
       add_not(process, env, bytecodeObj, position, form);
     }
@@ -270,11 +235,6 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
   else {
     add_literal(bytecodeObj, position, form);
   }
-  /* else { */
-  /*   printf("Bytecode can't handle form: "); */
-  /*   obj_print_cout(form); */
-  /*   exit(1); */
-  /* } */
 }
 
 Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
@@ -386,11 +346,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       break;
     case 'i':
       if(is_true(stack_pop(process))) {
-        //printf("don't jump\n");
         // don't jump, just skip over the next instruction (which is the length of the jump)
         process->frames[process->frame].p += 2;
       } else {
-        //printf("jump!\n");
         // jump if false!
         int i = bytecode[p + 1] - 65;
         process->frames[process->frame].p = i;
