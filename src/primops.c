@@ -1754,7 +1754,7 @@ Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
 Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "eval-bytecode must take 1 arguments. ", nil);
   Obj *bytecode = args[0];
-  return bytecode_eval(process, bytecode);
+  return bytecode_eval(process, bytecode, true);
 }
 
 Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {

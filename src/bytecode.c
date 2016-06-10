@@ -195,7 +195,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
       add_literal(bytecodeObj, position, nil); // is this case needed?
     }
     else if(HEAD_EQ("quote")) {
-      add_literal(bytecodeObj, position, form->car);
+      add_literal(bytecodeObj, position, form->cdr->car);
     }
     else if(HEAD_EQ("if")) {
       add_if(process, env, bytecodeObj, position, form);
@@ -225,8 +225,59 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
       add_literal(bytecodeObj, position, lambda);
     }
+    else if(HEAD_EQ("macro")) {
+      Obj *macro = obj_new_macro(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
+      add_literal(bytecodeObj, position, macro);
+    }
     else {
-      add_call(process, env, bytecodeObj, position, form);
+      Obj *lookup = env_lookup(process, env, form->car);
+      if(lookup && lookup->tag == 'M') {
+        Obj *macro = lookup;
+
+        Obj *calling_env = obj_new_environment(macro->env);
+
+        Obj *argp = form->cdr;
+        int arg_count = 0;
+        while(argp && argp->car) {
+          argp = argp->cdr;
+          arg_count++;
+        }
+
+        printf("Arg count: %d\n", arg_count);
+
+        argp = form->cdr;
+        Obj *args = obj_new_array(arg_count);
+        for(int i = 0; i < arg_count; i++) {
+          args->array[i] = argp->car;
+          argp = argp->cdr;
+        }
+
+        printf("Args: %s\n", obj_to_string(process, args)->s);
+        
+        env_extend_with_args(process, calling_env, macro, arg_count, args->array, true);
+
+        process->frame++;
+        process->frames[process->frame].p = 0;
+        if(macro->body->tag != 'X') {
+          set_error("The body of the macro must be bytecode: ", macro);
+          return;
+        }
+        process->frames[process->frame].bytecodeObj = macro->body;
+        process->frames[process->frame].env = calling_env;
+
+        Obj *final_result = NULL;
+        while(!final_result) {
+          final_result = bytecode_eval_internal(process, bytecodeObj, 1000);
+        }
+        
+        Obj *expanded = bytecode_eval(process, macro->body, false);
+        
+        printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        visit_form(process, env, bytecodeObj, position, expanded);
+      }
+      else {
+        add_call(process, env, bytecodeObj, position, form);
+      }
     }
   }
   else if(form->tag == 'Y') {
@@ -434,7 +485,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
   return stack_pop(process);
 }
 
-Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
+Obj *bytecode_eval(Process *process, Obj *bytecodeObj, bool restart) {
 
   if(bytecodeObj->tag != 'X') {
     set_error_return_nil("The code to eval must be bytecode, ", bytecodeObj);
@@ -442,7 +493,10 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
   
   shadow_stack_push(process, bytecodeObj);
 
-  process->frame = 0;
+  if(restart) {
+    process->frame = 0;
+  }
+  
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = bytecodeObj;
   process->frames[process->frame].env = process->global_env;
