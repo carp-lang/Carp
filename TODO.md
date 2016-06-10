@@ -19,7 +19,12 @@
   - Compile dictionaries (requires hashing function)
   - Lambdas
   - get / set special forms?
-  
+
+# Bytecode
+  - handle array literals
+  - handle (list ...)
+  - 
+
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
   - All types should have capital first letter?

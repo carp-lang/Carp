@@ -5,5 +5,6 @@
 ;;(reset! log-deps-when-baking-ast true)
 ;;(reset! log-redefining-struct true)
 
-
-
+(eb '(do (def x "yeah") (println x)))
+(eb '(do (def f (fn [z] (* z z))) (f 3)))
+(eb '(map (fn [x] (* x x)) (list 1 2 3)))

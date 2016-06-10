@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "../shared/types.h"
 #include "match.h"
+#include "bytecode.h"
 
 #define LOG_EVAL 0
 #define SHOW_MACRO_EXPANSION 0
@@ -130,7 +131,7 @@ void call_struct_constructor(Process *process, Obj *function, Obj **args, int ar
 void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
-    //printf("Calling function "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
+    //printf("Calling lambda "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
     
     Obj *calling_env = obj_new_environment(function->env);
     bool allow_rest_args = true;
@@ -139,8 +140,13 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
 
     shadow_stack_push(process, function);
     shadow_stack_push(process, calling_env);
+
+    if(function->body->tag == 'X') {
+      eval_error = obj_new_string("Can't apply lambda with bytecode body.");
+    } else {    
+      eval_internal(process, calling_env, function->body);
+    }
     
-    eval_internal(process, calling_env, function->body);
     if(eval_error) {
       return;
     }

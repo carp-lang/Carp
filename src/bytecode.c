@@ -416,7 +416,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         //printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode); // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
       }
       else {
-        printf("Can't handle other calling methods yet %c\n", function->tag);
+        printf("Can't call Obj of type '%c'\n", function->tag);
         obj_print_cout(function);
         return nil;
       }      
