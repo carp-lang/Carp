@@ -21,6 +21,7 @@
 // 'n' not
 //  // 'x' or REMOVED
 // 'w' while
+// 'j' jump
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -74,7 +75,7 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 }
 
 void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  assert(false);
+  //assert(false);
   int start = *position;
   Obj *expression = form_to_bytecode(process, env, form->cdr->car);
   Obj *body = form_to_bytecode(process, env, form->cdr->cdr->car);
@@ -82,10 +83,13 @@ void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj 
   char new_literal_index = literals->count;
   obj_array_mut_append(literals, expression);
   obj_array_mut_append(literals, body);
-  bytecodeObj->bytecode[*position + 0] = 'w';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+
+  bytecodeObj->bytecode[*position + 0] = new_literal_index + 65;
+  bytecodeObj->bytecode[*position + 1] = 'w';  
   bytecodeObj->bytecode[*position + 2] = start + 65; // index to jump to
   *position += 3;
+
+  // (while true (println "erik")) => lAwlB
 }
 
 void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -261,7 +265,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
   int arg_count, i, bindings_index, body_index;
   
   for(int step = 0; step < steps; step++) {
-
+    
     if(eval_error) {
       return nil;
     }
@@ -360,6 +364,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         process->frames[process->frame].env = process->frames[process->frame - 1].env;
       }
       break;
+    case 'w':
+      printf("Will execute 'while' instruction\n");
+
+      
+      stack_push(process, nil);
+      break;      
     case 'c':
       function = stack_pop(process);     
       arg_count = bytecode[p + 1] - 65;
