@@ -17,7 +17,8 @@
   - Compile match statements (should it be a macro?)
   - Compile modules (when they exist in the dynamic runtime...)
   - Compile dictionaries (requires hashing function)
-  - Lambdas?
+  - Lambdas
+  - get / set special forms?
   
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
