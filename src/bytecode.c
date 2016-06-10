@@ -187,8 +187,11 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     return;
   }
   else if(form->tag == 'C') {
-    if(form->car->car == NULL) {
+    if(form->car == NULL) {
       add_literal(bytecodeObj, position, nil);
+    }
+    else if(form->car->car == NULL) {
+      add_literal(bytecodeObj, position, nil); // is this case needed?
     }
     else if(HEAD_EQ("quote")) {
       add_literal(bytecodeObj, position, form->car);
@@ -247,7 +250,8 @@ Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   int position = 0;
   visit_form(process, env, bytecodeObj, &position, form);
   bytecodeObj->bytecode[position++] = 'q';
-  bytecodeObj->bytecode[position++] = '\0';  
+  bytecodeObj->bytecode[position++] = '\0';
+  printf("Converted '%s' to bytecode: %s\n", obj_to_string(process, form)->s, obj_to_string(process, bytecodeObj)->s);
   return bytecodeObj;
 }
 
@@ -267,7 +271,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
     int p = process->frames[process->frame].p;
     char c = bytecode[p];
     
-    //printf("frame = %d, c = %c\n", frame, c);
+    //printf("frame = %d, c = %c\n", process->frame, c);
     
     switch(c) {
     case 'l':
@@ -357,7 +361,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       }
       break;
     case 'c':
-      function = stack_pop(process);
+      function = stack_pop(process);     
       arg_count = bytecode[p + 1] - 65;
       Obj **args = NULL;
       if(arg_count > 0) {
@@ -369,7 +373,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         //shadow_stack_push(process, arg);
       }
       process->frames[process->frame].p += 2;
-
+      
       if(function->tag == 'P') {
         stack_push(process, function->primop((struct Process*)process, args, arg_count));
       }
@@ -440,7 +444,8 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj) {
   }
   
   shadow_stack_push(process, bytecodeObj);
-  
+
+  process->frame = 0;
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = bytecodeObj;
   process->frames[process->frame].env = process->global_env;
