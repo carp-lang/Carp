@@ -33,4 +33,5 @@
 ;;          (fi true (println "A") (println "B"))))
 
 
-;;(eb '(def fi (macro [a b c] (list 'if a c b))))
+(eb '(def fi (macro [a b c] (list 'if a c b))))
+(eb '(fi true 10 20))

@@ -243,7 +243,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           arg_count++;
         }
 
-        printf("Arg count: %d\n", arg_count);
+        //printf("Arg count: %d\n", arg_count);
 
         argp = form->cdr;
         Obj *args = obj_new_array(arg_count);
@@ -252,7 +252,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           argp = argp->cdr;
         }
 
-        printf("Args: %s\n", obj_to_string(process, args)->s);
+        //printf("Args: %s\n", obj_to_string(process, args)->s);
         
         env_extend_with_args(process, calling_env, macro, arg_count, args->array, true);
 
@@ -265,14 +265,16 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
         process->frames[process->frame].bytecodeObj = macro->body;
         process->frames[process->frame].env = calling_env;
 
-        Obj *final_result = NULL;
-        while(!final_result) {
-          final_result = bytecode_eval_internal(process, bytecodeObj, 1000);
+        shadow_stack_push(process, bytecodeObj);
+        
+        Obj *expanded = NULL;
+        while(!expanded) {
+          expanded = bytecode_eval_internal(process, bytecodeObj, 1000);
         }
+
+        shadow_stack_pop(process);
         
-        Obj *expanded = bytecode_eval(process, macro->body, false);
-        
-        printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
         visit_form(process, env, bytecodeObj, position, expanded);
       }
       else {
@@ -295,7 +297,7 @@ Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   visit_form(process, env, bytecodeObj, &position, form);
   bytecodeObj->bytecode[position++] = 'q';
   bytecodeObj->bytecode[position++] = '\0';
-  printf("Converted '%s' to bytecode: %s\n", obj_to_string(process, form)->s, obj_to_string(process, bytecodeObj)->s);
+  //printf("Converted '%s' to bytecode: %s\n", obj_to_string(process, form)->s, obj_to_string(process, bytecodeObj)->s);
   return bytecodeObj;
 }
 
