@@ -29,7 +29,7 @@ export C_INCLUDE_PATH=../libffi/<ARCHITECTURE>/include
 
 Replace <ARCHITECTURE> with the name of the architecture you built libffi for.
 
-If 'libffi' is installed with Brew, you can find the libraries at "/usr/local/Cellar/libffi/3.0.13/lib/pkgconfig/" and the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
+If 'libffi' is installed with Brew, you can find the libraries at "/usr/local/Cellar/libffi/3.0.13/lib/" and the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
 
 
 

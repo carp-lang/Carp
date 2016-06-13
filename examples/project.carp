@@ -34,3 +34,13 @@
 (eb '(def or (macro [a b]
                     (list 'if a a b))))
 (eb '(or false 10))
+
+(def fib (fn [x]
+           (if (< x 2) 1
+               (+ (fib (- x 2))
+                  (fib (- x 1))))))
+
+(eb '(def fibb (fn [x]
+                 (if (< x 2) 1
+                     (+ (fibb (- x 2))
+                        (fibb (- x 1)))))))
