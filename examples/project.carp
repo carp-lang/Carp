@@ -44,3 +44,5 @@
                  (if (< x 2) 1
                      (+ (fibb (- x 2))
                         (fibb (- x 1)))))))
+
+(println (str "fibb 26: " (eb '(fibb 26))))
