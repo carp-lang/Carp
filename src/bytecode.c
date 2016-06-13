@@ -309,7 +309,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
   for(int step = 0; step < steps; step++) {
     
     if(eval_error) {
-      return nil;
+      return NULL;
     }
     
     Obj **literals_array = process->frames[process->frame].bytecodeObj->bytecode_literals->array;
@@ -357,7 +357,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       } else {
         eval_error = obj_new_string("reset! can't find variable to reset: ");
         obj_string_mut_append(eval_error, obj_to_string(process, literal)->s);
-        return nil;
+        return NULL;
       }      
       process->frames[process->frame].p += 2;
       break;
@@ -392,7 +392,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
-        set_error_return_nil("Failed to lookup ", literal);
+        set_error_return_null("Failed to lookup ", literal);
       }
       stack_push(process, lookup);
       process->frames[process->frame].p += 2;
@@ -453,28 +453,30 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         }
       }
       else if(function->tag == 'L') {
+        if(process->frame >= BYTECODE_FRAME_SIZE - 1) {
+          set_error_return_null("Bytecode stack overflow. ", nil);
+        }
+        
         Obj *calling_env = obj_new_environment(function->env);
         //printf("arg_count = %d\n", arg_count);
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
         process->frame++;
         process->frames[process->frame].p = 0;
         if(function->body->tag != 'X') {
-          set_error_return_nil("The body of the lambda must be bytecode, ", function);
+          set_error_return_null("The body of the lambda must be bytecode, ", function);
         }
         process->frames[process->frame].bytecodeObj = function->body;
         process->frames[process->frame].env = calling_env;
         //printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode); // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
       }
       else {
-        printf("Can't call Obj of type '%c'\n", function->tag);
-        obj_print_cout(function);
-        return nil;
+        set_error_return_null("Can't call \n", function);
       }      
       break;
     case 'q':
       process->frame--;
       if(process->frame < 0) {
-        goto done;
+        return stack_pop(process);
       }
       break;
     default:
@@ -483,8 +485,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
     }
   }
 
- done:;
-  return stack_pop(process);
+  return NULL;
 }
 
 Obj *bytecode_eval(Process *process, Obj *bytecodeObj, bool restart) {
@@ -505,8 +506,13 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj, bool restart) {
 
   Obj *final_result = NULL;
   while(!final_result) {
-    final_result = bytecode_eval_internal(process, bytecodeObj, 1000);
+    final_result = bytecode_eval_internal(process, bytecodeObj, 20);
+    if(eval_error) {
+      final_result = nil;
+      break;
+    }
   }
+  //printf("Final result = %s\n", obj_to_string(process, final_result)->s);
 
   shadow_stack_pop(process);
   return final_result;

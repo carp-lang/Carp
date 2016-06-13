@@ -13,6 +13,8 @@
 #include "constants.h"
 #include "../shared/types.h"
 
+#define BYTECODE_FRAME_SIZE 256
+
 typedef void (*VoidFn)(void);
 
 /* Type tags
@@ -141,7 +143,7 @@ typedef struct {
   struct Obj *global_env;
 
   Obj *bytecodeObj;
-  BytecodeFrame frames[256];
+  BytecodeFrame frames[BYTECODE_FRAME_SIZE];
   int frame;
 } Process;
 
