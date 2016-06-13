@@ -15,7 +15,6 @@
 
 ;;(eb '(if true 10 20))
 
-
 ;; (eb '(do (def MAP (fn [f xs]
 ;;                     (let [i 0
 ;;                           result (copy xs)]
@@ -26,16 +25,12 @@
 ;;                         result))))
 ;;          (MAP inc (array 1 2 3))))
 
-
-;;(eb '(defn f [x] (inc x)))
-
-;; (eb '(do (def fi (macro [a b c] (list 'if a c b)))
-;;          (fi true (println "A") (println "B"))))
-
-
-(eb '(def fi (macro [a b c] (list 'if a c b))))
+;;(eb '(def fi (macro [a b c] (list 'if a c b))))
 ;; (eb '(fi true 10 20))
 
-(eb '(def recur (fn [] (do (println (str 123)) (recur)))))
+;;(eb '(def recur (fn [] (do (println (str 123)) (recur)))))
+;;(eb '(recur))
 
-(eb '(recur))
+(eb '(def or (macro [a b]
+                    (list 'if a a b))))
+(eb '(or false 10))

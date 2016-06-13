@@ -255,6 +255,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
         //printf("Args: %s\n", obj_to_string(process, args)->s);
         
         env_extend_with_args(process, calling_env, macro, arg_count, args->array, true);
+        if(eval_error) {
+          return;
+        }
 
         process->frame++;
         process->frames[process->frame].p = 0;
@@ -270,6 +273,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
         Obj *expanded = NULL;
         while(!expanded) {
           expanded = bytecode_eval_internal(process, bytecodeObj, 1000);
+          if(eval_error) {
+            return;
+          }
         }
 
         shadow_stack_pop(process);
