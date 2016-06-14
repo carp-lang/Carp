@@ -14,6 +14,7 @@
 
 // 'c' call <argcount>
 // 'd' def <literal>
+// 'e' discard
 // 'i' jump if false
 // 'j' jump (no matter what)
 // 'l' push <literal>
@@ -136,6 +137,11 @@ void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   Obj *p = form->cdr;
   while(p && p->car) {
     visit_form(process, env, bytecodeObj, position, p->car);
+    if(p->cdr && p->cdr->cdr) {
+      // this is not the last form
+      bytecodeObj->bytecode[*position] = 'e'; // discard
+      *position += 1;
+    }
     p = p->cdr;
   }
 }
@@ -318,10 +324,10 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     #if OPTIMIZED_LOOKUP
     Obj *binding_pair = env_lookup_binding(process, env, form);
     if(binding_pair && binding_pair->car && binding_pair->cdr) {
-      printf("Found binding: %s\n", obj_to_string(process, binding_pair)->s);
+      //printf("Found binding: %s\n", obj_to_string(process, binding_pair)->s);
       add_direct_lookup(bytecodeObj, position, binding_pair);
     } else {
-      printf("Found no binding for: %s\n", obj_to_string(process, form)->s);
+      //printf("Found no binding for: %s\n", obj_to_string(process, form)->s);
       add_lookup(bytecodeObj, position, form);
     }
     #else
@@ -362,11 +368,16 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
 
     #if LOG_BYTECODE_EXECUTION
     printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
+    stack_print(process);
     #endif
     
     switch(c) {
     case 'p':
       stack_push(process, nil);
+      process->frames[process->frame].p += 1;
+      break;
+    case 'e':
+      stack_pop(process);
       process->frames[process->frame].p += 1;
       break;
     case 'l':
@@ -384,7 +395,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
                                                                        literal->cdr->cdr->car),
                                    process->frames[process->frame].env,
                                    literal);
-      printf("Compiled lambda: "); obj_print_cout(lambda); printf("\n");
+      //printf("Compiled lambda: "); obj_print_cout(lambda); printf("\n");
       stack_push(process, lambda);
       process->frames[process->frame].p += 2;
       break;
@@ -477,16 +488,25 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
     case 'c':
       function = stack_pop(process);     
       arg_count = bytecode[p + 1] - 65;
+
+      printf("will call %s with %d args.\n", obj_to_string(process, function)->s, arg_count);
+      
       Obj **args = NULL;
       if(arg_count > 0) {
         args = malloc(sizeof(Obj*) * arg_count);
       }
       for(int i = 0; i < arg_count; i++) {
         Obj *arg = stack_pop(process);
+        printf("popped %s\n", obj_to_string(process, arg)->s);
         args[arg_count - i - 1] = arg;
         //shadow_stack_push(process, arg);
       }
       process->frames[process->frame].p += 2;
+
+      /* printf("args to %s\n", obj_to_string(process, function)->s); */
+      /* for(int i = 0; i < arg_count; i++) { */
+      /*   printf("arg %d: %s\n", i, obj_to_string(process, args[i])->s); */
+      /* } */
       
       if(function->tag == 'P') {
         stack_push(process, function->primop((struct Process*)process, args, arg_count));

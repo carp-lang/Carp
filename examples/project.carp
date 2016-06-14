@@ -45,32 +45,36 @@
 ;;                      (+ (fibb (- x 2))
 ;;                         (fibb (- x 1)))))))
 
-;;(println (str "fibb 26: " (eb '(fibb 26))))
+;; (time (println (str "fibb 26: " (eb '(fibb 26)))))
 ;;(time (println (str "fibb 20: " (eb '(fibb 20)))))
 
+(eb '(def make-counter (fn [start]
+                         (let [value start]
+                           (fn []
+                             (do (reset! value (inc value))
+                                 value))))))
 
+(eb '(def c1 (make-counter 10)))
+;;(eb '(def c2 (make-counter 10)))
 
-;; (eb '(def make-counter (fn [start]
-;;                          (fn []
-;;                            (do (reset! start (inc start))
-;;                                start)))))
-
-;; (eb '(def c1 (make-counter 10)))
-;; (eb '(def c2 (make-counter 10)))
+(eb '(println (str "c1: " (c1))))
 
 ;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c2: " (c1))))
+;; (eb '(println (str "c2: " (c2))))
 
 ;; (eb '(def f (fn [a] (list a a a))))
 ;; (eb '(def l (f 5)))
 
-(eb '(def make-f (fn [a]
-                   (let [x a]
-                     (fn [] (reset! x (inc x))
-                       x)))))
+;; (eb '(def make-f (fn [a]
+;;                    (let [x a]
+;;                      (fn [] (reset! x (inc x))
+;;                        x)))))
 
-(eb '(def f1 (make-f 100)))
+;; (eb '(def f1 (make-f 100)))
 
-(eb '(f1))
+;; (eb '(f1))
+
+;; (eb '(def f (fn [x] (fn [] (* x 123)))))
+;; (eb '(def x (f 3)))
+
+;; (eb '(println (str "x: " (x))))
