@@ -350,7 +350,7 @@ void process_eval(Process *process, Obj *form) {
 
 Obj *process_tick(Process *process) {
   if(!process->final_result) {
-    process->final_result = bytecode_eval_internal(process, process->bytecodeObj, 100);
+    process->final_result = bytecode_eval_internal(process, process->bytecodeObj, 100, 0);
   }
   return process->final_result;
 }

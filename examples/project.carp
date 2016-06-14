@@ -5,14 +5,8 @@
 ;;(reset! log-deps-when-baking-ast true)
 ;;(reset! log-redefining-struct true)
 
-(def carp-core-macros (open "../lisp/core_macros.carp"))
-(def carp-core (read (open "../lisp/core.carp")))
-
-
-
-
-
-
+;;(def carp-core-macros (open "../lisp/core_macros.carp"))
+;;(def carp-core (read (open "../lisp/core.carp")))
 
 ;;(eb '(do (def x "yeah") (println x)))
 ;;(eb '(do (def f (fn [z] (* z z))) (f 3)))
@@ -34,8 +28,8 @@
 ;;                         result))))
 ;;          (MAP inc (array 1 2 3))))
 
-;;(eb '(def fi (macro [a b c] (list 'if a c b))))
-;; (eb '(fi true 10 20))
+(eb '(def fi (macro [a b c] (list 'if a c b))))
+(eb '(fi true 10 20))
 
 ;;(eb '(def recur (fn [] (do (println (str 123)) (recur)))))
 ;;(eb '(recur))
@@ -58,16 +52,18 @@
 ;;(time (println (str "fibb 20: " (eb '(fibb 20)))))
 
 
-;; (eb '(def make-counter (fn [start]
-;;                          (let [value start]
-;;                            (fn []
-;;                              (do (reset! value (inc value))
-;;                                  value))))))
+(eb '(def make-counter (fn [start]
+                         (let [value start]
+                           (fn []
+                             (do (reset! value (inc value))
+                                 value))))))
 
-;; (eb '(def c1 (make-counter 10)))
-;; (eb '(def c2 (make-counter 10)))
+(eb '(def c1 (make-counter 10)))
+(eb '(def c2 (make-counter 10)))
 
-;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c1: " (c1))))
-;; (eb '(println (str "c2: " (c2))))
+(eb '(println (str "c1: " (c1))))
+(eb '(println (str "c1: " (c1))))
+(eb '(println (str "c1: " (c1))))
+(eb '(println (str "c2: " (c2))))
+
+;;(eb '(match 2 1 "a" 2 "b" 3 "c"))
