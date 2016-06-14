@@ -48,13 +48,29 @@
 ;;(println (str "fibb 26: " (eb '(fibb 26))))
 ;;(time (println (str "fibb 20: " (eb '(fibb 20)))))
 
-(eb '(def make-counter (fn [start]
-                         (fn []
-                           (let [value start]
-                             (do (reset! value (inc value))
-                                 value))))))
 
-(eb '(def c1 (make-counter 10)))
 
-(eb '(println (str (c1))))
+;; (eb '(def make-counter (fn [start]
+;;                          (fn []
+;;                            (do (reset! start (inc start))
+;;                                start)))))
 
+;; (eb '(def c1 (make-counter 10)))
+;; (eb '(def c2 (make-counter 10)))
+
+;; (eb '(println (str "c1: " (c1))))
+;; (eb '(println (str "c1: " (c1))))
+;; (eb '(println (str "c1: " (c1))))
+;; (eb '(println (str "c2: " (c1))))
+
+;; (eb '(def f (fn [a] (list a a a))))
+;; (eb '(def l (f 5)))
+
+(eb '(def make-f (fn [a]
+                   (let [x a]
+                     (fn [] (reset! x (inc x))
+                       x)))))
+
+(eb '(def f1 (make-f 100)))
+
+(eb '(f1))

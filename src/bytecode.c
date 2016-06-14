@@ -8,7 +8,7 @@
 #include "eval.h"
 
 #define OPTIMIZED_LOOKUP 1
-#define LOG_BYTECODE_EXECUTION 1
+#define LOG_BYTECODE_EXECUTION 0
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
@@ -17,6 +17,7 @@
 // 'i' jump if false
 // 'j' jump (no matter what)
 // 'l' push <literal>
+// 'm' push lambda <literal>
 // 'n' not
 // 'o' do
 // 'p' push nil
@@ -33,6 +34,15 @@ void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
   char new_literal_index = literals->count;
   obj_array_mut_append(literals, form);
   bytecodeObj->bytecode[*position] = 'l';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
+void add_lambda(Obj *bytecodeObj, int *position, Obj *form) {
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, form);
+  bytecodeObj->bytecode[*position] = 'm';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   *position += 2;
 }
@@ -237,9 +247,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     else if(HEAD_EQ("fn")) {
       //printf("Creating fn with env: %s\n", obj_to_string(process, env)->s);
       //printf("START Creating fn from form: %s\n", obj_to_string(process, form)->s);
-      Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
+      
       //printf("DONE Creating fn from form: %s\n", obj_to_string(process, form)->s);
-      add_literal(bytecodeObj, position, lambda);
+      add_lambda(bytecodeObj, position, form);
     }
     else if(HEAD_EQ("macro")) {
       Obj *macro = obj_new_macro(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
@@ -366,6 +376,18 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       stack_push(process, literal);
       process->frames[process->frame].p += 2;
       break;
+    case 'm':
+      i = bytecode[p + 1] - 65;
+      literal = literals_array[i];
+      Obj *lambda = obj_new_lambda(literal->cdr->car, form_to_bytecode(process,
+                                                                       process->frames[process->frame].env,
+                                                                       literal->cdr->cdr->car),
+                                   process->frames[process->frame].env,
+                                   literal);
+      printf("Compiled lambda: "); obj_print_cout(lambda); printf("\n");
+      stack_push(process, lambda);
+      process->frames[process->frame].p += 2;
+      break;
     case 'd':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
@@ -441,7 +463,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       break;
     case 'i':
       if(is_true(stack_pop(process))) {
-        // don't jump, just skip over the next instruction (which is the length of the jump)
+        // don't jump, just skip over the next instruction (the jump position)
         process->frames[process->frame].p += 2;
       } else {
         // jump if false!
@@ -500,7 +522,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         }
         
         Obj *calling_env = obj_new_environment(function->env);
-        //printf("arg_count = %d\n", arg_count);
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
         
         process->frame++;
@@ -510,7 +531,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         }
         process->frames[process->frame].bytecodeObj = function->body;
         process->frames[process->frame].env = calling_env;
-        //printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode); // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
+        // printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode);
+        // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
       }
       else {
         set_error_return_null("Can't call \n", function);
