@@ -12,13 +12,13 @@
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
+// 'a' push lambda <literal>
 // 'c' call <argcount>
 // 'd' def <literal>
 // 'e' discard
 // 'i' jump if false
 // 'j' jump (no matter what)
 // 'l' push <literal>
-// 'm' push lambda <literal>
 // 'n' not
 // 'o' do
 // 'p' push nil
@@ -43,7 +43,7 @@ void add_lambda(Obj *bytecodeObj, int *position, Obj *form) {
   Obj *literals = bytecodeObj->bytecode_literals;
   char new_literal_index = literals->count;
   obj_array_mut_append(literals, form);
-  bytecodeObj->bytecode[*position] = 'm';
+  bytecodeObj->bytecode[*position] = 'a';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   *position += 2;
 }
@@ -131,6 +131,15 @@ void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj 
 
   bytecodeObj->bytecode[*position + 0] = 'p'; // the while loop produces nil as a value
   *position += 1;
+}
+
+void add_match(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, form);
+  bytecodeObj->bytecode[*position] = 'm';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
 }
 
 void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -231,6 +240,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("while")) {
       add_while(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("match")) {
+      add_match(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("do")) {
       add_do(process, env, bytecodeObj, position, form);
@@ -387,7 +399,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       stack_push(process, literal);
       process->frames[process->frame].p += 2;
       break;
-    case 'm':
+    case 'a':
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       Obj *lambda = obj_new_lambda(literal->cdr->car, form_to_bytecode(process,
@@ -489,7 +501,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       function = stack_pop(process);     
       arg_count = bytecode[p + 1] - 65;
 
-      printf("will call %s with %d args.\n", obj_to_string(process, function)->s, arg_count);
+      //printf("will call %s with %d args.\n", obj_to_string(process, function)->s, arg_count);
       
       Obj **args = NULL;
       if(arg_count > 0) {
@@ -497,7 +509,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       }
       for(int i = 0; i < arg_count; i++) {
         Obj *arg = stack_pop(process);
-        printf("popped %s\n", obj_to_string(process, arg)->s);
         args[arg_count - i - 1] = arg;
         //shadow_stack_push(process, arg);
       }
