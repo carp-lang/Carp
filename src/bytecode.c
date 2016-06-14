@@ -7,7 +7,7 @@
 #include "assertions.h"
 #include "eval.h"
 
-#define OPTIMIZED_LOOKUP       1
+#define OPTIMIZED_LOOKUP       0
 #define LOG_BYTECODE_EXECUTION 0
 #define LOG_BYTECODE_STACK     0
 
@@ -394,6 +394,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
   int arg_count, i, bindings_index, body_index;
   
   for(int step = 0; step < steps; step++) {
+
+    if(process->frame < 0) {
+      set_error_return_null("Bytecode stack underflow. ", bytecodeObj);
+    }
     
     if(eval_error) {
       return NULL;

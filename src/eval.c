@@ -720,7 +720,12 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   //shadow_stack_print();
 
   if(BYTECODE_EVAL) {
-    bytecode_eval(process, form_to_bytecode(process, env, o), true);
+    Obj *bytecode = form_to_bytecode(process, env, o);
+    shadow_stack_push(process, bytecode);
+    Obj *result = bytecode_eval(process, bytecode, true);
+    shadow_stack_pop(process);
+    stack_push(process, result);
+    return;
   }
   
   if(LOG_EVAL) {
