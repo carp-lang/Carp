@@ -718,6 +718,10 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   if(eval_error) { return; }
 
   //shadow_stack_print();
+
+  if(BYTECODE_EVAL) {
+    bytecode_eval(process, form_to_bytecode(process, env, o), true);
+  }
   
   if(LOG_EVAL) {
     printf("> "); obj_print_cout(o); printf("\n");
@@ -804,7 +808,7 @@ void eval_text(Process *process, Obj *env, char *text, bool print, Obj *filename
   Obj *form = forms;
   stack_push(process, forms);
   while(form && form->car) {
-    Obj *result = BYTECODE_EVAL ? bytecode_eval(process, form_to_bytecode(process, env, form->car), true) : eval(process, env, form->car);
+    Obj *result = eval(process, env, form->car);
     if(eval_error) {
       Obj *lookup_message = NULL;
       if(eval_error->tag == 'E') {
