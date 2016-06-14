@@ -7,8 +7,9 @@
 #include "assertions.h"
 #include "eval.h"
 
-#define OPTIMIZED_LOOKUP 1
-#define LOG_BYTECODE_EXECUTION 1
+#define OPTIMIZED_LOOKUP       1
+#define LOG_BYTECODE_EXECUTION 0
+#define LOG_BYTECODE_STACK     0
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
@@ -405,7 +406,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
 
     #if LOG_BYTECODE_EXECUTION
     printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
-    //stack_print(process);
+    #endif
+    #if LOG_BYTECODE_STACK
+    stack_print(process);
     #endif
     
     switch(c) {
@@ -453,7 +456,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       Obj *value = stack_pop(process);
-      printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
+      //printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
       result = env_extend(process->global_env, literal, value);
       stack_push(process, result->cdr);
       process->frames[process->frame].p += 2;

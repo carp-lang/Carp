@@ -38,10 +38,14 @@
 ;;                     (list 'if a a b))))
 ;; (eb '(or false 10))
 
-;; (def fib (fn [x]
-;;            (if (< x 2) 1
-;;                (+ (fib (- x 2))
-;;                   (fib (- x 1))))))
+(def fib (fn [x]
+           (if (< x 2)
+             1
+             (+ (fib (- x 2))
+                (fib (- x 1))))))
+
+(def g (fn [x] (* x x)))
+(def h (fn [x] (+ (g x) (g x))))
 
 ;; (eb '(def fibb (fn [x]
 ;;                  (if (< x 2) 1
