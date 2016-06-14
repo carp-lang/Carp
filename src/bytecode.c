@@ -7,20 +7,24 @@
 #include "assertions.h"
 #include "eval.h"
 
+#define OPTIMIZED_LOOKUP 1
+#define LOG_BYTECODE_EXECUTION 1
+
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
-// 'q' stop
-// 'l' push <literal>
-// 'p' push nil
 // 'c' call <argcount>
-// 'y' lookup <literal>
 // 'd' def <literal>
-// 't' let
-// 'o' do
-// 'r' reset!
-// 'n' not
 // 'i' jump if false
 // 'j' jump (no matter what)
+// 'l' push <literal>
+// 'n' not
+// 'o' do
+// 'p' push nil
+// 'r' reset!
+// 't' let
+// 'x' direct lookup
+// 'y' lookup <literal>
+// 'q' stop
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -52,6 +56,15 @@ void add_lookup(Obj *bytecodeObj, int *position, Obj *form) {
   char new_literal_index = literals->count;
   obj_array_mut_append(literals, form);
   bytecodeObj->bytecode[*position] = 'y';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
+void add_direct_lookup(Obj *bytecodeObj, int *position, Obj *pair) {
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, pair);
+  bytecodeObj->bytecode[*position] = 'x';
   bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
   *position += 2;
 }
@@ -222,7 +235,10 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
       add_not(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("fn")) {
+      //printf("Creating fn with env: %s\n", obj_to_string(process, env)->s);
+      //printf("START Creating fn from form: %s\n", obj_to_string(process, form)->s);
       Obj *lambda = obj_new_lambda(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
+      //printf("DONE Creating fn from form: %s\n", obj_to_string(process, form)->s);
       add_literal(bytecodeObj, position, lambda);
     }
     else if(HEAD_EQ("macro")) {
@@ -289,7 +305,18 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
   }
   else if(form->tag == 'Y') {
+    #if OPTIMIZED_LOOKUP
+    Obj *binding_pair = env_lookup_binding(process, env, form);
+    if(binding_pair && binding_pair->car && binding_pair->cdr) {
+      printf("Found binding: %s\n", obj_to_string(process, binding_pair)->s);
+      add_direct_lookup(bytecodeObj, position, binding_pair);
+    } else {
+      printf("Found no binding for: %s\n", obj_to_string(process, form)->s);
+      add_lookup(bytecodeObj, position, form);
+    }
+    #else
     add_lookup(bytecodeObj, position, form);
+    #endif
   }
   else {
     add_literal(bytecodeObj, position, form);
@@ -322,8 +349,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
     char *bytecode = process->frames[process->frame].bytecodeObj->bytecode;
     int p = process->frames[process->frame].p;
     char c = bytecode[p];
-    
-    //printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
+
+    #if LOG_BYTECODE_EXECUTION
+    printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
+    #endif
     
     switch(c) {
     case 'p':
@@ -403,6 +432,13 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
       stack_push(process, lookup);
       process->frames[process->frame].p += 2;
       break;
+    case 'x':
+      i = bytecode[p + 1] - 65;
+      Obj *binding_pair = literals_array[i];
+      lookup = binding_pair->cdr;
+      stack_push(process, lookup);
+      process->frames[process->frame].p += 2;
+      break;
     case 'i':
       if(is_true(stack_pop(process))) {
         // don't jump, just skip over the next instruction (which is the length of the jump)
@@ -466,6 +502,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps) {
         Obj *calling_env = obj_new_environment(function->env);
         //printf("arg_count = %d\n", arg_count);
         env_extend_with_args(process, calling_env, function, arg_count, args, true);
+        
         process->frame++;
         process->frames[process->frame].p = 0;
         if(function->body->tag != 'X') {
