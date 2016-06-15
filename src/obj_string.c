@@ -178,6 +178,12 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
   }
   else if(o->tag == 'E') {
     shadow_stack_push(process, (struct Obj *)o);
+
+    if(o == process->global_env) {
+      obj_string_mut_append(total, "{ GLOBAL ENVIRONMENT }");
+      return;
+    }
+    
     obj_string_mut_append(total, "{");
     x++;
     Obj *p = o->bindings;

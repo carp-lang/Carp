@@ -1282,7 +1282,8 @@ Obj *p_error(Process *process, Obj** args, int arg_count) {
 }
 
 Obj *p_env(Process *process, Obj** args, int arg_count) {
-  return process->global_env;
+  return process->frames[process->frame].env;
+  //return process->global_env;
 }
 
 Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {

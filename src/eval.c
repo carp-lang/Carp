@@ -132,7 +132,34 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
     //printf("Calling lambda "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
-    //printf("Applying %s\n", obj_to_string(process, function)->s);
+    //printf("Applying %s\n", obj_to_string(process, function)->s);  
+
+    #if BYTECODE_EVAL
+
+    Obj *calling_env = obj_new_environment(process->frames[process->frame].env);
+    bool allow_rest_args = true;
+    env_extend_with_args(process, calling_env, function, arg_count, args, allow_rest_args);
+    //printf("calling_env: %s\n", obj_to_string(process, calling_env)->s);
+
+    shadow_stack_push(process, function);
+    shadow_stack_push(process, calling_env);
+    
+    Obj *result = bytecode_sub_eval_internal(process, calling_env, function->body);
+
+    if(eval_error) {
+      return;
+    }
+    assert(result);
+    
+    //printf("result = %s\n", obj_to_string(process, result)->s);
+    stack_push(process, result); // put it back on stack (TODO: fix this unnecessary work?)
+
+    Obj *pop1 = shadow_stack_pop(process);
+    Obj *pop2 = shadow_stack_pop(process);
+    assert(pop1 == calling_env);
+    assert(pop2 == function);
+    
+    #else
     
     Obj *calling_env = obj_new_environment(function->env);
     bool allow_rest_args = true;
@@ -141,28 +168,22 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
 
     shadow_stack_push(process, function);
     shadow_stack_push(process, calling_env);
-
-    #if BYTECODE_EVAL
-    process->frame++; // sub evaluation
-    Obj *result = bytecode_eval_bytecode_in_env(process, process->global_env, function->body);
-    printf("result = %s\n", obj_to_string(process, result)->s);
-    stack_push(process, result); // put it back on stack, TODO: fix this unnecessary work
-    #else 
+    
     if(function->body->tag == 'X') {
       eval_error = obj_new_string("Can't apply lambda with bytecode body.");
     } else {
       eval_internal(process, calling_env, function->body);
     }
-    #endif      
     
     if(eval_error) {
       return;
     }
-    
+
     Obj *pop1 = shadow_stack_pop(process);
     Obj *pop2 = shadow_stack_pop(process);
     assert(pop1 == calling_env);
     assert(pop2 == function);
+    #endif
   }
   else if(function->tag == 'P') {   
     Obj *result = function->primop((struct Process*)process, args, arg_count);

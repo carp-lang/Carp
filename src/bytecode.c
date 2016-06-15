@@ -31,7 +31,6 @@
 // 'y' lookup <literal>
 // 'q' stop
 
-Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj);
 void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts);
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -689,7 +688,7 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
 // *must* reset after 
 
 Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
-  printf("Will convert to bytecode and eval:\n%s\n", obj_to_string(process, form)->s);
+  printf("\nWill convert to bytecode and eval:\n%s\n\n", obj_to_string(process, form)->s);
   Obj *bytecode = form_to_bytecode(process, env, form);
   shadow_stack_push(process, bytecode);
   Obj *result = bytecode_eval_bytecode(process, bytecode); 
