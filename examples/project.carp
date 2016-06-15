@@ -18,6 +18,25 @@
 ;;                         result))))
 ;;          (MAP inc (array 1 2 3))))
 
+(def let-internal
+  (fn [bindings body]
+    (match (count bindings)
+      0 body
+      1 (error "Uneven nr of forms in bindings.")
+      _ (list 'lets (nth bindings 0) (nth bindings 1) (let-internal (rest (rest bindings)) body)))))
+
+(def let
+  (macro [bindings body]
+         (let-internal (array-to-list bindings) body)))
+
+(let [] (* 2 3))
+(let [a 10] (* a a))
+(let [a 10 b 20] (* a b))
+
+
+
+
+
 (def fi (macro [a b c] (list 'if a c b)))
 (fi true 10 20)
 

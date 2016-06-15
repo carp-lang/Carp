@@ -26,7 +26,7 @@
 // 'r' reset!
 // 't' let
 // 'u' return
-// 'v' process->frame--
+// 'v' pop let scope
 // 'x' direct lookup
 // 'y' lookup <literal>
 // 'q' stop
@@ -186,37 +186,36 @@ void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
 }
 
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'let' form: ", form);
+  assert_or_set_error(form->cdr->car->tag == 'Y', "Must bind to symbol in 'let' form: ", form);
+  assert_or_set_error(form->cdr->cdr->car, "Too few body forms in 'let' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->car, "Too few body forms in 'let' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", form);
   
-  Obj *bindings = form->cdr->car;
-  Obj *body = form->cdr->cdr->car;
-  shadow_stack_push(process, bindings);
+  Obj *key = form->cdr->car;
+  Obj *value = form->cdr->cdr->car;
+  Obj *body = form->cdr->cdr->cdr->car;
+  shadow_stack_push(process, key);
+  shadow_stack_push(process, value);
   shadow_stack_push(process, body);
-
-  //printf("bindings: %s\n", obj_to_string(process, bindings)->s);
-
-  Obj *bindings_only_symbols = obj_new_array(bindings->count / 2);
-  shadow_stack_push(process, bindings_only_symbols);
   
-  for(int i = 0; i < bindings_only_symbols->count; i++) {
-    bindings_only_symbols->array[i] = bindings->array[i * 2];
-    visit_form(process, env, bytecodeObj, position, bindings->array[i * 2 + 1]);
-  }
-  //printf("bindings_only_symbols: %s\n", obj_to_string(process, bindings_only_symbols)->s);
-
   Obj *literals = bytecodeObj->bytecode_literals;
   char new_literal_index = literals->count;
-  Obj *let_body_code = form_to_bytecode(process, env, body);
 
-  obj_array_mut_append(literals, bindings_only_symbols);
-  obj_array_mut_append(literals, let_body_code);
+  obj_array_mut_append(literals, key);
+
+  visit_form(process, env, bytecodeObj, position, value); // inline the expression of the let block
   
-  bytecodeObj->bytecode[*position] = 't';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  bytecodeObj->bytecode[*position + 2] = new_literal_index + 1 + 65;
-  bytecodeObj->bytecode[*position + 3] = 'v';
+  bytecodeObj->bytecode[*position] = 't'; // push frame and bind 
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; // key
+  *position += 2;
 
-  *position += 4;
+  visit_form(process, env, bytecodeObj, position, body); // inline the body of the let block
 
+  bytecodeObj->bytecode[*position] = 'v'; // pop frame
+  *position += 1;
+  
   shadow_stack_pop(process);
   shadow_stack_pop(process);
   shadow_stack_pop(process);
@@ -268,7 +267,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     else if(HEAD_EQ("do")) {
       add_do(process, env, bytecodeObj, position, form);
     }
-    else if(HEAD_EQ("let")) {
+    else if(HEAD_EQ("lets")) {
       add_let(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("def")) {
@@ -330,6 +329,10 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
         }
         
         Obj *expanded = bytecode_sub_eval_internal(process, calling_env, macro->body);
+
+        if(eval_error) {
+          return;
+        }
         
         //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
         visit_form(process, env, bytecodeObj, position, expanded);
@@ -415,11 +418,10 @@ void bytecode_stack_print(Process *process) {
 // returns NULL if not done yet
 Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int top_frame) {
   assert(process);
-  assert(process->frame >= 0);
   assert(bytecodeObj);
   
-  Obj *literal, *function, *lookup, *result, *bindings, *let_env, *binding;
-  int arg_count, i, bindings_index, body_index;
+  Obj *literal, *function, *lookup, *result, *let_env, *binding, *key;
+  int arg_count, i;
   int *jump_pos;
   
   for(int step = 0; step < steps; step++) {
@@ -438,8 +440,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     char c = bytecode[p];
 
     #if LOG_BYTECODE_EXECUTION
-    printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
+    printf("\n\nframe = %d, p = %d, c = %c\n", process->frame, p, c);
+    //printf("env: %s\n", obj_to_string(process, process->frames[process->frame].env)->s);
     #endif
+    
     #if LOG_BYTECODE_STACK
     //stack_print(process);
     bytecode_stack_print(process);
@@ -519,29 +523,21 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       process->frames[process->frame].p += 2;
       break;
     case 't':
-      //printf("entering let\n");
-      //shadow_stack_push(process, let_env);
-
-      bindings_index = bytecode[p + 1] - 65;
-      body_index = bytecode[p + 2] - 65;
-      
-      bindings = literals_array[bindings_index];
-      //printf("bindings: %s\n", obj_to_string(process, bindings)->s);
+      key = literals_array[bytecode[p + 1] - 65];
 
       let_env = obj_new_environment(process->frames[process->frame].env);
-      for(int i = 0; i < bindings->count; i++) {
-        env_extend(let_env, bindings->array[i], stack_pop(process));
-      }
 
-      process->frames[process->frame].p += 4;
+      value = stack_pop(process);
+      env_extend(let_env, key, value);
+
+      printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
+
+      process->frames[process->frame].p += 2; // jump past 't' and the key index
     
-      process->frames[process->frame + 1].p = 0;
-      process->frames[process->frame + 1].bytecodeObj = literals_array[body_index];
-      process->frames[process->frame + 1].env = let_env;
       process->frame++;
-
-      //printf("will now execute: %s\n", obj_to_string(process, process->frames[process->frame].bytecodeObj)->s);
-
+      process->frames[process->frame].p = process->frames[process->frame - 1].p;
+      process->frames[process->frame].bytecodeObj = process->frames[process->frame - 1].bytecodeObj;
+      process->frames[process->frame].env = let_env;
       break;
     case 'y':
       i = bytecode[p + 1] - 65;
@@ -649,9 +645,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       break;
     /* case 'u': */
     /*   return stack_pop(process); */
-    /* case 'v': */
-    /*   process->frame--; */
+    case 'v':
+      process->frame--;
+      process->frames[process->frame].p = process->frames[process->frame + 1].p + 1;
+      break;
     case 'q':
+      //printf("\nhit q\n");
       //set_error_return_null("Hit end of bytecode. \n", bytecodeObj);
       process->frame--;        
       if(process->frame < top_frame) {
@@ -846,6 +845,10 @@ void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts) {
       //stack_print(process);
       
       Obj *result = bytecode_sub_eval_internal(process, new_env, bytecode); // eval the following form using the new environment
+      if(eval_error) {
+        return;
+      }
+      
       stack_push(process, result);
 
       //printf("after sub eval, frame: %d\n", process->frame);
