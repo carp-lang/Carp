@@ -1,5 +1,5 @@
-(reset! echo-signature-after-bake true)
-(reset! log-unloading-of-dylibs true)
+;;(reset! echo-signature-after-bake true)
+;;(reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
@@ -7,18 +7,6 @@
 
 ;;(def carp-core-macros (open "../lisp/core_macros.carp"))
 ;;(def carp-core (read (open "../lisp/core.carp")))
-
-;;(eb '(do (def x "yeah") (println x)))
-;;(eb '(do (def f (fn [z] (* z z))) (f 3)))
-;;(eb '(map (fn [x] (* x x)) (list 1 2 3)))
-;;(eb '(while true (println "loop")))
-;;(eb '(while true false))
-
-;;(eb '(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t))))))
-
-(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))
-
-;;(eb '(if true 10 20))
 
 ;; (eb '(do (def MAP (fn [f xs]
 ;;                     (let [i 0
@@ -30,18 +18,10 @@
 ;;                         result))))
 ;;          (MAP inc (array 1 2 3))))
 
-(eb '(def fi (macro [a b c] (list 'if a c b))))
-(eb '(fi true 10 20))
-
 (def fi (macro [a b c] (list 'if a c b)))
 (fi true 10 20)
 
-;;(eb '(def recur (fn [] (do (println (str 123)) (recur)))))
-;;(eb '(recur))
-
-;; (eb '(def or (macro [a b]
-;;                     (list 'if a a b))))
-;; (eb '(or false 10))
+(def inc (fn [x] (+ x 1)))
 
 (def fib (fn [x]
            (if (< x 2)
@@ -52,29 +32,46 @@
 (def g (fn [x] (* x x)))
 (def h (fn [x] (+ (g x) (g x))))
 
-;; (eb '(def fibb (fn [x]
-;;                  (if (< x 2) 1
-;;                      (+ (fibb (- x 2))
-;;                         (fibb (- x 1)))))))
 
-;; (time (println (str "fibb 26: " (eb '(fibb 26)))))
-;;(time (println (str "fibb 20: " (eb '(fibb 20)))))
+(def make-counter (fn [start]
+                    (let [value start]
+                      (fn []
+                        (do (reset! value (inc value))
+                            value)))))
 
+(def c1 (make-counter 10))
+(def c2 (make-counter 10))
 
-(eb '(def make-counter (fn [start]
-                         (let [value start]
-                           (fn []
-                             (do (reset! value (inc value))
-                                 value))))))
+(println (str "c1: " (c1)))
+(println (str "c1: " (c1)))
+(println (str "c1: " (c1)))
+(println (str "c2: " (c2)))
 
-(eb '(def c1 (make-counter 10)))
-(eb '(def c2 (make-counter 10)))
-
-(eb '(println (str "c1: " (c1))))
-(eb '(println (str "c1: " (c1))))
-(eb '(println (str "c1: " (c1))))
-(eb '(println (str "c2: " (c2))))
-
-;;(eb '(match 2 1 "a" 2 "b" 3 "c"))
+(match 2 1 "a" 2 "b" 3 "c")
 
 (if true 10 20) (if false 10 20) (do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))
+
+(def defmacro (macro (name args body)
+                     (list 'do
+                           (list 'def name (list 'macro args body))
+                           (list 'meta-set! name :name (str name)))))
+
+(defmacro defn (name args body)
+  (list 'do
+        (list 'def name (list 'fn args body))
+        (list 'meta-set! name :line (meta-get name :line))
+        (list 'meta-set! name :name (str name))
+        (list 'meta-set! name :user-defined true)))
+
+(defn foo []
+  (let [x 5
+        y (* x 10)]
+    (println (str y))))
+
+(foo)
+
+;; (load-lisp "../lisp/core.carp")
+;; (load-lisp "../lisp/infer_types.carp")
+;; (load-lisp "../lisp/compiler_helpers.carp")
+;; (load-lisp "../lisp/sicp_solver.carp")
+
