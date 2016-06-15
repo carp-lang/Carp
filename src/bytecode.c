@@ -8,7 +8,7 @@
 #include "eval.h"
 
 #define OPTIMIZED_LOOKUP       0
-#define LOG_BYTECODE_EXECUTION 0
+#define LOG_BYTECODE_EXECUTION 1
 #define LOG_BYTECODE_STACK     0
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
@@ -96,42 +96,53 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 
   int jump_to_false_pos = *position;
   bytecodeObj->bytecode[*position] = '?'; // amount to jump when expression is false
-  *position += 1;
+  *position += sizeof(int);
   
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car); // true branch
 
-  int jump_from_true_pos = *position + 1;
-  bytecodeObj->bytecode[*position + 0] = 'j';
-  bytecodeObj->bytecode[*position + 1] = '?'; // amount to jump when true is done
-  *position += 2;
+  bytecodeObj->bytecode[*position] = 'j';
+  *position += 1;
+  
+  int jump_from_true_pos = *position;
+  bytecodeObj->bytecode[*position] = '?'; // amount to jump when true is done
+  *position += sizeof(int);
+
+  printf("jump_to_false_pos = %d, jump_from_true_pos = %d\n", jump_to_false_pos, jump_from_true_pos);
 
   // Now we know where the false branch begins, jump here if the expression is true:
-  bytecodeObj->bytecode[jump_to_false_pos] = *position + 65;
+  int *jump_to_false_int_p = (int*)(bytecodeObj->bytecode + jump_to_false_pos);
+  *jump_to_false_int_p = *position; // write int to the char array
   
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->cdr->car); // false branch
 
   // Now we know where the whole block ends, jump here when true branch is done:
-  bytecodeObj->bytecode[jump_from_true_pos] = *position + 65;
+  int *jump_from_true_int_p = (int*)(bytecodeObj->bytecode + jump_from_true_pos);
+  *jump_from_true_int_p = *position;
 }
 
 void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
   int start = *position;
 
   visit_form(process, env, bytecodeObj, position, form->cdr->car);
+
   bytecodeObj->bytecode[*position] = 'i'; // if
   *position += 1;
+  
   int jump_pos = *position;
   bytecodeObj->bytecode[*position] = '?'; // amount to jump
-  *position += 1;
+  *position += sizeof(int);
   
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
 
-  bytecodeObj->bytecode[*position + 0] = 'j'; // go back to start
-  bytecodeObj->bytecode[*position + 1] = start + 65;
-  *position += 2;
+  bytecodeObj->bytecode[*position] = 'j'; // go back to start
+  *position += 1;
+  
+  bytecodeObj->bytecode[*position] = start;
+  *position += sizeof(int);
 
   // Now we know where to jump to if the while expression is false:
-  bytecodeObj->bytecode[jump_pos] = *position + 65;
+  int *jump_int_p = (int*)(bytecodeObj->bytecode + jump_pos);
+  *jump_int_p = *position;
 
   bytecodeObj->bytecode[*position + 0] = 'p'; // the while loop produces nil as a value
   *position += 1;
@@ -409,6 +420,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
   
   Obj *literal, *function, *lookup, *result, *bindings, *let_env, *binding;
   int arg_count, i, bindings_index, body_index;
+  int *jump_pos;
   
   for(int step = 0; step < steps; step++) {
 
@@ -552,15 +564,16 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'i':
       if(is_true(stack_pop(process))) {
         // don't jump, just skip over the next instruction (the jump position)
-        process->frames[process->frame].p += 2;
+        process->frames[process->frame].p += 1 + sizeof(int);
       } else {
         // jump if false!
-        int i = bytecode[p + 1] - 65;
-        process->frames[process->frame].p = i;
+        jump_pos = (int*)(bytecode + 1 + p);
+        process->frames[process->frame].p = *jump_pos;
       }
       break;
     case 'j':
-      process->frames[process->frame].p = bytecode[p + 1] - 65;
+      jump_pos = (int*)(bytecode + 1 + p);
+      process->frames[process->frame].p = *jump_pos;
       break;
     case 'c':
       function = stack_pop(process);     
@@ -693,8 +706,8 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
 // *must* reset after 
 
 Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
-  printf("\nWill convert to bytecode and eval:\n%s\n\n", obj_to_string(process, form)->s);
   Obj *bytecode = form_to_bytecode(process, env, form);
+  printf("\nWill convert to bytecode and eval:\n%s\n%s\n\n", obj_to_string(process, bytecode)->s, obj_to_string(process, form)->s);
   shadow_stack_push(process, bytecode);
   Obj *result = bytecode_eval_bytecode(process, bytecode); 
   shadow_stack_pop(process);

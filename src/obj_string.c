@@ -425,7 +425,17 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
     /* obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s); */
     /* obj_string_mut_append(total, "\n----------------"); */
     obj_string_mut_append(total, "(Bytecode: ");
+
+    /* for(char *p = o->bytecode; p != '\0'; p++) { */
+    /*   char buffer[16]; */
+    /*   buffer[0] = *p; */
+    /*   buffer[1] = '\0'; */
+    /*   //printf("buffer = %s\n", buffer); */
+    /*   obj_string_mut_append(total, buffer); */
+    /* } */
+
     obj_string_mut_append(total, o->bytecode);
+    
     obj_string_mut_append(total, " => ");
     obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s);
     obj_string_mut_append(total, ")");
