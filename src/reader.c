@@ -126,15 +126,14 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     return new_array;
   }
   else if(CURRENT == '{') {
-    int line = read_line_nr;
-    int pos = read_line_pos;
     Obj *list = obj_new_cons(NULL, NULL);
+    obj_set_line_info(process, list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
     read_pos++;
     while(1) {
       skip_whitespace(s);
       if(CURRENT == '\0') {
-	printf("Missing } at the end.\n");
+	printf("Missing '}' at the end.\n");
 	print_read_pos();
 	return nil;
       }
@@ -142,26 +141,15 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
 	read_pos++;
 	break;
       }
-      Obj *key = read_internal(process, env, s, filename);
-
-      if(CURRENT == '}') {
-	printf("Uneven number of forms in dictionary.\n");
-	print_read_pos();
-	return nil;
-      }
-      
-      Obj *value = read_internal(process, env, s, filename);
-      
+      Obj *o = read_internal(process, env, s, filename);
       Obj *new = obj_new_cons(NULL, NULL);
-      Obj *pair = obj_new_cons(key, value);
-      prev->car = pair;
+      prev->car = o;
       prev->cdr = new;
       prev = new;
     }
-    Obj *dict = obj_new_environment(NULL);
-    dict->bindings = list;
-    obj_set_line_info(process, dict, line, pos, filename);
-    return dict;
+    Obj *call_to_dict = obj_new_cons(obj_new_symbol("dictionary"), list);
+    printf("Read dictionary literal: %s\n", obj_to_string(process, call_to_dict)->s);
+    return call_to_dict;
   }
   else if(CURRENT == '&') {
     int line = read_line_nr, pos = read_line_pos;
