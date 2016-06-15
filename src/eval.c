@@ -862,7 +862,11 @@ void eval_text(Process *process, Obj *env, char *text, bool print, Obj *filename
         }
       }
       if(show_stacktrace) {
+        #if BYTECODE_EVAL
+        bytecode_stack_print(process);
+        #else 
         function_trace_print(process);
+        #endif
       }
       /* printf("\n"); */
       /* stack_print(); */

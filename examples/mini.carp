@@ -1,3 +1,4 @@
 (println "eeeny...")
 (println "mini")
 (println "miney!")
+(error "bleh")

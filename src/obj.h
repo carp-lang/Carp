@@ -125,6 +125,7 @@ typedef struct {
   int p;
   Obj *bytecodeObj;
   Obj *env;
+  Obj *trace;
 } BytecodeFrame;
 
 typedef struct {

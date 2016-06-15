@@ -406,7 +406,40 @@ Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj) {
 }
 
 void bytecode_frame_print(Process *process, BytecodeFrame frame) {
-  printf("%s (p = %d)", obj_to_string(process, frame.bytecodeObj)->s, frame.p);
+  if(!frame.trace) {
+    printf("No trace.");
+  }
+  else if(frame.trace->meta) {
+    Obj *o = frame.trace;
+    //printf("%s\n", obj_to_string(o->meta)->s);
+    char *func_name = "";
+    Obj *func_name_data = NULL;
+    if(o && o->meta) {
+      func_name_data = env_lookup(process, o->meta, obj_new_keyword("name"));
+    }
+    if(func_name_data) {
+      func_name = obj_to_string_not_prn(process, func_name_data)->s;
+    } else {
+      func_name = "???"; // obj_to_string(o)->s;
+    }
+    /* int line = env_lookup(process, o->meta, obj_new_keyword("line"))->i; */
+    /* int pos = env_lookup(process, o->meta, obj_new_keyword("pos"))->i; */
+    /* char *file_path = env_lookup(process, o->meta, obj_new_keyword("file"))->s; */
+    /* char *file = file_path; */
+
+    /* int len = (int)strlen(file_path); */
+    /* for(int i = len - 1; i >= 0; i--) { */
+    /*   if(file_path[i] == '/') { */
+    /*     file = strdup(file_path + i + 1); */
+    /*     break; */
+    /*   } */
+    /* } */
+    /* printf("%-30s %s %d:%d", func_name, file, line, pos); */
+    printf("%s", func_name);
+  }
+  else {
+    printf("No meta data.");
+  }
 }
 
 void bytecode_stack_print(Process *process) {
@@ -639,16 +672,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         }
         process->frames[process->frame].bytecodeObj = function->body;
         process->frames[process->frame].env = calling_env;
+        process->frames[process->frame].trace = function;
+        
         // printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode);
         // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
-
-        /* StackTraceCallSite call_site = { .caller = obj_new_string("???"), .callee = obj_new_string("!!!") }; */
-        /* process->function_trace[process->function_trace_pos] = call_site; */
-        process->function_trace_pos++;
-
-        /* printf("will print function trace, pos = %d\n", process->function_trace_pos); */
-
-        /* function_trace_print(process); */
+        printf("Entering new frame...\n");
+        bytecode_stack_print(process);
       }
       else {
         set_error_return_null("Can't call \n", function);
@@ -665,7 +694,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'q':
       //printf("\nhit q\n");
       //set_error_return_null("Hit end of bytecode. \n", bytecodeObj);
-      process->function_trace_pos--;
       process->frame--;        
       if(process->frame < top_frame) {
         return stack_pop(process);

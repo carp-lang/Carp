@@ -148,6 +148,7 @@ void gc(Process *process) {
   for(int i = 0; i < process->frame; i++) {
     obj_mark_alive(process->frames[i].bytecodeObj);
     obj_mark_alive(process->frames[i].env);
+    obj_mark_alive(process->frames[i].trace);
     //obj_mark_alive(process->frames[i].);
   }
   gc_sweep();

@@ -11,3 +11,4 @@ Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form);
 Obj *bytecode_sub_eval_form(Process *process, Obj *env, Obj *form);
 Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int top_frame);
 Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj);
+void bytecode_stack_print(Process *process);
