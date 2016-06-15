@@ -25,7 +25,7 @@
 // 'p' push nil
 // 'r' reset!
 // 't' let
-// 'u' return
+// 'u' end of function (process->function_trace_pos--)
 // 'v' pop let scope
 // 'x' direct lookup
 // 'y' lookup <literal>
@@ -290,7 +290,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
       add_lambda(bytecodeObj, position, form);
     }
     else if(HEAD_EQ("macro")) {
-      Obj *macro = obj_new_macro(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car), env, form);
+      Obj *macro = obj_new_macro(form->cdr->car, form_to_bytecode(process, env, form->cdr->cdr->car, false), env, form);
       add_literal(bytecodeObj, position, macro);
     }
     else {
@@ -334,7 +334,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           return;
         }
         
-        printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
         
         visit_form(process, env, bytecodeObj, position, expanded);
       }
@@ -362,7 +362,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
   }
 }
 
-Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
+Obj *form_to_bytecode(Process *process, Obj *env, Obj *form, bool insert_return_instruction) {
   int code_max_length = 2048;
   char *code = malloc(code_max_length);
   Obj *bytecodeObj = obj_new_bytecode(code);
@@ -371,6 +371,9 @@ Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   if(position > code_max_length) {
     set_error_return_nil("Bytecode exceeded maximum allowed length for form: ", form);
   }
+  /* if(insert_return_instruction) { */
+  /*   bytecodeObj->bytecode[position++] = 'u'; */
+  /* } */
   bytecodeObj->bytecode[position++] = 'q';
   bytecodeObj->bytecode[position++] = '\0';
   //printf("Converted '%s' to bytecode: %s\n", obj_to_string(process, form)->s, obj_to_string(process, bytecodeObj)->s);
@@ -470,9 +473,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       i = bytecode[p + 1] - 65;
       literal = literals_array[i];
       // TODO: compile lambda during normal compilation step, only set up the environment here
-      Obj *lambda = obj_new_lambda(literal->cdr->car, form_to_bytecode(process,
-                                                                       process->frames[process->frame].env,
-                                                                       literal->cdr->cdr->car),
+      Obj *lambda_bytecode = form_to_bytecode(process, process->frames[process->frame].env, literal->cdr->cdr->car, true);
+      Obj *lambda = obj_new_lambda(literal->cdr->car, lambda_bytecode,
                                    process->frames[process->frame].env,
                                    literal);
       //printf("Compiled lambda: "); obj_print_cout(lambda); printf("\n");
@@ -639,13 +641,23 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         process->frames[process->frame].env = calling_env;
         // printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode);
         // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
+
+        /* StackTraceCallSite call_site = { .caller = obj_new_string("???"), .callee = obj_new_string("!!!") }; */
+        /* process->function_trace[process->function_trace_pos] = call_site; */
+        process->function_trace_pos++;
+
+        /* printf("will print function trace, pos = %d\n", process->function_trace_pos); */
+
+        /* function_trace_print(process); */
       }
       else {
         set_error_return_null("Can't call \n", function);
       }      
       break;
-    /* case 'u': */
-    /*   return stack_pop(process); */
+    case 'u':
+      process->function_trace_pos--;
+      process->frame++;
+      break;
     case 'v':
       process->frame--;
       process->frames[process->frame].p = process->frames[process->frame + 1].p + 1;
@@ -653,6 +665,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'q':
       //printf("\nhit q\n");
       //set_error_return_null("Hit end of bytecode. \n", bytecodeObj);
+      process->function_trace_pos--;
       process->frame--;        
       if(process->frame < top_frame) {
         return stack_pop(process);
@@ -706,8 +719,8 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
 // *must* reset after 
 
 Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
-  Obj *bytecode = form_to_bytecode(process, env, form);
-  printf("\nWill convert to bytecode and eval:\n%s\n%s\n\n", obj_to_string(process, bytecode)->s, obj_to_string(process, form)->s);
+  Obj *bytecode = form_to_bytecode(process, env, form, false);
+  //printf("\nWill convert to bytecode and eval:\n%s\n%s\n\n", obj_to_string(process, bytecode)->s, obj_to_string(process, form)->s);
   shadow_stack_push(process, bytecode);
   Obj *result = bytecode_eval_bytecode(process, bytecode); 
   shadow_stack_pop(process);
@@ -840,7 +853,7 @@ void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts) {
     if(result) {
       //printf("Match found, evaling %s in env\n", obj_to_string(process, p->cdr->car)->s); //, obj_to_string(new_env)->s);
 
-      Obj *bytecode = form_to_bytecode(process, new_env, p->cdr->car);
+      Obj *bytecode = form_to_bytecode(process, new_env, p->cdr->car, false);
 
       //printf("before sub eval, frame: %d\n", process->frame);
       //stack_print(process);

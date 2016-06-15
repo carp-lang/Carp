@@ -213,6 +213,7 @@ Process *process_clone(Process *parent) {
 
 void process_reset(Process *process) {
   process->frame = 0;
+  process->function_trace_pos = 0;
 }
 
 void stack_print(Process *process) {
@@ -343,7 +344,7 @@ void function_trace_print(Process *process) {
 }
 
 void process_eval(Process *process, Obj *form) {
-  process->bytecodeObj = form_to_bytecode(process, process->global_env, form);
+  process->bytecodeObj = form_to_bytecode(process, process->global_env, form, false);
   //printf("Process will eval bytecode: %s\n", obj_to_string(process, process->bytecodeObj)->s);
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = process->bytecodeObj;

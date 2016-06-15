@@ -1,3 +1,8 @@
+- Line numbers for dictionary literals
+- Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
+- 
+
+
 # Generic structs 
   - unload all concretized structs when the parent struct is redefined
 
