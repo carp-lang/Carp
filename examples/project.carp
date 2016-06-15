@@ -16,6 +16,8 @@
 
 ;;(eb '(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t))))))
 
+(do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))
+
 ;;(eb '(if true 10 20))
 
 ;; (eb '(do (def MAP (fn [f xs]
@@ -74,3 +76,5 @@
 (eb '(println (str "c2: " (c2))))
 
 ;;(eb '(match 2 1 "a" 2 "b" 3 "c"))
+
+(if true 10 20) (if false 10 20) (do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))

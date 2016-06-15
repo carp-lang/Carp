@@ -348,10 +348,14 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
 }
 
 Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
-  char *code = malloc(2048);
+  int code_max_length = 2048;
+  char *code = malloc(code_max_length);
   Obj *bytecodeObj = obj_new_bytecode(code);
   int position = 0;
   visit_form(process, env, bytecodeObj, &position, form);
+  if(position > code_max_length) {
+    set_error_return_nil("Bytecode exceeded maximum allowed length for form: ", form);
+  }
   bytecodeObj->bytecode[position++] = 'q';
   bytecodeObj->bytecode[position++] = '\0';
   //printf("Converted '%s' to bytecode: %s\n", obj_to_string(process, form)->s, obj_to_string(process, bytecodeObj)->s);
@@ -642,7 +646,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       }
       break;
     default:
-      printf("Unhandled instruction: %c\n", c);
+      printf("Unhandled instruction: %c\n\n", c);
+      bytecode_stack_print(process);
       exit(-1);
     }
   }

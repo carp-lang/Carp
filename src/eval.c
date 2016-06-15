@@ -120,7 +120,7 @@ void call_struct_constructor(Process *process, Obj *function, Obj **args, int ar
       obj_string_mut_append(eval_error, name);
       obj_string_mut_append(eval_error, " to ");
       obj_string_mut_append(eval_error, obj_to_string(process, args[i])->s);
-      obj_string_mut_append(eval_error, " (unhandled type).");
+      obj_string_mut_append(eval_error, " (handled type).");
       return;
     }
   }
