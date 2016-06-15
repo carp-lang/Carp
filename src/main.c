@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
   Process *process = process_new();
   
-  //eval_text(process, process->global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false, obj_new_string("main.c"));
+  eval_text(process, process->global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false, obj_new_string("main.c"));
   
   if(argc == 2) {
     char load_file[512];

@@ -8,7 +8,7 @@
 #include "eval.h"
 
 #define OPTIMIZED_LOOKUP       0
-#define LOG_BYTECODE_EXECUTION 1
+#define LOG_BYTECODE_EXECUTION 0
 #define LOG_BYTECODE_STACK     0
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
@@ -107,7 +107,7 @@ void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
   bytecodeObj->bytecode[*position] = '?'; // amount to jump when true is done
   *position += sizeof(int);
 
-  printf("jump_to_false_pos = %d, jump_from_true_pos = %d\n", jump_to_false_pos, jump_from_true_pos);
+  //printf("jump_to_false_pos = %d, jump_from_true_pos = %d\n", jump_to_false_pos, jump_from_true_pos);
 
   // Now we know where the false branch begins, jump here if the expression is true:
   int *jump_to_false_int_p = (int*)(bytecodeObj->bytecode + jump_to_false_pos);
