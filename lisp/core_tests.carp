@@ -271,14 +271,14 @@
           (assert-eq (get-in tree-2 '(:c :a)) 39999))))))
 
 (deftest test-dictionary-copy
-  (let [a {:x 100}
+  (let [a {:xxx 100}
         b (copy a)
         c a]
     (do
-      (dict-set-in! a '(:x) 200)
-      (assert-eq 200 (get a :x))
-      (assert-eq 100 (get b :x)) ; unchanged, because of copy
-      (assert-eq 200 (get c :x)) ; changed, just an alias
+      (dict-set-in! a '(:xxx) 200)
+      (assert-eq 200 (get a :xxx))
+      (assert-eq 100 (get b :xxx)) ; unchanged, because of copy
+      (assert-eq 200 (get c :xxx)) ; changed, just an alias
       )))
 
 (deftest test-dictionary-evaluation

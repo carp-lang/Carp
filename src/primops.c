@@ -267,26 +267,34 @@ Obj *p_array(Process *process, Obj** args, int arg_count) {
 
 Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
   Obj *e = obj_new_environment(NULL);
-  if(arg_count % 2 == 1) {
-    set_error_return_nil("Uneven nr of arguments to 'dictionary'. ", nil);
+
+  if(arg_count == 0) {
+    e->bindings = nil;
   }
-
-  Obj *first = NULL;
-  Obj *prev = NULL;
-
-  for(int i = 0; i < arg_count; i += 2) {
-    Obj *pair = obj_new_cons(args[i], args[i + 1]);
-    Obj *new = obj_new_cons(pair, nil);
-    if(!first) {
-      first = new;
+  else {
+    if(arg_count % 2 == 1) {
+      set_error_return_nil("Uneven nr of arguments to 'dictionary'. ", nil);
     }
-    if(prev) {
-      prev->cdr = new;
+
+    Obj *first = NULL;
+    Obj *prev = NULL;
+
+    for(int i = 0; i < arg_count; i += 2) {
+      Obj *pair = obj_new_cons(args[i], args[i + 1]);
+      Obj *new = obj_new_cons(pair, nil);
+      if(!first) {
+        first = new;
+      }
+      if(prev) {
+        prev->cdr = new;
+      }
+      prev = new;
     }
-    prev = new;
+    e->bindings = first;
   }
   
-  e->bindings = first;
+  //sprintf("Created dictionary:\n%s\n", obj_to_string(process, e)->s);
+  
   return e;
 }
 
@@ -478,6 +486,11 @@ Obj *p_copy(Process *process, Obj** args, int arg_count) {
     return nil;
   }
   Obj *a = args[0];
+
+  if(!a) {
+    set_error_return_nil("Trying to copy NULL", nil);
+  }
+  
   //printf("Will make a copy of: %s\n", obj_to_string(a)->s);
   Obj *b = obj_copy(a);
   return b;

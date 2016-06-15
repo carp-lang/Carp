@@ -29,7 +29,7 @@
     (assert-eq '(:fn () :string)
                (sign own-3))
     (assert-eq {:node :function, 
-                :free '({:name "_result_1" :type :string}),
+                :free (list {:name "_result_1" :type :string}),
                 :body ()}
                (ownership-analyze own-3))))
 
@@ -40,11 +40,11 @@
         (string-copy "CARP2")))
     (assert-eq '(:fn () :string)
                (sign own-4))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let, 
-                        :free ({:name "s", 
-                                :type :string}), 
+                        :free (list {:name "s", 
+                                     :type :string}), 
                         :body ()}}
                (ownership-analyze own-4))))
 
@@ -56,13 +56,13 @@
         0))
     (assert-eq '(:fn () :int)
                (sign own-5))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let, 
-                        :free ({:name "s2", 
-                                :type :string}
-                               {:name "s1", 
-                                :type :string}), 
+                        :free (list {:name "s2", 
+                                     :type :string}
+                                    {:name "s1", 
+                                     :type :string}), 
                         :body ()}}
                (ownership-analyze own-5))))
 
@@ -74,14 +74,14 @@
           0)))
     (assert-eq '(:fn () :int)
                (sign own-6))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let, 
-                        :free ({:name "s1", 
-                                :type :string}), 
+                        :free (list {:name "s1", 
+                                     :type :string}), 
                         :body {:node :let, 
-                               :free ({:name "s2", 
-                                       :type :string}), 
+                               :free (list {:name "s2", 
+                                            :type :string}), 
                                :body ()}}}
                (ownership-analyze own-6))))
 
@@ -103,14 +103,14 @@
           (string-copy "CARP2"))))
     (assert-eq '(:fn () :string)
                (sign own-8))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let
                         :free ()
                         :body {:node :if, 
                                :free-left (), 
-                               :free-right ({:name "s"
-                                             :type :string})
+                               :free-right (list {:name "s"
+                                                  :type :string})
                                :body-left ()
                                :body-right ()}}}
                (ownership-analyze own-8))))
@@ -124,7 +124,7 @@
           s)))
     (assert-eq '(:fn () :string)
                (sign own-9))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let
                         :free ()
@@ -144,11 +144,11 @@
           20)))
     (assert-eq '(:fn () :int)
                (sign own-10))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let
-                        :free ({:name "s"
-                                :type :string})
+                        :free (list {:name "s"
+                                     :type :string})
                         :body {:node :if, 
                                :free-left (), 
                                :free-right ()
@@ -166,15 +166,15 @@
           s2)))
     (assert-eq '(:fn () :string)
                (sign own-11))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let
                         :free ()
                         :body {:node :if, 
-                               :free-left ({:name "s2"
-                                            :type :string}),
-                               :free-right ({:name "s1"
-                                             :type :string})
+                               :free-left (list {:name "s2"
+                                                 :type :string}),
+                               :free-right (list {:name "s1"
+                                                  :type :string})
                                :body-left ()
                                :body-right ()}}}
                (ownership-analyze own-11))))
@@ -188,13 +188,13 @@
           s1)))
     (assert-eq '(:fn (:string) :string)
                (sign own-12))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :let
                         :free ()
                         :body {:node :if, 
-                               :free-left ({:name "s1"
-                                            :type :string}),
+                               :free-left (list {:name "s1"
+                                                 :type :string}),
                                :free-right ()
                                :body-left ()
                                :body-right ()}}}
@@ -210,11 +210,11 @@
           (eat-string s))))
     (assert-eq '(:fn () :void)
                (sign own-13))
-    (assert-eq '{:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body ()}}
+    (assert-eq {:node :function, 
+                :free (), 
+                :body {:node :let
+                       :free ()
+                       :body ()}}
                (ownership-analyze own-13))))
 
 (deftest test-own-14
@@ -235,7 +235,7 @@
         s1))
     (assert-eq '(:fn (:string) :string)
                (sign own-15))
-    (assert-eq '{:node :function, 
+    (assert-eq {:node :function, 
                  :free (), 
                  :body {:node :if, 
                         :free-left (),
@@ -248,12 +248,12 @@
   (do
     (defn free-the-thing []
       (println (ref (str (ref [1 2 3])))))
-    (assert-eq '{:node :function, 
-                 :free ({:name "_result_1", 
-                         :type :string}
-                        {:name "_array_0", 
-                         :type (:Array :int)}), 
-                 :body ()}
+    (assert-eq {:node :function, 
+                :free (list {:name "_result_1", 
+                             :type :string}
+                            {:name "_array_0", 
+                             :type '(:Array :int)}), 
+                :body ()}
                (ownership-analyze free-the-thing))))
 
 (deftest dont-allow-let-ref

@@ -2,7 +2,7 @@
 
 (def line-3 [1 2 3])
 
-(def line-5 {})
+(def line-5 '{}) ;; TODO: make dictionary literals work too, they lose their info after the call to 'dictionary'
 
 (def line-7 '())
 

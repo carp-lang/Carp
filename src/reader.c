@@ -126,6 +126,9 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     return new_array;
   }
   else if(CURRENT == '{') {
+    int line = read_line_nr;
+    int pos = read_line_pos;
+    
     Obj *list = obj_new_cons(NULL, NULL);
     obj_set_line_info(process, list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
@@ -148,7 +151,8 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
       prev = new;
     }
     Obj *call_to_dict = obj_new_cons(obj_new_symbol("dictionary"), list);
-    printf("Read dictionary literal: %s\n", obj_to_string(process, call_to_dict)->s);
+    //printf("Read dictionary literal: %s\n", obj_to_string(process, call_to_dict)->s);
+    obj_set_line_info(process, call_to_dict, line, pos, filename);
     return call_to_dict;
   }
   else if(CURRENT == '&') {
