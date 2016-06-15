@@ -3,6 +3,16 @@
                            (list 'def name (list 'macro args body))
                            (list 'meta-set! name :name (str name)))))
 
+(def let-internal
+  (fn [bindings body]
+    (match (count bindings)
+      0 body
+      1 (error "Uneven nr of forms in bindings.")
+      _ (list 'lets (nth bindings 0) (nth bindings 1) (let-internal (rest (rest bindings)) body)))))
+
+(defmacro let [bindings body]
+  (let-internal (array-to-list bindings) body))
+
 (defmacro when (expr a) (list 'if expr a nil))
 (defmacro if-not (expr a b) (list 'if (list 'not expr) a b))
 (defmacro comment (form) nil)

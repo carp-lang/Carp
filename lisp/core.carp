@@ -69,9 +69,10 @@
 (def total-time 0)
 
 (defmacro time (form)
-  (list 'let ['t1 (list 'now)]
-        (list 'let ['result form
-                    't (list '- (list 'now) 't1)]
+  (list 'let (array 't1 (list 'now))
+        (list 'let (array
+                    'result form
+                    't (list '- (list 'now) 't1))
               (list 'do
                     (list 'println (list 'str "Evaluating form " (str form) " took " 't "ms."))
                     (list 'reset! 'total-time (list '+ 'total-time 't))
@@ -213,9 +214,9 @@
 (defn sort [xs]
   (sort-by < xs))
 
-(defmacro for (b body)
+(defmacro for [b body]
   (match b
-    (sym start limit) (list 'let [sym start]
+    (sym start limit) (list 'let (array sym start)
                             (list 'while (list '< sym limit)
                                   (list 'do
                                         body
@@ -226,7 +227,7 @@
   (for (i 0 (count xs))
     (f (nth xs i))))
 
-(defmacro str-ref (x)
+(defmacro str-ref [x]
   (list 'ref (list 'str x)))
 
 (defn second [xs]
@@ -258,7 +259,7 @@
 
 (defmacro if-let [binding a b]
   (match binding
-    [var-name expr] (list 'let [var-name expr]
+    [var-name expr] (list 'let (array var-name expr)
                           (list 'if (list 'nil? var-name)
                                 b
                                 a))
@@ -266,7 +267,7 @@
 
 (defmacro when-let [binding a]
   (match binding
-    [var-name expr] (list 'let [var-name expr]
+    [var-name expr] (list 'let (array var-name expr)
                           (list 'if (list 'nil? var-name)
                                 nil
                                 a))

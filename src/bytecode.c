@@ -334,7 +334,8 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           return;
         }
         
-        //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        
         visit_form(process, env, bytecodeObj, position, expanded);
       }
       else {
