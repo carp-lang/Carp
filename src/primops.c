@@ -1293,7 +1293,14 @@ Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
     shadow_stack_push(process, forms);
     Obj *form = forms;
     while(form && form->car) {
+      #if BYTECODE_EVAL
+      Obj *result = bytecode_sub_eval_form(process, process->global_env, form->car);
+      shadow_stack_pop(process); // forms
+      shadow_stack_pop(process); // file_string
+      return result;
+      #else
       eval_internal(process, process->global_env, form->car);
+      #endif
       if(eval_error) { return nil; }
       /*Obj *discarded_result = */ stack_pop(process);
       form = form->cdr;
@@ -1370,10 +1377,17 @@ Obj *p_read_many(Process *process, Obj** args, int arg_count) {
 Obj *p_eval(Process *process, Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'eval'"); return nil; }
   shadow_stack_push(process, args[0]);
+
+  #if BYTECODE_EVAL
+  Obj *result = bytecode_sub_eval_form(process, process->global_env, args[0]);
+  shadow_stack_pop(process);
+  return result;
+  #else
   eval_internal(process, process->global_env, args[0]);
   Obj *result = stack_pop(process);
   shadow_stack_pop(process);
   return result;
+  #endif   
 }
 
 Obj *p_code(Process *process, Obj** args, int arg_count) {  
@@ -1754,7 +1768,7 @@ Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
 Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "eval-bytecode must take 1 arguments. ", nil);
   Obj *bytecode = args[0];
-  return bytecode_eval(process, bytecode, true);
+  return bytecode_eval_bytecode(process, bytecode);
 }
 
 Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {

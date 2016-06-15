@@ -31,7 +31,7 @@
 // 'y' lookup <literal>
 // 'q' stop
 
-Obj *bytecode_sub_eval(Process *process, Obj *env, Obj *bytecode_obj);
+Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj);
 void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts);
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
@@ -319,7 +319,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           return;
         }
         
-        Obj *expanded = bytecode_sub_eval(process, calling_env, macro->body);
+        Obj *expanded = bytecode_sub_eval_internal(process, calling_env, macro->body);
         
         //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
         visit_form(process, env, bytecodeObj, position, expanded);
@@ -359,7 +359,7 @@ Obj *form_to_bytecode(Process *process, Obj *env, Obj *form) {
   return bytecodeObj;
 }
 
-Obj *bytecode_sub_eval(Process *process, Obj *env, Obj *bytecode_obj) {
+Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj) {
   assert(process);
   assert(env->tag == 'E');
   assert(bytecode_obj->tag == 'X');
@@ -382,6 +382,20 @@ Obj *bytecode_sub_eval(Process *process, Obj *env, Obj *bytecode_obj) {
 
   shadow_stack_pop(process); // bytecode_obj
   return result;
+}
+
+void bytecode_frame_print(Process *process, BytecodeFrame frame) {
+  printf("%s (p = %d)", obj_to_string(process, frame.bytecodeObj)->s, frame.p);
+}
+
+void bytecode_stack_print(Process *process) {
+  printf("\n---\n");
+  for(int i = 0; i <= process->frame; i++) {
+    printf("%d ", i);
+    bytecode_frame_print(process, process->frames[i]);
+    printf("\n");
+  }
+  printf("---\n");
 }
 
 // returns NULL if not done yet
@@ -412,7 +426,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     printf("frame = %d, p = %d,  c = %c\n", process->frame, p, c);
     #endif
     #if LOG_BYTECODE_STACK
-    stack_print(process);
+    //stack_print(process);
+    bytecode_stack_print(process);
     #endif
     
     switch(c) {
@@ -636,21 +651,21 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
   return NULL;
 }
 
-Obj *bytecode_eval(Process *process, Obj *bytecodeObj, bool restart) {
+Obj *bytecode_eval_bytecode(Process *process, Obj *bytecodeObj) {
+  return bytecode_eval_bytecode_in_env(process, bytecodeObj, process->global_env);
+}
+
+Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env) {
 
   if(bytecodeObj->tag != 'X') {
-    set_error_return_nil("The code to eval must be bytecode, ", bytecodeObj);
+    set_error_return_nil("The code to eval must be bytecode:\n", bytecodeObj);
   }
   
   shadow_stack_push(process, bytecodeObj);
-
-  if(restart) {
-    process->frame = 0;
-  }
   
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = bytecodeObj;
-  process->frames[process->frame].env = process->global_env;
+  process->frames[process->frame].env = env;
 
   int top_frame = process->frame;
   
@@ -664,12 +679,29 @@ Obj *bytecode_eval(Process *process, Obj *bytecodeObj, bool restart) {
   }
   //printf("Final result = %s\n", obj_to_string(process, final_result)->s);
 
+  process->frame = top_frame; // must reset top frame after evaluation! the stack is one below top_frame (i.e. -1)
+
   shadow_stack_pop(process);
   return final_result;
 }
 
+// must *not* reset when it's a sub-evaluation in load-lisp or similar
+// *must* reset after 
 
+Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
+  Obj *bytecode = form_to_bytecode(process, env, form);
+  shadow_stack_push(process, bytecode);
+  Obj *result = bytecode_eval_bytecode(process, bytecode); 
+  shadow_stack_pop(process);
+  //stack_push(process, result);
+  return result;
+}
 
+Obj *bytecode_sub_eval_form(Process *process, Obj *env, Obj *form) {
+  process->frame++;
+  return bytecode_eval_form(process, env, form);
+}
+  
 
 
 // bytecode match TODO: move to match.c
@@ -795,7 +827,7 @@ void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts) {
       printf("before sub eval, frame: %d\n", process->frame);
       stack_print(process);
       
-      Obj *result = bytecode_sub_eval(process, new_env, bytecode); // eval the following form using the new environment
+      Obj *result = bytecode_sub_eval_internal(process, new_env, bytecode); // eval the following form using the new environment
       stack_push(process, result);
 
       printf("after sub eval, frame: %d\n", process->frame);

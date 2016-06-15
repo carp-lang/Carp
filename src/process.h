@@ -7,6 +7,7 @@ Process *process_clone(Process *parent);
 
 Process *parallell;
 
+void process_reset(Process *process);
 void process_eval(Process *process, Obj *form);
 Obj *process_tick(Process *process);
 

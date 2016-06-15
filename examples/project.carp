@@ -31,6 +31,9 @@
 (eb '(def fi (macro [a b c] (list 'if a c b))))
 (eb '(fi true 10 20))
 
+(def fi (macro [a b c] (list 'if a c b)))
+(fi true 10 20)
+
 ;;(eb '(def recur (fn [] (do (println (str 123)) (recur)))))
 ;;(eb '(recur))
 

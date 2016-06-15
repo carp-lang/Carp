@@ -132,6 +132,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
     //printf("Calling lambda "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
+    //printf("Applying %s\n", obj_to_string(process, function)->s);
     
     Obj *calling_env = obj_new_environment(function->env);
     bool allow_rest_args = true;
@@ -141,11 +142,18 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     shadow_stack_push(process, function);
     shadow_stack_push(process, calling_env);
 
+    #if BYTECODE_EVAL
+    process->frame++; // sub evaluation
+    Obj *result = bytecode_eval_bytecode_in_env(process, process->global_env, function->body);
+    printf("result = %s\n", obj_to_string(process, result)->s);
+    stack_push(process, result); // put it back on stack, TODO: fix this unnecessary work
+    #else 
     if(function->body->tag == 'X') {
       eval_error = obj_new_string("Can't apply lambda with bytecode body.");
-    } else {    
+    } else {
       eval_internal(process, calling_env, function->body);
     }
+    #endif      
     
     if(eval_error) {
       return;
@@ -720,12 +728,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   //shadow_stack_print();
 
   if(BYTECODE_EVAL) {
-    Obj *bytecode = form_to_bytecode(process, env, o);
-    shadow_stack_push(process, bytecode);
-    Obj *result = bytecode_eval(process, bytecode, true);
-    shadow_stack_pop(process);
-    stack_push(process, result);
-    return;
+    assert(false);
   }
   
   if(LOG_EVAL) {
@@ -813,7 +816,13 @@ void eval_text(Process *process, Obj *env, char *text, bool print, Obj *filename
   Obj *form = forms;
   stack_push(process, forms);
   while(form && form->car) {
-    Obj *result = eval(process, env, form->car);
+    
+    #if BYTECODE_EVAL
+      Obj *result = bytecode_eval_form(process, env, form->car);
+    #else
+      Obj *result = eval(process, env, form->car);
+    #endif
+    
     if(eval_error) {
       Obj *lookup_message = NULL;
       if(eval_error->tag == 'E') {

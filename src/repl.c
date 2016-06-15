@@ -75,6 +75,7 @@ void repl(Process *process) {
       break;
     }
     if(paren_balance(input) <= 0) {
+      process_reset(process);
       eval_text(process, process->global_env, input, true, obj_new_string("repl"));
       pop_stacks_to_zero(process);
       printf("\n");

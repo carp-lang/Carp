@@ -210,6 +210,10 @@ Process *process_clone(Process *parent) {
   return clone;
 }
 
+void process_reset(Process *process) {
+  process->frame = 0;
+}
+
 void stack_print(Process *process) {
   printf("----- STACK -----\n");
   for(int i = 0; i < process->stack_pos; i++) {
