@@ -465,9 +465,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       Obj *value_to_match_on = stack_pop(process);
       process->frames[process->frame].p += 2;
 
-      printf("before match, frame: %d\n", process->frame);
+      //printf("before match, frame: %d\n", process->frame);
       bytecode_match(process, process->frames[process->frame].env, value_to_match_on, cases);
-      printf("after match, frame: %d\n", process->frame);
+      //printf("after match, frame: %d\n", process->frame);
       
       //stack_push(process, );
       break;
@@ -689,6 +689,7 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
 // *must* reset after 
 
 Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
+  printf("Will convert to bytecode and eval:\n%s\n", obj_to_string(process, form)->s);
   Obj *bytecode = form_to_bytecode(process, env, form);
   shadow_stack_push(process, bytecode);
   Obj *result = bytecode_eval_bytecode(process, bytecode); 
@@ -820,18 +821,18 @@ void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts) {
     bool result = bytecode_obj_match(process, new_env, p->car, value);
 
     if(result) {
-      printf("Match found, evaling %s in env\n", obj_to_string(process, p->cdr->car)->s); //, obj_to_string(new_env)->s);
+      //printf("Match found, evaling %s in env\n", obj_to_string(process, p->cdr->car)->s); //, obj_to_string(new_env)->s);
 
       Obj *bytecode = form_to_bytecode(process, new_env, p->cdr->car);
 
-      printf("before sub eval, frame: %d\n", process->frame);
-      stack_print(process);
+      //printf("before sub eval, frame: %d\n", process->frame);
+      //stack_print(process);
       
       Obj *result = bytecode_sub_eval_internal(process, new_env, bytecode); // eval the following form using the new environment
       stack_push(process, result);
 
-      printf("after sub eval, frame: %d\n", process->frame);
-      stack_print(process);
+      //printf("after sub eval, frame: %d\n", process->frame);
+      //stack_print(process);
       
       Obj *pop = shadow_stack_pop(process); // new_env
       if(eval_error) {

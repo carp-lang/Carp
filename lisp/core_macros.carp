@@ -27,18 +27,20 @@
         (list 'meta-set! name :name (str name))
         (list 'meta-set! name :user-defined true)))
 
-(defn quasiquote-internal [form]  
-  (match form
-    ('dequote x) x
+(defn quasiquote-internal [form]
+  (do
+    (error "QUASIQUOTE IS TEMPORARILY UNAVAILABLE")
+    (match form
+      ('dequote x) x
 
-    ;; (x ... xs) (match x
-    ;;              ('dequote-splicing inner-x) (concat (quasiquote-internal (eval inner-x)) (quasiquote-internal xs))
-    ;;              _ (cons (quasiquote-internal x) (quasiquote-internal xs)))
+      ;; (x ... xs) (match x
+      ;;              ('dequote-splicing inner-x) (concat (quasiquote-internal (eval inner-x)) (quasiquote-internal xs))
+      ;;              _ (cons (quasiquote-internal x) (quasiquote-internal xs)))
 
-    x (if (list? x)
-        (cons 'list (map quasiquote-internal x))
-        (list 'quote x))
-    ))
+      x (if (list? x)
+          (cons 'list (map quasiquote-internal x))
+          (list 'quote x))
+      )))
 
 (defmacro quasiquote (form)
   (quasiquote-internal form))

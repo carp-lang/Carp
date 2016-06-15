@@ -339,7 +339,7 @@
                 ;;(println (str "value lookup must be a list when lhs is a list: " lhs))
                 substs))
             (do (when log-substs (println (str "lhs " lhs " is not a tvar or list, value lookup: " value-lookup)))
-                (if (or (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
+                (if (or* (= :any lhs) (= :any value-lookup) (= lhs value-lookup) (typevar? value-lookup))
                   substs
                   :fail
                   ;;(error (str "Can't unify \n" lhs " with \n" value-lookup))

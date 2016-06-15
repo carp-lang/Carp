@@ -1294,15 +1294,12 @@ Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
     Obj *form = forms;
     while(form && form->car) {
       #if BYTECODE_EVAL
-      Obj *result = bytecode_sub_eval_form(process, process->global_env, form->car);
-      shadow_stack_pop(process); // forms
-      shadow_stack_pop(process); // file_string
-      return result;
+      /* Obj *discarded_result = */bytecode_sub_eval_form(process, process->global_env, form->car);
       #else
       eval_internal(process, process->global_env, form->car);
+      /*Obj *discarded_result = */ stack_pop(process);
       #endif
       if(eval_error) { return nil; }
-      /*Obj *discarded_result = */ stack_pop(process);
       form = form->cdr;
     }
     shadow_stack_pop(process); // forms

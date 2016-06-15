@@ -1,8 +1,11 @@
 ;; Set type signatures for primops
 ;; These signatures are used when compiling to C to ensure correct instantiation of primops in the generics-module
 
+;; (defmacro set-signature! (sym sig)
+;;   `(meta-set! ~sym :signature '~sig))
+
 (defmacro set-signature! (sym sig)
-  `(meta-set! ~sym :signature '~sig))
+  (list meta-set! sym :signature (list quote sig)))
 
 (set-signature! array-of-size  (:fn (:int)                          (:Array "T") ))
 

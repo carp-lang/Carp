@@ -120,7 +120,7 @@
                           (cons {:name (str (:name binding-ast)) :type t :doc "let binding"} vars)
                           vars)
 
-          new-env (if (and (managed-ref-type? t) (= :ref (get-in binding-ast '(:value :node))) (= :lookup (get-in binding-ast '(:value :expr :node))))
+          new-env (if (and* (managed-ref-type? t) (= :ref (get-in binding-ast '(:value :node))) (= :lookup (get-in binding-ast '(:value :expr :node))))
                     (assoc env (str (:name binding-ast)) (str (get-in binding-ast '(:value :expr :value))))
                     env)
           ;;_ (println (str "new-env: " new-env))
