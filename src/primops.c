@@ -265,6 +265,31 @@ Obj *p_array(Process *process, Obj** args, int arg_count) {
   return a;
 }
 
+Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
+  Obj *e = obj_new_environment(NULL);
+  if(arg_count % 2 == 1) {
+    set_error_return_nil("Uneven nr of arguments to 'dictionary'. ", nil);
+  }
+
+  Obj *first = NULL;
+  Obj *prev = NULL;
+
+  for(int i = 0; i < arg_count; i += 2) {
+    Obj *pair = obj_new_cons(args[i], args[i + 1]);
+    Obj *new = obj_new_cons(pair, nil);
+    if(!first) {
+      first = new;
+    }
+    if(prev) {
+      prev->cdr = new;
+    }
+    prev = new;
+  }
+  
+  e->bindings = first;
+  return e;
+}
+
 Obj *p_str(Process *process, Obj** args, int arg_count) {
   Obj *s = obj_new_string("");
   shadow_stack_push(process, s);

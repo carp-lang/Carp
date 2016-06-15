@@ -120,6 +120,7 @@ Process *process_new() {
   register_primop(process, "=", p_eq);
   register_primop(process, "list", p_list);
   register_primop(process, "array", p_array);
+  register_primop(process, "dictionary", p_dictionary);
   register_primop(process, "str", p_str);
   register_primop(process, "str-append!", p_str_append_bang);
   register_primop(process, "str-replace", p_str_replace);

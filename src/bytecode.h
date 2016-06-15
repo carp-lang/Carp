@@ -2,7 +2,7 @@
 
 #include "obj.h"
 
-#define BYTECODE_EVAL 0
+#define BYTECODE_EVAL 1
 
 Obj *form_to_bytecode(Process *process, Obj *env, Obj *form);
 Obj *bytecode_eval_bytecode(Process *process, Obj *bytecodeObj);

@@ -18,6 +18,7 @@ Obj *p_div(Process *process, Obj** args, int arg_count);
 Obj *p_eq(Process *process, Obj** args, int arg_count);
 Obj *p_list(Process *process, Obj** args, int arg_count);
 Obj *p_array(Process *process, Obj** args, int arg_count);
+Obj *p_dictionary(Process *process, Obj** args, int arg_count);
 Obj *p_str(Process *process, Obj** args, int arg_count);
 Obj *p_str_append_bang(Process *process, Obj** args, int arg_count);
 Obj *p_join(Process *process, Obj** args, int arg_count);
