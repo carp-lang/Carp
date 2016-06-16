@@ -1126,7 +1126,7 @@ Obj *p_reduce(Process *process, Obj** args, int arg_count) {
 
 Obj *p_apply(Process *process, Obj** args, int arg_count) {
   if(arg_count != 2) { printf("'apply' takes two arguments.\n"); return nil; }
-  if(args[0]->tag != 'P' && args[0]->tag != 'L') {
+  if(args[0]->tag != 'P' && args[0]->tag != 'L' && args[0]->tag != 'F') {
     printf("'apply' requires arg 0 to be a function or lambda: %s (%c)\n", obj_to_string(process, args[0])->s, args[0]->tag);
     eval_error = obj_new_string("");
     return nil;

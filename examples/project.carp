@@ -23,13 +23,13 @@
 
 ;; (def inc (fn [x] (+ x 1)))
 
-(def fib (fn [x]
-           (if (< x 2)
-             1
-             (+ (fib (- x 2))
-                (fib (- x 1))))))
+;; (def fib (fn [x]
+;;            (if (< x 2)
+;;              1
+;;              (+ (fib (- x 2))
+;;                 (fib (- x 1))))))
 
-(letrec-internal '(a 10 b 20) '(* a b) '() '())
+;; (letrec-internal '(a 10 b 20) '(* a b) '() '())
 
 ;; (let [f nil]
 ;;   (do
@@ -175,7 +175,30 @@
 ;;                                                   (assoc new-ast :func-deps deps))))))))))
 
 
-(defn f []
-  (letrec [x 123
-           y {:a x :b (inc x)}]
-          y))
+;; (defn f []
+;;   (letrec [x 123
+;;            y {:a x :b (inc x)}]
+;;           y))
+
+;; (deftest test-own-4
+;;   (do
+;;     (defn own-4 ()
+;;       (let [s (string-copy "CARP1")]
+;;         (string-copy "CARP2")))
+;;     (assert-eq '(:fn () :string)
+;;                (sign own-4))
+;;     (assert-eq {:node :function, 
+;;                 :free (), 
+;;                 :body {:node :let, 
+;;                        :free (list {:name "s", 
+;;                                     :type :string}), 
+;;                        :body ()}}
+;;                (ownership-analyze own-4))))
+
+;;(test-own-4)
+
+(println (str (let [a 10] (mapcat (fn [x] (list :x (* x a))) (list 1 2 3 4 5)))))
+
+(def f (let [x 100] (fn [] x)))
+(apply f '())
+

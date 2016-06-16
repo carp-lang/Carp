@@ -57,6 +57,8 @@
 (defmacro letrec [bindings body]
   (letrec-internal (array-to-list bindings) body () ()))
 
+;;(def let letrec)
+
 
 (defn quasiquote-internal [form]
   (do

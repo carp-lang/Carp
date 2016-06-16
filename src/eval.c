@@ -136,9 +136,11 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
 
     #if BYTECODE_EVAL
 
-    Obj *calling_env = obj_new_environment(process->frames[process->frame].env);
+    Obj *calling_env = obj_new_environment(function->env);
+    
     bool allow_rest_args = true;
     env_extend_with_args(process, calling_env, function, arg_count, args, allow_rest_args);
+
     //printf("calling_env: %s\n", obj_to_string(process, calling_env)->s);
 
     shadow_stack_push(process, function);

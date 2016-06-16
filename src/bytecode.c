@@ -601,7 +601,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       process->frames[process->frame].p = process->frames[process->frame - 1].p;
       process->frames[process->frame].bytecodeObj = process->frames[process->frame - 1].bytecodeObj;
       process->frames[process->frame].env = let_env;
-      process->frames[process->frame].trace = obj_new_string("<let>");
+      process->frames[process->frame].trace = obj_new_string("<let> ");
+      obj_string_mut_append(process->frames[process->frame].trace, key->s);
       
       break;
     case 'y':
@@ -615,7 +616,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
         /* stack_print(process); */
-        /* printf("env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s); */
+        printf("env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s);
         set_error_return_null("Failed to lookup: ", literal);
       }
       stack_push(process, lookup);
