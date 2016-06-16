@@ -3,6 +3,7 @@
                            (list 'def name (list 'macro args body))
                            (list 'meta-set! name :name (str name)))))
 
+;; TODO: remove this hack when old interpreter is gone
 (defmacro lets [a b c]
   (list 'let (array a b) c))
 
