@@ -85,8 +85,8 @@
 (defn dec (x) (- x 1))
 
 (defn > [x y]
-  (not (= x y)
-       (< x y)))
+  (and (not (= x y))
+       (not (< x y))))
 
 (defn contains? (items item)
   (match items

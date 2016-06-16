@@ -171,6 +171,8 @@ void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *fo
 }
 
 void add_not(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'not' form: ", form);
+  assert_or_set_error(form->cdr->cdr->car == NULL, "Too many body forms in 'not' form: ", form);
   visit_form(process, env, bytecodeObj, position, form->cdr->car);
   bytecodeObj->bytecode[*position] = 'n';
   *position += 1;
@@ -181,9 +183,10 @@ void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
 }
 
 void add_catch(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'catch-error' form: ", form);
   bytecodeObj->bytecode[*position + 0] = 'g';
   *position += 1;
-  write_obj(bytecodeObj, position, form);
+  write_obj(bytecodeObj, position, form->cdr->car);
 }
 
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -630,7 +633,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       process->frames[process->frame].p = *jump_pos;
       break;
     case 'g':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;
+      
       int save_frame = process->frame;
       int shadow_stack_size_save = process->shadow_stack_pos;
       int stack_size_save = process->stack_pos;
@@ -659,7 +665,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       }
       process->frame = save_frame;
       process->shadow_stack_pos = shadow_stack_size_save;
-      process->frames[process->frame].p += 2;
+
 
       /* printf("AFTER 'g':\n"); */
       /* stack_print(process); */
