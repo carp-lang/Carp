@@ -507,7 +507,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'l':
       STEP_ONE;
       i = LITERAL_INDEX
-      printf("load lit at index: %d\n", i);
       process->frames[process->frame].p += sizeof(int);
       assert(i >= 0);
       assert(i <= 255);
@@ -533,7 +532,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       i = LITERAL_INDEX;
       STEP_INT_SIZE;
       Obj *cases = literals_array[i];
-      printf("Cases: "); obj_print_cout(cases); printf("\n");
+      //printf("Cases: "); obj_print_cout(cases); printf("\n");
       Obj *value_to_match_on = stack_pop(process);
       //printf("before match, frame: %d\n", process->frame);
       bytecode_match(process, process->frames[process->frame].env, value_to_match_on, cases);
@@ -543,11 +542,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'd':
       STEP_ONE;
       i = LITERAL_INDEX;
-      printf("lit index = %d\n", i);
       STEP_INT_SIZE;
       literal = literals_array[i];
       Obj *value = stack_pop(process);
-      printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
+      // printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
       result = env_extend(process->global_env, literal, value);
       stack_push(process, result->cdr);
       break;
@@ -585,7 +583,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       value = stack_pop(process);
       env_extend(let_env, key, value);
 
-      printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
+      //printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
     
       process->frame++;
       process->frames[process->frame].p = process->frames[process->frame - 1].p;
@@ -600,7 +598,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       STEP_INT_SIZE;
       literal = literals_array[i];
 
-      printf("Looking up literal "); obj_print_cout(literal); printf("\n");
+      //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
       
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
