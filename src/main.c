@@ -4,6 +4,7 @@
 #include "eval.h"
 #include "gc.h"
 #include <stdio.h>
+#include "bytecode.h"
 
 #define HANDLE_SIGNALS 0
 
@@ -56,6 +57,13 @@ int main(int argc, char **argv) {
   parallell = NULL;
 
   Process *process = process_new();
+
+  if(BYTECODE_EVAL) {
+    eval_text(process, process->global_env, "(def BYTECODE_EVAL true)", false, obj_new_string("main.c"));
+  }
+  else {
+    eval_text(process, process->global_env, "(def BYTECODE_EVAL false)", false, obj_new_string("main.c"));
+  }
   
   eval_text(process, process->global_env, "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))", false, obj_new_string("main.c"));
   

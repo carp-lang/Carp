@@ -7,8 +7,6 @@
 
 (def log-redefining-struct false)
 
-(def BYTECODE_EVAL false)
-
 (defn defstruct-internal [struct-name member-names member-types]
   (do
     ;;(println (str "defstruct-internal: " struct-name " " member-names " " member-types))
