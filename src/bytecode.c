@@ -584,7 +584,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       value = stack_pop(process);
       env_extend(let_env, key, value);
 
-      printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
+      //printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
 
       process->frames[process->frame].p += 2; // jump past 't' and the key index
     
@@ -633,12 +633,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       Obj *form = literals_array[i];     
       result = bytecode_sub_eval_form(process, process->frames[process->frame].env, form);
       if(eval_error) {
-        printf("Caught error: %s\n", obj_to_string(process, eval_error)->s);
+        //printf("Caught error: %s\n", obj_to_string(process, eval_error)->s);
         stack_push(process, eval_error);
         eval_error = NULL;
       }
       else {
-        printf("No error\n");
+        //printf("No error\n");
         stack_push(process, nil);
       }
       process->frame = save_frame;
