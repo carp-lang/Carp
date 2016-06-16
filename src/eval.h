@@ -13,3 +13,4 @@ void eval_internal(Process *process, Obj *env, Obj *o);
 void eval_text(Process *process, Obj *env, char *text, bool print, Obj *filename);
 
 void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_count);
+void call_struct_constructor(Process *process, Obj *function, Obj **args, int arg_count);

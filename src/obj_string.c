@@ -4,6 +4,7 @@
 #include "gc.h"
 #include "obj_conversions.h"
 #include "process.h"
+#include "bytecode.h"
 
 bool setting_print_lambda_body = true;
 
@@ -48,7 +49,13 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("prn"), quoted_sig);
 
   shadow_stack_push(process, call_to_generic_name);
-  Obj *generic_name_result = eval(process, process->global_env, call_to_generic_name);
+  Obj *generic_name_result = NULL;
+  if(BYTECODE_EVAL) {
+     generic_name_result = bytecode_eval_form(process, process->global_env, call_to_generic_name);
+  }
+  else {
+    generic_name_result = eval(process, process->global_env, call_to_generic_name);
+  }
   shadow_stack_push(process, generic_name_result);
 
   if(eval_error) {
@@ -63,7 +70,12 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   // Also make sure this particular version of the str primop has been baked:
   Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("prn"), quoted_sig);
   shadow_stack_push(process, call_to_bake_generic_primop_auto);
-  eval(process, process->global_env, call_to_bake_generic_primop_auto);
+
+  if(BYTECODE_EVAL) {
+    bytecode_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
+  } else {
+    eval(process, process->global_env, call_to_bake_generic_primop_auto);
+  }
 
   if(eval_error) {
     printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
@@ -88,7 +100,14 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   //   DON'T DO IT!!!
 
   shadow_stack_push(process, call_to_str);
-  Obj *array_to_string_result = eval(process, process->global_env, call_to_str);
+
+  Obj *array_to_string_result = NULL;
+  if(BYTECODE_EVAL) {
+    array_to_string_result = bytecode_eval_form(process, process->global_env, call_to_str);
+  } else {
+    array_to_string_result = eval(process, process->global_env, call_to_str);
+  }
+  
   shadow_stack_push(process, array_to_string_result);
   if(eval_error) {
     printf("Error when calling str function for void ptr of type '%s':\n", obj_to_string(process, type_lookup)->s);

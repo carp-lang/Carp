@@ -736,6 +736,33 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
           }
         }
       }
+      else if(function->tag == 'E' && obj_eq(process, env_lookup(process, function, obj_new_keyword("struct")), lisp_true)) {
+        if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
+          //printf("Calling generic struct constructor.\n");
+          Obj *function_call_symbol = obj_new_symbol("dynamic-generic-constructor-call");
+
+          Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
+          for(int i = 0; i < arg_count; i++) {
+            copied_args[i] = obj_copy(args[i]);
+            if(args[i]->meta) {
+              copied_args[i]->meta = obj_copy(args[i]->meta);
+            }
+          }
+      
+          Obj *carp_array = obj_new_array(arg_count);
+          carp_array->array = copied_args;
+
+          Obj *call_to_concretize_struct = obj_list(function_call_symbol,
+                                                    function,
+                                                    carp_array);
+      
+          shadow_stack_push(process, call_to_concretize_struct);
+          bytecode_sub_eval_form(process, process->global_env, call_to_concretize_struct);
+          shadow_stack_pop(process);
+        } else {
+          call_struct_constructor(process, function, args, arg_count);
+        }
+      }        
       else if(function->tag == 'L') {
         if(process->frame >= BYTECODE_FRAME_SIZE - 1) {
           set_error_return_null("Bytecode stack overflow. ", nil);
