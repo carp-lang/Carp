@@ -23,32 +23,40 @@
 
 ;; (def inc (fn [x] (+ x 1)))
 
-;; (def fib (fn [x]
-;;            (if (< x 2)
-;;              1
-;;              (+ (fib (- x 2))
-;;                 (fib (- x 1))))))
+(def fib (fn [x]
+           (if (< x 2)
+             1
+             (+ (fib (- x 2))
+                (fib (- x 1))))))
 
 ;; (def g (fn [x] (* x x)))
 ;; (def h (fn [x] (+ (g x) (g x))))
 
-(load-lisp "../lisp/core_macros.carp")
 
-(def inc (fn [x] (+ x 1)))
 
-(def make-counter (fn [start]
-                    (let [value start]
-                      (fn []
-                        (do (reset! value (inc value))
-                            value)))))
 
-(def c1 (make-counter 10))
-(def c2 (make-counter 10))
 
-(println (str "c1: " (c1)))
-(println (str "c1: " (c1)))
-(println (str "c1: " (c1)))
-(println (str "c2: " (c2)))
+;; (load-lisp "../lisp/core_macros.carp")
+
+;; (def inc (fn [x] (+ x 1)))
+
+;; (def make-counter (fn [start]
+;;                     (let [value start]
+;;                       (fn []
+;;                         (do (reset! value (inc value))
+;;                             value)))))
+
+;; (def c1 (make-counter 10))
+;; (def c2 (make-counter 10))
+
+;; (println (str "c1: " (c1)))
+;; (println (str "c1: " (c1)))
+;; (println (str "c1: " (c1)))
+;; (println (str "c2: " (c2)))
+
+
+
+
 
 ;; (match 2 1 "a" 2 "b" 3 "c")
 
@@ -84,25 +92,6 @@
 ;;   (do
 ;;     (assert-eq false (= d1 d2))))
 
-(let [d1 {:x 10 :y 20}
-      d2 {:x 10}
-      d3 {:y 20 :x 10}]
-  (do
-    ;; (assert-eq d1 d3)
-    ;; (assert-eq false (= d1 d2))
-    (assert-eq false (= d1 {}))
-    (assert-eq d3 (assoc d2 :y 20))
-    (assert-eq true (= d1 (assoc d2 :y 20)))
-    ))
-
-(let [a 10]
-  (do
-    (assert-eq 10 10)
-    (assert-eq 20 20)
-    (assert-eq 30 (+ 10 20))
-    (assert-eq 20 (+ a a))))
-
-
 ;; (let [d1 (dictionary :x 10 :y 20)
 ;;       d2 (dictionary :x 10)
 ;;       d3 (dictionary :y 20 :x 10)]
@@ -113,3 +102,4 @@
 ;;     (assert-eq d3 (assoc d2 :y 20))
 ;;     (assert-eq true (= d1 (assoc d2 :y 20)))
 ;;     ))
+

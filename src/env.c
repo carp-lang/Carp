@@ -4,6 +4,7 @@
 #include "assertions.h"
 
 Obj *env_lookup(Process *process, Obj *env, Obj *symbol) {
+  assert(env->tag == 'E');
   Obj *p = env->bindings;
   while(p && p->car) {
     Obj *pair = p->car;
@@ -118,7 +119,15 @@ void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int
 
     if(arg_count > paramp->count) {
       printf("arguments: %s\n", obj_to_string(process, paramp)->s);
-      set_error("Too many arguments (A) to function/macro: ", function);
+      //printf("meta: %s\n", (function->meta ? obj_to_string(process, function->meta)->s : "NULL"));
+      Obj *name = function;
+      if(function->meta) {
+        Obj *name_lookup = env_lookup(process, function->meta, obj_new_keyword("name"));
+        if(name_lookup) {
+          name = name_lookup;
+        }
+      }
+      set_error("Too many arguments (A) to function/macro: ", name);
     }
     
   }

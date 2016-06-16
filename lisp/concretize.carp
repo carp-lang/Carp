@@ -305,7 +305,7 @@
                       (primitive-type? maybe-struct-type))
               (error (str "Primitive type sent to '=' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
           lookup (eval (symbol (name maybe-struct-type)))]
-      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+      (if (and* (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str "API bool " c-func-name "(" t-name " *a, " t-name " *b)")
               member-names (array-to-list (:member-names lookup))
@@ -367,7 +367,7 @@
                       (primitive-type? maybe-struct-type))
               (error (str "Primitive type sent to 'str' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
           lookup (eval (symbol (name maybe-struct-type)))]
-      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+      (if (and* (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str "API string " c-func-name "(" (c-ify-name t-name) " *x)")
               member-names (array-to-list (:member-names lookup))
@@ -457,7 +457,7 @@
                       (primitive-type? maybe-struct-type))
               (error (str "Primitive type sent to 'copy' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
           lookup (eval (symbol (name maybe-struct-type)))]
-      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+      (if (and* (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str t-name " *" c-func-name "(" t-name " *x)")
               ;;_ (println (str "proto for struct copying function: " proto))
@@ -530,7 +530,7 @@
                        (primitive-type? maybe-struct-type))
               (error (str "Primitive type sent to 'delete' instantiator for struct types, but it is not a struct type: " maybe-struct-type)))
           lookup (eval (symbol (name maybe-struct-type)))]
-      (if (and (dict? lookup) (= true (get-maybe lookup :struct)))
+      (if (and* (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
               proto (str "API void " c-func-name "(" t-name " *x)")
               ;;_ (println (str "proto for struct delete function: " proto))

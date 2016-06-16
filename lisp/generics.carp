@@ -56,7 +56,7 @@
                          (do
                            ;;(println (str (:value ast) " : " t))
                            ;;(println (str "ast:\n" ast))
-                           (if (and (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
+                           (if (and* (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
                              (let [lookup-sym (:value ast)
                                    ;;_ (println (str "Will eval " ast))
                                    global-lookup (eval lookup-sym)
@@ -68,7 +68,7 @@
                                    is-generic-lens-stub (key-is-true? ast :generic-lens-stub)
                                    ]
 
-                               (if (and (lambda? global-lookup) is-generic)
+                               (if (and* (lambda? global-lookup) is-generic)
                                  (if (generic-type? t)
                                    (do
                                      ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))

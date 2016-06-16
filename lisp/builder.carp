@@ -94,8 +94,8 @@
       (map (fn (arg) {:c (:arg-name arg)}) args))))
 
 (defn inlined-literal? [ast]
-  (and (= :literal (:node ast))
-       (contains? '(:int :float :double :bool (:ref :string)) (:type ast))))
+  (and* (= :literal (:node ast))
+        (contains? '(:int :float :double :bool (:ref :string)) (:type ast))))
 
 (defn inlined-lookup? [ast]
   (= :lookup (:node ast)))

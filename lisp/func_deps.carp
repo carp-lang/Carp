@@ -48,12 +48,12 @@
                                                               (do
                                                                 ;;(println (str "Found constructor '" symbol-name "'"))
                                                                 (reset! deps (cons symbol-name deps))))
-                                                            (when (and is-lambda bake-deps (not is-generic-lens-stub)) ;; Bake, then add to deps
+                                                            (when (and* is-lambda bake-deps (not is-generic-lens-stub)) ;; Bake, then add to deps
                                                               (do
                                                                 ;;(println (str symbol " is a dependency of " func-name ", code: " (code evaled)))
                                                                 (compiler/bake-code symbol-name (code evaled) (meta-get evaled :ann))
                                                                 (reset! deps (cons symbol-name deps))))
-                                                            (when (and (foreign? evaled))
+                                                            (when (foreign? evaled)
                                                               (reset! deps (cons symbol-name deps)))
                                                             )))                                                      
                                                       (assoc ast :global-lookup is-global-lookup))))

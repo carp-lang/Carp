@@ -453,7 +453,7 @@ void bytecode_frame_print(Process *process, BytecodeFrame frame) {
 void bytecode_stack_print(Process *process) {
   printf("----------------------------------------------------------------\n");
   for(int i = 0; i <= process->frame; i++) {
-    printf("%d ", i);
+    printf("%d\t", i);
     bytecode_frame_print(process, process->frames[i]);
     printf("\n");
   }

@@ -73,7 +73,7 @@
 
           ;;_ (println (str "\n " (:arg-name arg-ast) " vars:\n" vars "\n"))
           
-          new-data (if (and (= :literal (:node arg-ast)) (not is-ref))
+          new-data (if (and* (= :literal (:node arg-ast)) (not is-ref))
                      {:ast arg-ast :vars vars} ;; a literal as an arg to a non-ref parameter doesn't create any new vars to free
                      (calculate-lifetimes-internal {:ast arg-ast
                                                     :env env
@@ -270,7 +270,7 @@
                       ;;_ (println (str "derefed-var-name: " derefed-var-name))
                       given-away (= 0 (count (filter (fn (v) (= derefed-var-name (:name v))) vars)))]
                   
-                  (if (and (or is-ref-lookup (managed-type? t)) given-away)
+                  (if (and* (or* is-ref-lookup (managed-type? t)) given-away)
                     (if (:global-lookup ast)
                       data
                       (error {:error error-given-away
