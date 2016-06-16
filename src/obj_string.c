@@ -51,7 +51,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   shadow_stack_push(process, call_to_generic_name);
   Obj *generic_name_result = NULL;
   if(BYTECODE_EVAL) {
-     generic_name_result = bytecode_eval_form(process, process->global_env, call_to_generic_name);
+     generic_name_result = bytecode_sub_eval_form(process, process->global_env, call_to_generic_name);
   }
   else {
     generic_name_result = eval(process, process->global_env, call_to_generic_name);
@@ -64,7 +64,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
     return;
   }
   else {
-    //printf("Generic name: %s\n", obj_to_string_not_prn(generic_name_result)->s);
+    //printf("Generic name: %s\n", obj_to_string_not_prn(process, generic_name_result)->s);
   }
 
   // Also make sure this particular version of the str primop has been baked:
@@ -72,7 +72,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   shadow_stack_push(process, call_to_bake_generic_primop_auto);
 
   if(BYTECODE_EVAL) {
-    bytecode_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
+    bytecode_sub_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
   } else {
     eval(process, process->global_env, call_to_bake_generic_primop_auto);
   }
@@ -84,7 +84,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
     return;
   }
   else {
-    //printf("%s should now exists\n", obj_to_string_not_prn(generic_name_result)->s);
+    //printf("%s should now exists\n", obj_to_string_not_prn(process, generic_name_result)->s);
   }
 
   char *generic_name = obj_to_string_not_prn(process, generic_name_result)->s;
@@ -103,7 +103,7 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   Obj *array_to_string_result = NULL;
   if(BYTECODE_EVAL) {
-    array_to_string_result = bytecode_eval_form(process, process->global_env, call_to_str);
+    array_to_string_result = bytecode_sub_eval_form(process, process->global_env, call_to_str);
   } else {
     array_to_string_result = eval(process, process->global_env, call_to_str);
   }

@@ -397,6 +397,8 @@ Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj) {
   assert(env->tag == 'E');
   assert(bytecode_obj->tag == 'X');
   shadow_stack_push(process, bytecode_obj);
+
+  //printf("bytecode_sub_eval_internal\n");
   
   process->frame++;
   process->frames[process->frame].p = 0;        
@@ -453,9 +455,10 @@ void bytecode_frame_print(Process *process, BytecodeFrame frame) {
     /* } */
     /* printf("%-30s %s %d:%d", func_name, file, line, pos); */
     printf("%s", func_name);
+    printf("\tp = %d", frame.p);
   }
   else {
-    printf("No meta data.");
+    printf("No meta data: %s\n", obj_to_string(process, frame.trace)->s);
   }
 }
 
@@ -629,6 +632,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       process->frames[process->frame].p += 2;
       break;
     case 'i':
+      //printf("'i' env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s);
       if(is_true(stack_pop(process))) {
         // don't jump, just skip over the next instruction (the jump position)
         process->frames[process->frame].p += 1 + sizeof(int);
@@ -827,6 +831,8 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env,
   if(bytecodeObj->tag != 'X') {
     set_error_return_nil("The code to eval must be bytecode:\n", bytecodeObj);
   }
+
+  //printf("bytecode_eval_bytecode_in_env\n");
   
   shadow_stack_push(process, bytecodeObj);
   
