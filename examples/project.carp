@@ -18,76 +18,57 @@
 ;;                         result))))
 ;;          (MAP inc (array 1 2 3))))
 
-(def let-internal
-  (fn [bindings body]
-    (match (count bindings)
-      0 body
-      1 (error "Uneven nr of forms in bindings.")
-      _ (list 'lets (nth bindings 0) (nth bindings 1) (let-internal (rest (rest bindings)) body)))))
+;; (def fi (macro [a b c] (list 'if a c b)))
+;; (fi true 10 20)
 
-(def let
-  (macro [bindings body]
-         (let-internal (array-to-list bindings) body)))
+;; (def inc (fn [x] (+ x 1)))
 
-(let [] (* 2 3))
-(let [a 10] (* a a))
-(let [a 10 b 20] (* a b))
+;; (def fib (fn [x]
+;;            (if (< x 2)
+;;              1
+;;              (+ (fib (- x 2))
+;;                 (fib (- x 1))))))
 
+;; (def g (fn [x] (* x x)))
+;; (def h (fn [x] (+ (g x) (g x))))
 
 
+;; (def make-counter (fn [start]
+;;                     (let [value start]
+;;                       (fn []
+;;                         (do (reset! value (inc value))
+;;                             value)))))
 
+;; (def c1 (make-counter 10))
+;; (def c2 (make-counter 10))
 
-(def fi (macro [a b c] (list 'if a c b)))
-(fi true 10 20)
+;; (println (str "c1: " (c1)))
+;; (println (str "c1: " (c1)))
+;; (println (str "c1: " (c1)))
+;; (println (str "c2: " (c2)))
 
-(def inc (fn [x] (+ x 1)))
+;; (match 2 1 "a" 2 "b" 3 "c")
 
-(def fib (fn [x]
-           (if (< x 2)
-             1
-             (+ (fib (- x 2))
-                (fib (- x 1))))))
+;; (if true 10 20) (if false 10 20) (do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))
 
-(def g (fn [x] (* x x)))
-(def h (fn [x] (+ (g x) (g x))))
+;; (def defmacro (macro (name args body)
+;;                      (list 'do
+;;                            (list 'def name (list 'macro args body))
+;;                            (list 'meta-set! name :name (str name)))))
 
+;; (defmacro defn (name args body)
+;;   (list 'do
+;;         (list 'def name (list 'fn args body))
+;;         (list 'meta-set! name :line (meta-get name :line))
+;;         (list 'meta-set! name :name (str name))
+;;         (list 'meta-set! name :user-defined true)))
 
-(def make-counter (fn [start]
-                    (let [value start]
-                      (fn []
-                        (do (reset! value (inc value))
-                            value)))))
+;; (defn foo []
+;;   (let [x 5
+;;         y (* x 10)]
+;;     (println (str y))))
 
-(def c1 (make-counter 10))
-(def c2 (make-counter 10))
-
-(println (str "c1: " (c1)))
-(println (str "c1: " (c1)))
-(println (str "c1: " (c1)))
-(println (str "c2: " (c2)))
-
-(match 2 1 "a" 2 "b" 3 "c")
-
-(if true 10 20) (if false 10 20) (do (def t 0) (while (< t 10) (do (println (str t)) (reset! t (inc t)))))
-
-(def defmacro (macro (name args body)
-                     (list 'do
-                           (list 'def name (list 'macro args body))
-                           (list 'meta-set! name :name (str name)))))
-
-(defmacro defn (name args body)
-  (list 'do
-        (list 'def name (list 'fn args body))
-        (list 'meta-set! name :line (meta-get name :line))
-        (list 'meta-set! name :name (str name))
-        (list 'meta-set! name :user-defined true)))
-
-(defn foo []
-  (let [x 5
-        y (* x 10)]
-    (println (str y))))
-
-(foo)
+;; (foo)
 
 ;; (load-lisp "../lisp/core.carp")
 ;; (load-lisp "../lisp/infer_types.carp")

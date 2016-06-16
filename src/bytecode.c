@@ -438,7 +438,7 @@ void bytecode_frame_print(Process *process, BytecodeFrame frame) {
     if(func_name_data) {
       func_name = obj_to_string_not_prn(process, func_name_data)->s;
     } else {
-      func_name = "???"; // obj_to_string(o)->s;
+      func_name = obj_to_string(process, o)->s;
     }
     /* int line = env_lookup(process, o->meta, obj_new_keyword("line"))->i; */
     /* int pos = env_lookup(process, o->meta, obj_new_keyword("pos"))->i; */
@@ -747,11 +747,11 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
   return NULL;
 }
 
-Obj *bytecode_eval_bytecode(Process *process, Obj *bytecodeObj) {
-  return bytecode_eval_bytecode_in_env(process, bytecodeObj, process->global_env);
-}
+/* Obj *bytecode_eval_bytecode(Process *process, Obj *bytecodeObj) { */
+/*   return bytecode_eval_bytecode_in_env(process, bytecodeObj, process->global_env); */
+/* } */
 
-Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env) {
+Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env, Obj *trace) {
 
   if(bytecodeObj->tag != 'X') {
     set_error_return_nil("The code to eval must be bytecode:\n", bytecodeObj);
@@ -762,8 +762,13 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = bytecodeObj;
   process->frames[process->frame].env = env;
-  process->frames[process->frame].trace = obj_new_string("<eval-in-env>");
 
+  if(trace) {
+    process->frames[process->frame].trace = trace;
+  } else {    
+    process->frames[process->frame].trace = obj_new_string("<eval-in-env>");
+  }
+  
   int top_frame = process->frame;
   
   Obj *final_result = NULL;
@@ -788,7 +793,7 @@ Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
   Obj *bytecode = form_to_bytecode(process, env, form, false);
   //printf("\nWill convert to bytecode and eval:\n%s\n%s\n\n", obj_to_string(process, bytecode)->s, obj_to_string(process, form)->s);
   shadow_stack_push(process, bytecode);
-  Obj *result = bytecode_eval_bytecode(process, bytecode); 
+  Obj *result = bytecode_eval_bytecode_in_env(process, bytecode, env, form); 
   shadow_stack_pop(process);
   //stack_push(process, result);
   return result;
@@ -796,7 +801,9 @@ Obj *bytecode_eval_form(Process *process, Obj *env, Obj *form) {
 
 Obj *bytecode_sub_eval_form(Process *process, Obj *env, Obj *form) {
   process->frame++;
-  return bytecode_eval_form(process, env, form);
+  Obj *result = bytecode_eval_form(process, env, form);
+  process->frame--;
+  return result;
 }
   
 

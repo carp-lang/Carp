@@ -1415,14 +1415,18 @@ Obj *p_eval(Process *process, Obj** args, int arg_count) {
   shadow_stack_push(process, args[0]);
 
   #if BYTECODE_EVAL
+  
   Obj *result = bytecode_sub_eval_form(process, process->global_env, args[0]);
   shadow_stack_pop(process);
   return result;
+  
   #else
+  
   eval_internal(process, process->global_env, args[0]);
   Obj *result = stack_pop(process);
   shadow_stack_pop(process);
   return result;
+  
   #endif   
 }
 
@@ -1804,7 +1808,7 @@ Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
 Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "eval-bytecode must take 1 arguments. ", nil);
   Obj *bytecode = args[0];
-  return bytecode_eval_bytecode(process, bytecode);
+  return bytecode_eval_bytecode_in_env(process, bytecode, process->global_env, NULL);
 }
 
 Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
