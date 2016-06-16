@@ -143,6 +143,9 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
 
     shadow_stack_push(process, function);
     shadow_stack_push(process, calling_env);
+
+    /* printf("before\n"); */
+    /* shadow_stack_print(process); */
     
     Obj *result = bytecode_sub_eval_internal(process, calling_env, function->body);
 
@@ -153,6 +156,9 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     
     //printf("result = %s\n", obj_to_string(process, result)->s);
     stack_push(process, result); // put it back on stack (TODO: fix this unnecessary work?)
+
+    /* printf("after\n"); */
+    /* shadow_stack_print(process); */
 
     Obj *pop1 = shadow_stack_pop(process);
     Obj *pop2 = shadow_stack_pop(process);

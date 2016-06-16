@@ -8,8 +8,8 @@
 #include "eval.h"
 
 #define OPTIMIZED_LOOKUP       0
-#define LOG_BYTECODE_EXECUTION 0
-#define LOG_BYTECODE_STACK     0
+#define LOG_BYTECODE_EXECUTION 1
+#define LOG_BYTECODE_STACK     1
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
@@ -500,8 +500,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     #endif
     
     #if LOG_BYTECODE_STACK
-    //stack_print(process);
-    bytecode_stack_print(process);
+    stack_print(process);
+    //bytecode_stack_print(process);
     #endif
     
     switch(c) {
@@ -515,6 +515,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       break;
     case 'l':
       i = bytecode[p + 1] - 65;
+      assert(i >= 0);
+      assert(i <= 255);
       literal = literals_array[i];
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
@@ -601,7 +603,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
-        set_error_return_null("Failed to lookup ", literal);
+        /* stack_print(process); */
+        /* printf("env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s); */
+        set_error_return_null("Failed to lookup: ", literal);
       }
       stack_push(process, lookup);
       process->frames[process->frame].p += 2;
@@ -630,8 +634,22 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'g':
       i = bytecode[p + 1] - 65;
       int save_frame = process->frame;
-      Obj *form = literals_array[i];     
+      int shadow_stack_size_save = process->shadow_stack_pos;
+      int stack_size_save = process->stack_pos;
+      Obj *form = literals_array[i];
+
+      /* printf("'g', form = %s, stack: \n",  obj_to_string(process, form)->s); */
+      /* stack_print(process); */
+      
       result = bytecode_sub_eval_form(process, process->frames[process->frame].env, form);
+
+      /* printf("result = %s, stack: \n",  obj_to_string(process, result)->s); */
+      /* stack_print(process); */
+
+      process->stack_pos = stack_size_save;
+      /* printf("restored stack size\n"); */
+      /* stack_print(process); */
+      
       if(eval_error) {
         //printf("Caught error: %s\n", obj_to_string(process, eval_error)->s);
         stack_push(process, eval_error);
@@ -642,7 +660,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         stack_push(process, nil);
       }
       process->frame = save_frame;
+      process->shadow_stack_pos = shadow_stack_size_save;
       process->frames[process->frame].p += 2;
+
+      /* printf("AFTER 'g':\n"); */
+      /* stack_print(process); */
+      
       break;
     case 'c':
       function = stack_pop(process);     

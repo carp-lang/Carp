@@ -75,3 +75,38 @@
 ;; (load-lisp "../lisp/compiler_helpers.carp")
 ;; (load-lisp "../lisp/sicp_solver.carp")
 
+;; (let [d1 {:x 10 :y 20}
+;;       d2 {:x 10}
+;;       d3 {:y 20 :x 10}]
+;;   (do
+;;     (assert-eq false (= d1 d2))))
+
+(let [d1 {:x 10 :y 20}
+      d2 {:x 10}
+      d3 {:y 20 :x 10}]
+  (do
+    ;; (assert-eq d1 d3)
+    ;; (assert-eq false (= d1 d2))
+    (assert-eq false (= d1 {}))
+    (assert-eq d3 (assoc d2 :y 20))
+    (assert-eq true (= d1 (assoc d2 :y 20)))
+    ))
+
+(let [a 10]
+  (do
+    (assert-eq 10 10)
+    (assert-eq 20 20)
+    (assert-eq 30 (+ 10 20))
+    (assert-eq 20 (+ a a))))
+
+
+;; (let [d1 (dictionary :x 10 :y 20)
+;;       d2 (dictionary :x 10)
+;;       d3 (dictionary :y 20 :x 10)]
+;;   (do
+;;     (assert-eq d1 d3)
+;;     (assert-eq false (= d1 d2))
+;;     (assert-eq false (= d1 (dictionary)))
+;;     (assert-eq d3 (assoc d2 :y 20))
+;;     (assert-eq true (= d1 (assoc d2 :y 20)))
+;;     ))
