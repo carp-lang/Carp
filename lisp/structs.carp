@@ -286,7 +286,7 @@
                   ]
               (do
                 ;; GETTER
-                (eval (list 'defn get-sym ['o] (list 'do
+                (eval (list 'defn get-sym (array 'o) (list 'do
                                                  (list 'concretize-struct-simple (list :type (list 'meta 'o)))
                                                  (list 'eval (list 'list
                                                                    (list 'symbol (list 'str
@@ -302,7 +302,7 @@
                 (eval (list 'meta-set! get-sym :stub-ending (str "-get-" n)))
 
                 ;; SETTER
-                (eval (list 'defn set-sym ['o 'v] (list 'do
+                (eval (list 'defn set-sym (array 'o 'v) (list 'do
                                                         (list 'concretize-struct-simple (list :type (list 'meta 'o)))
                                                         (list 'eval (list 'list
                                                                           (list 'symbol (list 'str
@@ -318,7 +318,7 @@
                 (eval (list 'meta-set! set-sym :stub-ending (str "-set-" n)))
 
                 ;; UPDATER
-                (eval (list 'defn update-sym ['o 'f] (list 'do
+                (eval (list 'defn update-sym (array 'o 'f) (list 'do
                                                            (list 'concretize-struct-simple (list :type (list 'meta 'o)))
                                                            (list 'eval (list 'list
                                                                              (list 'symbol (list 'str

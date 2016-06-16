@@ -524,7 +524,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       i = LITERAL_INDEX
       process->frames[process->frame].p += sizeof(int);
       assert(i >= 0);
-      assert(i <= 255);
       literal = literals_array[i];
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
