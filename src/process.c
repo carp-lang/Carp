@@ -131,6 +131,7 @@ Process *process_new() {
   register_primop(process, "print", p_print);
   register_primop(process, "println", p_println);
   register_primop(process, "prn", p_prn);
+  register_primop(process, "def?", p_def_QMARK);
   //register_primop(process, "system", p_system);
   register_primop(process, "get", p_get);
   register_primop(process, "get-maybe", p_get_maybe);

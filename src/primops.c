@@ -1324,6 +1324,18 @@ Obj *p_env(Process *process, Obj** args, int arg_count) {
   //return process->global_env;
 }
 
+Obj *p_def_QMARK(Process *process, Obj** args, int arg_count) {
+  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'def?'\n"); return nil; }
+  if(args[0]->tag != 'Y') { eval_error = obj_new_string("Must send symbol to 'def?'\n"); return nil; }
+  Obj *binding = env_lookup_binding(process, process->global_env, args[0]);
+  if(binding && binding->car && binding->cdr) {
+    //printf("Binding exists: %s\n", obj_to_string(process, binding)->s);
+    return lisp_true;
+  } else {
+    return lisp_false;
+  }
+}
+
 Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
   Obj *file_string = open_file(process, args[0]->s);
   shadow_stack_push(process, file_string);
