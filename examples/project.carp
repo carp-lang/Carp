@@ -32,20 +32,23 @@
 ;; (def g (fn [x] (* x x)))
 ;; (def h (fn [x] (+ (g x) (g x))))
 
+(load-lisp "../lisp/core_macros.carp")
 
-;; (def make-counter (fn [start]
-;;                     (let [value start]
-;;                       (fn []
-;;                         (do (reset! value (inc value))
-;;                             value)))))
+(def inc (fn [x] (+ x 1)))
 
-;; (def c1 (make-counter 10))
-;; (def c2 (make-counter 10))
+(def make-counter (fn [start]
+                    (let [value start]
+                      (fn []
+                        (do (reset! value (inc value))
+                            value)))))
 
-;; (println (str "c1: " (c1)))
-;; (println (str "c1: " (c1)))
-;; (println (str "c1: " (c1)))
-;; (println (str "c2: " (c2)))
+(def c1 (make-counter 10))
+(def c2 (make-counter 10))
+
+(println (str "c1: " (c1)))
+(println (str "c1: " (c1)))
+(println (str "c1: " (c1)))
+(println (str "c2: " (c2)))
 
 ;; (match 2 1 "a" 2 "b" 3 "c")
 

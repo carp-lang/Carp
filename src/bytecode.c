@@ -8,8 +8,8 @@
 #include "eval.h"
 
 #define OPTIMIZED_LOOKUP       0
-#define LOG_BYTECODE_EXECUTION 1
-#define LOG_BYTECODE_STACK     1
+#define LOG_BYTECODE_EXECUTION 0
+#define LOG_BYTECODE_STACK     0
 
 #define HEAD_EQ(str) (form->car->tag == 'Y' && strcmp(form->car->s, (str)) == 0)
 
@@ -35,22 +35,25 @@
 void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts);
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form);
 
-void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
+void write_obj(Obj *bytecodeObj, int *position, Obj *form) {
   Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
+  int new_index = literals->count;
   obj_array_mut_append(literals, form);
+  int *ip = (int*)(bytecodeObj->bytecode + *position);
+  *ip = new_index;
+  *position += sizeof(int);
+}
+
+void add_literal(Obj *bytecodeObj, int *position, Obj *form) {
   bytecodeObj->bytecode[*position] = 'l';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form);
 }
 
 void add_lambda(Obj *bytecodeObj, int *position, Obj *form) {
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form);
   bytecodeObj->bytecode[*position] = 'a';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form);
 }
 
 void add_call(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -68,21 +71,15 @@ void add_call(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *
 }
 
 void add_lookup(Obj *bytecodeObj, int *position, Obj *form) {
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form);
   bytecodeObj->bytecode[*position] = 'y';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form);
 }
 
 void add_direct_lookup(Obj *bytecodeObj, int *position, Obj *pair) {
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, pair);
   bytecodeObj->bytecode[*position] = 'x';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, pair);
 }
 
 void add_if(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -155,12 +152,9 @@ void add_match(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj 
 
   visit_form(process, env, bytecodeObj, position, form->cdr->car); // the value to match on
   
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form->cdr->cdr);
   bytecodeObj->bytecode[*position] = 'm';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form->cdr->cdr);
 }
 
 void add_do(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -187,12 +181,9 @@ void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
 }
 
 void add_catch(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form->cdr->car); // form
   bytecodeObj->bytecode[*position + 0] = 'g';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form);
 }
 
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -209,17 +200,13 @@ void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   shadow_stack_push(process, key);
   shadow_stack_push(process, value);
   shadow_stack_push(process, body);
-  
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-
-  obj_array_mut_append(literals, key);
-
+ 
   visit_form(process, env, bytecodeObj, position, value); // inline the expression of the let block
   
   bytecodeObj->bytecode[*position] = 't'; // push frame and bind 
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65; // key
-  *position += 2;
+  *position += 1;
+
+  write_obj(bytecodeObj, position, form->cdr->car); // key
 
   visit_form(process, env, bytecodeObj, position, body); // inline the body of the let block
 
@@ -232,23 +219,23 @@ void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
 }
 
 void add_def(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'def' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->car == NULL, "Too many body forms in 'def' form: ", form);
+  
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form->cdr->car);
   bytecodeObj->bytecode[*position] = 'd';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form->cdr->car);
 }
 
 void add_reset(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  assert_or_set_error(form->cdr->car, "Too few body forms in 'reset!' form: ", form);
+  assert_or_set_error(form->cdr->cdr->cdr->car == NULL, "Too many body forms in 'reset!' form: ", form);
+  
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
-  Obj *literals = bytecodeObj->bytecode_literals;
-  char new_literal_index = literals->count;
-  obj_array_mut_append(literals, form->cdr->car);
   bytecodeObj->bytecode[*position] = 'r';
-  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
-  *position += 2;
+  *position += 1;
+  write_obj(bytecodeObj, position, form->cdr->car);
 }
 
 void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
@@ -503,27 +490,35 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     stack_print(process);
     //bytecode_stack_print(process);
     #endif
+
+#define LITERAL_INDEX (*(int*)(bytecode + process->frames[process->frame].p));
+#define STEP_ONE process->frames[process->frame].p += 1;
+#define STEP_INT_SIZE process->frames[process->frame].p += sizeof(int);
     
     switch(c) {
     case 'p':
       stack_push(process, nil);
-      process->frames[process->frame].p += 1;
+      STEP_ONE;
       break;
     case 'e':
       stack_pop(process);
-      process->frames[process->frame].p += 1;
+      STEP_ONE;
       break;
     case 'l':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX
+      printf("load lit at index: %d\n", i);
+      process->frames[process->frame].p += sizeof(int);
       assert(i >= 0);
       assert(i <= 255);
       literal = literals_array[i];
       //printf("Pushing literal "); obj_print_cout(literal); printf("\n");
       stack_push(process, literal);
-      process->frames[process->frame].p += 2;
       break;
     case 'a':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;
       literal = literals_array[i];
       // TODO: compile lambda during normal compilation step, only set up the environment here
       Obj *lambda_bytecode = form_to_bytecode(process, process->frames[process->frame].env, literal->cdr->cdr->car, true);
@@ -532,28 +527,29 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
                                    literal);
       //printf("Compiled lambda: "); obj_print_cout(lambda); printf("\n");
       stack_push(process, lambda);
-      process->frames[process->frame].p += 2;
       break;
     case 'm':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;
       Obj *cases = literals_array[i];
+      printf("Cases: "); obj_print_cout(cases); printf("\n");
       Obj *value_to_match_on = stack_pop(process);
-      process->frames[process->frame].p += 2;
-
       //printf("before match, frame: %d\n", process->frame);
       bytecode_match(process, process->frames[process->frame].env, value_to_match_on, cases);
-      //printf("after match, frame: %d\n", process->frame);
-      
+      //printf("after match, frame: %d\n", process->frame);      
       //stack_push(process, );
       break;
     case 'd':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      printf("lit index = %d\n", i);
+      STEP_INT_SIZE;
       literal = literals_array[i];
       Obj *value = stack_pop(process);
-      //printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
+      printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
       result = env_extend(process->global_env, literal, value);
       stack_push(process, result->cdr);
-      process->frames[process->frame].p += 2;
       break;
     case 'n':
       if(is_true(stack_pop(process))) {
@@ -561,10 +557,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       } else {
         stack_push(process, lisp_true);
       }
-      process->frames[process->frame].p += 1;
+      STEP_ONE;
       break;
     case 'r':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;
       literal = literals_array[i];
       binding = env_lookup_binding(process, process->frames[process->frame].env, literal);
       if(binding->car) {
@@ -576,19 +574,18 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         obj_string_mut_append(eval_error, obj_to_string(process, literal)->s);
         return NULL;
       }      
-      process->frames[process->frame].p += 2;
       break;
     case 't':
-      key = literals_array[bytecode[p + 1] - 65];
-
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;      
+      key = literals_array[i];
       let_env = obj_new_environment(process->frames[process->frame].env);
 
       value = stack_pop(process);
       env_extend(let_env, key, value);
 
-      //printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
-
-      process->frames[process->frame].p += 2; // jump past 't' and the key index
+      printf("bound %s to %s\n", obj_to_string(process, key)->s, obj_to_string(process, value)->s);
     
       process->frame++;
       process->frames[process->frame].p = process->frames[process->frame - 1].p;
@@ -598,9 +595,13 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       
       break;
     case 'y':
-      i = bytecode[p + 1] - 65;
+      STEP_ONE;
+      i = LITERAL_INDEX;
+      STEP_INT_SIZE;
       literal = literals_array[i];
-      //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
+
+      printf("Looking up literal "); obj_print_cout(literal); printf("\n");
+      
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
         /* stack_print(process); */
@@ -608,7 +609,6 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         set_error_return_null("Failed to lookup: ", literal);
       }
       stack_push(process, lookup);
-      process->frames[process->frame].p += 2;
       break;
     case 'x':
       i = bytecode[p + 1] - 65;
