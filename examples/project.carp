@@ -29,6 +29,21 @@
              (+ (fib (- x 2))
                 (fib (- x 1))))))
 
+;;(letrec-internal '(a 10 b 20) '(* a b) '() '())
+
+;; (let [f nil]
+;;   (do
+;;     (reset! f (fn [x]
+;;                 (if (= 1 x)
+;;                   1
+;;                   (* x (f (dec x))))))
+;;     (println (str (f 5)))))
+
+;; (letrec [f (fn [x] (if (= 1 x)
+;;                      1
+;;                      (* x (f (dec x)))))]
+;;         (println (str (f 5))))
+
 ;; (def g (fn [x] (* x x)))
 ;; (def h (fn [x] (+ (g x) (g x))))
 

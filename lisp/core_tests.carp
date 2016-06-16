@@ -249,13 +249,13 @@
     (assert-eq false (contains? () 100))))
 
 (deftest test-fib
-  (let [fib (fn (n)
-              (match n
-                     0 0
-                     1 1
-                     2 1
-                     x (+ (fib (- x 2)) (fib (- x 1)))))]
-    (assert-eq '(1 1 2 3 5 8 13 21 34) (map fib '(1 2 3 4 5 6 7 8 9)))))
+  (letrec [fib (fn (n)
+                 (match n
+                   0 0
+                   1 1
+                   2 1
+                   x (+ (fib (- x 2)) (fib (- x 1)))))]
+          (assert-eq '(1 1 2 3 5 8 13 21 34) (map fib '(1 2 3 4 5 6 7 8 9)))))
 
 (deftest test-dictionary-mutation
   (let [stuff {:a 100 :b 200 :c 300 123 102030 :d () :e (+ 2 3)}

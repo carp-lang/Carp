@@ -3,6 +3,9 @@
                            (list 'def name (list 'macro args body))
                            (list 'meta-set! name :name (str name)))))
 
+(defmacro lets [a b c]
+  (list 'let (array a b) c))
+
 (def let-internal
   (fn [bindings body]
     (match (count bindings)
@@ -12,6 +15,7 @@
 
 (defmacro let [bindings body]
   (let-internal (array-to-list bindings) body))
+
 
 (defmacro when (expr a) (list 'if expr a nil))
 (defmacro if-not (expr a b) (list 'if (list 'not expr) a b))
@@ -36,6 +40,22 @@
         (list 'meta-set! name :line (meta-get name :line))
         (list 'meta-set! name :name (str name))
         (list 'meta-set! name :user-defined true)))
+
+
+(defn letrec-internal [bindings body binders values]
+  (match (count bindings)
+    0 (cons-last (cons 'do (map2 (fn [b v] (list 'reset! b v)) binders values)) body)
+    1 (error "Uneven nr of forms in bindings.")
+    _ (list 'lets (nth bindings 0) :undefined (letrec-internal
+                                               (rest (rest bindings))
+                                               body
+                                               (cons (nth bindings 0) binders)
+                                               (cons (nth bindings 1) values)
+                                               ))))
+
+(defmacro letrec [bindings body]
+  (letrec-internal (array-to-list bindings) body () ()))
+
 
 (defn quasiquote-internal [form]
   (do

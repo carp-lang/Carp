@@ -196,7 +196,16 @@ void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   assert_or_set_error(form->cdr->cdr->car, "Too few body forms in 'let' form: ", form);
   assert_or_set_error(form->cdr->cdr->cdr->car, "Too few body forms in 'let' form: ", form);
   assert_or_set_error(form->cdr->cdr->cdr->cdr->car == NULL, "Too many body forms in 'let' form (use explicit 'do').", form);
+
+  // forward define symbol:
+  /* bytecodeObj->bytecode[*position] = 'p'; */
+  /* *position += 1; */
+  /* bytecodeObj->bytecode[*position] = 'd'; */
+  /* *position += 1; */
+  /* write_obj(bytecodeObj, position, form->cdr->car); */
   
+
+  // normal let code:
   Obj *key = form->cdr->car;
   Obj *value = form->cdr->cdr->car;
   Obj *body = form->cdr->cdr->cdr->car;
@@ -548,7 +557,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       STEP_INT_SIZE;
       literal = literals_array[i];
       Obj *value = stack_pop(process);
-      // printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
+      //printf("defining %s to be %s\n", obj_to_string(process, literal)->s, obj_to_string(process, value)->s);
       result = env_extend(process->global_env, literal, value);
       stack_push(process, result->cdr);
       break;
@@ -606,7 +615,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
         /* stack_print(process); */
-        /* printf("env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s); */
+        printf("env:\n%s\n", obj_to_string(process, process->frames[process->frame].env)->s);
         set_error_return_null("Failed to lookup: ", literal);
       }
       stack_push(process, lookup);
