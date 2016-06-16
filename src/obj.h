@@ -13,7 +13,7 @@
 #include "constants.h"
 #include "../shared/types.h"
 
-#define BYTECODE_FRAME_SIZE 256
+#define BYTECODE_FRAME_SIZE 1024
 
 typedef void (*VoidFn)(void);
 

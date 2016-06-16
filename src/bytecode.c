@@ -758,7 +758,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
                                                     carp_array);
       
           shadow_stack_push(process, call_to_concretize_struct);
-          bytecode_sub_eval_form(process, process->global_env, call_to_concretize_struct);
+          Obj *result = bytecode_sub_eval_form(process, process->global_env, call_to_concretize_struct);
+          stack_push(process, result);
           shadow_stack_pop(process);
         } else {
           call_struct_constructor(process, function, args, arg_count);

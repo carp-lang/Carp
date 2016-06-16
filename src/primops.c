@@ -769,8 +769,12 @@ Obj *p_concat(Process *process, Obj** args, int arg_count) {
 }
 
 Obj *p_nth(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { eval_error = obj_new_string("Wrong argument count to 'nth'\n"); return nil; }
-  if(args[1]->tag != 'I') { set_error_return_nil("'nth' requires arg 1 to be an integer\n", args[1]); }
+  if(arg_count != 2) {
+    eval_error = obj_new_string("Wrong argument count to 'nth'\n"); return nil;
+  }
+  if(args[1]->tag != 'I') {
+    set_error_return_nil("'nth' requires arg 1 to be an integer: ", args[1]);
+  }
   if(args[0]->tag == 'C') {
     int i = 0;
     int n = args[1]->i;
