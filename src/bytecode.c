@@ -6,6 +6,7 @@
 #include "obj_string.h"
 #include "assertions.h"
 #include "eval.h"
+#include "obj_conversions.h"
 
 #define OPTIMIZED_LOOKUP       0
 #define LOG_BYTECODE_EXECUTION 0
@@ -578,9 +579,56 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       literal = literals_array[i];
       binding = env_lookup_binding(process, process->frames[process->frame].env, literal);
       if(binding->car) {
-        //printf("binding: %s\n", obj_to_string(process, binding)->s);
-        binding->cdr = stack_pop(process);
-        stack_push(process, binding->cdr);
+        //printf("reset! binding: %s\n", obj_to_string(process, binding)->s);
+
+        Obj *pair = binding;
+        if(pair->cdr->tag == 'R' && pair->cdr->meta) {
+          //pair->cdr->given_to_ffi = true; // needed?
+          //printf("Resetting a ptr-to-global.\n");
+          Obj *type_meta = env_lookup(process, pair->cdr->meta, obj_new_keyword("type"));
+          if(type_meta && obj_eq(process, type_meta, type_int)) {
+            int *ip = pair->cdr->void_ptr;
+            *ip = stack_pop(process)->i;
+          }
+          else if(type_meta && obj_eq(process, type_meta, type_float)) {
+            float *fp = pair->cdr->void_ptr;
+            *fp = stack_pop(process)->f32;
+          }
+          else if(type_meta && obj_eq(process, type_meta, type_double)) {
+            double *dp = pair->cdr->void_ptr;
+            *dp = stack_pop(process)->f64;
+          }
+          else if(type_meta && obj_eq(process, type_meta, type_char)) {
+            char *cp = pair->cdr->void_ptr;
+            *cp = stack_pop(process)->character;
+          }
+          else if(type_meta && obj_eq(process, type_meta, type_bool)) {
+            bool *bp = pair->cdr->void_ptr;
+            *bp = stack_pop(process)->boolean;
+          }
+          else if(type_meta && obj_eq(process, type_meta, type_string)) {
+            char **sp = pair->cdr->void_ptr;
+            *sp = strdup(stack_pop(process)->s); // OBS! strdup!!! Without this the string will get GC:ed though...
+          }
+          else if(type_meta->tag == 'C' && type_meta->cdr->car && obj_eq(process, type_meta->car, obj_new_keyword("Array"))) {
+            void **pp = pair->cdr->void_ptr;
+            Obj *a = stack_pop(process);
+            assert_or_set_error_return_nil(a->tag == 'A', "Must reset! global to array: ", binding->car);
+            Array *carp_array = obj_array_to_carp_array(process, a);
+            *pp = carp_array;
+          }
+          else {
+            /* printf("No/invalid :type\n"); */
+            /* pair->cdr = stack_pop(); */
+
+            void **pp = pair->cdr->void_ptr;
+            *pp = stack_pop(process)->void_ptr;
+          }
+        } else {
+          // a normal binding
+          binding->cdr = stack_pop(process);
+        }        
+        stack_push(process, binding->cdr);        
       } else {
         eval_error = obj_new_string("reset! can't find variable to reset: ");
         obj_string_mut_append(eval_error, obj_to_string(process, literal)->s);
@@ -613,8 +661,10 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       STEP_INT_SIZE;
       literal = literals_array[i];
 
+      //bytecode_stack_print(process);
       //printf("Looking up literal "); obj_print_cout(literal); printf("\n");
-      
+
+      shadow_stack_push(process, literal);
       lookup = env_lookup(process, process->frames[process->frame].env, literal);
       if(!lookup) {
         /* stack_print(process); */
@@ -622,6 +672,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         set_error_return_null("Failed to lookup: ", literal);
       }
       stack_push(process, lookup);
+      shadow_stack_pop(process); // literal
       break;
     case 'x':
       i = bytecode[p + 1] - 65;
@@ -654,11 +705,13 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       int shadow_stack_size_save = process->shadow_stack_pos;
       int stack_size_save = process->stack_pos;
       Obj *form = literals_array[i];
+      shadow_stack_push(process, form);
 
       /* printf("'g', form = %s, stack: \n",  obj_to_string(process, form)->s); */
       /* stack_print(process); */
-      
+
       result = bytecode_sub_eval_form(process, process->frames[process->frame].env, form);
+      shadow_stack_pop(process);
 
       /* printf("result = %s, stack: \n",  obj_to_string(process, result)->s); */
       /* stack_print(process); */

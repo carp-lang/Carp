@@ -1,5 +1,6 @@
 - Line numbers for dictionary literals
 - Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
+- Desugar [...] to (array ...) in reader
 
 
 # Generic structs 

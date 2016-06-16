@@ -145,7 +145,7 @@ void gc(Process *process) {
   /* if(process->bytecodeObj) { */
   /*   obj_mark_alive(process->bytecodeObj); */
   /* } */
-  for(int i = 0; i < process->frame; i++) {
+  for(int i = 0; i <= process->frame; i++) {
     obj_mark_alive(process->frames[i].bytecodeObj);
     obj_mark_alive(process->frames[i].env);
     obj_mark_alive(process->frames[i].trace);

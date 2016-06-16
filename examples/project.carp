@@ -23,11 +23,11 @@
 
 ;; (def inc (fn [x] (+ x 1)))
 
-;; (def fib (fn [x]
-;;            (if (< x 2)
-;;              1
-;;              (+ (fib (- x 2))
-;;                 (fib (- x 1))))))
+(def fib (fn [x]
+           (if (< x 2)
+             1
+             (+ (fib (- x 2))
+                (fib (- x 1))))))
 
 ;; (letrec-internal '(a 10 b 20) '(* a b) '() '())
 
@@ -202,35 +202,11 @@
 ;; (def f (let [x 100] (fn [] x)))
 ;; (apply f '())
 
-;; (defstruct TestPair
-;;       [a "t"
-;;        b "t"])
+;; (defn global-int []
+;;   (do
+;;     (def x 10)
+;;     (gc)
+;;     x
+;;       ))
 
-;; (TestPair 10 20)
-
-;; (assert-eq "(TestPair<int> 10 20)" (str p1))
-;; (assert-eq 10 (TestPair-get-a p1))
-;; (assert-eq 20 (TestPair-get-b p1))
-;; (assert-eq "(TestPair<bool> true false)" (str p2))
-;; (assert-eq true (TestPair-get-a p2))
-;; (assert-eq false (TestPair-get-b p2))
-
-;; (defstruct Floo [])
-
-;; (lets xxx (Floo) (if true (str xxx) nil))
-
-;;(lets xxx "hej" (if true (str xxx) nil))
-
-(do
-    (defstruct TestPair
-      [a "t"
-       b "t"])
-    (let [p1 (TestPair 10 20)
-          p2 (TestPair true false)]
-      (do
-        (assert-eq "(TestPair<int> 10 20)" (str p1))
-        (assert-eq 10 (TestPair-get-a p1))
-        (assert-eq 20 (TestPair-get-b p1))
-        (assert-eq "(TestPair<bool> true false)" (str p2))
-        (assert-eq true (TestPair-get-a p2))
-        (assert-eq false (TestPair-get-b p2)))))
+;; (global-int)
