@@ -28,7 +28,7 @@
 	nil))
 
 (defmacro assert-error (error-code form)
-  (list 'let ['result (list 'catch-error form)]
+  (list 'let (array 'result (list 'catch-error form))
         (list 'if (list 'nil? 'result)
               (list 'error (list 'str "No error!\n" (str form) "\n=>\n" 'result))
               (list 'if-not (list '= error-code (list :error 'result))

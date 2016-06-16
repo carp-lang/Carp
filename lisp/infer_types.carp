@@ -109,16 +109,16 @@
 
       :literal constraints ;; literals don't need constraints
 
-      :ref (let [expr (:expr ast)
-                 x0 (generate-constraints-internal constraints expr type-env)
-                 inner-type (match (:type ast)
-                              (:ref t) t
-                              _ (error "Not a ref type"))
-                 expr-constr {:a inner-type
-                              :b (:type expr)
-                              :prio prio-default
-                              :doc "ref-constr"}]
-             (cons expr-constr x0))
+      :ref (letrec [expr (:expr ast)
+                    x0 (generate-constraints-internal constraints expr type-env)
+                    inner-type (match (:type ast)
+                                 (:ref t) t
+                                 _ (error "Not a ref type"))
+                    expr-constr {:a inner-type
+                                 :b (:type expr)
+                                 :prio prio-default
+                                 :doc "ref-constr"}]
+                   (cons expr-constr x0))
 
       :reset (let [expr (:expr ast)
                    symbol (:value (:symbol ast))
@@ -251,16 +251,16 @@
 
       :null constraints
 
-      :array (let [t (:type ast)
-                   inner-type (nth t 1)
-                   value-constrs (mapcat (fn [val] (let [val-constr {:a inner-type
-                                                                     :b (:type val)
-                                                                     :doc (str "array-value-constr")
-                                                                     :prio prio-default}
-                                                         inner-constrs (generate-constraints-internal constraints val type-env)]
-                                                     (cons val-constr inner-constrs)))
-                                         (:values ast))]
-               value-constrs)
+      :array (letrec [t (:type ast)
+                      inner-type (nth t 1)
+                      value-constrs (mapcat (fn [val] (letrec [val-constr {:a inner-type
+                                                                           :b (:type val)
+                                                                           :doc (str "array-value-constr")
+                                                                           :prio prio-default}
+                                                               inner-constrs (generate-constraints-internal constraints val type-env)]
+                                                              (cons val-constr inner-constrs)))
+                                            (:values ast))]
+                     value-constrs)
       
       _ constraints
       )))
@@ -575,15 +575,15 @@
 
     :null ast
 
-    :array (let [inner-type (nth (:type ast) 1)
-                 looked-up-inner-type (get-type substs inner-type)
-                 _ (when (ref? looked-up-inner-type)
-                     (error {:error error-ref-in-array
-                             :message (str "The type of the elements in the array " (:original-form ast) " on line " (:line ast) " is not owned.\n")
-                             :show-stacktrace false}))
-                 x0 (assoc ast :type (list :Array looked-up-inner-type))
-                 x1 (assoc x0 :values (map (fn [x] (assign-types x substs)) (:values ast)))]
-             x1)
+    :array (letrec [inner-type (nth (:type ast) 1)
+                    looked-up-inner-type (get-type substs inner-type)
+                    _ (when (ref? looked-up-inner-type)
+                        (error {:error error-ref-in-array
+                                :message (str "The type of the elements in the array " (:original-form ast) " on line " (:line ast) " is not owned.\n")
+                                :show-stacktrace false}))
+                    x0 (assoc ast :type (list :Array looked-up-inner-type))
+                    x1 (assoc x0 :values (map (fn [x] (assign-types x substs)) (:values ast)))]
+                   x1)
 
     :c-code (assoc ast :type (get-type substs (:type ast)))
 

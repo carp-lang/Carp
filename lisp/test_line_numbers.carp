@@ -14,7 +14,7 @@
 
 (def line-15 3.14)
 
-(def line-17 (fn [] "..."))
+(def line-17 '(fn [] "...")) ;; TODO: fix this one too!
 
 (defn line-19 [] "...")
 

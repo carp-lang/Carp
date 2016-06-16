@@ -173,3 +173,9 @@
 ;;                                                   (reset! deps (copy (quote ())))
 
 ;;                                                   (assoc new-ast :func-deps deps))))))))))
+
+
+(defn f []
+  (letrec [x 123
+           y {:a x :b (inc x)}]
+          y))

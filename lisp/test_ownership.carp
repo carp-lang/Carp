@@ -41,11 +41,11 @@
     (assert-eq '(:fn () :string)
                (sign own-4))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let, 
-                        :free (list {:name "s", 
-                                     :type :string}), 
-                        :body ()}}
+                :free (), 
+                :body {:node :let, 
+                       :free (list {:name "s", 
+                                    :type :string}), 
+                       :body ()}}
                (ownership-analyze own-4))))
 
 (deftest test-own-5
@@ -57,13 +57,13 @@
     (assert-eq '(:fn () :int)
                (sign own-5))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let, 
-                        :free (list {:name "s2", 
-                                     :type :string}
-                                    {:name "s1", 
-                                     :type :string}), 
-                        :body ()}}
+                :free (), 
+                :body {:node :let, 
+                       :free (list {:name "s2", 
+                                    :type :string}
+                                   {:name "s1", 
+                                    :type :string}), 
+                       :body ()}}
                (ownership-analyze own-5))))
 
 (deftest test-own-6
@@ -75,14 +75,14 @@
     (assert-eq '(:fn () :int)
                (sign own-6))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let, 
-                        :free (list {:name "s1", 
-                                     :type :string}), 
-                        :body {:node :let, 
-                               :free (list {:name "s2", 
-                                            :type :string}), 
-                               :body ()}}}
+                :free (), 
+                :body {:node :let, 
+                       :free (list {:name "s1", 
+                                    :type :string}), 
+                       :body {:node :let, 
+                              :free (list {:name "s2", 
+                                           :type :string}), 
+                              :body ()}}}
                (ownership-analyze own-6))))
 
 (deftest test-own-7
@@ -104,15 +104,15 @@
     (assert-eq '(:fn () :string)
                (sign own-8))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body {:node :if, 
-                               :free-left (), 
-                               :free-right (list {:name "s"
-                                                  :type :string})
-                               :body-left ()
-                               :body-right ()}}}
+                :free (), 
+                :body {:node :let
+                       :free ()
+                       :body {:node :if, 
+                              :free-left (), 
+                              :free-right (list {:name "s"
+                                                 :type :string})
+                              :body-left ()
+                              :body-right ()}}}
                (ownership-analyze own-8))))
 
 (deftest test-own-9
@@ -125,14 +125,14 @@
     (assert-eq '(:fn () :string)
                (sign own-9))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body {:node :if, 
-                               :free-left (), 
-                               :free-right ()
-                               :body-left ()
-                               :body-right ()}}}
+                :free (), 
+                :body {:node :let
+                       :free ()
+                       :body {:node :if, 
+                              :free-left (), 
+                              :free-right ()
+                              :body-left ()
+                              :body-right ()}}}
                (ownership-analyze own-9))))
 
 (deftest test-own-10
@@ -145,15 +145,15 @@
     (assert-eq '(:fn () :int)
                (sign own-10))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free (list {:name "s"
-                                     :type :string})
-                        :body {:node :if, 
-                               :free-left (), 
-                               :free-right ()
-                               :body-left ()
-                               :body-right ()}}}
+                :free (), 
+                :body {:node :let
+                       :free (list {:name "s"
+                                    :type :string})
+                       :body {:node :if, 
+                              :free-left (), 
+                              :free-right ()
+                              :body-left ()
+                              :body-right ()}}}
                (ownership-analyze own-10))))
 
 (deftest test-own-11
@@ -167,16 +167,16 @@
     (assert-eq '(:fn () :string)
                (sign own-11))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body {:node :if, 
-                               :free-left (list {:name "s2"
-                                                 :type :string}),
-                               :free-right (list {:name "s1"
-                                                  :type :string})
-                               :body-left ()
-                               :body-right ()}}}
+                :free (), 
+                :body {:node :let
+                       :free ()
+                       :body {:node :if, 
+                              :free-left (list {:name "s2"
+                                                :type :string}),
+                              :free-right (list {:name "s1"
+                                                 :type :string})
+                              :body-left ()
+                              :body-right ()}}}
                (ownership-analyze own-11))))
 
 (deftest test-own-12
@@ -189,15 +189,15 @@
     (assert-eq '(:fn (:string) :string)
                (sign own-12))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :let
-                        :free ()
-                        :body {:node :if, 
-                               :free-left (list {:name "s1"
-                                                 :type :string}),
-                               :free-right ()
-                               :body-left ()
-                               :body-right ()}}}
+                :free (), 
+                :body {:node :let
+                       :free ()
+                       :body {:node :if, 
+                              :free-left (list {:name "s1"
+                                                :type :string}),
+                              :free-right ()
+                              :body-left ()
+                              :body-right ()}}}
                (ownership-analyze own-12))))
 
 (deftest test-own-13
@@ -236,12 +236,12 @@
     (assert-eq '(:fn (:string) :string)
                (sign own-15))
     (assert-eq {:node :function, 
-                 :free (), 
-                 :body {:node :if, 
-                        :free-left (),
-                        :free-right ()
-                        :body-left ()
-                        :body-right ()}}
+                :free (), 
+                :body {:node :if, 
+                       :free-left (),
+                       :free-right ()
+                       :body-left ()
+                       :body-right ()}}
                (ownership-analyze own-15))))
 
 (deftest test-free-things-sent-to-ref
