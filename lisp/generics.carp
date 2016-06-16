@@ -49,126 +49,126 @@
         nil))))
 
 (defn visit-generic-funcs [ast]
-  (let [deps (copy (:func-deps ast))
+  (letrec [deps (copy (:func-deps ast))
 
-        visit-lookup (fn [ast]
-                       (let [t (:type ast)]
-                         (do
-                           ;;(println (str (:value ast) " : " t))
-                           ;;(println (str "ast:\n" ast))
-                           (if (and* (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
-                             (let [lookup-sym (:value ast)
-                                   ;;_ (println (str "Will eval " ast))
-                                   global-lookup (eval lookup-sym)
-                                   ;;_ (println (str "global-lookup:\n" global-lookup))
-                                   
-                                   lookup-t (type global-lookup)
-                                   ;;_ (println (str "lookup-t: " lookup-t))
-                                   is-generic (meta-get lookup-t :generic)
-                                   is-generic-lens-stub (key-is-true? ast :generic-lens-stub)
-                                   ]
+           visit-lookup (fn [ast]
+                          (let [t (:type ast)]
+                            (do
+                              ;;(println (str (:value ast) " : " t))
+                              ;;(println (str "ast:\n" ast))
+                              (if (and* (nil? (get-maybe ast :self-recursive)) (:global-lookup ast))
+                                (let [lookup-sym (:value ast)
+                                      ;;_ (println (str "Will eval " ast))
+                                      global-lookup (eval lookup-sym)
+                                      ;;_ (println (str "global-lookup:\n" global-lookup))
+                                      
+                                      lookup-t (type global-lookup)
+                                      ;;_ (println (str "lookup-t: " lookup-t))
+                                      is-generic (meta-get lookup-t :generic)
+                                      is-generic-lens-stub (key-is-true? ast :generic-lens-stub)
+                                      ]
 
-                               (if (and* (lambda? global-lookup) is-generic)
-                                 (if (generic-type? t)
-                                   (do
-                                     ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
-                                     ast)
-                                   (if is-generic-lens-stub
-                                     (let [struct-t (get-in (:type ast) '(1 0))
-                                           struct-description (eval (:struct ast))
-                                           member-types (:member-types struct-description)
-                                           struct-name (:name struct-description)
-                                           concrete-struct-name (generic-safe-name struct-t)
-                                           stub-ending (:stub-ending ast)
-                                           concrete-stub-name (str concrete-struct-name stub-ending)
-                                           ]
-                                       (do
-                                         ;; (println (str "Concretizing " (:value ast)
-                                         ;;               " struct-t: " struct-t
-                                         ;;               " struct-name: " struct-name
-                                         ;;               " concrete-struct-name: " concrete-struct-name
-                                         ;;               " struct description:\n" struct-description))
-                                         (concretize-struct struct-name concrete-struct-name (rest struct-t))
-                                         (reset! deps (cons concrete-stub-name deps))
-                                         (assoc-in ast '(:value) (symbol concrete-stub-name))))
-                                     (let [n (generic-name lookup-sym t)]
-                                       (do
-                                         ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
-                                         (compiler/concretize (str lookup-sym) n (code global-lookup) t)
-                                         (reset! deps (cons n deps))
-                                         (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
-                                           ast0)))))
-                                 (if (and (primop? global-lookup) is-generic)
-                                   (if (generic-type? t)
-                                     (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
-                                       ast)
-                                     (let [n (generic-name lookup-sym t)]
-                                       (do
-                                         ;;(println (str "Found a generic primop to bake: " lookup-sym))
-                                         ;; (println (str "Final name will be " n))
-                                         (bake-generic-primop n
-                                                              (str lookup-sym)
-                                                              t)
-                                         (reset! deps (cons n deps))
-                                         (assoc-in ast '(:value) (symbol n)))))
+                                  (if (and* (lambda? global-lookup) is-generic)
+                                    (if (generic-type? t)
+                                      (do
+                                        ;;(println (str "Lambda with missing type information, can't compile concrete version: " lookup-sym " of type " t))
+                                        ast)
+                                      (if is-generic-lens-stub
+                                        (let [struct-t (get-in (:type ast) '(1 0))
+                                              struct-description (eval (:struct ast))
+                                              member-types (:member-types struct-description)
+                                              struct-name (:name struct-description)
+                                              concrete-struct-name (generic-safe-name struct-t)
+                                              stub-ending (:stub-ending ast)
+                                              concrete-stub-name (str concrete-struct-name stub-ending)
+                                              ]
+                                          (do
+                                            ;; (println (str "Concretizing " (:value ast)
+                                            ;;               " struct-t: " struct-t
+                                            ;;               " struct-name: " struct-name
+                                            ;;               " concrete-struct-name: " concrete-struct-name
+                                            ;;               " struct description:\n" struct-description))
+                                            (concretize-struct struct-name concrete-struct-name (rest struct-t))
+                                            (reset! deps (cons concrete-stub-name deps))
+                                            (assoc-in ast '(:value) (symbol concrete-stub-name))))
+                                        (let [n (generic-name lookup-sym t)]
+                                          (do
+                                            ;;(println (str "generic lookup of '" lookup-sym "', t: " t ", lookup-t: " lookup-t ", n: " generic-name))
+                                            (compiler/concretize (str lookup-sym) n (code global-lookup) t)
+                                            (reset! deps (cons n deps))
+                                            (let [ast0 (assoc-in ast '(:value) (symbol n))] ;; make it call another function...
+                                              ast0)))))
+                                    (if (and (primop? global-lookup) is-generic)
+                                      (if (generic-type? t)
+                                        (do ;;(println (str "Primop with missing type information, can't compile concrete version: " t))
+                                          ast)
+                                        (let [n (generic-name lookup-sym t)]
+                                          (do
+                                            ;;(println (str "Found a generic primop to bake: " lookup-sym))
+                                            ;; (println (str "Final name will be " n))
+                                            (bake-generic-primop n
+                                                                 (str lookup-sym)
+                                                                 t)
+                                            (reset! deps (cons n deps))
+                                            (assoc-in ast '(:value) (symbol n)))))
 
-                                   (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
-                                     (let [struct-name (:struct-name ast)
-                                           concrete-struct-type (nth t 2)
-                                           concrete-struct-name (generic-safe-name concrete-struct-type)
-                                           ;;_ (println (str "concrete-struct-name: " concrete-struct-name))
-                                           constructor-name (str "new-" concrete-struct-name)
-                                           concrete-types (rest concrete-struct-type)]
-                                       (do
-                                         (concretize-struct struct-name concrete-struct-name concrete-types)
-                                         (reset! deps (cons constructor-name deps))
-                                         (assoc-in ast '(:value) (symbol constructor-name))))
-                                     ast)
-                                   )))
-                             ast))))
+                                      (if (and (key-is-true? ast :constructor) (key-is-true? ast :generic))
+                                        (let [struct-name (:struct-name ast)
+                                              concrete-struct-type (nth t 2)
+                                              concrete-struct-name (generic-safe-name concrete-struct-type)
+                                              ;;_ (println (str "concrete-struct-name: " concrete-struct-name))
+                                              constructor-name (str "new-" concrete-struct-name)
+                                              concrete-types (rest concrete-struct-type)]
+                                          (do
+                                            (concretize-struct struct-name concrete-struct-name concrete-types)
+                                            (reset! deps (cons constructor-name deps))
+                                            (assoc-in ast '(:value) (symbol constructor-name))))
+                                        ast)
+                                      )))
+                                ast))))
 
-        visit-generic-funcs-internal (fn [ast]
-                                       (match (:node ast)
-                                         :function (update-in ast '(:body) visit-generic-funcs-internal)
-                                         
-                                         :app (let [head (:head ast)
-                                                    ast0 (update-in ast '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
-                                                (update-in ast0 '(:head) visit-generic-funcs-internal))
-                                         
-                                         :lookup (visit-lookup ast)
+           visit-generic-funcs-internal (fn [ast]
+                                          (match (:node ast)
+                                            :function (update-in ast '(:body) visit-generic-funcs-internal)
+                                            
+                                            :app (let [head (:head ast)
+                                                       ast0 (update-in ast '(:tail) (fn (a) (map visit-generic-funcs-internal (:tail ast))))]
+                                                   (update-in ast0 '(:head) visit-generic-funcs-internal))
+                                            
+                                            :lookup (visit-lookup ast)
 
-                                         :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
-                                                   ast1 (update-in ast0 '(:if-true) visit-generic-funcs-internal)
-                                                   ast2 (update-in ast1 '(:if-false) visit-generic-funcs-internal)]
-                                               ast2)
+                                            :if (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                      ast1 (update-in ast0 '(:if-true) visit-generic-funcs-internal)
+                                                      ast2 (update-in ast1 '(:if-false) visit-generic-funcs-internal)]
+                                                  ast2)
 
-                                         :binop (let [ast0 (update-in ast '(:left) visit-generic-funcs-internal)
-                                                      ast1 (update-in ast0 '(:right) visit-generic-funcs-internal)]
-                                                  ast1)
+                                            :binop (let [ast0 (update-in ast '(:left) visit-generic-funcs-internal)
+                                                         ast1 (update-in ast0 '(:right) visit-generic-funcs-internal)]
+                                                     ast1)
 
-                                         :reset (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)]
-                                                  ast0)
+                                            :reset (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)]
+                                                     ast0)
 
-                                         :literal ast
+                                            :literal ast
 
-                                         :ref (update-in ast '(:expr) visit-generic-funcs-internal)
+                                            :ref (update-in ast '(:expr) visit-generic-funcs-internal)
 
-                                         :let (let [ast0 (update-in ast '(:bindings)
-                                                                    (fn [forms] (map visit-generic-funcs-internal forms)))]
-                                                (update-in ast0 '(:body) visit-generic-funcs-internal))
+                                            :let (let [ast0 (update-in ast '(:bindings)
+                                                                       (fn [forms] (map visit-generic-funcs-internal forms)))]
+                                                   (update-in ast0 '(:body) visit-generic-funcs-internal))
 
-                                         :binding (update-in ast '(:value) visit-generic-funcs-internal)
+                                            :binding (update-in ast '(:value) visit-generic-funcs-internal)
 
-                                         :while (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
-                                                      ast1 (update-in ast0 '(:body) visit-generic-funcs-internal)]
-                                                  ast1)
+                                            :while (let [ast0 (update-in ast '(:expr) visit-generic-funcs-internal)
+                                                         ast1 (update-in ast0 '(:body) visit-generic-funcs-internal)]
+                                                     ast1)
 
-                                         :null ast
+                                            :null ast
 
-                                         :array (update-in ast '(:values) (fn [vals] (map visit-generic-funcs-internal vals)))
+                                            :array (update-in ast '(:values) (fn [vals] (map visit-generic-funcs-internal vals)))
 
-                                         :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
-                                         
-                                         x (error (str "visit-generic can't handle node type " x))))]
-    (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
+                                            :do (update-in ast '(:forms) (fn [forms] (map visit-generic-funcs-internal forms)))
+                                            
+                                            x (error (str "visit-generic can't handle node type " x))))]
+          (assoc (visit-generic-funcs-internal ast) :func-deps deps)))
 

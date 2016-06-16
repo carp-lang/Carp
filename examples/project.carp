@@ -29,7 +29,7 @@
              (+ (fib (- x 2))
                 (fib (- x 1))))))
 
-;;(letrec-internal '(a 10 b 20) '(* a b) '() '())
+(letrec-internal '(a 10 b 20) '(* a b) '() '())
 
 ;; (let [f nil]
 ;;   (do
@@ -118,3 +118,58 @@
 ;;     (assert-eq true (= d1 (assoc d2 :y 20)))
 ;;     ))
 
+
+
+;; (do  (meta-set! find-func-deps :line 7) (meta-set! find-func-deps :name "find-func-deps") (meta-set! find-func-deps :user-defined true))
+
+
+;; (def find-func-deps
+;;   (fn [ast bake-deps]
+;;     (letrec [deps (copy (quote ()))
+
+;;              _ (when (not (dict? ast)) (error (str "ast is not a dict: " ast)))
+
+;;              _ (when (not (= :function (get-maybe ast :node))) (error (str "ast is not a function ast node: " ast)))
+
+;;              func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n))
+
+;;              find-deps-in-list (fn [asts vars-in-scope] (reduce (fn [result a] (cons-last result (find-func-deps-internal a vars-in-scope))) (quote ()) asts))
+
+;;              find-deps-in-bindings (fn [bindings vars-in-scope] (reduce (fn [result binding] (cons-last result (update-in binding (quote (:value)) (fn [bv] (find-func-deps-internal bv vars-in-scope))))) (quote ()) bindings))
+
+;;              find-func-deps-internal (fn [ast vars-in-scope] (do (match (:node ast) :lookup (let [symbol (:value ast) symbol-name (str symbol) is-global-lookup (global? vars-in-scope symbol) self-recursive (= func-name symbol-name) is-constructor (= true (get-maybe ast :constructor))] (if self-recursive (assoc ast :self-recursive true) (do (when is-global-lookup (let [evaled (eval symbol) is-primop (primop? evaled) is-lambda (lambda? evaled) is-function (function? evaled) is-generic-lens-stub (key-is-true? (meta evaled) :generic-lens-stub)] (do (when (and (not is-function) (not is-constructor)) (do (bake-global (name symbol) deps) (reset! deps (cons symbol-name deps)))) (when is-constructor (do (reset! deps (cons symbol-name deps)))) (when (and* is-lambda bake-deps (not is-generic-lens-stub)) (do (compiler/bake-code symbol-name (code evaled) (meta-get evaled :ann)) (reset! deps (cons symbol-name deps)))) (when (foreign? evaled) (reset! deps (cons symbol-name deps)))))) (assoc ast :global-lookup is-global-lookup)))) :reset (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:symbol)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :app (let [ast0 (update-in ast (quote (:head)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:tail)) (fn [a] (find-deps-in-list a vars-in-scope)))] ast1) :function (let [args (:args ast) new-vars (union (map :name args) vars-in-scope)] (update-in ast (quote (:body)) (fn [a] (find-func-deps-internal a new-vars)))) :if (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:if-true)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast2 (update-in ast1 (quote (:if-false)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast2) :while (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:body)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :binop (let [ast0 (update-in ast (quote (:left)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:right)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :literal ast :do (let [new-ast (update-in ast (quote (:forms)) (fn [a] (find-deps-in-list a vars-in-scope)))] new-ast) :let (let [bindings (:bindings ast) new-vars (union (map :name bindings) vars-in-scope) ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))] (update-in ast0 (quote (:body)) (fn [a] (find-func-deps-internal a new-vars)))) :ref (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast0) :null ast :array (let [ast0 (update-in ast (quote (:values)) (fn [a] (find-deps-in-list a vars-in-scope)))] ast0) x (error (str "find-func-deps can't handle node: " x)))))
+
+;;              new-ast (find-func-deps-internal ast (quote ()))]
+
+;;             (assoc new-ast :func-deps deps)))
+;;   )
+
+
+
+
+
+
+
+
+
+
+;; (lets deps :undefined
+;;       (lets _ :undefined
+;;             (lets _ :undefined
+;;                   (lets func-name :undefined
+;;                         (lets find-deps-in-list :undefined
+;;                               (lets find-deps-in-bindings :undefined
+;;                                     (lets find-func-deps-internal :undefined
+;;                                           (lets new-ast :undefined
+;;                                                 (do
+;;                                                   (reset! new-ast (find-func-deps-internal ast (quote ())))
+                                                  
+;;                                                   (reset! find-func-deps-internal (fn [ast vars-in-scope] (do (match (:node ast) :lookup (let [symbol (:value ast) symbol-name (str symbol) is-global-lookup (global? vars-in-scope symbol) self-recursive (= func-name symbol-name) is-constructor (= true (get-maybe ast :constructor))] (if self-recursive (assoc ast :self-recursive true) (do (when is-global-lookup (let [evaled (eval symbol) is-primop (primop? evaled) is-lambda (lambda? evaled) is-function (function? evaled) is-generic-lens-stub (key-is-true? (meta evaled) :generic-lens-stub)] (do (when (and (not is-function) (not is-constructor)) (do (bake-global (name symbol) deps) (reset! deps (cons symbol-name deps)))) (when is-constructor (do (reset! deps (cons symbol-name deps)))) (when (and* is-lambda bake-deps (not is-generic-lens-stub)) (do (compiler/bake-code symbol-name (code evaled) (meta-get evaled :ann)) (reset! deps (cons symbol-name deps)))) (when (foreign? evaled) (reset! deps (cons symbol-name deps)))))) (assoc ast :global-lookup is-global-lookup)))) :reset (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:symbol)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :app (let [ast0 (update-in ast (quote (:head)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:tail)) (fn [a] (find-deps-in-list a vars-in-scope)))] ast1) :function (let [args (:args ast) new-vars (union (map :name args) vars-in-scope)] (update-in ast (quote (:body)) (fn [a] (find-func-deps-internal a new-vars)))) :if (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:if-true)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast2 (update-in ast1 (quote (:if-false)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast2) :while (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:body)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :binop (let [ast0 (update-in ast (quote (:left)) (fn [a] (find-func-deps-internal a vars-in-scope))) ast1 (update-in ast0 (quote (:right)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast1) :literal ast :do (let [new-ast (update-in ast (quote (:forms)) (fn [a] (find-deps-in-list a vars-in-scope)))] new-ast) :let (let [bindings (:bindings ast) new-vars (union (map :name bindings) vars-in-scope) ast0 (assoc ast :bindings (find-deps-in-bindings bindings new-vars))] (update-in ast0 (quote (:body)) (fn [a] (find-func-deps-internal a new-vars)))) :ref (let [ast0 (update-in ast (quote (:expr)) (fn [a] (find-func-deps-internal a vars-in-scope)))] ast0) :null ast :array (let [ast0 (update-in ast (quote (:values)) (fn [a] (find-deps-in-list a vars-in-scope)))] ast0) x (error (str "find-func-deps can't handle node: " x))))))
+;;                                                   (reset! find-deps-in-bindings (fn [bindings vars-in-scope] (reduce (fn [result binding] (cons-last result (update-in binding (quote (:value)) (fn [bv] (find-func-deps-internal bv vars-in-scope))))) (quote ()) bindings)))
+;;                                                   (reset! find-deps-in-list (fn [asts vars-in-scope] (reduce (fn [result a] (cons-last result (find-func-deps-internal a vars-in-scope))) (quote ()) asts)))
+;;                                                   (reset! func-name (let [n (get-maybe ast :name)] (if (nil? n) "" n)))
+;;                                                   (reset! _ (when (not (= :function (get-maybe ast :node))) (error (str "ast is not a function ast node: " ast))))
+;;                                                   (reset! _ (when (not (dict? ast)) (error (str "ast is not a dict: " ast))))
+;;                                                   (reset! deps (copy (quote ())))
+
+;;                                                   (assoc new-ast :func-deps deps))))))))))

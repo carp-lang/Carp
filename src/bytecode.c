@@ -346,7 +346,7 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
           return;
         }
         
-        //printf("Expanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
+        //printf("\nExpanded '%s' to %s\n", obj_to_string(process, form->car)->s, obj_to_string(process, expanded)->s);
         
         visit_form(process, env, bytecodeObj, position, expanded);
       }
@@ -710,7 +710,13 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       }
       else if(function->tag == 'K') {
         if(arg_count != 1) {
-          eval_error = obj_new_string("Args to keyword lookup must be a single arg.");
+          eval_error = obj_new_string("Args to keyword lookup must be a single arg: ");
+          obj_string_mut_append(eval_error, obj_to_string(process, function)->s);
+          obj_string_mut_append(eval_error, "\n\n");
+          for(int i = 0; i < arg_count; i++) {
+            obj_string_mut_append(eval_error, "\n");
+            obj_string_mut_append(eval_error, obj_to_string(process, args[i])->s);
+          }
         }
         else if(args[0]->tag != 'E') {
           eval_error = obj_new_string("Arg 0 to keyword lookup must be a dictionary: ");

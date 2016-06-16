@@ -50,8 +50,8 @@
     _ (list 'lets (nth bindings 0) :undefined (letrec-internal
                                                (rest (rest bindings))
                                                body
-                                               (cons (nth bindings 0) binders)
-                                               (cons (nth bindings 1) values)
+                                               (cons-last binders (nth bindings 0))
+                                               (cons-last values (nth bindings 1))
                                                ))))
 
 (defmacro letrec [bindings body]
