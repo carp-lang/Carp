@@ -390,6 +390,7 @@ Obj *bytecode_sub_eval_internal(Process *process, Obj *env, Obj *bytecode_obj) {
   process->frames[process->frame].p = 0;        
   process->frames[process->frame].bytecodeObj = bytecode_obj;
   process->frames[process->frame].env = env;
+  process->frames[process->frame].trace = obj_new_string("<sub-eval>");
 
   int top_frame = process->frame;
 
@@ -409,11 +410,15 @@ void bytecode_frame_print(Process *process, BytecodeFrame frame) {
   if(!frame.trace) {
     printf("No trace.");
   }
+  else if(frame.trace && frame.trace->tag == 'S') {
+    printf("%s", frame.trace->s);
+  }
   else if(frame.trace->meta) {
     Obj *o = frame.trace;
     //printf("%s\n", obj_to_string(o->meta)->s);
     char *func_name = "";
     Obj *func_name_data = NULL;
+
     if(o && o->meta) {
       func_name_data = env_lookup(process, o->meta, obj_new_keyword("name"));
     }
@@ -443,13 +448,13 @@ void bytecode_frame_print(Process *process, BytecodeFrame frame) {
 }
 
 void bytecode_stack_print(Process *process) {
-  printf("\n---\n");
+  printf("----------------------------------------------------------------\n");
   for(int i = 0; i <= process->frame; i++) {
     printf("%d ", i);
     bytecode_frame_print(process, process->frames[i]);
     printf("\n");
   }
-  printf("---\n");
+  printf("----------------------------------------------------------------\n");
 }
 
 // returns NULL if not done yet
@@ -574,6 +579,8 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       process->frames[process->frame].p = process->frames[process->frame - 1].p;
       process->frames[process->frame].bytecodeObj = process->frames[process->frame - 1].bytecodeObj;
       process->frames[process->frame].env = let_env;
+      process->frames[process->frame].trace = obj_new_string("<let>");
+      
       break;
     case 'y':
       i = bytecode[p + 1] - 65;
@@ -676,23 +683,24 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         
         // printf("Pushing new stack frame with bytecode '%s'\n", process->frames[process->frame].bytecode);
         // and env %s\n", process->frames[process->frame].bytecode, obj_to_string(process, calling_env)->s);
-        printf("Entering new frame...\n");
-        bytecode_stack_print(process);
+
+        /* printf("Entering new frame...\n"); */
+        /* bytecode_stack_print(process); */
       }
       else {
         set_error_return_null("Can't call \n", function);
       }      
       break;
     case 'u':
-      process->function_trace_pos--;
       process->frame++;
       break;
     case 'v':
+      //printf("\nv\n");
       process->frame--;
       process->frames[process->frame].p = process->frames[process->frame + 1].p + 1;
       break;
     case 'q':
-      //printf("\nhit q\n");
+      //printf("\nq\n");
       //set_error_return_null("Hit end of bytecode. \n", bytecodeObj);
       process->frame--;        
       if(process->frame < top_frame) {
@@ -724,6 +732,7 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
   process->frames[process->frame].p = 0;
   process->frames[process->frame].bytecodeObj = bytecodeObj;
   process->frames[process->frame].env = env;
+  process->frames[process->frame].trace = obj_new_string("<eval-in-env>");
 
   int top_frame = process->frame;
   
@@ -731,8 +740,7 @@ Obj *bytecode_eval_bytecode_in_env(Process *process, Obj *bytecodeObj, Obj *env)
   while(!final_result) {
     final_result = bytecode_eval_internal(process, bytecodeObj, 100, top_frame);
     if(eval_error) {
-      final_result = nil;
-      break;
+      return nil;
     }
   }
   //printf("Final result = %s\n", obj_to_string(process, final_result)->s);
