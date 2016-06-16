@@ -17,6 +17,7 @@
 // 'c' call <argcount>
 // 'd' def <literal>
 // 'e' discard
+// 'g' catch
 // 'i' jump if false
 // 'j' jump (no matter what)
 // 'l' push <literal>
@@ -185,6 +186,15 @@ void add_ref(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *f
   visit_form(process, env, bytecodeObj, position, form->cdr->car);
 }
 
+void add_catch(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
+  Obj *literals = bytecodeObj->bytecode_literals;
+  char new_literal_index = literals->count;
+  obj_array_mut_append(literals, form->cdr->car); // form
+  bytecodeObj->bytecode[*position + 0] = 'g';
+  bytecodeObj->bytecode[*position + 1] = new_literal_index + 65;
+  *position += 2;
+}
+
 void add_let(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *form) {
 
   assert_or_set_error(form->cdr->car, "Too few body forms in 'let' form: ", form);
@@ -278,6 +288,9 @@ void visit_form(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj
     }
     else if(HEAD_EQ("ref")) {
       add_ref(process, env, bytecodeObj, position, form);
+    }
+    else if(HEAD_EQ("catch-error")) {
+      add_catch(process, env, bytecodeObj, position, form);
     }
     else if(HEAD_EQ("not")) {
       add_not(process, env, bytecodeObj, position, form);
@@ -613,6 +626,23 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
     case 'j':
       jump_pos = (int*)(bytecode + 1 + p);
       process->frames[process->frame].p = *jump_pos;
+      break;
+    case 'g':
+      i = bytecode[p + 1] - 65;
+      int save_frame = process->frame;
+      Obj *form = literals_array[i];     
+      result = bytecode_sub_eval_form(process, process->frames[process->frame].env, form);
+      if(eval_error) {
+        printf("Caught error: %s\n", obj_to_string(process, eval_error)->s);
+        stack_push(process, eval_error);
+        eval_error = NULL;
+      }
+      else {
+        printf("No error\n");
+        stack_push(process, nil);
+      }
+      process->frame = save_frame;
+      process->frames[process->frame].p += 2;
       break;
     case 'c':
       function = stack_pop(process);     
