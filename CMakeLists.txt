@@ -19,6 +19,11 @@ set(LIBFFI_LIBRARY_PATH
   PATH
   "libffi library directory")
 
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+endif()
+
 set(SOURCE_DIR src)
 include(globfiles.cmake)
 
@@ -27,7 +32,7 @@ link_directories(${LIBFFI_LIBRARY_PATH})
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_h} ${${PROJECT_NAME}_c})
 
-target_link_libraries(${PROJECT_NAME} ffi)
+target_link_libraries(${PROJECT_NAME} ffi m c pthread dl)
 
 set_target_properties(${PROJECT_NAME}
     PROPERTIES

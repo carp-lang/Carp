@@ -2,7 +2,8 @@
 
 #include "types.h"
 
-#ifdef __APPLE__
+
+#if defined (__APPLE__) || defined(__linux__)
 
 #include <stdlib.h>
 #include <assert.h>
@@ -91,7 +92,14 @@ char* carp_get_load_library_error() {
 }
 
 CARP_PLATFORM carp_get_platform() {
+#ifdef __APPLE__
 	return CARP_PLATFORM_OSX;
+#elif defined __linux__
+	return CARP_PLATFORM_LINUX;
+#elif defined WIN32
+	return CARP_PLATFORM_WINDOWS;
+#endif
+	return CARP_PLATFORM_UNKNOWN;
 }
 
 #endif // __APPLE__
