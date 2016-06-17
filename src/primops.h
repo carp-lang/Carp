@@ -88,6 +88,7 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
 Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count);
 Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count);
 Obj *p_sort_by(Process *process, Obj** args, int arg_count);
+Obj *p_hash(Process *process, Obj** args, int arg_count);
 
 Obj *register_ffi_internal(Process *process, char *name, VoidFn funptr, Obj *args, Obj *return_type_obj, bool builtin);
 

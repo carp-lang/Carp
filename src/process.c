@@ -47,6 +47,9 @@ Process *process_new() {
   dotdotdot = obj_new_symbol("dotdotdot");
   define("dotdotdot", dotdotdot);
 
+  hash = obj_new_keyword("hash");
+  define("hash", hash);
+
   lisp_NULL = obj_new_ptr(NULL);
   define("NULL", lisp_NULL);
 
@@ -177,6 +180,7 @@ Process *process_new() {
   register_primop(process, "array-set!", p_array_set_BANG);
   register_primop(process, "array-set", p_array_set);
   register_primop(process, "gc", p_gc);
+  register_primop(process, "hash", p_hash);
   register_primop(process, "delete", p_delete);
   register_primop(process, "stop", p_stop);
   register_primop(process, "parallell", p_parallell);

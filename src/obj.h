@@ -171,6 +171,7 @@ Obj *obj_new_bool(bool b);
 Obj *obj_new_bytecode(char *bytecode);
 
 Obj *obj_copy(Obj *o);
+Obj *obj_hash(Process *process, Obj *o);
 bool obj_eq(Process *process, Obj *a, Obj *b);
 
 Obj *obj_list_internal(Obj *objs[]);
@@ -198,6 +199,7 @@ Obj *lisp_NULL;
 Obj *ampersand; // "&"
 Obj *hash; // "#"
 Obj *dotdotdot; // "..."
+Obj *hash; // ":hash"
 
 Obj *type_int;
 Obj *type_bool;

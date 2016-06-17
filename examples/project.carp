@@ -27,11 +27,32 @@
              :b {:x 66666}
              :c {:x 300}}})
 
-(defn compare []
-  (assert (not (= d1 d2))))
+(def d3 {:a {}
+         :b {:a 1
+             :b 2
+             :c 3}
+         :c {:a {:x 100}
+             :b {:x 200}
+             :c {:x 300}}})
 
-;;(time (for (i 0 9999) (compare)))
+(defn compare []
+  (do
+    (assert (not (= d1 d2)))
+    (assert (= d1 d3))))
+
+(time (for (i 0 50000) (compare))) ;; takes 4700 ms
+
+;; (println (str "meta d1: " (meta d1)))
+;; (println (str "meta d2: " (meta d2)))
+;; (println (str "meta d3: " (meta d3)))
 
 (println "bleh...")
 
-(while true (println "."))
+;;(meta {:a 10 :b {:x 10 :y 20}})
+
+;; 410767028
+;; 410767028
+
+;; {:a {:x 100}
+;;  :b {:x 666}
+;;  :c {:x 300}}

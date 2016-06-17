@@ -294,6 +294,9 @@ Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
   }
   
   //sprintf("Created dictionary:\n%s\n", obj_to_string(process, e)->s);
+
+  Obj *hash = obj_hash(process, e); // do this first since it might trigger GC
+  obj_set_meta(e, obj_new_keyword("hash"), hash);
   
   return e;
 }
@@ -2242,7 +2245,13 @@ Obj *p_sort_by(Process *process, Obj** args, int arg_count) {
   return result;
 }
 
-
+Obj *p_hash(Process *process, Obj** args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'hash'.");
+    return nil;
+  }
+  return obj_hash(process, args[0]);
+}
 
       /* shadow_stack_push(process, list); */
       

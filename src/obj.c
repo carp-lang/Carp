@@ -201,7 +201,7 @@ Obj *obj_copy(Obj *o) {
       prev->car = obj_copy(p->car);
       if(p->cdr) {
 	prev->cdr = obj_copy(p->cdr);
-	return list; // early break when copying dotted pairs!
+	return list; // early break when copying dotted pairs! TODO: is this case always selected?!
       } else {
 	prev->cdr = obj_new_cons(NULL, NULL);
 	prev = new;
@@ -275,6 +275,107 @@ Obj *obj_copy(Obj *o) {
 	return NULL;
     assert(false);
   }
+}
+
+int string_to_hash(char *str) {
+  unsigned long hash = 5381;
+  int c;
+  while((c = *str++)) {
+    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+  }
+  return hash;
+}
+
+Obj *obj_hash(Process *process, Obj *o) {
+  assert(o);
+
+  shadow_stack_push(process, o);
+  Obj *hash = obj_new_int(123456789);
+  shadow_stack_push(process, hash);
+  
+  if(o->tag == 'C') {
+    Obj *p = o;
+    int h = 1234;
+    while(p && p->car) {
+      h += obj_hash(process, p->car)->i;
+      if(p->cdr && p->cdr->tag != 'C') {
+        // dotted pair
+        h += obj_hash(process, p->cdr)->i;
+        break;
+      } else {
+        // normal list
+        p = p->cdr;
+      }
+    }
+    hash->i = h;   
+  }
+  else if(o->tag == 'A') {
+    int h = 5381;
+    for(int i = 0; i < o->count; i++) {
+      h = ((h << 5) + h) + obj_hash(process, o->array[i])->i;
+    }
+    hash->i = h;   
+  }
+  else if(o->tag == 'E') {
+    hash->i = obj_hash(process, o->bindings)->i + 666;   
+  }
+  else if(o->tag == 'Q') {
+    hash->i = (int)o->void_ptr;   
+  }
+  else if(o->tag == 'I') {
+    hash->i = o->i;   
+  }
+  else if(o->tag == 'V') {
+    hash->i = (int)o->f32;   
+  }
+  else if(o->tag == 'W') {
+    hash->i = (int)o->f64;   
+  }
+  else if(o->tag == 'S') {
+    hash->i = string_to_hash(o->s);   
+  }
+  else if(o->tag == 'Y') {
+    hash->i = string_to_hash(o->s);   
+  }
+  else if(o->tag == 'K') {
+    hash->i = string_to_hash(o->s);   
+  }
+  else if(o->tag == 'P') {
+    hash->i = (int)o->primop;
+  }
+  else if(o->tag == 'D') {
+    hash->i = (int)o->dylib;
+  }
+  else if(o->tag == 'F') {
+    hash->i = (int)o->funptr;
+  }
+  else if(o->tag == 'L') {
+    // ???
+  }
+  else if(o->tag == 'M') {
+    // ???
+  }
+  else if(o->tag == 'T') {
+    hash->i = (int)o->character;
+  }
+  else if(o->tag == 'B') {
+    hash->i = o->boolean ? 29843 : 42391;
+  }
+  else if(o->tag == 'X') {
+    // ???
+  }
+  else {
+    printf("obj_hash() can't handle type tag %c (%d).\n", o->tag, o->tag);
+    return NULL;
+    assert(false);
+  }
+
+  shadow_stack_pop(process); // hash
+  shadow_stack_pop(process); // o
+
+  //printf("hash for %s is %d\n", obj_to_string(process, o)->s, hash->i);
+  
+  return hash;
 }
 
 Obj *obj_list_internal(Obj *objs[]) {
@@ -433,7 +534,19 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag == 'D') {
     return a->dylib == b->dylib;
   }
-  else if(a->tag == 'C') {
+
+  if(a->meta && b->meta) {
+    Obj *hash_a = env_lookup(process, a->meta, hash);
+    Obj *hash_b = env_lookup(process, b->meta, hash);
+    if(hash_a && hash_b) {
+      if(hash_a->i != hash_b->i) {
+        //printf("Hash of %s and %s are not equal!\n", obj_to_string(process, a)->s, obj_to_string(process, b)->s);
+        return false;
+      }
+    }
+  }
+  
+  if(a->tag == 'C') {
     Obj *pa = a;
     Obj *pb = b;
     while(1) {
@@ -471,8 +584,17 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
     }
   }
   else if(a->tag == 'E') {
-    if(!obj_eq(process, a->parent, b->parent)) { return false; }
-    //printf("WARNING! Can't reliably compare dicts.\n");
+
+    /* if(!a->meta) { */
+    /*   printf("dict is missing meta: %s\n", obj_to_string(process, a)->s); */
+    /* } */
+    /* if(!b->meta) { */
+    /*   printf("dict is missing meta: %s\n", obj_to_string(process, b)->s); */
+    /* } */
+    
+    if(!obj_eq(process, a->parent, b->parent)) {
+      return false;
+    }
 
     {
       Obj *pa = a->bindings;    
