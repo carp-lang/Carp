@@ -133,6 +133,9 @@ void add_while(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj 
   
   visit_form(process, env, bytecodeObj, position, form->cdr->cdr->car);
 
+  bytecodeObj->bytecode[*position] = 'e'; // discard return value
+  *position += 1;
+  
   bytecodeObj->bytecode[*position] = 'j'; // go back to start
   *position += 1;
   

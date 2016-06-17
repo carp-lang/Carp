@@ -31,3 +31,4 @@ sourcetree.license
 temp/
 
 /TAGS
+/bin/project.carp
