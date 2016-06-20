@@ -213,7 +213,7 @@
           member-names (:member-names struct-description)
           generic-member-types (:member-types struct-description)
           significant-type-indexes (:significant-type-indexes struct-description)
-          typevar-values (reduce (fn [coll i] (cons-last coll(nth concrete-types i)))
+          typevar-values (reduce (fn [coll i] (cons-last coll (nth concrete-types i)))
                                  '()
                                  significant-type-indexes)
           typevars (typevars-from-member-types generic-member-types)

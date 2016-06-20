@@ -46,8 +46,6 @@
 ;; (println (str "meta d2: " (meta d2)))
 ;; (println (str "meta d3: " (meta d3)))
 
-(println "bleh...")
-
 ;;(meta {:a 10 :b {:x 10 :y 20}})
 
 ;; 410767028
@@ -57,17 +55,6 @@
 ;;  :b {:x 666}
 ;;  :c {:x 300}}
 
-;;(defstruct Fooo [])
-
-(defstruct Blip [x "T" y "T"])
-
-(def b (Blip 123 666))
-
-(bake b)
-
-
-
-;; (defn f [] (Blip [1 2 3] [4 5 6]))
-;; (bake f)
-
-
+(defstruct Blip [ x :bool t "T" z :string])
+(def b2 (Blip true 123 @"Yo"))
+(bake b2)

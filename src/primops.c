@@ -789,7 +789,10 @@ Obj *p_nth(Process *process, Obj** args, int arg_count) {
       p = p->cdr;
       i++;
     }
-    printf("Index %d out of bounds in %s\n", n, obj_to_string(process, args[0])->s);
+    eval_error = obj_new_string("Index ");
+    obj_string_mut_append(eval_error, obj_to_string(process, args[1])->s);
+    obj_string_mut_append(eval_error, " out of bounds in ");
+    obj_string_mut_append(eval_error, obj_to_string(process, args[0])->s);
     return nil;
   }
   else if(args[0]->tag == 'A') {
