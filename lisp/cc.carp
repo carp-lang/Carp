@@ -27,12 +27,17 @@
 (defn lib-paths ()
   (if (windows?)
     ""
-    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")))
+    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw")))
+
+;; (defn framework-paths ()
+;;   (if (windows?)
+;;     ""
+;;     "-framework OpenGL -framework Cocoa -framework IOKit"))
 
 (defn framework-paths ()
-  (if (windows?)
-    ""
-    "-framework OpenGL -framework Cocoa -framework IOKit"))
+  (if (or (windows?) (linux?))
+      ""
+      "-framework OpenGL -framework Cocoa -framework IOKit"))
 
 (defn print-external-compiler-time [start-time func-name]
   (let [t (/ (itof (- (now) start-time)) 1000f)]
@@ -56,7 +61,7 @@
   (let [clang-command (str "clang -g -DAPI= "
                            (if exe
                              (str "-o " exe-out-dir exe-name " ")
-                             (str "-shared -g -o " out-dir c-func-name ".so "))
+                             (str "-shared -fPIC -D_GNU_SOURCE -g -o " out-dir c-func-name ".so "))
                            c-file-name " "
                            (include-paths)  " "
                            (lib-paths) " "

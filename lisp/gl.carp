@@ -1,5 +1,8 @@
 
-(def glfw (load-dylib "libglfw3.dylib"))
+(if (osx?) (def *LIBNAME* "libglfw3.dylib") "")
+(if (linux?) (def *LIBNAME* "libglfw.so") "")
+
+(def glfw (load-dylib *LIBNAME*))
 
 (reset! extra-header-deps (cons "<GLFW/glfw3.h>" extra-header-deps))
 
