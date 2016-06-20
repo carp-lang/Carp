@@ -91,7 +91,7 @@
     (defn copy-3 [n1 n2]
       (copy (ref (AnotherCopy n1 n2))))
     (bake copy-3)
-    (assert-eq "(AnotherCopy \"AHA\" \"BUHU\")" (str (ref (copy-3 "AHA" "BUHU"))))))
+    (assert-eq "(AnotherCopy @\"AHA\" @\"BUHU\")" (str (ref (copy-3 "AHA" "BUHU"))))))
 
 ;; Test that functions depending on generic functions will be recompiled when the original generic function changes
 (deftest test-depending-on-generic

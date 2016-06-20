@@ -63,6 +63,10 @@
 
 (def b (Blip 123 666))
 
+(bake b)
+
+
+
 ;; (defn f [] (Blip [1 2 3] [4 5 6]))
 ;; (bake f)
 
