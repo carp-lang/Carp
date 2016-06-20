@@ -203,7 +203,7 @@
     
     "array-of-size" (match signature
                       (:fn (:int) (:Array t))
-                      (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(int count)")
+                      (let [proto (str "API " (type-build (list :Array t)) " " c-func-name "(int count)")
                             c (str proto
                                    "{ Array *a = malloc(sizeof(Array));"
                                    " a->count = count;"
@@ -231,7 +231,7 @@
     
     "array-set" (match signature
                   (:fn ((:Array t) :int t) (:Array t))
-                  (let [proto (str "API " (type-build '(:Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
+                  (let [proto (str "API " (type-build (list :Array t)) " " c-func-name "(Array *a, int index, " (type-build t) " value)")
                         c (str proto " { ((" (type-build t) "*)(a->data))[index] = value; return a; }")]
                     {:proto proto :c c :deps ()})
                   _ (error "Invalid type for call to 'array-set'"))
@@ -532,7 +532,7 @@
           lookup (eval (symbol (name maybe-struct-type)))]
       (if (and* (dict? lookup) (= true (get-maybe lookup :struct)))
         (let [t-name (name maybe-struct-type)
-              proto (str "API void " c-func-name "(" t-name " *x)")
+              proto (str "API void " c-func-name "(" (c-ify-name t-name) " *x)")
               ;;_ (println (str "proto for struct delete function: " proto))
               member-names (array-to-list (:member-names lookup))
               member-types (array-to-list (:member-types lookup))

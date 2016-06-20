@@ -68,7 +68,8 @@
          (join "\n" (map (fn [header] (str "#include " header)) extra-header-deps))
          "\n\n//Structs & function types:\n"
          (join "\n" (map :proto (sort-by compare-order (concat (graph/get-kind :struct)
-                                                               (graph/get-kind :function-type)))))
+                                                               (graph/get-kind :function-type)
+                                                               (graph/get-kind :array-type)))))
          "\n\n//Globals:\n"
          (join "\n" (map :proto (graph/get-kind :global)))
          "\n\n//Functions:\n"

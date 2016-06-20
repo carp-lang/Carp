@@ -711,7 +711,7 @@ Obj *p_cons(Process *process, Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'cons'\n"); return nil; }
   if(args[1]->tag != 'C') {
     char buffer[512];
-    snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(process, args[0])->s);
+    snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(process, args[1])->s);
     eval_error = obj_new_string(strdup(buffer));
     return nil;
   }

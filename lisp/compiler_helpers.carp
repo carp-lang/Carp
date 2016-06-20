@@ -47,7 +47,7 @@
            :? "unknown"
            (:fn _ _) (ensure-function-type t)
            (:ref r) (type-build-internal r star)
-           (:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
+           ;;(:Array a) (str "Array" (if star "*" "")) ;; TODO: case not needed
            :float "float"
            :double "double"
            :int "int"
@@ -56,5 +56,19 @@
            :string "string"
            :void "void"
            x (if (list? x)
-               (str (type-build-internal (first x) false) "LT" (join "_" (map (fn [inner-t] (type-build-internal inner-t false)) (rest x))) "GT" (if star "*" ""))
+               (do
+                 (when (= :Array (first x))
+                   (ensure-array-type x))
+                 (str (type-build-internal (first x) false) "LT" (join "_" (map (fn [inner-t] (type-build-internal inner-t false)) (rest x))) "GT" (if star "*" "")))
                (str (c-ify-name (name x)) (if star "*" ""))))))
+
+(defn ensure-array-type [t]
+  (graph/add-node! :array-type
+                   (generic-safe-name t)
+                   (str "typedef Array " (c-ify-name (generic-safe-name t)) ";")
+                   "" ;; no body
+                   "" ;; group
+                   nil ;; dylib ptr
+                   () ;; (struct-groups-in-type t) ;; deps
+                   (calculate-dependency-level t) ;; (log (str func-type-name " dep lvl: ")
+                   ))

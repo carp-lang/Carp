@@ -57,7 +57,14 @@
 ;;  :b {:x 666}
 ;;  :c {:x 300}}
 
+(defstruct Fooo [])
 
-(defstruct Blip [x "T"])
+(defstruct Blip [x "T" y "T"])
 
-(def b (Blip 123))
+;;(def b (Blip 123 666))
+
+(defn f [] (Blip [1 2 3] [4 5 6]))
+
+(bake f)
+
+
