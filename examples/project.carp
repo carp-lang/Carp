@@ -57,9 +57,7 @@
 
 
 
-;; (defstruct Blip [x :bool
-;;                  t "T"
-;;                  z :string])
+
 
 ;; (defn f [] (Blip-set-z (Blip true 123 @"yeah") @"hej"))
 ;; (bake f)

@@ -136,7 +136,12 @@
       (reduce add 0 &[1 2 3 4 5]))))
 
 (deftest test-instantiate-generic-struct-from-lens
-  (do )
-  )
+  (do (defstruct Bloop [x :bool
+                        t "T"
+                        z :string])
+      (let [b (Bloop true 123 @"hello")]
+        (do
+          (assert-eq "hello" (Bloop-get-z b))
+          (assert-eq 123 (Bloop-get-t b))))))
 
 (tester/run-suite "generics")
