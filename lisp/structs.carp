@@ -76,15 +76,17 @@
             (keyword struct-name)))))))
 
 (defn restore [name]
-  (let [x (eval (symbol name))]
-    (cond
-      (foreign? x) (graph/re-lambda-fy name) ;; todo: bake again?
-      (and (dict? x) (key-is-true? x :struct)) (defstruct-internal
-                                                 name
-                                                 (keyword name) ;; TODO: is this a bug when a generic struct is recompiled?
-                                                 (:member-names x)
-                                                 (:member-types x))
-      _ (error (str "Can't restore '" name "'.")))))
+  (do
+    ;;(println (str "restoring " name))
+    (let [x (eval (symbol name))]
+      (cond
+        (foreign? x) (graph/re-lambda-fy name) ;; todo: bake again?
+        (and (dict? x) (key-is-true? x :struct)) (defstruct-internal
+                                                   name
+                                                   (keyword name) ;; TODO: is this a bug when a generic struct is recompiled?
+                                                   (:member-names x)
+                                                   (:member-types x))
+        _ (error (str "Can't restore '" name "'."))))))
 
 (defn struct-type? [t]
   (if (list? t)
@@ -213,6 +215,7 @@
           member-names (:member-names struct-description)
           generic-member-types (:member-types struct-description)
           significant-type-indexes (:significant-type-indexes struct-description)
+          ;;_ (println (str "significant-type-indexes: " significant-type-indexes))          
           typevar-values (reduce (fn [coll i] (cons-last coll (nth concrete-types i)))
                                  '()
                                  significant-type-indexes)

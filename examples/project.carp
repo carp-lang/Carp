@@ -55,6 +55,15 @@
 ;;  :b {:x 666}
 ;;  :c {:x 300}}
 
-(defstruct Blip [ x :bool t "T" z :string])
-(def b2 (Blip true 123 @"Yo"))
-(bake b2)
+;;(defstruct Blip [ x :bool t "T" z :string])
+
+;;(def b2 (Blip true 123 @"Yo"))
+;;(bake b2)
+
+
+(do (defstruct Something [a :int
+                          b "B"
+                          c "C"])
+    (defn f [] (Something-get-c (Something 0 false @"hello")))
+    (bake f)
+    (assert-eq "hello" (f)))

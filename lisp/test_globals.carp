@@ -79,16 +79,9 @@
       (def b1 (Blip 123 666))
       (bake b1)
       (assert-eq "(Blip 123 666) ; ptr-to-global" (str b1))
-      (defstruct Blip [y "T" z :string])
-      (def b2 (Blip \g @"Yo"))
+      (defstruct Blip [x :bool y "T" z :string])
+      (def b2 (Blip true \g @"Yo"))
       (bake b2)
-      (assert-eq "(Blip \\g @\"Yo\") ; ptr-to-global" (str b2)) ))
-
-;; TODO: This fails because of three types?!
-;; (do (defstruct Blip [x :bool y "T" z :string])
-;;     (def b2 (Blip true \g @"Yo"))
-;;     (bake b2)
-;;     (assert-eq "(Blip true \\g @\"Yo\") ; ptr-to-global" (str b2)))
+      (assert-eq "(Blip true \\g @\"Yo\") ; ptr-to-global" (str b2)) ))
 
 (tester/run-suite "globals")
-
