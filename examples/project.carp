@@ -61,9 +61,23 @@
 ;;(bake b2)
 
 
-(do (defstruct Something [a :int
-                          b "B"
-                          c "C"])
-    (defn f [] (Something-get-c (Something 0 false @"hello")))
-    (bake f)
-    (assert-eq "hello" (f)))
+
+;; (do (defstruct Something [a :int
+;;                           b "B"
+;;                           c "C"])
+;;     (defn f [] (Something-get-c (Something 0 false @"hello")))
+;;     (bake f)
+;;     (assert-eq "hello" (f)))
+
+(defstruct TestPair
+  [a "t"
+   b "t"])
+
+(defn use-update-lens [x]
+  (TestPair-update-a (TestPair-update-b x inc) dec))
+
+(bake use-update-lens)
+
+(assert-eq :foreign (type use-update-lens))
+
+(assert-eq "(TestPair 9 21)" (str (use-update-lens (TestPair 10 20))))

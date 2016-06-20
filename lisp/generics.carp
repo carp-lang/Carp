@@ -88,7 +88,7 @@
                                                           " struct-name: " struct-name
                                                           " concrete-struct-name: " concrete-struct-name
                                                           " struct description:\n" struct-description))
-                                            (println (str "t: " t))
+                                            ;;(println (str "t: " t))
                                             (concretize-struct struct-name concrete-struct-name (rest struct-t))
                                             (reset! deps (cons concrete-stub-name deps))
                                             (assoc-in ast '(:value) (symbol concrete-stub-name))))
