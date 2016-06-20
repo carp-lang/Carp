@@ -209,26 +209,38 @@
 
 (defn concretize-struct [struct-name concrete-struct-name concrete-types]
   (do
-    ;;(println (str "concretize-struct: " struct-name ", concrete-types: " concrete-types))
+    ;;(println (str "\nconcretize-struct: " struct-name ", concrete-struct-name: " concrete-struct-name ", concrete-types: " concrete-types))
     (let [struct-description (eval (symbol struct-name))
           ;;_ (println (str "struct-description: " struct-description))
-          member-names (:member-names struct-description)
-          generic-member-types (:member-types struct-description)
-          significant-type-indexes (:significant-type-indexes struct-description)
-          ;;_ (println (str "significant-type-indexes: " significant-type-indexes))          
-          typevar-values (reduce (fn [coll i] (cons-last coll (nth concrete-types i)))
-                                 '()
-                                 significant-type-indexes)
-          typevars (typevars-from-member-types generic-member-types)
-          ;;_ (println (str "typevars: " typevars " typevar-values: " typevar-values))
-          mapping (reduce (fn [the-map key-value-pair] (assoc the-map (first key-value-pair) (second key-value-pair)))
-                          {}
-                          (map2 (fn [k v] (list k v)) typevars typevar-values))
-          ;;_ (println (str "mapping: " mapping))
-          concrete-member-types (map (fn [t] (if (typevar? t) (get mapping t) t)) generic-member-types)
 
-          struct-type (cons (keyword struct-name) typevar-values)
-          ;;_ (println (str "Concrete struct-type: " struct-type))
+          member-names (:member-names struct-description)
+          member-types (:member-types struct-description)
+          
+          ;; _ (when (not (= (count concrete-types) (count (set (array-to-list member-types)))))
+          ;;     (error (str "The nr of concrete types must match the number of unique member-types: "
+          ;;                 concrete-types " vs "
+          ;;                 (set member-types))))
+
+          mapping (reduce (fn [the-map key-value-pair]
+                            (if (typevar? (first key-value-pair))
+                              (assoc the-map (first key-value-pair) (second key-value-pair))
+                              the-map))
+                          {}
+                          (map2 (fn [k v] (list k v)) (array-to-list member-types) concrete-types))
+          ;;_ (println (str "mapping:\n" mapping))
+
+          significant-type-indexes (:significant-type-indexes struct-description)
+          ;;_ (println (str "significant-type-indexes: " significant-type-indexes))
+          
+          instantiated-significants (map (fn [i]
+                                           (nth concrete-types i))
+                                         significant-type-indexes)
+          
+          ;;_ (println (str "instantiated-significants: " instantiated-significants))
+
+          struct-type (cons (keyword struct-name) (array-to-list instantiated-significants))
+          ;;_ (println (str "struct-type: " struct-type))
+          
           ]
       (if (def? (symbol concrete-struct-name))
         (do ;;(println (str "Will not concretize " concrete-struct-name " again."))
@@ -237,17 +249,44 @@
           concrete-struct-name
           struct-type
           member-names
-          concrete-member-types)))))
+          (apply array concrete-types))
+        ))))
 
 ;; struct-type is an list of concrete types,
 ;; beginning with the type of the generic struct
 ;; i.e. (:Pair :int)
 (defn concretize-struct-simple [struct-type]
-  (let [struct-base-type (first struct-type)
-        struct-concrete-types (rest struct-type)
-        struct-base-name (name struct-base-type)
-        struct-concrete-name (generic-safe-name struct-type)]
-    (concretize-struct struct-base-name struct-concrete-name struct-concrete-types)))
+  (do
+    ;;(println (str "\nconcretize-struct-simple: " struct-type))
+    (let [struct-base-type (first struct-type)
+          known-types (rest struct-type)
+          struct-description (eval (symbol (name struct-base-type)))
+          _ (assert-eq (count known-types) (count (:significant-type-indexes struct-description)))
+          ;; _ (println (str "struct-description:\n" struct-description))
+
+          member-types (:member-types struct-description)
+
+          substs (reduce (fn [the-map key-value-pair]
+                           (assoc the-map (first key-value-pair) (second key-value-pair)))
+                         {}
+                         (map2 (fn [i t]
+                                 (list (nth member-types i) t))
+                               (array-to-list (:significant-type-indexes struct-description))
+                               known-types))
+                         
+          ;; _ (println (str "substs: " substs))
+          
+          struct-concrete-types (map (fn [t]
+                                       (if (typevar? t)
+                                         (get substs t)
+                                         t))
+                                     (array-to-list member-types))
+          
+          ;; _ (println (str "struct-concrete-types: " struct-concrete-types))
+          struct-base-name (name struct-base-type)
+          struct-concrete-name (generic-safe-name struct-type)]
+      ;;(println (str "concretize-struct: " struct-base-name " " struct-concrete-name " " struct-concrete-types))
+      (concretize-struct struct-base-name struct-concrete-name struct-concrete-types))))
 
 ;; Returns the indexes of the first occurence of each typevar in a list of types
 ;; Example 1 - ("a" "a" "b" "b") => [0 2]

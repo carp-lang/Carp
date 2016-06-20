@@ -55,12 +55,29 @@
 ;;  :b {:x 666}
 ;;  :c {:x 300}}
 
-;;(defstruct Blip [ x :bool t "T" z :string])
 
-;;(def b2 (Blip true 123 @"Yo"))
-;;(bake b2)
 
-;;(defstruct Pair [x "t" y "t"])
+;; (defstruct Blip [x :bool
+;;                  t "T"
+;;                  z :string])
+
+;; (defn f [] (Blip-set-z (Blip true 123 @"yeah") @"hej"))
+;; (bake f)
+
+;; (def b1 (Blip true \g @"Yo"))
+;; (def b2 (Blip true 123 @"Yo"))
+
+;; (bake b1)
+;; (bake b2)
+
+
+
+;; (defstruct Pair [x "t" y "t"])
+
+;; (def p1 (Pair 10 20))
+
+;; (assert-eq 10 (Pair-get-x p1))
+;; (assert-eq 20 (Pair-get-y p1))
 
 ;; (do (defstruct Something [a :int
 ;;                           b "B"

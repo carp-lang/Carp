@@ -89,7 +89,7 @@
                                             ;;               " concrete-struct-name: " concrete-struct-name
                                             ;;               " struct description:\n" struct-description))
                                             ;;(println (str "t: " t))
-                                            (concretize-struct struct-name concrete-struct-name (rest struct-t))
+                                            (concretize-struct-simple struct-t)
                                             (reset! deps (cons concrete-stub-name deps))
                                             (assoc-in ast '(:value) (symbol concrete-stub-name))))
                                         (let [n (generic-name lookup-sym t)]
