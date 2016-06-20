@@ -86,10 +86,10 @@
     (let [p1 (TestPair 10 20)
           p2 (TestPair true false)]
       (do
-        (assert-eq "(TestPair<int> 10 20)" (str p1))
+        (assert-eq "(TestPair 10 20)" (str p1))
         (assert-eq 10 (TestPair-get-a p1))
         (assert-eq 20 (TestPair-get-b p1))
-        (assert-eq "(TestPair<bool> true false)" (str p2))
+        (assert-eq "(TestPair true false)" (str p2))
         (assert-eq true (TestPair-get-a p2))
         (assert-eq false (TestPair-get-b p2))))))
 
@@ -107,10 +107,10 @@
     (let [p1 (fff1)
           p2 (fff2)]
       (do
-        (assert-eq "(TestPair2<int> 10 20)" (str p1))
+        (assert-eq "(TestPair2 10 20)" (str p1))
         (assert-eq 10 (TestPair2-get-a p1))
         (assert-eq 20 (TestPair2-get-b p1))
-        (assert-eq "(TestPair2<bool> true false)" (str p2))
+        (assert-eq "(TestPair2 true false)" (str p2))
         (assert-eq true (TestPair2-get-a p2))
         (assert-eq false (TestPair2-get-b p2))))))
 
@@ -123,7 +123,7 @@
       (TestPair-update-a (TestPair-update-b x inc) dec))
     (bake use-update-lens)
     (assert-eq :foreign (type use-update-lens))
-    (assert-eq "(TestPair<int> 9 21)" (str (use-update-lens (TestPair 10 20))))))
+    (assert-eq "(TestPair 9 21)" (str (use-update-lens (TestPair 10 20))))))
 
 (deftest test-generic-pair-compiled-everything
   (do
@@ -143,7 +143,7 @@
       [a "t"
        b "u"
        c "t"])
-    (assert-eq "(TestTuple<bool-char> true \\x false)" (str (TestTuple true \x false)))))
+    (assert-eq "(TestTuple true \\x false)" (str (TestTuple true \x false)))))
 
 (deftest test-type-with-concrete-types-also
   (do
@@ -151,7 +151,7 @@
       [a "t"
        b :bool
        c "u"])
-    (assert-eq "(TestWeirdTuple<char-char> \\a true \\c)" (str (TestWeirdTuple \a true \c)))))
+    (assert-eq "(TestWeirdTuple \\a true \\c)" (str (TestWeirdTuple \a true \c)))))
 
 (deftest struct-with-inner-struct
   (do
@@ -159,8 +159,8 @@
       [foo :int])
     (defstruct SomeGenericStruct
       [x "t"])
-    (assert-eq "(SomeGenericStruct<int> 10)" (str (SomeGenericStruct 10)))
-    (assert-eq "(SomeGenericStruct<Array<int>> [1 2 3])" (str (SomeGenericStruct [1 2 3])))
-    (assert-eq "(SomeGenericStruct<InnerStruct> (InnerStruct 123))" (str (SomeGenericStruct (InnerStruct 123))))))
+    (assert-eq "(SomeGenericStruct 10)" (str (SomeGenericStruct 10)))
+    (assert-eq "(SomeGenericStruct [1 2 3])" (str (SomeGenericStruct [1 2 3])))
+    (assert-eq "(SomeGenericStruct (InnerStruct 123))" (str (SomeGenericStruct (InnerStruct 123))))))
 
 (tester/run-suite "structs")

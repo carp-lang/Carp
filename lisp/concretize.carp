@@ -590,8 +590,6 @@
     t))
 
 (defn printable-name-from-struct-type [t]
-  (do
-    (println (str "t: " t))
-    (match t
-      (base-t ... rest-t) (name base-t)
-      x (name x))))
+  (match t
+    (base-t ... rest-t) (name base-t)
+    x (name x)))
