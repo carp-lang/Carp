@@ -1,4 +1,4 @@
-### Installation
+# Installation
 
 Clone this repo, then use cmake to generate the project files that you desire. Either run it in the root of the Carp project, or from a sub directory that you create called 'build' or similar. Then build the project and make sure the resulting executable is put into the 'bin' directory (cmake should arrange that automatically). An example of how to do all of this for Xcode is in the file 'xcode.sh' in the root of the project.
 
@@ -8,7 +8,7 @@ Add the 'bin' directory to your path to enable calling the ```carp``` command. T
 
 ```export PATH=$PATH:~/Carp/bin/```
 
-Carp is currently only tested on OSX 10.10. More platforms are coming soon, both Linux and Windows are being worked on. There are a few dependencies that have to be installed:
+Carp is developed on OSX 10.10 but Linux works too. More platforms are coming soon, Windows is being worked on. There are a few dependencies that have to be installed:
  * libffi
  * glfw3
  * rlwrap
@@ -29,8 +29,12 @@ export C_INCLUDE_PATH=../libffi/<ARCHITECTURE>/include
 
 Replace <ARCHITECTURE> with the name of the architecture you built libffi for.
 
+Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
+
+## Mac OS X
 If 'libffi' is installed with Brew, you can find the libraries at "/usr/local/Cellar/libffi/3.0.13/lib/" and the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
 
+## Linux
+On Linux Clang must be installed (GCC support will be added later).
 
-
-Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, modify the '/bin/carp' script if you don't want to use it.
+## Windows
