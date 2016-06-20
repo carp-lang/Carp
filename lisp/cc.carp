@@ -25,14 +25,10 @@
   (str (:include-flag platform-specifics) "/usr/local/include " (:include-flag platform-specifics) carp-dir "/shared"))
 
 (defn lib-paths ()
-  (if (windows?)
-    ""
-    (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw")))
-
-;; (defn framework-paths ()
-;;   (if (windows?)
-;;     ""
-;;     "-framework OpenGL -framework Cocoa -framework IOKit"))
+  (cond
+      (windows?) ""
+      (osx?)     (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")
+      (linux?)   (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw")))
 
 (defn framework-paths ()
   (if (or (windows?) (linux?))

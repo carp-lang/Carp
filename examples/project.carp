@@ -40,7 +40,7 @@
     (assert (not (= d1 d2)))
     (assert (= d1 d3))))
 
-(time (for (i 0 50000) (compare))) ;; takes 4700 ms
+;;(time (for (i 0 50000) (compare))) ;; takes 4700 ms
 
 ;; (println (str "meta d1: " (meta d1)))
 ;; (println (str "meta d2: " (meta d2)))
