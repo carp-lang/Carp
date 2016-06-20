@@ -304,7 +304,7 @@
 
 (defn define-generic-lens-stubs [struct-name member-names member-types]
   (do
-    (println (str "Defining generic lens stubs for " struct-name)) ;; " with member types " member-types))
+    ;;(println (str "Defining generic lens stubs for " struct-name)) ;; " with member types " member-types))
     
     (map2 (fn [n t]
             (let [get-sym (symbol (str struct-name "-get-" n))
@@ -312,10 +312,10 @@
                   update-sym (symbol (str struct-name "-update-" n))
                   generic-vars (reverse (set (array-to-list (filter string? member-types))))
                   generic-struct-t (cons (keyword struct-name) generic-vars)
-                  _ (println (str "generic-struct-t: " generic-struct-t))
+                  ;;_ (println (str "generic-struct-t: " generic-struct-t))
                   t (nth member-types (index-of member-names n))
                   get-s (list :fn (list generic-struct-t) t)
-                  set-s (list :fn (list generic-struct-t) (list (keyword struct-name) t))
+                  set-s (list :fn (list generic-struct-t t) generic-struct-t)
                   update-s (list :fn (list generic-struct-t (list :fn (list t) t)) generic-struct-t)
                   ;; _ (println (str "get-s : " (str get-s)))
                   ;; _ (println (str "set-s : " (str set-s)))

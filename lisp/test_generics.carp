@@ -135,7 +135,8 @@
     (defn r1 []
       (reduce add 0 &[1 2 3 4 5]))))
 
-(deftest test-instantiate-generic-struct-from-lens []
-  (do ))
+(deftest test-instantiate-generic-struct-from-lens
+  (do )
+  )
 
 (tester/run-suite "generics")
