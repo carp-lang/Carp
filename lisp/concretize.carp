@@ -118,7 +118,8 @@
 
               (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct
                                                         c-func-name
-                                                        (fix-generic-struct-name maybe-struct-type))
+                                                        (fix-generic-struct-name maybe-struct-type)
+                                                        (printable-name-from-struct-type maybe-struct-type))
               
               x (error {:error error-invalid-arg-type-to-generic
                         :show-stacktrace false
@@ -153,7 +154,8 @@
 
               (:fn ((:ref maybe-struct-type)) :string) (instantiate-str-or-prn-for-struct
                                                         c-func-name
-                                                        (fix-generic-struct-name maybe-struct-type))
+                                                        (fix-generic-struct-name maybe-struct-type)
+                                                        (printable-name-from-struct-type maybe-struct-type))
               
               x (error {:error error-invalid-arg-type-to-generic
                         :show-stacktrace false
@@ -361,7 +363,7 @@
     t
     (list :ref t)))
 
-(defn instantiate-str-or-prn-for-struct [c-func-name maybe-struct-type]
+(defn instantiate-str-or-prn-for-struct [c-func-name maybe-struct-type printable-name]
   (if (keyword? maybe-struct-type)
     (let [_ (when (or (= :string maybe-struct-type)
                       (primitive-type? maybe-struct-type))
@@ -380,8 +382,8 @@
                      "  char buffer[1024];\n"
                      "  int pos = 0;\n"
                      "  buffer[pos++] = '(';\n"
-                     "  snprintf(buffer + pos, 1000, \"%s\", \"" t-name "\");"
-                     "  pos += " (strlen t-name) ";"
+                     "  snprintf(buffer + pos, 1000, \"%s\", \"" printable-name "\");"
+                     "  pos += " (strlen printable-name) ";"
                      "  buffer[pos++] = ' ';\n"
                      "  char *s;"
                      (join " " (map2 (fn [t n]
@@ -586,3 +588,10 @@
   (if (list? t)
     (keyword (generic-safe-name t))
     t))
+
+(defn printable-name-from-struct-type [t]
+  (do
+    (println (str "t: " t))
+    (match t
+      (base-t ... rest-t) (name base-t)
+      x (name x))))
