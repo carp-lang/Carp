@@ -56,3 +56,8 @@
 ;; {:a {:x 100}
 ;;  :b {:x 666}
 ;;  :c {:x 300}}
+
+
+(defstruct Blip [x "T"])
+
+(def b (Blip 123))

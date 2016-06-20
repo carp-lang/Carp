@@ -9,7 +9,7 @@
 
 (defn defstruct-internal [struct-name member-names member-types]
   (do
-    ;;(println (str "defstruct-internal: " struct-name " " member-names " " member-types))
+    (println (str "defstruct-internal: " struct-name " " member-names " " member-types))
     
     (assert-eq (count member-names) (count member-types))
 
