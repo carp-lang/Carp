@@ -84,3 +84,26 @@
 ;;     (bake f)
 ;;     (assert-eq "hello" (f))
 ;;     )
+
+(defstruct Blergh [x :int])
+
+;; (def x [(Blergh 10) (Blergh 20)])
+
+(defn x2 [x]
+  (* x 2))
+
+(defn double-blergh [b]
+  (Blergh-update-x b x2))
+
+;; (defn f [x]
+;;   (map double-blergh x))
+
+;;(f x)
+
+(defn eat [x]
+  (do (println* (ref (double-blergh x)))
+      100))
+
+(def x (Blergh 123))
+;; (double-blergh x)
+
