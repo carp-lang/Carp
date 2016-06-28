@@ -229,6 +229,7 @@ Obj *obj_copy(Process *process, Obj *o) {
     Obj *type_meta = env_lookup(process, o->meta, obj_new_keyword("type"));
     if(type_meta) {
       //printf("type_meta: %s\n", STR(type_meta));
+      
       /* shadow_stack_push(process, o); */
 
       /* Obj *reffed_arg_type = obj_list(obj_new_keyword("ref"), type_meta); */
