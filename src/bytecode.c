@@ -803,9 +803,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
 
           Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
           for(int i = 0; i < arg_count; i++) {
-            copied_args[i] = obj_copy(args[i]);
+            copied_args[i] = obj_copy(process, args[i]);
             if(args[i]->meta) {
-              copied_args[i]->meta = obj_copy(args[i]->meta);
+              copied_args[i]->meta = obj_copy(process, args[i]->meta);
             }
           }
       

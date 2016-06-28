@@ -495,7 +495,7 @@ Obj *p_copy(Process *process, Obj** args, int arg_count) {
   }
   
   //printf("Will make a copy of: %s\n", obj_to_string(a)->s);
-  Obj *b = obj_copy(a);
+  Obj *b = obj_copy(process, a);
   return b;
 }
 
@@ -722,7 +722,7 @@ Obj *p_cons(Process *process, Obj** args, int arg_count) {
 Obj *p_cons_last(Process *process, Obj** args, int arg_count) {
   if(arg_count != 2) { printf("Wrong argument count to 'cons'\n"); return nil; }
   if(args[0]->tag != 'C') { printf("'rest' requires arg 0 to be a list: %s\n", obj_to_string(process, args[1])->s); return nil; }
-  Obj *new_list = obj_copy(args[0]);
+  Obj *new_list = obj_copy(process, args[0]);
   Obj *p = new_list;
   while(p->cdr) { p = p->cdr; }
   Obj *last = p;
@@ -742,7 +742,7 @@ Obj *p_concat(Process *process, Obj** args, int arg_count) {
   }
 
   int i = 0;
-  Obj *new = obj_copy(args[i]);
+  Obj *new = obj_copy(process, args[i]);
 
   while(!new->car) {
     ++i;
@@ -764,7 +764,7 @@ Obj *p_concat(Process *process, Obj** args, int arg_count) {
       }
       Obj *o = args[i];
       if(o->car) {
-        last->cdr = obj_copy(o);
+        last->cdr = obj_copy(process, o);
       }
     }
   }
@@ -1012,7 +1012,7 @@ Obj *p_values(Process *process, Obj** args, int arg_count) {
 Obj *p_signature(Process *process, Obj** args, int arg_count) {
   if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
   if(args[0]->tag == 'F') {
-    Obj *a = obj_copy(args[0]->arg_types);
+    Obj *a = obj_copy(process, args[0]->arg_types);
     Obj *b = args[0]->return_type;
     Obj *sig = obj_list(obj_new_keyword("fn"), a, b);
     return sig;
@@ -1789,7 +1789,7 @@ Obj *p_array_set(Process *process, Obj** args, int arg_count) {
   Obj *i = args[1];
   assert_or_set_error_return_nil(i->tag == 'I', "array-set must take an int as second arg: ", args[1]);
   Obj *o = args[2];
-  Obj *new_array = obj_copy(a);
+  Obj *new_array = obj_copy(process, a);
   new_array->array[i->i] = o;
   return new_array;
 }
@@ -1918,7 +1918,7 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
   assert_or_set_error_return_nil(arg_count == 3, "replace-substs-from-right-fast must take 3 arguments. ", nil);
   assert_or_set_error_return_nil(args[0]->tag == 'E', "First argument to lookup-in-substs-fast must be dictionary. ", args[0]);
   
-  Obj *mut_substs = obj_copy(args[0]); // COPY!
+  Obj *mut_substs = obj_copy(process, args[0]); // COPY!
   Obj *existing = args[1];
   Obj *new_value = args[2];
 

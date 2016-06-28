@@ -93,7 +93,7 @@
   (* x 2))
 
 (defn double-blergh [b]
-  (Blergh-update-x b x2))
+  (Blergh-update-x (copy b) x2))
 
 ;; (defn f [x]
 ;;   (map double-blergh x))

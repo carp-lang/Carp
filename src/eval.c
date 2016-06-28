@@ -230,9 +230,9 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
 
       Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
       for(int i = 0; i < arg_count; i++) {
-        copied_args[i] = obj_copy(args[i]);
+        copied_args[i] = obj_copy(process, args[i]);
         if(args[i]->meta) {
-          copied_args[i]->meta = obj_copy(args[i]->meta);
+          copied_args[i]->meta = obj_copy(process, args[i]->meta);
         }
       }
       
@@ -542,7 +542,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     Obj *body = o->cdr->cdr->car;
     //printf("Creating lambda with env: %s\n", obj_to_string(env)->s);
     Obj *lambda = obj_new_lambda(params, body, env, o);
-    obj_copy_meta(lambda, o);
+    obj_copy_meta(process, lambda, o);
     stack_push(process, lambda);
   }
   else if(HEAD_EQ("macro")) {
@@ -556,7 +556,7 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->cdr->car, "No body in macro: ", o);
     Obj *body = o->cdr->cdr->car;
     Obj *macro = obj_new_macro(params, body, env, o);
-    obj_copy_meta(macro, o);
+    obj_copy_meta(process, macro, o);
     stack_push(process, macro);
   }
   else if(HEAD_EQ("def")) {
@@ -783,8 +783,8 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
     eval_list(process, env, o);
   }
   else if(o->tag == 'E') {
-    Obj *new_env = obj_copy(o);
-    obj_copy_meta(new_env, o);
+    Obj *new_env = obj_copy(process, o);
+    obj_copy_meta(process, new_env, o);
     shadow_stack_push(process, new_env);
     Obj *p = new_env->bindings;
     while(p && p->car) {
@@ -803,7 +803,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   }
   else if(o->tag == 'A') {
     Obj *new_array = obj_new_array(o->count);
-    obj_copy_meta(new_array, o);
+    obj_copy_meta(process, new_array, o);
     shadow_stack_push(process, new_array);
     for(int i = 0; i < o->count; i++) {
       eval_internal(process, env, o->array[i]);
@@ -818,6 +818,17 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   }
   else if(o->tag == 'Y') {
     Obj *result = env_lookup(process, env, o);
+
+    if(env == process->global_env && result->tag == 'Q') {
+      Obj *type = env_lookup(process, result->meta, obj_new_keyword("type"));
+      printf("read global with type: %s\n", obj_to_string(process, type)->s);
+      printf("original with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
+      Obj *copy = obj_copy(process, primitive_to_obj(process, result->void_ptr, type));
+      copy->meta = result->meta;
+      result = copy;
+      printf("copy with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
+    }
+    
     if(!result) {
       char buffer[256];
       snprintf(buffer, 256, "Can't find '%s' in environment.", obj_to_string(process, o)->s);

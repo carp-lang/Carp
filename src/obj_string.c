@@ -46,47 +46,14 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   //printf("quoted_sig: %s\n", obj_to_string(quoted_sig)->s);
 	
-  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string("prn"), quoted_sig);
-
-  shadow_stack_push(process, call_to_generic_name);
-  Obj *generic_name_result = NULL;
-  if(BYTECODE_EVAL) {
-     generic_name_result = bytecode_sub_eval_form(process, process->global_env, call_to_generic_name);
-  }
-  else {
-    generic_name_result = eval(process, process->global_env, call_to_generic_name);
-  }
-  shadow_stack_push(process, generic_name_result);
-
+  Obj *generic_name_result = generic_name(process, "prn", quoted_sig);
   if(eval_error) {
-    printf("Error when calling generic-name:\n");
-    printf("%s\n", obj_to_string(process, eval_error)->s);
     return;
   }
-  else {
-    //printf("Generic name: %s\n", obj_to_string_not_prn(process, generic_name_result)->s);
-  }
 
-  // Also make sure this particular version of the str primop has been baked:
-  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string("prn"), quoted_sig);
-  shadow_stack_push(process, call_to_bake_generic_primop_auto);
+  bake_generic_primop_auto(process, "prn", quoted_sig);
 
-  if(BYTECODE_EVAL) {
-    bytecode_sub_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
-  } else {
-    eval(process, process->global_env, call_to_bake_generic_primop_auto);
-  }
-
-  if(eval_error) {
-    printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
-    printf("%s\n", obj_to_string(process, eval_error)->s);
-    function_trace_print(process);
-    return;
-  }
-  else {
-    //printf("%s should now exists\n", obj_to_string_not_prn(process, generic_name_result)->s);
-  }
-
+  // TODO: why this conversion?
   char *generic_name = obj_to_string_not_prn(process, generic_name_result)->s;
   //printf("generic_name 1: %s\n", generic_name);
 

@@ -170,7 +170,7 @@ Obj *obj_new_array(int count);
 Obj *obj_new_bool(bool b);
 Obj *obj_new_bytecode(char *bytecode);
 
-Obj *obj_copy(Obj *o);
+Obj *obj_copy(Process *process, Obj *o);
 Obj *obj_hash(Process *process, Obj *o);
 bool obj_eq(Process *process, Obj *a, Obj *b);
 
@@ -182,7 +182,7 @@ void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filenam
 bool is_true(Obj *o);
 
 void obj_print_cout(Obj *o);
-void obj_copy_meta(Obj *to, Obj *from);
+void obj_copy_meta(Process *process, Obj *to, Obj *from);
 
 Obj *obj_latest;
 int obj_total;
@@ -224,3 +224,7 @@ Obj *type_ptr_to_global;
 Obj *prompt;
 Obj *prompt_unfinished_form;
 
+Obj *generic_name(Process *process, char *function_name, Obj *quoted_sig);
+void bake_generic_primop_auto(Process *process, char *function_name, Obj *quoted_sig);
+
+#define STR(the_object) (obj_to_string(process, (the_object))->s)

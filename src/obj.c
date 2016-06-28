@@ -1,6 +1,8 @@
 #include "obj.h"
 #include "obj_string.h"
 #include "env.h"
+#include "bytecode.h"
+#include "eval.h"
 
 #define LOG_ALLOCS 0
 
@@ -189,7 +191,7 @@ Obj *obj_new_bytecode(char *bytecode) {
   return o;
 }
 
-Obj *obj_copy(Obj *o) {
+Obj *obj_copy(Process *process, Obj *o) {
   assert(o);
   if(o->tag == 'C') {
     //printf("Making a copy of the list: %s\n", obj_to_string(o)->s);
@@ -198,9 +200,9 @@ Obj *obj_copy(Obj *o) {
     Obj *p = o;
     while(p && p->car) {
       Obj *new = obj_new_cons(NULL, NULL);
-      prev->car = obj_copy(p->car);
+      prev->car = obj_copy(process, p->car);
       if(p->cdr) {
-	prev->cdr = obj_copy(p->cdr);
+	prev->cdr = obj_copy(process, p->cdr);
 	return list; // early break when copying dotted pairs! TODO: is this case always selected?!
       } else {
 	prev->cdr = obj_new_cons(NULL, NULL);
@@ -213,18 +215,27 @@ Obj *obj_copy(Obj *o) {
   else if(o->tag == 'A') {
     Obj *copy = obj_new_array(o->count);
     for(int i = 0; i < o->count; i++) {
-      copy->array[i] = obj_copy(o->array[i]);
+      copy->array[i] = obj_copy(process, o->array[i]);
     }
     return copy;
   }
   else if(o->tag == 'E') {
     //printf("Making a copy of the env: %s\n", obj_to_string(o)->s);
     Obj *new_env = obj_new_environment(NULL);
-    new_env->bindings = obj_copy(o->bindings);
+    new_env->bindings = obj_copy(process,o->bindings);
     return new_env;
   }
   else if(o->tag == 'Q') {
-    return obj_new_ptr(o->void_ptr);
+    Obj *type_meta = env_lookup(process, o->meta, obj_new_keyword("type"));
+    if(type_meta) {
+      printf("type_meta: %s\n", STR(type_meta));
+
+      
+      
+    } else {
+      // shallow copy
+      return obj_new_ptr(o->void_ptr);
+    }
   }
   else if(o->tag == 'I') {
     return obj_new_int(o->i);
@@ -251,7 +262,7 @@ Obj *obj_copy(Obj *o) {
     return obj_new_dylib(o->dylib);
   }
   else if(o->tag == 'F') {
-    return obj_new_ffi(o->name, o->cif, o->funptr, obj_copy(o->arg_types), obj_copy(o->return_type));
+    return obj_new_ffi(o->name, o->cif, o->funptr, obj_copy(process, o->arg_types), obj_copy(process, o->return_type));
   }
   else if(o->tag == 'L') {
     return o;
@@ -267,7 +278,7 @@ Obj *obj_copy(Obj *o) {
   }
   else if(o->tag == 'X') {
     Obj *copy = obj_new_bytecode(strdup(o->bytecode));
-    copy->bytecode_literals = obj_copy(o->bytecode_literals);
+    copy->bytecode_literals = obj_copy(process, o->bytecode_literals);
     return copy;
   }
   else {
@@ -492,9 +503,9 @@ void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filenam
   env_assoc(process, o->meta, obj_new_keyword("file"), filename);
 }
 
-void obj_copy_meta(Obj *to, Obj *from) {
+void obj_copy_meta(Process *process, Obj *to, Obj *from) {
   if(from->meta) {
-    to->meta = obj_copy(from->meta);
+    to->meta = obj_copy(process, from->meta);
   }
 }
 
@@ -653,5 +664,51 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
     snprintf(buffer, 512, "Can't compare %s with %s.\n", obj_to_string(process, a)->s, obj_to_string(process, b)->s);
     eval_error = obj_new_string(strdup(buffer));
     return false;
+  }
+}
+
+Obj *generic_name(Process *process, char *function_name, Obj *quoted_sig) {
+  Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string(function_name), quoted_sig);
+  shadow_stack_push(process, call_to_generic_name);  
+  Obj *generic_name_result = NULL;
+
+  if(BYTECODE_EVAL) {
+    generic_name_result = bytecode_sub_eval_form(process, process->global_env, call_to_generic_name);
+  }
+  else {
+    generic_name_result = eval(process, process->global_env, call_to_generic_name);
+  }
+  
+  shadow_stack_push(process, generic_name_result);
+
+  if(eval_error) {
+    printf("Error when calling 'generic-name':\n");
+    printf("%s\n", obj_to_string(process, eval_error)->s);
+    return NULL;
+  }
+  else {
+    //printf("Generic name: %s\n", obj_to_string_not_prn(process, generic_name_result)->s);
+  }
+  
+  return generic_name_result;
+}
+
+void bake_generic_primop_auto(Process *process, char *function_name, Obj *quoted_sig) {
+  Obj *call_to_bake_generic_primop_auto = obj_list(obj_new_symbol("bake-generic-primop-auto"), obj_new_string(function_name), quoted_sig);
+  shadow_stack_push(process, call_to_bake_generic_primop_auto);
+
+  if(BYTECODE_EVAL) {
+    bytecode_sub_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
+  } else {
+    eval(process, process->global_env, call_to_bake_generic_primop_auto);
+  }
+
+  if(eval_error) {
+    printf("Error when calling bake-generic-primop-auto from print_generic_array_or_struct:\n");
+    printf("%s\n", obj_to_string(process, eval_error)->s);
+    function_trace_print(process);
+  }
+  else {
+    //printf("%s should now exists\n", obj_to_string_not_prn(process, generic_name_result)->s);
   }
 }
