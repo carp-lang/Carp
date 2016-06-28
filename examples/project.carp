@@ -105,5 +105,5 @@
       100))
 
 (def x (Blergh 123))
-;; (double-blergh x)
+(double-blergh x)
 

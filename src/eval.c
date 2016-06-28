@@ -821,8 +821,8 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
 
     if(env == process->global_env && result->tag == 'Q') {
       Obj *type = env_lookup(process, result->meta, obj_new_keyword("type"));
-      printf("read global with type: %s\n", obj_to_string(process, type)->s);
-      printf("original with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
+      //printf("read global with type: %s\n", obj_to_string(process, type)->s);
+      //printf("original with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
       Obj *copy = obj_copy(process, primitive_to_obj(process, result->void_ptr, type));
       copy->meta = result->meta;
       result = copy;

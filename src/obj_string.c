@@ -50,8 +50,12 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
   if(eval_error) {
     return;
   }
+  shadow_stack_push(process, generic_name_result);
 
   bake_generic_primop_auto(process, "prn", quoted_sig);
+  if(eval_error) {
+    return;
+  }
 
   // TODO: why this conversion?
   char *generic_name = obj_to_string_not_prn(process, generic_name_result)->s;
@@ -88,8 +92,6 @@ void print_generic_array_or_struct(Process *process, Obj *total, Obj *type_looku
 
   Obj *pop1 = shadow_stack_pop(process);
   assert(pop1 == array_to_string_result);
-  shadow_stack_pop(process);
-  shadow_stack_pop(process);
   shadow_stack_pop(process);
   shadow_stack_pop(process);
   shadow_stack_pop(process);
