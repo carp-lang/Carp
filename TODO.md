@@ -14,6 +14,7 @@
      (it requires a fn of type &a -> b)
 
 # Compiler Big Features
+  - Allow global vars to be sent to baked functions
   - Bake generic structs in global variables
   - Live Reloading (requires threads and bytecode interpreter)
   - Windows support
@@ -37,8 +38,6 @@
   - Be able to save concretized struct types for type checking etc
 
 # Compiler Correctness
-  - Structs sent to mutating "pure" lenses will modify global vars in place
-  - Sending a global variable to a function that takes ownership of it will lead to disaster
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
