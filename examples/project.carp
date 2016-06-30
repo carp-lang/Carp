@@ -56,76 +56,13 @@
 ;;  :c {:x 300}}
 
 
+(defstruct Blergh [x :int])
 
+(defn x2 [x]
+  (* x 2))
 
+(defn double-blergh [b]
+  (Blergh-update-x (copy b) x2))
 
-;; (defn f [] (Blip-set-z (Blip true 123 @"yeah") @"hej"))
-;; (bake f)
-
-;; (def b1 (Blip true \g @"Yo"))
-;; (def b2 (Blip true 123 @"Yo"))
-
-;; (bake b1)
-;; (bake b2)
-
-
-
-;; (defstruct Pair [x "t" y "t"])
-
-;; (def p1 (Pair 10 20))
-
-;; (assert-eq 10 (Pair-get-x p1))
-;; (assert-eq 20 (Pair-get-y p1))
-
-;; (do (defstruct Something [a :int
-;;                           b "B"
-;;                           c "C"])
-;;     (defn f [] (Something-get-c (Something 0 false @"hello")))
-;;     (bake f)
-;;     (assert-eq "hello" (f))
-;;     )
-
-;;(defstruct Blergh [x :int])
-
-;; (def x [(Blergh 10) (Blergh 20)])
-
-;; (defn x2 [x]
-;;   (* x 2))
-
-;; (defn double-blergh [b]
-;;   (Blergh-update-x (copy b) x2))
-
-;; (defn f [x]
-;;   (map double-blergh x))
-
-;;(f x)
-
-;; (defn eat [x]
-;;   (do (println* (ref (double-blergh x)))
-;;       100))
-
-;; (def x (Blergh 123))
+(def x (Blergh 123))
 ;; (double-blergh x)
-
-(defstruct InnerStruct
-      [foo :int])
-
-(defstruct SomeGenericStruct
-  [x "t"])
-
-(defn struct-with-inner-struct []
-  (assert-eq "(SomeGenericStruct (InnerStruct 123))" (str (SomeGenericStruct (InnerStruct 123)))))
-
-;;(struct-with-inner-struct)
-
-;; (deftest global-generic-struct
-;;   (do (defstruct Blip [x "T" y "T"])
-;;       (def b1 (Blip 123 666))
-;;       (bake b1)
-;;       (assert-eq "(Blip 123 666) ; ptr-to-global" (str b1))
-;;       (defstruct Blip [x :bool y "T" z :string])
-;;       (def b2 (Blip true \g @"Yo"))
-;;       (bake b2)
-;;       (assert-eq "(Blip true \\g @\"Yo\") ; ptr-to-global" (str b2)) ))
-
-;; (global-generic-struct)

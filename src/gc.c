@@ -40,7 +40,7 @@ void obj_mark_alive(Obj *o) {
     obj_mark_alive(o->bytecode_literals);
   }
 
-  // TODO: remove data pointed to by void_ptr:s? (tag 'Q')
+  // TODO: remove data pointed to by void_ptr:s! (tag 'Q')
 }
 
 void free_internal_data(Obj *dead) {
