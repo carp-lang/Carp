@@ -828,17 +828,29 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
     assert(pop == new_array);
   }
   else if(o->tag == 'Y') {
+    shadow_stack_push(process, o);
+    
     Obj *result = env_lookup(process, env, o);
     shadow_stack_push(process, result);
     
-    if(env == process->global_env && result->tag == 'Q') {
+    if(env == process->global_env && (result->tag == 'Q' // || result->tag == 'R'
+                                      )) {
       Obj *type = env_lookup(process, result->meta, obj_new_keyword("type"));
-      //printf("read global with type: %s\n", obj_to_string(process, type)->s);
-      //printf("original with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
-      Obj *copy = obj_copy(process, primitive_to_obj(process, result->void_ptr, type));
-      copy->meta = result->meta;
-      result = copy;
-      //printf("copy with tag '%c': %s\n", result->tag, STR(result));
+      if(type) {
+        /* printf("Looked up symbol '%s'", STR(o)); */
+        /* printf(" which contained '%s' of type: ", STR(result)); */
+        /* printf("%s and tag %c, this should be copied! (for correctness)\n", STR(type), result->tag); */
+        /* printf("o: %s\n", STR(o)); */
+        //Obj *** primitive_to_obj(process, result, type)
+        Obj *copy = obj_copy(process, result);
+        copy->meta = result->meta;
+        shadow_stack_push(process, copy);
+        //printf("Copy with tag '%c': %s\n", copy->tag, STR(copy));
+        shadow_stack_pop(process);
+        result = copy;
+      } else {
+        printf("No :type meta on %s, will do nothing with it.\n", STR(result));
+      }
     }
     
     if(!result) {
@@ -848,7 +860,9 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
       stack_push(process, nil);
     } else {
       stack_push(process, result);
+
       shadow_stack_pop(process); // result
+      shadow_stack_pop(process); // o
     }
   }
   else {

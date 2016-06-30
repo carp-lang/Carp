@@ -192,7 +192,7 @@ Obj *obj_new_bytecode(char *bytecode) {
 }
 
 Obj *obj_copy(Process *process, Obj *o) {
-  assert(o);
+  assert(o);  
   if(o->tag == 'C') {
     //printf("Making a copy of the list: %s\n", obj_to_string(o)->s);
     Obj *list = obj_new_cons(NULL, NULL);
@@ -231,10 +231,11 @@ Obj *obj_copy(Process *process, Obj *o) {
     shadow_stack_pop(process);
     return new_env;
   }
-  else if(o->tag == 'Q') {
+  else if(o->tag == 'Q' || o->tag == 'R') {
+    //printf("COPY a Q/R: %s\n", STR(o));
     Obj *type_meta = env_lookup(process, o->meta, obj_new_keyword("type"));
     if(type_meta) {
-      //printf("type_meta: %s\n", STR(type_meta));
+      //printf("COPY type_meta: %s\n", STR(type_meta));
       
       shadow_stack_push(process, o);
 
@@ -242,6 +243,8 @@ Obj *obj_copy(Process *process, Obj *o) {
       Obj *args_type = obj_list(reffed_arg_type);
       Obj *signature = obj_list(obj_new_keyword("fn"), args_type, type_meta);
       Obj *quoted_sig = obj_list(lisp_quote, signature);
+
+      shadow_stack_push(process, quoted_sig);
       
       // Figure out the name
       Obj *generic_name_result = generic_name(process, "copy", quoted_sig);
@@ -293,13 +296,17 @@ Obj *obj_copy(Process *process, Obj *o) {
 
       Obj *pop3 = shadow_stack_pop(process); // generic_name_result
       assert(pop3 == generic_name_result);
-      
-      Obj *pop4 = shadow_stack_pop(process); // o
-      assert(pop4 == o);
 
-      return obj_new_ptr(copy_result->void_ptr);
+      Obj *pop4 = shadow_stack_pop(process); // quoted_sig
+      assert(pop4 == quoted_sig);
+      
+      Obj *pop5 = shadow_stack_pop(process); // o
+      assert(pop5 == o);
+
+      return copy_result;
     } else {
       // shallow copy
+      printf("COPY no type_meta\n");
       return obj_new_ptr(o->void_ptr);
     }
   }

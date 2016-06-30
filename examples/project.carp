@@ -1,4 +1,4 @@
-(reset! echo-signature-after-bake true)
+;;(reset! echo-signature-after-bake true)
 ;;(reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
@@ -66,3 +66,10 @@
 
 (def x (Blergh 123))
 ;; (double-blergh x)
+
+;; (def stuff [1 2 3 4 5])
+;; (defn map-stuff [] (map inc stuff))
+;; (bake map-stuff)
+;; (println (str (map-stuff)))
+;; (println (str (map-stuff)))
+;; (println (str (map-stuff)))
