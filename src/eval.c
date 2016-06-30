@@ -227,7 +227,8 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
       //printf("Calling generic struct constructor.\n");
       Obj *function_call_symbol = obj_new_symbol("dynamic-generic-constructor-call");
-
+      shadow_stack_push(process, function_call_symbol);
+      
       Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
       for(int i = 0; i < arg_count; i++) {
         copied_args[i] = obj_copy(process, args[i]);
@@ -245,7 +246,9 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
       
       shadow_stack_push(process, call_to_concretize_struct);
       eval_internal(process, process->global_env, call_to_concretize_struct);
+
       shadow_stack_pop(process);
+      shadow_stack_pop(process);      
     } else {
       call_struct_constructor(process, function, args, arg_count);
     }
@@ -542,7 +545,9 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     Obj *body = o->cdr->cdr->car;
     //printf("Creating lambda with env: %s\n", obj_to_string(env)->s);
     Obj *lambda = obj_new_lambda(params, body, env, o);
+    shadow_stack_push(process, lambda);
     obj_copy_meta(process, lambda, o);
+    shadow_stack_pop(process);
     stack_push(process, lambda);
   }
   else if(HEAD_EQ("macro")) {
@@ -556,7 +561,9 @@ void eval_list(Process *process, Obj *env, Obj *o) {
     assert_or_set_error(o->cdr->cdr->car, "No body in macro: ", o);
     Obj *body = o->cdr->cdr->car;
     Obj *macro = obj_new_macro(params, body, env, o);
+    shadow_stack_push(process, macro);
     obj_copy_meta(process, macro, o);
+    shadow_stack_pop(process);
     stack_push(process, macro);
   }
   else if(HEAD_EQ("def")) {
@@ -784,7 +791,9 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   }
   else if(o->tag == 'E') {
     Obj *new_env = obj_copy(process, o);
+    shadow_stack_push(process, new_env);
     obj_copy_meta(process, new_env, o);
+    shadow_stack_pop(process);
     shadow_stack_push(process, new_env);
     Obj *p = new_env->bindings;
     while(p && p->car) {
@@ -803,7 +812,9 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   }
   else if(o->tag == 'A') {
     Obj *new_array = obj_new_array(o->count);
+    shadow_stack_push(process, new_array);
     obj_copy_meta(process, new_array, o);
+    shadow_stack_pop(process);
     shadow_stack_push(process, new_array);
     for(int i = 0; i < o->count; i++) {
       eval_internal(process, env, o->array[i]);
@@ -818,7 +829,8 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
   }
   else if(o->tag == 'Y') {
     Obj *result = env_lookup(process, env, o);
-
+    shadow_stack_push(process, result);
+    
     if(env == process->global_env && result->tag == 'Q') {
       Obj *type = env_lookup(process, result->meta, obj_new_keyword("type"));
       //printf("read global with type: %s\n", obj_to_string(process, type)->s);
@@ -826,7 +838,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
       Obj *copy = obj_copy(process, primitive_to_obj(process, result->void_ptr, type));
       copy->meta = result->meta;
       result = copy;
-      printf("copy with tag '%c': %s\n", result->tag, obj_to_string(process, result)->s);
+      //printf("copy with tag '%c': %s\n", result->tag, STR(result));
     }
     
     if(!result) {
@@ -836,6 +848,7 @@ void eval_internal(Process *process, Obj *env, Obj *o) {
       stack_push(process, nil);
     } else {
       stack_push(process, result);
+      shadow_stack_pop(process); // result
     }
   }
   else {

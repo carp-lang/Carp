@@ -800,6 +800,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         if(obj_eq(process, env_lookup(process, function, obj_new_keyword("generic")), lisp_true)) {
           //printf("Calling generic struct constructor.\n");
           Obj *function_call_symbol = obj_new_symbol("dynamic-generic-constructor-call");
+          shadow_stack_push(process, function_call_symbol);
 
           Obj **copied_args = malloc(sizeof(Obj*) * arg_count);
           for(int i = 0; i < arg_count; i++) {
@@ -817,9 +818,12 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
                                                     carp_array);
       
           shadow_stack_push(process, call_to_concretize_struct);
+          
           Obj *result = bytecode_sub_eval_form(process, process->global_env, call_to_concretize_struct);
           stack_push(process, result);
-          shadow_stack_pop(process);
+
+          shadow_stack_pop(process); // function_call_symbol
+          shadow_stack_pop(process); // call_to_concretize_struct
         } else {
           call_struct_constructor(process, function, args, arg_count);
         }

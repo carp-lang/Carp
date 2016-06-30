@@ -1,44 +1,44 @@
-;;(reset! echo-signature-after-bake true)
+(reset! echo-signature-after-bake true)
 ;;(reset! log-unloading-of-dylibs true)
 ;;(reset! profile-infer-time true)
 ;;(reset! profile-external-compiler-time true)
 ;;(reset! log-deps-when-baking-ast true)
 ;;(reset! log-redefining-struct true)
 
-(def fib (fn [x]
-           (if (< x 2)
-             1
-             (+ (fib (- x 2))
-                (fib (- x 1))))))
+;; (def fib (fn [x]
+;;            (if (< x 2)
+;;              1
+;;              (+ (fib (- x 2))
+;;                 (fib (- x 1))))))
 
-(def d1 {:a {}
-         :b {:a 1
-             :b 2
-             :c 3}
-         :c {:a {:x 100}
-             :b {:x 200}
-             :c {:x 300}}})
+;; (def d1 {:a {}
+;;          :b {:a 1
+;;              :b 2
+;;              :c 3}
+;;          :c {:a {:x 100}
+;;              :b {:x 200}
+;;              :c {:x 300}}})
 
-(def d2 {:a {}
-         :b {:a 1
-             :b 2
-             :c 3}
-         :c {:a {:x 100}
-             :b {:x 66666}
-             :c {:x 300}}})
+;; (def d2 {:a {}
+;;          :b {:a 1
+;;              :b 2
+;;              :c 3}
+;;          :c {:a {:x 100}
+;;              :b {:x 66666}
+;;              :c {:x 300}}})
 
-(def d3 {:a {}
-         :b {:a 1
-             :b 2
-             :c 3}
-         :c {:a {:x 100}
-             :b {:x 200}
-             :c {:x 300}}})
+;; (def d3 {:a {}
+;;          :b {:a 1
+;;              :b 2
+;;              :c 3}
+;;          :c {:a {:x 100}
+;;              :b {:x 200}
+;;              :c {:x 300}}})
 
-(defn compare []
-  (do
-    (assert (not (= d1 d2)))
-    (assert (= d1 d3))))
+;; (defn compare []
+;;   (do
+;;     (assert (not (= d1 d2)))
+;;     (assert (= d1 d3))))
 
 ;;(time (for (i 0 50000) (compare))) ;; takes 4700 ms
 
@@ -85,25 +85,47 @@
 ;;     (assert-eq "hello" (f))
 ;;     )
 
-(defstruct Blergh [x :int])
+;;(defstruct Blergh [x :int])
 
 ;; (def x [(Blergh 10) (Blergh 20)])
 
-(defn x2 [x]
-  (* x 2))
+;; (defn x2 [x]
+;;   (* x 2))
 
-(defn double-blergh [b]
-  (Blergh-update-x (copy b) x2))
+;; (defn double-blergh [b]
+;;   (Blergh-update-x (copy b) x2))
 
 ;; (defn f [x]
 ;;   (map double-blergh x))
 
 ;;(f x)
 
-(defn eat [x]
-  (do (println* (ref (double-blergh x)))
-      100))
+;; (defn eat [x]
+;;   (do (println* (ref (double-blergh x)))
+;;       100))
 
-(def x (Blergh 123))
-(double-blergh x)
+;; (def x (Blergh 123))
+;; (double-blergh x)
 
+(defstruct InnerStruct
+      [foo :int])
+
+(defstruct SomeGenericStruct
+  [x "t"])
+
+(defn struct-with-inner-struct []
+  (assert-eq "(SomeGenericStruct (InnerStruct 123))" (str (SomeGenericStruct (InnerStruct 123)))))
+
+;;(struct-with-inner-struct)
+
+;; (deftest global-generic-struct
+;;   (do (defstruct Blip [x "T" y "T"])
+;;       (def b1 (Blip 123 666))
+;;       (bake b1)
+;;       (assert-eq "(Blip 123 666) ; ptr-to-global" (str b1))
+;;       (defstruct Blip [x :bool y "T" z :string])
+;;       (def b2 (Blip true \g @"Yo"))
+;;       (bake b2)
+;;       (assert-eq "(Blip true \\g @\"Yo\") ; ptr-to-global" (str b2)) ))
+
+;; (global-generic-struct)
