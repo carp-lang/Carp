@@ -261,7 +261,7 @@ Obj *obj_copy(Process *process, Obj *o) {
         return NULL;
       }
       else {
-        printf("Baked copying function: %s\n", generic_name_result->s);
+        //printf("Baked copying function: %s\n", generic_name_result->s);
       }
 
       // Call

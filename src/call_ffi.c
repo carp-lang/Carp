@@ -205,8 +205,8 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         values[i] = &args[i]->s;
       }
       else {
-        printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);
-        //printf("%s\n", STR(args[i]));
+        //printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);
+        //printf("%s\n", STR(args[i])); // <- WARNING! This is an infinite loop!
           
         if(args[i]->tag == 'Q') {
 
