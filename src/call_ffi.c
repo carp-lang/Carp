@@ -204,9 +204,12 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         values[i] = &args[i]->s;
       }
       else {
-        //printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);         
+        /* printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag); */
+        /* printf("%s\n", STR(args[i])); */
           
-        if(args[i]->tag == 'Q' /* || args[i]->tag == 'R' */) {
+        if(   args[i]->tag == 'Q'
+              /* || args[i]->tag == 'R' */ // ???
+           ) {
 
 #ifdef CHECKING
           if(args[i]->void_ptr == NULL || obj_eq(type_obj, obj_new_keyword("any"))) {

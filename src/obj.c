@@ -235,7 +235,7 @@ Obj *obj_copy(Process *process, Obj *o) {
     //printf("COPY a Q/R: %s\n", STR(o));
     Obj *type_meta = env_lookup(process, o->meta, obj_new_keyword("type"));
     if(type_meta) {
-      //printf("COPY type_meta: %s\n", STR(type_meta));
+      printf("COPY type_meta: %s\n", STR(type_meta));
       
       shadow_stack_push(process, o);
 
@@ -252,7 +252,7 @@ Obj *obj_copy(Process *process, Obj *o) {
         return NULL;
       }
       shadow_stack_push(process, generic_name_result);
-      //printf("generic_name_result: %s\n", STR(generic_name_result));
+      printf("generic_name_result: %s\n", STR(generic_name_result));
       
       //printf("Will bake 'copy' with quoted signature: %s\n", STR(quoted_sig));
       
@@ -262,7 +262,7 @@ Obj *obj_copy(Process *process, Obj *o) {
         return NULL;
       }
       else {
-        //printf("Baked 'copy'.\n");
+        printf("Baked copying function: %s\n", generic_name_result->s);
       }
 
       // Call
@@ -270,20 +270,20 @@ Obj *obj_copy(Process *process, Obj *o) {
       Obj *call_to_copy = obj_list(obj_new_symbol(s), o);
       shadow_stack_push(process, call_to_copy);
 
-      //printf("call_to_copy: %s\n", STR(call_to_copy));
+      printf("call_to_copy: %s\n", STR(call_to_copy));
 
       Obj *copy_result = NULL;
       if(BYTECODE_EVAL) {
         copy_result = bytecode_sub_eval_form(process, process->global_env, call_to_copy);
       } else {
         copy_result = eval(process, process->global_env, call_to_copy);
-        //printf("copy_result: %s\n", STR(copy_result));
+        printf("copy_result: %s with tag %c\n", STR(copy_result), copy_result->tag);
       }
   
       shadow_stack_push(process, copy_result);
       
       if(eval_error) {
-        printf("Error when calling 'copy' function for void ptr of type '%s':\n", STR(quoted_sig));
+        printf("Error when calling 'copy' function for void ptr of type '%s':\n", STR(type_meta));
         printf("%s\n", obj_to_string(process, eval_error)->s);
         return NULL;
       }
