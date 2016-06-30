@@ -56,16 +56,20 @@
 ;;  :c {:x 300}}
 
 
-;; (defstruct Blergh [x :int])
+(defstruct Blergh [x :int])
 
-;; (defn x2 [x]
-;;   (* x 2))
+(defn x2 [x]
+  (* x 2))
 
-;; (defn double-blergh [b]
-;;   (Blergh-update-x (copy b) x2))
+(defn double-blergh [b]
+  (Blergh-update-x b x2))
 
-;; (def x (Blergh 123))
-;; (double-blergh x)
+(def x (Blergh 123))
+;;(bake x)
+
+;; (println (str (double-blergh x)))
+;; (println (str (double-blergh x)))
+;; (println (str (double-blergh x)))
 
 ;; (def stuff [1 2 3 4 5])
 ;; (defn map-stuff [x] (map inc x))

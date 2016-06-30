@@ -5,6 +5,7 @@
 #include "obj_conversions.h"
 #include "primops.h"
 #include "../shared/types.h"
+#include "env.h"
 
 #define ALLOW_SENDING_LAMBDA_TO_FFI 1
 #define LABELED_DISPATCH 0
@@ -204,12 +205,10 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         values[i] = &args[i]->s;
       }
       else {
-        /* printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag); */
-        /* printf("%s\n", STR(args[i])); */
+        printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);
+        //printf("%s\n", STR(args[i]));
           
-        if(   args[i]->tag == 'Q'
-              /* || args[i]->tag == 'R' */ // ???
-           ) {
+        if(args[i]->tag == 'Q') {
 
 #ifdef CHECKING
           if(args[i]->void_ptr == NULL || obj_eq(type_obj, obj_new_keyword("any"))) {
@@ -231,8 +230,31 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
 
         hack:;
 #endif
-            
-          values[i] = &args[i]->void_ptr;
+
+          bool argExpectsRef = p->car->tag == 'C' && obj_eq(process, p->car->car, type_ref);
+          //printf("argExpectsRef: %d\n", argExpectsRef);
+
+          if(!argExpectsRef) {
+            Obj *type = env_lookup(process, args[i]->meta, obj_new_keyword("type"));
+            if(type) {
+              /* printf("Sending void_ptr as argument to ffi function, "); */
+              /* printf(" it's value is '%s' of type: ", STR(args[i])); */
+              /* printf("%s and tag %c, this should be copied! (for correctness)\n", STR(type), args[i]->tag); */
+              Obj *copy = obj_copy(process, args[i]);
+              copy->meta = args[i]->meta;
+              shadow_stack_push(process, copy);
+              //printf("Copy with tag '%c': %s\n", copy->tag, STR(copy));
+              shadow_stack_pop(process);
+              values[i] = &copy->void_ptr;
+            } else {
+              printf("No type meta on %s, won't copy it.\n", STR(args[i]));
+              goto noCopyOfArg;
+            }
+          }
+          else {
+          noCopyOfArg:;
+            values[i] = &args[i]->void_ptr;
+          }          
         }
         else if(args[i]->tag == 'A') {
           // TODO: Do some type checking here!!!
