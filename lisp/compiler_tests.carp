@@ -14,6 +14,7 @@
 (load-lisp (str carp-dir "lisp/test_printing.carp"))
 (load-lisp (str carp-dir "lisp/test_baking.carp"))
 (load-lisp (str carp-dir "lisp/test_generics.carp"))
+(load-lisp (str carp-dir "lisp/test_correctness.carp"))
 
 ;; These tests are for manual inspections:
 (load-lisp (str carp-dir "lisp/test_stack_trace.carp"))
