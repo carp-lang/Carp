@@ -295,8 +295,7 @@ Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
   
   //sprintf("Created dictionary:\n%s\n", obj_to_string(process, e)->s);
 
-  Obj *hash = obj_hash(process, e); // do this first since it might trigger GC
-  obj_set_meta(e, obj_new_keyword("hash"), hash);
+  e->hash = obj_hash(process, e);
   
   return e;
 }
@@ -1330,8 +1329,11 @@ Obj *p_error(Process *process, Obj** args, int arg_count) {
 }
 
 Obj *p_env(Process *process, Obj** args, int arg_count) {
+  #if BYTECODE_EVAL
   return process->frames[process->frame].env;
-  //return process->global_env;
+  #else
+  return process->global_env->bindings;
+  #endif
 }
 
 Obj *p_def_QMARK(Process *process, Obj** args, int arg_count) {
@@ -2253,7 +2255,7 @@ Obj *p_hash(Process *process, Obj** args, int arg_count) {
     eval_error = obj_new_string("Wrong argument count to 'hash'.");
     return nil;
   }
-  return obj_hash(process, args[0]);
+  return obj_new_int(obj_hash(process, args[0]));
 }
 
       /* shadow_stack_push(process, list); */

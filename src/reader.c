@@ -290,7 +290,8 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     }
     name[i] = '\0';
     Obj *symbol = obj_new_symbol(name);
-    obj_set_line_info(process, symbol, line, pos, filename);   
+    obj_set_line_info(process, symbol, line, pos, filename);
+    symbol->hash = obj_hash(process, symbol);
     return symbol;
   }
   else if(CURRENT == ':') {
@@ -306,6 +307,7 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
 
     Obj *new_keyword = obj_new_keyword(name);
     obj_set_line_info(process, new_keyword, line, pos, filename);
+    new_keyword->hash = obj_hash(process, new_keyword);
     return new_keyword;
   }
   else if(CURRENT == '"') {
@@ -347,6 +349,7 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     Obj *new_string = obj_new_string(str);
     obj_new_string(str);
     obj_set_line_info(process, new_string, line, pos, filename);
+    new_string->hash = obj_hash(process, new_string);
     return new_string;
   }
   else if(CURRENT == 0) {

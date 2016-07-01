@@ -56,41 +56,44 @@
 ;;  :c {:x 300}}
 
 
-;; (def small-dict {:x 100})
-;; (def medium-dict {:x 100
-;;                   :a 0
-;;                   :b 0
-;;                   :c 0
-;;                   :d 0
-;;                   :e 0
-;;                   :f 0
-;;                   :g 0
-;;                   :h 0
-;;                   :i 0
-;;                   :j 0
-;;                   :k 0
-;;                   :l 0
-;;                   :m 0
-;;                   :n 0
-;;                   :o 0
-;;                   :p 0
-;;                   :q 0
-;;                   :r 0
-;;                   :s 0
-;;                   :t 0})
-;; (def large-dict {:aa :ab :ac :ad :ae :af :ag :ah :ai :aj :ak :al :am :an :ao :ap :aq :ar :as :at :au :av :aw :ax :ay :az
-;;                  :ba :bb :bc :bd :be :bf :bg :bh :bi :bj :bk :bl :bm :bn :bo :bp :bq :br :bs :bt :bu :bv :bw :bx :by :bz
-;;                  :x 100
-;;                  :ca :cb :cc :cd :ce :cf :cg :ch :ci :cj :ck :cl :cm :cn :co :cp :cq :cr :cs :ct :cu :cv :cw :cx :cy :cz
-;;                  :da :db :dc :dd :de :df :dg :dh :di :dj :dk :dl :dm :dn :do :dp :dq :dr :ds :dt :du :dv :dw :dx :dy :dz
-;;                  })
+(def small-dict {:x 100})
+(def medium-dict {:x 100
+                  :a 0
+                  :b 0
+                  :c 0
+                  :d 0
+                  :e 0
+                  :f 0
+                  :g 0
+                  :h 0
+                  :i 0
+                  :j 0
+                  :k 0
+                  :l 0
+                  :m 0
+                  :n 0
+                  :o 0
+                  :p 0
+                  :q 0
+                  :r 0
+                  :s 0
+                  :t 0})
+(def large-dict {:aa :ab :ac :ad :ae :af :ag :ah :ai :aj :ak :al :am :an :ao :ap :aq :ar :as :at :au :av :aw :ax :ay :az
+                 :ba :bb :bc :bd :be :bf :bg :bh :bi :bj :bk :bl :bm :bn :bo :bp :bq :br :bs :bt :bu :bv :bw :bx :by :bz
+                 :x 100
+                 :ca :cb :cc :cd :ce :cf :cg :ch :ci :cj :ck :cl :cm :cn :co :cp :cq :cr :cs :ct :cu :cv :cw :cx :cy :cz
+                 :da :db :dc :dd :de :df :dg :dh :di :dj :dk :dl :dm :dn :do :dp :dq :dr :ds :dt :du :dv :dw :dx :dy :dz
+                 })
 
 
-;; (defn try-lookup [n d]
-;;   (for (i 0 n)
-;;     (assert-eq 100 (get d :x))))
+(defn try-lookup [n d]
+  (for (i 0 n)
+    (assert-eq 100 (get d :x))))
 
-;; (time (try-lookup 10000 small-dict))
-;; (time (try-lookup 10000 medium-dict))
-;; (time (try-lookup 10000 large-dict))
+(time (try-lookup 10000 small-dict))
+(time (try-lookup 10000 medium-dict))
+(time (try-lookup 10000 large-dict))
 
+(time (try-lookup 10000 small-dict))
+(time (try-lookup 10000 medium-dict))
+(time (try-lookup 10000 large-dict))

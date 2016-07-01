@@ -21,6 +21,7 @@ void obj_string_mut_append(Obj *string_obj, const char *s2) {
   s3[total_length] = '\0';
   strncpy(s3 + string_obj_len, s2, s2_len);
   string_obj->s = s3;
+  string_obj->hash = 0; // todo: calculate new hash instead!
 }
 
 Obj *concat_c_strings(char *a, const char *b) {

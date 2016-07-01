@@ -488,6 +488,7 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
   for(int step = 0; step < steps; step++) {
 
     if(process->frame < 0) {
+      assert(false);
       set_error_return_null("Bytecode stack underflow. ", bytecodeObj);
     }
     

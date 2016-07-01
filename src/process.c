@@ -23,7 +23,13 @@ Process *process_new() {
   Process *process = malloc(sizeof(Process));
   process->dead = false;
   process->final_result = NULL;
+
+  #if BYTECODE_EVAL
+  process->frame = 0;
+  #else
   process->frame = -1;
+  #endif
+  
   process->bytecodeObj = NULL;
   pop_stacks_to_zero(process);
 

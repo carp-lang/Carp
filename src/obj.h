@@ -108,6 +108,7 @@ typedef struct Obj {
     bool boolean;
   };
   struct Obj *meta;
+  int hash;
   // GC
   struct Obj *prev;
   char alive;
@@ -171,7 +172,7 @@ Obj *obj_new_bool(bool b);
 Obj *obj_new_bytecode(char *bytecode);
 
 Obj *obj_copy(Process *process, Obj *o);
-Obj *obj_hash(Process *process, Obj *o);
+int obj_hash(Process *process, Obj *o);
 bool obj_eq(Process *process, Obj *a, Obj *b);
 
 Obj *obj_list_internal(Obj *objs[]);

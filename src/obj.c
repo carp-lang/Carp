@@ -16,6 +16,7 @@ Obj *obj_new(char tag) {
   o->given_to_ffi = false;
   o->tag = tag;
   o->meta = NULL;
+  o->hash = 0;
   obj_latest = o;
   obj_total++;
   if(LOG_ALLOCS) {
@@ -369,71 +370,74 @@ int string_to_hash(char *str) {
   while((c = *str++)) {
     hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
   }
+  if(hash == 0) {
+    hash = 1; // hash 0 means no hash
+  }
   return hash;
 }
 
-Obj *obj_hash(Process *process, Obj *o) {
+int obj_hash(Process *process, Obj *o) {
   assert(o);
 
   shadow_stack_push(process, o);
-  Obj *hash = obj_new_int(123456789);
-  shadow_stack_push(process, hash);
+  int hash = 123456789;
   
   if(o->tag == 'C') {
     Obj *p = o;
     int h = 1234;
     while(p && p->car) {
-      h += obj_hash(process, p->car)->i;
+      h += obj_hash(process, p->car);
       if(p->cdr && p->cdr->tag != 'C') {
         // dotted pair
-        h += obj_hash(process, p->cdr)->i;
+        h += obj_hash(process, p->cdr);
         break;
       } else {
         // normal list
         p = p->cdr;
       }
     }
-    hash->i = h;   
+    hash = h;
   }
   else if(o->tag == 'A') {
     int h = 5381;
     for(int i = 0; i < o->count; i++) {
-      h = ((h << 5) + h) + obj_hash(process, o->array[i])->i;
+      h = ((h << 5) + h) + obj_hash(process, o->array[i]);
     }
-    hash->i = h;   
+    hash = h;
   }
   else if(o->tag == 'E') {
-    hash->i = obj_hash(process, o->bindings)->i + 666;   
+    int h = o->bindings ? obj_hash(process, o->bindings) : 0;
+    hash = h + 666;   
   }
   else if(o->tag == 'Q') {
-    hash->i = (int)o->void_ptr;   
+    hash = (int)o->void_ptr;   
   }
   else if(o->tag == 'I') {
-    hash->i = o->i;   
+    hash = o->i;   
   }
   else if(o->tag == 'V') {
-    hash->i = (int)o->f32;   
+    hash = (int)o->f32;   
   }
   else if(o->tag == 'W') {
-    hash->i = (int)o->f64;   
+    hash = (int)o->f64;   
   }
   else if(o->tag == 'S') {
-    hash->i = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);   
   }
   else if(o->tag == 'Y') {
-    hash->i = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);   
   }
   else if(o->tag == 'K') {
-    hash->i = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);   
   }
   else if(o->tag == 'P') {
-    hash->i = (int)o->primop;
+    hash = (int)o->primop;
   }
   else if(o->tag == 'D') {
-    hash->i = (int)o->dylib;
+    hash = (int)o->dylib;
   }
   else if(o->tag == 'F') {
-    hash->i = (int)o->funptr;
+    hash = (int)o->funptr;
   }
   else if(o->tag == 'L') {
     // ???
@@ -442,21 +446,20 @@ Obj *obj_hash(Process *process, Obj *o) {
     // ???
   }
   else if(o->tag == 'T') {
-    hash->i = (int)o->character;
+    hash = (int)o->character;
   }
   else if(o->tag == 'B') {
-    hash->i = o->boolean ? 29843 : 42391;
+    hash = o->boolean ? 29843 : 42391;
   }
   else if(o->tag == 'X') {
     // ???
   }
   else {
     printf("obj_hash() can't handle type tag %c (%d).\n", o->tag, o->tag);
-    return NULL;
+    return 0;
     assert(false);
   }
 
-  shadow_stack_pop(process); // hash
   shadow_stack_pop(process); // o
 
   //printf("hash for %s is %d\n", obj_to_string(process, o)->s, hash->i);
@@ -596,7 +599,21 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag != b->tag) {
     return false;
   }
-  else if(a->tag == 'B') {
+  
+  if(a->hash != 0 && b->hash != 0) {
+    if(a->hash != b->hash) {
+      /* Obj *a_str = obj_to_string(process, a); */
+      /* shadow_stack_push(process, a_str); */
+      /* Obj *b_str = obj_to_string(process, b); */
+      /* shadow_stack_push(process, b_str); */
+      /* printf("Hash of %s and %s are not equal: %d vs %d\n", a_str->s, b_str->s, a->hash, b->hash); */
+      /* shadow_stack_pop(process); */
+      /* shadow_stack_pop(process); */
+      return false;
+    }    
+  }
+  
+  if(a->tag == 'B') {
     return a->boolean == b->boolean;
   }
   else if(a->tag == 'S' || a->tag == 'Y' || a->tag == 'K') {
@@ -619,17 +636,6 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   }
   else if(a->tag == 'D') {
     return a->dylib == b->dylib;
-  }
-
-  if(a->meta && b->meta) {
-    Obj *hash_a = env_lookup(process, a->meta, hash);
-    Obj *hash_b = env_lookup(process, b->meta, hash);
-    if(hash_a && hash_b) {
-      if(hash_a->i != hash_b->i) {
-        //printf("Hash of %s and %s are not equal!\n", obj_to_string(process, a)->s, obj_to_string(process, b)->s);
-        return false;
-      }
-    }
   }
   
   if(a->tag == 'C') {

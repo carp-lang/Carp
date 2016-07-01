@@ -7,6 +7,7 @@
 #include "bytecode.h"
 
 #define HANDLE_SIGNALS 0
+#define BOOT 1
 
 void signal_handler(int sig) {
   printf("\e[31m");
@@ -64,12 +65,14 @@ int main(int argc, char **argv) {
   else {
     eval_text(process, process->global_env, "(def BYTECODE_EVAL false)", false, obj_new_string("main.c"));
   }
-  
+
+  #if BOOT
   eval_text(process,
             process->global_env,
             "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))",
             false,
             obj_new_string("main.c"));
+  #endif
   
   if(argc == 2) {
     char load_file[512];
