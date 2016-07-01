@@ -15,8 +15,8 @@
   (do (def stuff [1 2 3 4 5])
       (defn map-stuff [x] (map inc x))
       (bake map-stuff)
-      (assert-eq "[1 2 3 4 5]" (str (map-stuff stuff)))
-      (assert-eq "[1 2 3 4 5]" (str (map-stuff stuff)))
-      (assert-eq "[1 2 3 4 5]" (str (map-stuff stuff)))))
+      (assert-eq "[2 3 4 5 6]" (str (map-stuff stuff)))
+      (assert-eq "[2 3 4 5 6]" (str (map-stuff stuff)))
+      (assert-eq "[2 3 4 5 6]" (str (map-stuff stuff)))))
 
 (tester/run-suite "correctness")
