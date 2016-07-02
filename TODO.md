@@ -1,3 +1,5 @@
+Jonas är bäst.
+
 NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls to eval
 
 - Line numbers for dictionary literals
