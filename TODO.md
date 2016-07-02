@@ -1,3 +1,5 @@
+NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls to eval
+
 - Line numbers for dictionary literals
 - Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
 - Desugar [...] to (array ...) in reader

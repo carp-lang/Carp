@@ -3,7 +3,6 @@
 ;; (reset! profile-infer-time true)
 ;; (reset! profile-external-compiler-time true)
 
-
 (load-lisp (str carp-dir "lisp/test_arrays.carp"))
 (load-lisp (str carp-dir "lisp/test_structs.carp"))
 (load-lisp (str carp-dir "lisp/test_globals.carp"))

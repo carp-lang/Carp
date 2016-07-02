@@ -268,6 +268,8 @@ Obj *p_array(Process *process, Obj** args, int arg_count) {
 Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
   Obj *e = obj_new_environment(NULL);
 
+  //printf("creating dictionary with %d args\n", arg_count);
+
   if(arg_count == 0) {
     e->bindings = nil;
   }

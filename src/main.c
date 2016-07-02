@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
             false,
             obj_new_string("main.c"));
   #endif
-  
+
   if(argc == 2) {
     char load_file[512];
     snprintf(load_file, 512, "(load-lisp (str \"%s\"))", argv[1]);

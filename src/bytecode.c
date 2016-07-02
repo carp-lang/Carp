@@ -67,8 +67,11 @@ void add_call(Process *process, Obj *env, Obj *bytecodeObj, int *position, Obj *
   }
   visit_form(process, env, bytecodeObj, position, form->car); // the function position
   bytecodeObj->bytecode[*position] = 'c';
-  bytecodeObj->bytecode[*position + 1] = arg_count + 65;
-  (*position) += 2;
+  (*position) += 1;
+
+  int *ip = (int*)(bytecodeObj->bytecode + *position);
+  *ip = arg_count;
+  (*position) += sizeof(int);
 }
 
 void add_lookup(Obj *bytecodeObj, int *position, Obj *form) {
@@ -742,8 +745,11 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
       
       break;
     case 'c':
-      function = stack_pop(process);     
-      arg_count = bytecode[p + 1] - 65;
+      function = stack_pop(process);
+      
+      STEP_ONE;
+      arg_count = LITERAL_INDEX;
+      STEP_INT_SIZE;   
 
       //printf("will call %s with %d args.\n", obj_to_string(process, function)->s, arg_count);
       
@@ -756,9 +762,9 @@ Obj *bytecode_eval_internal(Process *process, Obj *bytecodeObj, int steps, int t
         args[arg_count - i - 1] = arg;
         //shadow_stack_push(process, arg);
       }
-      process->frames[process->frame].p += 2;
 
-      /* printf("args to %s\n", obj_to_string(process, function)->s); */
+      assert(arg_count >= 0);
+      /* printf("sending %d args to %s\n", arg_count, obj_to_string(process, function)->s); */
       /* for(int i = 0; i < arg_count; i++) { */
       /*   printf("arg %d: %s\n", i, obj_to_string(process, args[i])->s); */
       /* } */
@@ -1067,6 +1073,7 @@ void bytecode_match(Process *process, Obj *env, Obj *value, Obj *attempts) {
 
       //printf("before sub eval, frame: %d\n", process->frame);
       //stack_print(process);
+      assert(bytecode);
       
       Obj *result = bytecode_sub_eval_internal(process, new_env, bytecode); // eval the following form using the new environment
       if(eval_error) {

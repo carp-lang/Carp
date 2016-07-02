@@ -3,6 +3,23 @@
                            (list 'def name (list 'macro args body))
                            (list 'meta-set! name :name (str name)))))
 
+;; (if BYTECODE_EVAL
+;;   (do
+;;     (def write-match-case
+;;       (fn [pattern binder]
+;;         ))
+;;     (def match-internal
+;;       (fn [value exprs]
+;;         (if (= 0 (count exprs))
+;;           '()
+;;           (if (= 1 (count exprs))
+;;             (error (str "Uneven number of expressions in match: " value " " exprs))
+;;             (write-match-case (nth exprs 0) (nth exprs 1))
+;;             ))))
+;;     (defmacro match [value ... exprs]
+;;       (match-internal value exprs)))
+;;   nil)
+
 ;; TODO: remove this hack when old interpreter is gone
 (defmacro lets [a b c]
   (list 'let (array a b) c))

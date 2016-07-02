@@ -132,7 +132,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
   if(function->tag == 'L') {
 
     //printf("Calling lambda "); obj_print_cout(function); printf(" with params: "); obj_print_cout(function->params); printf("\n");
-    //printf("Applying %s\n", obj_to_string(process, function)->s);  
+    //printf("Applying %s with arg count %d\n", obj_to_string(process, function)->s, arg_count);
 
     #if BYTECODE_EVAL
 
@@ -193,7 +193,7 @@ void apply(Process *process, Obj *function, Obj **args, int arg_count) {
     assert(pop2 == function);
     #endif
   }
-  else if(function->tag == 'P') {   
+  else if(function->tag == 'P') {
     Obj *result = function->primop((struct Process*)process, args, arg_count);
     stack_push(process, result);
   }
