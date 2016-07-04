@@ -3,6 +3,7 @@
 #include "env.h"
 #include "bytecode.h"
 #include "eval.h"
+#include "assertions.h"
 
 #define LOG_ALLOCS 0
 
@@ -11,6 +12,7 @@ int obj_total = 0;
 
 Obj *obj_new(char tag) {  
   Obj *o = malloc(sizeof(Obj));
+  assert_or_fatal_error(o, "obj_new: call to malloc failed");
   o->prev = obj_latest;
   o->alive = false;
   o->given_to_ffi = false;

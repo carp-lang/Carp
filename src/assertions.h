@@ -34,3 +34,10 @@
   if(!(assertion)) {					\
     set_error_return_null(message, obj);				\
   }
+
+#define assert_or_fatal_error(assertion, message) \
+  if(!(assertion)){                               \
+    puts(message);                                \
+    exit(1);                                      \
+  }
+
