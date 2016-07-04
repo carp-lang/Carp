@@ -9,6 +9,7 @@ Add the 'bin' directory to your path to enable calling the ```carp``` command. T
 ```export PATH=$PATH:~/Carp/bin/```
 
 Carp is developed on OSX 10.10 but Linux works too. More platforms are coming soon, Windows is being worked on. There are a few dependencies that have to be installed:
+ * pkg-config
  * libffi
  * glfw3
  * rlwrap
