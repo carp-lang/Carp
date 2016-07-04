@@ -11,4 +11,3 @@ Obj *obj_to_string_not_prn(Process *process, const Obj *o);
 
 void obj_print(Process *process, Obj *o);
 void obj_print_not_prn(Process *process, Obj *o);
-

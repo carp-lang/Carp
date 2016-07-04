@@ -15,8 +15,8 @@ bool is_ok_in_symbol(char c, bool initial) {
   else if(c == '\'' && initial) {
     return true;
   }
-  else if(c == '!' || c == '?' || c == '<' || c == '>' || c == '=' || c == '%' || 
-	  c == '+' || c == '*' || c == '/' || c == '-' || c == '_' || c == '#') {
+  else if(c == '!' || c == '?' || c == '<' || c == '>' || c == '=' || c == '%' ||
+          c == '+' || c == '*' || c == '/' || c == '-' || c == '_' || c == '#') {
     return true;
   }
   else if(isalpha(c) || isdigit(c)) {
@@ -74,13 +74,13 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     while(1) {
       skip_whitespace(s);
       if(CURRENT == '\0') {
-	printf("Missing parenthesis at the end.\n");
-	print_read_pos();
-	return nil;
+        printf("Missing parenthesis at the end.\n");
+        print_read_pos();
+        return nil;
       }
       if(CURRENT == ')') {
-	read_pos++;
-	break;
+        read_pos++;
+        break;
       }
       Obj *o = read_internal(process, env, s, filename);
       Obj *new = obj_new_cons(NULL, NULL);
@@ -91,7 +91,7 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     return list;
   }
   else if(CURRENT == '[') {
-    //const int max_count = 512; // MSVC thinks that this is not a constant. What the ...
+//const int max_count = 512; // MSVC thinks that this is not a constant. What the ...
 #define MAX_COUNT 512
     Obj *temp[MAX_COUNT];
     int count = 0;
@@ -102,24 +102,24 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     while(1) {
       skip_whitespace(s);
       if(CURRENT == '\0') {
-	printf("Missing ']' at the end of array.\n");
-	print_read_pos();
-	return nil;
+        printf("Missing ']' at the end of array.\n");
+        print_read_pos();
+        return nil;
       }
       if(CURRENT == ']') {
-	read_pos++;
-	break;
+        read_pos++;
+        break;
       }
       Obj *o = read_internal(process, env, s, filename);
       temp[count] = o;
       count++;
       if(count >= MAX_COUNT) {
-	eval_error = obj_new_string("Can't read more than 512 values in literal. Please talk to the creator of this language about this.");
+        eval_error = obj_new_string("Can't read more than 512 values in literal. Please talk to the creator of this language about this.");
       }
     }
 
     Obj *new_array = obj_new_array(count);
-    for(int i = 0; i <  count; i++) {
+    for(int i = 0; i < count; i++) {
       new_array->array[i] = temp[i];
     }
     obj_set_line_info(process, new_array, line, pos, filename);
@@ -128,7 +128,7 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
   else if(CURRENT == '{') {
     int line = read_line_nr;
     int pos = read_line_pos;
-    
+
     Obj *list = obj_new_cons(NULL, NULL);
     obj_set_line_info(process, list, read_line_nr, read_line_pos, filename);
     Obj *prev = list;
@@ -136,13 +136,13 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     while(1) {
       skip_whitespace(s);
       if(CURRENT == '\0') {
-	printf("Missing '}' at the end.\n");
-	print_read_pos();
-	return nil;
+        printf("Missing '}' at the end.\n");
+        print_read_pos();
+        return nil;
       }
       if(CURRENT == '}') {
-	read_pos++;
-	break;
+        read_pos++;
+        break;
       }
       Obj *o = read_internal(process, env, s, filename);
       Obj *new = obj_new_cons(NULL, NULL);
@@ -190,19 +190,19 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
       scratch[i++] = CURRENT;
       read_pos++;
       if(CURRENT == '.' && !has_period) {
-	scratch[i++] = CURRENT;
-	has_period = true;
-	read_pos++;
+        scratch[i++] = CURRENT;
+        has_period = true;
+        read_pos++;
       }
       if(CURRENT == 'f') {
-	is_float = true;
-	read_pos++;
-	break;
+        is_float = true;
+        read_pos++;
+        break;
       }
       if(CURRENT == 'd') {
-	is_double = true;
-	read_pos++;
-	break;
+        is_double = true;
+        read_pos++;
+        break;
       }
     }
     scratch[i] = '\0';
@@ -211,7 +211,7 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
       Obj *new_double = obj_new_double(x);
       obj_set_line_info(process, new_double, line, pos, filename);
       return new_double;
-    } 
+    }
     else if(is_float) {
       float x = (float)atof(scratch) * negator;
       Obj *new_float = obj_new_float(x);
@@ -255,7 +255,8 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
       Obj *cons2 = obj_new_cons(sym, nil);
       Obj *cons1 = obj_new_cons(obj_new_symbol("dequote-splicing"), cons2);
       return cons1;
-    } else {
+    }
+    else {
       Obj *sym = read_internal(process, env, s, filename);
       Obj *cons2 = obj_new_cons(sym, nil);
       Obj *cons1 = obj_new_cons(obj_new_symbol("dequote"), cons2);
@@ -275,9 +276,9 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     Obj *value = read_internal(process, env, s, filename);
     Obj *form = read_internal(process, env, s, filename);
     Obj *head = obj_new_symbol("meta-set!");
-    
+
     Obj *new_form = obj_list(head, form, key, value);
-    
+
     return new_form;
   }
   else if(is_ok_in_symbol(CURRENT, true)) {
@@ -318,30 +319,30 @@ Obj *read_internal(Process *process, Obj *env, char *s, Obj *filename) {
     int i = 0;
     while(CURRENT != '"') {
       if(CURRENT == '\0') {
-	printf("Missing quote in string\n");
-	break;
+        printf("Missing quote in string\n");
+        break;
       }
       else if(CURRENT == '\\') {
-	read_pos++;
-	if(CURRENT == 'n') {
-	  str[i++] = '\n';
-	}
-	else if(CURRENT == '"') {
-	  str[i++] = '"';
-	}
-	else if(CURRENT == '\\') {
-	  str[i++] = '\\';
-	}
-	else {
-	  printf("Can't read '%c' after backslash (%d)\n", CURRENT, CURRENT);
-	  read_pos++;
-	  return nil;
-	}
-	read_pos++;
+        read_pos++;
+        if(CURRENT == 'n') {
+          str[i++] = '\n';
+        }
+        else if(CURRENT == '"') {
+          str[i++] = '"';
+        }
+        else if(CURRENT == '\\') {
+          str[i++] = '\\';
+        }
+        else {
+          printf("Can't read '%c' after backslash (%d)\n", CURRENT, CURRENT);
+          read_pos++;
+          return nil;
+        }
+        read_pos++;
       }
       else {
-	str[i++] = CURRENT;
-	read_pos++;
+        str[i++] = CURRENT;
+        read_pos++;
       }
     }
     str[i] = '\0';
