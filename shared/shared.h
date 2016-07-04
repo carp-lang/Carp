@@ -10,7 +10,7 @@
 #include "types.h"
 #include "platform.h"
 
-#define and &&
+#define and&&
 
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)
@@ -19,10 +19,10 @@
 #endif
 
 typedef int unknown;
-typedef void* typevar;
-typedef void* any;
+typedef void *typevar;
+typedef void *any;
 
-typedef char* string;
+typedef char *string;
 
 EXPORT int intsqrt(int x) { return (int)sqrt(x); }
 EXPORT float itof(int x) { return (float)x; }
@@ -136,25 +136,25 @@ EXPORT void sleep(int millis) {
 #endif
 
 EXPORT CARP_PLATFORM platform() {
-	return carp_get_platform();
+  return carp_get_platform();
 }
 
 EXPORT string get_normal_console_color() {
-  #ifdef WIN32
+#ifdef WIN32
   return strdup("");
-  #else
+#else
   return strdup("\e[0m");
-  #endif
+#endif
 }
 
 EXPORT string get_console_color(int x) {
-  #ifdef WIN32
+#ifdef WIN32
   return strdup("");
-  #else
+#else
   char buffer[16];
   snprintf(buffer, 16, "\e[3%dm", x);
   return strdup(buffer);
-  #endif
+#endif
 }
 
 EXPORT Array *chars(string s) {
@@ -165,7 +165,7 @@ EXPORT Array *chars(string s) {
 }
 
 EXPORT string string_join(string separator, Array *array_of_strings) {
-  string *casted = (string*)array_of_strings->data;
+  string *casted = (string *)array_of_strings->data;
   int separator_len = strlen(separator);
   int total_length = 0;
   int count = array_of_strings->count;

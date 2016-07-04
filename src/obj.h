@@ -53,7 +53,7 @@ typedef struct Obj {
     // Cons cells
     struct {
       struct Obj *car;
-      struct Obj *cdr;      
+      struct Obj *cdr;
     };
     // Integers
     int i;
@@ -75,12 +75,12 @@ typedef struct Obj {
       struct Obj *bindings;
     };
     // Primitive C function pointer f(process, arglist, argcount)
-    struct Obj* (*primop)(struct Process*, struct Obj**, int);
+    struct Obj *(*primop)(struct Process *, struct Obj **, int);
     // Libffi function
     struct {
       ffi_cif *cif;
       VoidFn funptr;
-      char* name;
+      char *name;
       struct Obj *arg_types;
       struct Obj *return_type;
     };
@@ -140,7 +140,7 @@ typedef struct {
   int function_trace_pos;
 
   Obj *final_result;
-  
+
   bool dead;
   struct Obj *global_env;
 
@@ -149,7 +149,7 @@ typedef struct {
   int frame;
 } Process;
 
-typedef Obj* (*Primop)(Process*, Obj**, int);
+typedef Obj *(*Primop)(Process *, Obj **, int);
 
 Obj *obj_new_cons(Obj *car, Obj *cdr);
 Obj *obj_new_int(int i);
@@ -162,7 +162,7 @@ Obj *obj_new_primop(Primop p);
 Obj *obj_new_dylib(void *dylib);
 Obj *obj_new_ptr(void *ptr);
 Obj *obj_new_ptr_to_global(void *ptr);
-Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
+Obj *obj_new_ffi(const char *name, ffi_cif *cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj);
 Obj *obj_new_lambda(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_macro(Obj *params, Obj *body, Obj *env, Obj *code);
 Obj *obj_new_environment(Obj *parent);
@@ -176,7 +176,7 @@ int obj_hash(Process *process, Obj *o);
 bool obj_eq(Process *process, Obj *a, Obj *b);
 
 Obj *obj_list_internal(Obj *objs[]);
-#define obj_list(...) obj_list_internal((Obj*[]){__VA_ARGS__, NULL});
+#define obj_list(...) obj_list_internal((Obj *[]){__VA_ARGS__, NULL});
 
 void obj_set_line_info(Process *process, Obj *o, int line, int pos, Obj *filename);
 

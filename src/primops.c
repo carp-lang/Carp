@@ -25,57 +25,70 @@ void register_primop(Process *process, char *name, Primop primop) {
 
 Obj *open_file(Process *process, const char *filename) {
   assert(filename);
-  
-  char * buffer = 0;
+
+  char *buffer = 0;
   long length;
-  FILE * f = fopen (filename, "rb");
+  FILE *f = fopen(filename, "rb");
 
   if(f) {
-    fseek (f, 0, SEEK_END);
-    length = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    buffer = malloc (length + 1);
-    if (buffer) {
-      fread (buffer, 1, length, f);
+    fseek(f, 0, SEEK_END);
+    length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    buffer = malloc(length + 1);
+    if(buffer) {
+      fread(buffer, 1, length, f);
       buffer[length] = '\0';
     }
-    fclose (f);
-  } else {
-    set_error_and_return("Failed to open file: ", obj_new_string((char*)filename));
+    fclose(f);
+  }
+  else {
+    set_error_and_return("Failed to open file: ", obj_new_string((char *)filename));
   }
 
-  if (buffer) {
+  if(buffer) {
     return obj_new_string(buffer);
-  } else {
-    set_error_and_return("Failed to open buffer from file: ", obj_new_string((char*)filename));
+  }
+  else {
+    set_error_and_return("Failed to open buffer from file: ", obj_new_string((char *)filename));
   }
 }
 
 Obj *save_file(Process *process, const char *filename, const char *contents) {
-  FILE * f = fopen (filename, "w");
+  FILE *f = fopen(filename, "w");
   if(f) {
     fprintf(f, "%s", contents);
     fclose(f);
     return nil;
-  } else {
-    set_error_and_return("Failed to save file: ", obj_new_string((char*)filename));
+  }
+  else {
+    set_error_and_return("Failed to save file: ", obj_new_string((char *)filename));
   }
 }
 
-Obj *p_open_file(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { return nil; }
-  if(args[0]->tag != 'S') { return nil; }
+Obj *p_open_file(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    return nil;
+  }
+  if(args[0]->tag != 'S') {
+    return nil;
+  }
   return open_file(process, args[0]->s);
 }
 
-Obj *p_save_file(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { return nil; }
-  if(args[0]->tag != 'S') { return nil; }
-  if(args[1]->tag != 'S') { return nil; }
+Obj *p_save_file(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    return nil;
+  }
+  if(args[0]->tag != 'S') {
+    return nil;
+  }
+  if(args[1]->tag != 'S') {
+    return nil;
+  }
   return save_file(process, args[0]->s, args[1]->s);
 }
 
-Obj *p_add(Process *process, Obj** args, int arg_count) {
+Obj *p_add(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0 || args[0]->tag == 'I') {
     int sum = 0;
     for(int i = 0; i < arg_count; i++) {
@@ -115,9 +128,11 @@ Obj *p_add(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_sub(Process *process, Obj** args, int arg_count) {
+Obj *p_sub(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0 || args[0]->tag == 'I') {
-    if(arg_count == 1) { return obj_new_int(-args[0]->i); }
+    if(arg_count == 1) {
+      return obj_new_int(-args[0]->i);
+    }
     int sum = args[0]->i;
     for(int i = 1; i < arg_count; i++) {
       sum -= args[i]->i;
@@ -150,11 +165,11 @@ Obj *p_sub(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_mul(Process *process, Obj** args, int arg_count) {
+Obj *p_mul(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0) {
     return obj_new_int(1);
   }
-  
+
   if(args[0]->tag == 'I') {
     int prod = args[0]->i;
     for(int i = 1; i < arg_count; i++) {
@@ -182,11 +197,11 @@ Obj *p_mul(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_div(Process *process, Obj** args, int arg_count) {
+Obj *p_div(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0) {
     return obj_new_int(1);
   }
-  
+
   if(args[0]->tag == 'I') {
     int prod = args[0]->i;
     for(int i = 1; i < arg_count; i++) {
@@ -225,7 +240,7 @@ Obj *p_div(Process *process, Obj** args, int arg_count) {
 /*   return obj_new_int(prod); */
 /* } */
 
-Obj *p_eq(Process *process, Obj** args, int arg_count) {
+Obj *p_eq(Process *process, Obj **args, int arg_count) {
   if(arg_count < 2) {
     printf("The function '=' requires at least 2 arguments.\n");
     return nil;
@@ -238,7 +253,7 @@ Obj *p_eq(Process *process, Obj** args, int arg_count) {
   return lisp_true;
 }
 
-Obj *p_list(Process *process, Obj** args, int arg_count) {
+Obj *p_list(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0) {
     return nil; // TODO: don't use a hack like this
   }
@@ -257,7 +272,7 @@ Obj *p_list(Process *process, Obj** args, int arg_count) {
   return first;
 }
 
-Obj *p_array(Process *process, Obj** args, int arg_count) {
+Obj *p_array(Process *process, Obj **args, int arg_count) {
   Obj *a = obj_new_array(arg_count);
   for(int i = 0; i < arg_count; i++) {
     a->array[i] = args[i];
@@ -265,7 +280,7 @@ Obj *p_array(Process *process, Obj** args, int arg_count) {
   return a;
 }
 
-Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
+Obj *p_dictionary(Process *process, Obj **args, int arg_count) {
   Obj *e = obj_new_environment(NULL);
 
   //printf("creating dictionary with %d args\n", arg_count);
@@ -294,15 +309,15 @@ Obj *p_dictionary(Process *process, Obj** args, int arg_count) {
     }
     e->bindings = first;
   }
-  
+
   //sprintf("Created dictionary:\n%s\n", obj_to_string(process, e)->s);
 
   e->hash = obj_hash(process, e);
-  
+
   return e;
 }
 
-Obj *p_str(Process *process, Obj** args, int arg_count) {
+Obj *p_str(Process *process, Obj **args, int arg_count) {
   Obj *s = obj_new_string("");
   shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
@@ -318,7 +333,7 @@ Obj *p_str(Process *process, Obj** args, int arg_count) {
   return s;
 }
 
-Obj *p_str_append_bang(Process *process, Obj** args, int arg_count) {
+Obj *p_str_append_bang(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     eval_error = obj_new_string("'str-append!' takes exactly two arguments");
     return nil;
@@ -336,7 +351,7 @@ Obj *p_str_append_bang(Process *process, Obj** args, int arg_count) {
   return s;
 }
 
-Obj *p_join(Process *process, Obj** args, int arg_count) {
+Obj *p_join(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     eval_error = obj_new_string("'join' takes exactly two arguments");
     return nil;
@@ -345,10 +360,10 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
     eval_error = obj_new_string("First arg to 'join' must be a string");
     return nil;
   }
-  
+
   if(args[1]->tag == 'C') {
     Obj *s = obj_new_string("");
-    shadow_stack_push(process, s);  
+    shadow_stack_push(process, s);
     Obj *p = args[1];
     while(p && p->car) {
       obj_string_mut_append(s, obj_to_string_not_prn(process, p->car)->s);
@@ -362,7 +377,7 @@ Obj *p_join(Process *process, Obj** args, int arg_count) {
   }
   else if(args[1]->tag == 'A') {
     Obj *s = obj_new_string("");
-    shadow_stack_push(process, s);  
+    shadow_stack_push(process, s);
     Obj *a = args[1];
     for(int i = 0; i < a->count; i++) {
       obj_string_mut_append(s, obj_to_string_not_prn(process, a->array[i])->s);
@@ -399,66 +414,69 @@ char *str_replace(const char *str, const char *old, const char *new) {
   size_t cpylen, orglen, retlen, newlen, oldlen = strlen(old);
 
   /* Find all matches and cache their positions. */
-  while ((pstr2 = strstr(pstr, old)) != NULL) {
+  while((pstr2 = strstr(pstr, old)) != NULL) {
     count++;
 
     /* Increase the cache size when necessary. */
-    if (cache_sz < count) {
+    if(cache_sz < count) {
       cache_sz += cache_sz_inc;
       pos_cache = realloc(pos_cache, sizeof(*pos_cache) * cache_sz);
-      if (pos_cache == NULL) {
+      if(pos_cache == NULL) {
         goto end_repl_str;
       }
       cache_sz_inc *= cache_sz_inc_factor;
-      if (cache_sz_inc > cache_sz_inc_max) {
+      if(cache_sz_inc > cache_sz_inc_max) {
         cache_sz_inc = cache_sz_inc_max;
       }
     }
 
-    pos_cache[count-1] = pstr2 - str;
+    pos_cache[count - 1] = pstr2 - str;
     pstr = pstr2 + oldlen;
   }
 
   orglen = pstr - str + strlen(pstr);
 
   /* Allocate memory for the post-replacement string. */
-  if (count > 0) {
+  if(count > 0) {
     newlen = strlen(new);
     retlen = orglen + (newlen - oldlen) * count;
-  } else        retlen = orglen;
+  }
+  else
+    retlen = orglen;
   ret = malloc(retlen + 1);
-  if (ret == NULL) {
+  if(ret == NULL) {
     goto end_repl_str;
   }
 
-  if (count == 0) {
+  if(count == 0) {
     /* If no matches, then just duplicate the string. */
     strcpy(ret, str);
-  } else {
+  }
+  else {
     /* Otherwise, duplicate the string whilst performing
      * the replacements using the position cache. */
     pret = ret;
     memcpy(pret, str, pos_cache[0]);
     pret += pos_cache[0];
-    for (i = 0; i < count; i++) {
+    for(i = 0; i < count; i++) {
       memcpy(pret, new, newlen);
       pret += newlen;
       pstr = str + pos_cache[i] + oldlen;
-      cpylen = (i == count-1 ? orglen : pos_cache[i+1]) - pos_cache[i] - oldlen;
+      cpylen = (i == count - 1 ? orglen : pos_cache[i + 1]) - pos_cache[i] - oldlen;
       memcpy(pret, pstr, cpylen);
       pret += cpylen;
     }
     ret[retlen] = '\0';
   }
 
- end_repl_str:
+end_repl_str:
   /* Free the cache and return the post-replacement string,
    * which will be NULL in the event of an error. */
   free(pos_cache);
   return ret;
 }
 
-Obj *p_str_replace(Process *process, Obj** args, int arg_count) {
+Obj *p_str_replace(Process *process, Obj **args, int arg_count) {
   if(arg_count != 3) {
     eval_error = obj_new_string("'str-replace' takes exactly three arguments");
     return nil;
@@ -484,7 +502,7 @@ Obj *p_str_replace(Process *process, Obj** args, int arg_count) {
   return obj_new_string(replaced);
 }
 
-Obj *p_copy(Process *process, Obj** args, int arg_count) {
+Obj *p_copy(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("'copy' takes exactly one argument");
     return nil;
@@ -494,20 +512,20 @@ Obj *p_copy(Process *process, Obj** args, int arg_count) {
   if(!a) {
     set_error_return_nil("Trying to copy NULL", nil);
   }
-  
+
   //printf("Will make a copy of: %s\n", obj_to_string(a)->s);
   Obj *b = obj_copy(process, a);
   return b;
 }
 
-Obj *p_print(Process *process, Obj** args, int arg_count) {
+Obj *p_print(Process *process, Obj **args, int arg_count) {
   for(int i = 0; i < arg_count; i++) {
     obj_print_not_prn(process, args[i]);
   }
   return nil;
 }
 
-Obj *p_prn(Process *process, Obj** args, int arg_count) {
+Obj *p_prn(Process *process, Obj **args, int arg_count) {
   Obj *s = obj_new_string("");
   shadow_stack_push(process, s);
   for(int i = 0; i < arg_count; i++) {
@@ -524,7 +542,7 @@ Obj *p_prn(Process *process, Obj** args, int arg_count) {
   return s;
 }
 
-Obj *p_println(Process *process, Obj** args, int arg_count) {
+Obj *p_println(Process *process, Obj **args, int arg_count) {
   for(int i = 0; i < arg_count; i++) {
     obj_print_not_prn(process, args[i]);
     /* if(i < arg_count - 1) { */
@@ -535,20 +553,30 @@ Obj *p_println(Process *process, Obj** args, int arg_count) {
   return nil;
 }
 
-Obj *p_system(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'system'\n"); return nil; }
-  if(args[0]->tag != 'S') { printf("'system' takes a string as its argument\n"); return nil; }
+Obj *p_system(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    printf("Wrong argument count to 'system'\n");
+    return nil;
+  }
+  if(args[0]->tag != 'S') {
+    printf("'system' takes a string as its argument\n");
+    return nil;
+  }
   system(args[0]->s);
   return nil;
 }
 
-Obj *p_get(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'get'\n"); return nil; }
+Obj *p_get(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("Wrong argument count to 'get'\n");
+    return nil;
+  }
   if(args[0]->tag == 'E') {
     Obj *o = env_lookup(process, args[0], args[1]);
     if(o) {
       return o;
-    } else {
+    }
+    else {
       Obj *s = obj_new_string("Can't get key '");
       shadow_stack_push(process, s);
       obj_string_mut_append(s, obj_to_string(process, args[1])->s);
@@ -588,18 +616,25 @@ Obj *p_get(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_get_maybe(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'get-maybe'\n"); return nil; }
+Obj *p_get_maybe(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("Wrong argument count to 'get-maybe'\n");
+    return nil;
+  }
   if(args[0]->tag == 'E') {
     Obj *o = env_lookup(process, args[0], args[1]);
     if(o) {
       return o;
-    } else {
+    }
+    else {
       return nil;
     }
   }
   else if(args[0]->tag == 'C') {
-    if(args[1]->tag != 'I') { eval_error = obj_new_string("get-maybe requires arg 1 to be an integer\n"); return nil; }
+    if(args[1]->tag != 'I') {
+      eval_error = obj_new_string("get-maybe requires arg 1 to be an integer\n");
+      return nil;
+    }
     int i = 0;
     int n = args[1]->i;
     Obj *p = args[0];
@@ -617,8 +652,11 @@ Obj *p_get_maybe(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_dict_set_bang(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 3) { printf("Wrong argument count to 'dict-set!'\n"); return nil; }
+Obj *p_dict_set_bang(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 3) {
+    printf("Wrong argument count to 'dict-set!'\n");
+    return nil;
+  }
   if(args[0]->tag == 'E') {
     return env_assoc(process, args[0], args[1], args[2]);
   }
@@ -650,8 +688,11 @@ Obj *p_dict_set_bang(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_dict_remove_bang(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'dict-remove!'\n"); return nil; }
+Obj *p_dict_remove_bang(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("Wrong argument count to 'dict-remove!'\n");
+    return nil;
+  }
   if(args[0]->tag != 'E') {
     printf("'dict-remove!' requires arg 0 to be a dictionary: %s\n", obj_to_string(process, args[0])->s);
     return nil;
@@ -675,11 +716,11 @@ Obj *p_dict_remove_bang(Process *process, Obj** args, int arg_count) {
       p = p->cdr;
     }
   }
-  
+
   return args[0];
 }
 
-Obj *p_first(Process *process, Obj** args, int arg_count) {
+Obj *p_first(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     set_error_return_nil("Wrong argument count to 'first'. ", nil);
   }
@@ -693,8 +734,11 @@ Obj *p_first(Process *process, Obj** args, int arg_count) {
   return args[0]->car;
 }
 
-Obj *p_rest(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'rest'\n"); return nil; }
+Obj *p_rest(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    printf("Wrong argument count to 'rest'\n");
+    return nil;
+  }
   if(args[0]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'rest' requires arg 0 to be a list: %s\n", obj_to_string(process, args[0])->s);
@@ -708,8 +752,11 @@ Obj *p_rest(Process *process, Obj** args, int arg_count) {
   return args[0]->cdr;
 }
 
-Obj *p_cons(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'cons'\n"); return nil; }
+Obj *p_cons(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("Wrong argument count to 'cons'\n");
+    return nil;
+  }
   if(args[1]->tag != 'C') {
     char buffer[512];
     snprintf(buffer, 512, "'cons' requires arg 1 to be a list: %s\n", obj_to_string(process, args[1])->s);
@@ -720,12 +767,20 @@ Obj *p_cons(Process *process, Obj** args, int arg_count) {
   return new_cons;
 }
 
-Obj *p_cons_last(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("Wrong argument count to 'cons'\n"); return nil; }
-  if(args[0]->tag != 'C') { printf("'rest' requires arg 0 to be a list: %s\n", obj_to_string(process, args[1])->s); return nil; }
+Obj *p_cons_last(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("Wrong argument count to 'cons'\n");
+    return nil;
+  }
+  if(args[0]->tag != 'C') {
+    printf("'rest' requires arg 0 to be a list: %s\n", obj_to_string(process, args[1])->s);
+    return nil;
+  }
   Obj *new_list = obj_copy(process, args[0]);
   Obj *p = new_list;
-  while(p->cdr) { p = p->cdr; }
+  while(p->cdr) {
+    p = p->cdr;
+  }
   Obj *last = p;
   Obj *new_nil = obj_new_cons(NULL, NULL);
   last->car = args[1];
@@ -733,13 +788,16 @@ Obj *p_cons_last(Process *process, Obj** args, int arg_count) {
   return new_list;
 }
 
-Obj *p_concat(Process *process, Obj** args, int arg_count) {
+Obj *p_concat(Process *process, Obj **args, int arg_count) {
   if(arg_count == 0) {
     return nil;
   }
-  
+
   for(int i = 0; i < arg_count; i++) {
-    if(args[i]->tag != 'C') { eval_error = obj_new_string("'concat' requires all args to be lists\n"); return nil; }
+    if(args[i]->tag != 'C') {
+      eval_error = obj_new_string("'concat' requires all args to be lists\n");
+      return nil;
+    }
   }
 
   int i = 0;
@@ -752,14 +810,15 @@ Obj *p_concat(Process *process, Obj** args, int arg_count) {
     }
     new = args[i];
   }
-  
+
   Obj *last = new;
 
   for(i++; i < arg_count; i++) {
     //printf("Will concat %s\n", obj_to_string(args[i])->s);
     if(!last->cdr) {
       // continue
-    } else {
+    }
+    else {
       while(last->cdr->cdr) {
         last = last->cdr;
       }
@@ -772,9 +831,10 @@ Obj *p_concat(Process *process, Obj** args, int arg_count) {
   return new;
 }
 
-Obj *p_nth(Process *process, Obj** args, int arg_count) {
+Obj *p_nth(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
-    eval_error = obj_new_string("Wrong argument count to 'nth'\n"); return nil;
+    eval_error = obj_new_string("Wrong argument count to 'nth'\n");
+    return nil;
   }
   if(args[1]->tag != 'I') {
     set_error_return_nil("'nth' requires arg 1 to be an integer: ", args[1]);
@@ -811,8 +871,10 @@ Obj *p_nth(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_count(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { set_error_return_nil("Wrong argument count to 'count'. ", nil); }
+Obj *p_count(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    set_error_return_nil("Wrong argument count to 'count'. ", nil);
+  }
   if(args[0]->tag == 'C') {
     int i = 0;
     Obj *p = args[0];
@@ -834,7 +896,7 @@ bool is_callable(Obj *obj) {
   return obj->tag == 'P' || obj->tag != 'L' || obj->tag != 'F';
 }
 
-Obj *p_map(Process *process, Obj** args, int arg_count) {
+Obj *p_map(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     eval_error = obj_new_string("Wrong argument count to 'map'.");
     return nil;
@@ -850,7 +912,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car) {
-      Obj *arg[1] = { p->car };
+      Obj *arg[1] = {p->car};
       apply(process, f, arg, 1);
       prev->car = stack_pop(process);
       Obj *new = obj_new_cons(NULL, NULL);
@@ -871,7 +933,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
     Obj *new_a = obj_new_array(a->count);
     shadow_stack_push(process, new_a);
     for(int i = 0; i < a->count; i++) {
-      Obj *arg[1] = { a->array[i] };
+      Obj *arg[1] = {a->array[i]};
       apply(process, f, arg, 1);
       new_a->array[i] = stack_pop(process);
     }
@@ -890,22 +952,22 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
       for(int i = 0; i < a->count; i++) {
         Obj *arg[1];
         if(obj_eq(process, inner_type, type_string)) {
-          arg[0] = obj_new_string(((char**)(a->data))[i]);
+          arg[0] = obj_new_string(((char **)(a->data))[i]);
         }
         else if(obj_eq(process, inner_type, type_char)) {
-          arg[0] = obj_new_char(((char*)(a->data))[i]);
+          arg[0] = obj_new_char(((char *)(a->data))[i]);
         }
         else if(obj_eq(process, inner_type, type_float)) {
-          arg[0] = obj_new_float(((float*)(a->data))[i]);
+          arg[0] = obj_new_float(((float *)(a->data))[i]);
         }
         else if(obj_eq(process, inner_type, type_double)) {
-          arg[0] = obj_new_double(((float*)(a->data))[i]);
+          arg[0] = obj_new_double(((float *)(a->data))[i]);
         }
         else if(obj_eq(process, inner_type, type_int)) {
-          arg[0] = obj_new_int(((int*)(a->data))[i]);
+          arg[0] = obj_new_int(((int *)(a->data))[i]);
         }
         else {
-          arg[0] = obj_new_ptr(((void**)(a->data))[i]);
+          arg[0] = obj_new_ptr(((void **)(a->data))[i]);
           //set_error_return_nil("Map over void_ptr to array can't handle type: ", inner_type);
         }
         apply(process, f, arg, 1);
@@ -919,7 +981,7 @@ Obj *p_map(Process *process, Obj** args, int arg_count) {
   set_error_return_nil("'map' requires arg 1 to be a list or array: ", args[1]);
 }
 
-Obj *p_map2(Process *process, Obj** args, int arg_count) {
+Obj *p_map2(Process *process, Obj **args, int arg_count) {
   if(arg_count != 3) {
     set_error_return_nil("Wrong argument count to 'map2'. ", nil);
   }
@@ -935,7 +997,7 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car && p2 && p2->car) {
-      Obj *argz[2] = { p->car, p2->car };
+      Obj *argz[2] = {p->car, p2->car};
       apply(process, f, argz, 2);
       prev->car = stack_pop(process);
       Obj *new = obj_new_cons(NULL, NULL);
@@ -962,7 +1024,7 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
     Obj *new_a = obj_new_array(a->count);
     shadow_stack_push(process, new_a);
     for(int i = 0; i < a->count; i++) {
-      Obj *fargs[2] = { a->array[i], b->array[i] };
+      Obj *fargs[2] = {a->array[i], b->array[i]};
       apply(process, f, fargs, 2);
       new_a->array[i] = stack_pop(process);
     }
@@ -975,15 +1037,21 @@ Obj *p_map2(Process *process, Obj** args, int arg_count) {
     obj_string_mut_append(eval_error, "\n");
     obj_string_mut_append(eval_error, obj_to_string(process, args[2])->s);
     return nil;
-  }  
+  }
 }
 
-Obj *p_keys(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'keys'\n"); return nil; }
-  if(args[0]->tag != 'E') { printf("'keys' requires arg 0 to be a dictionary.\n"); return nil; }
+Obj *p_keys(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    printf("Wrong argument count to 'keys'\n");
+    return nil;
+  }
+  if(args[0]->tag != 'E') {
+    printf("'keys' requires arg 0 to be a dictionary.\n");
+    return nil;
+  }
   Obj *p = args[0]->bindings;
   Obj *list = obj_new_cons(NULL, NULL);
-  Obj *prev = list; 
+  Obj *prev = list;
   while(p && p->car) {
     Obj *new = obj_new_cons(NULL, NULL);
     prev->car = p->car->car;
@@ -994,12 +1062,18 @@ Obj *p_keys(Process *process, Obj** args, int arg_count) {
   return list;
 }
 
-Obj *p_values(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("Wrong argument count to 'values'\n"); return nil; }
-  if(args[0]->tag != 'E') { printf("'values' requires arg 0 to be a dictionary.\n"); return nil; }
+Obj *p_values(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    printf("Wrong argument count to 'values'\n");
+    return nil;
+  }
+  if(args[0]->tag != 'E') {
+    printf("'values' requires arg 0 to be a dictionary.\n");
+    return nil;
+  }
   Obj *p = args[0]->bindings;
   Obj *list = obj_new_cons(NULL, NULL);
-  Obj *prev = list; 
+  Obj *prev = list;
   while(p && p->car) {
     Obj *new = obj_new_cons(NULL, NULL);
     prev->car = p->car->cdr;
@@ -1010,8 +1084,11 @@ Obj *p_values(Process *process, Obj** args, int arg_count) {
   return list;
 }
 
-Obj *p_signature(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'signature'"); return nil; }
+Obj *p_signature(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'signature'");
+    return nil;
+  }
   if(args[0]->tag == 'F') {
     Obj *a = obj_copy(process, args[0]->arg_types);
     Obj *b = args[0]->return_type;
@@ -1031,21 +1108,29 @@ Obj *p_signature(Process *process, Obj** args, int arg_count) {
     }
   }
   else {
-    eval_error = obj_new_string("'signature' requires arg 0 to be some kind of function."); return nil;
+    eval_error = obj_new_string("'signature' requires arg 0 to be some kind of function.");
+    return nil;
   }
 }
 
-Obj *p_null_predicate(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'null?'"); return nil; }
-  if(args[0]->tag != 'Q') { eval_error = obj_new_string("Argument to 'null?' must be void pointer."); return nil; }
+Obj *p_null_predicate(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'null?'");
+    return nil;
+  }
+  if(args[0]->tag != 'Q') {
+    eval_error = obj_new_string("Argument to 'null?' must be void pointer.");
+    return nil;
+  }
   if(args[0]->void_ptr == NULL) {
     return lisp_true;
-  } else {
+  }
+  else {
     return lisp_false;
   }
 }
 
-Obj *p_filter(Process *process, Obj** args, int arg_count) {
+Obj *p_filter(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     set_error_return_nil("Wrong argument count to 'filter'.", nil);
   }
@@ -1060,7 +1145,7 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
     Obj *prev = list;
     int shadow_count = 0;
     while(p && p->car) {
-      Obj *arg[1] = { p->car };
+      Obj *arg[1] = {p->car};
       apply(process, f, arg, 1);
       Obj *result = stack_pop(process);
       if(is_true(result)) {
@@ -1081,10 +1166,10 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
   }
   else if(args[1]->tag == 'A') {
     Obj *a = args[1];
-    Obj **temp = malloc(sizeof(Obj*) * a->count);
+    Obj **temp = malloc(sizeof(Obj *) * a->count);
     int count = 0;
     for(int i = 0; i < a->count; i++) {
-      Obj *arg[1] = { a->array[i] };
+      Obj *arg[1] = {a->array[i]};
       apply(process, f, arg, 1);
       Obj *result = stack_pop(process);
       if(is_true(result)) {
@@ -1104,17 +1189,20 @@ Obj *p_filter(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_reduce(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 3) { printf("Wrong argument count to 'reduce'\n"); return nil; }
+Obj *p_reduce(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 3) {
+    printf("Wrong argument count to 'reduce'\n");
+    return nil;
+  }
   if(!is_callable(args[0])) {
     set_error_return_nil("'reduce' requires arg 0 to be a function or lambda: %s (%c)\n", args[0]);
   }
   Obj *f = args[0];
   Obj *total = args[1];
   if(args[2]->tag == 'C') {
-    Obj *p = args[2]; 
+    Obj *p = args[2];
     while(p && p->car) {
-      Obj *args[2] = { total, p->car };
+      Obj *args[2] = {total, p->car};
       apply(process, f, args, 2);
       total = stack_pop(process);
       p = p->cdr;
@@ -1124,7 +1212,7 @@ Obj *p_reduce(Process *process, Obj** args, int arg_count) {
   else if(args[2]->tag == 'A') {
     Obj *a = args[2];
     for(int i = 0; i < a->count; i++) {
-      Obj *args[2] = { total, a->array[i] };
+      Obj *args[2] = {total, a->array[i]};
       apply(process, f, args, 2);
       total = stack_pop(process);
     }
@@ -1135,8 +1223,11 @@ Obj *p_reduce(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_apply(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 2) { printf("'apply' takes two arguments.\n"); return nil; }
+Obj *p_apply(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 2) {
+    printf("'apply' takes two arguments.\n");
+    return nil;
+  }
   if(args[0]->tag != 'P' && args[0]->tag != 'L' && args[0]->tag != 'F') {
     printf("'apply' requires arg 0 to be a function or lambda: %s (%c)\n", obj_to_string(process, args[0])->s, args[0]->tag);
     eval_error = obj_new_string("");
@@ -1155,7 +1246,7 @@ Obj *p_apply(Process *process, Obj** args, int arg_count) {
   }
   Obj **apply_args = NULL;
   if(apply_arg_count > 0) {
-    apply_args = malloc(sizeof(Obj*) * apply_arg_count);
+    apply_args = malloc(sizeof(Obj *) * apply_arg_count);
   }
   Obj *q = args[1];
   for(int i = 0; i < apply_arg_count; i++) {
@@ -1167,8 +1258,11 @@ Obj *p_apply(Process *process, Obj** args, int arg_count) {
   return stack_pop(process);
 }
 
-Obj *p_type(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { printf("'type' takes one argument.\n"); return nil; }
+Obj *p_type(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    printf("'type' takes one argument.\n");
+    return nil;
+  }
   if(args[0]->tag == 'S') {
     return type_string;
   }
@@ -1227,13 +1321,17 @@ Obj *p_type(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_lt(Process *process, Obj** args, int arg_count) {
-  if(arg_count == 0) { return lisp_true; }
+Obj *p_lt(Process *process, Obj **args, int arg_count) {
+  if(arg_count == 0) {
+    return lisp_true;
+  }
   if(args[0]->tag == 'I') {
     int smallest = args[0]->i;
     for(int i = 1; i < arg_count; i++) {
       assert_or_set_error_return_nil(args[i]->tag == 'I', "< for ints called with non-int: ", args[0]);
-      if(smallest >= args[i]->i) { return lisp_false; }
+      if(smallest >= args[i]->i) {
+        return lisp_false;
+      }
       smallest = args[i]->i;
     }
     return lisp_true;
@@ -1242,7 +1340,9 @@ Obj *p_lt(Process *process, Obj** args, int arg_count) {
     float smallest = args[0]->f32;
     for(int i = 1; i < arg_count; i++) {
       assert_or_set_error_return_nil(args[i]->tag == 'V', "< for floats called with non-float: ", args[0]);
-      if(smallest >= args[i]->f32) { return lisp_false; }
+      if(smallest >= args[i]->f32) {
+        return lisp_false;
+      }
       smallest = args[i]->f32;
     }
     return lisp_true;
@@ -1251,7 +1351,9 @@ Obj *p_lt(Process *process, Obj** args, int arg_count) {
     double smallest = args[0]->f64;
     for(int i = 1; i < arg_count; i++) {
       assert_or_set_error_return_nil(args[i]->tag == 'W', "< for doubles called with non-double: ", args[0]);
-      if(smallest >= args[i]->f64) { return lisp_false; }
+      if(smallest >= args[i]->f64) {
+        return lisp_false;
+      }
       smallest = args[i]->f64;
     }
     return lisp_true;
@@ -1271,12 +1373,15 @@ Obj *p_lt(Process *process, Obj** args, int arg_count) {
   }
 */
 
-Obj *p_now(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 0) { printf("Wrong argument count to 'now'\n"); return nil; }
+Obj *p_now(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 0) {
+    printf("Wrong argument count to 'now'\n");
+    return nil;
+  }
   return obj_new_int(carp_millitime());
 }
 
-Obj *p_name(Process *process, Obj** args, int arg_count) {
+Obj *p_name(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("Wrong arg count to 'name'.");
     return nil;
@@ -1292,7 +1397,7 @@ Obj *p_name(Process *process, Obj** args, int arg_count) {
   return obj_new_string(args[0]->s);
 }
 
-Obj *p_symbol(Process *process, Obj** args, int arg_count) {
+Obj *p_symbol(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("Wrong arg count to 'symbol'.");
     return nil;
@@ -1308,7 +1413,7 @@ Obj *p_symbol(Process *process, Obj** args, int arg_count) {
   return obj_new_symbol(args[0]->s);
 }
 
-Obj *p_keyword(Process *process, Obj** args, int arg_count) {
+Obj *p_keyword(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("Wrong arg count to 'keyword'.");
     return nil;
@@ -1324,33 +1429,43 @@ Obj *p_keyword(Process *process, Obj** args, int arg_count) {
   return obj_new_keyword(args[0]->s);
 }
 
-Obj *p_error(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'error'\n"); return nil; }
+Obj *p_error(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'error'\n");
+    return nil;
+  }
   eval_error = args[0];
   return nil;
 }
 
-Obj *p_env(Process *process, Obj** args, int arg_count) {
-  #if BYTECODE_EVAL
+Obj *p_env(Process *process, Obj **args, int arg_count) {
+#if BYTECODE_EVAL
   return process->frames[process->frame].env;
-  #else
+#else
   return process->global_env->bindings;
-  #endif
+#endif
 }
 
-Obj *p_def_QMARK(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'def?'\n"); return nil; }
-  if(args[0]->tag != 'Y') { eval_error = obj_new_string("Must send symbol to 'def?'\n"); return nil; }
+Obj *p_def_QMARK(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'def?'\n");
+    return nil;
+  }
+  if(args[0]->tag != 'Y') {
+    eval_error = obj_new_string("Must send symbol to 'def?'\n");
+    return nil;
+  }
   Obj *binding = env_lookup_binding(process, process->global_env, args[0]);
   if(binding && binding->car && binding->cdr) {
     //printf("Binding exists: %s\n", obj_to_string(process, binding)->s);
     return lisp_true;
-  } else {
+  }
+  else {
     return lisp_false;
   }
 }
 
-Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
+Obj *p_load_lisp(Process *process, Obj **args, int arg_count) {
   Obj *file_string = open_file(process, args[0]->s);
   shadow_stack_push(process, file_string);
   if(file_string->tag == 'S') {
@@ -1358,13 +1473,15 @@ Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
     shadow_stack_push(process, forms);
     Obj *form = forms;
     while(form && form->car) {
-      #if BYTECODE_EVAL
-      /* Obj *discarded_result = */bytecode_sub_eval_form(process, process->global_env, form->car);
-      #else
+#if BYTECODE_EVAL
+      /* Obj *discarded_result = */ bytecode_sub_eval_form(process, process->global_env, form->car);
+#else
       eval_internal(process, process->global_env, form->car);
       /*Obj *discarded_result = */ stack_pop(process);
-      #endif
-      if(eval_error) { return nil; }
+#endif
+      if(eval_error) {
+        return nil;
+      }
       form = form->cdr;
     }
     shadow_stack_pop(process); // forms
@@ -1373,25 +1490,25 @@ Obj *p_load_lisp(Process *process, Obj** args, int arg_count) {
   return nil;
 }
 
-Obj *p_load_dylib(Process *process, Obj** args, int arg_count) {
+Obj *p_load_dylib(Process *process, Obj **args, int arg_count) {
   char *filename = args[0]->s;
   carp_library_t handle = carp_load_library(filename);
-  if (!handle) {
+  if(!handle) {
     set_error_and_return("Failed to open dylib: ", args[0]);
     return nil;
   }
   const char *load_error;
-  if ((load_error = carp_get_load_library_error()) != NULL)  {
+  if((load_error = carp_get_load_library_error()) != NULL) {
     set_error_and_return("Failed to load dylib: ", args[0]);
   }
   //printf("dlopen %p\n", handle);
   return obj_new_dylib(handle);
 }
 
-Obj *p_unload_dylib(Process *process, Obj** args, int arg_count) {
+Obj *p_unload_dylib(Process *process, Obj **args, int arg_count) {
   //assert_or_return_nil(arg_count == 1, "'unload-dylib' must take one argument.");
   //assert_or_return_nil(args[0]->tag, "'unload-dylib' must take dylib as argument.", args[0]);
-  if (!(args[0]->tag == 'D')) {
+  if(!(args[0]->tag == 'D')) {
     set_error_and_return("unload-dylib takes a dylib as argument: ", args[0]);
     return nil;
   }
@@ -1410,12 +1527,12 @@ Obj *p_unload_dylib(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_read(Process *process, Obj** args, int arg_count) {
-  if (arg_count != 1) {
+Obj *p_read(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
     set_error_and_return("'read' takes one argument: ", args[0]);
     return nil;
   }
-  if (args[0]->tag != 'S') {
+  if(args[0]->tag != 'S') {
     set_error_and_return("'read' takes a string as argument: ", args[0]);
     return nil;
   }
@@ -1423,12 +1540,12 @@ Obj *p_read(Process *process, Obj** args, int arg_count) {
   return forms->car;
 }
 
-Obj *p_read_many(Process *process, Obj** args, int arg_count) {
-  if (arg_count != 1) {
+Obj *p_read_many(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
     set_error_and_return("'read-many' takes one argument: ", args[0]);
     return nil;
   }
-  if (args[0]->tag != 'S') {
+  if(args[0]->tag != 'S') {
     set_error_and_return("'read-many' takes a string as argument: ", args[0]);
     return nil;
   }
@@ -1436,27 +1553,30 @@ Obj *p_read_many(Process *process, Obj** args, int arg_count) {
   return forms;
 }
 
-Obj *p_eval(Process *process, Obj** args, int arg_count) {
-  if(arg_count != 1) { eval_error = obj_new_string("Wrong argument count to 'eval'"); return nil; }
+Obj *p_eval(Process *process, Obj **args, int arg_count) {
+  if(arg_count != 1) {
+    eval_error = obj_new_string("Wrong argument count to 'eval'");
+    return nil;
+  }
   shadow_stack_push(process, args[0]);
 
-  #if BYTECODE_EVAL
-  
+#if BYTECODE_EVAL
+
   Obj *result = bytecode_sub_eval_form(process, process->global_env, args[0]);
   shadow_stack_pop(process);
   return result;
-  
-  #else
-  
+
+#else
+
   eval_internal(process, process->global_env, args[0]);
   Obj *result = stack_pop(process);
   shadow_stack_pop(process);
   return result;
-  
-  #endif   
+
+#endif
 }
 
-Obj *p_code(Process *process, Obj** args, int arg_count) {  
+Obj *p_code(Process *process, Obj **args, int arg_count) {
   if(args[0]->tag != 'L' && args[0]->tag != 'M') {
     set_error_and_return("'code' must take lambda/macro as argument: ", args[0]);
   }
@@ -1468,7 +1588,7 @@ Obj *p_code(Process *process, Obj** args, int arg_count) {
 }
 
 ffi_type *lisp_type_to_ffi_type(Process *process, Obj *type_obj) {
-  
+
   // Is it a ref type? (borrowed)
   if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(process, type_obj->car, type_ref)) {
     type_obj = type_obj->cdr->car; // the second element of the list
@@ -1522,7 +1642,7 @@ char *lispify(char *name) {
 }
 
 ffi_type **make_arg_type_array(Process *process, Obj *args, int arg_count, char *func_name) {
-  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type*) * (arg_count + 1));
+  ffi_type **arg_types_c_array = malloc(sizeof(ffi_type *) * (arg_count + 1));
 
   Obj *p = args;
   for(int i = 0; i < arg_count; i++) {
@@ -1547,7 +1667,7 @@ ffi_cif *create_cif(Process *process, Obj *args, int arg_count, Obj *return_type
   if(!arg_types_c_array) {
     return NULL;
   }
-  
+
   ffi_type *return_type = lisp_type_to_ffi_type(process, return_type_obj);
 
   if(!return_type) {
@@ -1563,8 +1683,8 @@ ffi_cif *create_cif(Process *process, Obj *args, int arg_count, Obj *return_type
                                  arg_count,
                                  return_type,
                                  arg_types_c_array);
-  
-  if (init_result != FFI_OK) {
+
+  if(init_result != FFI_OK) {
     printf("Registration of foreign function %s failed.\n", func_name);
     return NULL;
   }
@@ -1578,7 +1698,7 @@ Obj *register_ffi_internal(Process *process, char *name, VoidFn funptr, Obj *arg
     printf("funptr for %s is NULL\n", name);
     return nil;
   }
-  
+
   int arg_count = 0;
   Obj *p = args;
   while(p && p->car) {
@@ -1586,22 +1706,24 @@ Obj *register_ffi_internal(Process *process, char *name, VoidFn funptr, Obj *arg
     arg_count++;
   }
   //printf("Arg count for %s: %d\n", name, arg_count);
-  
+
   ffi_cif *cif = create_cif(process, args, arg_count, return_type_obj, name);
   if(!cif) {
     return nil;
   }
 
   //printf("Registration of '%s' OK.\n", name);
-  
+
   Obj *ffi = obj_new_ffi(name, cif, funptr, args, return_type_obj);
 
-  if(!ffi->meta) { ffi->meta = obj_new_environment(NULL); }
+  if(!ffi->meta) {
+    ffi->meta = obj_new_environment(NULL);
+  }
   env_assoc(process, ffi->meta, obj_new_keyword("name"), obj_new_string(name));
 
   char *lispified_name = lispify(name);
   //printf("Registering %s\n", lispified_name);
-  
+
   global_env_extend(process, obj_new_symbol(lispified_name), ffi);
 
   return ffi;
@@ -1613,7 +1735,7 @@ Obj *register_ffi_variable_internal(Process *process, char *name, void *varptr, 
     printf("varptr for %s is NULL\n", name);
     return nil;
   }
-  
+
   /* Obj *new_variable_value; */
 
   /* if(obj_eq(process, var_type_obj, type_int)) { */
@@ -1632,14 +1754,14 @@ Obj *register_ffi_variable_internal(Process *process, char *name, void *varptr, 
   obj_set_meta(variable_ptr, obj_new_keyword("type"), var_type_obj);
 
   char *lispified_name = lispify(name);
-  //printf("Registering variable %s\n", lispified_name);  
+  //printf("Registering variable %s\n", lispified_name);
   global_env_extend(process, obj_new_symbol(lispified_name), variable_ptr);
 
   return variable_ptr;
 }
 
 // (register <dylib> <function-name> <arg-types> <return-type>)
-Obj *p_register(Process *process, Obj** args, int arg_count) {
+Obj *p_register(Process *process, Obj **args, int arg_count) {
   if(arg_count != 4 || args[0]->tag != 'D' || args[1]->tag != 'S' || args[2]->tag != 'C') {
     printf("Args to register must be: (handle, function-name, argument-types, return-type)");
     printf("Arg count: %d\n", arg_count);
@@ -1648,39 +1770,39 @@ Obj *p_register(Process *process, Obj** args, int arg_count) {
   }
   carp_library_t handle = args[0]->dylib;
   char *name = args[1]->s;
-  
+
   VoidFn f = carp_find_symbol(handle, name);
 
   if(!f) {
     printf("Failed to load dynamic C function with name '%s' from %s\n", name, obj_to_string(process, args[0])->s);
     return nil;
   }
-  
+
   return register_ffi_internal(process, name, f, args[2], args[3], false);
 }
 
-Obj *p_register_variable(Process *process, Obj** args, int arg_count) {
+Obj *p_register_variable(Process *process, Obj **args, int arg_count) {
   if(arg_count != 3 || args[0]->tag != 'D' || args[1]->tag != 'S') {
     printf("Args to register-variable must be: (handle, variable-name, type)");
     printf("Arg count: %d\n", arg_count);
     printf("Args %c %c %c\n", args[0]->tag, args[1]->tag, args[2]->tag);
     return nil;
   }
-  
+
   carp_library_t handle = args[0]->dylib;
   char *name = args[1]->s;
-  
+
   void *variable = carp_find_symbol(handle, name);
 
   if(!variable) {
     printf("Failed to load dynamic C variable with name '%s' from %s\n", name, obj_to_string(process, args[0])->s);
     return nil;
   }
-  
+
   return register_ffi_variable_internal(process, name, variable, args[2]);
 }
 
-Obj *p_register_builtin(Process *process, Obj** args, int arg_count) {
+Obj *p_register_builtin(Process *process, Obj **args, int arg_count) {
   if(arg_count != 3 || args[0]->tag != 'S' || args[1]->tag != 'C') {
     printf("Args to register-builtin must be: (function-name, argument-types, return-type)\n");
     printf("Arg count: %d\n", arg_count);
@@ -1694,11 +1816,11 @@ Obj *p_register_builtin(Process *process, Obj** args, int arg_count) {
     printf("Failed to load dynamic C function with name '%s' from executable.\n", name);
     return nil;
   }
-  
+
   return register_ffi_internal(process, name, f, args[1], args[2], true);
 }
 
-Obj *p_meta_set_BANG(Process *process, Obj** args, int arg_count) {
+Obj *p_meta_set_BANG(Process *process, Obj **args, int arg_count) {
   if(arg_count != 3) {
     eval_error = obj_new_string("Invalid argument to meta-set!");
     return nil;
@@ -1711,7 +1833,7 @@ Obj *p_meta_set_BANG(Process *process, Obj** args, int arg_count) {
   return o;
 }
 
-Obj *p_meta_get(Process *process, Obj** args, int arg_count) {
+Obj *p_meta_get(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     eval_error = obj_new_string("Invalid argument to meta-get");
     return nil;
@@ -1721,7 +1843,8 @@ Obj *p_meta_get(Process *process, Obj** args, int arg_count) {
     Obj *lookup = env_lookup(process, o->meta, args[1]);
     if(lookup) {
       return lookup;
-    } else {
+    }
+    else {
       return nil;
     }
   }
@@ -1730,7 +1853,7 @@ Obj *p_meta_get(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_meta_get_all(Process *process, Obj** args, int arg_count) {
+Obj *p_meta_get_all(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("Invalid argument to meta-get-all");
     return nil;
@@ -1744,7 +1867,7 @@ Obj *p_meta_get_all(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_array_to_list(Process *process, Obj** args, int arg_count) {
+Obj *p_array_to_list(Process *process, Obj **args, int arg_count) {
   Obj *a = args[0];
   assert_or_set_error_return_nil(a->tag == 'A', "array-to-list must take array as argument: ", args[0]);
   Obj *list = obj_new_cons(NULL, NULL);
@@ -1766,7 +1889,7 @@ Obj *p_array_to_list(Process *process, Obj** args, int arg_count) {
 /*   return new_array; */
 /* } */
 
-Obj *p_array_of_size(Process *process, Obj** args, int arg_count) {
+Obj *p_array_of_size(Process *process, Obj **args, int arg_count) {
   int array_count = args[0]->i;
   Obj *new_array = obj_new_array(array_count);
   for(int i = 0; i < array_count; i++) {
@@ -1775,7 +1898,7 @@ Obj *p_array_of_size(Process *process, Obj** args, int arg_count) {
   return new_array;
 }
 
-Obj *p_array_set_BANG(Process *process, Obj** args, int arg_count) {
+Obj *p_array_set_BANG(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 3, "array-set! must take 3 arguments: ", args[0]);
   Obj *a = args[0];
   assert_or_set_error_return_nil(a->tag == 'A', "array-set! must take an array as first arg: ", args[0]);
@@ -1786,7 +1909,7 @@ Obj *p_array_set_BANG(Process *process, Obj** args, int arg_count) {
   return nil;
 }
 
-Obj *p_array_set(Process *process, Obj** args, int arg_count) {
+Obj *p_array_set(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 3, "array-set must take 3 arguments: ", args[0]);
   Obj *a = args[0];
   assert_or_set_error_return_nil(a->tag == 'A', "array-set must take an array as first arg: ", args[0]);
@@ -1804,40 +1927,40 @@ Obj *p_array_set(Process *process, Obj** args, int arg_count) {
 /*   return nil; */
 /* } */
 
-Obj *p_gc(Process *process, Obj** args, int arg_count) {
+Obj *p_gc(Process *process, Obj **args, int arg_count) {
   gc(process);
   return nil;
 }
 
-Obj *p_delete(Process *process, Obj** args, int arg_count) {
+Obj *p_delete(Process *process, Obj **args, int arg_count) {
   // no op?
   return nil;
 }
 
-Obj *p_stop(Process *process, Obj** args, int arg_count) {
+Obj *p_stop(Process *process, Obj **args, int arg_count) {
   process->dead = true;
   return nil;
 }
 
-Obj *p_parallell(Process *process, Obj** args, int arg_count) {
+Obj *p_parallell(Process *process, Obj **args, int arg_count) {
   parallell = process_clone(process);
   process_eval(parallell, args[0]);
   return nil;
 }
 
-Obj *p_bytecode(Process *process, Obj** args, int arg_count) {
+Obj *p_bytecode(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "bytecode must take 1 arguments. ", nil);
   Obj *bytecode = form_to_bytecode(process, process->global_env, args[0], false);
   return bytecode;
 }
 
-Obj *p_bytecode_eval(Process *process, Obj** args, int arg_count) {
+Obj *p_bytecode_eval(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 1, "eval-bytecode must take 1 arguments. ", nil);
   Obj *bytecode = args[0];
   return bytecode_eval_bytecode_in_env(process, bytecode, process->global_env, NULL);
 }
 
-Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
+Obj *p_lookup_in_substs_fast(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 2, "lookup-in-substs-fast must take 2 arguments. ", nil);
   Obj *substs = args[0];
   Obj *b = args[1];
@@ -1853,7 +1976,7 @@ Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
       int shadow_count = 0;
       Obj *p = b;
       while(p && p->car) {
-        Obj *args[2] = { substs, p->car };
+        Obj *args[2] = {substs, p->car};
         prev->car = p_lookup_in_substs_fast(process, args, 2);
         Obj *new = obj_new_cons(NULL, NULL);
         shadow_stack_push(process, new);
@@ -1871,21 +1994,23 @@ Obj *p_lookup_in_substs_fast(Process *process, Obj** args, int arg_count) {
     else {
       Obj *result = NULL;
       shadow_stack_push(process, substs);
-      shadow_stack_push(process, b);      
-      Obj *lookup = env_lookup(process, substs, b);      
+      shadow_stack_push(process, b);
+      Obj *lookup = env_lookup(process, substs, b);
       if(lookup) {
         if(obj_eq(process, b, lookup)) {
           result = lookup;
         }
         else {
           if(lookup->tag == 'S') {
-            Obj *args[2] = { substs, lookup };
+            Obj *args[2] = {substs, lookup};
             result = p_lookup_in_substs_fast(process, args, 2);
-          } else {
+          }
+          else {
             result = lookup;
           }
         }
-      } else {
+      }
+      else {
         result = b;
       }
       shadow_stack_pop(process);
@@ -1913,15 +2038,15 @@ void replace_from_right_in_list(Process *process, Obj *list, Obj *existing, Obj 
     else {
       // do nothing
     }
-    
+
     listp = listp->cdr;
   }
 }
 
-Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count) {
+Obj *p_replace_subst_from_right_fast(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 3, "replace-substs-from-right-fast must take 3 arguments. ", nil);
   assert_or_set_error_return_nil(args[0]->tag == 'E', "First argument to lookup-in-substs-fast must be dictionary. ", args[0]);
-  
+
   Obj *mut_substs = obj_copy(process, args[0]); // COPY!
   Obj *existing = args[1];
   Obj *new_value = args[2];
@@ -1943,16 +2068,16 @@ Obj *p_replace_subst_from_right_fast(Process *process, Obj** args, int arg_count
     else {
       // do nothing
     }
-    
+
     p = p->cdr;
   }
 
   shadow_stack_pop(process); // mut_substs
-  
+
   return mut_substs;
 }
 
-Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count) {
+Obj *p_types_exactly_eq(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 2, "types-exactly-eq? must take 2 arguments. ", nil);
   Obj *a = args[0];
   Obj *b = args[1];
@@ -1963,7 +2088,7 @@ Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count) {
       if(!p2 || !p2->car) {
         return lisp_false;
       }
-      Obj *inner_args[2] = { p->car, p2->car };
+      Obj *inner_args[2] = {p->car, p2->car};
       Obj *result = p_types_exactly_eq(process, inner_args, 2);
       if(result == lisp_false) {
         return lisp_false;
@@ -1984,7 +2109,7 @@ Obj *p_types_exactly_eq(Process *process, Obj** args, int arg_count) {
   }
 }
 
-Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
+Obj *p_extend_substitutions_fast(Process *process, Obj **args, int arg_count) {
   assert_or_set_error_return_nil(arg_count == 3, "extend-substitutions-fast must take 3 arguments. ", nil);
 
   Obj *substs = args[0];
@@ -1998,26 +2123,26 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
   else {
     Obj *result = NULL;
     //printf("substs: %s\n", obj_to_string(process, substs)->s);
-    Obj *lookup_args[2] = { substs, value };
+    Obj *lookup_args[2] = {substs, value};
     Obj *lookup = p_lookup_in_substs_fast(process, lookup_args, 2);
 
     shadow_stack_push(process, lookup);
     shadow_stack_push(process, lhs);
     shadow_stack_push(process, value);
-    
+
     /* printf("Will extend %s with %s, lookup: %s, substs:\n%s\n\n", */
     /*        obj_to_string(process, lhs)->s, */
     /*        obj_to_string(process, value)->s, */
     /*        obj_to_string(process, lookup)->s, */
     /*        obj_to_string(process, substs)->s); */
-    
+
     if(lhs->tag == 'S') {
       //printf("lhs is a typevar\n");
       Obj *existing = env_lookup(process, substs, lhs);
       if(existing == NULL) {
         //printf("not existing\n");
         Obj *new_substs = env_assoc(process, substs, lhs, lookup);
-        Obj *replace_args[3] = { new_substs, existing, lookup };
+        Obj *replace_args[3] = {new_substs, existing, lookup};
         result = p_replace_subst_from_right_fast(process, replace_args, 3);
       }
       else {
@@ -2025,10 +2150,10 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
 
         if(existing->tag == 'C') {
           //printf("existing is a list\n");
-          
+
           if(lookup->tag == 'C') {
             //printf("lookup is a list\n");
-            
+
             Obj *final_substs = substs;
             Obj *p1 = existing;
             Obj *p2 = lookup;
@@ -2040,22 +2165,23 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
                 result = final_substs;
                 break;
               }
-              
-              Obj *extend_args[3] = { final_substs, p1->car, p2->car };
+
+              Obj *extend_args[3] = {final_substs, p1->car, p2->car};
               final_substs = p_extend_substitutions_fast(process, extend_args, 3);
-                
+
               p1 = p1->cdr;
               p2 = p2->cdr;
             }
             result = final_substs;
-          } else {
-            //printf("lookup is not a list\n");            
+          }
+          else {
+            //printf("lookup is not a list\n");
             result = substs;
           }
         }
         else if(existing->tag == 'S') {
           //printf("existing is a typevar\n");
-          Obj *replace_args[3] = { substs, existing, lookup };
+          Obj *replace_args[3] = {substs, existing, lookup};
           result = p_replace_subst_from_right_fast(process, replace_args, 3);
         }
         else if(lookup->s) {
@@ -2067,7 +2193,7 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
         else {
           //printf("existing is a not a typevar or list\n");
           // The existing binding is not a typevar, must match exactly or the unification will fail
-          Obj *exactly_eq_args[2] = { existing, lookup };
+          Obj *exactly_eq_args[2] = {existing, lookup};
           Obj *are_eq = p_types_exactly_eq(process, exactly_eq_args, 2);
           if(are_eq == lisp_true) {
             result = substs;
@@ -2077,19 +2203,18 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
             result = obj_new_keyword("fail");
           }
         }
-        
       }
     }
     else {
       // lhs is not a typevar
       //printf("lhs is not a typevar: %s\n", obj_to_string(process, lhs)->s);
-      
+
       if(lhs->tag == 'C') {
         //printf("lhs is a list\n");
-        
+
         if(lookup->tag == 'C') {
           //printf("lookup is a list\n");
-          
+
           Obj *final_substs = substs;
           Obj *p1 = lhs;
           Obj *p2 = lookup;
@@ -2097,7 +2222,7 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
           /* printf("substs: %s\n", obj_to_string(process, final_substs)->s); */
           /* printf("p1: %s\n", obj_to_string(process, p1)->s); */
           /* printf("p2: %s\n", obj_to_string(process, p2)->s); */
-          
+
           while(p1 && p1->car) {
             assert(p2);
             assert(p2->car);
@@ -2108,25 +2233,26 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
             }
 
             // (extend-substitutions-fast {"b" (list "t0" "t1")} (list :int "x") "b")
-            
-            Obj *extend_args[3] = { final_substs, p1->car, p2->car };
+
+            Obj *extend_args[3] = {final_substs, p1->car, p2->car};
             final_substs = p_extend_substitutions_fast(process, extend_args, 3);
 
             //shadow_stack_push(process, final_substs);
             //printf("new final substs: %s %c\n", obj_to_string(process, final_substs)->s, final_substs->tag);
-                
+
             p1 = p1->cdr;
             p2 = p2->cdr;
           }
-          result = final_substs;          
+          result = final_substs;
         }
         else {
           //printf("lookup is NOT a list\n");
           result = substs;
         }
-      } else {
+      }
+      else {
         //printf("lhs is NOT a list\n");
-        
+
         if(obj_eq(process, lhs, lookup)) {
           result = substs;
         }
@@ -2138,12 +2264,12 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
         }
         else if(lhs->tag == 'K' && strcmp(lhs->s, "any") == 0) {
           result = substs;
-        }          
+        }
         else {
           //printf("FAIL in not typevar, not list\n");
           result = obj_new_keyword("fail");
         }
-      }      
+      }
     }
 
     shadow_stack_pop(process); // value
@@ -2155,8 +2281,7 @@ Obj *p_extend_substitutions_fast(Process *process, Obj** args, int arg_count) {
   }
 }
 
-
-Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
+Obj *sort_internal(Process *process, Obj *f, Obj *xs) {
   Obj *left = obj_new_cons(NULL, NULL);
   Obj *right = obj_new_cons(NULL, NULL);
   Obj *left_prev = left;
@@ -2176,14 +2301,14 @@ Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
 
   shadow_stack_push(process, left);
   shadow_stack_push(process, right);
-  
+
   Obj *mid = xs->car;
   //printf("mid: %s\n", obj_to_string(process, xs->car)->s);
-  
+
   Obj *p = xs->cdr;
   while(p && p->car) {
-        
-    Obj *arg[2] = { p->car, mid };
+
+    Obj *arg[2] = {p->car, mid};
     apply(process, f, arg, 2);
     Obj *result = stack_pop(process);
     Obj *new = obj_new_cons(NULL, NULL);
@@ -2194,18 +2319,19 @@ Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
       left_prev->car = p->car;
       left_prev->cdr = new;
       left_prev = new;
-    } else {
+    }
+    else {
       right_prev->car = p->car;
       right_prev->cdr = new;
       right_prev = new;
     }
-    
+
     p = p->cdr;
   }
 
   shadow_stack_push(process, left);
   shadow_stack_push(process, right);
-  
+
   /* printf("left: %s\n", obj_to_string(process, left)->s); */
   /* printf("right: %s\n", obj_to_string(process, right)->s); */
 
@@ -2220,11 +2346,11 @@ Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
   shadow_stack_push(process, sorted_left);
   shadow_stack_push(process, sorted_right);
 
-  Obj *args[3] = { sorted_left, obj_new_cons(mid, nil), sorted_right };
+  Obj *args[3] = {sorted_left, obj_new_cons(mid, nil), sorted_right};
 
   assert_or_set_error_return_nil(sorted_left->tag == 'C', "sorted left is not list: ", sorted_left);
   assert_or_set_error_return_nil(sorted_right->tag == 'C', "sorted right is not list: ", sorted_right);
-  
+
   sorted = p_concat(process, args, 3);
 
   shadow_stack_pop(process);
@@ -2233,12 +2359,12 @@ Obj *sort_internal(Process *process, Obj *f, Obj* xs) {
   shadow_stack_pop(process);
   shadow_stack_pop(process);
   shadow_stack_pop(process);
-                    
+
   assert(sorted);
   return sorted;
 }
 
-Obj *p_sort_by(Process *process, Obj** args, int arg_count) {
+Obj *p_sort_by(Process *process, Obj **args, int arg_count) {
   if(arg_count != 2) {
     eval_error = obj_new_string("Wrong argument count to 'sort-by'.");
     return nil;
@@ -2252,7 +2378,7 @@ Obj *p_sort_by(Process *process, Obj** args, int arg_count) {
   return result;
 }
 
-Obj *p_hash(Process *process, Obj** args, int arg_count) {
+Obj *p_hash(Process *process, Obj **args, int arg_count) {
   if(arg_count != 1) {
     eval_error = obj_new_string("Wrong argument count to 'hash'.");
     return nil;
@@ -2260,17 +2386,17 @@ Obj *p_hash(Process *process, Obj** args, int arg_count) {
   return obj_new_int(obj_hash(process, args[0]));
 }
 
-      /* shadow_stack_push(process, list); */
-      
-      /* int shadow_count = 0; */
-      /* Obj *p = b; */
-      /* while(p && p->car) { */
-      /*   Obj *args[2] = { substs, p->car }; */
-      /*   prev->car = p_lookup_in_substs_fast(process, args, 2); */
-      /*   Obj *new = obj_new_cons(NULL, NULL); */
-      /*   shadow_stack_push(process, new); */
-      /*   shadow_count++; */
-      /*   prev->cdr = new; */
-      /*   prev = new; */
-      /*   p = p->cdr; */
-      /* } */
+/* shadow_stack_push(process, list); */
+
+/* int shadow_count = 0; */
+/* Obj *p = b; */
+/* while(p && p->car) { */
+/*   Obj *args[2] = { substs, p->car }; */
+/*   prev->car = p_lookup_in_substs_fast(process, args, 2); */
+/*   Obj *new = obj_new_cons(NULL, NULL); */
+/*   shadow_stack_push(process, new); */
+/*   shadow_count++; */
+/*   prev->cdr = new; */
+/*   prev = new; */
+/*   p = p->cdr; */
+/* } */

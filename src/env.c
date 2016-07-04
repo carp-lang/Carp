@@ -44,7 +44,7 @@ Obj *env_lookup_binding(Process *process, Obj *env, Obj *symbol) {
 
 Obj *env_extend(Obj *env, Obj *key, Obj *value) {
   assert(env->tag == 'E');
-  
+
   Obj *pair = obj_new_cons(key, value);
   Obj *cons = obj_new_cons(pair, env->bindings);
 
@@ -56,7 +56,7 @@ Obj *env_extend(Obj *env, Obj *key, Obj *value) {
 void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int arg_count, Obj **args, bool allow_restargs) {
 
   // TODO: remove the whole 'C' branch and only allow arrays for parameters
-  
+
   Obj *paramp = function->params;
   if(paramp->tag == 'C') {
     for(int i = 0; i < arg_count; i++) {
@@ -78,7 +78,7 @@ void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int
         }
       }
       if(!paramp || !paramp->car) {
-          set_error("Too many arguments (C) to function: ", function);
+        set_error("Too many arguments (C) to function: ", function);
       }
       env_extend(calling_env, paramp->car, args[i]);
       paramp = paramp->cdr;
@@ -105,14 +105,15 @@ void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int
         env_extend(calling_env, paramp->array[i + 1], rest_list);
         return;
       }
- 
+
       env_extend(calling_env, paramp->array[i], args[i]);
     }
 
     if(i < paramp->count) {
       if(allow_restargs && obj_eq(process, paramp->array[i], dotdotdot)) {
         env_extend(calling_env, paramp->array[i + 1], obj_new_array(0));
-      } else {
+      }
+      else {
         set_error("Too few arguments to function/macro: ", function);
       }
     }
@@ -129,19 +130,16 @@ void env_extend_with_args(Process *process, Obj *calling_env, Obj *function, int
       }
       set_error("Too many arguments (A) to function/macro: ", name);
     }
-    
   }
 }
-
-
-    
 
 void global_env_extend(Process *process, Obj *key, Obj *val) {
   assert(process->global_env);
   Obj *existing_binding = env_lookup_binding(process, process->global_env, key);
   if(existing_binding->car) {
     existing_binding->cdr = val;
-  } else {
+  }
+  else {
     env_extend(process->global_env, key, val);
   }
 }

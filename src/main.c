@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     signal(SIGTERM, signal_handler);
     //signal(SIGINT, signal_handler);
   }
-  
+
   /* printf("%ld %ld %ld \n", sizeof(float), sizeof(int), sizeof(void*)); */
   carp_platform_init();
   obj_total_max = 100000;
@@ -66,13 +66,13 @@ int main(int argc, char **argv) {
     eval_text(process, process->global_env, "(def BYTECODE_EVAL false)", false, obj_new_string("main.c"));
   }
 
-  #if BOOT
+#if BOOT
   eval_text(process,
             process->global_env,
             "(load-lisp (str (getenv \"CARP_DIR\") \"lisp/boot.carp\"))",
             false,
             obj_new_string("main.c"));
-  #endif
+#endif
 
   if(argc == 2) {
     char load_file[512];
