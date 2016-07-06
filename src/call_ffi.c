@@ -10,13 +10,13 @@
 #define ALLOW_SENDING_LAMBDA_TO_FFI 1
 #define LABELED_DISPATCH 0
 
-void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsType *lambda_and_its_type) {
+void call_lambda_from_ffi(ffi_cif *cif, void *ret, void *args[], LambdaAndItsType *lambda_and_its_type) {
   //printf("Calling lambda %s from ffi function!\n", obj_to_string(lambda_and_its_type->lambda)->s);
 
   int arg_count = cif->nargs;
   //printf("arg count: %d\n", arg_count);
 
-  Obj **obj_args = malloc(sizeof(Obj*) * arg_count);
+  Obj **obj_args = malloc(sizeof(Obj *) * arg_count);
   //Obj *obj_args[arg_count];
   Obj *lambda_type_signature = lambda_and_its_type->signature; // TODO: shadow stack?!
   Obj *lambda_return_type = lambda_type_signature->cdr->cdr->car;
@@ -25,7 +25,7 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
   //printf("Lambda signature: %s\n", obj_to_string(lambda_type_signature)->s);
 
   Process *process = lambda_and_its_type->process;
-  
+
   for(int i = 0; i < arg_count; i++) {
 
     Obj *lambda_arg_type_p = lambda_arg_type_list_p->car;
@@ -35,15 +35,11 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
       eval_error = obj_new_string("Too many args.");
       return;
     }
-    
+
     // Unwrap ref args
-    if(lambda_arg_type_p->tag == 'C'
-       && lambda_arg_type_p->car
-       && lambda_arg_type_p->cdr && lambda_arg_type_p->cdr->car
-       && obj_eq(process, lambda_arg_type_p->car, obj_new_keyword("ref")))
-      {
+    if(lambda_arg_type_p->tag == 'C' && lambda_arg_type_p->car && lambda_arg_type_p->cdr && lambda_arg_type_p->cdr->car && obj_eq(process, lambda_arg_type_p->car, obj_new_keyword("ref"))) {
       lambda_arg_type_p = lambda_arg_type_p->cdr->car; // the second element of the list
-    }    
+    }
     //printf("Lambda arg p: %s\n", obj_to_string(lambda_arg_type_p)->s);
 
     if(cif->arg_types[i] == &ffi_type_sint) {
@@ -91,9 +87,9 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
 
   // unwrap ref
   if(lambda_return_type->tag == 'C' && lambda_return_type->car && lambda_return_type->cdr && lambda_return_type->cdr->car && obj_eq(process, lambda_return_type->car, obj_new_keyword("ref"))) {
-      lambda_return_type = lambda_return_type->cdr->car; // the second element of the list
-    }  
-  
+    lambda_return_type = lambda_return_type->cdr->car; // the second element of the list
+  }
+
   // TODO: extract this and refactor to common helper function
   if(obj_eq(process, lambda_return_type, type_int)) {
     assert_or_set_error(result->tag == 'I', "Invalid type of return value: ", result);
@@ -128,7 +124,6 @@ void call_lambda_from_ffi(ffi_cif *cif, void *ret, void* args[], LambdaAndItsTyp
     *s = result->s;
   }
   else if(obj_eq(process, lambda_return_type, type_void)) {
-    
   }
   else {
     //set_error("Calling lambda from FFI can't handle return type ", lambda_return_type);
@@ -149,13 +144,13 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
     eval_error = obj_new_string("Can't call foregin function, it's funptr is NULL. May be a stub function with just a signature?");
     return;
   }
-    
+
   assert(function->cif);
   assert(function->arg_types);
   assert(function->return_type);
 
   // TODO: change name to 'arg_values' or something like that
-  void **values = calloc(sizeof(void*), arg_count);
+  void **values = calloc(sizeof(void *), arg_count);
   assert(values);
 
 #define assert_or_free_values_and_set_error(assertion, message, object) \
@@ -165,7 +160,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
   assert_or_set_error((assertion), (message), (object));
 
   Obj *p = function->arg_types;
-  for(int i = 0; i < arg_count; i++) {      
+  for(int i = 0; i < arg_count; i++) {
     if(p && p->cdr) {
       assert(p->car);
       Obj *type_obj = p->car;
@@ -174,7 +169,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
       if(type_obj->tag == 'C' && type_obj->car && type_obj->cdr && type_obj->cdr->car && obj_eq(process, type_obj->car, type_ref)) {
         type_obj = type_obj->cdr->car; // the second element of the list
       }
-        
+
       args[i]->given_to_ffi = true; // This makes the GC ignore this value when deleting internal C-data, like inside a string
 
       if(obj_eq(process, type_obj, type_int)) {
@@ -207,7 +202,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
       else {
         //printf("Calling function with expected parameter of type %s. Argument is of type %c.\n", obj_to_string(process, p->car)->s, args[i]->tag);
         //printf("%s\n", STR(args[i])); // <- WARNING! This is an infinite loop!
-          
+
         if(args[i]->tag == 'Q') {
 
 #ifdef CHECKING
@@ -246,7 +241,8 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
               //printf("Copy with tag '%c': %s\n", copy->tag, STR(copy));
               shadow_stack_pop(process);
               values[i] = &copy->void_ptr;
-            } else {
+            }
+            else {
               printf("No type meta on %s, won't copy it.\n", STR(args[i]));
               goto noCopyOfArg;
             }
@@ -254,7 +250,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
           else {
           noCopyOfArg:;
             values[i] = &args[i]->void_ptr;
-          }          
+          }
         }
         else if(args[i]->tag == 'A') {
           // TODO: Do some type checking here!!!
@@ -263,7 +259,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
             return;
           }
           assert(a);
-          values[i] = &a;            
+          values[i] = &a;
         }
         else if(args[i]->tag == 'F') {
           values[i] = &args[i]->funptr;
@@ -271,13 +267,13 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
         else if(args[i]->tag == 'L') {
           if(ALLOW_SENDING_LAMBDA_TO_FFI) {
             //printf("Will call unbaked lambda from ffi function. Lambda should have types: %s\n", obj_to_string(type_obj)->s);
-	    
+
             ffi_type *closure_args[1];
-            ffi_closure *closure;  
+            ffi_closure *closure;
             void (*closure_fun_ptr)();
-            closure = ffi_closure_alloc(sizeof(ffi_closure), (void**)&closure_fun_ptr);
-     
-            if (closure) {
+            closure = ffi_closure_alloc(sizeof(ffi_closure), (void **)&closure_fun_ptr);
+
+            if(closure) {
               /* Initialize the argument info vectors */
               closure_args[0] = &ffi_type_pointer;
 
@@ -295,7 +291,7 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
                 p = p->cdr;
                 lambda_arg_count++;
               }
-		
+
               ffi_cif *cif = create_cif(process, lambda_arg_types, lambda_arg_count, lambda_return_type, "TODO:proper-name");
 
               Obj *lambda_arg = args[i];
@@ -303,10 +299,10 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
               lambda_and_its_type->lambda = lambda_arg; // the uncompiled lambda that was passed to the ffi function
               lambda_and_its_type->signature = type_obj;
               lambda_and_its_type->process = process;
-                
+
               typedef void (*LambdaCallback)(ffi_cif *, void *, void **, void *);
-	      
-              if (ffi_prep_closure_loc(closure, cif, (LambdaCallback)call_lambda_from_ffi, lambda_and_its_type, closure_fun_ptr) == FFI_OK) {
+
+              if(ffi_prep_closure_loc(closure, cif, (LambdaCallback)call_lambda_from_ffi, lambda_and_its_type, closure_fun_ptr) == FFI_OK) {
                 //printf("Closure preparation done.\n");
                 values[i] = &closure_fun_ptr;
               }
@@ -317,7 +313,8 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
             else {
               set_error("Failed to allocate closure. ", nil);
             }
-          } else {
+          }
+          else {
             free(values);
             set_error("Can't send argument of lambda type (tag 'L') to ffi function, you need to compile it to a C function using (bake ...) first:\n", args[i]);
           }
@@ -334,14 +331,13 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
     else {
       free(values);
       set_error("Too many arguments to ", function);
-    } 
+    }
   }
 
   if(p && p->car) {
     free(values);
     set_error("Too few arguments to ", function);
   }
-
 
   // Handle refs:
   Obj *return_type = function->return_type;
@@ -353,14 +349,14 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
   void *result;
   ffi_call(function->cif, function->funptr, &result, values);
 
-  Obj *obj_result = primitive_to_obj(process, result, return_type); 
+  Obj *obj_result = primitive_to_obj(process, result, return_type);
 
   free(values);
-    
+
   if(!obj_result) {
     printf("obj_result == NULL, return_type = %s\n", obj_to_string(process, return_type)->s);
     return; // something went wrong
   }
 
-  stack_push(process, obj_result);    
+  stack_push(process, obj_result);
 }

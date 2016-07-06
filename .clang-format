@@ -1,0 +1,27 @@
+Language: Cpp
+
+AllowShortIfStatementsOnASingleLine: true
+AlignOperands: true
+AlignTrailingComments: false
+ColumnLimit: 0
+IndentCaseLabels: false
+IndentWidth: 2
+SpaceBeforeParens: false
+UseTab: Never
+SortIncludes: false
+
+# Configure each individual brace in BraceWrapping
+BreakBeforeBraces: 'Custom'
+
+# Control of individual brace wrapping cases
+BraceWrapping: {
+    AfterControlStatement: 'false'
+    AfterEnum      : 'false'
+    AfterFunction  : 'false'
+    AfterNamespace : 'false'
+    AfterStruct    : 'false'
+    AfterUnion     : 'false'
+    BeforeCatch    : 'false'
+    BeforeElse     : 'true'
+    IndentBraces   : 'false'
+}

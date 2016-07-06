@@ -37,4 +37,9 @@ target_link_libraries(${PROJECT_NAME} ffi m c pthread dl)
 set_target_properties(${PROJECT_NAME}
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
-  
+
+add_custom_target(
+    format
+    COMMAND find . -iname '*.[ch]' | xargs clang-format -style=file -i
+)
+

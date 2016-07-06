@@ -24,12 +24,12 @@ Process *process_new() {
   process->dead = false;
   process->final_result = NULL;
 
-  #if BYTECODE_EVAL
+#if BYTECODE_EVAL
   process->frame = 0;
-  #else
+#else
   process->frame = -1;
-  #endif
-  
+#endif
+
   process->bytecodeObj = NULL;
   pop_stacks_to_zero(process);
 
@@ -40,7 +40,7 @@ Process *process_new() {
 
   lisp_false = obj_new_bool(false);
   define("false", lisp_false);
-  
+
   lisp_true = obj_new_bool(true);
   define("true", lisp_true);
 
@@ -73,31 +73,31 @@ Process *process_new() {
 
   type_double = obj_new_keyword("double");
   define("type-double", type_double);
-  
+
   type_string = obj_new_keyword("string");
   define("type-string", type_string);
 
   type_symbol = obj_new_keyword("symbol");
   define("type-symbol", type_symbol);
-  
+
   type_keyword = obj_new_keyword("keyword");
   define("type-keyword", type_keyword);
-  
+
   type_foreign = obj_new_keyword("foreign");
   define("type-foreign", type_foreign);
-  
+
   type_primop = obj_new_keyword("primop");
   define("type-primop", type_primop);
-  
+
   type_env = obj_new_keyword("env");
   define("type-env", type_env);
-  
+
   type_macro = obj_new_keyword("macro");
   define("type-macro", type_macro);
 
   type_lambda = obj_new_keyword("lambda");
   define("type-lambda", type_lambda);
-  
+
   type_list = obj_new_keyword("list");
   define("type-list", type_list);
 
@@ -118,7 +118,7 @@ Process *process_new() {
 
   prompt = define("prompt", obj_new_string(PROMPT));
   prompt_unfinished_form = define("prompt-unfinished-form", obj_new_string(PROMPT_UNFINISHED_FORM));
-  
+
   register_primop(process, "open", p_open_file);
   register_primop(process, "save", p_save_file);
   register_primop(process, "+", p_add);
@@ -197,7 +197,7 @@ Process *process_new() {
   register_primop(process, "types-exactly-eq?", p_types_exactly_eq);
   register_primop(process, "extend-substitutions-fast", p_extend_substitutions_fast);
   register_primop(process, "sort-by-fast", p_sort_by);
-  
+
   Obj *abs_args = obj_list(type_int);
   register_ffi_internal(process, "abs", (VoidFn)abs, abs_args, type_int, true);
 
@@ -206,7 +206,7 @@ Process *process_new() {
 
   Obj *getenv_args = obj_list(type_string);
   register_ffi_internal(process, "getenv", (VoidFn)getenv, getenv_args, type_string, true);
-  
+
   //printf("Global env: %s\n", obj_to_string(env)->s);
 
   return process;
@@ -269,7 +269,7 @@ Obj *stack_pop(Process *process) {
   return o;
 }
 
-void shadow_stack_print(Process* process) {
+void shadow_stack_print(Process *process) {
   printf("----- SHADOW STACK -----\n");
   for(int i = 0; i < process->shadow_stack_pos - 1; i++) {
     printf("%d\t", i);
@@ -279,7 +279,7 @@ void shadow_stack_print(Process* process) {
   printf("-----  END  -----\n\n");
 }
 
-void shadow_stack_push(Process* process, Obj *o) {
+void shadow_stack_push(Process *process, Obj *o) {
   if(LOG_SHADOW_STACK) {
     printf("Pushing to shadow stack: %p ", o);
     obj_print_cout(o);
@@ -295,7 +295,7 @@ void shadow_stack_push(Process* process, Obj *o) {
   process->shadow_stack[process->shadow_stack_pos++] = o;
 }
 
-Obj *shadow_stack_pop(Process* process) {
+Obj *shadow_stack_pop(Process *process) {
   if(process->shadow_stack_pos <= 0) {
     printf("Shadow stack underflow.\n");
     assert(false);
@@ -311,14 +311,14 @@ Obj *shadow_stack_pop(Process* process) {
 
 void function_trace_print(Process *process) {
   printf(" ----------------------------------------------------------------\n");
-  
+
   for(int i = process->function_trace_pos - 1; i >= 0; i--) {
     printf("%3d ", i);
 
     StackTraceCallSite call_site = process->function_trace[i];
     Obj *o = call_site.caller;
     Obj *function = call_site.callee;
-    
+
     if(o->meta) {
       //printf("%s\n", obj_to_string(o->meta)->s);
       char *func_name = "";
@@ -328,7 +328,8 @@ void function_trace_print(Process *process) {
       }
       if(func_name_data) {
         func_name = obj_to_string_not_prn(process, func_name_data)->s;
-      } else {
+      }
+      else {
         func_name = "???"; // obj_to_string(function)->s;
       }
       int line = env_lookup(process, o->meta, obj_new_keyword("line"))->i;
@@ -350,7 +351,7 @@ void function_trace_print(Process *process) {
     }
     printf("\n");
   }
-  
+
   printf(" ----------------------------------------------------------------\n");
 }
 

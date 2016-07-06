@@ -10,7 +10,7 @@
 Obj *obj_latest = NULL;
 int obj_total = 0;
 
-Obj *obj_new(char tag) {  
+Obj *obj_new(char tag) {
   Obj *o = malloc(sizeof(Obj));
   assert_or_fatal_error(o, "obj_new: call to malloc failed");
   o->prev = obj_latest;
@@ -63,26 +63,58 @@ Obj *obj_new_symbol(char *s) {
   Obj *o = obj_new('Y');
   o->s = strdup(s);
 
-  if(strcmp(s, "do") == 0) { o->dispatch_index = 1; }
-  else if(strcmp(s, "let") == 0) { o->dispatch_index = 2; }
-  else if(strcmp(s, "not") == 0) { o->dispatch_index = 3; }
-  else if(strcmp(s, "or") == 0) { o->dispatch_index = 4; }
-  else if(strcmp(s, "and") == 0) { o->dispatch_index = 5; }
-  else if(strcmp(s, "quote") == 0) { o->dispatch_index = 6; }
-  else if(strcmp(s, "while") == 0) { o->dispatch_index = 7; }
-  else if(strcmp(s, "if") == 0) { o->dispatch_index = 8; }
-  else if(strcmp(s, "match") == 0) { o->dispatch_index = 9; }
-  else if(strcmp(s, "reset!") == 0) { o->dispatch_index = 10; }
-  else if(strcmp(s, "fn") == 0) { o->dispatch_index = 11; }
-  else if(strcmp(s, "macro") == 0) { o->dispatch_index = 12; }
-  else if(strcmp(s, "def") == 0) { o->dispatch_index = 13; }
-  else if(strcmp(s, "def?") == 0) { o->dispatch_index = 14; }
-  else if(strcmp(s, "ref") == 0) { o->dispatch_index = 15; }
-  else if(strcmp(s, "catch-error") == 0) { o->dispatch_index = 16; }
-  else {   
+  if(strcmp(s, "do") == 0) {
+    o->dispatch_index = 1;
+  }
+  else if(strcmp(s, "let") == 0) {
+    o->dispatch_index = 2;
+  }
+  else if(strcmp(s, "not") == 0) {
+    o->dispatch_index = 3;
+  }
+  else if(strcmp(s, "or") == 0) {
+    o->dispatch_index = 4;
+  }
+  else if(strcmp(s, "and") == 0) {
+    o->dispatch_index = 5;
+  }
+  else if(strcmp(s, "quote") == 0) {
+    o->dispatch_index = 6;
+  }
+  else if(strcmp(s, "while") == 0) {
+    o->dispatch_index = 7;
+  }
+  else if(strcmp(s, "if") == 0) {
+    o->dispatch_index = 8;
+  }
+  else if(strcmp(s, "match") == 0) {
+    o->dispatch_index = 9;
+  }
+  else if(strcmp(s, "reset!") == 0) {
+    o->dispatch_index = 10;
+  }
+  else if(strcmp(s, "fn") == 0) {
+    o->dispatch_index = 11;
+  }
+  else if(strcmp(s, "macro") == 0) {
+    o->dispatch_index = 12;
+  }
+  else if(strcmp(s, "def") == 0) {
+    o->dispatch_index = 13;
+  }
+  else if(strcmp(s, "def?") == 0) {
+    o->dispatch_index = 14;
+  }
+  else if(strcmp(s, "ref") == 0) {
+    o->dispatch_index = 15;
+  }
+  else if(strcmp(s, "catch-error") == 0) {
+    o->dispatch_index = 16;
+  }
+  else {
     o->dispatch_index = 0;
   }
-  
+
   return o;
 }
 
@@ -94,7 +126,7 @@ Obj *obj_new_keyword(char *s) {
 
 Obj *obj_new_primop(Primop p) {
   Obj *o = obj_new('P');
-  o->primop = (struct Obj *(*)(struct Process *, struct Obj **, int)) p;
+  o->primop = (struct Obj * (*)(struct Process *, struct Obj **, int))p;
   return o;
 }
 
@@ -116,7 +148,7 @@ Obj *obj_new_ptr_to_global(void *ptr) {
   return o;
 }
 
-Obj *obj_new_ffi(const char* name, ffi_cif* cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj) {
+Obj *obj_new_ffi(const char *name, ffi_cif *cif, VoidFn funptr, Obj *arg_types, Obj *return_type_obj) {
   assert(cif);
   assert(name);
   assert(arg_types);
@@ -176,7 +208,7 @@ Obj *obj_new_char(char character) {
 
 Obj *obj_new_array(int count) {
   Obj *o = obj_new('A');
-  o->array = calloc(sizeof(Obj*), count);
+  o->array = calloc(sizeof(Obj *), count);
   o->count = count;
   return o;
 }
@@ -195,7 +227,7 @@ Obj *obj_new_bytecode(char *bytecode) {
 }
 
 Obj *obj_copy(Process *process, Obj *o) {
-  assert(o);  
+  assert(o);
   if(o->tag == 'C') {
     //printf("Making a copy of the list: %s\n", obj_to_string(o)->s);
     Obj *list = obj_new_cons(NULL, NULL);
@@ -207,12 +239,13 @@ Obj *obj_copy(Process *process, Obj *o) {
       prev->car = obj_copy(process, p->car);
       shadow_stack_pop(process);
       if(p->cdr) {
-	prev->cdr = obj_copy(process, p->cdr);
-	return list; // early break when copying dotted pairs! TODO: is this case always selected?!
-      } else {
-	prev->cdr = obj_new_cons(NULL, NULL);
-	prev = new;
-	p = p->cdr;
+        prev->cdr = obj_copy(process, p->cdr);
+        return list; // early break when copying dotted pairs! TODO: is this case always selected?!
+      }
+      else {
+        prev->cdr = obj_new_cons(NULL, NULL);
+        prev = new;
+        p = p->cdr;
       }
     }
     return list;
@@ -230,7 +263,7 @@ Obj *obj_copy(Process *process, Obj *o) {
     //printf("Making a copy of the env: %s\n", obj_to_string(o)->s);
     Obj *new_env = obj_new_environment(NULL);
     shadow_stack_push(process, new_env);
-    new_env->bindings = obj_copy(process,o->bindings);
+    new_env->bindings = obj_copy(process, o->bindings);
     shadow_stack_pop(process);
     return new_env;
   }
@@ -238,7 +271,7 @@ Obj *obj_copy(Process *process, Obj *o) {
     Obj *type_meta = env_lookup(process, o->meta, obj_new_keyword("type"));
     if(type_meta) {
       //printf("COPY type_meta: %s\n", STR(type_meta));
-      
+
       shadow_stack_push(process, o);
 
       Obj *reffed_arg_type = obj_list(obj_new_keyword("ref"), type_meta);
@@ -247,7 +280,7 @@ Obj *obj_copy(Process *process, Obj *o) {
       Obj *quoted_sig = obj_list(lisp_quote, signature);
 
       shadow_stack_push(process, quoted_sig);
-      
+
       // Figure out the name
       Obj *generic_name_result = generic_name(process, "copy", quoted_sig);
       if(eval_error) {
@@ -255,9 +288,9 @@ Obj *obj_copy(Process *process, Obj *o) {
       }
       shadow_stack_push(process, generic_name_result);
       //printf("generic_name_result: %s\n", STR(generic_name_result));
-      
+
       //printf("Will bake 'copy' with quoted signature: %s\n", STR(quoted_sig));
-      
+
       // Bake
       bake_generic_primop_auto(process, "copy", quoted_sig);
       if(eval_error) {
@@ -277,13 +310,14 @@ Obj *obj_copy(Process *process, Obj *o) {
       Obj *copy_result = NULL;
       if(BYTECODE_EVAL) {
         copy_result = bytecode_sub_eval_form(process, process->global_env, call_to_copy);
-      } else {
+      }
+      else {
         copy_result = eval(process, process->global_env, call_to_copy);
         //printf("copy_result: %s with tag %c\n", STR(copy_result), copy_result->tag);
       }
-  
+
       shadow_stack_push(process, copy_result);
-      
+
       if(eval_error) {
         printf("Error when calling 'copy' function for void ptr of type '%s':\n", STR(type_meta));
         printf("%s\n", obj_to_string(process, eval_error)->s);
@@ -301,12 +335,13 @@ Obj *obj_copy(Process *process, Obj *o) {
 
       Obj *pop4 = shadow_stack_pop(process); // quoted_sig
       assert(pop4 == quoted_sig);
-      
+
       Obj *pop5 = shadow_stack_pop(process); // o
       assert(pop5 == o);
 
       return copy_result;
-    } else {
+    }
+    else {
       // shallow copy
       printf("COPY no type_meta\n");
       return obj_new_ptr(o->void_ptr);
@@ -361,7 +396,7 @@ Obj *obj_copy(Process *process, Obj *o) {
   }
   else {
     printf("obj_copy() can't handle type tag %c (%d).\n", o->tag, o->tag);
-	return NULL;
+    return NULL;
     assert(false);
   }
 }
@@ -383,7 +418,7 @@ int obj_hash(Process *process, Obj *o) {
 
   shadow_stack_push(process, o);
   int hash = 123456789;
-  
+
   if(o->tag == 'C') {
     Obj *p = o;
     int h = 1234;
@@ -393,7 +428,8 @@ int obj_hash(Process *process, Obj *o) {
         // dotted pair
         h += obj_hash(process, p->cdr);
         break;
-      } else {
+      }
+      else {
         // normal list
         p = p->cdr;
       }
@@ -409,28 +445,28 @@ int obj_hash(Process *process, Obj *o) {
   }
   else if(o->tag == 'E') {
     int h = o->bindings ? obj_hash(process, o->bindings) : 0;
-    hash = h + 666;   
+    hash = h + 666;
   }
   else if(o->tag == 'Q') {
-    hash = (int)o->void_ptr;   
+    hash = (int)o->void_ptr;
   }
   else if(o->tag == 'I') {
-    hash = o->i;   
+    hash = o->i;
   }
   else if(o->tag == 'V') {
-    hash = (int)o->f32;   
+    hash = (int)o->f32;
   }
   else if(o->tag == 'W') {
-    hash = (int)o->f64;   
+    hash = (int)o->f64;
   }
   else if(o->tag == 'S') {
-    hash = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);
   }
   else if(o->tag == 'Y') {
-    hash = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);
   }
   else if(o->tag == 'K') {
-    hash = string_to_hash(o->s);   
+    hash = string_to_hash(o->s);
   }
   else if(o->tag == 'P') {
     hash = (int)o->primop;
@@ -465,7 +501,7 @@ int obj_hash(Process *process, Obj *o) {
   shadow_stack_pop(process); // o
 
   //printf("hash for %s is %d\n", obj_to_string(process, o)->s, hash->i);
-  
+
   return hash;
 }
 
@@ -503,7 +539,7 @@ void obj_print_cout(Obj *o) {
     while(p && p->car && p->tag == 'C') {
       obj_print_cout(p->car);
       if(p->cdr && p->cdr->tag == 'C' && p->cdr->cdr) {
-    	printf(" ");
+        printf(" ");
       }
       p = p->cdr;
     }
@@ -601,7 +637,7 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag != b->tag) {
     return false;
   }
-  
+
   if(a->hash != 0 && b->hash != 0) {
     if(a->hash != b->hash) {
       /* Obj *a_str = obj_to_string(process, a); */
@@ -612,9 +648,9 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
       /* shadow_stack_pop(process); */
       /* shadow_stack_pop(process); */
       return false;
-    }    
+    }
   }
-  
+
   if(a->tag == 'B') {
     return a->boolean == b->boolean;
   }
@@ -639,28 +675,28 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
   else if(a->tag == 'D') {
     return a->dylib == b->dylib;
   }
-  
+
   if(a->tag == 'C') {
     Obj *pa = a;
     Obj *pb = b;
     while(1) {
       if(obj_eq(process, pa->car, pb->car)) {
-	if(!pa->cdr && !pb->cdr) {
-	  return true;
-	}
-	else if(pa->cdr && !pb->cdr) {
-	  return false;
-	}
-	else if(!pa->cdr && pb->cdr) {
-	  return false;
-	}
-	else {
-	  pa = pa->cdr;
-	  pb = pb->cdr;
-	}
+        if(!pa->cdr && !pb->cdr) {
+          return true;
+        }
+        else if(pa->cdr && !pb->cdr) {
+          return false;
+        }
+        else if(!pa->cdr && pb->cdr) {
+          return false;
+        }
+        else {
+          pa = pa->cdr;
+          pb = pb->cdr;
+        }
       }
       else {
-	return false;
+        return false;
       }
     }
   }
@@ -670,9 +706,9 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
     }
     else {
       for(int i = 0; i < a->count; i++) {
-	if(!obj_eq(process, a->array[i], b->array[i])) {
-	  return false;
-	}
+        if(!obj_eq(process, a->array[i], b->array[i])) {
+          return false;
+        }
       }
       return true;
     }
@@ -685,61 +721,61 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
     /* if(!b->meta) { */
     /*   printf("dict is missing meta: %s\n", obj_to_string(process, b)->s); */
     /* } */
-    
+
     if(!obj_eq(process, a->parent, b->parent)) {
       return false;
     }
 
     {
-      Obj *pa = a->bindings;    
+      Obj *pa = a->bindings;
       while(pa && pa->cdr) {
-	Obj *pair = pa->car;
-	//printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
-	Obj *binding = env_lookup_binding(process, b, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
-	  bool eq = obj_eq(process, pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pa = pa->cdr;
+        Obj *pair = pa->car;
+        //printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
+        Obj *binding = env_lookup_binding(process, b, pair->car);
+        if(binding) {
+          //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
+          bool eq = obj_eq(process, pair->cdr, binding->cdr);
+          if(!binding->car) {
+            //printf("binding->car was NULL\n");
+            return false;
+          }
+          else if(!eq) {
+            //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+        pa = pa->cdr;
       }
     }
 
     {
-      Obj *pb = b->bindings;    
+      Obj *pb = b->bindings;
       while(pb && pb->cdr) {
-	Obj *pair = pb->car;
-	//printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
-	Obj *binding = env_lookup_binding(process, a, pair->car);
-	if(binding) {
-	  //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
-	  bool eq = obj_eq(process, pair->cdr, binding->cdr);
-	  if(!binding->car) {
-	    //printf("binding->car was NULL\n");
-	    return false;
-	  }
-	  else if(!eq) {
-	    //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
-	    return false;
-	  }
-	}
-	else {
-	  return false;
-	}
-	pb = pb->cdr;
+        Obj *pair = pb->car;
+        //printf("Will lookup %s\n", obj_to_string(process, pair->car)->s);
+        Obj *binding = env_lookup_binding(process, a, pair->car);
+        if(binding) {
+          //printf("Found binding: %s\n", obj_to_string(process, binding)->s);
+          bool eq = obj_eq(process, pair->cdr, binding->cdr);
+          if(!binding->car) {
+            //printf("binding->car was NULL\n");
+            return false;
+          }
+          else if(!eq) {
+            //printf("%s != %s\n", obj_to_string(process, pair->cdr)->s, obj_to_string(process, binding->cdr)->s);
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+        pb = pb->cdr;
       }
     }
-    
+
     return true;
   }
   else {
@@ -752,7 +788,7 @@ bool obj_eq(Process *process, Obj *a, Obj *b) {
 
 Obj *generic_name(Process *process, char *function_name, Obj *quoted_sig) {
   Obj *call_to_generic_name = obj_list(obj_new_symbol("generic-name"), obj_new_string(function_name), quoted_sig);
-  shadow_stack_push(process, call_to_generic_name);  
+  shadow_stack_push(process, call_to_generic_name);
   Obj *generic_name_result = NULL;
 
   if(BYTECODE_EVAL) {
@@ -761,7 +797,7 @@ Obj *generic_name(Process *process, char *function_name, Obj *quoted_sig) {
   else {
     generic_name_result = eval(process, process->global_env, call_to_generic_name);
   }
-  
+
   shadow_stack_push(process, generic_name_result);
 
   if(eval_error) {
@@ -778,7 +814,7 @@ Obj *generic_name(Process *process, char *function_name, Obj *quoted_sig) {
 
   Obj *pop2 = shadow_stack_pop(process);
   assert(pop2 == call_to_generic_name);
-  
+
   return generic_name_result;
 }
 
@@ -788,7 +824,8 @@ void bake_generic_primop_auto(Process *process, char *function_name, Obj *quoted
 
   if(BYTECODE_EVAL) {
     bytecode_sub_eval_form(process, process->global_env, call_to_bake_generic_primop_auto);
-  } else {
+  }
+  else {
     //printf("CALL: %s\n", STR(call_to_bake_generic_primop_auto));
     eval(process, process->global_env, call_to_bake_generic_primop_auto);
   }

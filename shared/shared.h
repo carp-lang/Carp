@@ -10,7 +10,9 @@
 #include "types.h"
 #include "platform.h"
 
+// clang-format off
 #define and &&
+// clang-format on
 
 #ifdef WIN32
 #define EXPORT __declspec(dllexport)

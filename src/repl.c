@@ -38,7 +38,7 @@ int paren_balance(char *s) {
     }
     else {
       //printf("ignoring '%c' %d, ignore = '%c'\n", c, c, ignore);
-      
+
       if(c == '"' && c == ignore) {
         //printf("back from ignoring string\n");
         ignore = '\0';
@@ -57,10 +57,10 @@ void repl(Process *process) {
 
     /* int r = */ setjmp(jumpbuffer);
     //printf("r = %d\n", r);
-    
+
     if(GC_COLLECT_BEFORE_REPL_INPUT) {
       if(LOG_GC_POINTS) {
-	printf("Running GC before taking REPL input:\n");
+        printf("Running GC before taking REPL input:\n");
       }
       gc(process);
     }
@@ -68,7 +68,7 @@ void repl(Process *process) {
       printf("%s", prompt->cdr->s);
     }
     int read_offset = 0;
-    
+
   read_more:;
     void *eof = fgets(input + read_offset, MAX_INPUT_BUFFER_SIZE - read_offset, stdin);
     if(eof == NULL) {

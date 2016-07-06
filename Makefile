@@ -9,5 +9,9 @@ all: src/main.o
 run:
 	./bin/carp
 
-clean: rm -f ./bin/*.o ast
+clean:
+	rm -f ./bin/*.o ast
+
+format:
+		find src/ -iname '*.[ch]' | xargs clang-format -style=file -i
 

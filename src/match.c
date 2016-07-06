@@ -73,7 +73,7 @@ bool obj_match_arrays(Process *process, Obj *env, Obj *attempt, Obj *value) {
 
 bool obj_match(Process *process, Obj *env, Obj *attempt, Obj *value) {
   //printf("Matching %s with %s\n", obj_to_string(attempt)->s, obj_to_string(value)->s);
-  
+
   if(attempt->tag == 'C' && obj_eq(process, attempt->car, lisp_quote) && attempt->cdr && attempt->cdr->car) {
     // Dubious HACK to enable matching on quoted things...
     // Don't want to extend environment in this case!
@@ -126,11 +126,11 @@ void match(Process *process, Obj *env, Obj *value, Obj *attempts) {
       assert(pop == new_env);
       return;
     }
-    
+
     if(!p->cdr) {
       set_error("Uneven nr of forms in match.", attempts);
     }
-      
+
     p = p->cdr->cdr;
 
     Obj *e = shadow_stack_pop(process); // new_env
