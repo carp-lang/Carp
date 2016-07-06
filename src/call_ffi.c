@@ -229,6 +229,11 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
           bool argExpectsRef = p->car->tag == 'C' && obj_eq(process, p->car->car, type_ref);
           //printf("argExpectsRef: %d\n", argExpectsRef);
 
+          goto noCopyOfArg;
+
+          if(args[i] == NULL || args[i]->meta == NULL) {
+            goto noCopyOfArg;
+          }
           if(!argExpectsRef) {
             Obj *type = env_lookup(process, args[i]->meta, obj_new_keyword("type"));
             if(type) {
