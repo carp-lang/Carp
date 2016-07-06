@@ -9,10 +9,10 @@ void obj_mark_alive(Obj *o) {
   }
 
   //printf("marking %p alive: ", o); obj_print_cout(o); printf("\n");
-  
+
   o->alive = true;
   obj_mark_alive(o->meta);
-  
+
   if(o->tag == 'C') {
     obj_mark_alive(o->car);
     obj_mark_alive(o->cdr);
@@ -86,7 +86,7 @@ void gc_sweep() {
 
       //memset(dead, 0, sizeof(Obj));
       free(dead);
-      
+
       /* if(dead->tag == 'A') free(dead); */
       /* else if(dead->tag == 'B') free(dead); */
       /* else if(dead->tag == 'C') free(dead); */
@@ -114,7 +114,7 @@ void gc_sweep() {
       /* else { */
       /*   printf("Can't free object with invalid tag: %c\n", dead->tag); */
       /* } */
-      
+
       obj_total--;
       kill_count++;
     }
@@ -157,4 +157,3 @@ void gc(Process *process) {
 void gc_all() {
   gc_sweep();
 }
-

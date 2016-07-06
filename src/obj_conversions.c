@@ -8,7 +8,7 @@ Obj *primitive_array_to_obj_array(Process *process, Array *carp_array, Obj *inne
   Obj *new_array = obj_new_array(carp_array->count);
 
   //printf("Converting primitive array to Obj-array, inner type: %s\n", obj_to_string(inner_type)->s);
-  
+
   if(obj_eq(process, inner_type, type_int)) {
     int *int_array = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
@@ -61,7 +61,7 @@ Obj *primitive_array_to_obj_array(Process *process, Array *carp_array, Obj *inne
 Obj *primitive_to_obj(Process *process, void *primitive, Obj *return_type) {
 
   //printf("Will turn %s to primitive type.\n", obj_to_string(return_type)->s);
-    
+
   Obj *obj_result = NULL;
   if(obj_eq(process, return_type, type_string)) {
     //printf("Returning string.\n");
@@ -71,43 +71,39 @@ Obj *primitive_to_obj(Process *process, void *primitive, Obj *return_type) {
       //printf("Return value of type string from ffi function is null.\n");
       obj_result = obj_new_string("");
     }
-    else {      
+    else {
       obj_result = obj_new_string(c);
     }
   }
-  else if(obj_eq(process, return_type, type_int)) { 
+  else if(obj_eq(process, return_type, type_int)) {
     //printf("Returning int.\n");
     ffi_sarg result = (ffi_sarg)primitive;
     obj_result = obj_new_int(result);
   }
-  else if(obj_eq(process, return_type, type_bool)) { 
+  else if(obj_eq(process, return_type, type_bool)) {
     //printf("Returning bool.\n");
     ffi_arg result = (ffi_arg)primitive;
     obj_result = result ? lisp_true : lisp_false;
   }
-  else if(obj_eq(process, return_type, type_char)) { 
+  else if(obj_eq(process, return_type, type_char)) {
     ffi_sarg result = (ffi_sarg)primitive;
     obj_result = obj_new_char(result);
   }
-  else if(obj_eq(process, return_type, type_float)) { 
+  else if(obj_eq(process, return_type, type_float)) {
     //printf("Returning float.\n");
-    float result = *(float*)&primitive;
+    float result = *(float *)&primitive;
     obj_result = obj_new_float(result);
   }
-  else if(obj_eq(process, return_type, type_double)) { 
-    double result = *(double*)&primitive;
+  else if(obj_eq(process, return_type, type_double)) {
+    double result = *(double *)&primitive;
     obj_result = obj_new_double(result);
   }
-  else if(obj_eq(process, return_type, type_void)) { 
+  else if(obj_eq(process, return_type, type_void)) {
     //printf("Returning void.\n");
     //ffi_sarg result = (ffi_sarg)primitive;
     obj_result = nil;
   }
-  else if(return_type->tag == 'C'
-          && return_type->car
-          && obj_eq(process, return_type->car, obj_new_keyword("Array"))
-          && return_type->cdr && return_type->cdr->car
-          ) {
+  else if(return_type->tag == 'C' && return_type->car && obj_eq(process, return_type->car, obj_new_keyword("Array")) && return_type->cdr && return_type->cdr->car) {
     //printf("Returning an Array.\n");
     void *result = primitive;
     Obj *inner_type = return_type->cdr->car;
@@ -132,11 +128,10 @@ Obj *primitive_to_obj(Process *process, void *primitive, Obj *return_type) {
 Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
   Array *carp_array = malloc(sizeof(Array));
   carp_array->count = obj_array->count;
-  
+
   Obj **oa = obj_array->array;
 
   if(obj_array->count == 0) {
-
   }
   else if(oa[0]->tag == 'I') {
     carp_array->data = malloc(sizeof(int) * carp_array->count);
@@ -179,7 +174,7 @@ Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
     }
   }
   else if(oa[0]->tag == 'S') {
-    carp_array->data = malloc(sizeof(char*) * carp_array->count);
+    carp_array->data = malloc(sizeof(char *) * carp_array->count);
     char **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
       assert_or_set_error_return_null(oa[i]->tag == 'S', "All elements in array must be strings: ", oa[i]);
@@ -187,7 +182,7 @@ Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
     }
   }
   else if(oa[0]->tag == 'Q') {
-    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    carp_array->data = malloc(sizeof(void *) * carp_array->count);
     void **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
       assert_or_set_error_return_null(oa[i]->tag == 'Q', "All elements in array must be ptr:s ", oa[i]);
@@ -195,7 +190,7 @@ Array *obj_array_to_carp_array(Process *process, Obj *obj_array) {
     }
   }
   else if(oa[0]->tag == 'A') {
-    carp_array->data = malloc(sizeof(void*) * carp_array->count);
+    carp_array->data = malloc(sizeof(void *) * carp_array->count);
     Array **data = carp_array->data;
     for(int i = 0; i < carp_array->count; i++) {
       Array *inner_array = obj_array_to_carp_array(process, oa[i]);
