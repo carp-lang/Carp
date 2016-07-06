@@ -17,12 +17,16 @@ Tip: Build libffi with ```./configure --enable-static --disable-shared``` to avo
 
 You will have to tell cmake the location of 'libffi' before it can build correctly. Try using their GUI application if you have trouble, it's pretty self explanatory (first press 'Configure', then set up the paths to 'libffi', and then press 'Generate').
 
-To make cmake find libffi you might need to add it to the PKG_CONFIG_PATH:
+To make cmake find libffi you might need to add it to the `PKG_CONFIG_PATH`:
 ```
 export PKG_CONFIG_PATH=../libffi/<ARCHITECTURE>/
 ```
 
-And to be able to run 'make' you might need to add libffi to your C_INCLUDE_PATH:
+And to be able to run 'make' you might need to add libffi to your `C_INCLUDE_PATH`:
+```
+cmake . cmake . -DLIBFFI_INCLUDE_PATH=/opt/local/lib/libffi-3.2.1/include -DLIBFFI_LIBRARY_PATH=/opt/local/lib/
+```
+or
 ```
 export C_INCLUDE_PATH=../libffi/<ARCHITECTURE>/include
 ```
@@ -33,6 +37,7 @@ Note: 'rlwrap' is not strictly needed but makes the REPL experience much nicer, 
 
 ## Mac OS X
 If 'libffi' is installed with Brew, you can find the libraries at "/usr/local/Cellar/libffi/3.0.13/lib/" and the include files at "/usr/local/opt/libffi/lib/libffi-3.0.13/include".
+With macports 'libffi' is at "/opt/local/lib/libffi-3.2.1/include" and "/opt/local/lib".
 
 ## Linux
 On Linux Clang must be installed (GCC support will be added later).

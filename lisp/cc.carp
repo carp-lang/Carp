@@ -13,21 +13,29 @@
      :link-extension ".lib"
      :include-flag "/I"
      :linkdir-flag "/link /NOLOGO /LIBPATH:"}
-    {:dylib-extension ".so"
+    (if (osx?)
+     {:dylib-extension ".dylib"
+     :link-extension ".bundle"
+     :include-flag "-I"
+     :linkdir-flag "-L"}
+     {:dylib-extension ".so"
      :link-extension ".so"
      :include-flag "-I"
-     :linkdir-flag "-L"}))
+     :linkdir-flag "-L"})))
 
 (defn link-libs (dependencies)
-  (join " " (map (fn (f) (str out-dir (c-ify-name (str f)) (:link-extension platform-specifics))) dependencies)))
+  (join " " (map (fn (f) (str out-dir (c-ify-name (str f))
+                              (:link-extension platform-specifics))) dependencies)))
 
 (defn include-paths ()
-  (str (:include-flag platform-specifics) "/usr/local/include " (:include-flag platform-specifics) carp-dir "/shared"))
+  (str (:include-flag platform-specifics) "/usr/local/include "
+       (:include-flag platform-specifics) "/opt/local/include "
+       (:include-flag platform-specifics) carp-dir "/shared"))
 
 (defn lib-paths ()
   (cond
       (windows?) ""
-      (osx?)     (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")
+      (osx?)     (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -L/opt/local/lib/ -lglfw")
       (linux?)   (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw")))
 
 (defn framework-paths ()
@@ -57,7 +65,8 @@
   (let [clang-command (str "clang -g -DAPI= "
                            (if exe
                              (str "-o " exe-out-dir exe-name " ")
-                             (str "-shared -fPIC -D_GNU_SOURCE -g -o " out-dir c-func-name ".so "))
+                             (str "-shared -fPIC -D_GNU_SOURCE -g -o " out-dir c-func-name
+                                  (:link-extension platform-specifics) " "))
                            c-file-name " "
                            (include-paths)  " "
                            (lib-paths) " "
@@ -95,6 +104,8 @@
       (system "del *.obj"))
     (do
       (system "rm declarations.h")
-      (system "rm *.so")
+      (system (str "rm *" (:link-extension platform-specifics)))
       (system "rm *.c")
-      (system "rm -r *.dSYM"))))
+      (if (osx?)
+        (system "rm -r *.dSYM"))
+      )))

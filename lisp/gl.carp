@@ -1,6 +1,7 @@
 
-(if (osx?) (def *LIBNAME* "libglfw3.dylib") "")
-(if (linux?) (def *LIBNAME* "libglfw.so") "")
+;(if (osx?) (def *LIBNAME* "libglfw3.dylib") "")
+;(if (linux?) (def *LIBNAME* "libglfw.so") "")
+(def *LIBNAME* (str (if (windows?) "" "lib") "glfw" (:dylib-extension platform-specifics))
 
 (def glfw (load-dylib *LIBNAME*))
 

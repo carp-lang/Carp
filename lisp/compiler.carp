@@ -132,7 +132,7 @@
 (defn compiler/bake-group [group-name code-nodes deps]
   (let [src (with-declarations-header (join "\n\n" (map (fn [d] (:src d)) code-nodes)))
         c-file-name (c-ify-name (str out-dir group-name ".c"))
-        dylib-full-path (c-ify-name (str out-dir group-name (:dylib-extension platform-specifics)))]
+        dylib-full-path (c-ify-name (str out-dir group-name (:link-extension platform-specifics)))]
     (do
       ;;(println (str "Compiling group '" group-name "'."))
       (def src src)
