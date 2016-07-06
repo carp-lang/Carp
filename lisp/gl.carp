@@ -6,8 +6,11 @@
 
 (reset! extra-header-deps (cons "<GLFW/glfw3.h>" extra-header-deps))
 
+;; (register-struct GLFWmonitor)
+;; (register-struct GLFWwindow)
+
 (register glfw "glfwInit" '() :bool)
-(register glfw "glfwCreateWindow" '(:int :int (:ref :string) :GLFWmonitor :GLFWwindow) '(:ref :GLFWwindow))
+(register glfw "glfwCreateWindow" '(:int :int (:ref :string) (:ref :GLFWmonitor) (:ref :GLFWwindow)) '(:ref :GLFWwindow))
 (register glfw "glfwMakeContextCurrent" '((:ref :GLFWwindow)) :void)
 (register glfw "glfwTerminate" '() :void)
 (register glfw "glfwPollEvents" '() :void)

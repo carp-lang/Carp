@@ -50,6 +50,6 @@
 (register-builtin "async" '((:fn () :void)) :void)
 
 ;;Misc
-(register-builtin "nullQMARK" '(:any) :bool)
+(register-builtin "nullQMARK" '((:ref :any)) :bool)
 (register-builtin "not" '(:bool) :bool)
 
