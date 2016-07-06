@@ -1,3 +1,5 @@
+https://news.ycombinator.com/item?id=12039268
+
 # C PROGRAMMING, LLVM, AND DEBUGGING
 http://clang.llvm.org/docs/AddressSanitizer.html
 https://www.iar.com/support/resources/articles/advanced-preprocessor-tips-and-tricks/
