@@ -229,18 +229,23 @@ void call_foreign_function(Process *process, Obj *function, Obj **args, int arg_
           bool argExpectsRef = p->car->tag == 'C' && obj_eq(process, p->car->car, type_ref);
           //printf("argExpectsRef: %d\n", argExpectsRef);
 
-          goto noCopyOfArg;
-
           if(args[i] == NULL || args[i]->meta == NULL) {
             goto noCopyOfArg;
           }
           if(!argExpectsRef) {
             Obj *type = env_lookup(process, args[i]->meta, obj_new_keyword("type"));
             if(type) {
-              /* printf("Sending void_ptr as argument to ffi function, "); */
-              /* printf(" it's value is '%s' of type: ", STR(args[i])); */
-              /* printf("%s and tag %c, this should be copied! (for correctness)\n", STR(type), args[i]->tag); */
+
+              /* printf("Sending void_ptr as argument to ffi function %s, ", STR(function)); */
+              /* //printf(" it's value is '%s' ", STR(args[i])); */
+              /* printf("type %s and tag %c, this should be copied! (for correctness)\n", STR(type), args[i]->tag); */
+              
               Obj *copy = obj_copy(process, args[i]);
+
+              if(eval_error) {
+                return;
+              }
+              
               copy->meta = args[i]->meta;
               shadow_stack_push(process, copy);
               //printf("Copy with tag '%c': %s\n", copy->tag, STR(copy));

@@ -833,7 +833,7 @@ void bake_generic_primop_auto(Process *process, char *function_name, Obj *quoted
   if(eval_error) {
     printf("Error when calling bake-generic-primop-auto '%s' from C code: ", function_name);
     printf("%s\n", obj_to_string(process, eval_error)->s);
-    function_trace_print(process);
+    //function_trace_print(process);
     return;
   }
   else {

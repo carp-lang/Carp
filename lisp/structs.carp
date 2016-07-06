@@ -1,4 +1,19 @@
 
+;; Should there be a way to mark existing C-structs?
+;; (defmacro register-struct [struct-name]
+;;   (register-struct-internal (str struct-name)))
+
+;; (defn register-struct-internal [struct-name]
+;;   (let [type-definition nil
+;;         group-name ""
+;;         dependency-level 0
+;;         copy-signature (list :fn (list (list :ref (keyword struct-name))) (keyword struct-name))]
+;;     (do
+;;       ;;(graph/add-node! :struct struct-name type-definition "" group-name nil '() dependency-level)
+;;       (graph/add-node! :struct (generic-name "copy" copy-signature) nil "" group-name nil '() dependency-level))))
+
+
+
 (defmacro defstruct (struct-name struct-members)
   (let [names-and-types (split-every-second (array-to-list struct-members))]
     (list 'defstruct-internal
