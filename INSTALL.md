@@ -4,6 +4,8 @@ Clone this repo, then use cmake to generate the project files that you desire. E
 
 ```cmake .```
 
+Make sure you run the compiler (i.e. ```make``` if you generated a Makefile). Now there should be a ```Carp/bin/carp-repl``` executable.
+
 Add the 'bin' directory to your path to enable calling the ```carp``` command. To do this, add the following to your .bashrc / .zshrc / whatever:
 
 ```export PATH=$PATH:~/Carp/bin/```
