@@ -43,3 +43,4 @@ add_custom_target(
     COMMAND find . -iname '*.[ch]' | xargs clang-format -style=file -i
 )
 
+set_property(TARGET carp-repl PROPERTY C_STANDARD 99)
