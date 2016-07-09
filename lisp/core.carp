@@ -292,8 +292,22 @@
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
 (defn user () (getenv "USER"))
-(defn mkdir (dir-name) (system (str "mkdir " dir-name)))
-(defn touch (file-name) (system (str "touch " file-name)))
+
+(defn shell-safe? (str)
+  (do
+    (def shell-safe-chars "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-/.")
+    (defn in-shell-safe-chars? (char) (string-contains? shell-safe-chars char))
+
+    (all? in-shell-safe-chars? (chars str))))
+
+(defn mkdir (dir-name)
+  (if (shell-safe? dir-name)
+    (system (str "mkdir " dir-name))
+    (list 'error "invalid dir-name input")))
+(defn touch (file-name)
+  (if (shell-safe? file-name)
+    (system (str "touch " file-name))
+    (list 'error "invalid file-name input")))
 
 (register-builtin "platform" '() :int)
 
