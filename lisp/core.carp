@@ -288,11 +288,11 @@
 
 (defn shell-quote [arg]
   (str
-    "\"" ;; surround with quotes
+    "'" ;; surround with quotes
     (str-replace
       (str-replace arg "\\" "\\\\") ;; replace backslashes
-      "\"" "\\\"") ;; replace double-quotes
-    "\""))
+      "'" "\\'") ;; replace single quotes
+    "'"))
 
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
