@@ -41,8 +41,8 @@
 
 (defmacro assert-eq (a b)
   (list 'if-not (list '= a b)
-	(list 'error (list 'str "assert-eq fail:\n" (str a) " \n=>\n" a "\n\n - VS - \n\n" (str b) " \n=>\n" b))
-	nil))
+    (list 'error (list 'str "assert-eq fail:\n" (str a) " \n=>\n" a "\n\n - VS - \n\n" (str b) " \n=>\n" b))
+    nil))
 
 (defmacro assert-error (error-code form)
   (list 'let (array 'result (list 'catch-error form))

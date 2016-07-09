@@ -34,7 +34,7 @@
 (defn update-in (dict key-path f)
   (let [new (copy dict)]
     (do (update-in! new key-path f)
-	new)))
+        new)))
 
 (defn assoc (dict key val)
   (let [new (copy dict)]
