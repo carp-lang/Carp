@@ -16,8 +16,8 @@
 (def carp-dev (env-variable-true? (getenv "CARP_DEV")))
 
 ;; ~~~ CORE ~~~
-(load-lisp (str carp-dir "lisp/core.carp"))
 (load-lisp (str carp-dir "lisp/builtins.carp"))
+(load-lisp (str carp-dir "lisp/core.carp"))
 (load-lisp (str carp-dir "lisp/signatures.carp"))
 (load-lisp (str carp-dir "lisp/tester.carp"))
 
