@@ -48,7 +48,7 @@
         (map graph/unload-group (set (map :group dependers)))
         ;;(println (str "graph nodes: " (keys graph)))
 
-        (if (any generic-type? (array-to-list member-types))
+        (if (any? generic-type? (array-to-list member-types))
           (do
             (eval (list 'def (symbol struct-name) {:struct true
                                                    :generic true
@@ -105,7 +105,7 @@
 
 (defn struct-type? [t]
   (if (list? t)
-    (any struct-type? t)
+    (any? struct-type? t)
     (let [x (symbol (name t))
           lookup (if (def? x) (eval x) nil)]
       (and (dict? lookup) (key-is-true? lookup :struct)))))

@@ -15,12 +15,12 @@
   (match (type t)
     :string true
     :keyword false
-    :list (any true? (map generic-type? t))
+    :list (any? true? (map generic-type? t))
     x (error (str "Invalid type in 'generic-type?': " (prn x)))))
 
 (defn generic-function? [ast]
   (match (:type ast)
-    (:fn arg-types ret-type) (or (any generic-type? arg-types) (generic-type? ret-type))
+    (:fn arg-types ret-type) (or (any? generic-type? arg-types) (generic-type? ret-type))
     x (error (str "Can't match " x " in generic-function?"))))
 
 (defn c-ify-name [lisp-name]
