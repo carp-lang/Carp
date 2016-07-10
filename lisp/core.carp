@@ -176,8 +176,26 @@
 (defn true? (x) (= true x))
 (defn false? (x) (= false x))
 
-(defn all? (pred xs)
-  (= (count xs) (count (filter pred xs))))
+(defn all? [pred xs]
+  ;; short circuit if any (pred item) is false
+  (let [cont true
+        res  false]
+    (do
+      (while cont
+        (match xs
+          ()  (do
+                (reset! cont false))
+          (x) (do
+                (reset! cont false)
+                (reset! res (pred x)))
+          (x ... rest) (if (not (pred x))
+                           (do
+                             (reset! cont false)
+                             (reset! res false))
+                           (do
+                             (reset! xs rest)
+                             (reset! res true)))))
+      res)))
 
 (defn remove (pred xs)
   (filter (fn (x) (not (pred x))) xs))
