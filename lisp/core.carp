@@ -103,10 +103,23 @@
   (array-contains? (chars str) char))
 
 (defn any (pred xs)
-  (match xs
-    () false
-    (x) (pred x)
-    (x ... rest) (if (pred x) true (any pred rest))))
+  ;; short circuit if any (pred item) is true
+  (let [cont true
+        res  false]
+    (do
+      (while cont
+        (match xs
+          ()  (do
+                (reset! cont false))
+          (x) (do
+                (reset! cont false)
+                (reset! res (pred x)))
+          (x ... rest) (if (pred x)
+                           (do
+                             (reset! cont false)
+                             (reset! res  true))
+                           (reset! xs rest))))
+      res)))
 
 (defn true? (x) (if x true false))
 (defn false? (x) (if x false true))
