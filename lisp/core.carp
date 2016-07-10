@@ -103,7 +103,10 @@
   (array-contains? (chars str) char))
 
 (defn any (pred xs)
-  (contains? (map pred xs) true))
+  (match xs
+    () false
+    (x) (pred x)
+    (x ... rest) (if (pred x) true (any pred rest))))
 
 (defn true? (x) (if x true false))
 (defn false? (x) (if x false true))
