@@ -103,7 +103,23 @@
   (array-contains? (chars str) char))
 
 (defn any (pred xs)
-  (contains? (map pred xs) true))
+  ;; short circuit if any (pred item) is true
+  (let [cont true
+        res  false]
+    (do
+      (while cont
+        (match xs
+          ()  (do
+                (reset! cont false))
+          (x) (do
+                (reset! cont false)
+                (reset! res (pred x)))
+          (x ... rest) (if (pred x)
+                           (do
+                             (reset! cont false)
+                             (reset! res  true))
+                           (reset! xs rest))))
+      res)))
 
 (defn true? (x) (if x true false))
 (defn false? (x) (if x false true))
@@ -173,8 +189,26 @@
 (defn true? (x) (= true x))
 (defn false? (x) (= false x))
 
-(defn all? (pred xs)
-  (= (count xs) (count (filter pred xs))))
+(defn all? [pred xs]
+  ;; short circuit if any (pred item) is false
+  (let [cont true
+        res  true]
+    (do
+      (while cont
+        (match xs
+          ()  (do
+                (reset! cont false))
+          (x) (do
+                (reset! cont false)
+                (reset! res (pred x)))
+          (x ... rest) (if (not (pred x))
+                           (do
+                             (reset! cont false)
+                             (reset! res false))
+                           (do
+                             (reset! xs rest)
+                             (reset! res true)))))
+      res)))
 
 (defn remove (pred xs)
   (filter (fn (x) (not (pred x))) xs))

@@ -392,6 +392,18 @@
     (assert (string-contains? "abc" \a))
     (assert (not (string-contains? "abc" \d)))))
 
+(deftest test-any
+  (do
+    (defn is-a (x) (= \a x))
+    (assert (any is-a (cons \a (cons \b (cons \c nil)))))
+    (assert (not (any is-a (cons \d (cons \b (cons \c nil))))))))
+
+(deftest test-all?
+  (do
+    (defn is-a (x) (= \a x))
+    (assert (all? is-a (list \a \a \a)))
+    (assert (not (all? is-a (list \a \a \a \b))))))
+
 ;; Can't test this inside a function:
 (defn define-at-toplevel ()
   (def top-var :mountain-high))
