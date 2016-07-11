@@ -33,3 +33,6 @@ temp/
 /TAGS
 /bin/project.carp
 instrumentations/
+/CMakeCache.txt
+CMakeFiles/
+/cmake_install.cmake
