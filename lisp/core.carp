@@ -58,7 +58,7 @@
     '()
     (cons (f) (repeatedly f (- times 1)))))
 
-;; Replace all occurences of something in a list
+^doc "Replace all occurrences of `something` in a list with `replacement`"
 (defn replace [the-list something replacement]
   (match the-list
     () ()
@@ -85,6 +85,7 @@
   (and (not (= x y))
        (not (< x y))))
 
+^doc "Returns true if item is within items"
 (defn contains? (items item)
   (match items
     () false
@@ -92,6 +93,7 @@
                  true
                  (contains? xs item))))
 
+^doc "Returns true if the array xs contains the item x"
 (defn array-contains? [xs x]
   (let [result false]
     (do (for (i 0 (count xs))
@@ -102,6 +104,7 @@
 (defn string-contains? [str char]
   (array-contains? (chars str) char))
 
+^doc "Returns true if (pred item) returns true for any item within xs"
 (defn any? (pred xs)
   ;; short circuit if any (pred item) is true
   (let [cont true
@@ -163,18 +166,21 @@
     (cons start (range-f (+ start step) stop step))
     '()))
 
+^doc "Returns reversed list"
 (defn reverse (l)
   (match l
     () ()
     (x) (list x)
     (x ... xs) (cons-last (reverse xs) x)))
 
+^doc "Returns true if dictionary `dict` contains key `key`"
 (defn has-key? (dict key)
   (not (= () (get-maybe dict key))))
 
 (defn even? (x) (= 0 (mod x 2)))
 (defn odd? (x) (= 1 (mod x 2)))
 
+^doc "Returns last item in list"
 (defn last (xs)
   (match xs
     () (error "Can't call last on empty list.")
@@ -189,6 +195,7 @@
 (defn true? (x) (= true x))
 (defn false? (x) (= false x))
 
+^doc "Returns true if `(pred item)` returns true for all items within xs"
 (defn all? [pred xs]
   ;; short circuit if any (pred item) is false
   (let [cont true
