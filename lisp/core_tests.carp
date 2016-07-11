@@ -387,6 +387,11 @@
                _ :also-fail)
              27))
 
+(deftest test-string-handling
+  (do
+    (assert (string-contains? "abc" \a))
+    (assert (not (string-contains? "abc" \d)))))
+
 ;; Can't test this inside a function:
 (defn define-at-toplevel ()
   (def top-var :mountain-high))

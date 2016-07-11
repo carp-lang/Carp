@@ -102,6 +102,9 @@
             (reset! result true)))
         result)))
 
+(defn string-contains? [str char]
+  (array-contains? (chars str) char))
+
 (defn any (pred xs)
   (contains? (map pred xs) true))
 
