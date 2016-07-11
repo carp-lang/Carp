@@ -64,6 +64,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Anes Lihovac
 * Chris Hall
 * Tom Smeding
+* Dan Connolly
 
 ## License
 
