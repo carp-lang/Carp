@@ -43,6 +43,9 @@ int paren_balance(char *s) {
         //printf("back from ignoring string\n");
         ignore = '\0';
       }
+      else if(c == '\\' && ignore == '"') {
+        i++;
+      }
       else if(c == '\n' && ignore == ';') {
         //printf("back from ignoring comment\n");
         ignore = '\0';
