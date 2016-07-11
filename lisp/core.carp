@@ -81,9 +81,6 @@
 (defmacro swap! (sym f)
   (list 'reset! sym (list f sym)))
 
-(defn inc (x) (+ x 1))
-(defn dec (x) (- x 1))
-
 (defn > [x y]
   (and (not (= x y))
        (not (< x y))))
