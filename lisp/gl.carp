@@ -26,14 +26,22 @@
 (def glfw-cursor-callback-type '(:fn ((:ref :GLFWwindow) :double :double) :void))
 (register glfw "glfwSetCursorPosCallback" (list '(:ref :GLFWwindow) glfw-cursor-callback-type) :void)
 
-(register glfw "glClearColor" '(:float :float :float :float) :void)
-(register glfw "glClear" '(:int) :void)
-(register glfw "glColor3f" '(:float :float :float) :void)
-(register glfw "glBegin" '(:int) :void)
-(register glfw "glEnd" '() :void)
-(register glfw "glVertex3f" '(:float, :float, :float) :void)
-(register glfw "glOrtho" '(:double :double :double :double :double :double) :void)
-(register glfw "glLoadIdentity" '() :void)
+;; use libgl for gl-funcs under linux
+;; use glfw on other platforms
+(if (linux?)
+  (do
+    (def libgl (load-dylib "libGL.so"))
+    (def gl-funcs libgl))
+  (def gl-funcs glfw))
+
+(register gl-funcs "glClearColor" '(:float :float :float :float) :void)
+(register gl-funcs "glClear" '(:int) :void)
+(register gl-funcs "glColor3f" '(:float :float :float) :void)
+(register gl-funcs "glBegin" '(:int) :void)
+(register gl-funcs "glEnd" '() :void)
+(register gl-funcs "glVertex3f" '(:float, :float, :float) :void)
+(register gl-funcs "glOrtho" '(:double :double :double :double :double :double) :void)
+(register gl-funcs "glLoadIdentity" '() :void)
 
 (def carp-gl-color-buffer-bit 16384)
 (def carp-gl-lines 1)
