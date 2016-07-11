@@ -117,20 +117,20 @@ typedef struct Obj {
   char tag;
 } Obj;
 
-typedef struct {
+typedef struct StackTraceCallSite {
   Obj *caller;
   Obj *callee;
 } StackTraceCallSite;
 
-typedef struct {
+typedef struct BytecodeFrame {
   int p;
   Obj *bytecodeObj;
   Obj *env;
   Obj *trace;
 } BytecodeFrame;
 
-typedef struct {
-  struct Obj *stack[STACK_SIZE];
+typedef struct Process {
+  Obj *stack[STACK_SIZE];
   int stack_pos;
 
   Obj *shadow_stack[SHADOW_STACK_SIZE];
