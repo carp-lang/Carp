@@ -63,6 +63,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Fyodor Shchukin
 * Anes Lihovac
 * Chris Hall
+* Tom Smeding
 
 ## License
 
