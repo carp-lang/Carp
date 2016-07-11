@@ -392,11 +392,11 @@
     (assert (string-contains? "abc" \a))
     (assert (not (string-contains? "abc" \d)))))
 
-(deftest test-any
+(deftest test-any?
   (do
     (defn is-a (x) (= \a x))
-    (assert (any is-a (cons \a (cons \b (cons \c nil)))))
-    (assert (not (any is-a (cons \d (cons \b (cons \c nil))))))))
+    (assert (any? is-a (cons \a (cons \b (cons \c nil)))))
+    (assert (not (any? is-a (cons \d (cons \b (cons \c nil))))))))
 
 (deftest test-all?
   (do

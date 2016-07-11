@@ -185,7 +185,7 @@
     (do
       {:node :lookup
        :constructor true
-       :generic (any generic-type? (array-to-list member-types))
+       :generic (any? generic-type? (array-to-list member-types))
        :typevars (typevars-from-member-types member-types)
        :type (list :fn (repeatedly gen-typevar arg-count) (keyword struct-name))
        :member-types member-types

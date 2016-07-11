@@ -102,7 +102,7 @@
 (defn string-contains? [str char]
   (array-contains? (chars str) char))
 
-(defn any (pred xs)
+(defn any? (pred xs)
   ;; short circuit if any (pred item) is true
   (let [cont true
         res  false]
