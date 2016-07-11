@@ -192,7 +192,7 @@
 (defn all? [pred xs]
   ;; short circuit if any (pred item) is false
   (let [cont true
-        res  false]
+        res  true]
     (do
       (while cont
         (match xs
