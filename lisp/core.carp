@@ -286,11 +286,19 @@
           text
           (map2 list (keys substitutions) (values substitutions))))
 
+(defn shell-quote [arg]
+  (str
+    "'" ;; surround with quotes
+    (str-replace
+      (str-replace arg "\\" "\\\\") ;; replace backslashes
+      "'" "\\'") ;; replace single quotes
+    "'"))
+
 (defn ls () (system "ls"))
 (defn pwd () (system "pwd"))
 (defn user () (getenv "USER"))
-(defn mkdir (dir-name) (system (str "mkdir " dir-name)))
-(defn touch (file-name) (system (str "touch " file-name)))
+(defn mkdir (dir-name) (system (str "mkdir " (shell-quote dir-name))))
+(defn touch (file-name) (system (str "touch " (shell-quote file-name))))
 
 (register-builtin "platform" '() :int)
 
