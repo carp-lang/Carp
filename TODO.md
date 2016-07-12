@@ -1,13 +1,3 @@
-NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls to eval
-
-- Line numbers for dictionary literals
-- Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
-- Desugar [...] to (array ...) in reader
-
-
-# Generic structs 
-  - unload all concretized structs when the parent struct is redefined
-
 # The Big 'ref' debacle - alternatives:
   1. Allow ref:ed value types to be coerced into non-ref:ed types
   2. A deref function that can remove the ref from primitive types
@@ -16,11 +6,7 @@ NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls t
      (it requires a fn of type &a -> b)
 
 # Compiler Big Features
-  - Allow global vars to be sent to baked functions
-  - Bake generic structs in global variables
   - Live Reloading (requires threads and bytecode interpreter)
-  - Windows support
-  - Linux support
   - Special handling of POD structs (stack allocated, referenced by pointer)
   - Compile match statements (should it be a macro?)
   - Compile modules (when they exist in the dynamic runtime...)
@@ -29,10 +15,8 @@ NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls t
   - get / set special forms?
 
 # Bytecode
-  - handle array literals
-  - handle (list ...)
-  - inline 'do'
-  - inline 'let'
+  - Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
+  - Make bytecode 'match' use labels and gotos instead of recursive calls to eval
 
 # Compiler Small Features
   - Shorter names for concrete versions of generic functions
@@ -41,6 +25,7 @@ NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls t
 
 # Compiler Correctness
   - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
+  - Must unload all concretized structs when the parent struct is redefined
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
   - Complete type constraints for binops, check for "numeric" types (use a union type of some sort?). Or turn binops into normal funcs?
@@ -52,12 +37,15 @@ NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls t
   - Rewrite a bunch of functions in the compiler passes using pipe operator and update-in
   - Speed up some passes by mutating a single variable instead of copying immutable versions around
   - Use the new key-is-true function instead of has-key? in lots of places
+  - Calls back to the compiler from runtime should be minimized and only require a single call, not two or three like it often is now
 
 # Dynamic Runtime Big Features
+  - Desugar [...] to (array ...) in reader
   - Macro splicing
   - Modules 
   - A Set-type with reader syntax #{}
   - Instantiate generic functions like '=' for primitive types when calling them
+  - Line numbers for dictionary literals
   
 # Modules
   - Name
@@ -82,8 +70,7 @@ NEXT UP: make bytecode 'match' use labels and gotos instead of recursive calls t
   
 # Sanity checks
   - Ensure correctness of GC (run at every step)
-  - Don't leak values returned from calling ffi functions at the repl (but how..?)
-  - Profile the evaluator
+  - Don't leak values returned from calling ffi functions via non-compiled code
   
 # Lisp Core Libs
   - 'import' function that searches paths for carp files
