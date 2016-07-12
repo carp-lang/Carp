@@ -19,14 +19,14 @@
 // 'd' def <literal>
 // 'e' discard
 // 'g' catch
-// 'i' jump if false
-// 'j' jump (no matter what)
+// 'i' jump if false <pos>
+// 'j' jump (no matter what) <pos>
 // 'l' push <literal>
 // 'n' not
 // 'o' do
 // 'p' push nil
-// 'r' reset!
-// 't' let
+// 'r' reset! <literal>
+// 't' let <literal>
 // 'u' end of function (process->function_trace_pos--)
 // 'v' pop let scope
 // 'x' direct lookup

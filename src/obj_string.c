@@ -408,25 +408,87 @@ void obj_to_string_internal(Process *process, Obj *total, const Obj *o, bool prn
     }
   }
   else if(o->tag == 'X') {
-    /* obj_string_mut_append(total, "--- Bytecode ---\n"); */
-    /* obj_string_mut_append(total, o->bytecode); */
-    /* obj_string_mut_append(total, "\nLiterals: "); */
-    /* obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s); */
-    /* obj_string_mut_append(total, "\n----------------"); */
-    obj_string_mut_append(total, "(Bytecode: ");
+    obj_string_mut_append(total, "(\n");
 
-    /* for(char *p = o->bytecode; p != '\0'; p++) { */
-    /*   char buffer[16]; */
-    /*   buffer[0] = *p; */
-    /*   buffer[1] = '\0'; */
-    /*   //printf("buffer = %s\n", buffer); */
-    /*   obj_string_mut_append(total, buffer); */
-    /* } */
+    for(char *p = o->bytecode; *p != '\0';) {
+      const int buffer_size = 128;
+      char buffer[buffer_size];
+      
+      snprintf(buffer, buffer_size, "%4d  ", (int)(p - o->bytecode));
+      obj_string_mut_append(total, buffer);
 
-    obj_string_mut_append(total, o->bytecode);
+      char c = *p;
+      p++;
+      
+      if(c == 'l') {
+        snprintf(buffer, buffer_size, "LOAD LIT %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'a') {
+        snprintf(buffer, buffer_size, "LOAD λ %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'c') {
+        snprintf(buffer, buffer_size, "CALL %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'd') {
+        snprintf(buffer, buffer_size, "DEFINE %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'y') {
+        snprintf(buffer, buffer_size, "LOOKUP %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'i') {
+        snprintf(buffer, buffer_size, "JUMP IF NOT %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'j') {
+        snprintf(buffer, buffer_size, "JUMP %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'r') {
+        snprintf(buffer, buffer_size, "RESET %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 't') {
+        snprintf(buffer, buffer_size, "LET %d", *((int*)p));
+        p += sizeof(int);
+      }
+      else if(c == 'e') {
+        snprintf(buffer, buffer_size, "DISCARD");
+      }
+      else if(c == 'g') {
+        snprintf(buffer, buffer_size, "CATCH");
+      }
+      else if(c == 'n') {
+        snprintf(buffer, buffer_size, "NOT");
+      }
+      else if(c == 'p') {
+        snprintf(buffer, buffer_size, "PUSH NIL");
+      }
+      else if(c == 'v') {
+        snprintf(buffer, buffer_size, "POP LET-SCOPE");
+      }
+      else if(c == 'x') {
+        snprintf(buffer, buffer_size, "DIRECT LOOKUP");
+      }
+      else if(c == 'q') {
+        snprintf(buffer, buffer_size, "END");
+      }
+      else {
+        snprintf(buffer, buffer_size, "UNHANDLED OP (%c)", *p);
+        p++;
+      }
+      
+      obj_string_mut_append(total, buffer);
+      obj_string_mut_append(total, "\n");
+    }
 
-    obj_string_mut_append(total, " => ");
+    obj_string_mut_append(total, "Literals: ");
     obj_string_mut_append(total, obj_to_string(process, o->bytecode_literals)->s);
+    obj_string_mut_append(total, "\n");
     obj_string_mut_append(total, ")");
   }
   else {
