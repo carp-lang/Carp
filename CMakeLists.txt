@@ -33,9 +33,6 @@ endif()
 set(SOURCE_DIR src)
 include(globfiles.cmake)
 
-include(FindPkgConfig)
-PKG_SEARCH_MODULE(LIBFFI REQUIRED libffi)
-
 include_directories(
     ${LIBFFI_INCLUDE_DIRS})
 
