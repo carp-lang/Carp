@@ -1,0 +1,20 @@
+os:
+  - linux
+
+language: c
+
+compiler: gcc
+
+sudo: true
+
+before_install:
+  - sudo apt-get update
+
+install:
+  - sudo apt-get install build-essential cmake pkg-config libffi-dev rlwrap libglfw3-dev
+
+script:
+  cmake .
+  make
+
+
