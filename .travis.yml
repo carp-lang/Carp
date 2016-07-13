@@ -20,7 +20,7 @@ install:
   - sudo apt-get install -y --force-yes libglfw3-dev
 
 script:
-  cmake .
-  make
+  - cmake .
+  - make
 
 
