@@ -3,7 +3,9 @@ os:
 
 language: c
 
-compiler: gcc
+compiler:
+  - gcc
+  - clang
 
 sudo: true
 
