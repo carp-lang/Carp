@@ -8,10 +8,15 @@ compiler: gcc
 sudo: true
 
 before_install:
+  # libglfw3-dev is not available in travis ubuntu
+  # see https://github.com/filipwasil/fillwave/issues/58
+  # get via ppa
+  - echo "deb http://ppa.launchpad.net/keithw/glfw3/ubuntu trusty main" | sudo tee -a /etc/apt/sources.list.d/fillwave_ext.list
   - sudo apt-get update
 
 install:
-  - sudo apt-get install build-essential cmake pkg-config libffi-dev rlwrap libglfw3-dev
+  - sudo apt-get install build-essential cmake pkg-config libffi-dev rlwrap
+  - sudo apt-get install libglfw3-dev
 
 script:
   cmake .
