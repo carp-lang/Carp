@@ -16,7 +16,8 @@ before_install:
 
 install:
   - sudo apt-get install build-essential cmake pkg-config libffi-dev rlwrap
-  - sudo apt-get install libglfw3-dev
+  # unauthenticated package - install anyway
+  - sudo apt-get install -y --force-yes libglfw3-dev
 
 script:
   cmake .
