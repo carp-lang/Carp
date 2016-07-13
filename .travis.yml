@@ -1,0 +1,28 @@
+os:
+  - linux
+
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+sudo: required
+
+before_install:
+  # libglfw3-dev is not available in travis ubuntu
+  # see https://github.com/filipwasil/fillwave/issues/58
+  # get via ppa
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "deb http://ppa.launchpad.net/keithw/glfw3/ubuntu trusty main" | sudo tee -a /etc/apt/sources.list.d/fillwave_ext.list; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+
+install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install build-essential cmake pkg-config libffi-dev rlwrap; fi
+  # unauthenticated package - install anyway
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y --force-yes libglfw3-dev; fi
+
+script:
+  - cmake .
+  - make
+
+
