@@ -28,7 +28,7 @@
   (cond
       (windows?) ""
       (osx?)     (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw3")
-      (linux?)   (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw")))
+      (linux?)   (str (:linkdir-flag platform-specifics) "/usr/local/lib/ -lglfw -lm -pthread -ldl")))
 
 (defn framework-paths ()
   (if (or (windows?) (linux?))
