@@ -9,6 +9,11 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/time.h>
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <dlfcn.h>
 #include <unistd.h>
 
