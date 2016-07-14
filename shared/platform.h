@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+// The symbols RTLD_DEFAULT and RTLD_NEXT are defined by <dlfcn.h> only
+// when _GNU_SOURCE was defined before including it. (http://linux.die.net/man/3/dlopen)
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
