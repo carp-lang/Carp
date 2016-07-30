@@ -1,4 +1,3 @@
-#include "../shared/platform.h"
 #include "../shared/shared.h"
 #include "repl.h"
 #include "eval.h"
