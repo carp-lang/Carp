@@ -1,5 +1,7 @@
 # Installation
 
+**Sorry about the mess in this document, it will be cleaned up when there is a good and easy way to build the whole project.**
+
 Clone this repo, then use cmake to generate the project files that you desire. Either run it in the root of the Carp project, or from a sub directory that you create called 'build' or similar. Then build the project and make sure the resulting executable is put into the 'bin' directory (cmake should arrange that automatically). An example of how to do all of this for Xcode is in the file 'xcode.sh' in the root of the project.
 
 ```cmake .```
