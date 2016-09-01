@@ -20,10 +20,10 @@ The key features of Carp are the following:
 
 ## Learn more
 
-* [Installation](INSTALL.md) - how to build the Carp compiler
-* [The Compiler Manual](MANUAL.md) - how to compile code and configure your projects
-* [Carp Language Guide](LANGUAGE.md) - syntax and semantics of the language
-* [Libraries](LIBRARIES.md) - the various libraries that come built-in to Carp
+* [Installation](docs/Install.md) - how to build the Carp compiler
+* [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
+* [Carp Language Guide](docs/Language.md) - syntax and semantics of the language
+* [Libraries](docs/Libraries.md) - the various libraries that come built-in to Carp
 * [typograf.carp](/examples/typograf.carp) - a more complex example
 
 
