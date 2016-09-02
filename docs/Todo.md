@@ -1,5 +1,5 @@
 # The Big 'ref' debacle - alternatives:
-  1. Allow ref:ed value types to be coerced into non-ref:ed types
+  1. Allow ref:ed value types to be coerced into non-ref:ed types (best solution, if it works)
   2. A deref function that can remove the ref from primitive types
   3. A 'map-primitive' that can map a function that takes non-refs as argument 
      since it's annying to not be able to use functions like 'itos' directly with 'map-copy' 
@@ -8,23 +8,22 @@
 # Compiler Big Features
   - Live Reloading (requires threads and bytecode interpreter)
   - Special handling of POD structs (stack allocated, referenced by pointer)
-  - Compile match statements (should it be a macro?)
+  - Compile match statements (could it be a macro?)
   - Compile modules (when they exist in the dynamic runtime...)
-  - Compile dictionaries (requires hashing function)
+  - Compile dictionaries (requires hashing function for all types that can be keys)
   - Lambdas
-  - get / set special forms?
+  - get / set special forms? Would enable shorter names, and sharing names for members between different structs
 
 # Bytecode
-  - Print bytecode properly (the jump instructions destroy the "stringiness" of the byte array
   - Make bytecode 'match' use labels and gotos instead of recursive calls to eval
 
 # Compiler Small Features
-  - Shorter names for concrete versions of generic functions
+  - Shorter names for concrete versions of generic functions (don't duplicate types like this: 'atan2_Int_Int')
   - All types should have capital first letter?
   - Be able to save concretized struct types for type checking etc
 
 # Compiler Correctness
-  - Variables/functions named the same thing as a struct can override the dylib generated for the struct group.
+  - Variables/functions named the same thing as a struct can override the dylib generated for the struct group
   - Must unload all concretized structs when the parent struct is redefined
   - Compiler doesn't catch when a let-binding refers to a variable that's defined later (in the same let binding)
   - Avoid problems with name shadowing when freeing a local variable (is this possible? disallow shadowing instead?)
