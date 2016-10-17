@@ -36,7 +36,7 @@ export C_INCLUDE_PATH=../libffi/<ARCHITECTURE>/include
 or for some people:
 
 ```
-cmake . -DLIBFFI_INCLUDE_PATH=/opt/local/lib/libffi-3.2.1/include -DLIBFFI_LIBRARY_PATH=/opt/local/lib/
+cmake . -DLIBFFI_INCLUDE_DIRS=/opt/local/lib/libffi-3.2.1/include -DLIBFFI_LIBRARIES=/opt/local/lib/
 ```
 
 Replace <ARCHITECTURE> with the name of the architecture you built libffi for.
