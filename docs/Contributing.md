@@ -20,6 +20,6 @@ Carp is currently released under the terms of the the ASL 2.0 license.
 
 Code
 ----
-For tips on how to navigate the codebase please see [Developer_tips.md](Developer_tips.md) 
+For tips on how to navigate the codebase please see [DeveloperTips.md](DeveloperTips.md) 
 in this same directory.
 
