@@ -1,11 +1,11 @@
 # Core Libraries
-See [lisp/core.carp](lisp/core.carp), proper docs are coming soon!
+See [lisp/core.carp](../lisp/core.carp), proper docs are coming soon!
 
 # The C standard library (wrapped)
-See [lisp/builtins.carp](lisp/builtins.carp)
+See [lisp/builtins.carp](../lisp/builtins.carp)
 
 # OpenGL
-See [lisp/gl.carp](lisp/gl.carp)
+See [lisp/gl.carp](../lisp/gl.carp)
 
 # The '*' macros
 Since the functions in Carp can't accept a variable number of args there are a bunch of helper macros that allows you to circumvent this limitation. Here are some examples:
