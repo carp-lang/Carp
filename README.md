@@ -7,6 +7,8 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important!</i>
 
+<i>Update (May 2017): The compiler is currently being rewritten to be much faster and more stable, the code will be uploaded here when it has achieved feature parity with the old version.</i>
+
 Carp is a small programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
 The key features of Carp are the following:
@@ -16,8 +18,6 @@ The key features of Carp are the following:
 * Ownership tracking enables a functional programming style while still using mutation of cache friendly data structures under the hood
 * No hidden performance penalties – allocation and copying is explicit
 * Very good integration with existing C code
-
-<i>Update (May 2017): The compiler is currently being rewritten to be much faster and more stable, the code will be uploaded here when it has achieved feature parity with the old version.</i>
 
 ## Learn more
 
