@@ -15,7 +15,7 @@ To start the Carp compiler in development mode (which will run its test suite), 
 ```CARP_DEV=1 carp```
 
 ### Compiler Variables
-* ```carp-dir``` The root folder of the Carp compiler, should be the same folder as the on where this README.md file resides.
+* ```carp-dir``` The root folder of the Carp compiler, should be the same folder as the one where the README.md file resides.
 * ```out-dir``` A string with the name of the folder where build artifacts should be put. Standard value is the 'out' folder in the carp directory.
 * ```exe-out-dir``` Where the exe:s produced by (bake-exe ...) should be placed. Standard value is "./" (working directory)
 * ```echo-signature-after-bake``` If this is true the type signature of freshly baked functions will be printed in the REPL.
