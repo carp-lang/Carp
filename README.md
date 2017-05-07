@@ -9,6 +9,8 @@
 
 <i>Update (May 2017): The compiler is currently being rewritten to be much faster and more stable, the code will be uploaded here when it has achieved feature parity with the old version.</i>
 
+## About
+
 Carp is a small programming language designed to work well for interactive and performance sensitive use cases like games, sound synthesis and visualizations.
 
 The key features of Carp are the following:
