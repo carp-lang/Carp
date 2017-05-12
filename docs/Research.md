@@ -21,6 +21,7 @@ https://news.ycombinator.com/item?id=12039268
 - http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/
 - https://doc.rust-lang.org/book/deref-coercions.html
 - http://ticki.github.io/blog/lambda_crabs_1/
+- https://gankro.github.io/blah/linear-rust/
 
 # MODULES & FUNCTORS
 
