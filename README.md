@@ -54,7 +54,7 @@ The Carp REPL has built in documentation, run ```(help)``` to access it!
                   (if (> num answer)
                     (println &"Too high.")
                     (println &"Correct!")))
-                (print &"Please guess again: "))))))))
+                (print &"Please guess again: ")))))))
 
 ```
 
