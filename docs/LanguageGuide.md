@@ -49,7 +49,7 @@ foo ; symbol
 ### Special Forms
 ```
 (def variable-name value) ;; Define a global variable
-(defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function (will be compiled)
+(defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function
 (let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Define local bindings
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
@@ -79,8 +79,8 @@ add a hole in your source code and reload (":r") to let the Carp compiler figure
 These can only be used at the REPL and during macro evaluation.
 
 ```
-(defmacro <name> [<arg1> <arg2> ...] <macro-body>)
-(dynamic <name> [<arg1> <arg2> ...] <function-body>)
+(defmacro <name> [<arg1> <arg2> ...] <macro-body>) ;; Its argument will not be evaluated when called
+(dynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL
 (quote <expression>) ;; Avoid further evaluation of the expression
 (car <collection>) ;; Return the first element of a list or array
 (cdr <collection>) ;; Return all but the first element of a list or array
