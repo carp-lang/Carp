@@ -11,7 +11,7 @@ and any subsequent use will lead to a compiler error. To temporarily lend a valu
 
 ### Comments
 ```
-;; Comments begin with semi-colon and continue until the end of the line.
+;; Comments begin with a semicolon and continue until the end of the line.
 ```
 
 ### Data Literals
