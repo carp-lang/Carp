@@ -27,3 +27,14 @@
 
 (defn main []
   (f))
+
+(defn say-hi [text]
+  (while true
+    (if (< (count text) 10)
+      (println &"Too short!")
+      (println text))))
+
+(defn say-what [text]
+  (if (< (count &text) 10)
+    (copy &"Too short")
+    text))
