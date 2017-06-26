@@ -1,124 +1,66 @@
 ## The Language
 
-Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
-
-```clojure
-(import String)
-(import IO)
-
-(defn say-hi [text]
-  (while true
-    (if (< (count text) 10)
-      (println &"Too short!")
-      (println text))))
-```
-
-This compiles to the following C program:
-```C
-void say_MINUS_hi(string* text) {
-  bool _55 = true;
-  while (_55) {
-    int _62 = String_count(text);
-    bool _60 = Int__LT_(_62, 10);
-    if (_60) {
-      string _69 = strdup("Too short!");
-      string* _68 = &_69; // ref
-      IO_println(_68);
-    } else {
-      IO_println(text);
-    }
-    _55 = true;
-  }
-}
-```
-
-If-statements are kind of tricky in regards to memory management:
-```clojure
-(defn say-what [text]
-  (let [manage-me (copy text)]
-    (if (< (count text) 10)
-      (copy "Too short")
-      manage-me)))
-```
-
-The 'manage-me' variable is the return value in the second branch, but should get freed if "Too short" is returned.
-The output is a somewhat noisy C program:
-```C
-string say_MINUS_what(string text) {
-    string _78;
-    string* _84 = &text; // ref
-    int _82 = String_count(_84);
-    bool _80 = Int__LT_(_82, 10);
-    if (_80) {
-        string _90 = strdup("Too short");
-        string* _89 = &_90; // ref
-        string _87 = String_copy(_89);
-        String_delete(text);
-        _78 = _87;
-    } else {
-        _78 = text;
-    }
-    return _78;
-}
-```
-
-The most important thing in Carp is to work with arrays of data. Here's an example of how that is supposed to look: (NOT FULLY IMPLEMENTED YET)
-
-```clojure
-(defn weird-sum [nums]
-  (reduce + 0 (map inc (filter even? nums))))
-```
-
-All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in [Rust](https://www.rust-lang.org) parlance) makes sure that the same data structure isn't used in several places.
-
-To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the function (right now the easiest way to do that is with the ```(env)``` command). If the value is a simple type like String, Vector3, or similar, it means that the memory ownership gets handed over. If it's a reference signature (i.e. ```(Ref String)```), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's often correct to send your data structures to C as refs or pointers (using ```(address <variable>)```), keeping the memory management inside the Carp section of the program.
+Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust.
+Types are inferred but can be annoted for readability using the ```the``` keyword (see below).
 
 ### Data Literals
-```clojure
-100 ; Int
-3.14f ; Float
-10.0 ; Double
-true ; Bool
+```
+100     ; Int
+3.14f   ; Float
+10.0    ; Double
+true    ; Bool
 "hello" ; String
-\e ; Char
+\e      ; Char
 [1 2 3] ; (Array Int)
 ```
 
 ### Dynamic-only Data Literals
 Right now the following data types are only available for manipulation in non-compiled code.
 
-```clojure
+```
 (1 2 3) ; list
 foo ; symbol
 ```
 
 ### Special Forms
-```clojure
+```
 (def variable-name value)
-(defn function-name (arg1 arg2 ...) (function-body ...))
-(let [var1 expr1, var2 expr2, ...] body)
-(do expr1 expr2 ...)
-(if expression true-branch false-branch)
-(while expression body)
-(ref x) ;; Turns an owned value into an unowned one
-(address x) ;; Takes the memory address of a value, returns a C-style pointer
-(set! variable value)
-(the Int x) ;; explicitly tell the type of an expression
+(defn function-name [<arg1> <arg2> ...] <body>)
+(let [<var1> <expr1> <var2> <expr2> ...] <body>)
+(do <expr1> <expr2> ... <return-expression>)
+(if <expression> <true-branch> <false-branch>)
+(while <expression> <body>)
+(ref <expression>) ;; Turns an owned value into an unowned one
+(address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
+(set! <variable> <expression>) ;; Mutate a variable
+(the Int <expression>) ;; Explicitly declare the type of an expression
 ```
 
 ### Named holes
-```clojure
+When using a statically typed language like Carp it can sometimes be hard to know what value should
+be used at a specific point in your program. In such cases the concept of 'holes' can be useful. Just
+add a hole in your source code and reload (":r") to let the Carp compiler figure out what type goes there.
+
+```
 (String.append ?w00t "!") ;; Will generate a type error telling you that the type of 'w00t' is String
 ```
 
 ### Reader macros
-```clojure
+```
 &x ; same as (ref x)
 @x ; same as (copy x)
 ```
 
 ### Dynamic-only Special Forms
+These can only be used in the REPL and during macro evaluation.
+
 ```
+(defmacro <name> [<arg1> <arg2> ...] <macro-body>)
+(dynamic <name> [<arg1> <arg2> ...] <function-body>)
+(quote <expr>)
+(car <collection>)
+(cdr <collection>)
+(list <expr1> <expr2> ...)
 ```
 
 ### Modules and name lookup
@@ -127,7 +69,7 @@ you need to qualify it with the module name, like this: ```Float.cos```.
 
 Importing a module makes it possible to access its members without qualifying them:
 
-```clojure
+```
 (import Float)
 
 (defn f []
@@ -139,7 +81,7 @@ out which one of the symbols you really mean (based on the types in your code). 
 For example, both the module ```String``` and ```Array``` contain a function named 'count'. In the following code it's
 possible to see that it's the array version that is needed, and that one will be called:
 
-```clojure
+```
 (import String)
 (import Array)
 
@@ -148,7 +90,7 @@ possible to see that it's the array version that is needed, and that one will be
 ```
 
 In the following example it's not possible to figure out which type is intended:
-```clojure
+```
 (import String)
 (import Array)
 
@@ -157,7 +99,7 @@ In the following example it's not possible to figure out which type is intended:
 ```
 
 Specifying the type solves this error:
-```clojure
+```
 (import String)
 (import Array)
 
@@ -166,20 +108,21 @@ Specifying the type solves this error:
 ```
 
 ### Structs
-```clojure
-(deftype Vector2 [x Float, y Float])
+```
+(deftype Vector2 [x Int, y Int])
 
-(let [my-pos (Vector2.init 102.2f 210.3f)]
+(let [my-pos (Vector2.init 10 20)]
   ...)
 
 ;; A 'lens' is automatically generated for each member:
-(Vector2.x my-pos) ;; => 102.2f
-(Vector2.set-x my-pos 3.0f) ;; => (Vector2 10.2f 3.0f)
-(Vector2.update-x my-pos inc) ;; => (Vector2 10.2f 4.0f)
+(Vector2.x my-pos) ;; => 10
+(Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
+(Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
 ```
 
 ### C interop
-```clojure
-(register blah "foo" (Fn (Int Int) String)) ;; will register the function 'foo' that takes two ints and returns a string
+```
+(register blah (Fn (Int Int) String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
+(register pi Double) ;; Will register the global variable 'pi' of type Double
 ```
 
