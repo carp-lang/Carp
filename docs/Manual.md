@@ -3,7 +3,9 @@ The Carp language is very tightly integrated with the REPL, everything you want 
 
 To explore the commands available, enter ```(help)``` and press enter.
 
-More information will come here shortly...
+To load code, use ```(load <filename>)```, this will add the source file to the current 'project'. A project is a light weight concept in the repl that ties together source files and compiler settings much like in an IDE like Eclipse or Visual Studio.
+
+To build your current project, call ```(build)```. This will emit an executable or dynamic library depending on if you have defined a main-function or not. Everything emitted by the compiler will be saved in a directory named ```out``` by default. This, and other settings regarding the project can be changed by various commands. To see a list of available commands, call ```(help project)```.
 
 <!-- ### Special Files -->
 <!-- If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations. -->
