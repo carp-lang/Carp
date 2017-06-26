@@ -6,7 +6,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important!</i>
 
-<i>Update (June 2017): The rewrite is now live, if you want to look at the old version it's in the branch named "c" in this repository.</i>
+<i>Update (June 26, 2017): The total rewrite is now live, if you want to look at the old version it's under the branch named "c" in this repository.</i>
 
 ## About
 
