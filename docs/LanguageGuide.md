@@ -3,9 +3,12 @@
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust. Here's a sample program:
 
 ```clojure
+(import String)
+(import IO)
+
 (defn say-hi [text]
   (while true
-    (if (< (strlen text) 10)
+    (if (< (count text) 10)
       (println &"Too short!")
       (println text))))
 ```
