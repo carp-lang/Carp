@@ -100,7 +100,7 @@ foo ; symbol
 (ref x) ;; Turns an owned value into an unowned one
 (address x) ;; Takes the memory address of a value, returns a C-style pointer
 (set! variable value)
-(the Int x) ;; explicitly tell the type of a
+(the Int x) ;; explicitly tell the type of an expression
 ```
 
 ### Named holes
