@@ -119,7 +119,50 @@ foo ; symbol
 
 ### Dynamic-only Special Forms
 ```
-(import <module>) ;; Make it possible to access members of a module without qualifying them with "ModuleName."
+```
+
+### Modules and name lookup
+Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
+you need to qualify it with the module name, like this: ```Float.cos```.
+
+Importing a module makes it possible to access its members without qualifying them:
+
+```clojure
+(import Float)
+
+(defn f []
+  (cos 3.2f))
+```
+
+If there are several imported modules that contain symbols with the same name, the type inferer will try to figure
+out which one of the symbols you really mean (based on the types in your code). If it can't, it will display an error.
+For example, both the module ```String``` and ```Array``` contain a function named 'count'. In the following code it's
+possible to see that it's the array version that is needed, and that one will be called:
+
+```clojure
+(import String)
+(import Array)
+
+(defn f []
+  (count [1 2 3 4 5]))
+```
+
+In the following example it's not possible to figure out which type is intended:
+```clojure
+(import String)
+(import Array)
+
+(defn f [x]
+  (count x))
+```
+
+Specifying the type solves this error:
+```clojure
+(import String)
+(import Array)
+
+(defn f [x]
+  (String.count x))
 ```
 
 ### Structs
