@@ -9,15 +9,20 @@ When a value is returned or passed to another function the initial function will
 and any subsequent use will lead to a compiler error. To temporarily lend a value to another function
 (i.e. to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
 
+### Comments
+```
+;; Comments begin with semi-colon and continue until the end of the line.
+```
+
 ### Data Literals
 ```
-100     ; Int
-3.14f   ; Float
-10.0    ; Double
-true    ; Bool
-"hello" ; String
-\e      ; Char
-[1 2 3] ; (Array Int)
+100     ;; Int
+3.14f   ;; Float
+10.0    ;; Double
+true    ;; Bool
+"hello" ;; String
+\e      ;; Char
+[1 2 3] ;; (Array Int)
 ```
 
 ### Dynamic-only Data Literals
@@ -30,13 +35,13 @@ foo ; symbol
 
 ### Special Forms
 ```
-(def variable-name value)
-(defn function-name [<arg1> <arg2> ...] <body>)
-(let [<var1> <expr1> <var2> <expr2> ...] <body>)
-(do <expr1> <expr2> ... <return-expression>)
-(if <expression> <true-branch> <false-branch>)
-(while <expression> <body>)
-(ref <expression>) ;; Turns an owned value into an unowned one
+(def variable-name value) ;; Define a global variable
+(defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function (will be compiled)
+(let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Define local bindings
+(do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
+(if <expression> <true-branch> <false-branch>) ;; Branching
+(while <expression> <body>) ;; Loop until expression is false
+(ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
 (the Int <expression>) ;; Explicitly declare the type of an expression
@@ -44,8 +49,8 @@ foo ; symbol
 
 ### Reader Macros
 ```
-&x ; same as (ref x)
-@x ; same as (copy x)
+&x ;; same as (ref x)
+@x ;; same as (copy x)
 ```
 
 ### Named Holes
@@ -63,10 +68,12 @@ These can only be used at the REPL and during macro evaluation.
 ```
 (defmacro <name> [<arg1> <arg2> ...] <macro-body>)
 (dynamic <name> [<arg1> <arg2> ...] <function-body>)
-(quote <expr>)
-(car <collection>)
-(cdr <collection>)
-(list <expr1> <expr2> ...)
+(quote <expression>) ;; Avoid further evaluation of the expression
+(car <collection>) ;; Return the first element of a list or array
+(cdr <collection>) ;; Return all but the first element of a list or array
+(cons <expr> <list>) ;; Add the value of <expr> as the first element the <list>
+(list <expr1> <expr2> ...) ;; Create a list from a series of evaluated expressions
+(array <expr1> <expr2> ...) ;; Create an array from a series of evaluated expressions
 ```
 
 ### Modules and Name Lookup
