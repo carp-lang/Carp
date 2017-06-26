@@ -47,6 +47,9 @@ foo ; symbol
 ```
 
 ### Special Forms
+The following forms can be used in Carp source code and will be compiled to C after type checking 
+and other static analysis. Please note that they can not be executed at the REPL.
+
 ```
 (def variable-name value) ;; Define a global variable
 (defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function
