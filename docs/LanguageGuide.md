@@ -25,6 +25,19 @@ true    ;; Bool
 [1 2 3] ;; (Array Int)
 ```
 
+### Type Literals
+```
+t         ;; Type variables begin with a lowercase letter
+Int
+Float
+Double
+Bool
+String
+Char
+(Array t)
+(Fn [<arg-type1> <arg-type2> ...] <return-type>) ;; Function type
+```
+
 ### Dynamic-only Data Literals
 Right now the following data types are only available for manipulation in non-compiled code.
 
