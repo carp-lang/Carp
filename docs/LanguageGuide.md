@@ -27,7 +27,7 @@ true    ;; Bool
 
 ### Type Literals
 ```
-t         ;; Type variables begin with a lowercase letter
+t ;; Type variables begin with a lowercase letter
 Int
 Float
 Double
