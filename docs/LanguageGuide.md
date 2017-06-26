@@ -1,7 +1,13 @@
 ## The Language
 
+### Introduction
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust.
 Types are inferred but can be annoted for readability using the ```the``` keyword (see below).
+
+Memory management is handled by static analysis, a value is owned by the function where it was created.
+When a value is returned or passed to another function the initial function will give up ownership of it
+and any subsequent use will lead to a compiler error. To temporarily lend a value to another function
+(i.e. to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
 
 ### Data Literals
 ```
@@ -36,23 +42,23 @@ foo ; symbol
 (the Int <expression>) ;; Explicitly declare the type of an expression
 ```
 
-### Named holes
-When using a statically typed language like Carp it can sometimes be hard to know what value should
-be used at a specific point in your program. In such cases the concept of 'holes' can be useful. Just
-add a hole in your source code and reload (":r") to let the Carp compiler figure out what type goes there.
-
-```
-(String.append ?w00t "!") ;; Will generate a type error telling you that the type of 'w00t' is String
-```
-
-### Reader macros
+### Reader Macros
 ```
 &x ; same as (ref x)
 @x ; same as (copy x)
 ```
 
+### Named Holes
+When using a statically typed language like Carp it can sometimes be hard to know what value should
+be used at a specific point in your program. In such cases the concept of 'holes' can be useful. Just
+add a hole in your source code and reload (":r") to let the Carp compiler figure out what type goes there.
+
+```
+(String.append ?w00t "!") ;; Will generate a type error telling you that the type of '?w00t' is String
+```
+
 ### Dynamic-only Special Forms
-These can only be used in the REPL and during macro evaluation.
+These can only be used at the REPL and during macro evaluation.
 
 ```
 (defmacro <name> [<arg1> <arg2> ...] <macro-body>)
@@ -63,7 +69,7 @@ These can only be used in the REPL and during macro evaluation.
 (list <expr1> <expr2> ...)
 ```
 
-### Modules and name lookup
+### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
 you need to qualify it with the module name, like this: ```Float.cos```.
 
@@ -120,7 +126,7 @@ Specifying the type solves this error:
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
 ```
 
-### C interop
+### C Interop
 ```
 (register blah (Fn (Int Int) String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
