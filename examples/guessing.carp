@@ -1,0 +1,25 @@
+;; The number guessing game
+
+(import IO)
+(import Int)
+(import String)
+
+(defn main []
+  (do (println (ref "~ The number guessing game ~"))
+      (print (ref "Please enter a number between 1 - 99: "))
+      (let [play true
+            answer (random-between 1 100)]
+        (while play
+          (let [guess (get-line)
+                num (from-string guess)]
+            (if (= (ref guess) (ref "q\n"))
+              (do
+                (println (ref "Good bye..."))
+                (set! play false))
+              (do
+                (if (< num answer)
+                  (println (ref "Too low."))
+                  (if (> num answer)
+                    (println (ref "Too high."))
+                    (println (ref "Correct!"))))
+                (print (ref "Please guess again: ")))))))))

@@ -1,0 +1,120 @@
+(import IO)
+(import System)
+(import Int)
+(import Double)
+(import Array)
+
+(load "core/sdl.carp")
+(load "core/sdl_image.carp")
+(import Keycode)
+(import MouseState)
+
+(def width  60)
+(def height 60)
+
+(defn handle-key [app event play]
+  (let [key (event-keycode event)]
+    (cond
+      (= key SDLK_ESCAPE) (do (quit app) false)
+      (= key SDLK_SPACE) (not play)
+      (do (println (ref "Unrecognized key."))
+          play))))
+
+(defn handle-mouse [world]
+  (let [mouse (ref (get-mouse-state))
+        index (+ (/ (x mouse) 10) (* (/ (y mouse) 10) width))]
+    (aset! world index (not (nth world index)))))
+
+(defn handle-events [app rend world play]
+  (let [event (SDL_Event_init)
+        new-play play]
+    (do
+      (while (SDL_PollEvent (address event))
+        (let [et (event-type (ref event))]
+          (cond (= et SDL_QUIT) (quit app)
+                (= et SDL_KEYDOWN) (set! new-play (handle-key app (ref event) play))
+                (= et SDL_MOUSEBUTTONDOWN) (handle-mouse world)
+                ())))
+      new-play)))
+
+(defn cell-index [x y]
+  (+ x (* y width)))
+
+(defn draw [rend world play]
+  (do
+    (if play
+      (SDL_SetRenderDrawColor rend 0 0 0 255)
+      (SDL_SetRenderDrawColor rend 0 100 50 255))
+    (SDL_RenderClear rend)
+    (for [y 0 height]
+      (for [x 0 width]
+        (let [square (make-rect (* x 10) (* y 10) 9 9)]
+          (do
+            (if (nth world (cell-index x y))
+              (SDL_SetRenderDrawColor rend 255 255 255 255)
+              (SDL_SetRenderDrawColor rend 50 50 50 255))
+            (SDL_RenderFillRect rend (address square))
+            ))))
+    (SDL_RenderPresent rend)))
+
+(defn cell-value [world x y]
+  (cond
+    (< x 0) 0
+    (< (dec width) x) 0
+    (< y 0) 0
+    (< (dec height) y) 0
+    (if (nth world (cell-index x y))
+      1
+      0)))
+
+(defn neighbours [world x y]
+  (let [a (cell-value world (dec x) (dec y))
+        b (cell-value world x       (dec y))
+        c (cell-value world (inc x) (dec y))        
+        d (cell-value world (dec x) y)
+        e 0
+        f (cell-value world (inc x) y)     
+        g (cell-value world (dec x) (inc y))
+        h (cell-value world x       (inc y))
+        i (cell-value world (inc x) (inc y))]
+    (sum (ref [a b c
+              d e f
+              g h i]))))
+
+(defn tick [world newWorld]
+  (for [i 0 (count world)]
+    (let [x (mod i height)
+          y (/ i width)
+          total (neighbours world x y)
+          newState (cond
+                     (< total 2) false
+                     (= total 3) true
+                     (> total 3) false
+                     (nth world i))]
+      (aset! newWorld i newState))))
+
+(defn flip []
+  (= 0 (random-between 0 20)))
+
+(defn main []
+  (do
+    (seed (time))
+    (let [app (app-init "~ Game of Life ~" 800 600)
+          rend (app-renderer app)
+          world (repeat (* height width) flip)
+          play false]
+      (while true
+        (do
+          (let [new-play (handle-events (ref app) rend (ref world) play)]
+            (do
+              (set! play new-play)
+              (if new-play
+                (let [newWorld (replicate (* height width) false)]
+                  (do
+                    (tick (ref world) (ref newWorld))
+                    (set! world newWorld)
+                    (SDL_Delay 50)))
+                ())))
+          (draw rend (ref world) play)
+          (SDL_Delay 30))))))
+

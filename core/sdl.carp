@@ -1,0 +1,112 @@
+(system-include "math.h")
+(system-include "SDL.h")
+(local-include "../core/SDLHelper.h")
+
+;; Compiler flags
+(add-cflag "-I/usr/local/include/SDL2")
+(add-cflag "-D_THREAD_SAFE")
+(add-lib "-L/usr/local/lib")
+(add-lib "-lSDL2")
+
+;; Setup and quit
+(register SDL_Init (Fn [Int] ()))
+(register SDL_Delay (Fn [Int] ()))
+(register SDL_INIT_EVERYTHING Int)
+(register SDL_Quit (Fn [] ()))
+
+;; SDL_EventType
+(register SDL_QUIT Int)
+(register SDL_KEYDOWN Int)
+(register SDL_UP Int)
+(register SDL_MOUSEMOTION Int)
+(register SDL_MOUSEBUTTONDOWN Int)
+(register SDL_MOUSEBUTTONUP Int)
+(register SDL_MOUSEWHEEL Int)
+
+;; Structures
+(register-type SDL_Rect)
+(register-type SDL_Point)
+
+(register make-rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
+(register make-point (Fn [Int Int] SDL_Point))
+
+;; Rendering
+(register SDL_RenderPresent (Fn [(Ptr SDL_Renderer)] ()))
+(register SDL_RenderClear (Fn [(Ptr SDL_Renderer)] ()))
+(register SDL_RenderCopy (Fn [(Ptr SDL_Renderer) (Ptr SDL_Texture) (Ptr SDL_Rect) (Ptr SDL_Rect)] ())) ;; src-rect & dest-rect
+(register SDL_RenderCopyEx (Fn [(Ptr SDL_Renderer) (Ptr SDL_Texture) (Ptr SDL_Rect) (Ptr SDL_Rect)
+                                Double (Ptr SDL_Point) SDL_RendererFlip] ())) ;; src-rect, dest-rect, angle, center, flip
+(register SDL_SetRenderDrawColor (Fn [(Ptr SDL_Renderer) Int Int Int Int] ())) ;; rgba
+(register SDL_RenderFillRect (Fn [(Ptr SDL_Renderer) (Ptr SDL_Rect)] ()))
+(register SDL_RenderFillRects (Fn [(Ptr SDL_Renderer) (Ptr SDL_Rect) Int] ())) ;; rects, count
+(register SDL_RenderDrawLine (Fn [(Ptr SDL_Renderer) Int Int Int Int] ())) ;; x1 y1 x2 y2
+(register SDL_RenderDrawLines (Fn [(Ptr SDL_Renderer) (Ptr SDL_Point) Int] ())) ;; lines, count
+(register SDL_DestroyTexture (Fn [(Ptr SDL_Texture)] ()))
+(register SDL_SetRenderDrawBlendMode (Fn [(Ptr SDL_Renderer) SDL_BlendMode] ()))
+(register SDL_BlitSurface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ())) ;; src, srcrect, dst, dstrect
+(register SDL_QueryTexture (Fn [(Ptr SDL_Texture) (Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int)] ())) ;; ? ? w h
+
+;; Blend modes
+(register-type SDL_BlendMode)
+(register SDL_BLENDMODE_NONE SDL_BlendMode)
+(register SDL_BLENDMODE_BLEND SDL_BlendMode)
+(register SDL_BLENDMODE_ADD SDL_BlendMode)
+(register SDL_BLENDMODE_MOD SDL_BlendMode)
+
+;; SDL_RendererFlip
+(register-type SDL_RendererFlip)
+(register SDL_FLIP_NONE SDL_RendererFlip)
+(register SDL_FLIP_HORIZONTAL SDL_RendererFlip)
+(register SDL_FLIP_VERTICAL SDL_RendererFlip)
+
+;; Events
+(register SDL_PollEvent (Fn [(Ptr SDL_Event)] Bool))
+(register SDL_Event_init (Fn [] SDL_Event))
+(register event-type (Fn [(Ref SDL_Event)] Int))
+(register event-keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
+
+;; Keys
+(register-type SDL_Keycode)
+(register SDLK_RETURN SDL_Keycode)
+(register SDLK_SPACE SDL_Keycode)
+(register SDLK_ESCAPE SDL_Keycode)
+(register SDLK_LEFT SDL_Keycode)
+(register SDLK_RIGHT SDL_Keycode)
+(register SDLK_UP SDL_Keycode)
+(register SDLK_DOWN SDL_Keycode)
+
+(defmodule Keycode
+  (register = (Fn [SDL_Keycode SDL_Keycode] Bool)))
+
+;; Mouse
+(register SDL_GetMouseState (Fn [(Ptr Int) (Ptr Int)] Int))
+(register SDL_BUTTON (Fn [Int] Int))
+(register SDL_BUTTON_LEFT Int)
+(register SDL_BUTTON_RIGHT Int)
+
+(deftype MouseState [x Int
+                     y Int
+                     left Bool
+                     right Bool])
+
+(defn get-mouse-state []
+  (let [x 0
+        y 0
+        state (SDL_GetMouseState (address x) (address y))
+        l (Int.mask state (SDL_BUTTON SDL_BUTTON_LEFT))
+        r (Int.mask state (SDL_BUTTON SDL_BUTTON_RIGHT))]
+    (MouseState.init x y l r)))
+
+;; Time
+(register SDL_GetTicks (Fn [] Int))
+
+;; App helper
+(register-type App)
+(register app-init (Fn [String Int Int] App))
+(register app-window (Fn [App] (Ptr SDL_Window)))
+(register app-renderer (Fn [App] (Ptr SDL_Renderer)))
+(register app-stop (Fn [(Ref App)] ()))
+
+(defn quit [app]
+  (do (app-stop app)
+      (System.exit 0)))

@@ -94,7 +94,7 @@ The following commands are available:
 \\{inf-carp-minor-mode-map}"
   :lighter "" :keymap inf-carp-minor-mode-map)
 
-(defcustom inf-carp-program "carp-inferior"
+(defcustom inf-carp-program "CarpHask-exe"
   "Program name for invoking an inferior Carp in Inferior Carp mode."
   :type 'string
   :group 'inf-carp)
@@ -107,7 +107,7 @@ to load that file."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-prompt "^[^λ> \n]+λ> *"
+(defcustom inf-carp-prompt "^[^鲮 \n]   *" ;; "^[^λ> \n]+λ> *"
   "Regexp to recognize prompts in the Inferior Carp mode."
   :type 'regexp
   :group 'inf-carp)

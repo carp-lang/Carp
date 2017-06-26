@@ -1,0 +1,29 @@
+(import IO)
+(import Int)
+(import Float)
+(import Double)
+(import Array)
+(import System)
+(import String)
+(import Char)
+
+;; (deftype QQQ [xxx Int
+;;               sss String])
+
+;; (import QQQ)
+
+;; (defn f []
+;;   (let [stuff (ref [["yeah"] ["a" "b" "c"]])
+;;         x @stuff]
+;;     (do
+;;       (println (ref (str (nth &x 1)))))))
+
+;; (defn main []
+;;   (f))
+
+(defn f []
+  (let [stuff ["fsdf" "fsdfsdf"]]
+    (println (ref (nth &stuff 0)))))
+
+(defn main []
+  (f))

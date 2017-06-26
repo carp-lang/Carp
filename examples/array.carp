@@ -1,0 +1,26 @@
+(import IO)
+(import Array)
+
+(defn nested []
+  [[1 2 3]
+   [4 5 6]
+   [7 8 9]])
+
+(defn excl [x] (String.append x "!"))
+
+(defn main []
+  (let [a (Array.range 1 10)
+        ;;b (Array.replicate 5 (ref "hej"))
+        ]
+    (do
+      (println (ref (Int.str (nth (ref a) 5))))
+      (println (ref (str (ref (range 10 20)))))
+      (println (ref (str (ref (map excl (replicate 5 "Hi"))))))
+      ;; (println (ref (str (ref ["hej" "san" "!"]))))
+      ;; (println (ref (str (nth (ref (nested)) 0))))
+      ;; (println (ref (str (nth (ref (nested)) 1))))
+      ;; (println (ref (str (nth (ref (nested)) 2))))
+      )))
+
+;; (build)
+;; (run)

@@ -1,0 +1,6 @@
+(defmodule Float
+  (register + (Fn [Float Float] Float))
+  (register - (Fn [Float Float] Float))
+  (register * (Fn [Float Float] Float))
+  (register / (Fn [Float Float] Float))
+  (register toInt (Fn [Float] Int)))

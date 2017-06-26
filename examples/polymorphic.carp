@@ -1,0 +1,21 @@
+(import IO)
+(import Int)
+
+(defmodule A
+  (defn id [x] x)
+  (defn hard [a b c]
+    (if a b c)))
+
+(defn id [x] x)
+
+(defmodule B
+  (defn id2 [x] (id x)))
+
+(defn main []
+  (do
+    (println (ref (B.id2 "hej")))
+    (println (ref (str (A.hard true 10 20))))
+    (println (ref (str (A.hard false 10 20))))))
+
+(build)
+(run)

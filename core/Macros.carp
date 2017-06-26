@@ -1,0 +1,32 @@
+(defdynamic cond-internal [xs]
+  (if (= (count xs) 0)
+    (list)
+    (if (= (count xs) 2)
+      (list)
+      (if (= (count xs) 1)
+        (car xs)
+        (list
+         (quote if)
+         (car xs)
+         (car (cdr xs))
+         (cond-internal (cdr (cdr xs))))))))
+
+(defmacro cond [:rest xs]
+  (cond-internal xs))
+
+(defmacro for [settings body] ;; settings = variable, from, to, <step>
+  (list
+   (quote let)
+   (array (car settings) (car (cdr settings)))
+   (list
+    (quote while)
+    (list (quote Int.<) (car settings) (car (cdr (cdr settings))))
+    (list (quote do)
+          body
+          (list
+           (quote set!) (car settings)
+           (list (quote Int.+)
+                 (car settings)
+                 (if (= 4 (count settings)) ;; optional arg for step
+                   (car (cdr (cdr (cdr settings))))
+                   1)))))))

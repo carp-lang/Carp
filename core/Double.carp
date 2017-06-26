@@ -1,0 +1,10 @@
+(defmodule Double
+  (register + (Fn [Double Double] Double))
+  (register - (Fn [Double Double] Double))
+  (register * (Fn [Double Double] Double))
+  (register / (Fn [Double Double] Double))
+  (register toInt (Fn [Double] Int))
+  (register fromInt (Fn [Int] Double))
+  (register sin (Fn [Double] Double))
+  (register cos (Fn [Double] Double))
+  )

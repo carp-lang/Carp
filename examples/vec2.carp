@@ -1,0 +1,29 @@
+(import IO)
+(import String)
+(import Int)
+
+(deftype Vec2
+    [x Int
+     y Int])
+
+(defmodule Vec2
+  (defn str [v]
+    (append
+     (append   "x: " (Int.str (Vec2.x v)))
+     (append ", y: " (Int.str (Vec2.y v)))))
+  (defn basic [] (Vec2.init 10 20)))
+
+(defmodule Advanced
+  (deftype Mat4 [x Int]))
+
+(defn main []
+  (let [v (ref (Vec2.basic))]
+    (do
+      (println (ref (Vec2.str v)))
+      (println (ref (str (Advanced.Mat4.x
+                          (ref (Advanced.Mat4.set-x
+                                (Advanced.Mat4.init 100)
+                                200)))))))))
+
+(build)
+(run)

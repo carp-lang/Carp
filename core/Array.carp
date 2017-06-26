@@ -1,0 +1,12 @@
+(defmodule Array
+  (register str (Fn [(Ref (Array t))] String))
+  (register range (Fn [Int Int] (Array Int)))
+  (register sum (Fn [(Ref (Array Int))] Int))
+  )
+
+;; Other Array functions available:
+;; raw : (Fn [(Array t)] (Ptr t))
+;; nth : (Fn [(Array t) Int] t)
+;; aset! : (Fn [(Array t) Int t] ())
+;; count : (Fn [(Array t)] Int)
+;; replicate : (Fn [Int t] (Array t))

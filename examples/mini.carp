@@ -1,5 +1,0 @@
-(println "eeeny...")
-(println "mini")
-(println "miney!")
-(defn f [] (error "bleh"))
-(f)

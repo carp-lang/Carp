@@ -1,0 +1,2 @@
+(defmodule Char
+  (register str (Fn [Char] String)))

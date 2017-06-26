@@ -1,0 +1,54 @@
+;; Type selection (choose the right function based on the types at the call site)
+(import IO)
+(import Int)
+
+;; USER DEFINED FUNCTIONS
+(defn f [] true)
+(defmodule A (defn f [] 123))
+(defmodule B (defn f [] "hello"))
+
+(import A)
+(import B)
+
+(defn main []
+  (do
+    (if (f) (println (ref "yes")) (println (ref "no")))
+    (println (ref (str (f))))
+    (println (ref (f)))))
+
+(build)
+(run)
+
+;; => yes
+;;    123
+;;    hello
+
+
+
+;; PLUS FUNCTION
+(import Double)
+(import Float)
+
+(defn shouldBeInt [x] (+ x 10))
+(defn shouldBeDouble [x] (+ x 10.0))
+(defn shouldBeFloat [x] (+ x 10.0f))
+
+(defn shouldBeFloatInLet [x] (let [a (+ x 10.0f)]
+                               a))
+
+
+;; RECORD FIELDS
+(deftype Person [name String])
+(deftype Building [name String])
+
+(import Person)
+(import Building)
+
+(defn main []
+  (let [thing (Building.init "Eiffel Tower")
+        another (Person.init "Alice")]
+    (do (println (name (ref thing)))
+        (println (name (ref another))))))
+
+(build)
+(run)

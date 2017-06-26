@@ -1,7 +1,0 @@
-
-;; The improved Core uses the complete language to make better versions of some of the functions.
-;; This is done as a final step after the compiler has bootstrapped itself.
-
-(defn println* [x]
-  (println (ref (str (ref x)))))
-

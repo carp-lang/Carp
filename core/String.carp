@@ -1,0 +1,8 @@
+(defmodule String
+  (register = (Fn [(Ref String) (Ref String)] Bool))
+  (register append (Fn [String String] String))
+  (register delete (Fn [String] ()))
+  (register copy (Fn [(Ref String)] String))
+  (register count (Fn [(Ref String)] Int))
+  (register duplicate (Fn [(Ref String)] String))
+  )

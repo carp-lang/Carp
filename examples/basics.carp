@@ -1,0 +1,125 @@
+(import Int)
+(import Double)
+(import Float)
+(import Array)
+(import IO)
+
+(defn fib [n]
+  (if (< n 2)
+    1
+    (+ (fib (dec (dec n)))
+       (fib (dec n)))))
+
+(defmodule Things
+  (defn inside [s]
+    (let [msg (String.append s "!")]
+      (println (ref msg))))
+  (defn call []
+    (inside "Hello")))
+
+(defn use-doubles []
+  (println (ref (str (Double.toInt (Double.+ 2.0 3.0))))))
+
+(deftype Person
+    [name String
+     age Int])
+
+(defn use-person []
+  (let [me (Person.init "Erik" 30)]
+    (println (Person.name (ref me)))))
+
+(defn heap-allocations []
+  (let [friend (Person.new "Oscar" 30)]
+    ()))
+
+(defn refer-up []
+  (let [a 10
+        b (+ a 5)
+        c (* a b)]
+    c))
+
+(deftype Thing
+    [val Int])
+
+(defn set-stuff-in-array []
+  (let [xs (range 0 10)]
+    (do
+      (aset! (ref xs) 4 666)
+      (println (ref (str (ref xs)))))))
+
+(defn more-array []
+  (let [xs [1 2 3 4]
+        xs2 (pop-back xs)]
+    (do      
+      (println (ref (str (ref (push-back xs2 500))))))))
+
+(defn using-the-form-to-specialize [x y]
+  (+ x (the Double y)))
+
+(defn flip []
+  (random-between 0 2))
+
+(defn macrooo []
+  (let [msg "Print!"]
+        (cond
+          (< 10 1) (println (ref "Don't print!"))
+          (> 10 1) (println (ref msg))
+          (println (ref "Don't print!")))))
+
+(defn macrooo2 []
+  (for [x 1 3]
+        (for [y 10 100 20]
+          (println (ref (str (* x y)))))))
+
+(deftype A [s String])
+(import A)
+
+(deftype Peep [x Int
+               y String
+               z A])
+(import Peep)
+
+(defn calling-delete []
+  (let [plupp (Peep.init 10 "PLUPP" (A.init "w00t"))
+        poop [(Peep.init 10 "hej" (A.init "aha"))]
+        strings ["a" "b" "c"]]
+      (do
+        (delete plupp)
+        (delete poop)
+        (delete strings))))
+
+(defn updating []
+  (let [p1 (Peep.init 9999 "jaha" (A.init "mmm"))
+        p2 (Peep.update-x p1 inc)]
+    (println (ref (str (Peep.x (ref p2)))))))
+
+(defn character []
+  (println (ref (Char.str \#))))
+
+(defn negative-numbers []
+  (let [x -10.0 y -20.0f z -30]
+    (* (*(toInt x) (toInt y)) z)))
+
+(defn main []
+  (do (Things.call)
+      (use-doubles)
+      (println (ref (str (fib 10))))
+      (use-person)
+      (heap-allocations)
+      (println (ref (str (refer-up))))
+      (println (ref (str (ref [10 20 30 40 50]))))
+      ;;(println (ref (str (ref (map Thing.val [(Thing.init 100) (Thing.init 200)])))))
+      (println (ref (str (Int.mod 30 7))))
+      (set-stuff-in-array)
+      (more-array)
+      (macrooo)
+      (macrooo2)
+      (seed (System.time))
+      (println (ref (str (ref (repeat 10 flip)))))
+      (calling-delete)
+      (updating)
+      (character)
+      (println (ref (str (negative-numbers))))))
+
+(build)
+(run)

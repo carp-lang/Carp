@@ -1,0 +1,5 @@
+(defmodule IO
+  (register println (Fn [(Ref String)] ()))
+  (register print (Fn [(Ref String)] ()))
+  (register get-line (Fn [] String))
+  )
