@@ -37,7 +37,7 @@ The Carp REPL has built in documentation, run ```(help)``` to access it!
 (import String)
 
 (defn main []
-  (do (println &"~ The number guessing game ~"))
+  (do (println &"~ The number guessing game ~")
       (print &"Please enter a number between 1 - 99: ")
       (let [play true
             answer (random-between 1 100)]
@@ -54,8 +54,7 @@ The Carp REPL has built in documentation, run ```(help)``` to access it!
                   (if (> num answer)
                     (println &"Too high.")
                     (println &"Correct!")))
-                (print &"Please guess again: ")))))))
-
+                (print &"Please guess again: "))))))))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable.
