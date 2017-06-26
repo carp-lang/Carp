@@ -7,7 +7,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important!</i>
 
-<i>Update (May 2017): The compiler is currently being rewritten to be much faster and more stable, the code will be uploaded here when it has achieved feature parity with the old version.</i>
+<i>Update (June 2017): The rewrite is now live, if you want to look at the old version it's in the branch named "c" in this repository.</i>
 
 ## About
 
@@ -16,10 +16,9 @@ Carp is a small programming language designed to work well for interactive and p
 The key features of Carp are the following:
 * Automatic and deterministic memory management (no garbage collector or VM)
 * Inferred static types for great speed and reliability
-* Live reloading of code, REPL-driven development, a fun and helpful workflow
 * Ownership tracking enables a functional programming style while still using mutation of cache friendly data structures under the hood
 * No hidden performance penalties – allocation and copying is explicit
-* Very good integration with existing C code
+* Straight-forward integration with existing C code
 
 ## Learn more
 
@@ -27,37 +26,39 @@ The key features of Carp are the following:
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
 * [Libraries](docs/Libraries.md) - the various libraries that come built-in to Carp
-* [typograf.carp](/examples/typograf.carp) - a more complex example
 
+The Carp REPL also has built in documentation, run ```(help)``` to access it.
 
-## A Small OpenGL/GLFW Example
+## A Small Example
 
 ```clojure
-(import gl)
+(import IO)
+(import Int)
+(import String)
 
-(defn init []
-  0f)
+(defn main []
+  (do (println &"~ The number guessing game ~"))
+      (print &"Please enter a number between 1 - 99: ")
+      (let [play true
+            answer (random-between 1 100)]
+        (while play
+          (let [guess (get-line)
+                num (from-string guess)]
+            (if (= &guess &"q\n")
+              (do
+                (println &"Good bye...")
+                (set! play false))
+              (do
+                (if (< num answer)
+                  (println &"Too low.")
+                  (if (> num answer)
+                    (println &"Too high.")
+                    (println &"Correct!")))
+                (print &"Please guess again: "))))))))
 
-(defn tick [state]
-  (+ state 0.15f))
-
-(defn draw [state]
-  (let [t @state
-        steps 100
-        step (/ 1f (itof steps))]
-    (for (i 0 steps)
-      (let [r (* step (itof i))
-            r2 (+ r step)]
-        (draw-line (* r (cosf (* t r)))
-                   (* r (sinf (* t r)))
-                   (* r2 (cosf (* t r2)))
-                   (* r2 (sinf (* t r2))))))))
-
-(defn spin []
-  (glfw-app "Spin" init tick draw default-on-keys))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load-lisp "example.carp")```, then execute ```(bake-exe spin)``` to build an executable, or ```(spin)``` to run the program directly from the REPL.
+To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable.
 
 
 ### Contributors
@@ -76,7 +77,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 
 ## License
 
-Copyright 2016 Erik Svedäng
+Copyright 2016 - 2017 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
