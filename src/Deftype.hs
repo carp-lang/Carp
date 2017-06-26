@@ -229,7 +229,7 @@ memberCopy env (memberName, t)
       [(_, Binder single)] ->
         let Just t' = ty single
             (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (FuncTy [t] UnitTy)
+            suffix = polymorphicSuffix t' (FuncTy [(RefTy t)] t)
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  "    copy." ++ memberName ++ " = " ++ pathToC concretizedPath ++ "(&(pRef->" ++ memberName ++ "));"
       _ -> "    /* Can't find a single copy-function for member '" ++ memberName ++ "' */"
@@ -243,7 +243,7 @@ memberCopyDeps typeEnv env (memberName, t)
       [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
         []
       [(_, Binder single)] ->
-        case concretizeDefinition False typeEnv env single (FuncTy [t] (UnitTy)) of
+        case concretizeDefinition False typeEnv env single (FuncTy [(RefTy t)] t) of
           Left err -> error (show err)
           Right (ok, deps) -> (ok : deps)
       _ -> (trace $ "Too many copy functions found for member '" ++ memberName ++ "'") []

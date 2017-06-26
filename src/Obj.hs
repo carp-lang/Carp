@@ -8,7 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
---import Debug.Trace
+import Debug.Trace
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath
