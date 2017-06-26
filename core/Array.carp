@@ -5,8 +5,14 @@
   )
 
 ;; Other Array functions available:
-;; raw : (Fn [(Array t)] (Ptr t))
-;; nth : (Fn [(Array t) Int] t)
-;; aset! : (Fn [(Array t) Int t] ())
-;; count : (Fn [(Array t)] Int)
-;; replicate : (Fn [Int t] (Array t))
+;; map
+;; push-back
+;; pop-back
+;; nth
+;; replicate
+;; repeat
+;; raw
+;; aset
+;; aset!
+;; count
+;; copy
