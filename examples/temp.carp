@@ -9,6 +9,21 @@
 
 (deftype A [stuff (Array Int)])
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;; (deftype QQQ [xxx Int
 ;;               sss String])
 

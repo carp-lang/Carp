@@ -428,40 +428,6 @@ envToDeclarations env typeEnv =
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
 sortDeclarationBinders :: Env -> [Binder] -> [Binder]
-sortDeclarationBinders typeEnv binders = map snd (sortOn fst (map scoreBinder binders))
-  where scoreBinder :: Binder -> (Int, Binder)
-        scoreBinder b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
-          case x of
-            Typ -> case lookupInEnv (SymPath [] name) typeEnv of
-                     Just (_, Binder typedef) -> (dependencyDepth typeEnv typedef, b)
-                     Nothing -> compilerError ("Can't find " ++ name ++ " in type env.")
-            _ -> (100, b)
-        scoreBinder b = (200, b)
-
-dependencyDepth :: Env -> XObj -> Int
-dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
-  case concatMap expandCase rest of
-    [] -> 0
-    xs -> maximum xs
-  where
-    expandCase :: XObj -> [Int]
-    expandCase (XObj (Arr arr) _ _) = map (depthOfType . xobjToTy . snd) (pairwise arr)
-    expandCase _ = compilerError "Malformed case in typedef."
-    
-    depthOfType :: Maybe Ty -> Int
-    depthOfType (Just (StructTy name _)) = depthOfStructType name
-    depthOfType (Just (FuncTy _ _)) = 0 -- TODO: fix
-    depthOfType (Just (PointerTy p)) = depthOfType (Just p)
-    depthOfType (Just (RefTy r)) = depthOfType (Just r)
-    depthOfType (Just _) = 0
-    depthOfType Nothing = -100 -- External / unknown type
-
-    depthOfStructType :: String -> Int
-    depthOfStructType name =
-      if name == selfName
-      then 0
-      else case lookupInEnv (SymPath [] name) typeEnv of
-        Just (_, Binder typedef) -> dependencyDepth typeEnv typedef + 1
-        Nothing -> -200 -- refering to unknown type
-   
-dependencyDepth _ xobj = compilerError ("Can't get dependency depth from " ++ show xobj)
+sortDeclarationBinders typeEnv binders =
+  --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
+  map snd (sortOn fst (map (scoreBinder typeEnv) binders))

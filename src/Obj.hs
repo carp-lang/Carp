@@ -90,6 +90,7 @@ getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _) _ _ : _
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "alias"
 getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _) _ _ : _)) _ _) = "external-type"
+getBinderDescription (XObj (Lst (XObj Typ _ _ : XObj (Sym _) _ _ : _)) _ _) = "deftype"
 getBinderDescription _ = "?"
 
 getName :: XObj -> String
@@ -185,6 +186,60 @@ showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
   " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
+
+-- | The score is used for sorting the bindings before emitting them.
+-- | A lower score means appearing earlier in the emitted file.
+scoreBinder :: Env -> Binder -> (Int, Binder)
+scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
+  case x of
+    Defalias _ ->
+      case lookupInEnv (SymPath [] name) typeEnv of
+        Just (_, Binder typedef) -> let depth = (dependencyDepth typeEnv typedef, b)
+                                    in  --trace ("depth of " ++ name ++ ": " ++ show depth)
+                                        depth
+        Nothing -> compilerError ("Can't find aliased type '" ++ name ++ "' in type env.")
+    Typ ->
+      case lookupInEnv (SymPath [] name) typeEnv of
+        Just (_, Binder typedef) -> let depth = (dependencyDepth typeEnv typedef, b)
+                                    in  --trace ("depth of " ++ name ++ ": " ++ show depth)
+                                        depth
+        Nothing -> compilerError ("Can't find user defined type '" ++ name ++ "' in type env.")
+    _ ->
+      (100, b)
+scoreBinder typeEnv b@(Binder (XObj (Mod _) _ _)) =
+  (200, b)
+scoreBinder typeEnv x = error ("Can't score: " ++ show x)
+
+dependencyDepth :: Env -> XObj -> Int
+dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
+  case concatMap expandCase rest of
+    [] -> 0
+    xs -> maximum xs
+  where
+    expandCase :: XObj -> [Int]
+    expandCase (XObj (Arr arr) _ _) = map (depthOfType . xobjToTy . snd) (pairwise arr)
+    expandCase _ = compilerError "Malformed case in typedef."
+    
+    depthOfType :: Maybe Ty -> Int
+    depthOfType (Just (StructTy name _)) = depthOfStructType name
+    depthOfType (Just (FuncTy _ _)) = 0 -- TODO: fix
+    depthOfType (Just (PointerTy p)) = depthOfType (Just p)
+    depthOfType (Just (RefTy r)) = depthOfType (Just r)
+    depthOfType (Just _) = 0
+    depthOfType Nothing = -100 -- External / unknown type
+
+    depthOfStructType :: String -> Int
+    depthOfStructType name =
+      case name of
+        "Array" -> 20
+        _ | name == selfName -> 0
+          | otherwise ->
+              case lookupInEnv (SymPath [] name) typeEnv of
+                Just (_, Binder typedef) -> dependencyDepth typeEnv typedef + 1
+                Nothing -> trace ("Unknown type: " ++ name)
+                           0 -- refering to unknown type
+   
+dependencyDepth _ xobj = compilerError ("Can't get dependency depth from " ++ show xobj)
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)

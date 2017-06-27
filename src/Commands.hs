@@ -119,11 +119,16 @@ charToCommand 'q' = Just Quit
 charToCommand _ = Nothing
 
 define :: Context -> XObj -> IO Context
-define ctx@(Context globalEnv _ _ proj _) annXObj =
-    do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
-       when (projectEchoC proj) $
-         putStrLn (toC annXObj)
-       return (ctx { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+define ctx@(Context globalEnv typeEnv _ proj _) annXObj =
+  -- Sort different kinds of definitions into the globalEnv or the typeEnv:
+  case annXObj of
+    XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
+      do return (ctx { contextTypeEnv = envInsertAt typeEnv (getPath annXObj) annXObj })
+    _ ->
+      do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
+         when (projectEchoC proj) $
+           putStrLn (toC annXObj)
+         return (ctx { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
@@ -264,7 +269,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
          let src = do decl <- envToDeclarations env typeEnv
                       typeDecl <- envToDeclarations typeEnv typeEnv
                       c <- envToC env
-                      return (typeDecl ++ "\n\n" ++ decl ++ "\n\n" ++ c)
+                      return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
          in case src of
               Left err -> do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
                              return ctx
