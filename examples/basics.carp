@@ -106,7 +106,7 @@
 (defn endofunctor-mapping []
   (let [stuff [1 2 3 4 5]
         after (emap square stuff)]
-    (println (ref (str &after)))))
+    (println (refstr &after))))
 
 (defn main []
   (do (Things.call)

@@ -30,3 +30,7 @@
                  (if (= 4 (count settings)) ;; optional arg for step
                    (car (cdr (cdr (cdr settings))))
                    1)))))))
+
+(defmacro refstr [x]
+  (list (quote ref)
+        (list (quote str) x)))
