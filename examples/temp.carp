@@ -7,51 +7,6 @@
 (import String)
 (import Char)
 
-(deftype A [stuff (Array Int)])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; (deftype QQQ [xxx Int
-;;               sss String])
-
-;; (import QQQ)
-
-;; (defn f []
-;;   (let [stuff (ref [["yeah"] ["a" "b" "c"]])
-;;         x @stuff]
-;;     (do
-;;       (println (ref (str (nth &x 1)))))))
-
 ;; (defn main []
-;;   (f))
-
-;; (defn f []
-;;   (let [stuff ["fsdf" "fsdfsdf"]]
-;;     (println (ref (nth &stuff 0)))))
-
-;; (defn main []
-;;   (f))
-
-;; (defn say-hi [text]
-;;   (while true
-;;     (if (< (count text) 10)
-;;       (println &"Too short!")
-;;       (println text))))
-
-;; (defn say-what [text]
-;;   (if (< (count &text) 10)
-;;     (copy &"Too short")
-;;     text))
+;;   (let [stuff (range 1 10)]
+;;     (println (ref (str &stuff)))))

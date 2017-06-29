@@ -37,6 +37,7 @@ data ReplCommand = Define XObj
                  | DefineType XObj [XObj]
                  | DefineMacro String XObj XObj
                  | DefineDynamic String XObj XObj
+                 | DefineAlias String XObj
                  | Eval XObj
                  | Expand XObj
                  | InstantiateTemplate XObj XObj
@@ -83,6 +84,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "defdynamic")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
                      DefineDynamic name params body
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest -> DefineType name rest
+                   XObj (Sym (SymPath _ "defalias")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> DefineAlias name t
                    XObj (Sym (SymPath _ "eval")) _ _ : form : [] -> Eval form
                    XObj (Sym (SymPath _ "expand")) _ _ : form : [] -> Expand form
                    XObj (Sym (SymPath _ "instantiate")) _ _ : name : signature : [] -> InstantiateTemplate name signature
@@ -224,6 +226,16 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
              binding = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path) Nothing Nothing]) Nothing (Just TypeTy)
              typeEnv' = envInsertAt typeEnv path binding
          in  return (ctx { contextTypeEnv = typeEnv' })
+
+       DefineAlias name typeXObj ->
+         case xobjToTy typeXObj of
+           Just t ->
+             let alias = defineTypeAlias name t
+                 typeEnv' = envInsertAt typeEnv (SymPath [] name) alias
+             in  return (ctx { contextTypeEnv = typeEnv' })
+           Nothing ->
+             do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj)
+                return ctx
 
        DefineMacro name params body ->
          let path = SymPath pathStrings name

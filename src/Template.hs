@@ -154,6 +154,26 @@ templateMap =
         ])
       (\(FuncTy [t, arrayType] _) -> [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType])
 
+-- | "Endofunctor Map"
+templateEMap :: (String, Binder)
+templateEMap = 
+  let fTy = FuncTy [VarTy "a"] (VarTy "a")
+      aTy = StructTy "Array" [VarTy "a"]
+      bTy = StructTy "Array" [VarTy "a"]
+  in  defineTemplate
+      (SymPath ["Array"] "emap")
+      (FuncTy [fTy, aTy] bTy)
+      (toTemplate "Array $NAME($(Fn [a] a) f, Array a)")
+      (toTemplate $ unlines
+        ["$DECL { "
+        ,"    for(int i = 0; i < a.len; ++i) {"
+        ,"        (($a*)a.data)[i] = f((($a*)a.data)[i]); "
+        ,"    }"
+        ,"    return a;"
+        ,"}"
+        ])
+      (\(FuncTy [t, arrayType] _) -> [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType])
+
 templatePushBack :: (String, Binder)
 templatePushBack = 
   let aTy = StructTy "Array" [VarTy "a"]

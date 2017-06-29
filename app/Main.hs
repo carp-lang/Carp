@@ -39,6 +39,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateReplicate
                                 , templateRepeat
                                 , templateMap
+                                , templateEMap
                                 , templateRaw
                                 , templateAset
                                 , templateAsetBang
