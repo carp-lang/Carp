@@ -7,6 +7,10 @@
 (import String)
 (import Char)
 
-;; (defn main []
-;;   (let [stuff (range 1 10)]
-;;     (println (ref (str &stuff)))))
+(defn square [x]
+  (Int.* x x))
+
+(defn main []
+  (let [stuff [1 2 3 4 5]
+        after (emap square stuff)]
+    (println (ref (str &after)))))

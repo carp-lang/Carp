@@ -100,6 +100,14 @@
   (let [x -10.0 y -20.0f z -30]
     (* (*(toInt x) (toInt y)) z)))
 
+(defn square [x]
+  (Int.* x x))
+
+(defn endofunctor-mapping []
+  (let [stuff [1 2 3 4 5]
+        after (emap square stuff)]
+    (println (ref (str &after)))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -119,7 +127,8 @@
       (calling-delete)
       (updating)
       (character)
-      (println (ref (str (negative-numbers))))))
+      (println (ref (str (negative-numbers))))
+      (endofunctor-mapping)))
 
 (build)
 (run)

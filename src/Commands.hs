@@ -125,7 +125,8 @@ define ctx@(Context globalEnv typeEnv _ proj _) annXObj =
   -- Sort different kinds of definitions into the globalEnv or the typeEnv:
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-      do return (ctx { contextTypeEnv = envInsertAt typeEnv (getPath annXObj) annXObj })
+      do --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
+         return (ctx { contextTypeEnv = envInsertAt typeEnv (getPath annXObj) annXObj })
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
