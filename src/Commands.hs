@@ -480,6 +480,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                     putStrLn "(module <name> <def1> <def2> ...) - Define a module and/or add definitions to an existing one."
                     putStrLn "(deftype <name> ...)              - Define a new type."
                     putStrLn "(register <name> <type>)          - Make an external variable or function available for usage."
+                    putStrLn "(defalias <name> <type>)          - Create another name for a type."
                     putStrLn ""
                     putStrLn "C-compiler configuration:"
                     putStrLn "(system-include <file>) - Include a system header file."
