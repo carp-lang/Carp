@@ -865,48 +865,42 @@ manageMemory typeEnv globalEnv root =
             Just deleter -> modify (Set.insert deleter)
             Nothing -> return ()
 
+        hmm :: XObj -> Set.Set Deleter -> [Deleter]
+        hmm xobj deleters =
+          let var = varOfXObj xobj
+          in  Set.toList $ Set.filter (\d -> case d of
+                                               ProperDeleter { deleterVariable = dv } -> dv == var
+                                               FakeDeleter   { deleterVariable = dv } -> dv == var)
+                                      deleters
+
         unmanage :: XObj -> State MemState ()
         unmanage xobj =
-          case info xobj of
-            Just i -> let Just t = ty xobj in
-                      if isManaged t && not (isExternalType typeEnv t)
-                      then do deleters <- get
-                              let var = varOfXObj xobj
-                                  unmanageThese = Set.filter (\d -> case d of
-                                                                      ProperDeleter { deleterVariable = dv } -> dv == var
-                                                                      FakeDeleter   { deleterVariable = dv } -> dv == var
-                                                             )
-                                                  deleters
-                              case Set.toList unmanageThese of
-                                [] -> trace ("Trying to use '" ++ getName xobj ++ "' (" ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
-                                             " but it has already been given away.") (return ())
-                                [one] -> let newDeleters = Set.delete one deleters
-                                         in  put newDeleters
-                                _ -> error "Too many variables with the same name in set."                                  
-                      else return ()
-            Nothing -> error ("Can't unmanage " ++ show xobj)
+          let Just t = ty xobj 
+              Just i = info xobj
+          in if isManaged t && not (isExternalType typeEnv t)
+             then do deleters <- get
+                     case hmm xobj deleters of
+                       [] -> trace ("Trying to use '" ++ getName xobj ++ "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
+                                    " but it has already been given away.") (return ())
+                       [one] -> let newDeleters = Set.delete one deleters
+                                in  put newDeleters
+                       _ -> error "Too many variables with the same name in set."                                  
+             else return ()
 
         -- | Check that the value being referenced hasn't already been given away
         refCheck :: XObj -> State MemState ()
         refCheck xobj =
-          case info xobj of
-            Just i -> let Just t = ty xobj in
-                      if isManaged t && not (isExternalType typeEnv t)
-                      then do deleters <- get
-                              let var = varOfXObj xobj
-                                  unmanageThese = Set.filter (\d -> case d of
-                                                                      ProperDeleter { deleterVariable = dv } -> dv == var
-                                                                      FakeDeleter   { deleterVariable = dv } -> dv == var
-                                                             )
-                                                  deleters
-                              case Set.toList unmanageThese of
-                                [] -> trace ("Trying to get reference from '" ++ getName xobj ++
-                                             "' (" ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
-                                             " but it has already been given away.") (return ())
-                                [one] -> return ()
-                                _ -> error "Too many variables with the same name in set."                                  
-                      else return ()
-            Nothing -> error ("Can't unmanage " ++ show xobj)
+          let Just i = info xobj
+              Just t = ty xobj
+          in if isManaged t && not (isExternalType typeEnv t)
+             then do deleters <- get
+                     case hmm xobj deleters of
+                       [] -> trace ("Trying to get reference from '" ++ getName xobj ++
+                                    "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
+                                    " but it has already been given away.") (return ())
+                       [one] -> return ()
+                       _ -> error "Too many variables with the same name in set."                                  
+             else return ()
 
         transferOwnership :: XObj -> XObj -> State MemState ()
         transferOwnership from to =
