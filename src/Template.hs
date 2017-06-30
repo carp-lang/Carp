@@ -86,7 +86,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     parseTokC = do s <- Parsec.many1 validInSymbol
                    return (TokC s)
       where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharactersInTemplate]
-            validCharactersInTemplate = " ><{}()[]|;.,_-+*#/'^!?€%&=@\"\n\t"
+            validCharactersInTemplate = " ><{}()[]|;:.,_-+*#/'^!?€%&=@\"\n\t"
 
     parseTokTy :: Parsec.Parsec String Int Token
     parseTokTy = do _ <- Parsec.char '$'
@@ -173,6 +173,38 @@ templateEMap =
         ,"}"
         ])
       (\(FuncTy [t, arrayType] _) -> [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType])
+
+templateFilter :: (String, Binder)
+templateFilter = defineTypeParameterizedTemplate templateCreator path t
+  where
+    fTy = FuncTy [VarTy "a"] BoolTy
+    aTy = StructTy "Array" [VarTy "a"]
+    path = SymPath ["Array"] "filter"
+    t = (FuncTy [fTy, aTy] aTy)
+    templateCreator = TemplateCreator $
+      \typeEnv env ->
+        Template
+        t
+        (const (toTemplate "Array $NAME($(Fn [a] Bool) predicate, Array a)"))
+        (\(FuncTy [(FuncTy [insideTy] BoolTy), aTy] _) ->
+           (toTemplate $ unlines $
+            let deleter = insideArrayDeletion env insideTy
+            in ["$DECL { "
+               , "    int insertIndex = 0;"
+               , "    for(int i = 0; i < a.len; ++i) {"
+               , "        if(predicate((($a*)a.data)[i])) {"
+               , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
+               , "        } else {"
+               , "        " ++ deleter
+               , "        }"
+               , "    }"
+               , "    a.len = insertIndex;"
+               , "    // NOTE: the array isn't resized for now, it probably should be?"
+               , "    return a;"
+               , "}"
+               ]))
+        (\(FuncTy [t@(FuncTy [insideType] BoolTy), arrayType] _) ->
+           [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env insideType)
 
 templatePushBack :: (String, Binder)
 templatePushBack = 

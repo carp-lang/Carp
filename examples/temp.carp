@@ -10,7 +10,10 @@
 (defn square [x]
   (Int.* x x))
 
+(defn even? [x]
+  (= (Int.mod x 2) 0))
+
 (defn main []
-  (let [stuff [1 2 3 4 5]
-        after (emap square stuff)]
-    (println (refstr &stuff))))
+  (let [stuff [1 2 3 4 5 6 7 8 9 10]
+        after (emap square (filter even? stuff))]
+    (println (refstr &after))))
