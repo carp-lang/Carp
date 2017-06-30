@@ -865,8 +865,8 @@ manageMemory typeEnv globalEnv root =
             Just deleter -> modify (Set.insert deleter)
             Nothing -> return ()
 
-        hmm :: XObj -> Set.Set Deleter -> [Deleter]
-        hmm xobj deleters =
+        deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
+        deletersMatchingXObj xobj deleters =
           let var = varOfXObj xobj
           in  Set.toList $ Set.filter (\d -> case d of
                                                ProperDeleter { deleterVariable = dv } -> dv == var
@@ -879,7 +879,7 @@ manageMemory typeEnv globalEnv root =
               Just i = info xobj
           in if isManaged t && not (isExternalType typeEnv t)
              then do deleters <- get
-                     case hmm xobj deleters of
+                     case deletersMatchingXObj xobj deleters of
                        [] -> trace ("Trying to use '" ++ getName xobj ++ "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
                                     " but it has already been given away.") (return ())
                        [one] -> let newDeleters = Set.delete one deleters
@@ -894,7 +894,7 @@ manageMemory typeEnv globalEnv root =
               Just t = ty xobj
           in if isManaged t && not (isExternalType typeEnv t)
              then do deleters <- get
-                     case hmm xobj deleters of
+                     case deletersMatchingXObj xobj deleters of
                        [] -> trace ("Trying to get reference from '" ++ getName xobj ++
                                     "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
                                     " but it has already been given away.") (return ())
