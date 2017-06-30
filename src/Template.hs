@@ -132,27 +132,34 @@ toTokTy s =
 ----------------------------------------------------------------------------------------------------------
 -- | ACTUAL TEMPLATES:
 
-templateMap :: (String, Binder)
-templateMap = 
-  let fTy = FuncTy [VarTy "a"] (VarTy "b")
-      aTy = StructTy "Array" [VarTy "a"]
-      bTy = StructTy "Array" [VarTy "b"]
-  in  defineTemplate
-      (SymPath ["Array"] "map")
-      (FuncTy [fTy, aTy] bTy)
-      (toTemplate "Array $NAME($(Fn [a] b) f, Array a)")
-      (toTemplate $ unlines
-        ["$DECL { "
-        ,"    Array b;"
-        ,"    b.len = a.len;"
-        ,"    b.data = CARP_MALLOC(sizeof($b) * a.len);"
-        ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($b*)b.data)[i] = f((($a*)a.data)[i]); "
-        ,"    }"
-        ,"    return b;"
-        ,"}"
-        ])
-      (\(FuncTy [t, arrayType] _) -> [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType])
+templateCopyingMap :: (String, Binder)
+templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
+  where fTy = FuncTy [VarTy "a"] (VarTy "b")
+        aTy = StructTy "Array" [VarTy "a"]
+        bTy = StructTy "Array" [VarTy "b"]
+        path = SymPath ["Array"] "transform"
+        t = FuncTy [fTy, aTy] bTy
+        templateCreator = TemplateCreator $
+          \typeEnv env -> 
+            Template
+            t
+            (const (toTemplate "Array $NAME($(Fn [a] b) f, Array a)"))
+            (\(FuncTy [(FuncTy [_] _), _] _) ->
+               (toTemplate $ unlines $                
+                  [ "$DECL { "
+                  , "    Array b;"
+                  , "    b.len = a.len;"
+                  , "    b.data = CARP_MALLOC(sizeof($b) * a.len);"
+                  , "    for(int i = 0; i < a.len; ++i) {"
+                  , "        (($b*)b.data)[i] = f((($a*)a.data)[i]); "
+                  , "    }"
+                  , "    CARP_FREE(a.data);"
+                  , "    return b;"
+                  , "}"
+                  ]))
+            (\(FuncTy [t@(FuncTy [insideTypeA] _), arrayTypeA] arrayTypeB) ->
+               [defineFunctionTypeAlias t, defineArrayTypeAlias arrayTypeA, defineArrayTypeAlias arrayTypeB] ++
+                insideArrayDeleteDeps typeEnv env insideTypeA)
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
@@ -161,7 +168,7 @@ templateEMap =
       aTy = StructTy "Array" [VarTy "a"]
       bTy = StructTy "Array" [VarTy "a"]
   in  defineTemplate
-      (SymPath ["Array"] "emap")
+      (SymPath ["Array"] "map")
       (FuncTy [fTy, aTy] bTy)
       (toTemplate "Array $NAME($(Fn [a] a) f, Array a)")
       (toTemplate $ unlines

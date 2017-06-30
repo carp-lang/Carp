@@ -38,7 +38,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
   where bindings = Map.fromList [ templateNth
                                 , templateReplicate
                                 , templateRepeat
-                                , templateMap
+                                , templateCopyingMap
                                 , templateEMap
                                 , templateFilter
                                 , templateReduce
