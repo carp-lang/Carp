@@ -236,8 +236,8 @@ dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : re
           | otherwise ->
               case lookupInEnv (SymPath [] name) typeEnv of
                 Just (_, Binder typedef) -> dependencyDepth typeEnv typedef + 1
-                Nothing -> trace ("Unknown type: " ++ name)
-                           0 -- refering to unknown type
+                Nothing -> -- trace ("Unknown type: " ++ name)
+                           0 -- Refering to unknown type
    
 dependencyDepth _ xobj = compilerError ("Can't get dependency depth from " ++ show xobj)
 

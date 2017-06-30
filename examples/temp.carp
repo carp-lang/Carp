@@ -13,4 +13,4 @@
 (defn main []
   (let [stuff [1 2 3 4 5]
         after (emap square stuff)]
-    (println (refstr &stuff))))
+    (println (refstr &after))))

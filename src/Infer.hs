@@ -763,7 +763,7 @@ manageMemory typeEnv globalEnv root =
                              return (XObj (Lst (theExpr : typeXObj : okValue : [])) i t)
             refExpr@(XObj Ref _ _) : value : [] ->
               do visitedValue <- visit value
-                 --manage xobj
+                 refCheck value
                  return $ do okValue <- visitedValue
                              return (XObj (Lst (refExpr : okValue : [])) i t)
             doExpr@(XObj Do _ _) : expressions ->
@@ -882,6 +882,28 @@ manageMemory typeEnv globalEnv root =
                                              " but it has already been given away.") (return ())
                                 [one] -> let newDeleters = Set.delete one deleters
                                          in  put newDeleters
+                                _ -> error "Too many variables with the same name in set."                                  
+                      else return ()
+            Nothing -> error ("Can't unmanage " ++ show xobj)
+
+        -- | Check that the value being referenced hasn't already been given away
+        refCheck :: XObj -> State MemState ()
+        refCheck xobj =
+          case info xobj of
+            Just i -> let Just t = ty xobj in
+                      if isManaged t && not (isExternalType typeEnv t)
+                      then do deleters <- get
+                              let var = varOfXObj xobj
+                                  unmanageThese = Set.filter (\d -> case d of
+                                                                      ProperDeleter { deleterVariable = dv } -> dv == var
+                                                                      FakeDeleter   { deleterVariable = dv } -> dv == var
+                                                             )
+                                                  deleters
+                              case Set.toList unmanageThese of
+                                [] -> trace ("Trying to get reference from '" ++ getName xobj ++
+                                             "' (" ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
+                                             " but it has already been given away.") (return ())
+                                [one] -> return ()
                                 _ -> error "Too many variables with the same name in set."                                  
                       else return ()
             Nothing -> error ("Can't unmanage " ++ show xobj)
