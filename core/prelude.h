@@ -65,13 +65,13 @@ void IO_print(string *s) { printf("%s", *s); }
 
 string IO_get_MINUS_line() {
     size_t size = 1024;
-    char *buffer = malloc(size);
+    char *buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
 
 string str(int x) {
-    char *buffer = malloc(64);
+    char *buffer = CARP_MALLOC(64);
     snprintf(buffer, 64, "%d", x);
     return buffer;
 }
@@ -106,7 +106,7 @@ bool Int_mask(int a, int b) {
 }
 
 void String_delete(string s) {
-    free(s);
+    CARP_FREE(s);
 }
 
 string String_copy(string *s) {
@@ -121,10 +121,10 @@ string String_append(string a, string b) {
     int la = strlen(a);
     int lb = strlen(b);
     int total = la + lb + 1;
-    string buffer = malloc(total);
+    string buffer = CARP_MALLOC(total);
     snprintf(buffer, total, "%s%s", a, b);
-    free(a);
-    free(b);
+    CARP_FREE(a);
+    CARP_FREE(b);
     return buffer;
 }
 
@@ -138,7 +138,7 @@ string String_duplicate(string *s) {
 }
 
 string Char_str(char c) {
-    char *buffer = malloc(2);
+    char *buffer = CARP_MALLOC(2);
     snprintf(buffer, 2, "%c", c);
     return buffer;
 }
@@ -178,7 +178,7 @@ Array Array_range(int start, int end) {
     Array a;
     int len = end - start;
     a.len = len;
-    a.data = malloc(sizeof(int) * len);
+    a.data = CARP_MALLOC(sizeof(int) * len);
     for(int i = 0; i < len; ++i) {
         ((int*)a.data)[i] = start + i;
     }
@@ -187,13 +187,14 @@ Array Array_range(int start, int end) {
 
 string Array_str__int(Array *aRef) {
     Array a = *aRef;
-    string buffer = malloc(1024);
+    string buffer = CARP_MALLOC(1024);
     string b = buffer;
     sprintf(b, "["); b += 1;
     for(int i = 0; i < a.len; ++i) {
         string temp = malloc(32);
         snprintf(temp, 32, "%d", ((int*)a.data)[i]);
         sprintf(b, "%s", temp);
+        free(temp);
         b += strlen(temp);
         if(i < a.len - 1) {
             sprintf(b, " "); b += 1;            
@@ -206,7 +207,7 @@ string Array_str__int(Array *aRef) {
 
 string Array_str__string(Array *aRef) {
     Array a = *aRef;
-    string buffer = malloc(1024);
+    string buffer = CARP_MALLOC(1024);
     string b = buffer;
     sprintf(b, "["); b += 1;
     for(int i = 0; i < a.len; ++i) {
@@ -223,13 +224,14 @@ string Array_str__string(Array *aRef) {
 }
 
 string Array_str__bool(Array a) {
-    string buffer = malloc(1024);
+    string buffer = CARP_MALLOC(1024);
     string b = buffer;
     sprintf(b, "["); b += 1;
     for(int i = 0; i < a.len; ++i) {
         string temp = malloc(32);
         snprintf(temp, 32, "%s", (((int*)a.data)[i] ? "true" : "false"));
         sprintf(b, "%s", temp);
+        free(temp);
         b += strlen(temp);
         if(i < a.len - 1) {
             sprintf(b, " "); b += 1;            
@@ -253,8 +255,8 @@ void System_exit(int code) {
     exit(code);
 }
 
-void System_free__string_MUL_(void *p) {
-    free(p);
+void System_CARP_FREE__string_MUL_(void *p) {
+    CARP_FREE(p);
 }
 
 int System_time() {
