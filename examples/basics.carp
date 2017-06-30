@@ -105,7 +105,7 @@
 
 (defn endofunctor-mapping []
   (let [stuff [1 2 3 4 5]
-        after (emap square stuff)]
+        after (map square stuff)]
     (println (refstr &after))))
 
 (defn main []

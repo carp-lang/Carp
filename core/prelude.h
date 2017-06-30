@@ -20,7 +20,7 @@ void logged_free(void *ptr) {
     free(ptr);
 }
 
-#define LOG_MEMORY 1
+#define LOG_MEMORY 0
 
 #if LOG_MEMORY
 #define CARP_MALLOC(size) logged_malloc(size)
