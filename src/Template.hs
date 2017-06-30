@@ -206,6 +206,34 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
         (\(FuncTy [t@(FuncTy [insideType] BoolTy), arrayType] _) ->
            [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env insideType)
 
+templateReduce :: (String, Binder)
+templateReduce = defineTypeParameterizedTemplate templateCreator path t
+  where
+    fTy = FuncTy [bTy, aTy] bTy
+    arrTy = StructTy "Array" [aTy]
+    aTy = VarTy "a"
+    bTy = VarTy "b"
+    path = SymPath ["Array"] "reduce"
+    t = (FuncTy [fTy, bTy, arrTy] bTy)
+    templateCreator = TemplateCreator $
+      \typeEnv env ->
+        Template
+        t
+        (const (toTemplate "$b $NAME($(Fn [b a] a) f, $b initial_value, Array a)"))
+        (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
+           (toTemplate $ unlines $
+               [ "$DECL { "
+               , "    $b b = initial_value;"
+               , "    for(int i = 0; i < a.len; ++i) {"
+               , "        b = f(b, (($a*)a.data)[i]);"
+               , "    }"
+               , "    CARP_FREE(a.data); // Can't call Array_delete since it will destroy the items that have been handed off to f()."
+               , "    return b;"
+               , "}"
+               ]))
+        (\(FuncTy [ft@(FuncTy [_, _] _), _, arrayType] _) ->
+           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType])
+
 templatePushBack :: (String, Binder)
 templatePushBack = 
   let aTy = StructTy "Array" [VarTy "a"]

@@ -36,13 +36,13 @@ bool not(bool b) {
     return !b;
 }
 
-#define Int__PLUS_(x, y) ((x) + (y))
-#define Int__MINUS_(x, y) ((x) - (y))
-#define Int__MUL_(x, y) ((x) * (y))
-#define Int__DIV_(x, y) ((x) / (y))
-#define Int__EQ_(x, y) ((x) == (y))
-#define Int__LT_(x, y) ((x) < (y))
-#define Int__GT_(x, y) ((x) > (y))
+int Int__PLUS_(x, y)  { return x + y; }
+int Int__MINUS_(x, y) { return x - y; }
+int Int__MUL_(x, y)   { return x * y; }
+int Int__DIV_(x, y)   { return x / y; } 
+int Int__EQ_(x, y)    { return x == y; } 
+int Int__LT_(x, y)    { return x < y; } 
+int Int__GT_(x, y)    { return x > y; } 
 
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
