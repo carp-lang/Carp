@@ -14,7 +14,6 @@
   (= (Int.mod x 2) 0))
 
 (defn main []
-  (while true
-    (let [stuff [3 5 8 9 10]
-          after (reduce Int.+ 0 (emap square (filter even? stuff)))]
-      (println (ref (Int.str after))))))
+  (let [stuff [3 5 8 9 10]
+        after (reduce + 0 (emap square (filter even? stuff)))]
+    (println (refstr after))))

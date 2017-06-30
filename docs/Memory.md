@@ -62,11 +62,12 @@ string say_MINUS_what(string text) {
 }
 ```
 
-The most important thing in Carp is to work with arrays of data. Here's an example of how that is supposed to look: (NOT FULLY IMPLEMENTED YET)
+The most important thing in Carp is to work with arrays of data. Here's an example of how that is supposed to look:
 
 ```clojure
-(defn weird-sum [nums]
-  (reduce + 0 (map inc (filter even? nums))))
+(defn weird-sum []
+  (let [stuff [3 5 8 9 10]]
+    (reduce + 0 (emap square (filter even? stuff)))))
 ```
 
 All the array modification functions like 'map', 'filter', etc. use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in [Rust](https://www.rust-lang.org) parlance) makes sure that the same data structure isn't used in several places.
