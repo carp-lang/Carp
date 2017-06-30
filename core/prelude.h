@@ -9,6 +9,27 @@
 #include <time.h>
 #include <assert.h>
 
+void *logged_malloc(size_t size) {
+    void *ptr = malloc(size);
+    printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    return ptr;
+}
+
+void logged_free(void *ptr) {
+    printf("FREE: %p\n", ptr);
+    free(ptr);
+}
+
+#define LOG_MEMORY 1
+
+#if LOG_MEMORY
+#define CARP_MALLOC(size) logged_malloc(size)
+#define CARP_FREE(ptr) logged_free(ptr)
+#else
+#define CARP_MALLOC(size) malloc(size)
+#define CARP_FREE(ptr) free(ptr)
+#endif
+
 typedef char* string;
 
 bool not(bool b) {

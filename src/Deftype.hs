@@ -110,7 +110,7 @@ templateInit allocationMode typeName members =
     (const (toTemplate $ unlines [ "$DECL {"
                                  , case allocationMode of
                                      StackAlloc -> "    $p instance;"
-                                     HeapAlloc ->  "    $p instance = malloc(sizeof(" ++ typeName ++ "));"
+                                     HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
                                  , joinWith "\n" (map (memberAssignment allocationMode) members) 
                                  , "    return instance;"
                                  , "}"]))

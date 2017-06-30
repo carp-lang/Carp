@@ -145,7 +145,7 @@ templateMap =
         ["$DECL { "
         ,"    Array b;"
         ,"    b.len = a.len;"
-        ,"    b.data = malloc(sizeof($b) * a.len);"
+        ,"    b.data = CARP_MALLOC(sizeof($b) * a.len);"
         ,"    for(int i = 0; i < a.len; ++i) {"
         ,"        (($b*)b.data)[i] = f((($a*)a.data)[i]); "
         ,"    }"
@@ -218,8 +218,8 @@ templatePushBack =
         ["$DECL { "
         ,"    a.len++;"
         ,"    void *pre = a.data;"
-        ,"    a.data = malloc(sizeof($a) * a.len);"
-        ,"    free(pre);"
+        ,"    a.data = CARP_MALLOC(sizeof($a) * a.len);"
+        ,"    CARP_FREE(pre);"
          --a.data = realloc(a.data, sizeof($a) * a.len);"
         ,"    (($a*)a.data)[a.len - 1] = value;"
         ,"    return a;"
@@ -240,8 +240,8 @@ templatePopBack =
         ,"    if(a.len > 0) {"
         --,"        a.data = realloc(a.data, sizeof($a) * a.len);"
         ,"        void *pre = a.data;"
-        ,"        a.data = malloc(sizeof($a) * a.len);"
-        ,"        free(pre);"
+        ,"        a.data = CARP_MALLOC(sizeof($a) * a.len);"
+        ,"        CARP_FREE(pre);"
         ,"    }"
         ,"    return a;"
         ,"}"
@@ -269,7 +269,7 @@ templateReplicate = defineTemplate
   (FuncTy [IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
   (toTemplate "Array $NAME(int n, $t elem)")
   (toTemplate $ unlines [ "$DECL {"
-                        , "    Array a; a.len = n; a.data = malloc(sizeof($t) * n);"
+                        , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
                         , "    for(int i = 0; i < n; ++i) {"
                         , "      (($t*)a.data)[i] = elem;"
                         , "    }"
@@ -283,7 +283,7 @@ templateRepeat = defineTemplate
   (FuncTy [IntTy, (FuncTy [] (VarTy "t"))] (StructTy "Array" [VarTy "t"]))
   (toTemplate "Array $NAME(int n, $(Fn [] t) f)")
   (toTemplate $ unlines [ "$DECL {"
-                        , "    Array a; a.len = n; a.data = malloc(sizeof($t) * n);"
+                        , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
                         , "    for(int i = 0; i < n; ++i) {"
                         , "      (($t*)a.data)[i] = f();"
                         , "    }"
@@ -354,7 +354,7 @@ deleteTy env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
   , TokC $ "    " ++ insideArrayDeletion env innerType
   , TokC   "    }\n"
-  , TokC   "    free(a.data);\n"
+  , TokC   "    CARP_FREE(a.data);\n"
   ]
 deleteTy _ _ = []
 
@@ -399,7 +399,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokDecl, TokC "{\n"] ++
                 [TokC "    Array copy;\n"] ++
                 [TokC "    copy.len = a->len;\n"] ++
-                [TokC "    copy.data = malloc(sizeof(", TokTy (VarTy "a"), TokC ") * a->len);\n"] ++
+                [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a"), TokC ") * a->len);\n"] ++
                 (copyTy env arrayType) ++
                 [TokC "    return copy;\n"] ++
                 [TokC "}\n"])
