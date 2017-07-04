@@ -100,8 +100,13 @@ recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> recursiveLookup mappings v
                                  (RefTy r) -> do okR <- (recursiveLookupTy mappings r)
                                                  return (RefTy okR)
+                                 (PointerTy p) -> do okP <- (recursiveLookupTy mappings p)
+                                                     return (RefTy okP)
                                  (StructTy n innerTys) -> do okInnerTys <- mapM (recursiveLookupTy mappings) innerTys
                                                              return (StructTy n okInnerTys)
+                                 (FuncTy argTys retTy) -> do okArgTys <- mapM (recursiveLookupTy mappings) argTys
+                                                             okRetTy <- recursiveLookupTy mappings retTy
+                                                             return (FuncTy okArgTys okRetTy)
                                  _ -> Just t
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
