@@ -75,7 +75,7 @@ instance Show TypeError where
     ++
     "Constraint: " ++ show constraint ++ "\n\n" ++
     "All constraints:\n" ++ show constraints ++ "\n\n" ++
-    "Mappings: \n" ++ show mappings
+    "Mappings: \n" ++ show mappings ++ "\n\n"
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -98,6 +98,10 @@ instance Show TypeError where
 recursiveLookupTy :: TypeMappings -> Ty -> Maybe Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> recursiveLookup mappings v
+                                 (RefTy r) -> do okR <- (recursiveLookupTy mappings r)
+                                                 return (RefTy okR)
+                                 (StructTy n innerTys) -> do okInnerTys <- mapM (recursiveLookupTy mappings) innerTys
+                                                             return (StructTy n okInnerTys)
                                  _ -> Just t
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
