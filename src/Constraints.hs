@@ -13,7 +13,10 @@ import Debug.Trace
 import Obj
 import Types
 
-data Constraint = Constraint Ty Ty XObj XObj deriving Eq
+data Constraint = Constraint Ty Ty XObj XObj Int deriving Eq
+
+instance Ord Constraint where
+  compare (Constraint _ _ _ _ a) (Constraint _ _ _ _ b) = compare a b
 
 data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                                              , unificationMappings :: TypeMappings
@@ -22,7 +25,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b _ _) = "" ++ show a ++ " == " ++ show b ++ ""
+  show (Constraint a b _ _ _) = "" ++ show a ++ " == " ++ show b ++ ""
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty
@@ -69,49 +72,49 @@ solveOneInternal :: TypeMappings -> Constraint -> Either UnificationFailure Type
 solveOneInternal mappings constraint =
   case constraint of
     -- Two type variables
-    Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ ->
+    Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ _ ->
       if aTy == bTy
       then Right mappings
       else do m' <- checkForConflict mappings constraint aName bTy
               checkForConflict m' constraint bName aTy
 
     -- One type variable
-    Constraint (VarTy aName) bTy           _ _ -> checkForConflict mappings constraint aName bTy 
-    Constraint aTy           (VarTy bName) _ _ -> checkForConflict mappings constraint bName aTy
+    Constraint (VarTy aName) bTy           _ _ _ -> checkForConflict mappings constraint aName bTy 
+    Constraint aTy           (VarTy bName) _ _ _ -> checkForConflict mappings constraint bName aTy
 
     -- Struct types
-    Constraint (StructTy nameA varsA) (StructTy nameB varsB) _ _ ->
+    Constraint (StructTy nameA varsA) (StructTy nameB varsB) _ _ _ ->
       if nameA == nameB
-      then let (Constraint _ _ i1 i2) = constraint
-           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2)) mappings (zip varsA varsB)
+      then let (Constraint _ _ i1 i2 ord) = constraint
+           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ord)) mappings (zip varsA varsB)
       else Left (UnificationFailure constraint mappings)
 
     -- Func types
-    Constraint (FuncTy argsA retA) (FuncTy argsB retB) _ _ ->
+    Constraint (FuncTy argsA retA) (FuncTy argsB retB) _ _ _ ->
       if length argsA == length argsB
-      then let (Constraint _ _ i1 i2) = constraint
-           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2)) mappings (zip (retA : argsA)
-                                                                                                (retB : argsB))
+      then let (Constraint _ _ i1 i2 ord) = constraint
+           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ord )) mappings (zip (retA : argsA)
+                                                                                                     (retB : argsB))
       else Left (UnificationFailure constraint mappings)
 
     -- Pointer types
-    Constraint (PointerTy a) (PointerTy b) _ _ ->
-      let (Constraint _ _ i1 i2) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2)
+    Constraint (PointerTy a) (PointerTy b) _ _ _ ->
+      let (Constraint _ _ i1 i2 ord) = constraint
+      in  solveOneInternal mappings (Constraint a b i1 i2 ord)
 
     -- Ref types
-    Constraint (RefTy a) (RefTy b) _ _ ->
-      let (Constraint _ _ i1 i2) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2)
+    Constraint (RefTy a) (RefTy b) _ _ _ ->
+      let (Constraint _ _ i1 i2 ord) = constraint
+      in  solveOneInternal mappings (Constraint a b i1 i2 ord)
 
     -- Else
-    Constraint aTy bTy _ _ ->
+    Constraint aTy bTy _ _ _ ->
       if aTy == bTy
       then Right mappings
       else Left (UnificationFailure constraint mappings)
 
 mkConstraint :: Ty -> Ty -> Constraint
-mkConstraint t1 t2 = Constraint t1 t2 dummy dummy
+mkConstraint t1 t2 = Constraint t1 t2 dummy dummy 0
   where dummy = XObj External Nothing Nothing
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings

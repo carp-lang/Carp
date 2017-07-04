@@ -108,6 +108,18 @@
         after (map square stuff)]
     (println (refstr &after))))
 
+(defn square [x]
+  (Int.* x x))
+
+(defn even? [x]
+  (= (Int.mod x 2) 0))
+
+(defn map-filter-reduce-stuff []
+  (let [stuff [3 5 8 9 10]
+        after (reduce + 0 (transform square (filter even? stuff)))]
+    (println (refstr after))))
+
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -128,7 +140,8 @@
       (updating)
       (character)
       (println (ref (str (negative-numbers))))
-      (endofunctor-mapping)))
+      (endofunctor-mapping)
+      (map-filter-reduce-stuff)))
 
 (build)
 (run)

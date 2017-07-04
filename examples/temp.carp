@@ -7,13 +7,11 @@
 (import String)
 (import Char)
 
-(defn square [x]
-  (Int.* x x))
+(defn first [x]
+  (nth (ref x) 0))
 
-(defn even? [x]
-  (= (Int.mod x 2) 0))
+(defn f []
+  (first &[10 20 30]))
 
 (defn main []
-  (let [stuff [3 5 8 9 10]
-        after (reduce + 0 (transform square (filter even? stuff)))]
-    (println (refstr after))))
+  (println (refstr (f))))
