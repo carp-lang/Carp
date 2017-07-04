@@ -67,12 +67,15 @@ instance Show TypeError where
     "The do-statement has no expressions inside of it at " ++ prettyInfoFromXObj xobj ++ "."
   show (TooManyFormsInBody xobj) =
     "The statement has too many expressions in body position " ++ prettyInfoFromXObj xobj ++ "."
-  show (UnificationFailed (Constraint a b aObj bObj _) mappings constraints) =
+  show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++ 
     "  " ++ pretty aObj ++ " : " ++ showMaybeTy (recursiveLookupTy mappings a) ++ " (" ++ prettyInfoFromXObj aObj ++ ")" ++
     "\n\nwith \n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showMaybeTy (recursiveLookupTy mappings b) ++ " (" ++ prettyInfoFromXObj bObj ++ ")\n\n" ++
-    "Constraints:\n" ++ show constraints
+    "  " ++ pretty bObj ++ " : " ++ showMaybeTy (recursiveLookupTy mappings b) ++ " (" ++ prettyInfoFromXObj bObj ++ ")\n\n"
+    ++
+    "Constraint: " ++ show constraint ++ "\n\n" ++
+    "All constraints:\n" ++ show constraints ++ "\n\n" ++
+    "Mappings: \n" ++ show mappings
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -373,26 +376,26 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                                          return (name, Binder xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
 
-ordArg = 1
-ordDefnBody = 1
-ordDefExpr = 1
-ordLetBind = 1
-ordLetBody = 1
-ordIfCondition = 1
-ordIfReturn = 1
-ordIfWhole = 1
-ordWhileBody = 1
-ordWhileCondition = 1
-ordDoReturn = 1
-ordDoStatement = 1
-ordSetBang = 1
-ordThe = 1
-ordFuncAppRet = 1
-ordFuncAppArg = 1
-ordFuncAppVarTy = 1
-ordArrBetween = 1
-ordArrHead = 1
-ordMultiSym = 1
+ordArg            = 101
+ordDefnBody       = 102
+ordDefExpr        = 103
+ordLetBind        = 104
+ordLetBody        = 105
+ordIfCondition    = 106
+ordIfReturn       = 107
+ordIfWhole        = 108
+ordWhileBody      = 109
+ordWhileCondition = 110
+ordDoReturn       = 111
+ordDoStatement    = 112
+ordSetBang        = 113
+ordThe            = 114
+ordFuncAppRet     = 115
+ordFuncAppArg     = 116
+ordFuncAppVarTy   = 117
+ordArrBetween     = 118
+ordArrHead        = 50
+ordMultiSym       = 120
 
 genConstraints :: XObj -> Either TypeError [Constraint]
 genConstraints root = fmap sort (gen root)
