@@ -288,13 +288,13 @@ templateNth =
   let t = VarTy "t"
   in defineTemplate
   (SymPath ["Array"] "nth")
-  (FuncTy [RefTy (StructTy "Array" [t]), IntTy] t)
-  (toTemplate "$t $NAME (Array *aRef, int n)")
+  (FuncTy [RefTy (StructTy "Array" [t]), IntTy] (RefTy t))
+  (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    Array a = *aRef;"
                         ,"    assert(n >= 0);"
                         ,"    assert(n < a.len);"
-                        ,"    return (($t*)a.data)[n];"
+                        ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
   (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
   

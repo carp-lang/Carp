@@ -119,6 +119,12 @@
         after (reduce + 0 (transform square (filter even? stuff)))]
     (println (refstr after))))
 
+(defn get-last-string [xs] ;; Should be generic preferably...
+  (let [i (dec (Array.count &xs))]
+    (String.copy (Array.nth &xs i))))
+
+(defn print-last-string []
+  (println &(get-last-string ["NO" "NO" "YES"])))
 
 (defn main []
   (do (Things.call)
@@ -141,7 +147,9 @@
       (character)
       (println (ref (str (negative-numbers))))
       (endofunctor-mapping)
-      (map-filter-reduce-stuff)))
+      (map-filter-reduce-stuff)
+      (print-last-string)
+      ))
 
 (build)
 (run)

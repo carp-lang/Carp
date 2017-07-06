@@ -537,9 +537,10 @@ polymorphicSuffix signature actualType =
   where visit :: Ty -> Ty -> State VisitedTypes [String]
         visit sig actual =
           case (sig, actual) of
-            (VarTy _, VarTy _) -> error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
-                                          " when calculating polymorphic suffix for " ++
-                                          show signature ++ " => " ++ show actualType
+            (VarTy _, VarTy _) -> -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
+                                  --        " when calculating polymorphic suffix for " ++
+                                  --        show signature ++ " => " ++ show actualType
+                                  return ["UNSOLVED_VARIABLE"]
             (a@(VarTy _), b) -> do visitedTypeVariables <- get
                                    if a `elem` visitedTypeVariables
                                      then return []

@@ -9,7 +9,8 @@
 (deftype Box [x Int])
 
 (defmodule Box
-  (defn fmap [f box] (Box.set-x box (f (Box.x box)))))
+  (defn fmap [f box] (let [new-x (f (Box.x &box))]
+                       (Box.set-x box new-x))))
 
 (import Box)
 (import ArrayExtension)
@@ -18,13 +19,13 @@
 
 (defn main []
   (do
-    (println (str (Box.x (fmap inc (Box.init 100)))))
-    (println (str (Box.x (Box.fmap inc (Box.init 100)))))
-    (println (str (ArrayExtension.fmap inc [10 20 30 40 50])))
-    (println (str (fmap inc [10 20 30 40 50])))
-    (println (Array.str (fmap inc [10 20 30 40 50])))
-    (println (Array.str (ArrayExtension.fmap inc [10 20 30 40 50])))
+    (println &(str (Box.x (ref (fmap inc (Box.init 100))))))
+    (println &(str (Box.x (ref (Box.fmap inc (Box.init 100))))))
+    (println &(str (ref (ArrayExtension.fmap inc [10 20 30 40 50]))))
+    (println &(str (ref (fmap inc [10 20 30 40 50]))))
+    (println &(Array.str (ref (fmap inc [10 20 30 40 50]))))
+    (println &(Array.str (ref (ArrayExtension.fmap inc [10 20 30 40 50]))))
     ))
 
-(build)
-(run)
+;; (build)
+;; (run)
