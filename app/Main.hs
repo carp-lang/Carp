@@ -14,8 +14,8 @@ import Parsing
 defaultProject :: Project
 defaultProject = Project { projectTitle = "Untitled"
                          , projectIncludes = [SystemInclude "prelude.h"]
-                         , projectCFlags = ["-lm"]
-                         , projectLibFlags = []
+                         , projectCFlags = []
+                         , projectLibFlags = ["-lm"]
                          , projectFiles = []
                          , projectEchoC = False
                          , projectCarpDir = "./"
