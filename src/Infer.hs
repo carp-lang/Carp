@@ -69,13 +69,13 @@ instance Show TypeError where
     "The statement has too many expressions in body position " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++ 
-    "  " ++ pretty aObj ++ " : " ++ showMaybeTy (recursiveLookupTy mappings a) ++ " (" ++ prettyInfoFromXObj aObj ++ ")" ++
+    "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ " (" ++ prettyInfoFromXObj aObj ++ ")" ++
     "\n\nwith \n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showMaybeTy (recursiveLookupTy mappings b) ++ " (" ++ prettyInfoFromXObj bObj ++ ")\n\n"
-    ++
-    "Constraint: " ++ show constraint ++ "\n\n" ++
-    "All constraints:\n" ++ show constraints ++ "\n\n" ++
-    "Mappings: \n" ++ show mappings ++ "\n\n"
+    "  " ++ pretty bObj ++ " : " ++ show (recursiveLookupTy mappings b) ++ " (" ++ prettyInfoFromXObj bObj ++ ")\n\n"
+    -- ++
+    -- "Constraint: " ++ show constraint ++ "\n\n" ++
+    -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
+    -- "Mappings: \n" ++ show mappings ++ "\n\n"
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -95,19 +95,17 @@ instance Show TypeError where
   show (CantReturnRefTy xobj) =
     "Functions can't return references: '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj
     
-recursiveLookupTy :: TypeMappings -> Ty -> Maybe Ty
+recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
-                                 (VarTy v) -> recursiveLookup mappings v
-                                 (RefTy r) -> do okR <- (recursiveLookupTy mappings r)
-                                                 return (RefTy okR)
-                                 (PointerTy p) -> do okP <- (recursiveLookupTy mappings p)
-                                                     return (RefTy okP)
-                                 (StructTy n innerTys) -> do okInnerTys <- mapM (recursiveLookupTy mappings) innerTys
-                                                             return (StructTy n okInnerTys)
-                                 (FuncTy argTys retTy) -> do okArgTys <- mapM (recursiveLookupTy mappings) argTys
-                                                             okRetTy <- recursiveLookupTy mappings retTy
-                                                             return (FuncTy okArgTys okRetTy)
-                                 _ -> Just t
+                                 (VarTy v) -> case recursiveLookup mappings v of
+                                                Just ok -> ok
+                                                Nothing -> t
+                                 (RefTy r) -> RefTy (recursiveLookupTy mappings r)
+                                 (PointerTy p) -> PointerTy (recursiveLookupTy mappings p)
+                                 (StructTy n innerTys) -> StructTy n (map (recursiveLookupTy mappings) innerTys)
+                                 (FuncTy argTys retTy) -> FuncTy (map (recursiveLookupTy mappings) argTys)
+                                                                 (recursiveLookupTy mappings retTy)
+                                 _ -> t
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
 genVarTyWithPrefix :: String -> State Integer Ty
@@ -385,6 +383,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                                          return (name, Binder xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
 
+ordArrHead        = 50
 ordArg            = 101
 ordDefnBody       = 102
 ordDefExpr        = 103
@@ -399,12 +398,11 @@ ordDoReturn       = 111
 ordDoStatement    = 112
 ordSetBang        = 113
 ordThe            = 114
-ordFuncAppRet     = 115
-ordFuncAppArg     = 116
 ordFuncAppVarTy   = 117
 ordArrBetween     = 118
-ordArrHead        = 50
 ordMultiSym       = 120
+ordFuncAppRet     = 125
+ordFuncAppArg     = 126
 
 genConstraints :: XObj -> Either TypeError [Constraint]
 genConstraints root = fmap sort (gen root)
