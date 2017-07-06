@@ -7,11 +7,7 @@
 (import String)
 (import Char)
 
-(defn first [x]
-  (nth (ref x) 0))
+;;(defn last [xs] (Array.nth xs (dec (Array.count &xs))))
 
-(defn f []
-  (first &[10 20 30]))
-
-(defn main []
-  (println (refstr (f))))
+(defn f [] (Array.nth [1 2 3] 0))
+(defn g [] (Array.count [1 2 3]))
