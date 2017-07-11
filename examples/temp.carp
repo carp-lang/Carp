@@ -7,12 +7,5 @@
 (import String)
 (import Char)
 
-(defn last [xs]
-  (let [i (dec (Array.count &xs))]
-    (String.copy (Array.nth &xs i))))
-
-(defn main []
-  (println &(last ["NO" "NO" "YES"])))
-
-;; (defn f [] (Array.nth [1 2 3] 0))
-;; (defn g [] (Array.count [1 2 3]))
+(defn f [] (Array.nth [1 2 3] 0))
+(defn g [] (Array.count [1 2 3]))

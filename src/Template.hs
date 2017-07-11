@@ -157,8 +157,8 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
                   , "    return b;"
                   , "}"
                   ]))
-            (\(FuncTy [t@(FuncTy [insideTypeA] _), arrayTypeA] arrayTypeB) ->
-               [defineFunctionTypeAlias t, defineArrayTypeAlias arrayTypeA, defineArrayTypeAlias arrayTypeB] ++
+            (\(FuncTy [ft@(FuncTy [insideTypeA] _), arrayTypeA] arrayTypeB) ->
+               [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayTypeA, defineArrayTypeAlias arrayTypeB] ++
                 insideArrayDeleteDeps typeEnv env insideTypeA)
 
 -- | "Endofunctor Map"
@@ -193,7 +193,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
         Template
         t
         (const (toTemplate "Array $NAME($(Fn [a] Bool) predicate, Array a)"))
-        (\(FuncTy [(FuncTy [insideTy] BoolTy), aTy] _) ->
+        (\(FuncTy [(FuncTy [insideTy] BoolTy), _] _) ->
            (toTemplate $ unlines $
             let deleter = insideArrayDeletion env insideTy
             in ["$DECL { "
@@ -210,8 +210,8 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "    return a;"
                , "}"
                ]))
-        (\(FuncTy [t@(FuncTy [insideType] BoolTy), arrayType] _) ->
-           [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env insideType)
+        (\(FuncTy [ft@(FuncTy [insideType] BoolTy), arrayType] _) ->
+           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env insideType)
 
 templateReduce :: (String, Binder)
 templateReduce = defineTypeParameterizedTemplate templateCreator path t
@@ -223,7 +223,7 @@ templateReduce = defineTypeParameterizedTemplate templateCreator path t
     path = SymPath ["Array"] "reduce"
     t = (FuncTy [fTy, bTy, arrTy] bTy)
     templateCreator = TemplateCreator $
-      \typeEnv env ->
+      \_ _ ->
         Template
         t
         (const (toTemplate "$b $NAME($(Fn [b a] a) f, $b initial_value, Array a)"))

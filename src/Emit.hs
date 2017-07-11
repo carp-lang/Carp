@@ -4,7 +4,7 @@ import Data.List (intercalate, sortOn)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
-import Debug.Trace
+--import Debug.Trace
 
 import Obj
 import Types

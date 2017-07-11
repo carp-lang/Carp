@@ -8,7 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
-import Debug.Trace
+--import Debug.Trace
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath
@@ -206,9 +206,9 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name
         Nothing -> compilerError ("Can't find user defined type '" ++ name ++ "' in type env.")
     _ ->
       (100, b)
-scoreBinder typeEnv b@(Binder (XObj (Mod _) _ _)) =
+scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (200, b)
-scoreBinder typeEnv x = error ("Can't score: " ++ show x)
+scoreBinder _ x = error ("Can't score: " ++ show x)
 
 dependencyDepth :: Env -> XObj -> Int
 dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =

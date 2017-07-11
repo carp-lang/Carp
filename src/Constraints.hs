@@ -1,5 +1,6 @@
 module Constraints (solve,
                     Constraint(..),
+                    ConstraintOrder(..),
                     UnificationFailure(..),
                     recursiveLookup,
                     debugSolveOne,    -- exported to avoid warning about unused function (should be another way...)
@@ -13,7 +14,30 @@ import Debug.Trace
 import Obj
 import Types
 
-data Constraint = Constraint Ty Ty XObj XObj Int deriving Eq
+data ConstraintOrder = OrdNo
+                     | OrdArrHead        
+                     | OrdArg            
+                     | OrdDefnBody       
+                     | OrdDefExpr        
+                     | OrdLetBind        
+                     | OrdLetBody        
+                     | OrdIfCondition    
+                     | OrdIfReturn       
+                     | OrdIfWhole        
+                     | OrdWhileBody      
+                     | OrdWhileCondition 
+                     | OrdDoReturn       
+                     | OrdDoStatement    
+                     | OrdSetBang        
+                     | OrdThe            
+                     | OrdFuncAppVarTy   
+                     | OrdArrBetween     
+                     | OrdMultiSym       
+                     | OrdFuncAppRet     
+                     | OrdFuncAppArg
+                     deriving (Show, Ord, Eq)
+
+data Constraint = Constraint Ty Ty XObj XObj ConstraintOrder deriving Eq
 
 instance Ord Constraint where
   compare (Constraint _ _ _ _ a) (Constraint _ _ _ _ b) = compare a b
@@ -114,7 +138,7 @@ solveOneInternal mappings constraint =
       else Left (UnificationFailure constraint mappings)
 
 mkConstraint :: Ty -> Ty -> Constraint
-mkConstraint t1 t2 = Constraint t1 t2 dummy dummy 0
+mkConstraint t1 t2 = Constraint t1 t2 dummy dummy OrdNo
   where dummy = XObj External Nothing Nothing
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings

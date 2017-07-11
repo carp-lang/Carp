@@ -383,27 +383,6 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                                          return (name, Binder xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
 
-ordArrHead        = 50
-ordArg            = 101
-ordDefnBody       = 102
-ordDefExpr        = 103
-ordLetBind        = 104
-ordLetBody        = 105
-ordIfCondition    = 106
-ordIfReturn       = 107
-ordIfWhole        = 108
-ordWhileBody      = 109
-ordWhileCondition = 110
-ordDoReturn       = 111
-ordDoStatement    = 112
-ordSetBang        = 113
-ordThe            = 114
-ordFuncAppVarTy   = 117
-ordArrBetween     = 118
-ordMultiSym       = 120
-ordFuncAppRet     = 125
-ordFuncAppArg     = 126
-
 genConstraints :: XObj -> Either TypeError [Constraint]
 genConstraints root = fmap sort (gen root)
   where gen xobj =
@@ -415,8 +394,8 @@ genConstraints root = fmap sort (gen root)
                                 xobjType <- toEither (ty xobj) (DefnMissingType xobj)
                                 bodyType <- toEither (ty body) (ExpressionMissingType xobj)
                                 let (FuncTy argTys retTy) = xobjType
-                                    bodyConstr = Constraint retTy bodyType xobj body ordDefnBody
-                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj ordArg) (map forceTy args) argTys args
+                                    bodyConstr = Constraint retTy bodyType xobj body OrdDefnBody
+                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj OrdArg) (map forceTy args) argTys args
                                 return (bodyConstr : argConstrs ++ insideBodyConstraints)
 
                            -- Def
@@ -424,7 +403,7 @@ genConstraints root = fmap sort (gen root)
                              do insideExprConstraints <- gen expr
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 exprType <- toEither (ty expr) (ExpressionMissingType xobj)
-                                let defConstraint = Constraint xobjType exprType xobj expr ordDefExpr
+                                let defConstraint = Constraint xobjType exprType xobj expr OrdDefExpr
                                 return (defConstraint : insideExprConstraints)
 
                            -- Let
@@ -433,9 +412,9 @@ genConstraints root = fmap sort (gen root)
                                 insideBindingsConstraints <- fmap join (mapM gen bindings)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)                                
                                 let Just xobjTy = ty xobj
-                                    wholeStatementConstraint = Constraint bodyType xobjTy body xobj ordLetBody
+                                    wholeStatementConstraint = Constraint bodyType xobjTy body xobj OrdLetBody
                                     bindingsConstraints = zipWith (\(symTy, exprTy) (symObj, exprObj) ->
-                                                                     Constraint symTy exprTy symObj exprObj ordLetBind)
+                                                                     Constraint symTy exprTy symObj exprObj OrdLetBind)
                                                                   (map (\(a, b) -> (forceTy a, forceTy b)) (pairwise bindings))
                                                                   (pairwise bindings)
                                 return (wholeStatementConstraint : insideBodyConstraints ++
@@ -450,10 +429,10 @@ genConstraints root = fmap sort (gen root)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
                                 let expected = XObj (Sym (SymPath [] "condition in if-value")) (info xobj) (ty xobj)
-                                    conditionConstraint = Constraint exprType BoolTy expr expected ordIfCondition
-                                    sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse ordIfReturn
+                                    conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
+                                    sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
                                     Just t = ty xobj
-                                    wholeStatementConstraint = Constraint trueType t ifTrue xobj ordIfWhole
+                                    wholeStatementConstraint = Constraint trueType t ifTrue xobj OrdIfWhole
                                 return (conditionConstraint : sameReturnConstraint :
                                         wholeStatementConstraint : insideConditionConstraints ++
                                         insideTrueConstraints ++ insideFalseConstraints)
@@ -466,8 +445,8 @@ genConstraints root = fmap sort (gen root)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)                                
                                 let expectedCond = XObj (Sym (SymPath [] "condition in while-expression")) (info xobj) (ty xobj)
                                     expectedBody = XObj (Sym (SymPath [] "body in while-expression")) (info xobj) (ty xobj)
-                                    conditionConstraint = Constraint exprType BoolTy expr expectedCond ordWhileCondition
-                                    wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody ordWhileBody
+                                    conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
+                                    wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
                                 return (conditionConstraint : wholeStatementConstraint :
                                         insideConditionConstraints ++ insideBodyConstraints)
                                   
@@ -479,9 +458,9 @@ genConstraints root = fmap sort (gen root)
                                     in do insideExpressionsConstraints <- fmap join (mapM gen expressions)
                                           xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                           lastExprType <- toEither (ty lastExpr) (ExpressionMissingType xobj)
-                                          let retConstraint = Constraint xobjType lastExprType xobj lastExpr ordDoReturn
+                                          let retConstraint = Constraint xobjType lastExprType xobj lastExpr OrdDoReturn
                                               must = XObj (Sym (SymPath [] "statement in do-expression")) (info xobj) (ty xobj)
-                                              mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must ordDoStatement)
+                                              mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must OrdDoStatement)
                                               mkConstr _ = Nothing
                                               expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
                                           return (retConstraint : insideExpressionsConstraints ++ expressionsShouldReturnUnit)
@@ -495,7 +474,7 @@ genConstraints root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType valueType variable value ordSetBang
+                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
                                 return (sameTypeConstraint : insideValueConstraints)
 
                            -- The
@@ -503,7 +482,7 @@ genConstraints root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 valueType <- toEither (ty value) (DefMissingType value)
-                                let theTheConstraint = Constraint xobjType valueType xobj value ordThe
+                                let theTheConstraint = Constraint xobjType valueType xobj value OrdThe
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Ref
@@ -521,17 +500,17 @@ genConstraints root = fmap sort (gen root)
                                     else
                                       let expected = XObj (Sym (SymPath [] ("expected argument to '" ++ getName func ++ "'")))
                                                           (info func) Nothing
-                                          argConstraints = zipWith3 (\a t aObj -> Constraint a t aObj expected ordFuncAppArg)
+                                          argConstraints = zipWith3 (\a t aObj -> Constraint a t aObj expected OrdFuncAppArg)
                                                                     (map forceTy args)
                                                                     argTys
                                                                     args
                                           Just xobjTy = ty xobj
-                                          retConstraint = Constraint xobjTy retTy xobj func ordFuncAppRet
+                                          retConstraint = Constraint xobjTy retTy xobj func OrdFuncAppRet
                                       in  return (retConstraint : argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
                                         expected = XObj (Sym (SymPath [] ("calling '" ++ getName func ++ "'"))) (info func) Nothing
-                                        wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected ordFuncAppVarTy
+                                        wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : insideArgsConstraints)
                                   _ -> Left (NotAFunction func)
                                
@@ -544,8 +523,8 @@ genConstraints root = fmap sort (gen root)
                 x:xs -> do insideExprConstraints <- fmap join (mapM gen arr)
                            let Just headTy = ty x
                                Just (StructTy "Array" [t]) = ty xobj
-                               betweenExprConstraints = map (\o -> Constraint headTy (forceTy o) x o ordArrBetween) xs
-                               headConstraint = Constraint headTy t x xobj ordArrHead
+                               betweenExprConstraints = map (\o -> Constraint headTy (forceTy o) x o OrdArrBetween) xs
+                               headConstraint = Constraint headTy t x xobj OrdArrHead
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)              
                            
             _ -> Right []
@@ -671,7 +650,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
             [(theType, singlePath)] -> let Just t' = t
                                            fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
                                            fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
-                                       in  case solve [Constraint theType t' fake1 fake2 ordMultiSym] of
+                                       in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
                                                    normalSymbol = XObj (Sym singlePath) i (Just replaced)
@@ -931,7 +910,7 @@ manageMemory typeEnv globalEnv root =
                        [] -> trace ("Trying to get reference from '" ++ getName xobj ++
                                     "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
                                     " but it has already been given away.") (return ())
-                       [one] -> return ()
+                       [_] -> return ()
                        _ -> error "Too many variables with the same name in set."                                  
              else return ()
 
@@ -1062,5 +1041,5 @@ annotate typeEnv globalEnv xobj =
                                   [True, False]
      final <- manageMemory typeEnv globalEnv annotated
      check final
-     mapM check dependencies
+     _ <- mapM check dependencies
      return (final : dependencies)
