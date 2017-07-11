@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad
+import System.Console.Readline
 import qualified System.Environment as SystemEnvironment
 import System.IO (hFlush, stdout)
 import qualified Data.Map as Map
@@ -24,14 +25,17 @@ defaultProject = Project { projectTitle = "Untitled"
 
 repl :: Context -> String -> IO ()
 repl context readSoFar =
-  do putStrWithColor Yellow (if null readSoFar then "鲮 " else "     ") -- 鲤 / 鲮
-     hFlush stdout
-     input <- fmap (\s -> readSoFar ++ s ++ "\n") getLine
-     case balance input of
-       0 -> do let input' = if input == "\n" then contextLastInput context else input
-               context' <- executeString context input'
-               repl (context' { contextLastInput = input' }) ""
-       _ -> repl context input
+  do let prompt = strWithColor Yellow (if null readSoFar then "鲮 " else "     ") -- 鲤 / 鲮
+     maybeLine <- readline prompt
+     case maybeLine of
+       Nothing   -> return () -- EOF / control-d
+       Just line -> do addHistory line
+                       let input = readSoFar ++ line ++ "\n"
+                       case balance input of
+                         0 -> do let input' = if input == "\n" then contextLastInput context else input
+                                 context' <- executeString context input'
+                                 repl (context' { contextLastInput = input' }) ""
+                         _ -> repl context input
 
 arrayModule :: Env
 arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envImports = [], envMode = ExternalEnv }
