@@ -7,4 +7,19 @@
 (import String)
 (import Char)
 
+;; (defn range [from to]
+;;   (let [length (- to from)
+;;         arr (replicate length 0)]
+;;     (do
+;;       (for [i 0 length]
+;;         (aset! &arr i (+ from i)))
+;;       arr)))
 
+;; (defn main []
+;;   (let [r (range 5 10)]
+;;     (println (refstr &r))))
+
+(defn g [] 123)
+
+(defn f []
+  (repeat 5 g))

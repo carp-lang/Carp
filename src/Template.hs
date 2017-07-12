@@ -301,32 +301,45 @@ templateNth =
   (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
   
 templateReplicate :: (String, Binder)
-templateReplicate = defineTemplate
-  (SymPath ["Array"] "replicate")
-  (FuncTy [IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
-  (toTemplate "Array $NAME(int n, $t elem)")
-  (toTemplate $ unlines [ "$DECL {"
+templateReplicate = defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath ["Array"] "replicate"
+        t = FuncTy [IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"])
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+             Template
+             t
+             (const (toTemplate "Array $NAME(int n, $t elem)"))
+             (\_ ->
+                (toTemplate $ unlines [ "$DECL {"
                         , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
                         , "    for(int i = 0; i < n; ++i) {"
                         , "      (($t*)a.data)[i] = elem;"
                         , "    }"
                         , "    return a;"
-                        , "}"])
-  (\(FuncTy [_, _] arrayType) -> [defineArrayTypeAlias arrayType])
+                        , "}"]))
+             (\(FuncTy [_, _] arrayType) ->
+                [defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env arrayType)
 
 templateRepeat :: (String, Binder)
-templateRepeat = defineTemplate
-  (SymPath ["Array"] "repeat")
-  (FuncTy [IntTy, (FuncTy [] (VarTy "t"))] (StructTy "Array" [VarTy "t"]))
-  (toTemplate "Array $NAME(int n, $(Fn [] t) f)")
-  (toTemplate $ unlines [ "$DECL {"
-                        , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
-                        , "    for(int i = 0; i < n; ++i) {"
-                        , "      (($t*)a.data)[i] = f();"
-                        , "    }"
-                        , "    return a;"
-                        , "}"])
-  (\(FuncTy [_, t] arrayType) -> [defineArrayTypeAlias arrayType, defineFunctionTypeAlias t])
+templateRepeat = defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath ["Array"] "repeat"
+        t = (FuncTy [IntTy, (FuncTy [] (VarTy "t"))] (StructTy "Array" [VarTy "t"]))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+             Template
+             t
+             (const (toTemplate "Array $NAME(int n, $(Fn [] t) f)"))
+             (\_ ->
+                (toTemplate $ unlines
+                  [ "$DECL {"
+                  , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
+                  , "    for(int i = 0; i < n; ++i) {"
+                  , "      (($t*)a.data)[i] = f();"
+                  , "    }"
+                  , "    return a;"
+                  , "}"]))
+             (\(FuncTy [_, ft] arrayType) ->
+                 defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft : insideArrayDeleteDeps typeEnv env arrayType)
 
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate

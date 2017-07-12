@@ -76,8 +76,8 @@ string str(int x) {
     return buffer;
 }
 
-int Int_from_MINUS_string(string s) {
-    return atoi(s);
+int Int_from_MINUS_string(string *s) {
+    return atoi(*s);
 }
 
 int Int_mod(int x, int divider) {

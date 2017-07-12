@@ -11,7 +11,7 @@
             answer (random-between 1 100)]
         (while play
           (let [guess (get-line)
-                num (from-string guess)]
+                num (from-string &guess)]
             (if (= (ref guess) (ref "q\n"))
               (do
                 (println (ref "Good bye..."))

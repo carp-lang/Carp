@@ -11,7 +11,7 @@
   (register random (Fn [] Int))
   (register random-between (Fn [Int Int] Int))
   (register str (Fn [Int] String))
-  (register from-string (Fn [String] Int))
+  (register from-string (Fn [(Ref String)] Int))
   (register mask (Fn [Int Int] Bool))
   (register inc (Fn [Int] Int))
   (register dec (Fn [Int] Int)))
