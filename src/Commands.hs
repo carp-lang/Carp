@@ -42,6 +42,7 @@ data ReplCommand = Define XObj
                  | Expand XObj
                  | InstantiateTemplate XObj XObj
                  | Import SymPath
+                 | ProjectSet String String
                  | DoNothing
                  | ReplMacroError String
                  | ReplTypeError String
@@ -96,6 +97,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "run")) _ _ : [] -> RunExe
                    XObj (Sym (SymPath _ "cat")) _ _ : [] -> Cat
                    XObj (Sym (SymPath _ "import")) _ _ : XObj (Sym path) _ _ : [] -> Import path
+                   XObj (Sym (SymPath _ "project-set!")) _ _ : XObj (Sym (SymPath _ key)) _ _ : XObj (Str value) _ _ : [] -> ProjectSet key value
                    XObj (Sym (SymPath _ "register")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> Register name t
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : [] -> RegisterType name
                    XObj (Sym (SymPath _ "local-include")) _ _ : XObj (Str file) _ _ : [] -> AddInclude (LocalInclude file)
@@ -277,6 +279,15 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
            Just (_, Binder _) ->  return ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
            Nothing -> do putStrLnWithColor Red ("Can't import '" ++ show path ++ "'")
                          return ctx
+
+       -- | A more general way to set project settings, will replace other means later probably.
+       ProjectSet key value ->
+         case key of
+           "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
+           "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
+           _ ->
+             do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
+                return ctx
 
        BuildExe ->
          let src = do decl <- envToDeclarations env typeEnv

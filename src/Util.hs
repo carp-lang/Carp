@@ -37,3 +37,9 @@ replaceChars dict input = concat (map replacer input)
   where replacer c = case Map.lookup c dict of
                        Just s -> s
                        Nothing -> [c]
+
+addIfNotPresent :: Eq a => a -> [a] -> [a]
+addIfNotPresent x xs =
+  if x `elem` xs
+  then xs
+  else x : xs
