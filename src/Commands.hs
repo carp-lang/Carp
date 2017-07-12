@@ -285,6 +285,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
          case key of
            "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
            "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
+           "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
            _ ->
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx

@@ -14,17 +14,18 @@ import Parsing
 defaultProject :: Project
 defaultProject = Project { projectTitle = "Untitled"
                          , projectIncludes = [SystemInclude "prelude.h"]
-                         , projectCFlags = []
+                         , projectCFlags = ["-fPIC"]
                          , projectLibFlags = ["-lm"]
                          , projectFiles = []
                          , projectEchoC = False
                          , projectCarpDir = "./"
                          , projectOutDir = "./out/"
+                         , projectPrompt = "鲮> "
                          }
 
 repl :: Context -> String -> IO ()
 repl context readSoFar =
-  do putStrWithColor Yellow (if null readSoFar then "鲮 " else "     ") -- 鲤 / 鲮
+  do putStrWithColor Yellow (if null readSoFar then (projectPrompt (contextProj context)) else "     ") -- 鲤 / 鲮
      hFlush stdout
      input <- fmap (\s -> readSoFar ++ s ++ "\n") getLine
      case balance input of

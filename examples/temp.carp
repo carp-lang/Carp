@@ -19,7 +19,15 @@
 ;;   (let [r (range 5 10)]
 ;;     (println (refstr &r))))
 
-(defn g [] 123)
+;; (defn g [] 123)
 
-(defn f []
-  (repeat 5 g))
+;; (defn f []
+;;   (repeat 5 g))
+
+;;(def x (the (Array Int) NULL))
+
+(defn main []
+  (let [x NULL]
+    (do
+      (set! x [1 2 3])
+      (println (refstr &x)))))
