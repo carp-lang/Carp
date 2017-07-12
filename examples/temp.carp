@@ -7,5 +7,4 @@
 (import String)
 (import Char)
 
-(defn f [] (Array.nth [1 2 3] 0))
-(defn g [] (Array.count [1 2 3]))
+

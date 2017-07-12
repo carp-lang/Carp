@@ -27,5 +27,5 @@
     (println &(Array.str (ref (ArrayExtension.fmap inc [10 20 30 40 50]))))
     ))
 
-;; (build)
-;; (run)
+(build)
+(run)

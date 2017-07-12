@@ -4,6 +4,7 @@ module Template where
 
 import qualified Text.Parsec as Parsec
 import Text.Parsec ((<|>))
+import qualified Data.Set as Set
 import Debug.Trace
 
 import Util
@@ -27,8 +28,9 @@ defineTemplate :: SymPath -> Ty -> [Token] -> [Token] -> (Ty -> [XObj]) -> (Stri
 defineTemplate path t declaration definition depsFunc = 
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
+      i = Info 0 0 Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path) Nothing Nothing]
-  in  (name, Binder (XObj (Lst defLst) Nothing (Just t)))
+  in  (name, Binder (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
 defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> (String, Binder)
@@ -368,6 +370,22 @@ templateCount = defineTemplate
   (toTemplate "$DECL { return (*a).len; }")
   (\(FuncTy [arrayType] _) -> [defineArrayTypeAlias arrayType])
 
+-- templateRange :: (String, Binder)
+-- templateRange = defineTemplate
+--   (SymPath ["Array"] "range")
+--   (FuncTy [(VarTy "t"), (VarTy "t")] (StructTy "Array" [(VarTy "t")]))
+--   (toTemplate "Array $NAME ($t start, $t end)")
+--   (toTemplate (unlines [ "$DECL { "
+--                        , "    assert(end > start);"
+--                        , "    int length = end - start;"
+--                        , "    Array a = { .len = length, .data = malloc(sizeof($t) * length) };"
+--                        , "    for(int i = 0; i < length; i++) {"
+--                        , "        (($t*)a.data)[i] = start + ($t)i;"
+--                        , "    }"
+--                        , "    return a;"
+--                        , "}"]))
+--   (\(FuncTy [t, _] _) -> [defineArrayTypeAlias (StructTy "Array" [t])] ++ )
+  
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
   where templateCreator = TemplateCreator $

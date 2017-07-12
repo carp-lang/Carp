@@ -42,16 +42,16 @@
     [val Int])
 
 (defn set-stuff-in-array []
-  (let [xs (range 0 10)]
+  (let [xs [0 1 2 3 4 5 6 7 8 9]]
     (do
-      (aset! (ref xs) 4 666)
+      (aset! &xs 4 666)
       (println (ref (str (ref xs)))))))
 
 (defn more-array []
   (let [xs [1 2 3 4]
         xs2 (pop-back xs)]
     (do      
-      (println (ref (str (ref (push-back xs2 500))))))))
+      (println (refstr &(push-back xs2 500))))))
 
 (defn using-the-form-to-specialize [x y]
   (+ x (the Double y)))
