@@ -24,7 +24,7 @@
     (list (quote do)
           body
           (list
-           (quote set!) (car settings)
+           (quote set!) (list (quote ref) (car settings))
            (list (quote Int.+)
                  (car settings)
                  (if (= 4 (count settings)) ;; optional arg for step

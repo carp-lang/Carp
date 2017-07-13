@@ -68,8 +68,8 @@
 
 (defn macrooo2 []
   (for [x 1 3]
-        (for [y 10 100 20]
-          (println (ref (str (* x y)))))))
+    (for [y 10 100 20]
+      (println (ref (str (* x y)))))))
 
 (deftype A [s String])
 (import A)

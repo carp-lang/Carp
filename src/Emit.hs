@@ -4,7 +4,7 @@ import Data.List (intercalate, sortOn)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
---import Debug.Trace
+import Debug.Trace
 
 import Obj
 import Types
@@ -203,7 +203,12 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             -- Set!
             XObj SetBang _ _ : variable : value : [] ->
               do valueVar <- visit indent value
-                 appendToSrc (addIndent indent ++ mangle (getName variable) ++ " = " ++ valueVar ++ ";\n")
+                 let properVariableName = case variable of
+                                            (XObj (Lst (XObj Ref _ _ : x : _)) _ _) -> mangle (getName x)
+                                            _ -> error "How to handle setting of refs?" -- mangle (getName variable)
+                     Just varInfo = info variable
+                 delete indent varInfo
+                 appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ ";\n")
                  return ""
 
             -- The

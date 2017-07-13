@@ -27,7 +27,8 @@
 ;;(def x (the (Array Int) NULL))
 
 (defn main []
-  (let [x NULL]
+  (let [x [10]]
     (do
-      (set! x [1 2 3])
+      (set! &x [1 2 3])
+      (set! &x [4 5 6])
       (println (refstr &x)))))

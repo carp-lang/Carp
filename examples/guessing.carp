@@ -15,7 +15,7 @@
             (if (= (ref guess) (ref "q\n"))
               (do
                 (println (ref "Good bye..."))
-                (set! play false))
+                (set! &play false))
               (do
                 (if (< num answer)
                   (println (ref "Too low."))

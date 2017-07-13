@@ -474,7 +474,7 @@ genConstraints root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
+                                let sameTypeConstraint = Constraint variableType (RefTy valueType) variable value OrdSetBang
                                 return (sameTypeConstraint : insideValueConstraints)
 
                            -- The
@@ -764,6 +764,20 @@ manageMemory typeEnv globalEnv root =
                  return $ do okBody <- visitedBody
                              okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
                              return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
+            setbangExpr@(XObj SetBang _ _) : variable : value : [] ->
+              do visitedValue <- visit value
+                 unmanage value
+                 let varInfo = info variable
+                     correctVariable = case variable of
+                                         XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
+                                         x -> x
+                     deleters = case createDeleter correctVariable of
+                                  Just d  -> Set.fromList [d]
+                                  Nothing -> Set.empty
+                     newVarInfo = setDeletersOnInfo varInfo deleters
+                     newVariable = variable { info = newVarInfo }
+                 return $ do okValue <- visitedValue
+                             return (XObj (Lst (setbangExpr : newVariable : okValue : [])) i t)
             addressExpr@(XObj Address _ _) : value : [] ->
               do visitedValue <- visit value
                  return $ do okValue <- visitedValue

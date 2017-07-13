@@ -3,6 +3,7 @@ module Main where
 import Control.Monad
 import qualified System.Environment as SystemEnvironment
 import System.IO (hFlush, stdout)
+import System.Info (os)
 import qualified Data.Map as Map
 import ColorText
 import Obj
@@ -20,7 +21,7 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectEchoC = False
                          , projectCarpDir = "./"
                          , projectOutDir = "./out/"
-                         , projectPrompt = "鲮> "
+                         , projectPrompt = if os == "darwin" then "鲮 " else "> "
                          }
 
 repl :: Context -> String -> IO ()
