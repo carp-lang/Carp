@@ -460,6 +460,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                             putStrLn "new (heap allocation)"
                             putStrLn "copy"
                             putStrLn "delete (used internally, no need to call this explicitly)"
+                            putStrLn ""
                             return ctx
 
        Help "shortcuts" -> do putStrLn "GHC-style shortcuts at the repl:"
@@ -496,10 +497,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                     putStrLn "(defalias <name> <type>)          - Create another name for a type."
                     putStrLn ""
                     putStrLn "C-compiler configuration:"
-                    putStrLn "(system-include <file>) - Include a system header file."
-                    putStrLn "(local-include <file>)  - Include a local header file."
-                    putStrLn "(add-cflag <flag>)      - Add a cflag to the compilation step."
-                    putStrLn "(add-lib <flag>)        - Add a library flag to the compilation step."
+                    putStrLn "(system-include <file>)          - Include a system header file."
+                    putStrLn "(local-include <file>)           - Include a local header file."
+                    putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
+                    putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
+                    putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
                     putStrLn ""
                     return ctx
 
