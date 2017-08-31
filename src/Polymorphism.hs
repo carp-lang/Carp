@@ -23,3 +23,4 @@ nameOfPolymorphicFunction env t lookupName
         in  Just concretizedPath
       _ -> Nothing
   | otherwise   = Nothing
+

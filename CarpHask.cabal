@@ -29,6 +29,7 @@ library
                        Eval,
                        TypeError,
                        InitialTypes,
+                       AssignTypes,
                        GenerateConstraints,
                        ManageMemory,
                        Polymorphism
