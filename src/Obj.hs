@@ -604,6 +604,17 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
+-- | Find out if a type is "external", meaning it is not defined by the user 
+--   in this program but instead imported from another C library or similar.
+isExternalType :: Env -> Ty -> Bool
+isExternalType typeEnv (StructTy name _) =
+  case lookupInEnv (SymPath [] name) typeEnv of
+    Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
+    Just _ -> False
+    Nothing -> False
+isExternalType _ _ =
+  False
+
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty
 forceTy xobj = case ty xobj of

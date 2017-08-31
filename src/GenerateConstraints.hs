@@ -10,6 +10,7 @@ import Data.List (foldl', sort)
 import Control.Monad.State
 import Data.Maybe (mapMaybe)
 
+-- | Will create a list of type constraints for a form.
 genConstraints :: XObj -> Either TypeError [Constraint]
 genConstraints root = fmap sort (gen root)
   where gen xobj =
