@@ -36,3 +36,7 @@
       (println (ref (str &x)))
       (println (ref (str y)))
       )))
+
+;; BUG when flipping type and name in deftype:
+;; (deftype AHA [int x])
+;; (defn foo [] (AHA.init 3))

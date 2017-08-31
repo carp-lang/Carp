@@ -34,25 +34,25 @@ moduleForDeftype typeEnv env pathStrings typeName rest i =
             deps = deleteDeps ++ membersDeps ++ copyDeps
         return (typeModuleName, typeModuleXObj, deps)
 
--- | What a mess this function is...
+-- | Make sure that the member declarations in a type definition
+-- | Follow the pattern [<name> <type>, <name> <type>, ...]
+-- | TODO: What a mess this function is, clean it up!
 validateMembers :: [XObj] -> Maybe ()
 validateMembers rest = if all (== True) (map validateOneCase rest)
                        then Just ()
                        else Nothing
-
-validateOneCase :: XObj -> Bool
-validateOneCase (XObj (Arr arr) _ _) = length arr `mod` 2 == 0 &&
+  where
+    validateOneCase :: XObj -> Bool
+    validateOneCase (XObj (Arr arr) _ _) = length arr `mod` 2 == 0 &&
                                        all okMemberType (map snd (pairwise arr))
-validateOneCase XObj {} = False
+    validateOneCase XObj {} = False
 
-okMemberType :: XObj -> Bool
-okMemberType xobj = case xobjToTy xobj of
-                      Just _ -> True
-                      Nothing -> False
+    okMemberType :: XObj -> Bool
+    okMemberType xobj = case xobjToTy xobj of
+                          Just _ -> True
+                          Nothing -> False
 
-initArgListTypes :: [XObj] -> [Ty]
-initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
-
+-- | Helper function to create the binder for the 'init' template.
 templateForInit :: [String] -> String -> [XObj] -> Maybe (String, Binder)
 templateForInit insidePath typeName [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "init")
@@ -60,6 +60,7 @@ templateForInit insidePath typeName [XObj (Arr membersXObjs) _ _] =
                         (templateInit StackAlloc typeName (memberXObjsToPairs membersXObjs))
 templateForInit _ _ _ = Nothing
 
+-- | Helper function to create the binder for the 'new' template.
 templateForNew :: [String] -> String -> [XObj] -> Maybe (String, Binder)
 templateForNew insidePath typeName [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "new")
@@ -67,6 +68,11 @@ templateForNew insidePath typeName [XObj (Arr membersXObjs) _ _] =
                         (templateInit HeapAlloc typeName (memberXObjsToPairs membersXObjs))
 templateForNew _ _ _ = Nothing
 
+-- | Generate a list of types from a deftype declaration.
+initArgListTypes :: [XObj] -> [Ty]
+initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
+
+-- | Helper function to create the binder for the 'delete' template.
 templateForDelete :: Env -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForDelete typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
   Just $ (instanceBinderWithDeps (SymPath insidePath "delete")
@@ -74,6 +80,7 @@ templateForDelete typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] 
                                  (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForDelete _ _ _ _ _ = Nothing
 
+-- | Helper function to create the binder for the 'copy' template.
 templateForCopy :: Env -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForCopy typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
   Just $ (instanceBinderWithDeps (SymPath insidePath "copy")
@@ -81,15 +88,18 @@ templateForCopy typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
                                  (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 
+-- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
 memberXObjsToPairs xobjs = map (\(n, t) -> (getName n, fromJust (xobjToTy t))) (pairwise xobjs)
 
+-- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: Env -> Env -> [String] -> String -> [XObj] -> Maybe ([(String, Binder)], [XObj])
 templatesForMembers typeEnv env insidePath typeName [XObj (Arr membersXobjs) _ _] =
   let bindersAndDeps = concatMap (templatesForSingleMember typeEnv env insidePath typeName) (pairwise membersXobjs)
   in  Just (map fst bindersAndDeps, concatMap snd bindersAndDeps)
-templatesForMembers _ _ _ _ _ = error "Can't create member functions for type with more than one case."
+templatesForMembers _ _ _ _ _ = error "Can't create member functions for type with more than one case (yet)."
 
+-- | Generate the templates for a single member in a deftype declaration.
 templatesForSingleMember :: Env -> Env -> [String] -> String -> (XObj, XObj) -> [((String, Binder), [XObj])]
 templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
@@ -102,6 +112,7 @@ templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
                                                             (FuncTy [p, (FuncTy [t] t)] p)
                                                             (templateUpdater memberName)]
 
+-- | The template for the 'init' and 'new' functions for a deftype.
 templateInit :: AllocationMode -> String -> [(String, Ty)] -> Template
 templateInit allocationMode typeName members =
   Template
@@ -116,15 +127,21 @@ templateInit allocationMode typeName members =
                                  , "}"]))
     (const [])
 
+-- | Creates the C code for an arg to the init function.
+-- | i.e. "(deftype A [x Int])" will generate "int x" which
+-- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
 memberArg (memberName, memberTy) = tyToC memberTy ++ " " ++ memberName
 
+-- | Generate C code for assigning to a member variable.
+-- | Needs to know if the instance is a pointer or stack variable.
 memberAssignment :: AllocationMode -> (String, Ty) -> String
 memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
   where sep = case allocationMode of
                 StackAlloc -> "."
                 HeapAlloc -> "->"
-  
+
+-- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
 templateGetter member fixedMemberTy =
   let maybeAmpersand = case fixedMemberTy of
@@ -137,6 +154,7 @@ templateGetter member fixedMemberTy =
     (const (toTemplate ("$DECL { return " ++ maybeAmpersand ++ "(p->" ++ member ++ "); }\n")))
     (const [])
 
+-- | The template for setters of a deftype.
 templateSetter :: Env -> Env -> String -> Ty -> Template
 templateSetter typeEnv env memberName memberTy =
   let callToDelete = memberDeletion env (memberName, memberTy)
@@ -151,6 +169,8 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"}\n"])))
     (\_ -> (memberDeletionDeps typeEnv env (memberName, memberTy)))
 
+-- | The template for updater functions of a deftype
+-- | (allows changing a variable by passing an transformation function).
 templateUpdater :: String -> Template
 templateUpdater member =
   Template
@@ -162,6 +182,7 @@ templateUpdater member =
                                 ,"}\n"])))
     (\(FuncTy [_, t] _) -> [defineFunctionTypeAlias t])
 
+-- | The template for the 'delete' function of a deftype.
 templateDelete :: Env -> Env -> [(String, Ty)] -> Template
 templateDelete typeEnv env members =
   Template
@@ -172,7 +193,8 @@ templateDelete typeEnv env members =
                                 , "}"]))
    (\_ -> concatMap (memberDeletionDeps typeEnv env) members)
 
--- TODO: Should return an Either since this can fail.
+-- | Generate the C code for deleting a single member of the deftype.
+-- | TODO: Should return an Either since this can fail!
 memberDeletion :: Env -> (String, Ty) -> String
 memberDeletion env (memberName, t)
   | isManaged t =
@@ -187,7 +209,9 @@ memberDeletion env (memberName, t)
       _ -> "    /* Can't find a single delete-function for member '" ++ memberName ++ "' */"
   | otherwise   = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
 
--- TODO: Should return an Either since this can fail.
+-- | Figure out what dependencies the delete function has.
+-- | This will trigger the generation of other deleter functions.
+-- | TODO: Should return an Either since this can fail!
 memberDeletionDeps :: Env -> Env -> (String, Ty) -> [XObj]
 memberDeletionDeps typeEnv env (memberName, t)
   | isManaged t =
