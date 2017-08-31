@@ -260,6 +260,8 @@ solveConstraintsAndConvertErrorIfNeeded constraints =
     Left (Holes holes) -> Left (HolesFound holes)
     Right ok -> Right ok
 
+-- | Will make sure that a form doesn't return a reference.
+-- | TODO: This check is needed on nested forms like 'let' statements, etc.
 check :: XObj -> Either TypeError ()
 check xobj@(XObj (Lst (XObj Defn _ _ : _)) _ t) =
   case t of
@@ -268,6 +270,7 @@ check xobj@(XObj (Lst (XObj Defn _ _ : _)) _ t) =
     Nothing -> Left (DefnMissingType xobj)
 check _ = return ()
 
+-- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
 annotateOne :: Env -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
