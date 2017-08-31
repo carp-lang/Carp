@@ -5,6 +5,11 @@ import Types
 import Util
 import TypeError
 
+-- | Calculate the full, mangled name of a concretized polymorphic function.
+-- | For example, The 'id' in "(id 3)" will become 'id__int'.
+-- | This function uses the 'multiLookupALL' function which gives it acces to
+-- | modules that are not imported. This allows it to access 'delete' functions
+-- | and similar for internal use.
 nameOfPolymorphicFunction :: Env -> Ty -> String -> Maybe SymPath
 nameOfPolymorphicFunction env t lookupName
   | isManaged t =
