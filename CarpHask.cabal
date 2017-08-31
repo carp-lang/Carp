@@ -26,7 +26,10 @@ library
                        Template,
                        Types,
                        Util,
-                       Eval
+                       Eval,
+                       TypeError,
+                       InitialTypes,
+                       GenerateConstraints
                         
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*

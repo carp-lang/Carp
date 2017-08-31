@@ -604,3 +604,8 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
+-- | Unsafe way of getting the type from an XObj
+forceTy :: XObj -> Ty
+forceTy xobj = case ty xobj of
+                 Just t -> t
+                 Nothing -> error ("No type in " ++ show xobj)
