@@ -167,7 +167,9 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    p." ++ memberName ++ " = newValue;"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\_ -> (memberDeletionDeps typeEnv env (memberName, memberTy)))
+    (\_ -> if isManaged memberTy
+           then (depsOfPolymorphicFunction typeEnv env "delete" (memberTypeToDeleterType memberTy))
+           else [])
 
 -- | The template for updater functions of a deftype
 -- | (allows changing a variable by passing an transformation function).
@@ -191,7 +193,13 @@ templateDelete typeEnv env members =
    (const (toTemplate $ unlines [ "$DECL {"
                                 , (joinWith "\n" (map (memberDeletion env) members)) 
                                 , "}"]))
-   (\_ -> concatMap (memberDeletionDeps typeEnv env) members)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . memberTypeToDeleterType)
+                    (filter isManaged (map snd members)))
+
+-- | Given a member type, get the type of the member's deleter function.
+memberTypeToDeleterType :: Ty -> Ty
+memberTypeToDeleterType memberType =
+  (FuncTy [memberType] UnitTy)
 
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
@@ -209,25 +217,6 @@ memberDeletion env (memberName, t)
       _ -> "    /* Can't find a single delete-function for member '" ++ memberName ++ "' */"
   | otherwise   = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
 
--- | Figure out what dependencies the delete function has.
--- | This will trigger the generation of other deleter functions.
--- | TODO: Should return an Either since this can fail!
-memberDeletionDeps :: Env -> Env -> (String, Ty) -> [XObj]
-memberDeletionDeps typeEnv env (memberName, t)
-  | isManaged t =
-    case filter ((\(Just t') -> (areUnifiable (FuncTy [t] UnitTy) t')) . ty . binderXObj . snd) (multiLookupALL "delete" env) of
-      [] -> (trace $ "No delete function found for member '" ++ memberName ++ "'") []
-      [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
-        []
-      [(_, Binder single)] ->
-        case concretizeDefinition False typeEnv env single (FuncTy [t] (UnitTy)) of
-          Left err -> error (show err)
-          Right (ok, deps) -> (ok : deps)
-      _ -> (trace $ "Too many delete functions found for member '" ++ memberName ++ "'") []
-  | otherwise = []
-
-
-
 
 
 ---------------------------------------------------------------------
@@ -243,7 +232,13 @@ templateCopy typeEnv env members =
                                 , (joinWith "\n" (map (memberCopy env) members))
                                 , "    return copy;"
                                 , "}"]))
-   (\_ -> concatMap (memberCopyDeps typeEnv env) members)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . memberTypeToCopyFunctionType)
+                    (filter isManaged (map snd members)))
+
+-- | The type of a member's copying function.
+memberTypeToCopyFunctionType :: Ty -> Ty
+memberTypeToCopyFunctionType memberType =
+  (FuncTy [(RefTy memberType)] memberType)  
 
 memberCopy :: Env -> (String, Ty) -> String
 memberCopy env (memberName, t)
@@ -259,16 +254,3 @@ memberCopy env (memberName, t)
       _ -> "    /* Can't find a single copy-function for member '" ++ memberName ++ "' */"
   | otherwise   = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
 
-memberCopyDeps :: Env -> Env -> (String, Ty) -> [XObj]
-memberCopyDeps typeEnv env (memberName, t)
-  | isManaged t =
-    case filter ((\(Just t') -> (areUnifiable (FuncTy [(RefTy t)] t) t')) . ty . binderXObj . snd) (multiLookupALL "copy" env) of
-      [] -> (trace $ "No copy function found for member '" ++ memberName ++ "'") []
-      [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
-        []
-      [(_, Binder single)] ->
-        case concretizeDefinition False typeEnv env single (FuncTy [(RefTy t)] t) of
-          Left err -> error (show err)
-          Right (ok, deps) -> (ok : deps)
-      _ -> (trace $ "Too many copy functions found for member '" ++ memberName ++ "'") []
-  | otherwise = []

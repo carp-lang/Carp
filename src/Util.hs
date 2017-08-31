@@ -43,3 +43,6 @@ addIfNotPresent x xs =
   if x `elem` xs
   then xs
   else x : xs
+
+remove :: (a -> Bool) -> [a] -> [a]
+remove f = filter (not . f)

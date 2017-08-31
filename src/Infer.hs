@@ -5,6 +5,7 @@ module Infer (annotate
              ,concretizeXObj
              ,concretizeDefinition
              ,manageMemory
+             ,depsOfPolymorphicFunction
              ,insideArrayDeleteDeps
              ,insideArrayCopyDeps
              ) where
@@ -178,20 +179,20 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
       err ->
         compilerError ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
 
--- depsOfPolymorphicFunction :: Env -> Ty -> String -> [XObj]
--- depsOfPolymorphicFunction env t name
---   | isManaged t =
---     case filter ((\(Just t') -> (areUnifiable (FuncTy [t] UnitTy) t')) . ty . binderXObj . snd) (multiLookupALL name env) of
---       [] -> (trace $ "No dependency found for " ++ show t) []
---       [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
---         []
---       [(_, Binder single)] ->
---         case concretizeDefinition False env single (FuncTy [t] (UnitTy)) of
---           Left err -> error (show err)
---           Right (ok, deps) -> (ok : deps)
---       _ -> (trace $ "Too many dependencies found for " ++ show t) []
---   | otherwise = []
+-- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
+depsOfPolymorphicFunction :: Env -> Env -> String -> Ty -> [XObj]
+depsOfPolymorphicFunction typeEnv env functionName functionType =
+  case filter ((\(Just t') -> (areUnifiable functionType t')) . ty . binderXObj . snd) (multiLookupALL functionName env) of
+    [] -> (trace $ "No '" ++ functionName ++ "' function found for type " ++ show functionType ++ ".") []
+    [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
+      []
+    [(_, Binder single)] ->
+      case concretizeDefinition False typeEnv env single functionType of
+        Left err -> error (show err)
+        Right (ok, deps) -> (ok : deps)
+    _ -> (trace $ "Too many '" ++ functionName ++ "' functions found, can't figure out dependencies.") []
 
+-- | TODO: Can this use the 'depsOfPolymorphicFunction' too?!
 insideArrayDeleteDeps :: Env -> Env -> Ty -> [XObj]
 insideArrayDeleteDeps typeEnv env t
   | isManaged t =
@@ -207,7 +208,7 @@ insideArrayDeleteDeps typeEnv env t
       _ -> (trace $ "Too many 'delete' functions found for " ++ show t) []
   | otherwise = []
 
--- TODO: merge with "insideArrayDeleteDeps"
+-- | TODO: merge with "insideArrayDeleteDeps" etc.
 insideArrayCopyDeps :: Env -> Env -> Ty -> [XObj]
 insideArrayCopyDeps typeEnv env t
   | isManaged t =
