@@ -12,6 +12,7 @@ import Types
 import Obj
 import Parsing
 import Infer
+import Concretize
 
 -- | Templates are instructions for the compiler to generate some C-code 
 -- | based on some template and the names and types to fill into the template.
@@ -161,7 +162,7 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
                   ]))
             (\(FuncTy [ft@(FuncTy [insideTypeA] _), arrayTypeA] arrayTypeB) ->
                [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayTypeA, defineArrayTypeAlias arrayTypeB] ++
-                insideArrayDeleteDeps typeEnv env insideTypeA)
+                deleterDeps typeEnv env insideTypeA)
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
@@ -213,7 +214,8 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "}"
                ]))
         (\(FuncTy [ft@(FuncTy [insideType] BoolTy), arrayType] _) ->
-           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env insideType)
+           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++
+            deleterDeps typeEnv env insideType)
 
 templateReduce :: (String, Binder)
 templateReduce = defineTypeParameterizedTemplate templateCreator path t
@@ -318,7 +320,8 @@ templateReplicate = defineTypeParameterizedTemplate templateCreator path t
                         , "    return a;"
                         , "}"]))
              (\(FuncTy [_, _] arrayType) ->
-                [defineArrayTypeAlias arrayType] ++ insideArrayDeleteDeps typeEnv env arrayType)
+                let StructTy _ [insideType] = arrayType
+                in [defineArrayTypeAlias arrayType] ++ deleterDeps typeEnv env insideType)
 
 templateRepeat :: (String, Binder)
 templateRepeat = defineTypeParameterizedTemplate templateCreator path t
@@ -339,7 +342,9 @@ templateRepeat = defineTypeParameterizedTemplate templateCreator path t
                   , "    return a;"
                   , "}"]))
              (\(FuncTy [_, ft] arrayType) ->
-                 defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft : insideArrayDeleteDeps typeEnv env arrayType)
+                let StructTy _ [insideType] = arrayType
+                in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
+                    deleterDeps typeEnv env insideType)
 
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate
@@ -411,7 +416,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
                 (deleteTy env arrayType) ++
                 [TokC "}\n"])
              (\(FuncTy [arrayType@(StructTy "Array" [insideType])] UnitTy) ->
-                defineArrayTypeAlias arrayType : insideArrayDeleteDeps typeEnv env insideType)
+                defineArrayTypeAlias arrayType : deleterDeps typeEnv env insideType)
         path = SymPath ["Array"] "delete"
         t = (FuncTy [(StructTy "Array" [VarTy "a"])] UnitTy)
         
@@ -471,7 +476,8 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokC "}\n"])
              (\case
                  (FuncTy [(RefTy arrayType@(StructTy "Array" [insideType]))] _) ->
-                   defineArrayTypeAlias arrayType : insideArrayCopyDeps typeEnv env insideType
+                   defineArrayTypeAlias arrayType :
+                   copierDeps typeEnv env insideType
                  err ->
                    error ("CAN'T MATCH: " ++ (show err))
              )

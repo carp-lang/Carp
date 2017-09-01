@@ -1,0 +1,10 @@
+(import IO)
+(import Int)
+(import String)
+(import Array)
+
+(deftype A [s String])
+
+(defn f []
+  (let [stuff [(A.init "hej") (A.init "svej")]]
+    123))

@@ -15,6 +15,7 @@ module Types ( TypeMappings
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Util
+--import Debug.Trace
 
 -- | Carp types.
 data Ty = IntTy
@@ -29,7 +30,7 @@ data Ty = IntTy
         | ModuleTy
         | PointerTy Ty
         | RefTy Ty
-        | StructTy String [Ty]
+        | StructTy String [Ty] -- the name of the struct, and it's type parameters
         | TypeTy -- the type of types
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)

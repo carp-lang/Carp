@@ -6,8 +6,6 @@ module Infer (annotate
              ,concretizeDefinition
              ,manageMemory
              ,depsOfPolymorphicFunction
-             ,insideArrayDeleteDeps
-             ,insideArrayCopyDeps
              ) where
 
 import Control.Monad.State

@@ -30,7 +30,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                                         return $ do okVisited <- visited
                                                     Right (XObj (Lst okVisited) i t)
     visit env (XObj (Arr arr) i (Just t)) = do visited <- fmap sequence (mapM (visit env) arr)
-                                               modify ((insideArrayDeleteDeps typeEnv env t) ++ )
+                                               modify ((deleterDeps typeEnv env t) ++ )
                                                modify ((defineArrayTypeAlias t) : )
                                                return $ do okVisited <- visited
                                                            Right (XObj (Arr okVisited) i (Just t))
@@ -163,47 +163,36 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
       err ->
         compilerError ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
 
+allFunctionsWithNameAndSignature env functionName functionType =
+  filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
+  where
+    predicate = \(Just t) -> areUnifiable functionType t
+
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: Env -> Env -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env functionName functionType =
-  case filter ((\(Just t') -> (areUnifiable functionType t')) . ty . binderXObj . snd) (multiLookupALL functionName env) of
-    [] -> (trace $ "No '" ++ functionName ++ "' function found for type " ++ show functionType ++ ".") []
+  case allFunctionsWithNameAndSignature env functionName functionType of
+    [] ->
+      (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+      []
     [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
       []
     [(_, Binder single)] ->
       case concretizeDefinition False typeEnv env single functionType of
         Left err -> error (show err)
         Right (ok, deps) -> (ok : deps)
-    _ -> (trace $ "Too many '" ++ functionName ++ "' functions found, can't figure out dependencies.") []
+    _ ->
+      (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
+      []  
+  
+deleterDeps :: Env -> Env -> Ty -> [XObj]
+deleterDeps typeEnv env t =
+  if isManaged t
+  then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
+  else []
 
--- | TODO: Can this use the 'depsOfPolymorphicFunction' too?!
-insideArrayDeleteDeps :: Env -> Env -> Ty -> [XObj]
-insideArrayDeleteDeps typeEnv env t
-  | isManaged t =
-    case filter ((\(Just t') -> (areUnifiable (FuncTy [t] UnitTy) t')) . ty . binderXObj . snd) (multiLookupALL "delete" env) of
-      [] -> --(trace $ "No 'delete' function found for " ++ show t)
-        []
-      [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
-        []
-      [(_, Binder single)] ->
-        case concretizeDefinition False typeEnv env single (FuncTy [t] (UnitTy)) of
-          Left err -> error (show err)
-          Right (ok, deps) -> (ok : deps)
-      _ -> (trace $ "Too many 'delete' functions found for " ++ show t) []
-  | otherwise = []
-
--- | TODO: merge with "insideArrayDeleteDeps" etc.
-insideArrayCopyDeps :: Env -> Env -> Ty -> [XObj]
-insideArrayCopyDeps typeEnv env t
-  | isManaged t =
-    case filter ((\(Just t') -> (areUnifiable (FuncTy [(RefTy t)] t) t')) . ty . binderXObj . snd) (multiLookupALL "copy" env) of
-      [] -> --(trace $ "No 'copy' function found for " ++ show t)
-        []
-      [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
-        []
-      [(_, Binder single)] ->
-        case concretizeDefinition False typeEnv env single (FuncTy [(RefTy t)] t) of
-          Left err -> error (show err)
-          Right (ok, deps) -> (ok : deps)
-      _ -> (trace $ "Too many 'copy' functions found for " ++ show t) []
-  | otherwise = []
+copierDeps :: Env -> Env -> Ty -> [XObj]
+copierDeps typeEnv env t =
+  if isManaged t
+  then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
+  else []
