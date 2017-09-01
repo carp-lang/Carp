@@ -184,13 +184,15 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
     _ ->
       (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
       []  
-  
+
+-- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: Env -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
   if isManaged t
   then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
   else []
 
+-- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: Env -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged t
