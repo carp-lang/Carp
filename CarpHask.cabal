@@ -32,7 +32,8 @@ library
                        AssignTypes,
                        GenerateConstraints,
                        ManageMemory,
-                       Polymorphism
+                       Polymorphism,
+                       Concretize
                         
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
