@@ -29,7 +29,32 @@ import AssignTypes
 import GenerateConstraints
 import ManageMemory
 import Concretize
-                
+
+-- | Performs all the steps of creating initial types, solving constraints and assigning the types.
+-- | Returns a list of all the bindings that need to be added for the new form to work.
+-- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
+-- | makes it possible to solve more types so let's do it several times.  
+annotate :: Env -> Env -> XObj -> Either TypeError [XObj]
+annotate typeEnv globalEnv xobj =
+  do initiated <- initialTypes globalEnv xobj
+     (annotated, dependencies) <- foldM (\(x, deps) allowAmbiguity ->
+                                           do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
+                                              return (x', deps ++ deps'))
+                                  (initiated, [])
+                                  [True, False]
+     final <- manageMemory typeEnv globalEnv annotated
+     check final
+     _ <- mapM check dependencies
+     return (final : dependencies)
+
+-- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
+annotateOne :: Env -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
+annotateOne typeEnv env xobj allowAmbiguity = do
+  constraints <- genConstraints xobj
+  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints
+  let typed = assignTypes mappings xobj
+  concretizeXObj allowAmbiguity typeEnv env typed
+       
 -- | Convert from the type 'UnificationFailure' to 'TypeError' (enables monadic chaining of Either).
 solveConstraintsAndConvertErrorIfNeeded :: [Constraint] -> Either TypeError TypeMappings
 solveConstraintsAndConvertErrorIfNeeded constraints =
@@ -50,28 +75,4 @@ check xobj@(XObj (Lst (XObj Defn _ _ : _)) _ t) =
     Just _ -> return ()
     Nothing -> Left (DefnMissingType xobj)
 check _ = return ()
-
--- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
-annotateOne :: Env -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
-annotateOne typeEnv env xobj allowAmbiguity = do
-  constraints <- genConstraints xobj
-  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints
-  let typed = assignTypes mappings xobj
-  concretizeXObj allowAmbiguity typeEnv env typed
   
--- | Performs all the steps of creating initial types, solving constraints and assigning the types.
--- | Returns a list of all the bindings that need to be added for the new form to work.
--- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
--- | makes it possible to solve more types so let's do it several times.  
-annotate :: Env -> Env -> XObj -> Either TypeError [XObj]
-annotate typeEnv globalEnv xobj =
-  do initiated <- initialTypes globalEnv xobj
-     (annotated, dependencies) <- foldM (\(x, deps) allowAmbiguity ->
-                                           do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
-                                              return (x', deps ++ deps'))
-                                  (initiated, [])
-                                  [True, False]
-     final <- manageMemory typeEnv globalEnv annotated
-     check final
-     _ <- mapM check dependencies
-     return (final : dependencies)
