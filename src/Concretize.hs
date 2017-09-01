@@ -30,7 +30,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                                         return $ do okVisited <- visited
                                                     Right (XObj (Lst okVisited) i t)
     visit env (XObj (Arr arr) i (Just t)) = do visited <- fmap sequence (mapM (visit env) arr)
-                                               modify ((deleterDeps typeEnv env t) ++ )
+                                               modify ((depsForDeleteFunc typeEnv env t) ++ )
                                                modify ((defineArrayTypeAlias t) : )
                                                return $ do okVisited <- visited
                                                            Right (XObj (Arr okVisited) i (Just t))
@@ -185,14 +185,14 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
       (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
       []  
   
-deleterDeps :: Env -> Env -> Ty -> [XObj]
-deleterDeps typeEnv env t =
+depsForDeleteFunc :: Env -> Env -> Ty -> [XObj]
+depsForDeleteFunc typeEnv env t =
   if isManaged t
   then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
   else []
 
-copierDeps :: Env -> Env -> Ty -> [XObj]
-copierDeps typeEnv env t =
+depsForCopyFunc :: Env -> Env -> Ty -> [XObj]
+depsForCopyFunc typeEnv env t =
   if isManaged t
   then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
   else []
