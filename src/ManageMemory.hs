@@ -176,7 +176,7 @@ manageMemory typeEnv globalEnv root =
 
         visitArg :: XObj -> State MemState (Either TypeError XObj)
         visitArg xobj@(XObj _ _ (Just t)) =
-          if isManaged t
+          if isManaged typeEnv t
           then do visitedXObj <- visit xobj
                   unmanage xobj
                   return $ do okXObj <- visitedXObj
@@ -190,8 +190,8 @@ manageMemory typeEnv globalEnv root =
         createDeleter xobj =
           case ty xobj of
             Just t -> let var = varOfXObj xobj
-                      in  if isManaged t && not (isExternalType typeEnv t)
-                          then case nameOfPolymorphicFunction globalEnv t "delete" of
+                      in  if isManaged typeEnv t && not (isExternalType typeEnv t)
+                          then case nameOfPolymorphicFunction globalEnv typeEnv t "delete" of
                                  Just pathOfDeleteFunc -> Just (ProperDeleter pathOfDeleteFunc var)
                                  Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                                             Just (FakeDeleter var)
@@ -216,7 +216,7 @@ manageMemory typeEnv globalEnv root =
         unmanage xobj =
           let Just t = ty xobj 
               Just i = info xobj
-          in if isManaged t && not (isExternalType typeEnv t)
+          in if isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> trace ("Trying to use '" ++ getName xobj ++ "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
@@ -231,7 +231,7 @@ manageMemory typeEnv globalEnv root =
         refCheck xobj =
           let Just i = info xobj
               Just t = ty xobj
-          in if isManaged t && not (isExternalType typeEnv t)
+          in if isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> trace ("Trying to get reference from '" ++ getName xobj ++

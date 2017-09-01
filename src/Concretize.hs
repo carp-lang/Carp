@@ -188,13 +188,13 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: Env -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
-  if isManaged t
+  if isManaged typeEnv t
   then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
   else []
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: Env -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
-  if isManaged t
+  if isManaged typeEnv t
   then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
   else []

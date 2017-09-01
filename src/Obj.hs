@@ -620,3 +620,16 @@ forceTy :: XObj -> Ty
 forceTy xobj = case ty xobj of
                  Just t -> t
                  Nothing -> error ("No type in " ++ show xobj)
+
+-- | Is this type managed - does it need to be freed?
+isManaged :: Env -> Ty -> Bool
+isManaged typeEnv (StructTy name _) =
+  if name == "Array"
+  then True
+  else case lookupInEnv (SymPath [] name) typeEnv of
+         Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
+         Just (_, Binder (XObj (Lst (XObj Typ _ _ : _)) _ _)) -> True
+         Just (_, Binder (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
+         Nothing -> error ("Can't find " ++ name ++ " in type env.")
+isManaged _ StringTy = True
+isManaged _ _ = False

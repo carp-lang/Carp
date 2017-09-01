@@ -198,7 +198,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
         (const (toTemplate "Array $NAME($(Fn [a] Bool) predicate, Array a)"))
         (\(FuncTy [(FuncTy [insideTy] BoolTy), _] _) ->
            (toTemplate $ unlines $
-            let deleter = insideArrayDeletion env insideTy
+            let deleter = insideArrayDeletion env typeEnv insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
@@ -413,25 +413,25 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
              (const (toTemplate "void $NAME (Array a)"))
              (\(FuncTy [arrayType] UnitTy) ->
                 [TokDecl, TokC "{\n"] ++
-                (deleteTy env arrayType) ++
+                (deleteTy env typeEnv arrayType) ++
                 [TokC "}\n"])
              (\(FuncTy [arrayType@(StructTy "Array" [insideType])] UnitTy) ->
                 defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
         path = SymPath ["Array"] "delete"
         t = (FuncTy [(StructTy "Array" [VarTy "a"])] UnitTy)
         
-deleteTy :: Env -> Ty -> [Token]
-deleteTy env (StructTy "Array" [innerType]) =
+deleteTy :: Env -> Env -> Ty -> [Token]
+deleteTy env typeEnv (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
-  , TokC $ "    " ++ insideArrayDeletion env innerType
+  , TokC $ "    " ++ insideArrayDeletion env typeEnv innerType
   , TokC   "    }\n"
   , TokC   "    CARP_FREE(a.data);\n"
   ]
-deleteTy _ _ = []
+deleteTy _ _ _ = []
 
-insideArrayDeletion :: Env -> Ty -> String
-insideArrayDeletion env t
-  | isManaged t =
+insideArrayDeletion :: Env -> Env -> Ty -> String
+insideArrayDeletion env typeEnv t
+  | isManaged typeEnv t =
     case filter ((\(Just t') -> areUnifiable (FuncTy [t] UnitTy) t') . ty . binderXObj . snd) (multiLookupALL "delete" env) of
       [] -> "    /* Can't find any delete-function for type inside Array: '" ++ show t ++ "' */\n"
       [(_, Binder single)] ->
@@ -471,7 +471,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokC "    Array copy;\n"] ++
                 [TokC "    copy.len = a->len;\n"] ++
                 [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a"), TokC ") * a->len);\n"] ++
-                (copyTy env arrayType) ++
+                (copyTy env typeEnv arrayType) ++
                 [TokC "    return copy;\n"] ++
                 [TokC "}\n"])
              (\case
@@ -484,17 +484,17 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
         path = SymPath ["Array"] "copy"
         t = (FuncTy [(RefTy (StructTy "Array" [VarTy "a"]))] (StructTy "Array" [VarTy "a"]))
         
-copyTy :: Env -> Ty -> [Token]
-copyTy env (StructTy "Array" [innerType]) =
+copyTy :: Env -> Env -> Ty -> [Token]
+copyTy env typeEnv (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
-  , TokC $ "    " ++ insideArrayCopying env innerType
+  , TokC $ "    " ++ insideArrayCopying env typeEnv innerType
   , TokC   "    }\n"
   ]
-copyTy _ _ = []
+copyTy _ _ _ = []
 
-insideArrayCopying :: Env -> Ty -> String
-insideArrayCopying env t
-  | isManaged t =
+insideArrayCopying :: Env -> Env -> Ty -> String
+insideArrayCopying env typeEnv t
+  | isManaged typeEnv t =
     case filter ((\(Just t') -> areUnifiable (FuncTy [(RefTy t)] t) t') . ty . binderXObj . snd) (multiLookupALL "copy" env) of
       [] -> "    /* Can't find any copy-function for type inside Array: '" ++ show t ++ "' */\n"
       [(_, Binder single)] ->

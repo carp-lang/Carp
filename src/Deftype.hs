@@ -105,7 +105,7 @@ templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       p = StructTy typeName []
       memberName = getName nameXObj
-      fixedMemberTy = if isManaged t then (RefTy t) else t
+      fixedMemberTy = if isManaged typeEnv t then (RefTy t) else t
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [(RefTy p)] fixedMemberTy) (templateGetter memberName fixedMemberTy)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env memberName t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
@@ -157,7 +157,7 @@ templateGetter member fixedMemberTy =
 -- | The template for setters of a deftype.
 templateSetter :: Env -> Env -> String -> Ty -> Template
 templateSetter typeEnv env memberName memberTy =
-  let callToDelete = memberDeletion env (memberName, memberTy)
+  let callToDelete = memberDeletion env typeEnv (memberName, memberTy)
   in
   Template
     (FuncTy [VarTy "p", VarTy "t"] (VarTy "p"))
@@ -167,7 +167,7 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    p." ++ memberName ++ " = newValue;"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\_ -> if isManaged memberTy
+    (\_ -> if isManaged typeEnv memberTy
            then (depsOfPolymorphicFunction typeEnv env "delete" (memberTypeToDeleterType memberTy))
            else [])
 
@@ -191,10 +191,10 @@ templateDelete typeEnv env members =
    (FuncTy [(VarTy "p")] UnitTy)
    (const (toTemplate $ "void $NAME($p p)"))
    (const (toTemplate $ unlines [ "$DECL {"
-                                , (joinWith "\n" (map (memberDeletion env) members)) 
+                                , (joinWith "\n" (map (memberDeletion env typeEnv) members)) 
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . memberTypeToDeleterType)
-                    (filter isManaged (map snd members)))
+                    (filter (isManaged typeEnv) (map snd members)))
 
 -- | Given a member type, get the type of the member's deleter function.
 memberTypeToDeleterType :: Ty -> Ty
@@ -203,9 +203,9 @@ memberTypeToDeleterType memberType =
 
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
-memberDeletion :: Env -> (String, Ty) -> String
-memberDeletion env (memberName, t)
-  | isManaged t =
+memberDeletion :: Env -> Env -> (String, Ty) -> String
+memberDeletion env typeEnv (memberName, t)
+  | isManaged typeEnv t =
     case filter ((\(Just t') -> (areUnifiable (FuncTy [t] UnitTy) t')) . ty . binderXObj . snd) (multiLookupALL "delete" env) of
       [] -> "    /* Can't find any delete-function for member '" ++ memberName ++ "' */"
       [(_, Binder single)] ->
@@ -229,20 +229,20 @@ templateCopy typeEnv env members =
    (const (toTemplate $ "$p $NAME($p* pRef)"))
    (const (toTemplate $ unlines [ "$DECL {"
                                 , "    $p copy = *pRef;"
-                                , (joinWith "\n" (map (memberCopy env) members))
+                                , (joinWith "\n" (map (memberCopy env typeEnv) members))
                                 , "    return copy;"
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . memberTypeToCopyFunctionType)
-                    (filter isManaged (map snd members)))
+                    (filter (isManaged typeEnv) (map snd members)))
 
 -- | The type of a member's copying function.
 memberTypeToCopyFunctionType :: Ty -> Ty
 memberTypeToCopyFunctionType memberType =
   (FuncTy [(RefTy memberType)] memberType)  
 
-memberCopy :: Env -> (String, Ty) -> String
-memberCopy env (memberName, t)
-  | isManaged t =
+memberCopy :: Env -> Env -> (String, Ty) -> String
+memberCopy env typeEnv (memberName, t)
+  | isManaged typeEnv t =
     case filter ((\(Just t') -> (areUnifiable (FuncTy [(RefTy t)] t) t')) . ty . binderXObj . snd) (multiLookupALL "copy" env) of
       [] -> "    /* Can't find any copy-function for member '" ++ memberName ++ "' */"
       [(_, Binder single)] ->

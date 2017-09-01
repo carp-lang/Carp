@@ -9,7 +9,6 @@ module Types ( TypeMappings
              , mangle
              , pathToC
              , areUnifiable
-             , isManaged
              ) where
 
 import qualified Data.Map as Map
@@ -177,9 +176,3 @@ replaceTyVars mappings t =
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x) -> RefTy (replaceTyVars mappings x)
     _ -> t
-
--- | Is this type managed - does it need to be freed?
-isManaged :: Ty -> Bool
-isManaged (StructTy _ _) = True
-isManaged StringTy = True
-isManaged _ = False

@@ -11,9 +11,9 @@ import Debug.Trace
 -- | This function uses the 'multiLookupALL' function which gives it acces to
 -- | modules that are not imported. This allows it to access 'delete' functions
 -- | and similar for internal use.
-nameOfPolymorphicFunction :: Env -> Ty -> String -> Maybe SymPath
-nameOfPolymorphicFunction env t lookupName
-  | isManaged t =
+nameOfPolymorphicFunction :: Env -> Env -> Ty -> String -> Maybe SymPath
+nameOfPolymorphicFunction env typeEnv t lookupName
+  | isManaged typeEnv t =
     case filter ((\(Just t') -> areUnifiable (FuncTy [t] UnitTy) t') . ty . binderXObj . snd) (multiLookupALL lookupName env) of
       [] -> Nothing
       [(_, Binder single)] ->
