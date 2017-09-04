@@ -85,5 +85,5 @@
     (while true
       (do
         (handle-events app rend)
-        (draw rend (ref images))
+        (draw rend &images)
         (SDL_Delay 30)))))
