@@ -47,13 +47,20 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                                   functionEnv argsArr
          visitedBody <- (visit envWithArgs) body
          return $ do okBody <- visitedBody
-                     return [defn, nameSymbol, args, okBody]        
+                     return [defn, nameSymbol, args, okBody]
+                     
     visitList env (letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : []) =
       do visitedBindings <- fmap sequence (mapM (visit env) bindings)
          visitedBody <- (visit env) body         
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
+
+    visitList env (theExpr@(XObj The _ _) : typeXObj : value : []) =
+      do visitedValue <- visit env value
+         return $ do okVisitedValue <- visitedValue
+                     return [theExpr, typeXObj, okVisitedValue]
+
     visitList env (func : args) =
       do f <- visit env func
          a <- fmap sequence (mapM (visit env) args)
