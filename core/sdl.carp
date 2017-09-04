@@ -26,7 +26,7 @@
 ;; Structures
 (register-type SDL_Rect)
 (register-type SDL_Point)
-(register-type SDL_)
+(register-type SDL_Event)
 
 (register make-rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
 (register make-point (Fn [Int Int] SDL_Point))
