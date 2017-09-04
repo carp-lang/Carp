@@ -68,13 +68,13 @@
 (defn handle-events [app rend]
   (let [event (SDL_Event_init)]
     (while (SDL_PollEvent (address event))
-      (let [et (event-type (ref event))]
-        (cond (= et SDL_QUIT) (quit (ref app))
-              (= et SDL_KEYDOWN) (let [key (event-keycode (ref event))]
+      (let [et (event-type &event)]
+        (cond (= et SDL_QUIT) (quit &app)
+              (= et SDL_KEYDOWN) (let [key (event-keycode &event)]
                                    (cond
-                                     (= key SDLK_ESCAPE) (quit (ref app))
-                                     (println (ref"Unrecognized key."))))              
-              (println (ref "Some other event happened...")))))))
+                                     (= key SDLK_ESCAPE) (quit &app)
+                                     (println &"Unrecognized key.")))              
+              (println &"Some other event happened..."))))))
 
 (defn main []
   (let [app (app-init "~ CARP ~" 512 512)
