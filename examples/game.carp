@@ -43,7 +43,7 @@
                    (make-rect 48 80 16 16)
                    (make-rect 48 112 16 16)
                    (make-rect 48 144 16 16)]
-            n (count (ref rects))]
+            n (count &rects)]
         (SDL_RenderFillRects rend (raw rects) n))
       (SDL_SetRenderDrawColor rend 255 50 100 255)
       (for [x 0 512 16]
@@ -52,7 +52,7 @@
           (SDL_RenderDrawLine rend 512 (+ 256 (/ x 2)) 0 512)))
       (SDL_SetRenderDrawColor rend 0 0 0 255)
       (let [lines (random-lines)
-            n (count (ref lines))]
+            n (count &lines)]
         (SDL_RenderDrawLines rend (raw lines) n))
       (let [img (Images.img1 (the (Ref Images) images))]
         (SDL_RenderCopyEx rend
