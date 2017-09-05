@@ -177,7 +177,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
          case nameXObj of
            XObj (Sym (SymPath _ typeName)) i _ ->
              case moduleForDeftype typeEnv env pathStrings typeName rest i of
-               Just (typeModuleName, typeModuleXObj, deps) ->
+               Right (typeModuleName, typeModuleXObj, deps) ->
                  let typeDefinition =
                        -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                        XObj (Lst (XObj Typ Nothing Nothing : XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing : rest)) i (Just TypeTy)
@@ -186,8 +186,8 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                                  })
                  in  do ctx'' <- foldM define ctx' deps
                         return ctx''
-               Nothing ->
-                 do putStrLnWithColor Red ("Invalid type definition: " ++ pretty nameXObj)
+               Left errorMessage ->
+                 do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
                     return ctx
            _ ->
              do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)

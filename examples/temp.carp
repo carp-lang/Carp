@@ -37,12 +37,8 @@
 ;;       (println (ref (str y)))
 ;;       )))
 
+;;(register-type Flurgh)
+
 ;; BUG when flipping type and name in deftype:
-;; (deftype AHA [int x])
-;; (defn foo [] (AHA.init 3))
-
-(defn g []
-  [1 2 3])
-
-(defn f []
-  (the (Array Int) []))
+(deftype AHA [x Flurgh])
+;;(defn foo [] (AHA.init 3))
