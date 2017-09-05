@@ -170,6 +170,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
       err ->
         compilerError ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
 
+-- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature env functionName functionType =
   filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
   where

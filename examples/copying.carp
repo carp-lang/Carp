@@ -2,3 +2,8 @@
 
 (deftype C [a String
             b (Array Int)])
+
+(defn main []
+  (let [c1 (C.init "Hej" [1 2 3])
+        c2 (C.copy &c1)]
+    (IO.println &"OK.")))

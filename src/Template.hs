@@ -492,6 +492,7 @@ copyTy env typeEnv (StructTy "Array" [innerType]) =
   ]
 copyTy _ _ _ = []
 
+-- | TODO: Can this function be replaced with call(s) to a more generic function?
 insideArrayCopying :: Env -> Env -> Ty -> String
 insideArrayCopying env typeEnv t
   | isManaged typeEnv t =

@@ -7,4 +7,8 @@
 
 (defn f []
   (let [stuff [(A.init "hej") (A.init "svej")]]
-    123))
+    ()))
+
+(defn main []
+  (do (f)
+      (println &"OK.")))
