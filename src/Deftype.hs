@@ -70,8 +70,10 @@ validateMembers typeEnv rest =
                        BoolTy   -> return ()
                        StringTy -> return ()
                        CharTy   -> return ()
-                       PointerTy inner -> do okInner <- okMemberType inner
+                       PointerTy inner -> do _ <- okMemberType inner
                                              return ()
+                       StructTy "Array" [inner] -> do _ <- okMemberType inner
+                                                      return ()
                        StructTy name tyVars ->
                          case lookupInEnv (SymPath [] name) typeEnv of
                            Just _ -> return ()

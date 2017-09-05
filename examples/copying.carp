@@ -1,0 +1,4 @@
+(import Array)
+
+(deftype C [a String
+            b (Array Int)])

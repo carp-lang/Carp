@@ -40,5 +40,7 @@
 ;;(register-type Flurgh)
 
 ;; BUG when flipping type and name in deftype:
-(deftype AHA [x Flurgh])
+;;(deftype AHA [x Flurgh])
 ;;(defn foo [] (AHA.init 3))
+
+
