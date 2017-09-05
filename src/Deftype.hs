@@ -228,18 +228,11 @@ templateDelete typeEnv env members =
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletion :: Env -> Env -> (String, Ty) -> String
-memberDeletion env typeEnv (memberName, memberType)
-  | isManaged typeEnv memberType =
-    case allFunctionsWithNameAndSignature  env "copy" (typesDeleterFunctionType memberType) of
-      [] -> "    /* Can't find any delete-function for member '" ++ memberName ++ "' */"
-      [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (typesDeleterFunctionType memberType)
-            concretizedPath = SymPath pathStrings (name ++ suffix)
-        in  "    " ++ pathToC concretizedPath ++ "(p." ++ memberName ++ ");"
-      _ -> "    /* Can't find a single delete-function for member '" ++ memberName ++ "' */"
-  | otherwise = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+memberDeletion env typeEnv (memberName, memberType) =
+  case findFunctionForMember env typeEnv "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p." ++ memberName ++ ");"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
 
 -- | The template for the 'copy' function of a deftype.
 templateCopy :: Env -> Env -> [(String, Ty)] -> Template
@@ -255,18 +248,12 @@ templateCopy typeEnv env members =
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . typesCopyFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
 
--- | TODO: Should return an Either since this can fail! Also, share code with memberDeletion
+-- | Generate the C code for copying the member of a deftype.
+-- | TODO: Should return an Either since this can fail!
 memberCopy :: Env -> Env -> (String, Ty) -> String
-memberCopy env typeEnv (memberName, memberType)
-  | isManaged typeEnv memberType =
-    case allFunctionsWithNameAndSignature  env "copy" (typesCopyFunctionType memberType) of
-      [] -> "    /* Can't find any copy-function for member '" ++ memberName ++ "' */"
-      [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (typesCopyFunctionType memberType)
-            concretizedPath = SymPath pathStrings (name ++ suffix)
-        in  "    copy." ++ memberName ++ " = " ++ pathToC concretizedPath ++ "(&(pRef->" ++ memberName ++ "));"
-      _ -> "    /* Can't find a single copy-function for member '" ++ memberName ++ "' */"
-  | otherwise   = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
-
+memberCopy env typeEnv (memberName, memberType) =
+  case findFunctionForMember env typeEnv "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName ->
+      "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
