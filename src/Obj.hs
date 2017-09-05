@@ -8,7 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
---import Debug.Trace
+import Debug.Trace
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath
@@ -192,15 +192,11 @@ showBinderIndented indent (name, Binder xobj) =
 scoreBinder :: Env -> Binder -> (Int, Binder)
 scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
   case x of
-    Defalias _ ->
-      case lookupInEnv (SymPath [] name) typeEnv of
-        Just (_, Binder typedef) -> let depth = (dependencyDepth typeEnv typedef, b)
-                                    in  --trace ("depth of " ++ name ++ ": " ++ show depth)
-                                        depth
-        Nothing -> compilerError ("Can't find aliased type '" ++ name ++ "' in type env.")
+    Defalias aliasedType ->
+      (depthOfType typeEnv "W00T" (Just aliasedType), b)
     Typ ->
       case lookupInEnv (SymPath [] name) typeEnv of
-        Just (_, Binder typedef) -> let depth = (dependencyDepth typeEnv typedef, b)
+        Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef, b)
                                     in  --trace ("depth of " ++ name ++ ": " ++ show depth)
                                         depth
         Nothing -> compilerError ("Can't find user defined type '" ++ name ++ "' in type env.")
@@ -210,23 +206,30 @@ scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (200, b)
 scoreBinder _ x = error ("Can't score: " ++ show x)
 
-dependencyDepth :: Env -> XObj -> Int
-dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
+dependencyDepthOfTypedef :: Env -> XObj -> Int
+dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
   case concatMap expandCase rest of
     [] -> 0
     xs -> maximum xs
   where
     expandCase :: XObj -> [Int]
-    expandCase (XObj (Arr arr) _ _) = map (depthOfType . xobjToTy . snd) (pairwise arr)
+    expandCase (XObj (Arr arr) _ _) = map ((depthOfType typeEnv selfName) . xobjToTy . snd) (pairwise arr)
     expandCase _ = compilerError "Malformed case in typedef."
-    
-    depthOfType :: Maybe Ty -> Int
-    depthOfType (Just (StructTy name _)) = depthOfStructType name
-    depthOfType (Just (FuncTy _ _)) = 0 -- TODO: fix
-    depthOfType (Just (PointerTy p)) = depthOfType (Just p)
-    depthOfType (Just (RefTy r)) = depthOfType (Just r)
-    depthOfType (Just _) = 0
-    depthOfType Nothing = -100 -- External / unknown type
+dependencyDepthOfTypedef _ xobj =
+  compilerError ("Can't get dependency depth from " ++ show xobj)
+
+depthOfType :: Env -> String -> Maybe Ty -> Int
+depthOfType typeEnv selfName ty = visitType ty
+  where  
+    visitType :: Maybe Ty -> Int
+    visitType (Just (StructTy name _)) = depthOfStructType name
+    visitType (Just (FuncTy argTys retTy)) = 
+      -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
+      (maximum (visitType (Just retTy) : (map (visitType . Just) argTys))) + 1
+    visitType (Just (PointerTy p)) = visitType (Just p)
+    visitType (Just (RefTy r)) = visitType (Just r)
+    visitType (Just _) = 0
+    visitType Nothing = -100 -- External / unknown type
 
     depthOfStructType :: String -> Int
     depthOfStructType name =
@@ -235,11 +238,9 @@ dependencyDepth typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : re
         _ | name == selfName -> 0
           | otherwise ->
               case lookupInEnv (SymPath [] name) typeEnv of
-                Just (_, Binder typedef) -> dependencyDepth typeEnv typedef + 1
+                Just (_, Binder typedef) -> dependencyDepthOfTypedef typeEnv typedef + 1
                 Nothing -> -- trace ("Unknown type: " ++ name)
                            0 -- Refering to unknown type
-   
-dependencyDepth _ xobj = compilerError ("Can't get dependency depth from " ++ show xobj)
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
