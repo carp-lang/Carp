@@ -197,7 +197,7 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    return p;"
                                 ,"}\n"])))
     (\_ -> if isManaged typeEnv memberTy
-           then (depsOfPolymorphicFunction typeEnv env "delete" (memberTypeToDeleterType memberTy))
+           then (depsOfPolymorphicFunction typeEnv env "delete" (typesDeleterFunctionType memberTy))
            else [])
 
 -- | The template for updater functions of a deftype
@@ -222,25 +222,20 @@ templateDelete typeEnv env members =
    (const (toTemplate $ unlines [ "$DECL {"
                                 , (joinWith "\n" (map (memberDeletion env typeEnv) members)) 
                                 , "}"]))
-   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . memberTypeToDeleterType)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
-
--- | Given a member type, get the type of the member's deleter function.
-memberTypeToDeleterType :: Ty -> Ty
-memberTypeToDeleterType memberType =
-  (FuncTy [memberType] UnitTy)
 
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletion :: Env -> Env -> (String, Ty) -> String
 memberDeletion env typeEnv (memberName, memberType)
   | isManaged typeEnv memberType =
-    case allFunctionsWithNameAndSignature  env "copy" (memberTypeToDeleterType memberType) of
+    case allFunctionsWithNameAndSignature  env "copy" (typesDeleterFunctionType memberType) of
       [] -> "    /* Can't find any delete-function for member '" ++ memberName ++ "' */"
       [(_, Binder single)] ->
         let Just t' = ty single
             (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (memberTypeToDeleterType memberType)
+            suffix = polymorphicSuffix t' (typesDeleterFunctionType memberType)
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  "    " ++ pathToC concretizedPath ++ "(p." ++ memberName ++ ");"
       _ -> "    /* Can't find a single delete-function for member '" ++ memberName ++ "' */"
@@ -257,24 +252,19 @@ templateCopy typeEnv env members =
                                 , (joinWith "\n" (map (memberCopy env typeEnv) members))
                                 , "    return copy;"
                                 , "}"]))
-   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . memberTypeToCopyFunctionType)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . typesCopyFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
-
--- | The type of a member's copying function.
-memberTypeToCopyFunctionType :: Ty -> Ty
-memberTypeToCopyFunctionType memberType =
-  (FuncTy [(RefTy memberType)] memberType)  
 
 -- | TODO: Should return an Either since this can fail! Also, share code with memberDeletion
 memberCopy :: Env -> Env -> (String, Ty) -> String
 memberCopy env typeEnv (memberName, memberType)
   | isManaged typeEnv memberType =
-    case allFunctionsWithNameAndSignature  env "copy" (memberTypeToCopyFunctionType memberType) of
+    case allFunctionsWithNameAndSignature  env "copy" (typesCopyFunctionType memberType) of
       [] -> "    /* Can't find any copy-function for member '" ++ memberName ++ "' */"
       [(_, Binder single)] ->
         let Just t' = ty single
             (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (memberTypeToCopyFunctionType memberType)
+            suffix = polymorphicSuffix t' (typesCopyFunctionType memberType)
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  "    copy." ++ memberName ++ " = " ++ pathToC concretizedPath ++ "(&(pRef->" ++ memberName ++ "));"
       _ -> "    /* Can't find a single copy-function for member '" ++ memberName ++ "' */"
