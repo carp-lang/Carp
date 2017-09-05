@@ -244,8 +244,9 @@ memberDeletion env typeEnv (memberName, memberType)
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  "    " ++ pathToC concretizedPath ++ "(p." ++ memberName ++ ");"
       _ -> "    /* Can't find a single delete-function for member '" ++ memberName ++ "' */"
-  | otherwise   = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+  | otherwise = "    /* Ignore non-managed member '" ++ memberName ++ "' */"
 
+-- | The template for the 'copy' function of a deftype.
 templateCopy :: Env -> Env -> [(String, Ty)] -> Template
 templateCopy typeEnv env members =
   Template
@@ -264,6 +265,7 @@ memberTypeToCopyFunctionType :: Ty -> Ty
 memberTypeToCopyFunctionType memberType =
   (FuncTy [(RefTy memberType)] memberType)  
 
+-- | TODO: Should return an Either since this can fail! Also, share code with memberDeletion
 memberCopy :: Env -> Env -> (String, Ty) -> String
 memberCopy env typeEnv (memberName, memberType)
   | isManaged typeEnv memberType =
