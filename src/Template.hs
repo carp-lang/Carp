@@ -430,19 +430,13 @@ deleteTy env typeEnv (StructTy "Array" [innerType]) =
 deleteTy _ _ _ = []
 
 insideArrayDeletion :: Env -> Env -> Ty -> String
-insideArrayDeletion env typeEnv t
-  | isManaged typeEnv t =
-    case filter ((\(Just t') -> areUnifiable (FuncTy [t] UnitTy) t') . ty . binderXObj . snd) (multiLookupALL "delete" env) of
-      [] -> "    /* Can't find any delete-function for type inside Array: '" ++ show t ++ "' */\n"
-      [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (FuncTy [t] UnitTy)
-            concretizedPath = SymPath pathStrings (name ++ suffix)
-        in  "    " ++ pathToC concretizedPath ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
-      _ -> "    /* Can't find a single delete-function for type inside Array: '" ++ show t ++ "' */\n"
-  | otherwise   = "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
-
+insideArrayDeletion env typeEnv t =
+  case findFunctionForMember env typeEnv "delete" (typesDeleterFunctionType t) ("Inside array.", t) of
+    FunctionFound functionFullName ->
+      "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
+    
 templateNoop :: (String, Binder)
 templateNoop = defineTemplate
   (SymPath [] "noop")
@@ -450,14 +444,6 @@ templateNoop = defineTemplate
   (toTemplate "void $NAME ($a* a)")
   (toTemplate "$DECL { }")
   (const [])
-
-
-
-
-
-
-
----------------------------
 
 templateCopyArray :: (String, Binder)
 templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
@@ -495,19 +481,13 @@ copyTy _ _ _ = []
 -- | TODO: Can this function be replaced with call(s) to a more generic function?
 -- | The "memberCopy" and "memberDeletion" functions in Deftype are very similar!
 insideArrayCopying :: Env -> Env -> Ty -> String
-insideArrayCopying env typeEnv t
-  | isManaged typeEnv t =
-    case allFunctionsWithNameAndSignature  env "copy" (typesCopyFunctionType t) of
-      [] -> "    /* Can't find any copy-function for type inside Array: '" ++ show t ++ "' */\n"
-      [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' (typesCopyFunctionType t)
-            concretizedPath = SymPath pathStrings (name ++ suffix)
-        in  "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ pathToC concretizedPath ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
-      _ -> "    /* Can't find a single copy-function for type inside Array: '" ++ show t ++ "' */\n"
-  | otherwise   = "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
-
+insideArrayCopying env typeEnv t =
+  case findFunctionForMember env typeEnv "copy" (typesCopyFunctionType t) ("Inside array.", t) of
+    FunctionFound functionFullName ->
+      "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ functionFullName ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
+  
 -- | The type of a type's copying function.
 typesCopyFunctionType :: Ty -> Ty
 typesCopyFunctionType memberType =
@@ -529,12 +509,12 @@ findFunctionForMember :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionF
 findFunctionForMember env typeEnv functionName functionType (memberName, memberType)
   | isManaged typeEnv memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
-      [] -> FunctionNotFound ("Can't find any delete-function for member '" ++ memberName ++ "'.")
+      [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++ memberName ++ "'.")
       [(_, Binder single)] ->
         let Just t' = ty single
             (SymPath pathStrings name) = getPath single
             suffix = polymorphicSuffix t' functionType
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  FunctionFound (pathToC concretizedPath)
-      _ -> FunctionNotFound ("Can't find a single delete-function for member '" ++ memberName ++ "'.")
+      _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++ memberName ++ "'.")
   | otherwise = FunctionIgnored
