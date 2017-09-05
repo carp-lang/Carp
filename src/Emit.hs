@@ -425,14 +425,18 @@ envToC env = let binders = map snd (Map.toList (envBindings env))
 
 envToDeclarations :: Env -> Env -> Either ToCError String
 envToDeclarations env typeEnv =
-  let binders = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
-  in  do okDecls <- mapM (binderToDeclaration typeEnv) binders
+  let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
+  in  do okDecls <- mapM (\(score, binder) ->
+                            -- | Uncomment this line to emit the score of each binding:
+                            fmap (\s -> if s == "" then "" else ("\n// Score " ++ show score ++ "\n") ++ s)
+                            (binderToDeclaration typeEnv binder))
+                         bindersWithScore
          return (concat okDecls)
 
 -- debugScorePair :: (Int, Binder) -> (Int, Binder)
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
-sortDeclarationBinders :: Env -> [Binder] -> [Binder]
+sortDeclarationBinders :: Env -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  map snd (sortOn fst (map (scoreBinder typeEnv) binders))
+  sortOn fst (map (scoreBinder typeEnv) binders)

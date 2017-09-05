@@ -1,7 +1,11 @@
 (import Array)
 
+;;(deftype Mini [m String])
+
 (deftype C [a String
-            b (Array Int)])
+            b (Array Int)
+            ;;m Mini
+            ])
 
 (import C)
 
