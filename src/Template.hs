@@ -132,37 +132,6 @@ toTokTy s =
                       Nothing -> compilerError ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
     Right xobjs -> compilerError ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
 
--- | The various results when trying to find a function using 'findFunctionForMember'.
-data FunctionFinderResult = FunctionFound String
-                          | FunctionNotFound String
-                          | FunctionIgnored
-                          deriving (Show)
-
--- | Used for finding functions like 'delete' or 'copy' for members of a Deftype (or Array).
-findFunctionForMember :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
-findFunctionForMember env typeEnv functionName functionType (memberName, memberType)
-  | isManaged typeEnv memberType =
-    case allFunctionsWithNameAndSignature env functionName functionType of
-      [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++ memberName ++ "'.")
-      [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' functionType
-            concretizedPath = SymPath pathStrings (name ++ suffix)
-        in  FunctionFound (pathToC concretizedPath)
-      _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++ memberName ++ "'.")
-  | otherwise = FunctionIgnored
-
--- | The type of a type's copying function.
-typesCopyFunctionType :: Ty -> Ty
-typesCopyFunctionType memberType =
-  (FuncTy [(RefTy memberType)] memberType)
-
--- | The type of a type's deleter function.
-typesDeleterFunctionType :: Ty -> Ty
-typesDeleterFunctionType memberType =
-  (FuncTy [memberType] UnitTy)
-
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES
 

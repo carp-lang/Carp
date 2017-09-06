@@ -9,6 +9,8 @@ module Types ( TypeMappings
              , mangle
              , pathToC
              , areUnifiable
+             , typesDeleterFunctionType
+             , typesCopyFunctionType
              ) where
 
 import qualified Data.Map as Map
@@ -176,3 +178,13 @@ replaceTyVars mappings t =
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x) -> RefTy (replaceTyVars mappings x)
     _ -> t
+
+-- | The type of a type's copying function.
+typesCopyFunctionType :: Ty -> Ty
+typesCopyFunctionType memberType =
+  (FuncTy [(RefTy memberType)] memberType)
+
+-- | The type of a type's deleter function.
+typesDeleterFunctionType :: Ty -> Ty
+typesDeleterFunctionType memberType =
+  (FuncTy [memberType] UnitTy)
