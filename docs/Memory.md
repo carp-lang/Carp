@@ -3,8 +3,8 @@
 A simple piece of code:
 
 ```clojure
-(import String)
-(import IO)
+(use String)
+(use IO)
 
 (defn say-hi [text]
   (while true

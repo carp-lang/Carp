@@ -32,9 +32,9 @@ The Carp REPL has built in documentation, run ```(help)``` to access it!
 ## A Small Example
 
 ```clojure
-(import IO)
-(import Int)
-(import String)
+(use IO)
+(use Int)
+(use String)
 
 (defn main []
   (do (println &"~ The number guessing game ~")
