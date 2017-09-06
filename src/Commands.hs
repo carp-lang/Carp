@@ -433,6 +433,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                              putStrLn "(address <expr>)"
                              putStrLn "(set! <var> <value>)"
                              putStrLn ""
+                             putStrLn "To use functions in modules without qualifying them:"
+                             putStrLn "(use <module>)"
+                             putStrLn ""
                              putStrLn ("Valid non-alphanumerics: " ++ validCharacters)
                              putStrLn ""
                              putStrLn "Number literals:"
