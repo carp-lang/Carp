@@ -167,8 +167,8 @@ expandAll env xobj =
 
 expand :: Env -> XObj -> Either EvalError XObj
 expand env xobj =
-  --case obj xobj of 
-  case obj (trace ("Expand: " ++ pretty xobj) xobj) of
+  case obj xobj of 
+  --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
     Sym _ -> expandSymbol xobj

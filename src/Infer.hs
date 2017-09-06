@@ -20,7 +20,6 @@ import Obj
 import Constraints
 import Types
 import Util
-import Eval
 import TypeError
 import InitialTypes
 import AssignTypes

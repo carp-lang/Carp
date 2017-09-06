@@ -3,7 +3,6 @@ module GenerateConstraints (genConstraints) where
 import Types
 import Obj
 import Constraints
-import Eval
 import Util
 import TypeError
 import Data.List (foldl', sort)

@@ -7,7 +7,6 @@ import Debug.Trace
 import Types
 import Obj
 import Constraints
-import Eval
 import Util
 import TypeError
 import Polymorphism
