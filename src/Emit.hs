@@ -76,9 +76,16 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Ref -> error (show (DontVisitObj Ref))
 
         visitString indent (XObj (Str str) (Just i) _) =
+          -- | This will allocate a new string every time the code runs:
+          -- do let var = freshVar i
+          --    appendToSrc (addIndent indent ++ "string " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
+          --    return var
+          -- | This will use the statically allocated string in the C binary (can't be freed):
           do let var = freshVar i
-             appendToSrc (addIndent indent ++ "string " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
-             return var
+                 varRef = freshVar i ++ "_ref";
+             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ str ++ "\";\n")
+             appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
+             return varRef
         visitString _ _ = error "Not a string."
 
         visitSymbol :: XObj -> State EmitterState String

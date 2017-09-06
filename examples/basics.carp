@@ -12,10 +12,10 @@
 
 (defmodule Things
   (defn inside [s]
-    (let [msg (String.append s "!")]
+    (let [msg (String.append s (String.copy "!"))]
       (println (ref msg))))
   (defn call []
-    (inside "Hello")))
+    (inside (String.copy "Hello"))))
 
 (defn use-doubles []
   (println (ref (str (Double.toInt (Double.+ 2.0 3.0))))))
@@ -25,11 +25,11 @@
      age Int])
 
 (defn use-person []
-  (let [me (Person.init "Erik" 30)]
+  (let [me (Person.init (String.copy "Erik") 30)]
     (println (Person.name (ref me)))))
 
 (defn heap-allocations []
-  (let [friend (Person.new "Oscar" 30)]
+  (let [friend (Person.new (String.copy "Oscar") 30)]
     ()))
 
 (defn refer-up []
@@ -62,9 +62,9 @@
 (defn macrooo []
   (let [msg "Print!"]
         (cond
-          (< 10 1) (println (ref "Don't print!"))
-          (> 10 1) (println (ref msg))
-          (println (ref "Don't print!")))))
+          (< 10 1) (println "Don't print!")
+          (> 10 1) (println msg)
+          (println "Don't print!"))))
 
 (defn macrooo2 []
   (for [x 1 3]
@@ -80,16 +80,16 @@
 (use Peep)
 
 (defn calling-delete []
-  (let [plupp (Peep.init 10 "PLUPP" (A.init "w00t"))
-        poop [(Peep.init 10 "hej" (A.init "aha"))]
-        strings ["a" "b" "c"]]
+  (let [plupp (Peep.init 10 (String.copy "PLUPP") (A.init (String.copy "w00t")))
+        poop [(Peep.init 10 (String.copy "hej") (A.init (String.copy "aha")))]
+        strings [(String.copy "a") (String.copy "b") (String.copy "c")]]
       (do
         (delete plupp)
         (delete poop)
-        (delete strings))))
+        (Array.delete strings))))
 
 (defn updating []
-  (let [p1 (Peep.init 9999 "jaha" (A.init "mmm"))
+  (let [p1 (Peep.init 9999 (String.copy "jaha") (A.init (String.copy "mmm")))
         p2 (Peep.update-x p1 inc)]
     (println (ref (str (Peep.x (ref p2)))))))
 
@@ -124,7 +124,7 @@
     (String.copy (Array.nth &xs i))))
 
 (defn print-last-string []
-  (println &(get-last-string ["NO" "NO" "YES"])))
+  (println &(get-last-string [(String.copy "NO") (String.copy "NO") (String.copy "YES")])))
 
 (defn main []
   (do (Things.call)

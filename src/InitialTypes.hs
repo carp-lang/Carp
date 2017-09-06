@@ -63,7 +63,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
     visit env xobj = case obj xobj of
                        (Num t _)          -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
-                       (Str _)            -> return (Right (xobj { ty = Just StringTy }))
+                       (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
