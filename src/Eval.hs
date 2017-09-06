@@ -159,7 +159,7 @@ falseXObj = XObj (Bol False) Nothing Nothing
 expandAll :: Env -> XObj -> Either EvalError XObj
 expandAll env xobj =
   case expand env xobj of
-    -- | Note: comparing environments is tricky since some things in them can be unconditionally non-equal.
+    -- | Note: comparing environments is tricky! Make sure they *can* be equal, otherwise this won't work at all:
     Right expanded -> if expanded == xobj
                       then Right expanded
                       else expandAll env expanded
