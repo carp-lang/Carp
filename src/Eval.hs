@@ -6,7 +6,7 @@ import Data.List.Split (splitWhen)
 import Obj
 import Types
 import Util
---import Debug.Trace
+import Debug.Trace
 
 newtype EvalError = EvalError String deriving (Eq)
 
@@ -155,11 +155,20 @@ trueXObj = XObj (Bol True) Nothing Nothing
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
 
+-- | Keep expanding the form until it doesn't change anymore.
 expandAll :: Env -> XObj -> Either EvalError XObj
 expandAll env xobj =
   case expand env xobj of
-    Right expanded -> if expanded == xobj then Right expanded else expandAll env expanded
+    -- | Note: comparing environments is tricky since some things in them can be unconditionally non-equal.
+    -- | Therefore the expansion stops when it finds a module.
+    Right expanded -> if (isModuleDefinition expanded) || expanded == xobj
+                      then Right expanded
+                      else expandAll env (trace ("\n\nNOPE\n" ++ (show expanded) ++ "\n\n") expanded)
     err -> err
+
+isModuleDefinition :: XObj -> Bool
+isModuleDefinition (XObj (Lst (XObj (Sym _) _ _ : (XObj (Mod _) _ _) : _)) _ _) = True
+isModuleDefinition _ = False
 
 expand :: Env -> XObj -> Either EvalError XObj
 expand env xobj =
