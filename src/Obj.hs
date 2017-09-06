@@ -193,7 +193,8 @@ scoreBinder :: Env -> Binder -> (Int, Binder)
 scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
-      (depthOfType typeEnv "W00T" (Just aliasedType), b)
+      let selfName = ""
+      in  (depthOfType typeEnv selfName (Just aliasedType), b)
     Typ ->
       case lookupInEnv (SymPath [] name) typeEnv of
         Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef, b)
