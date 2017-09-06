@@ -160,20 +160,15 @@ expandAll :: Env -> XObj -> Either EvalError XObj
 expandAll env xobj =
   case expand env xobj of
     -- | Note: comparing environments is tricky since some things in them can be unconditionally non-equal.
-    -- | Therefore the expansion stops when it finds a module.
-    Right expanded -> if (isModuleDefinition expanded) || expanded == xobj
+    Right expanded -> if expanded == xobj
                       then Right expanded
                       else expandAll env expanded
     err -> err
 
-isModuleDefinition :: XObj -> Bool
-isModuleDefinition (XObj (Lst (XObj (Sym _) _ _ : (XObj (Mod _) _ _) : _)) _ _) = True
-isModuleDefinition _ = False
-
 expand :: Env -> XObj -> Either EvalError XObj
 expand env xobj =
-  case obj xobj of 
-  --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
+  --case obj xobj of 
+  case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
     Sym _ -> expandSymbol xobj

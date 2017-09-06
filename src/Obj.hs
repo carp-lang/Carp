@@ -41,10 +41,14 @@ data Obj = Sym SymPath
          deriving (Show, Eq)
 
 newtype TemplateCreator = TemplateCreator { getTemplateCreator :: Env -> Env -> Template }
+
 instance Show TemplateCreator where
   show _ = "TemplateCreator"
+
+-- | Note: This is to make comparisons of Environments possible, otherwise
+-- | they are always different when they contain TemplateCreators.
 instance Eq TemplateCreator where
-  _ == _ = False
+  _ == _ = True
 
 -- | Information about where the Obj originated from.
 data Info = Info { infoLine :: Int
@@ -570,9 +574,10 @@ data Template = Template { templateSignature :: Ty
 instance Show Template where
   show _ = "Template"
 
--- TODO: What about this instance?!
+-- | Note: This is to make comparisons of Environments possible, otherwise
+-- | they are always different when they contain Templates.
 instance Eq Template where
-  _ == _ = False
+  a == b = (templateSignature a) == (templateSignature b)
 
 -- | Tokens are used for emitting C code from templates.
 data Token = TokTy Ty        -- | Some kind of type, will be looked up if it's a type variable.
