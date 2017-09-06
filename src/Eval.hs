@@ -163,7 +163,7 @@ expandAll env xobj =
     -- | Therefore the expansion stops when it finds a module.
     Right expanded -> if (isModuleDefinition expanded) || expanded == xobj
                       then Right expanded
-                      else expandAll env (trace ("\n\nNOPE\n" ++ (show expanded) ++ "\n\n") expanded)
+                      else expandAll env expanded
     err -> err
 
 isModuleDefinition :: XObj -> Bool
