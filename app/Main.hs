@@ -10,6 +10,7 @@ import Obj
 import Types
 import Commands
 import Template
+import ArrayTemplates
 import Parsing
 
 defaultProject :: Project

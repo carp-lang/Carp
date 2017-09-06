@@ -33,7 +33,8 @@ library
                        GenerateConstraints,
                        ManageMemory,
                        Polymorphism,
-                       Concretize
+                       Concretize,
+                       ArrayTemplates
                         
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
