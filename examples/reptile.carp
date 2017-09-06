@@ -1,19 +1,19 @@
-(import IO)
-(import System)
-(import Int)
-(import Double)
-(import Array)
+(use IO)
+(use System)
+(use Int)
+(use Double)
+(use Array)
 
 (load "core/sdl.carp")
 (load "core/sdl_image.carp")
-(import Keycode)
+(use Keycode)
 (add-cflag "-fsanitize=address")
 
 (deftype Vec2
     [x Int
      y Int])
 
-(import Vec2)
+(use Vec2)
 
 (def RIGHT 0)
 (def UP 1)
@@ -26,18 +26,18 @@
      freeze Int
      ]) 
 
-(import Snake)
+(use Snake)
 
 (deftype Human
     [pos Vec2])
 
-(import Human)
+(use Human)
 
 (deftype World
     [snake Snake
      humans (Array Human)])
 
-(import World)
+(use World)
 
 (def bg-col 120)
 (def grid-size 32)

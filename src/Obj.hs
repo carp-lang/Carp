@@ -255,7 +255,7 @@ data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
 data Env = Env { envBindings :: Map.Map String Binder
                , envParent :: Maybe Env
                , envModuleName :: Maybe String
-               , envImports :: [SymPath]
+               , envUseModules :: [SymPath]
                , envMode :: EnvMode
                } deriving (Show, Eq)
 
@@ -277,7 +277,7 @@ prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
   joinWith "\n" $ map (showBinderIndented indent) (Map.toList (envBindings env)) ++
                   [replicate indent ' ' ++ "Imports:"] ++
-                  map (showImportIndented indent) (envImports env)
+                  map (showImportIndented indent) (envUseModules env)
 
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ show path
@@ -333,7 +333,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                       then let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
                            in  envs ++ (concatMap imports envs)
                       -- Only lookup in imported modules:
-                      else let paths = envImports env
+                      else let paths = envUseModules env
                            in  mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) paths 
 
         binderToEnv :: Binder -> Maybe Env

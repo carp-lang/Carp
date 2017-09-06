@@ -1,12 +1,12 @@
-(import IO)
-(import System)
-(import Int)
-(import Double)
-(import Array)
+(use IO)
+(use System)
+(use Int)
+(use Double)
+(use Array)
 
 (load "core/sdl.carp")
 (load "core/sdl_image.carp")
-(import Keycode)
+(use Keycode)
 
 (def max 400)
 

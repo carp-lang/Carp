@@ -37,7 +37,7 @@ repl context readSoFar =
        _ -> repl context input
 
 arrayModule :: Env
-arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envImports = [], envMode = ExternalEnv }
+arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ templateNth
                                 , templateReplicate
                                 , templateRepeat
@@ -56,7 +56,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 ]
 
 startingGlobalEnv :: Env
-startingGlobalEnv = Env { envBindings = bs, envParent = Nothing, envModuleName = Nothing, envImports = [], envMode = ExternalEnv }
+startingGlobalEnv = Env { envBindings = bs, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
   where bs = Map.fromList [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
                           , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                           , register "not" (FuncTy [BoolTy] BoolTy)
@@ -66,7 +66,7 @@ startingGlobalEnv = Env { envBindings = bs, envParent = Nothing, envModuleName =
                           ]
 
 startingTypeEnv :: Env
-startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envImports = [], envMode = ExternalEnv }
+startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
 
 preludeModules :: String -> [String]
 preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Int"

@@ -1,5 +1,5 @@
-(import IO)
-(import Int)
+(use IO)
+(use Int)
 
 (defmodule A
   (defn id [x] x)

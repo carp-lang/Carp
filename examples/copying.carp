@@ -1,4 +1,4 @@
-(import Array)
+(use Array)
 
 ;;(deftype Mini [m String])
 
@@ -7,7 +7,7 @@
             ;;m Mini
             ])
 
-(import C)
+(use C)
 
 (defn main []
   (let [c1 (C.init "Hej" [1 2 3])

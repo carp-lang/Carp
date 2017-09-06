@@ -1,8 +1,8 @@
-(import Int)
-(import Double)
-(import Float)
-(import Array)
-(import IO)
+(use Int)
+(use Double)
+(use Float)
+(use Array)
+(use IO)
 
 (defn fib [n]
   (if (< n 2)
@@ -72,12 +72,12 @@
       (println (ref (str (* x y)))))))
 
 (deftype A [s String])
-(import A)
+(use A)
 
 (deftype Peep [x Int
                y String
                z A])
-(import Peep)
+(use Peep)
 
 (defn calling-delete []
   (let [plupp (Peep.init 10 "PLUPP" (A.init "w00t"))

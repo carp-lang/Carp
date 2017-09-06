@@ -1,6 +1,6 @@
-(import IO)
-(import Int)
-(import Array)
+(use IO)
+(use Int)
+(use Array)
 
 (defmodule ArrayExtension
   (defn fmap [f a] (Array.map f a))
@@ -12,8 +12,8 @@
   (defn fmap [f box] (let [new-x (f (Box.x &box))]
                        (Box.set-x box new-x))))
 
-(import Box)
-(import ArrayExtension)
+(use Box)
+(use ArrayExtension)
 
 ;;(defn higherOrder [x] (fmap inc x))
 

@@ -249,7 +249,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
           emptyInnerEnv = Env { envBindings = Map.fromList []
                               , envParent = Just env
                               , envModuleName = Nothing
-                              , envImports = []
+                              , envUseModules = []
                               , envMode = InternalEnv
                               }
       -- Need to fold (rather than map) to make the previous bindings accesible to the later ones, i.e. (let [a 100 b a] ...)
@@ -272,7 +272,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
          return Env { envBindings = Map.fromList binders
                     , envParent = Just env
                     , envModuleName = Nothing
-                    , envImports = []
+                    , envUseModules = []
                     , envMode = InternalEnv
                     }
       where

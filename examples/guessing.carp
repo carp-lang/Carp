@@ -1,8 +1,8 @@
 ;; The number guessing game
 
-(import IO)
-(import Int)
-(import String)
+(use IO)
+(use Int)
+(use String)
 
 (defn main []
   (do (println (ref "~ The number guessing game ~"))

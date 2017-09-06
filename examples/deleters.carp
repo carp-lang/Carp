@@ -1,7 +1,7 @@
-(import IO)
-(import Int)
-(import String)
-(import Array)
+(use IO)
+(use Int)
+(use String)
+(use Array)
 
 (deftype A [s String])
 

@@ -1,14 +1,14 @@
 ;; Type selection (choose the right function based on the types at the call site)
-(import IO)
-(import Int)
+(use IO)
+(use Int)
 
 ;; USER DEFINED FUNCTIONS
 (defn f [] true)
 (defmodule A (defn f [] 123))
 (defmodule B (defn f [] "hello"))
 
-(import A)
-(import B)
+(use A)
+(use B)
 
 (defn main []
   (do
@@ -26,8 +26,8 @@
 
 
 ;; PLUS FUNCTION
-(import Double)
-(import Float)
+(use Double)
+(use Float)
 
 (defn shouldBeInt [x] (+ x 10))
 (defn shouldBeDouble [x] (+ x 10.0))
@@ -41,8 +41,8 @@
 (deftype Person [name String])
 (deftype Building [name String])
 
-(import Person)
-(import Building)
+(use Person)
+(use Building)
 
 (defn main []
   (let [thing (Building.init "Eiffel Tower")

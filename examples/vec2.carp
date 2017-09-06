@@ -1,6 +1,6 @@
-(import IO)
-(import String)
-(import Int)
+(use IO)
+(use String)
+(use Int)
 
 (deftype Vec2
     [x Int

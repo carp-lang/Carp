@@ -41,7 +41,7 @@ data ReplCommand = Define XObj
                  | Eval XObj
                  | Expand XObj
                  | InstantiateTemplate XObj XObj
-                 | Import SymPath
+                 | Use SymPath XObj
                  | ProjectSet String String
                  | DoNothing
                  | ReplMacroError String
@@ -96,7 +96,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "build")) _ _ : [] -> BuildExe
                    XObj (Sym (SymPath _ "run")) _ _ : [] -> RunExe
                    XObj (Sym (SymPath _ "cat")) _ _ : [] -> Cat
-                   XObj (Sym (SymPath _ "import")) _ _ : XObj (Sym path) _ _ : [] -> Import path
+                   XObj (Sym (SymPath _ "use")) _ _ : XObj (Sym path) _ _ : [] -> Use path xobj
                    XObj (Sym (SymPath _ "project-set!")) _ _ : XObj (Sym (SymPath _ key)) _ _ : XObj (Str value) _ _ : [] -> ProjectSet key value
                    XObj (Sym (SymPath _ "register")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> Register name t
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : [] -> RegisterType name
@@ -237,7 +237,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                  typeEnv' = envInsertAt typeEnv (SymPath [] name) alias
              in  return (ctx { contextTypeEnv = typeEnv' })
            Nothing ->
-             do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj)
+             do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
                 return ctx
 
        DefineMacro name params body ->
@@ -270,14 +270,14 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
              do putStrLnWithColor Yellow (pretty expanded)
                 return ctx
                 
-       Import path ->
+       Use path xobj ->
          let e = getEnv env pathStrings
-             imports = envImports e
-             e' = if path `elem` imports then e else e { envImports = path : imports }
+             useThese = envUseModules e
+             e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
              innerEnv = getEnv env pathStrings
          in case lookupInEnv path innerEnv of
            Just (_, Binder _) ->  return ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
-           Nothing -> do putStrLnWithColor Red ("Can't import '" ++ show path ++ "'")
+           Nothing -> do putStrLnWithColor Red ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
                          return ctx
 
        -- | A more general way to set project settings, will replace other means later probably.
