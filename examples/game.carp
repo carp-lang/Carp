@@ -79,8 +79,8 @@
 (defn main []
   (let [app (app-init (String.copy "~ CARP ~") 512 512)
         rend (app-renderer app)
-        img1 (IMG_LoadTexture rend (raw "./img/square.png"))
-        img2 (IMG_LoadTexture rend (raw "./img/carp_logo_969_no_texture.png"))
+        img1 (IMG_LoadTexture rend (cstr "./img/square.png"))
+        img2 (IMG_LoadTexture rend (cstr "./img/carp_logo_969_no_texture.png"))
         images (Images.init img1 img2)]
     (while true
       (do

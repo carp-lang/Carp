@@ -137,7 +137,7 @@ string String_duplicate(string *s) {
     return strdup(*s);
 }
 
-string String_raw(string *s) {
+char* String_cstr(string *s) {
     return *s;
 }
 

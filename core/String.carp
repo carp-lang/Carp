@@ -5,5 +5,5 @@
   (register copy (Fn [(Ref String)] String))
   (register count (Fn [(Ref String)] Int))
   (register duplicate (Fn [(Ref String)] String))
-  (register raw (Fn [(Ref String)] String)) ;; bad name?
+  (register cstr (Fn [(Ref String)] (Ptr Char)))
   )

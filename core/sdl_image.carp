@@ -1,5 +1,5 @@
 (system-include "SDL2/SDL_image.h")
 (add-lib "-lSDL2_image")
 
-(register IMG_LoadTexture (Fn [(Ptr SDL_Renderer) String] (Ptr SDL_Texture)))
-(register IMG_Load (Fn [String] (Ptr SDL_Surface)))
+(register IMG_LoadTexture (Fn [(Ptr SDL_Renderer) (Ptr Char)] (Ptr SDL_Texture)))
+(register IMG_Load (Fn [(Ptr Char)] (Ptr SDL_Surface)))
