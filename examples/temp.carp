@@ -44,10 +44,22 @@
 ;;(defn foo [] (AHA.init 3))
 
 
-(deftype A [])
-(deftype B [a A])
-(deftype C [b B])
+
+;; (deftype A [])
+;; (deftype B [a A])
+;; (deftype C [b B])
+
+;; (defn main []
+;;   (let [c (C.init (B.init (A.init)))]
+;;     (println &"Yup.")))
+
+
+(deftype Blahaha [s String])
 
 (defn main []
-  (let [c (C.init (B.init (A.init)))]
-    (println &"Yup.")))
+  (let [;;x (Blahaha.init @"jahaja")
+        r [@"a" @"b" @"c"]]
+    (do
+      (println (nth &r 1))
+      ;;(println (Blahaha.s &x))
+      )))

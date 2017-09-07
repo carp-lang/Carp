@@ -459,7 +459,10 @@ setFullyQualifiedSymbols env xobj@(XObj (Sym (SymPath [] name)) i t) = -- Only d
 setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) =
   case lookupInEnv path env of
     Just (_, Binder found) -> XObj (Sym (getPath found)) i t
-    Nothing -> xobj    
+    Nothing -> xobj
+setFullyQualifiedSymbols env xobj@(XObj (Arr array) i t) =
+  let array' = map (setFullyQualifiedSymbols env) array
+  in  XObj (Arr array') i t
 setFullyQualifiedSymbols _ xobj = xobj
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
