@@ -10,8 +10,8 @@
 (use C)
 
 (defn main []
-  (let [c1 (C.init "Hej" [1 2 3])
+  (let [c1 (C.init @"Hej" [1 2 3])
         c2 (C.copy &c1)
         a1 [(C.copy &c2) (C.copy &c2) (C.copy &c2)]
         a2 (copy &a1)]
-    (IO.println &"OK.")))
+    (IO.println "OK.")))

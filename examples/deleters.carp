@@ -1,14 +1,13 @@
 (use IO)
 (use Int)
-(use String)
 (use Array)
 
 (deftype A [s String])
 
 (defn f []
-  (let [stuff [(A.init "hej") (A.init "svej")]]
+  (let [stuff [(A.init (String.copy "hej")) (A.init (String.copy "svej"))]]
     ()))
 
 (defn main []
   (do (f)
-      (println &"OK.")))
+      (println "OK.")))

@@ -5,21 +5,21 @@
 (use String)
 
 (defn main []
-  (do (println (ref "~ The number guessing game ~"))
-      (print (ref "Please enter a number between 1 - 99: "))
+  (do (println "~ The number guessing game ~")
+      (print "Please enter a number between 1 - 99: ")
       (let [play true
             answer (random-between 1 100)]
         (while play
           (let [guess (get-line)
                 num (from-string &guess)]
-            (if (= (ref guess) (ref "q\n"))
+            (if (= (ref guess) "q\n")
               (do
-                (println (ref "Good bye..."))
+                (println "Good bye...")
                 (set! &play false))
               (do
                 (if (< num answer)
-                  (println (ref "Too low."))
+                  (println "Too low.")
                   (if (> num answer)
-                    (println (ref "Too high."))
-                    (println (ref "Correct!"))))
-                (print (ref "Please guess again: ")))))))))
+                    (println "Too high.")
+                    (println "Correct!")))
+                (print "Please guess again: "))))))))

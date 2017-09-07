@@ -9,8 +9,8 @@
 (defmodule Vec2
   (defn str [v]
     (append
-     (append   "x: " (Int.str (Vec2.x v)))
-     (append ", y: " (Int.str (Vec2.y v)))))
+     (append   @"x: " (Int.str (Vec2.x v)))
+     (append @", y: " (Int.str (Vec2.y v)))))
   (defn basic [] (Vec2.init 10 20)))
 
 (defmodule Advanced

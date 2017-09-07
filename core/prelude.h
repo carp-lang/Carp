@@ -137,6 +137,10 @@ string String_duplicate(string *s) {
     return strdup(*s);
 }
 
+string String_raw(string *s) {
+    return *s;
+}
+
 string Char_str(char c) {
     char *buffer = CARP_MALLOC(2);
     snprintf(buffer, 2, "%c", c);

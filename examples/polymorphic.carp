@@ -13,7 +13,7 @@
 
 (defn main []
   (do
-    (println (ref (B.id2 "hej")))
+    (println (ref (B.id2 @"hej")))
     (println (ref (str (A.hard true 10 20))))
     (println (ref (str (A.hard false 10 20))))))
 

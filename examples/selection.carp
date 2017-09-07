@@ -5,14 +5,14 @@
 ;; USER DEFINED FUNCTIONS
 (defn f [] true)
 (defmodule A (defn f [] 123))
-(defmodule B (defn f [] "hello"))
+(defmodule B (defn f [] @"hello"))
 
 (use A)
 (use B)
 
 (defn main []
   (do
-    (if (f) (println (ref "yes")) (println (ref "no")))
+    (if (f) (println "yes") (println "no"))
     (println (ref (str (f))))
     (println (ref (f)))))
 
@@ -45,8 +45,8 @@
 (use Building)
 
 (defn main []
-  (let [thing (Building.init "Eiffel Tower")
-        another (Person.init "Alice")]
+  (let [thing (Building.init @"Eiffel Tower")
+        another (Person.init @"Alice")]
     (do (println (name (ref thing)))
         (println (name (ref another))))))
 

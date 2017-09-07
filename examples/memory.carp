@@ -4,7 +4,6 @@
 (use Double)
 (use Array)
 (use System)
-(use String)
 (use Char)
 
 (deftype A [])
@@ -15,40 +14,40 @@
     hah))
 
 (defn e []
-  "hej")
+  @"hej")
 
 (defn f []
-  (let [s "hej"]
+  (let [s @"hej"]
     (noop (address s))))
 
 (defn g []
-  (let [s "hej"]
+  (let [s @"hej"]
     s))
 
 (defn h []
-  (let [s "hej"]
+  (let [s @"hej"]
     (println (ref s))))
 
 (defn i [s]
-  (do (println (ref s))
-      "hej"))
+  (do (println s)
+      @"hej"))
 
 (defn j [s]
   (do (noop (address s))
-      "hej"))
+      @"hej"))
 
 (defn k []
-  (let [s "hej"]
-    (do (println (ref "?"))
+  (let [s @"hej"]
+    (do (println "?")
         123)))
 
 (defn l []
-  (do (noop (address "hej"))
-      (println (ref "blub"))
-      "ccccc"))
+  (do (noop (address @"hej"))
+      (println (ref @"blub"))
+      @"ccccc"))
 
 (defn m []
-  (let [x (ref "yes")]
+  (let [x "yes"]
     (do (println x)
         (println x))))
 
