@@ -195,7 +195,7 @@ templateReplicate = defineTypeParameterizedTemplate templateCreator path t
                         , "}"]))
              (\(FuncTy [_, _] arrayType) ->
                 let StructTy _ [insideType] = arrayType
-                in [defineArrayTypeAlias arrayType] ++ depsForDeleteFunc typeEnv env insideType)
+                in defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
 
 templateRepeat :: (String, Binder)
 templateRepeat = defineTypeParameterizedTemplate templateCreator path t

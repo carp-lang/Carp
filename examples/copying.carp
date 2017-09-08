@@ -15,3 +15,7 @@
         a1 [(C.copy &c2) (C.copy &c2) (C.copy &c2)]
         a2 (copy &a1)]
     (IO.println "OK.")))
+
+(build)
+(run)
+(quit)

@@ -14,5 +14,7 @@
   (register from-string (Fn [(Ref String)] Int))
   (register mask (Fn [Int Int] Bool))
   (register inc (Fn [Int] Int))
-  (register dec (Fn [Int] Int)))
+  (register dec (Fn [Int] Int))
+  (register copy (Fn [(Ref Int)] Int)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
+  )
 

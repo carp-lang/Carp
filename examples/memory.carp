@@ -54,3 +54,7 @@
 ;; (defn main []
 ;;   (let [xs ["hej" "svej"]]
 ;;     (println "yeah")))
+
+(build)
+(run)
+(quit)

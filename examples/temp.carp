@@ -54,12 +54,7 @@
 ;;     (println &"Yup.")))
 
 
-(deftype Blahaha [s String])
+(defn exclaim [x] (String.append x @"!"))
 
 (defn main []
-  (let [;;x (Blahaha.init @"jahaja")
-        r [@"a" @"b" @"c"]]
-    (do
-      (println (nth &r 1))
-      ;;(println (Blahaha.s &x))
-      )))
+  (println (ref (str (ref (map exclaim (replicate 5 @"Hi")))))))

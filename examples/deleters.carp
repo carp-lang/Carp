@@ -11,3 +11,7 @@
 (defn main []
   (do (f)
       (println "OK.")))
+
+(build)
+(run)
+(quit)

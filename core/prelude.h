@@ -47,6 +47,8 @@ int Int__GT_(x, y)    { return x > y; }
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
 
+int Int_copy(int *x) { return *x; }
+
 #define Double__PLUS_(x, y) ((x) + (y))
 #define Double__MINUS_(x, y) ((x) - (y))
 #define Double__MUL_(x, y) ((x) * (y))
