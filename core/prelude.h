@@ -112,7 +112,11 @@ void String_delete(string s) {
 }
 
 string String_copy(string *s) {
-    return strdup(*s);
+    char *ptr = strdup(*s);
+    #if LOG_MEMORY
+    printf("STRDUP: %p\n", ptr);
+    #endif
+    return ptr;
 }
 
 bool String__EQ_(string *a, string *b) {

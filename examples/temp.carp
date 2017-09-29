@@ -10,5 +10,5 @@
 (defn exclaim [x] (String.append x @"!"))
 
 (defn main []
-  (let [stuff (map exclaim (replicate 2 @"Yo"))]
+  (let [stuff (replicate 3 "Yo")]
     (println &(Array.str &stuff))))

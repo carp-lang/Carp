@@ -181,12 +181,12 @@ templateNth =
 templateReplicate :: (String, Binder)
 templateReplicate = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "replicate"
-        t = FuncTy [IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"])
+        t = FuncTy [IntTy, (RefTy (VarTy "t"))] (StructTy "Array" [VarTy "t"])
         templateCreator = TemplateCreator $
           \typeEnv env ->
              Template
              t
-             (const (toTemplate "Array $NAME(int n, $t elem)"))
+             (const (toTemplate "Array $NAME(int n, $t *elem)"))
              (\(FuncTy [_, _] arrayType) ->
                 let StructTy _ [insideType] = arrayType
                     copierType = (FuncTy [(RefTy insideType)] insideType)
@@ -200,8 +200,8 @@ templateReplicate = defineTypeParameterizedTemplate templateCreator path t
                         , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
                         , "    for(int i = 0; i < n; ++i) {"
                         , "      (($t*)a.data)[i] = " ++ case copierPath of
-                                                           Just p -> pathToC p ++ "(&elem);"
-                                                           Nothing -> "elem;"
+                                                           Just p -> pathToC p ++ "(elem);"
+                                                           Nothing -> "*elem;"
                         , "    }"
                         , "    return a;"
                         , "}"]))
