@@ -7,54 +7,8 @@
 (use String)
 (use Char)
 
-;; (defn range [from to]
-;;   (let [length (- to from)
-;;         arr (replicate length 0)]
-;;     (do
-;;       (for [i 0 length]
-;;         (aset! &arr i (+ from i)))
-;;       arr)))
-
-;; (defn main []
-;;   (let [r (range 5 10)]
-;;     (println (refstr &r))))
-
-;; (defn g [] 123)
-
-;; (defn f []
-;;   (repeat 5 g))
-
-;;(def x (the (Array Int) NULL))
-
-;; (defn main []
-;;   (let [x [10]
-;;         y 123]
-;;     (do
-;;       (set! &x [1 2 3])
-;;       (set! &x [4 5 6])
-;;       (set! &y 10)
-;;       (println (ref (str &x)))
-;;       (println (ref (str y)))
-;;       )))
-
-;;(register-type Flurgh)
-
-;; BUG when flipping type and name in deftype:
-;;(deftype AHA [x Flurgh])
-;;(defn foo [] (AHA.init 3))
-
-
-
-;; (deftype A [])
-;; (deftype B [a A])
-;; (deftype C [b B])
-
-;; (defn main []
-;;   (let [c (C.init (B.init (A.init)))]
-;;     (println &"Yup.")))
-
-
 (defn exclaim [x] (String.append x @"!"))
 
 (defn main []
-  (println (ref (str (ref (map exclaim (replicate 5 @"Hi")))))))
+  (let [stuff (map exclaim (replicate 2 @"Yo"))]
+    (println &(Array.str &stuff))))

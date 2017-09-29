@@ -7,7 +7,9 @@ import Types
 import Obj
 import Parsing
 import Template
+import Polymorphism
 import Concretize
+import Debug.Trace
 
 templateCopyingMap :: (String, Binder)
 templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
@@ -185,17 +187,29 @@ templateReplicate = defineTypeParameterizedTemplate templateCreator path t
              Template
              t
              (const (toTemplate "Array $NAME(int n, $t elem)"))
-             (\_ ->
+             (\(FuncTy [_, _] arrayType) ->
+                let StructTy _ [insideType] = arrayType
+                    copierType = (FuncTy [(RefTy insideType)] insideType)
+                    copierPath = if isManaged env insideType -- TODO: also check if it's an external function
+                                 then case nameOfPolymorphicFunction env typeEnv copierType "copy" of
+                                        Just p -> Just p
+                                        Nothing -> error ("Can't find copy function for array type: " ++ show insideType)
+                                 else Nothing
+                in
                 (toTemplate $ unlines [ "$DECL {"
                         , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
                         , "    for(int i = 0; i < n; ++i) {"
-                        , "      (($t*)a.data)[i] = elem;"
+                        , "      (($t*)a.data)[i] = " ++ case copierPath of
+                                                           Just p -> pathToC p ++ "(&elem);"
+                                                           Nothing -> "elem;"
                         , "    }"
                         , "    return a;"
                         , "}"]))
              (\(FuncTy [_, _] arrayType) ->
                 let StructTy _ [insideType] = arrayType
-                in defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
+                in defineArrayTypeAlias arrayType :
+                   depsForDeleteFunc typeEnv env arrayType ++
+                   depsForCopyFunc typeEnv env insideType)
 
 templateRepeat :: (String, Binder)
 templateRepeat = defineTypeParameterizedTemplate templateCreator path t
@@ -218,7 +232,7 @@ templateRepeat = defineTypeParameterizedTemplate templateCreator path t
              (\(FuncTy [_, ft] arrayType) ->
                 let StructTy _ [insideType] = arrayType
                 in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
-                    depsForDeleteFunc typeEnv env insideType)
+                    depsForDeleteFunc typeEnv env arrayType)
 
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate

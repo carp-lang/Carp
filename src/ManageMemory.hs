@@ -190,7 +190,7 @@ manageMemory typeEnv globalEnv root =
           case ty xobj of
             Just t -> let var = varOfXObj xobj
                       in  if isManaged typeEnv t && not (isExternalType typeEnv t)
-                          then case nameOfPolymorphicFunction globalEnv typeEnv t "delete" of
+                          then case nameOfPolymorphicFunction globalEnv typeEnv (FuncTy [t] UnitTy) "delete" of
                                  Just pathOfDeleteFunc -> Just (ProperDeleter pathOfDeleteFunc var)
                                  Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
                                             Just (FakeDeleter var)
