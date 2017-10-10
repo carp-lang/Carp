@@ -72,12 +72,6 @@ string IO_get_MINUS_line() {
     return buffer;
 }
 
-string str(int x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, "%d", x);
-    return buffer;
-}
-
 int Int_from_MINUS_string(string *s) {
     return atoi(*s);
 }
@@ -100,7 +94,9 @@ int Int_random_MINUS_between(int lower, int upper) {
 }
 
 string Int_str(int x) {
-    return str(x);
+    char *buffer = CARP_MALLOC(64);
+    snprintf(buffer, 64, "%d", x);
+    return buffer;
 }
 
 bool Int_mask(int a, int b) {
@@ -147,9 +143,16 @@ char* String_cstr(string *s) {
     return *s;
 }
 
+string String_str(string *s) {
+    int n = strlen(*s) + 3;
+    string buffer = malloc(n);
+    snprintf(buffer, n, "\"%s\"", *s);
+    return buffer;
+}
+
 string Char_str(char c) {
-    char *buffer = CARP_MALLOC(2);
-    snprintf(buffer, 2, "%c", c);
+    char *buffer = CARP_MALLOC(3);
+    snprintf(buffer, 3, "\\%c", c);
     return buffer;
 }
 
@@ -174,8 +177,20 @@ double Double_cos(double x) {
     return cos(x);
 }
 
+string Double_str(double x) {
+    char *buffer = CARP_MALLOC(32);
+    snprintf(buffer, 32, "%f", x);
+    return buffer;
+}
+
 int Float_toInt(double x) {
     return (int)x;
+}
+
+string Float_str(float x) {
+    char *buffer = CARP_MALLOC(32);
+    snprintf(buffer, 32, "%f", x);
+    return buffer;
 }
 
 // Array

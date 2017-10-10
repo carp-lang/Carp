@@ -10,6 +10,7 @@ import Util
 import Template
 import Infer
 import Concretize
+import Polymorphism
 
 data AllocationMode = StackAlloc | HeapAlloc
 
@@ -30,10 +31,11 @@ moduleForDeftype typeEnv env pathStrings typeName rest i =
          case
            do okInit <- templateForInit insidePath typeName rest
               okNew <- templateForNew insidePath typeName rest
+              okStr <- templateForStr typeEnv env insidePath typeName rest
               (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath typeName rest
               (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath typeName rest
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath typeName rest
-              let funcs = okInit : okNew : okDelete : okCopy : okMembers
+              let funcs = okInit : okNew : okStr : okDelete : okCopy : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
                   deps = deleteDeps ++ membersDeps ++ copyDeps
@@ -97,6 +99,14 @@ templateForNew insidePath typeName [XObj (Arr membersXObjs) _ _] =
                         (templateInit HeapAlloc typeName (memberXObjsToPairs membersXObjs))
 templateForNew _ _ _ = Nothing
 
+-- | Helper function to create the binder for the 'str' template.
+templateForStr :: Env -> Env -> [String] -> String -> [XObj] -> Maybe (String, Binder)
+templateForStr typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
+  Just $ instanceBinder (SymPath insidePath "str")
+                        (FuncTy [(RefTy (StructTy typeName []))] StringTy)
+                        (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs))
+templateForStr _ _ _ _ _ = Nothing
+
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
 initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
@@ -155,6 +165,43 @@ templateInit allocationMode typeName members =
                                  , "    return instance;"
                                  , "}"]))
     (const [])
+
+-- | The template for the 'str' function for a deftype.
+-- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.
+templateStr :: Env -> Env -> String -> [(String, Ty)] -> Template
+templateStr typeEnv env typeName members =
+  Template
+    (FuncTy [(RefTy (StructTy typeName []))] StringTy)
+    (const (toTemplate $ "string $NAME(" ++ typeName ++ " *p)"))
+    (const (toTemplate $ unlines [ "$DECL {"
+                                 , "  // convert members to string here:"
+                                 , "  string buffer = calloc(1024, 1); // TODO: dynamic length"
+                                 , "  string bufferPtr = buffer;"
+                                 , "  string temp = calloc(1024, 1);"
+                                 , ""
+                                 , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ typeName ++ "\");"
+                                 , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
+                                 , joinWith "\n" (map (memberStr typeEnv env) members)
+                                 , "  bufferPtr--;"
+                                 , "  snprintf(bufferPtr, 1024, \")\");"
+                                 , "  return buffer;"
+                                 , "}"]))
+    (const [])
+
+-- | Generate C code for converting a member variable to a string and appending it to a buffer.
+memberStr :: Env -> Env -> (String, Ty) -> String
+memberStr typeEnv env (memberName, memberTy) =
+  let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
+      maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
+      strFuncType = (FuncTy [refOrNotRefType] StringTy)
+  in case nameOfPolymorphicFunction env typeEnv strFuncType "str" of
+       Just strFunctionPath ->
+         unlines [("  snprintf(temp, 1024, \"%s\", " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ "));")
+                 , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+                 , "  bufferPtr += strlen(temp) + 1;"
+                 ]
+       Nothing ->
+         "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 -- | Creates the C code for an arg to the init function.
 -- | i.e. "(deftype A [x Int])" will generate "int x" which

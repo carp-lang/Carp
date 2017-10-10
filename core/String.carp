@@ -6,4 +6,5 @@
   (register count (Fn [(Ref String)] Int))
   (register duplicate (Fn [(Ref String)] String))
   (register cstr (Fn [(Ref String)] (Ptr Char)))
+  (register str (Fn [(Ref String)] String))
   )
