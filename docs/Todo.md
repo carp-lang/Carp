@@ -14,6 +14,5 @@
 * LLVM backend
 * Emit #LINE macros in the generated C code
 
-
 ## Tooling
 * Built in REPL history (without using rlwrap)
