@@ -1,6 +1,7 @@
 # Todo
 
 ## Critical Bugs
+* Let-forms can return references
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -9,6 +10,10 @@
 * Automatic generation of 'str'-function for struct types and Arrays
 
 ## Smaller Language Features ("niceties")
+
+## Language Design Considerations
+* The type of the variable in a set!-form, i.e. (set! &x 10)
+* 'copy' should probably be a special form, just like 'ref'?
 
 ## Code generation
 * LLVM backend
