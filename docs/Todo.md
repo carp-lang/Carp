@@ -6,7 +6,7 @@
 * Generic data types (apart from Array, which already is)
 * Tagged unions (also known as "sum types" or "enums")
 * Lambdas (anonymous functions)
-* Automatic generation of 'str'-function for struct types and Arrays
+* Automatic generation of 'str'-function for Arrays (and structs containing Arrays)
 
 ## Smaller Language Features ("niceties")
 
