@@ -126,6 +126,8 @@
 (defn print-last-string []
   (println &(get-last-string [(String.copy "NO") (String.copy "NO") (String.copy "YES")])))
 
+(defn exclaim [x] (String.append x @"!"))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -149,6 +151,8 @@
       (endofunctor-mapping)
       (map-filter-reduce-stuff)
       (print-last-string)
+      (let [stuff (replicate 3 "Yo")]
+        (println &(Array.str &(map exclaim stuff))))
       ))
 
 (build)
