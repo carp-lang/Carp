@@ -14,6 +14,7 @@
 ## Language Design Considerations
 * The type of the variable in a set!-form, i.e. (set! &x 10)
 * 'copy' should probably be a special form, just like 'ref'?
+* Is some kind of interface/typeclass construct worthwhile?
 
 ## Code generation
 * LLVM backend
@@ -21,3 +22,4 @@
 
 ## Tooling
 * Built in REPL history (without using rlwrap)
+* Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error

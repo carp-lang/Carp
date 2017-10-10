@@ -23,7 +23,8 @@ data TypeError = SymbolMissingType XObj Env
                | HolesFound [(String, Ty)]
                | FailedToExpand XObj EvalError
                | NotAValidType XObj
-               | CantReturnRefTy XObj
+               | FunctionsCantReturnRefTy XObj
+               | LetCantReturnRefTy XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -75,9 +76,11 @@ instance Show TypeError where
     "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
   show (NotAValidType xobj) =
     "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
-  show (CantReturnRefTy xobj) =
+  show (FunctionsCantReturnRefTy xobj) =
     "Functions can't return references: '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj
-
+  show (LetCantReturnRefTy xobj) =
+    "Let-expressions can't return references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> case recursiveLookup mappings v of

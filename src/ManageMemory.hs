@@ -59,23 +59,28 @@ manageMemory typeEnv globalEnv root =
               do mapM_ manage argList
                  visitedBody <- visit body
                  unmanage body
-                 return $ do okBody <- visitedBody                             
+                 return $ do okBody <- visitedBody
                              return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
             letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
-              do preDeleters <- get
-                 visitedBindings <- mapM visitLetBinding (pairwise bindings)
-                 visitedBody <- visit body
-                 unmanage body
-                 postDeleters <- get
-                 let diff = postDeleters Set.\\ preDeleters
-                     newInfo = setDeletersOnInfo i diff
-                     survivors = (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
-                 put survivors
-                 --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
-                 manage xobj
-                 return $ do okBody <- visitedBody
-                             okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
-                             return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
+              let Just letReturnType = t
+              in case letReturnType of
+                RefTy _ ->
+                  return (Left (LetCantReturnRefTy letExpr))
+                _ ->
+                  do preDeleters <- get
+                     visitedBindings <- mapM visitLetBinding (pairwise bindings)
+                     visitedBody <- visit body
+                     unmanage body
+                     postDeleters <- get
+                     let diff = postDeleters Set.\\ preDeleters
+                         newInfo = setDeletersOnInfo i diff
+                         survivors = (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
+                     put survivors
+                     --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
+                     manage xobj
+                     return $ do okBody <- visitedBody
+                                 okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
+                                 return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
             setbangExpr@(XObj SetBang _ _) : variable : value : [] ->
               do visitedValue <- visit value
                  unmanage value
@@ -158,10 +163,12 @@ manageMemory typeEnv globalEnv root =
                              okFalse <- visitedFalse
                              return (XObj (Lst (ifExpr : okExpr : (del okTrue delsTrue) : (del okFalse delsFalse) : [])) i t)
             f : args ->
-              do _ <- visit f
-                 mapM_ visitArg args
+              do visitedF <- visit f
+                 visitedArgs <- fmap sequence $ mapM visitArg args
                  manage xobj
-                 return (Right (XObj (Lst (f : args)) i t))
+                 return $ do okF <- visitedF
+                             okArgs <- visitedArgs
+                             (Right (XObj (Lst (okF : okArgs)) i t))
 
             [] -> return (Right xobj)              
         visitList _ = error "Must visit list."

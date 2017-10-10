@@ -68,7 +68,7 @@ solveConstraintsAndConvertErrorIfNeeded constraints =
 check :: XObj -> Either TypeError ()
 check xobj@(XObj (Lst (XObj Defn _ _ : _)) _ t) =
   case t of
-    Just (FuncTy _ (RefTy _)) -> Left (CantReturnRefTy xobj)
+    Just (FuncTy _ (RefTy _)) -> Left (FunctionsCantReturnRefTy xobj)
     Just _ -> return ()
     Nothing -> Left (DefnMissingType xobj)
 check _ = return ()
