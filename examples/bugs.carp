@@ -1,10 +1,1 @@
 ;; This file contains examples of unsolved bugs
-
-(use IO)
-
-(defn f []
-  (println (let [s @"HEJ"]
-             &s)))
-
-(defn main []
-  (f))

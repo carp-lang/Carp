@@ -1,7 +1,6 @@
 # Todo
 
 ## Critical Bugs
-* Let-forms can return references
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)

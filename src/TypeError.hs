@@ -23,8 +23,8 @@ data TypeError = SymbolMissingType XObj Env
                | HolesFound [(String, Ty)]
                | FailedToExpand XObj EvalError
                | NotAValidType XObj
-               | FunctionsCantReturnRefTy XObj
-               | LetCantReturnRefTy XObj
+               | FunctionsCantReturnRefTy XObj Ty
+               | LetCantReturnRefTy XObj Ty
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -53,9 +53,9 @@ instance Show TypeError where
     "The statement has too many expressions in body position " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++ 
-    "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ " (" ++ prettyInfoFromXObj aObj ++ ")" ++
+    "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\nwith \n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ show (recursiveLookupTy mappings b) ++ " (" ++ prettyInfoFromXObj bObj ++ ")\n\n"
+    "  " ++ pretty bObj ++ " : " ++ show (recursiveLookupTy mappings b) ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
     -- ++
     -- "Constraint: " ++ show constraint ++ "\n\n" ++
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
@@ -76,10 +76,10 @@ instance Show TypeError where
     "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
   show (NotAValidType xobj) =
     "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
-  show (FunctionsCantReturnRefTy xobj) =
-    "Functions can't return references: '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  show (LetCantReturnRefTy xobj) =
-    "Let-expressions can't return references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (FunctionsCantReturnRefTy xobj t) =
+    "Functions can't return references: '" ++ getName xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+  show (LetCantReturnRefTy xobj t) =
+    "Let-expressions can't return references: '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
     
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of

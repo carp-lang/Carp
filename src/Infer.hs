@@ -40,8 +40,6 @@ annotate typeEnv globalEnv xobj =
                                   (initiated, [])
                                   [True, False]
      final <- manageMemory typeEnv globalEnv annotated
-     check final
-     _ <- mapM check dependencies
      return (final : dependencies)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
@@ -61,15 +59,4 @@ solveConstraintsAndConvertErrorIfNeeded constraints =
                                                    (unificationMappings failure)
                                                    constraints)
     Left (Holes holes) -> Left (HolesFound holes)
-    Right ok -> Right ok
-
--- | Will make sure that a form doesn't return a reference.
--- | TODO: This check is needed on nested forms like 'let' statements, etc.
-check :: XObj -> Either TypeError ()
-check xobj@(XObj (Lst (XObj Defn _ _ : _)) _ t) =
-  case t of
-    Just (FuncTy _ (RefTy _)) -> Left (FunctionsCantReturnRefTy xobj)
-    Just _ -> return ()
-    Nothing -> Left (DefnMissingType xobj)
-check _ = return ()
-  
+    Right ok -> Right ok 

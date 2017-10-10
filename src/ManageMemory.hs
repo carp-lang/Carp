@@ -47,7 +47,7 @@ manageMemory typeEnv globalEnv root =
         visitArray xobj@(XObj (Arr arr) _ _) =
           do mapM_ visit arr
              mapM_ unmanage arr
-             _ <- manage xobj
+             _ <- manage xobj -- TODO: result is discarded here, is that OK?
              return (Right xobj)
 
         visitArray _ = error "Must visit array."
@@ -56,16 +56,21 @@ manageMemory typeEnv globalEnv root =
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
             defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym _) _ _) : args@(XObj (Arr argList) _ _) : body : [] ->
-              do mapM_ manage argList
-                 visitedBody <- visit body
-                 unmanage body
-                 return $ do okBody <- visitedBody
-                             return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
+              let Just (FuncTy _ defnReturnType) = t
+              in case defnReturnType of
+                   RefTy _ ->
+                     return (Left (FunctionsCantReturnRefTy xobj defnReturnType))
+                   _ ->
+                     do mapM_ manage argList
+                        visitedBody <- visit body
+                        unmanage body
+                        return $ do okBody <- visitedBody
+                                    return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
             letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
               let Just letReturnType = t
               in case letReturnType of
                 RefTy _ ->
-                  return (Left (LetCantReturnRefTy letExpr))
+                  return (Left (LetCantReturnRefTy xobj letReturnType))
                 _ ->
                   do preDeleters <- get
                      visitedBindings <- mapM visitLetBinding (pairwise bindings)
