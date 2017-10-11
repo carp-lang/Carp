@@ -219,63 +219,63 @@ Array Array_range(int start, int end) {
     return a;
 }
 
-string Array_str__int(Array *aRef) {
-    Array a = *aRef;
-    string buffer = CARP_MALLOC(1024);
-    string b = buffer;
-    sprintf(b, "["); b += 1;
-    for(int i = 0; i < a.len; ++i) {
-        string temp = malloc(32);
-        snprintf(temp, 32, "%d", ((int*)a.data)[i]);
-        sprintf(b, "%s", temp);
-        free(temp);
-        b += strlen(temp);
-        if(i < a.len - 1) {
-            sprintf(b, " "); b += 1;            
-        }
-    }
-    sprintf(b, "]"); b += 1;
-    *b = '\0';
-    return buffer;        
-}
+/* string Array_str__int(Array *aRef) { */
+/*     Array a = *aRef; */
+/*     string buffer = CARP_MALLOC(1024); */
+/*     string b = buffer; */
+/*     sprintf(b, "["); b += 1; */
+/*     for(int i = 0; i < a.len; ++i) { */
+/*         string temp = malloc(32); */
+/*         snprintf(temp, 32, "%d", ((int*)a.data)[i]); */
+/*         sprintf(b, "%s", temp); */
+/*         free(temp); */
+/*         b += strlen(temp); */
+/*         if(i < a.len - 1) { */
+/*             sprintf(b, " "); b += 1;             */
+/*         } */
+/*     } */
+/*     sprintf(b, "]"); b += 1; */
+/*     *b = '\0'; */
+/*     return buffer;         */
+/* } */
 
-string Array_str__string(Array *aRef) {
-    Array a = *aRef;
-    string buffer = CARP_MALLOC(1024);
-    string b = buffer;
-    sprintf(b, "["); b += 1;
-    for(int i = 0; i < a.len; ++i) {
-        char *temp = ((string*)a.data)[i];
-        sprintf(b, "\"%s\"", temp);
-        b += strlen(temp);
-        b += 2; // for the quotes
-        if(i < a.len - 1) {
-            sprintf(b, " "); b += 1;
-        }
-    }
-    sprintf(b, "]"); b += 1;
-    *b = '\0';
-    return buffer;        
-}
+/* string Array_str__string(Array *aRef) { */
+/*     Array a = *aRef; */
+/*     string buffer = CARP_MALLOC(1024); */
+/*     string b = buffer; */
+/*     sprintf(b, "["); b += 1; */
+/*     for(int i = 0; i < a.len; ++i) { */
+/*         char *temp = ((string*)a.data)[i]; */
+/*         sprintf(b, "\"%s\"", temp); */
+/*         b += strlen(temp); */
+/*         b += 2; // for the quotes */
+/*         if(i < a.len - 1) { */
+/*             sprintf(b, " "); b += 1; */
+/*         } */
+/*     } */
+/*     sprintf(b, "]"); b += 1; */
+/*     *b = '\0'; */
+/*     return buffer;         */
+/* } */
 
-string Array_str__bool(Array a) {
-    string buffer = CARP_MALLOC(1024);
-    string b = buffer;
-    sprintf(b, "["); b += 1;
-    for(int i = 0; i < a.len; ++i) {
-        string temp = malloc(32);
-        snprintf(temp, 32, "%s", (((int*)a.data)[i] ? "true" : "false"));
-        sprintf(b, "%s", temp);
-        free(temp);
-        b += strlen(temp);
-        if(i < a.len - 1) {
-            sprintf(b, " "); b += 1;            
-        }
-    }
-    sprintf(b, "]"); b += 1;
-    *b = '\0';
-    return buffer;        
-}
+/* string Array_str__bool(Array a) { */
+/*     string buffer = CARP_MALLOC(1024); */
+/*     string b = buffer; */
+/*     sprintf(b, "["); b += 1; */
+/*     for(int i = 0; i < a.len; ++i) { */
+/*         string temp = malloc(32); */
+/*         snprintf(temp, 32, "%s", (((int*)a.data)[i] ? "true" : "false")); */
+/*         sprintf(b, "%s", temp); */
+/*         free(temp); */
+/*         b += strlen(temp); */
+/*         if(i < a.len - 1) { */
+/*             sprintf(b, " "); b += 1;             */
+/*         } */
+/*     } */
+/*     sprintf(b, "]"); b += 1; */
+/*     *b = '\0'; */
+/*     return buffer;         */
+/* } */
 
 int Array_sum(Array *aRef) {
     Array a = *aRef;

@@ -391,16 +391,16 @@ strTy env typeEnv (StructTy "Array" [innerType]) =
   , TokC   "  string buffer = calloc(1, 1024);\n"
   , TokC   "  string bufferPtr = buffer;\n"
   , TokC   "  string temp;\n"
-  , TokC   ""
-  , TokC   "  snprintf(buffer, 1024, \"[\");"
-  , TokC   "  bufferPtr += 1;"
-  , TokC   ""
+  , TokC   "\n"
+  , TokC   "  snprintf(buffer, 1024, \"[\");\n"
+  , TokC   "  bufferPtr += 1;\n"
+  , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
   , TokC $ "  " ++ insideArrayStr env typeEnv innerType
   , TokC   "  }\n"
-  , TokC   ""
-  , TokC   "  bufferPtr -= 2;"
-  , TokC   "  snprintf(bufferPtr, 1024, \"]\");"
+  , TokC   "\n"
+  , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
+  , TokC   "  snprintf(bufferPtr, 1024, \"]\");\n"
   , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
@@ -411,8 +411,8 @@ insideArrayStr env typeEnv t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "  snprintf(bufferPtr, 1024, \"%s, \", temp);"
-                  , "  bufferPtr += strlen(temp) + 2;"
+                  , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+                  , "  bufferPtr += strlen(temp) + 1;"
                   ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
