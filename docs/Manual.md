@@ -20,6 +20,16 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 :q   Quit the repl
 ```
 
+### Getting types from bindings
+```
+(type <binding>)
+```
+
+### Listing bindings in a module
+```
+(info <module name>)
+```
+
 <!-- ### Special Files -->
 <!-- If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations. -->
 
