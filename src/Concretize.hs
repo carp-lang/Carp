@@ -225,12 +225,29 @@ findFunctionForMember :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionF
 findFunctionForMember env typeEnv functionName functionType (memberName, memberType)
   | isManaged typeEnv memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
-      [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++ memberName ++ "' of type " ++ show functionType)
+      [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
+                              memberName ++ "' of type " ++ show functionType)
       [(_, Binder single)] ->
         let Just t' = ty single
             (SymPath pathStrings name) = getPath single
             suffix = polymorphicSuffix t' functionType
             concretizedPath = SymPath pathStrings (name ++ suffix)
         in  FunctionFound (pathToC concretizedPath)
-      _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++ memberName ++ "' of type " ++ show functionType)
+      _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
+                             memberName ++ "' of type " ++ show functionType)
   | otherwise = FunctionIgnored
+
+-- | TODO: should this be the default and 'findFunctionForMember' be the specific one
+findFunctionForMemberIncludePrimitives :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
+findFunctionForMemberIncludePrimitives env typeEnv functionName functionType (memberName, memberType) =
+  case allFunctionsWithNameAndSignature env functionName functionType of
+    [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
+                            memberName ++ "' of type " ++ show functionType)
+    [(_, Binder single)] ->
+      let Just t' = ty single
+          (SymPath pathStrings name) = getPath single
+          suffix = polymorphicSuffix t' functionType
+          concretizedPath = SymPath pathStrings (name ++ suffix)
+      in  FunctionFound (pathToC concretizedPath)
+    _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
+                           memberName ++ "' of type " ++ show functionType)

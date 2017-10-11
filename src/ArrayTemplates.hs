@@ -407,7 +407,7 @@ strTy _ _ _ = []
 
 insideArrayStr :: Env -> Env -> Ty -> String
 insideArrayStr env typeEnv t =
-  case findFunctionForMember env typeEnv "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+  case findFunctionForMemberIncludePrimitives env typeEnv "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"

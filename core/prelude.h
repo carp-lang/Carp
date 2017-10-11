@@ -189,7 +189,7 @@ int Float_toInt(double x) {
 
 string Float_str(float x) {
     char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%f", x);
+    snprintf(buffer, 32, "%ff", x);
     return buffer;
 }
 
