@@ -175,9 +175,9 @@ templateStr typeEnv env typeName members =
     (const (toTemplate $ "string $NAME(" ++ typeName ++ " *p)"))
     (const (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
-                                 , "  string buffer = calloc(1024, 1); // TODO: dynamic length"
+                                 , "  string buffer = CARP_MALLOC(1024); // TODO: dynamic length"
                                  , "  string bufferPtr = buffer;"
-                                 , "  string temp = calloc(1024, 1);"
+                                 , "  string temp = NULL;"
                                  , ""
                                  , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ typeName ++ "\");"
                                  , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
@@ -197,9 +197,10 @@ memberStr typeEnv env (memberName, memberTy) =
       strFuncType = (FuncTy [refOrNotRefType] StringTy)
   in case nameOfPolymorphicFunction env typeEnv strFuncType "str" of
        Just strFunctionPath ->
-         unlines [("  snprintf(temp, 1024, \"%s\", " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ "));")
+         unlines [("  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");")
                  , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
                  , "  bufferPtr += strlen(temp) + 1;"
+                 , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                  ]
        Nothing ->
          "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"

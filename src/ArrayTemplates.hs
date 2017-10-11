@@ -388,9 +388,9 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
 strTy :: Env -> Env -> Ty -> [Token]
 strTy env typeEnv (StructTy "Array" [innerType]) =
   [ TokC   ""
-  , TokC   "  string buffer = calloc(1, 1024);\n"
+  , TokC   "  string buffer = CARP_MALLOC(1024);\n"
   , TokC   "  string bufferPtr = buffer;\n"
-  , TokC   "  string temp;\n"
+  , TokC   "  string temp = NULL;\n"
   , TokC   "\n"
   , TokC   "  snprintf(buffer, 1024, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"
@@ -413,6 +413,7 @@ insideArrayStr env typeEnv t =
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
                   , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
                   , "  bufferPtr += strlen(temp) + 1;"
+                  , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                   ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
