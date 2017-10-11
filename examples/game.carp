@@ -82,11 +82,13 @@
         img1 (IMG_LoadTexture rend (cstr "./img/square.png"))
         img2 (IMG_LoadTexture rend (cstr "./img/carp_logo_969_no_texture.png"))
         images (Images.init img1 img2)]
-    (while true
-      (do
-        (handle-events app rend)
-        (draw rend &images)
-        (SDL_Delay 30)))))
+    (do
+      (println (ref (Images.str &images)))
+      (while true
+        (do
+          (handle-events app rend)
+          (draw rend &images)
+          (SDL_Delay 30))))))
 
 (build)
 (run)

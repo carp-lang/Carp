@@ -617,6 +617,8 @@ defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 -- | Find out if a type is "external", meaning it is not defined by the user 
 --   in this program but instead imported from another C library or similar.
 isExternalType :: Env -> Ty -> Bool
+isExternalType typeEnv (PointerTy p) =
+  isExternalType typeEnv p
 isExternalType typeEnv (StructTy name _) =
   case lookupInEnv (SymPath [] name) typeEnv of
     Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
