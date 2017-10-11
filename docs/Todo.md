@@ -1,6 +1,7 @@
 # Todo
 
 ## Critical Bugs
+* Not a bug, but to prevent bugs phantom types could be used for the environments to prevent mixing up the global Env and the type Env
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)

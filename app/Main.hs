@@ -53,6 +53,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templatePopBack
                                 , templateDeleteArray
                                 , templateCopyArray
+                                , templateStrArray
                                 ]
 
 startingGlobalEnv :: Env

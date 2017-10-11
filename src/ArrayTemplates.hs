@@ -367,3 +367,49 @@ insideArrayCopying env typeEnv t =
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
   
+templateStrArray :: (String, Binder)
+templateStrArray = defineTypeParameterizedTemplate templateCreator path t
+  where templateCreator = TemplateCreator $
+          \typeEnv env ->
+             Template
+             t
+             (const (toTemplate "void $NAME (Array* a)"))
+             (\(FuncTy [(RefTy arrayType)] StringTy) ->
+                [TokDecl, TokC "{\n"] ++
+                (strTy env typeEnv arrayType) ++
+                [TokC "}\n"])
+             (\(FuncTy [(RefTy arrayType@(StructTy "Array" [insideType]))] StringTy) ->
+                let deps = depsForStrFunc typeEnv env insideType
+                in  defineArrayTypeAlias arrayType : (trace ("DEPS: " ++ show deps) deps))
+        path = SymPath ["Array"] "str"
+        t = (FuncTy [(RefTy (StructTy "Array" [VarTy "a"]))] StringTy)
+
+-- | TODO: move this into the templateStrArray function?
+strTy :: Env -> Env -> Ty -> [Token]
+strTy env typeEnv (StructTy "Array" [innerType]) =
+  [ TokC   ""
+  , TokC   "  string buffer = calloc(1, 1024);\n"
+  , TokC   "  string temp;\n"
+  , TokC   ""
+  , TokC   "    for(int i = 0; i < a.len; i++) {\n"
+  , TokC $ "    " ++ insideArrayStr env typeEnv innerType
+  , TokC   "    }\n"
+  , TokC   ""
+  , TokC   ""
+  ]
+strTy _ _ _ = []
+
+insideArrayStr :: Env -> Env -> Ty -> String
+insideArrayStr env typeEnv t =
+  case findFunctionForMember env typeEnv "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+    FunctionFound functionFullName ->
+      "    temp = " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
+
+-- | The type of a type's str function.
+typesStrFunctionType :: Env -> Ty -> Ty
+typesStrFunctionType typeEnv memberType =
+  if isManaged typeEnv memberType
+  then (FuncTy [(RefTy memberType)] UnitTy)
+  else (FuncTy [memberType] UnitTy)

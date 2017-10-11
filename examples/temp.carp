@@ -6,4 +6,13 @@
 (use System)
 (use String)
 (use Char)
+(use Bool)
 
+(deftype Thing [x Int y Bool])
+
+(defn turn-any-array-into-string []
+  (let [a [(Thing.init 10 false) (Thing.init 20 true)]]
+    (println &(Array.str &a))))
+
+(defn main []
+  (turn-any-array-into-string))

@@ -207,6 +207,13 @@ depsForCopyFunc typeEnv env t =
   then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
   else []
 
+-- | Helper for finding the 'str' function for a type.
+depsForStrFunc :: Env -> Env -> Ty -> [XObj]
+depsForStrFunc typeEnv env t =
+  if isManaged typeEnv t
+  then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [(RefTy t)] StringTy)
+  else depsOfPolymorphicFunction typeEnv env "str" (FuncTy [t] StringTy)
+
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult = FunctionFound String
                           | FunctionNotFound String
