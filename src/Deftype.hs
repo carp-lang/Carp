@@ -31,14 +31,14 @@ moduleForDeftype typeEnv env pathStrings typeName rest i =
          case
            do okInit <- templateForInit insidePath typeName rest
               okNew <- templateForNew insidePath typeName rest
-              okStr <- templateForStr typeEnv env insidePath typeName rest
+              (okStr, strDeps) <- templateForStr typeEnv env insidePath typeName rest
               (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath typeName rest
               (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath typeName rest
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath typeName rest
               let funcs = okInit : okNew : okStr : okDelete : okCopy : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-                  deps = deleteDeps ++ membersDeps ++ copyDeps
+                  deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
               return (typeModuleName, typeModuleXObj, deps)
          of
            Just x -> Right x
@@ -100,11 +100,11 @@ templateForNew insidePath typeName [XObj (Arr membersXObjs) _ _] =
 templateForNew _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'str' template.
-templateForStr :: Env -> Env -> [String] -> String -> [XObj] -> Maybe (String, Binder)
+templateForStr :: Env -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForStr typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
-  Just $ instanceBinder (SymPath insidePath "str")
-                        (FuncTy [(RefTy (StructTy typeName []))] StringTy)
-                        (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs))
+  Just $ (instanceBinderWithDeps (SymPath insidePath "str")
+                                 (FuncTy [(RefTy (StructTy typeName []))] StringTy)
+                                 (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs)))
 templateForStr _ _ _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
@@ -186,7 +186,8 @@ templateStr typeEnv env typeName members =
                                  , "  snprintf(bufferPtr, 1024, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
-    (const [])
+    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "str" . (typesStrFunctionType typeEnv))
+                     (map snd members))
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: Env -> Env -> (String, Ty) -> String

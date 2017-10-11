@@ -416,10 +416,3 @@ insideArrayStr env typeEnv t =
                   ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
-
--- | The type of a type's str function.
-typesStrFunctionType :: Env -> Ty -> Ty
-typesStrFunctionType typeEnv memberType =
-  if isManaged typeEnv memberType
-  then (FuncTy [(RefTy memberType)] StringTy)
-  else (FuncTy [memberType] StringTy)

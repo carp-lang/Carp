@@ -214,6 +214,13 @@ depsForStrFunc typeEnv env t =
   then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [(RefTy t)] StringTy)
   else depsOfPolymorphicFunction typeEnv env "str" (FuncTy [t] StringTy)
 
+-- | The type of a type's str function.
+typesStrFunctionType :: Env -> Ty -> Ty
+typesStrFunctionType typeEnv memberType =
+  if isManaged typeEnv memberType
+  then (FuncTy [(RefTy memberType)] StringTy)
+  else (FuncTy [memberType] StringTy)
+
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult = FunctionFound String
                           | FunctionNotFound String
