@@ -189,7 +189,7 @@ showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
+  " : " ++ showMaybeTy (ty xobj) -- ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
