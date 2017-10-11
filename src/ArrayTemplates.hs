@@ -373,14 +373,14 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
           \typeEnv env ->
              Template
              t
-             (const (toTemplate "void $NAME (Array* a)"))
+             (const (toTemplate "string $NAME (Array* a)"))
              (\(FuncTy [(RefTy arrayType)] StringTy) ->
                 [TokDecl, TokC "{\n"] ++
                 (strTy env typeEnv arrayType) ++
                 [TokC "}\n"])
              (\(FuncTy [(RefTy arrayType@(StructTy "Array" [insideType]))] StringTy) ->
                 let deps = depsForStrFunc typeEnv env insideType
-                in  defineArrayTypeAlias arrayType : (trace ("DEPS: " ++ show deps) deps))
+                in  defineArrayTypeAlias arrayType : deps)
         path = SymPath ["Array"] "str"
         t = (FuncTy [(RefTy (StructTy "Array" [VarTy "a"]))] StringTy)
 
@@ -389,13 +389,19 @@ strTy :: Env -> Env -> Ty -> [Token]
 strTy env typeEnv (StructTy "Array" [innerType]) =
   [ TokC   ""
   , TokC   "  string buffer = calloc(1, 1024);\n"
+  , TokC   "  string bufferPtr = buffer;\n"
   , TokC   "  string temp;\n"
   , TokC   ""
-  , TokC   "    for(int i = 0; i < a.len; i++) {\n"
-  , TokC $ "    " ++ insideArrayStr env typeEnv innerType
-  , TokC   "    }\n"
+  , TokC   "  snprintf(buffer, 1024, \"[\");"
+  , TokC   "  bufferPtr += 1;"
   , TokC   ""
+  , TokC   "  for(int i = 0; i < a->len; i++) {\n"
+  , TokC $ "  " ++ insideArrayStr env typeEnv innerType
+  , TokC   "  }\n"
   , TokC   ""
+  , TokC   "  bufferPtr -= 2;"
+  , TokC   "  snprintf(bufferPtr, 1024, \"]\");"
+  , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
 
@@ -403,7 +409,11 @@ insideArrayStr :: Env -> Env -> Ty -> String
 insideArrayStr env typeEnv t =
   case findFunctionForMember env typeEnv "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
     FunctionFound functionFullName ->
-      "    temp = " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
+      let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
+      in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
+                  , "  snprintf(bufferPtr, 1024, \"%s, \", temp);"
+                  , "  bufferPtr += strlen(temp) + 2;"
+                  ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
 
@@ -411,5 +421,5 @@ insideArrayStr env typeEnv t =
 typesStrFunctionType :: Env -> Ty -> Ty
 typesStrFunctionType typeEnv memberType =
   if isManaged typeEnv memberType
-  then (FuncTy [(RefTy memberType)] UnitTy)
-  else (FuncTy [memberType] UnitTy)
+  then (FuncTy [(RefTy memberType)] StringTy)
+  else (FuncTy [memberType] StringTy)

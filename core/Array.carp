@@ -1,6 +1,5 @@
 (defmodule Array
   ;; TODO: Move these to Template.hs so that the proper helper functions are generated
-  (register str (Fn [(Ref (Array t))] String))
   ;;(register range (Fn [Int Int] (Array Int)))
   (register sum (Fn [(Ref (Array Int))] Int))
   )
