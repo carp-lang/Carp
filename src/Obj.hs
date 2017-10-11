@@ -280,11 +280,13 @@ prettyEnvironment = prettyEnvironmentIndented 0
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
   joinWith "\n" $ map (showBinderIndented indent) (Map.toList (envBindings env)) ++
-                  [replicate indent ' ' ++ "Imports:"] ++
-                  map (showImportIndented indent) (envUseModules env)
+                  let modules = (envUseModules env)
+                  in  if null modules
+                      then []
+                      else ["\n" ++ replicate indent ' ' ++ "Used modules:"] ++ map (showImportIndented indent) modules
 
 showImportIndented :: Int -> SymPath -> String
-showImportIndented indent path = replicate indent ' ' ++ show path
+showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 
 -- | Checks if an environment is "external", meaning it's either the global scope or a module scope.
 envIsExternal :: Env -> Bool

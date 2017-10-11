@@ -40,6 +40,8 @@ data ReplCommand = Define XObj
                  | DefineAlias String XObj
                  | Eval XObj
                  | Expand XObj
+                 | Type XObj
+                 | GetInfo XObj
                  | InstantiateTemplate XObj XObj
                  | Use SymPath XObj
                  | ProjectSet String String
@@ -89,6 +91,8 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "eval")) _ _ : form : [] -> Eval form
                    XObj (Sym (SymPath _ "expand")) _ _ : form : [] -> Expand form
                    XObj (Sym (SymPath _ "instantiate")) _ _ : name : signature : [] -> InstantiateTemplate name signature
+                   XObj (Sym (SymPath _ "type")) _ _ : form : [] -> Type form
+                   XObj (Sym (SymPath _ "info")) _ _ : form : [] -> GetInfo form
                    XObj (Sym (SymPath _ "help")) _ _ : XObj (Sym (SymPath _ chapter)) _ _ : [] -> Help chapter
                    XObj (Sym (SymPath _ "help")) _ _ : [] -> Help ""
                    XObj (Sym (SymPath _ "quit")) _ _ : [] -> Quit
@@ -213,6 +217,43 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                Nothing -> error ("Internal compiler error: No type signature on template '" ++ templateName ++ "'")
            _ ->
              do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
+                return ctx
+
+       GetInfo xobj ->
+         case xobj of
+           XObj (Sym path) _ _ ->
+             case lookupInEnv path env of
+               Just (_, Binder (XObj (Mod moduleEnv) _ _)) ->
+                 do putStrLnWithColor White (prettyEnvironment moduleEnv)
+                    return ctx
+               Just (_, Binder (XObj _ _ (Just t))) ->
+                 do putStrLnWithColor White (show t)
+                    return ctx
+               Just _ ->
+                 do putStrLnWithColor Red "Type missing."
+                    return ctx
+               Nothing ->
+                 do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                    return ctx
+           _ ->
+             do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
+                return ctx
+                
+       Type xobj ->
+         case xobj of
+           XObj (Sym path) _ _ ->
+             case lookupInEnv path env of               
+               Just (_, Binder (XObj _ _ (Just t))) ->
+                 do putStrLnWithColor White (show t)
+                    return ctx
+               Just _ ->
+                 do putStrLnWithColor Red "Type missing."
+                    return ctx
+               Nothing ->
+                 do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                    return ctx
+           _ ->
+             do putStrLnWithColor Red ("Can't take the type of non-symbol: " ++ pretty xobj)
                 return ctx
 
        Register name xobj ->
@@ -388,10 +429,10 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
             return ctx
 
        ListBindingsInEnv ->
-         do putStrLn (prettyEnvironment env)
-            putStrLn ""
-            putStrLn "Types:"
+         do putStrLn "Types:\n"
             putStrLn (prettyEnvironment typeEnv)
+            putStrLn "\nGlobal environment:\n"
+            putStrLn (prettyEnvironment env)
             putStrLn ""
             return ctx
 
