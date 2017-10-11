@@ -13,7 +13,7 @@
 (defn main []
   (do
     (if (f) (println "yes") (println "no"))
-    (println (ref (str (f))))
+    (println (ref (Int.str (f))))
     (println (ref (f)))))
 
 (build)

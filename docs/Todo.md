@@ -21,6 +21,9 @@
 * Emit #LINE macros in the generated C code
 
 ## Tooling
-* Built in REPL history (without using rlwrap)
-* Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
+* Allow checking type of a function from the REPL
+* Store line numbers with forms and present them in error messages
 * Proper error handling when defining invalid struct types (right now it crashes)
+* Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
+* Built in REPL history (without using rlwrap)
+* Preserve whitespace to allow saving forms back to disk

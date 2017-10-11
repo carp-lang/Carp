@@ -128,6 +128,17 @@
 
 (defn exclaim [x] (String.append x @"!"))
 
+(deftype Simple [])
+(deftype Complex [x Int f Float d Double s String c Char])
+
+(defn print-structs []
+  (let [s (Simple.init)
+        c (Complex.init 12345 3.14f 99.99 @"yo" \x)]
+    (do
+      (println (ref (Simple.str &s)))
+      (println (ref (Complex.str &c))))))
+
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -153,6 +164,7 @@
       (print-last-string)
       (let [stuff (replicate 3 "Yo")]
         (println &(Array.str &(map exclaim stuff))))
+      (print-structs)
       ))
 
 (build)

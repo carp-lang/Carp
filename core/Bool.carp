@@ -1,0 +1,3 @@
+(defmodule Bool
+  (register str (Fn [Bool] String))
+  )

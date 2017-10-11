@@ -7,12 +7,3 @@
 (use String)
 (use Char)
 
-(deftype Simple [])
-(deftype Complex [x Int f Float d Double s String c Char])
-
-(defn main []
-  (let [s (Simple.init)
-        a &(Complex.init 12345 3.14f 99.99 @"yo" \x)]
-    (do
-      (println (ref (Complex.str a)))
-      (println (ref (Simple.str &s))))))

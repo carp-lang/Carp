@@ -193,6 +193,15 @@ string Float_str(float x) {
     return buffer;
 }
 
+// Bool
+string Bool_str(bool b) {
+    if(b) {
+        return strdup("true");
+    } else {
+        return strdup("false");
+    }
+}
+
 // Array
 typedef struct {
     int len;
