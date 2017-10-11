@@ -152,6 +152,12 @@
       (println &(Array.str &d))
       )))
 
+(deftype Inner [])
+(deftype Outer [as (Array Inner)])
+(defn convert-struct-with-array-member-to-string []
+  (let [b (Outer.init [(Inner.init) (Inner.init) (Inner.init)])]
+    (println (ref (Outer.str &b)))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -179,6 +185,7 @@
         (println &(Array.str &(map exclaim stuff))))
       (print-structs)
       (turn-any-array-into-string)
+      (convert-struct-with-array-member-to-string)
       ))
 
 (build)
