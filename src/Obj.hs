@@ -3,7 +3,7 @@ module Obj where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (intercalate, foldl')
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, fromMaybe)
 import Control.Monad.State
 import Data.Char
 import Types
@@ -147,9 +147,7 @@ pretty root = visit 0 root
             While -> "while"
             Do -> "do"
             Let -> "let"
-            Mod env -> case envModuleName env of
-                         Just name -> name
-                         Nothing -> "module"
+            Mod env -> fromMaybe "module" (envModuleName env)
             Typ -> "deftype"
             Deftemplate _ -> "deftemplate"
             Instantiate _ -> "instantiate"
