@@ -2,6 +2,7 @@
 
 ## Critical Bugs
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
+* After use:ing the Int and Float modules, this command crashes the REPL: (+ ?a ?b)
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
