@@ -1,1 +1,18 @@
 ;; This file contains examples of unsolved bugs
+
+(use IO)
+
+(defmodule A
+  (defn h [x] (Float.+ x x)))
+
+(defmodule B
+  (defn h [x] (Float.* x x)))
+
+(use A)
+(use B)
+
+(defn f [x]
+  (h x))
+
+(defn g []
+  (println &(Float.str (f 10.0f))))

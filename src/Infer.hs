@@ -38,7 +38,7 @@ annotate typeEnv globalEnv xobj =
                                            do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
                                               return (x', deps ++ deps'))
                                   (initiated, [])
-                                  [True, False]
+                                  [True, True]
      final <- manageMemory typeEnv globalEnv annotated
      return (final : dependencies)
 
