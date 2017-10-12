@@ -258,3 +258,4 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
       in  FunctionFound (pathToC concretizedPath)
     _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
                            memberName ++ "' of type " ++ show functionType)
+

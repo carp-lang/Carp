@@ -40,7 +40,6 @@ annotate typeEnv globalEnv xobj =
                                   (initiated, [])
                                   [True, True]
      final <- manageMemory typeEnv globalEnv annotated
-     checkForUnresolvedMultisymbols final -- This catches cases where concretize has been too kind and left multisymbols in the XObj.
      return (final : dependencies)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
@@ -61,26 +60,3 @@ solveConstraintsAndConvertErrorIfNeeded constraints =
                                                    constraints)
     Left (Holes holes) -> Left (HolesFound holes)
     Right ok -> Right ok 
-
-checkForUnresolvedMultiSymbols :: XObj -> Either TypeError ()
-checkForUnresolvedMultiSymbols root = visit root
-  where
-    visit :: XObj -> Either TypeError ()
-    visit xobj =
-      case obj xobj of
-        (Lst _) -> visitList xobj
-        (Arr _) -> visitArray xobj
-        (MultiSym _ _) -> Left (UnresolvedMultiSymbol xobj)
-        _ -> return ()
-
-    visitList :: XObj -> Either TypeError ()
-    visitList (XObj (Lst xobjs) i t) =
-      do mapM_ visit xobjs
-         return ()
-    visitList _ = compilerError "The function 'visitList' only accepts XObjs with lists in them."
-
-    visitArray :: XObj -> Either TypeError ()
-    visitArray (XObj (Arr xobjs) i t) =
-      do mapM_ visit xobjs
-         return ()
-    visitArray _ = compilerError "The function 'visitArray' only accepts XObjs with arrays in them."

@@ -24,6 +24,7 @@ data ToCError = InvalidParameter XObj
               | CannotEmitExternal
               | CannotEmitModKeyword
               | BinderIsMissingType Binder
+              | UnresolvedMultiSymbol XObj
 
 instance Show ToCError where
   show (InvalidParameter xobj) = "Invalid parameter: " ++ show (obj xobj)
@@ -33,6 +34,10 @@ instance Show ToCError where
   show CannotEmitExternal = "Can't emit code for external function/variable."
   show CannotEmitModKeyword = "Can't emit code for Mod."
   show (BinderIsMissingType b) = "Binder is missing type: " ++ show b
+  show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
+    "Found ambiguous symbol " ++ symName ++
+    " (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
+    " at " ++ prettyInfoFromXObj xobj
 
 data EmitterState = EmitterState { emitterSrc :: String }
 
@@ -413,7 +418,10 @@ binderToC binder = let xobj = binderXObj binder
                          XObj ExternalType _ _ -> Right ""
                          XObj (Mod env) _ _ -> envToC env
                          _ -> case ty xobj of
-                                Just t -> if typeIsGeneric t then Right "" else Right (toC xobj)
+                                Just t -> if typeIsGeneric t
+                                          then Right ""
+                                          else do checkForUnresolvedMultiSymbols xobj
+                                                  return (toC xobj)
                                 Nothing -> Left (BinderIsMissingType binder)
 
 binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
@@ -447,3 +455,26 @@ sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
   sortOn fst (map (scoreBinder typeEnv) binders)
+
+checkForUnresolvedMultiSymbols :: XObj -> Either ToCError ()
+checkForUnresolvedMultiSymbols root = visit root
+  where
+    visit :: XObj -> Either ToCError ()
+    visit xobj =
+      case obj xobj of
+        (Lst _) -> visitList xobj
+        (Arr _) -> visitArray xobj
+        (MultiSym _ _) -> Left (UnresolvedMultiSymbol xobj)
+        _ -> return ()
+
+    visitList :: XObj -> Either ToCError ()
+    visitList (XObj (Lst xobjs) i t) =
+      do mapM_ visit xobjs
+         return ()
+    visitList _ = compilerError "The function 'visitList' only accepts XObjs with lists in them."
+
+    visitArray :: XObj -> Either ToCError ()
+    visitArray (XObj (Arr xobjs) i t) =
+      do mapM_ visit xobjs
+         return ()
+    visitArray _ = compilerError "The function 'visitArray' only accepts XObjs with arrays in them."
