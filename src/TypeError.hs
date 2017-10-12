@@ -84,7 +84,7 @@ instance Show TypeError where
   show (FunctionsCantReturnRefTy xobj t) =
     "Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (LetCantReturnRefTy xobj t) =
-    "Let-expressions can't return references: '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+    "Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (GettingReferenceToUnownedValue xobj) =
     "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
     prettyInfoFromXObj xobj
