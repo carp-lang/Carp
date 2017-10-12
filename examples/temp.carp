@@ -8,15 +8,4 @@
 (use Char)
 (use Bool)
 
-;; (defn f [func r]
-;;   (let [s (copy r)]
-;;     (func (ref s))))
 
-;; (defn main []
-;;   (f println "hej"))
-
-(defn main []
-  (do
-    (println (ref (str (ref (range 10 0 -1)))))
-    (println (ref (str (ref (range 1.0 2.0 0.1)))))
-    (println (ref (str (ref (range 1 10 2)))))))

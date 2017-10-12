@@ -1,6 +1,7 @@
 # Todo
 
 ## Critical Bugs
+* The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -15,7 +16,8 @@
 * Is some kind of interface/typeclass construct worthwhile?
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
-* Fixed-size stack allocated arrays would be useful (also as members of structs).
+* Fixed-size stack allocated arrays would be useful (also as members of structs)
+* Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
 
 ## Code generation
 * LLVM backend
