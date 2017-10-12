@@ -15,11 +15,8 @@
 ;; (defn main []
 ;;   (f println "hej"))
 
-(defn take [s]
-  (println &s))
-
-(defn give []
-  (let [name @"ERIK"]
-    (do
-      (take name)
-      (println &name))))
+(defn main []
+  (do
+    (println (ref (str (ref (range 10 0 -1)))))
+    (println (ref (str (ref (range 1.0 2.0 0.1)))))
+    (println (ref (str (ref (range 1 10 2)))))))

@@ -1,18 +1,6 @@
 (defmodule Array
-  ;; TODO: Move these to Template.hs so that the proper helper functions are generated
-  ;;(register range (Fn [Int Int] (Array Int)))
-  (register sum (Fn [(Ref (Array Int))] Int))
-  )
 
-;; Other Array functions available:
-;; map
-;; push-back
-;; pop-back
-;; nth
-;; replicate
-;; repeat
-;; raw
-;; aset
-;; aset!
-;; count
-;; copy
+  (defn sum [xs]
+    123456)
+
+  )
