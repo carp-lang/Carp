@@ -8,10 +8,18 @@
 (use Char)
 (use Bool)
 
-(defn f [func r]
-  (let [s (copy r)]
-    (func (ref s))))
+;; (defn f [func r]
+;;   (let [s (copy r)]
+;;     (func (ref s))))
 
-(defn main []
-  (f println "hej"))
+;; (defn main []
+;;   (f println "hej"))
 
+(defn take [s]
+  (println &s))
+
+(defn give []
+  (let [name @"ERIK"]
+    (do
+      (take name)
+      (println &name))))

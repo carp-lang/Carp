@@ -1,7 +1,6 @@
 # Todo
 
 ## Critical Bugs
-* Not a bug, but to prevent bugs phantom types could be used for the environments to prevent mixing up the global Env and the type Env
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -9,7 +8,6 @@
 * Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
-
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
@@ -30,3 +28,4 @@
 * Preserve whitespace to allow saving forms back to disk
 * Refactorings at the REPL
 * Hide instances of templates/generic functions when printing the environment (by default)
+* Warnings about giving away values should be compiler errors and not Haskell trace:s
