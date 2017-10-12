@@ -162,6 +162,8 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                                 return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i (Just wholeExprType))
                Left err -> return (Left err)
 
+        XObj Let _ _ : XObj (Arr _) _ _ : [] ->
+          return (Left (NoFormsInBody xobj))
         XObj Let _ _ : XObj (Arr _) _ _ : _ ->
           return (Left (TooManyFormsInBody xobj))
         XObj Let _ _ : _ ->
@@ -188,7 +190,10 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                          okBody <- visitedBody
                          return (XObj (Lst [whileExpr, okExpr, okBody]) i (Just UnitTy))
 
-        XObj While _ _ : _ -> return (Left (InvalidObj While xobj))
+        XObj While _ _ : _ : [] ->
+          return (Left (NoFormsInBody xobj))
+        XObj While _ _ : _ ->
+          return (Left (TooManyFormsInBody xobj))
         
         -- Do
         doExpr@(XObj Do _ _) : expressions ->

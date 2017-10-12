@@ -78,10 +78,10 @@ objToCommand ctx xobj =
       Lst lst -> case lst of
                    XObj Defn _ _ : _ : _ : _ : [] -> Define xobj
                    XObj Def _ _ : _ : _ : [] -> Define xobj
-                   XObj (Sym (SymPath _ "module")) i _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions i
-                   XObj (Sym (SymPath _ "defmodule")) i _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions i
+                   XObj (Sym (SymPath _ "module")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
+                     DefineModule name innerExpressions (info xobj)
+                   XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
+                     DefineModule name innerExpressions (info xobj)
                    XObj (Sym (SymPath _ "defmacro")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
                      DefineMacro name params body
                    XObj (Sym (SymPath _ "defdynamic")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
@@ -433,7 +433,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
             return ctx
 
        Print s ->
-         do putStrLn s
+         do putStr s
             return ctx
 
        ListBindingsInEnv ->

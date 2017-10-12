@@ -16,6 +16,7 @@ data TypeError = SymbolMissingType XObj Env
                | NotAFunction XObj
                | NoStatementsInDo XObj
                | TooManyFormsInBody XObj
+               | NoFormsInBody XObj
                | LeadingColon XObj
                | UnificationFailed Constraint TypeMappings [Constraint]
                | CantDisambiguate XObj String Ty [(Ty, SymPath)]
@@ -50,7 +51,9 @@ instance Show TypeError where
   show (NoStatementsInDo xobj) =
     "The do-statement has no expressions inside of it at " ++ prettyInfoFromXObj xobj ++ "."
   show (TooManyFormsInBody xobj) =
-    "The statement has too many expressions in body position " ++ prettyInfoFromXObj xobj ++ "."
+    "Too many expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+  show (NoFormsInBody xobj) =
+    "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++ 
     "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
