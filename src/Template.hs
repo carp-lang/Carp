@@ -27,7 +27,7 @@ defineTemplate :: SymPath -> Ty -> [Token] -> [Token] -> (Ty -> [XObj]) -> (Stri
 defineTemplate path t declaration definition depsFunc = 
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
-      i = Info 0 0 Set.empty 0
+      i = Info 0 0 (show path ++ ".template") Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path) Nothing Nothing]
   in  (name, Binder (XObj (Lst defLst) (Just i) (Just t)))
 
@@ -124,7 +124,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
 -- | i.e. the string "(Array Int)" becomes (TokTy (StructTy "Array" IntTy)).
 toTokTy :: String -> Token
 toTokTy s =
-  case parse s of
+  case parse s "" of
     Left err -> compilerError (show err)
     Right [] -> compilerError ("toTokTy got [] when parsing: '" ++ s ++ "'")
     Right [xobj] -> case xobjToTy xobj of

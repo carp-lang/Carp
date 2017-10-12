@@ -120,7 +120,8 @@ incColumn x = do s <- Parsec.getState
                      line = infoLine i
                      column = infoColumn i
                      identifier = infoIdentifier i
-                     newInfo = Info line (column + x) (Set.fromList []) identifier
+                     file = infoFile i
+                     newInfo = Info line (column + x) file (Set.fromList []) identifier
                  Parsec.putState (s { parseInfo = newInfo })
                  return ()
 
@@ -134,7 +135,8 @@ linebreak = do s <- Parsec.getState
                let i = parseInfo s
                    line = infoLine i
                    identifier = infoIdentifier i
-                   newInfo = Info (line + 1) 0 (Set.fromList [])  identifier
+                   file = infoFile i
+                   newInfo = Info (line + 1) 0 file (Set.fromList [])  identifier
                Parsec.putState (s { parseInfo = newInfo })
                _ <- Parsec.char '\n'
                return ()
@@ -210,9 +212,9 @@ lispSyntax = do padding <- Parsec.many whitespace
                 incColumn (length padding)
                 Parsec.sepBy sexpr whitespaceOrNothing
 
-parse :: String -> Either Parsec.ParseError [XObj]
-parse text = let initState = ParseState (Info 1 0 (Set.fromList []) 0)
-             in  Parsec.runParser lispSyntax initState "(source)" text
+parse :: String -> String -> Either Parsec.ParseError [XObj]
+parse text fileName = let initState = ParseState (Info 1 0 fileName (Set.fromList []) 0)
+                      in  Parsec.runParser lispSyntax initState "(source)" text
 
 
 

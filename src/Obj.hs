@@ -53,12 +53,13 @@ instance Eq TemplateCreator where
 -- | Information about where the Obj originated from.
 data Info = Info { infoLine :: Int
                  , infoColumn :: Int
+                 , infoFile :: String
                  , infoDelete :: Set.Set Deleter
                  , infoIdentifier :: Int
                  } deriving (Show, Eq)
 
 dummyInfo :: Info
-dummyInfo = Info 0 0 (Set.empty) (-1)
+dummyInfo = Info 0 0 "dummy-file" (Set.empty) (-1)
 
 data Deleter = ProperDeleter { deleterPath :: SymPath
                              , deleterVariable :: String
@@ -68,7 +69,7 @@ data Deleter = ProperDeleter { deleterPath :: SymPath
              deriving (Show, Eq, Ord)
 
 prettyInfo :: Info -> String
-prettyInfo i = "line " ++ show (infoLine i) ++ ", column " ++ show (infoColumn i)
+prettyInfo i = "line " ++ show (infoLine i) ++ ", column " ++ show (infoColumn i) ++ " in '" ++ infoFile i ++ "'"
 
 prettyInfoFromXObj :: XObj -> String
 prettyInfoFromXObj xobj = case info xobj of

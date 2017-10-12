@@ -375,13 +375,13 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                          then files
                          else path : files
                 proj' = proj { projectFiles = files' }
-            executeString (ctx { contextProj = proj' }) contents
+            executeString (ctx { contextProj = proj' }) contents path
 
        Reload ->
          do let paths = projectFiles proj
                 f :: Context -> FilePath -> IO Context
                 f context filepath = do contents <- readFile filepath
-                                        executeString context contents
+                                        executeString context contents filepath
             foldM f ctx paths
 
        AddInclude includer ->
@@ -559,9 +559,9 @@ catcher :: Context -> IOException -> IO Context
 catcher ctx err = do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ show err)
                      return ctx
 
-executeString :: Context -> String -> IO Context
-executeString ctx input = catch exec (catcher ctx)
-  where exec = case parse input of
+executeString :: Context -> String -> String -> IO Context
+executeString ctx input fileName = catch exec (catcher ctx)
+  where exec = case parse input fileName of
                  Left parseError -> executeCommand ctx (ReplParseError (show parseError))
                  Right xobjs -> foldM folder ctx xobjs
 

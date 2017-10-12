@@ -8,13 +8,5 @@
 (use Char)
 (use Bool)
 
-(deftype A [])
-(deftype B [as (Array A)])
-
-(defn convert-struct-with-array-member-to-string []
-  (let [b (B.init [(A.init) (A.init) (A.init)])]
-    (println (ref (B.str &b)))))
-
-(defn main []
-  (while true
-    (convert-struct-with-array-member-to-string)))
+(defn f []
+  (Int.+ 231))
