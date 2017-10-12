@@ -17,6 +17,7 @@
 * Is some kind of interface/typeclass construct worthwhile?
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
+* Fixed-size stack allocated arrays would be useful (also as members of structs).
 
 ## Code generation
 * LLVM backend
