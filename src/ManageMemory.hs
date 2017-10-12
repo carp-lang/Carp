@@ -59,10 +59,10 @@ manageMemory typeEnv globalEnv root =
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
             defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym _) _ _) : args@(XObj (Arr argList) _ _) : body : [] ->
-              let Just (FuncTy _ defnReturnType) = t
+              let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
                    RefTy _ ->
-                     return (Left (FunctionsCantReturnRefTy xobj defnReturnType))
+                     return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
                         visitedBody <- visit body

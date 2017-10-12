@@ -82,7 +82,7 @@ instance Show TypeError where
   show (NotAValidType xobj) =
     "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
-    "Functions can't return references: '" ++ getName xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+    "Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (LetCantReturnRefTy xobj t) =
     "Let-expressions can't return references: '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (GettingReferenceToUnownedValue xobj) =
