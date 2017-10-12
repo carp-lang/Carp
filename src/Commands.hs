@@ -21,7 +21,7 @@ import Util
 import Eval
 
 data Context = Context { contextGlobalEnv :: Env
-                       , contextTypeEnv :: Env
+                       , contextTypeEnv :: TypeEnv
                        , contextPath :: [String]
                        , contextProj :: Project
                        , contextLastInput :: String
@@ -132,7 +132,7 @@ define ctx@(Context globalEnv typeEnv _ proj _) annXObj =
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
       do --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-         return (ctx { contextTypeEnv = envInsertAt typeEnv (getPath annXObj) annXObj })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
@@ -186,7 +186,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                        -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                        XObj (Lst (XObj Typ Nothing Nothing : XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing : rest)) i (Just TypeTy)
                      ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
-                                 , contextTypeEnv = extendEnv typeEnv typeName typeDefinition
+                                 , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                                  })
                  in  do ctx'' <- foldM define ctx' deps
                         return ctx''
@@ -268,14 +268,14 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
        RegisterType name ->
          let path = SymPath pathStrings name
              binding = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path) Nothing Nothing]) Nothing (Just TypeTy)
-             typeEnv' = envInsertAt typeEnv path binding
+             typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) path binding)
          in  return (ctx { contextTypeEnv = typeEnv' })
 
        DefineAlias name typeXObj ->
          case xobjToTy typeXObj of
            Just t ->
              let alias = defineTypeAlias name t
-                 typeEnv' = envInsertAt typeEnv (SymPath [] name) alias
+                 typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) alias)
              in  return (ctx { contextTypeEnv = typeEnv' })
            Nothing ->
              do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
@@ -333,7 +333,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
 
        BuildExe ->
          let src = do decl <- envToDeclarations typeEnv env
-                      typeDecl <- envToDeclarations typeEnv typeEnv
+                      typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                       c <- envToC env
                       return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
          in case src of
@@ -430,7 +430,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
 
        ListBindingsInEnv ->
          do putStrLn "Types:\n"
-            putStrLn (prettyEnvironment typeEnv)
+            putStrLn (prettyEnvironment (getTypeEnv typeEnv))
             putStrLn "\nGlobal environment:\n"
             putStrLn (prettyEnvironment env)
             putStrLn ""

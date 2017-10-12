@@ -31,7 +31,7 @@ import Concretize
 -- | Returns a list of all the bindings that need to be added for the new form to work.
 -- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
 -- | makes it possible to solve more types so let's do it several times.  
-annotate :: Env -> Env -> XObj -> Either TypeError [XObj]
+annotate :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
 annotate typeEnv globalEnv xobj =
   do initiated <- initialTypes globalEnv xobj
      (annotated, dependencies) <- foldM (\(x, deps) allowAmbiguity ->
@@ -43,7 +43,7 @@ annotate typeEnv globalEnv xobj =
      return (final : dependencies)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
-annotateOne :: Env -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
+annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
   mappings <- solveConstraintsAndConvertErrorIfNeeded constraints

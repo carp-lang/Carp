@@ -40,7 +40,7 @@ data Obj = Sym SymPath
          | Ref
          deriving (Show, Eq)
 
-newtype TemplateCreator = TemplateCreator { getTemplateCreator :: Env -> Env -> Template }
+newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
 
 instance Show TemplateCreator where
   show _ = "TemplateCreator"
@@ -194,14 +194,14 @@ showBinderIndented indent (name, Binder xobj) =
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
-scoreBinder :: Env -> Binder -> (Int, Binder)
+scoreBinder :: TypeEnv -> Binder -> (Int, Binder)
 scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
       in  (depthOfType typeEnv selfName (Just aliasedType), b)
     Typ ->
-      case lookupInEnv (SymPath [] name) typeEnv of
+      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
         Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef, b)
                                     in  --trace ("depth of " ++ name ++ ": " ++ show depth)
                                         depth
@@ -212,7 +212,7 @@ scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (200, b)
 scoreBinder _ x = error ("Can't score: " ++ show x)
 
-dependencyDepthOfTypedef :: Env -> XObj -> Int
+dependencyDepthOfTypedef :: TypeEnv -> XObj -> Int
 dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
   case concatMap expandCase rest of
     [] -> 0
@@ -224,7 +224,7 @@ dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName))
 dependencyDepthOfTypedef _ xobj =
   compilerError ("Can't get dependency depth from " ++ show xobj)
 
-depthOfType :: Env -> String -> Maybe Ty -> Int
+depthOfType :: TypeEnv -> String -> Maybe Ty -> Int
 depthOfType typeEnv selfName ty = visitType ty
   where  
     visitType :: Maybe Ty -> Int
@@ -243,7 +243,7 @@ depthOfType typeEnv selfName ty = visitType ty
         "Array" -> 20
         _ | name == selfName -> 0
           | otherwise ->
-              case lookupInEnv (SymPath [] name) typeEnv of
+              case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                 Just (_, Binder typedef) -> dependencyDepthOfTypedef typeEnv typedef + 1
                 Nothing -> -- trace ("Unknown type: " ++ name)
                            0 -- Refering to unknown type
@@ -624,11 +624,11 @@ defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
 -- | Find out if a type is "external", meaning it is not defined by the user 
 --   in this program but instead imported from another C library or similar.
-isExternalType :: Env -> Ty -> Bool
+isExternalType :: TypeEnv -> Ty -> Bool
 isExternalType typeEnv (PointerTy p) =
   isExternalType typeEnv p
 isExternalType typeEnv (StructTy name _) =
-  case lookupInEnv (SymPath [] name) typeEnv of
+  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
     Just _ -> False
     Nothing -> False
@@ -642,11 +642,11 @@ forceTy xobj = case ty xobj of
                  Nothing -> error ("No type in " ++ show xobj)
 
 -- | Is this type managed - does it need to be freed?
-isManaged :: Env -> Ty -> Bool
+isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
   if name == "Array"
   then True
-  else case lookupInEnv (SymPath [] name) typeEnv of
+  else case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder (XObj (Lst (XObj Typ _ _ : _)) _ _)) -> True
          Just (_, Binder (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)

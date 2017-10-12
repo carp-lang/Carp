@@ -97,7 +97,7 @@ main = do putStrLn "Welcome to Carp 0.2.0"
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
-          context <- foldM executeCommand (Context startingGlobalEnv startingTypeEnv [] projectWithCarpDir "")
+          context <- foldM executeCommand (Context startingGlobalEnv (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
           context' <- foldM executeCommand context (map Load args)
           repl context' ""

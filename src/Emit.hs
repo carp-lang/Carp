@@ -416,7 +416,7 @@ binderToC binder = let xobj = binderXObj binder
                                 Just t -> if typeIsGeneric t then Right "" else Right (toC xobj)
                                 Nothing -> Left (BinderIsMissingType binder)
 
-binderToDeclaration :: Env -> Binder -> Either ToCError String
+binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
 binderToDeclaration typeEnv binder =
   let xobj = binderXObj binder
   in  case xobj of
@@ -430,7 +430,7 @@ envToC env = let binders = map snd (Map.toList (envBindings env))
              in  do okCodes <- mapM binderToC binders
                     return (concat okCodes)
 
-envToDeclarations :: Env -> Env -> Either ToCError String
+envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
   let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
   in  do okDecls <- mapM (\(score, binder) ->
@@ -443,7 +443,7 @@ envToDeclarations typeEnv env =
 -- debugScorePair :: (Int, Binder) -> (Int, Binder)
 -- debugScorePair (s,b) = trace ("Scored binder: " ++ show b ++ ", score: " ++ show s) (s,b)
 
-sortDeclarationBinders :: Env -> [Binder] -> [(Int, Binder)]
+sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
   sortOn fst (map (scoreBinder typeEnv) binders)

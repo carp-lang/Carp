@@ -17,7 +17,7 @@ import ManageMemory
 --   1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
 --   2. Changes the name of symbols at call sites so they use the polymorphic name
 --   Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
-concretizeXObj :: Bool -> Env -> Env -> XObj -> Either TypeError (XObj, [XObj])
+concretizeXObj :: Bool -> TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
 concretizeXObj allowAmbiguity typeEnv rootEnv root =
   case runState (visit rootEnv root) [] of
     (Left err, _) -> Left err
@@ -143,7 +143,7 @@ typeFromPath env p =
 --   a concrete type (a type without any type variables)
 --   this function returns a new definition with the concrete
 --   types assigned, and a list of dependencies.
-concretizeDefinition :: Bool -> Env -> Env -> XObj -> Ty -> Either TypeError (XObj, [XObj])
+concretizeDefinition :: Bool -> TypeEnv -> Env -> XObj -> Ty -> Either TypeError (XObj, [XObj])
 concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
   let SymPath pathStrings name = getPath definition
       Just polyType = ty definition
@@ -177,7 +177,7 @@ allFunctionsWithNameAndSignature env functionName functionType =
     predicate = \(Just t) -> areUnifiable functionType t
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
-depsOfPolymorphicFunction :: Env -> Env -> String -> Ty -> [XObj]
+depsOfPolymorphicFunction :: TypeEnv -> Env -> String -> Ty -> [XObj]
 depsOfPolymorphicFunction typeEnv env functionName functionType =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] ->
@@ -194,28 +194,28 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
       []  
 
 -- | Helper for finding the 'delete' function for a type.
-depsForDeleteFunc :: Env -> Env -> Ty -> [XObj]
+depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
   if isManaged typeEnv t
   then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
   else []
 
 -- | Helper for finding the 'copy' function for a type.
-depsForCopyFunc :: Env -> Env -> Ty -> [XObj]
+depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged typeEnv t
   then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
   else []
 
 -- | Helper for finding the 'str' function for a type.
-depsForStrFunc :: Env -> Env -> Ty -> [XObj]
+depsForStrFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForStrFunc typeEnv env t =
   if isManaged typeEnv t
   then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [(RefTy t)] StringTy)
   else depsOfPolymorphicFunction typeEnv env "str" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
-typesStrFunctionType :: Env -> Ty -> Ty
+typesStrFunctionType :: TypeEnv -> Ty -> Ty
 typesStrFunctionType typeEnv memberType =
   if isManaged typeEnv memberType
   then (FuncTy [(RefTy memberType)] StringTy)
@@ -228,7 +228,7 @@ data FunctionFinderResult = FunctionFound String
                           deriving (Show)
 
 -- | Used for finding functions like 'delete' or 'copy' for members of a Deftype (or Array).
-findFunctionForMember :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
+findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
   | isManaged typeEnv memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
@@ -245,7 +245,7 @@ findFunctionForMember typeEnv env functionName functionType (memberName, memberT
   | otherwise = FunctionIgnored
 
 -- | TODO: should this be the default and 'findFunctionForMember' be the specific one
-findFunctionForMemberIncludePrimitives :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
+findFunctionForMemberIncludePrimitives :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
 findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (memberName, memberType) =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++

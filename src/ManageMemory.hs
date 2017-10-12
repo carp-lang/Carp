@@ -25,7 +25,7 @@ type MemState = Set.Set Deleter
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
 -- | the code emitter can access them and insert calls to destructors.
-manageMemory :: Env -> Env -> XObj -> Either TypeError XObj
+manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError XObj
 manageMemory typeEnv globalEnv root =
   let (finalObj, deleteThese) = runState (visit root) (Set.fromList [])
   in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
