@@ -25,6 +25,7 @@ data TypeError = SymbolMissingType XObj Env
                | NotAValidType XObj
                | FunctionsCantReturnRefTy XObj Ty
                | LetCantReturnRefTy XObj Ty
+               | UnresolvedMultiSymbol XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -80,6 +81,8 @@ instance Show TypeError where
     "Functions can't return references: '" ++ getName xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (LetCantReturnRefTy xobj t) =
     "Let-expressions can't return references: '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+  show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
+    "Can't disambiguate " ++ symName ++ " (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++ " at " ++ prettyInfoFromXObj xobj
     
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
