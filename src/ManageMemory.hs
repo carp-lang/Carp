@@ -46,9 +46,12 @@ manageMemory typeEnv globalEnv root =
         visitArray :: XObj -> State MemState (Either TypeError XObj)
         visitArray xobj@(XObj (Arr arr) _ _) =
           do mapM_ visit arr
-             mapM_ unmanage arr
-             _ <- manage xobj -- TODO: result is discarded here, is that OK?
-             return (Right xobj)
+             results <- mapM unmanage arr
+             case sequence results of
+               Left e -> return (Left e)
+               Right _ ->
+                 do _ <- manage xobj -- TODO: result is discarded here, is that OK?
+                    return (Right xobj)
 
         visitArray _ = error "Must visit array."
 
@@ -63,9 +66,13 @@ manageMemory typeEnv globalEnv root =
                    _ ->
                      do mapM_ manage argList
                         visitedBody <- visit body
-                        unmanage body
-                        return $ do okBody <- visitedBody
-                                    return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
+                        result <- unmanage body
+                        return $
+                          case result of
+                            Left e -> Left e
+                            Right _ ->
+                              do okBody <- visitedBody
+                                 return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
             letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
               let Just letReturnType = t
               in case letReturnType of
@@ -75,17 +82,20 @@ manageMemory typeEnv globalEnv root =
                   do preDeleters <- get
                      visitedBindings <- mapM visitLetBinding (pairwise bindings)
                      visitedBody <- visit body
-                     unmanage body
-                     postDeleters <- get
-                     let diff = postDeleters Set.\\ preDeleters
-                         newInfo = setDeletersOnInfo i diff
-                         survivors = (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
-                     put survivors
-                     --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
-                     manage xobj
-                     return $ do okBody <- visitedBody
-                                 okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
-                                 return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
+                     result <- unmanage body
+                     case result of
+                       Left e -> return (Left e)
+                       Right _ ->
+                         do postDeleters <- get
+                            let diff = postDeleters Set.\\ preDeleters
+                                newInfo = setDeletersOnInfo i diff
+                                survivors = (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
+                            put survivors
+                            --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
+                            manage xobj
+                            return $ do okBody <- visitedBody
+                                        okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
+                                        return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
             setbangExpr@(XObj SetBang _ _) : variable : value : [] ->
               do visitedValue <- visit value
                  unmanage value
@@ -106,9 +116,11 @@ manageMemory typeEnv globalEnv root =
                              return (XObj (Lst (addressExpr : okValue : [])) i t)
             theExpr@(XObj The _ _) : typeXObj : value : [] ->
               do visitedValue <- visit value
-                 transferOwnership value xobj
-                 return $ do okValue <- visitedValue
-                             return (XObj (Lst (theExpr : typeXObj : okValue : [])) i t)
+                 result <- transferOwnership value xobj
+                 return $ case result of
+                            Left e -> Left e
+                            Right _ -> do okValue <- visitedValue
+                                          return (XObj (Lst (theExpr : typeXObj : okValue : [])) i t)
             refExpr@(XObj Ref _ _) : value : [] ->
               do visitedValue <- visit value
                  case visitedValue of
@@ -120,9 +132,11 @@ manageMemory typeEnv globalEnv root =
                           Right () -> return $ Right (XObj (Lst (refExpr : visitedValue : [])) i t)
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM visit expressions
-                 transferOwnership (last expressions) xobj
-                 return $ do okExpressions <- sequence visitedExpressions
-                             return (XObj (Lst (doExpr : okExpressions)) i t)
+                 result <- transferOwnership (last expressions) xobj
+                 return $ case result of
+                            Left e -> Left e
+                            Right _ -> do okExpressions <- sequence visitedExpressions
+                                          return (XObj (Lst (doExpr : okExpressions)) i t)
             whileExpr@(XObj While _ _) : expr : body : [] ->
               do preDeleters <- get
                  visitedExpr <- visit expr
@@ -144,14 +158,18 @@ manageMemory typeEnv globalEnv root =
                  deleters <- get
                  
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
-                                                                      transferOwnership ifTrue xobj;
-                                                                      return v
+                                                                      result <- transferOwnership ifTrue xobj;
+                                                                      return $ case result of
+                                                                                 Left e -> Left e
+                                                                                 Right _ -> v
                                                                     })
                                                        deleters
                                                        
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
-                                                                      transferOwnership ifFalse xobj;
-                                                                      return v
+                                                                      result <- transferOwnership ifFalse xobj;
+                                                                      return $ case result of
+                                                                                 Left e -> Left e
+                                                                                 Right _ -> v
                                                                     })
                                                        deleters
 
@@ -185,17 +203,21 @@ manageMemory typeEnv globalEnv root =
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding (name, expr) =
           do visitedExpr <- visit expr
-             transferOwnership expr name
-             return $ do okExpr <- visitedExpr
-                         return (name, okExpr)
+             result <- transferOwnership expr name
+             return $ case result of
+                        Left e -> Left e
+                        Right _ -> do okExpr <- visitedExpr
+                                      return (name, okExpr)
 
         visitArg :: XObj -> State MemState (Either TypeError XObj)
         visitArg xobj@(XObj _ _ (Just t)) =
           if isManaged typeEnv t
           then do visitedXObj <- visit xobj
-                  unmanage xobj
-                  return $ do okXObj <- visitedXObj
-                              return okXObj
+                  result <- unmanage xobj
+                  case result of
+                    Left e  -> return (Left e)
+                    Right _ -> return $ do okXObj <- visitedXObj
+                                           return okXObj
           else do --(trace ("Ignoring arg " ++ show xobj ++ " because it's not managed."))
                     (visit xobj)
         visitArg xobj@(XObj _ _ _) =
@@ -227,19 +249,19 @@ manageMemory typeEnv globalEnv root =
                                                FakeDeleter   { deleterVariable = dv } -> dv == var)
                                       deleters
 
-        unmanage :: XObj -> State MemState ()
+        unmanage :: XObj -> State MemState (Either TypeError ())
         unmanage xobj =
           let Just t = ty xobj 
               Just i = info xobj
           in if isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
                      case deletersMatchingXObj xobj deleters of
-                       [] -> trace ("Trying to use '" ++ getName xobj ++ "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
-                                    " but it has already been given away.") (return ())
+                       [] -> return (Left (UsingUnownedValue xobj))
                        [one] -> let newDeleters = Set.delete one deleters
-                                in  put newDeleters
+                                in  do put newDeleters
+                                       return (Right ())
                        _ -> error "Too many variables with the same name in set."                                  
-             else return ()
+             else return (Right ())
 
         -- | Check that the value being referenced hasn't already been given away
         refCheck :: XObj -> State MemState (Either TypeError ())
@@ -254,10 +276,13 @@ manageMemory typeEnv globalEnv root =
                        _ -> error "Too many variables with the same name in set."                                  
              else return (return ())
 
-        transferOwnership :: XObj -> XObj -> State MemState ()
+        transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())
         transferOwnership from to =
-          do unmanage from
-             manage to
+          do result <- unmanage from
+             case result of
+               Left e -> return (Left e)
+               Right _ -> do manage to
+                             return (Right ())
              --trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") $ return ()
 
         varOfXObj :: XObj -> String

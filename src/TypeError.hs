@@ -27,6 +27,7 @@ data TypeError = SymbolMissingType XObj Env
                | FunctionsCantReturnRefTy XObj Ty
                | LetCantReturnRefTy XObj Ty
                | GettingReferenceToUnownedValue XObj
+               | UsingUnownedValue XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -87,9 +88,8 @@ instance Show TypeError where
   show (GettingReferenceToUnownedValue xobj) =
     "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
     prettyInfoFromXObj xobj
-  -- show (GettingReferenceToUnownedValue xobj) =
-  --   ("Trying to use '" ++ getName xobj ++ "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
-  --                                   " but it has already been given away.")
+  show (UsingUnownedValue xobj) =
+    "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
     
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
