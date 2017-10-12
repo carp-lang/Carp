@@ -332,7 +332,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                 return ctx
 
        BuildExe ->
-         let src = do decl <- envToDeclarations env typeEnv
+         let src = do decl <- envToDeclarations typeEnv env
                       typeDecl <- envToDeclarations typeEnv typeEnv
                       c <- envToC env
                       return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)

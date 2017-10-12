@@ -229,7 +229,7 @@ data FunctionFinderResult = FunctionFound String
 
 -- | Used for finding functions like 'delete' or 'copy' for members of a Deftype (or Array).
 findFunctionForMember :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
-findFunctionForMember env typeEnv functionName functionType (memberName, memberType)
+findFunctionForMember typeEnv env functionName functionType (memberName, memberType)
   | isManaged typeEnv memberType =
     case allFunctionsWithNameAndSignature env functionName functionType of
       [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
@@ -246,7 +246,7 @@ findFunctionForMember env typeEnv functionName functionType (memberName, memberT
 
 -- | TODO: should this be the default and 'findFunctionForMember' be the specific one
 findFunctionForMemberIncludePrimitives :: Env -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
-findFunctionForMemberIncludePrimitives env typeEnv functionName functionType (memberName, memberType) =
+findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (memberName, memberType) =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
                             memberName ++ "' of type " ++ show functionType)

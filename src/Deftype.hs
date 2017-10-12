@@ -202,7 +202,7 @@ memberStr typeEnv env (memberName, memberTy) =
   else let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
            maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
            strFuncType = (FuncTy [refOrNotRefType] StringTy)
-       in case nameOfPolymorphicFunction env typeEnv strFuncType "str" of
+       in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
             Just strFunctionPath ->
               unlines [("  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");")
                       , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
@@ -242,7 +242,7 @@ templateGetter member fixedMemberTy =
 -- | The template for setters of a deftype.
 templateSetter :: Env -> Env -> String -> Ty -> Template
 templateSetter typeEnv env memberName memberTy =
-  let callToDelete = memberDeletion env typeEnv (memberName, memberTy)
+  let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
   in
   Template
     (FuncTy [VarTy "p", VarTy "t"] (VarTy "p"))
@@ -276,7 +276,7 @@ templateDelete typeEnv env members =
    (FuncTy [(VarTy "p")] UnitTy)
    (const (toTemplate $ "void $NAME($p p)"))
    (const (toTemplate $ unlines [ "$DECL {"
-                                , (joinWith "\n" (map (memberDeletion env typeEnv) members)) 
+                                , (joinWith "\n" (map (memberDeletion typeEnv env) members)) 
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
@@ -284,8 +284,8 @@ templateDelete typeEnv env members =
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
 memberDeletion :: Env -> Env -> (String, Ty) -> String
-memberDeletion env typeEnv (memberName, memberType) =
-  case findFunctionForMember env typeEnv "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
+memberDeletion typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p." ++ memberName ++ ");"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
@@ -298,7 +298,7 @@ templateCopy typeEnv env members =
    (const (toTemplate $ "$p $NAME($p* pRef)"))
    (const (toTemplate $ unlines [ "$DECL {"
                                 , "    $p copy = *pRef;"
-                                , (joinWith "\n" (map (memberCopy env typeEnv) members))
+                                , (joinWith "\n" (map (memberCopy typeEnv env) members))
                                 , "    return copy;"
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . typesCopyFunctionType)
@@ -307,8 +307,8 @@ templateCopy typeEnv env members =
 -- | Generate the C code for copying the member of a deftype.
 -- | TODO: Should return an Either since this can fail!
 memberCopy :: Env -> Env -> (String, Ty) -> String
-memberCopy env typeEnv (memberName, memberType) =
-  case findFunctionForMember env typeEnv "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
+memberCopy typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName ->
       "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
     FunctionNotFound msg -> error msg

@@ -15,7 +15,7 @@ import Debug.Trace
 -- | TODO: Environments are passed in different order here!!!
 
 nameOfPolymorphicFunction :: Env -> Env -> Ty -> String -> Maybe SymPath
-nameOfPolymorphicFunction env typeEnv functionType functionName =
+nameOfPolymorphicFunction typeEnv env functionType functionName =
   let foundBinders = multiLookupALL functionName env
   in case filter ((\(Just t') -> areUnifiable functionType t') . ty . binderXObj . snd) foundBinders of
        [] -> Nothing

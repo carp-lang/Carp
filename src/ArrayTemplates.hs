@@ -74,7 +74,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
         (const (toTemplate "Array $NAME($(Fn [a] Bool) predicate, Array a)"))
         (\(FuncTy [(FuncTy [insideTy] BoolTy), _] _) ->
            (toTemplate $ unlines $
-            let deleter = insideArrayDeletion env typeEnv insideTy
+            let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
@@ -191,7 +191,7 @@ templateReplicate = defineTypeParameterizedTemplate templateCreator path t
                 let StructTy _ [insideType] = arrayType
                     copierType = (FuncTy [(RefTy insideType)] insideType)
                     copierPath = if isManaged env insideType -- TODO: also check if it's an external function
-                                 then case nameOfPolymorphicFunction env typeEnv copierType "copy" of
+                                 then case nameOfPolymorphicFunction typeEnv env copierType "copy" of
                                         Just p -> Just p
                                         Nothing -> error ("Can't find copy function for array type: " ++ show insideType)
                                  else Nothing
@@ -301,7 +301,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
              (const (toTemplate "void $NAME (Array a)"))
              (\(FuncTy [arrayType] UnitTy) ->
                 [TokDecl, TokC "{\n"] ++
-                (deleteTy env typeEnv arrayType) ++
+                (deleteTy typeEnv env arrayType) ++
                 [TokC "}\n"])
              (\(FuncTy [arrayType@(StructTy "Array" [insideType])] UnitTy) ->
                 defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
@@ -309,17 +309,17 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
         t = (FuncTy [(StructTy "Array" [VarTy "a"])] UnitTy)
         
 deleteTy :: Env -> Env -> Ty -> [Token]
-deleteTy env typeEnv (StructTy "Array" [innerType]) =
+deleteTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
-  , TokC $ "    " ++ insideArrayDeletion env typeEnv innerType
+  , TokC $ "    " ++ insideArrayDeletion typeEnv env innerType
   , TokC   "    }\n"
   , TokC   "    CARP_FREE(a.data);\n"
   ]
 deleteTy _ _ _ = []
 
 insideArrayDeletion :: Env -> Env -> Ty -> String
-insideArrayDeletion env typeEnv t =
-  case findFunctionForMember env typeEnv "delete" (typesDeleterFunctionType t) ("Inside array.", t) of
+insideArrayDeletion typeEnv env t =
+  case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
     FunctionNotFound msg -> error msg
@@ -337,7 +337,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokC "    Array copy;\n"] ++
                 [TokC "    copy.len = a->len;\n"] ++
                 [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a"), TokC ") * a->len);\n"] ++
-                (copyTy env typeEnv arrayType) ++
+                (copyTy typeEnv env arrayType) ++
                 [TokC "    return copy;\n"] ++
                 [TokC "}\n"])
              (\case
@@ -351,17 +351,17 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
         t = (FuncTy [(RefTy (StructTy "Array" [VarTy "a"]))] (StructTy "Array" [VarTy "a"]))
         
 copyTy :: Env -> Env -> Ty -> [Token]
-copyTy env typeEnv (StructTy "Array" [innerType]) =
+copyTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
-  , TokC $ "    " ++ insideArrayCopying env typeEnv innerType
+  , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
   , TokC   "    }\n"
   ]
 copyTy _ _ _ = []
 
 -- | The "memberCopy" and "memberDeletion" functions in Deftype are very similar!
 insideArrayCopying :: Env -> Env -> Ty -> String
-insideArrayCopying env typeEnv t =
-  case findFunctionForMember env typeEnv "copy" (typesCopyFunctionType t) ("Inside array.", t) of
+insideArrayCopying typeEnv env t =
+  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ functionFullName ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
     FunctionNotFound msg -> error msg
@@ -376,7 +376,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
              (const (toTemplate "string $NAME (Array* a)"))
              (\(FuncTy [(RefTy arrayType)] StringTy) ->
                 [TokDecl, TokC "{\n"] ++
-                (strTy env typeEnv arrayType) ++
+                (strTy typeEnv env arrayType) ++
                 [TokC "}\n"])
              (\(FuncTy [(RefTy arrayType@(StructTy "Array" [insideType]))] StringTy) ->
                 let deps = depsForStrFunc typeEnv env insideType
@@ -386,7 +386,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
 
 -- | TODO: move this into the templateStrArray function?
 strTy :: Env -> Env -> Ty -> [Token]
-strTy env typeEnv (StructTy "Array" [innerType]) =
+strTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   ""
   , TokC   "  string buffer = CARP_MALLOC(1024);\n"
   , TokC   "  string bufferPtr = buffer;\n"
@@ -396,7 +396,7 @@ strTy env typeEnv (StructTy "Array" [innerType]) =
   , TokC   "  bufferPtr += 1;\n"
   , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
-  , TokC $ "  " ++ insideArrayStr env typeEnv innerType
+  , TokC $ "  " ++ insideArrayStr typeEnv env innerType
   , TokC   "  }\n"
   , TokC   "\n"
   , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
@@ -406,8 +406,8 @@ strTy env typeEnv (StructTy "Array" [innerType]) =
 strTy _ _ _ = []
 
 insideArrayStr :: Env -> Env -> Ty -> String
-insideArrayStr env typeEnv t =
-  case findFunctionForMemberIncludePrimitives env typeEnv "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+insideArrayStr typeEnv env t =
+  case findFunctionForMemberIncludePrimitives typeEnv env "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"

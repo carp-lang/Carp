@@ -420,7 +420,7 @@ binderToDeclaration :: Env -> Binder -> Either ToCError String
 binderToDeclaration typeEnv binder =
   let xobj = binderXObj binder
   in  case xobj of
-        XObj (Mod env) _ _ -> envToDeclarations env typeEnv
+        XObj (Mod env) _ _ -> envToDeclarations typeEnv env
         _ -> case ty xobj of
                Just t -> if typeIsGeneric t then Right "" else Right (toDeclaration xobj ++ "") 
                Nothing -> Left (BinderIsMissingType binder)
@@ -431,7 +431,7 @@ envToC env = let binders = map snd (Map.toList (envBindings env))
                     return (concat okCodes)
 
 envToDeclarations :: Env -> Env -> Either ToCError String
-envToDeclarations env typeEnv =
+envToDeclarations typeEnv env =
   let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
   in  do okDecls <- mapM (\(score, binder) ->
                             -- | Uncomment this line to emit the score of each binding:

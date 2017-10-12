@@ -264,6 +264,11 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envMode :: EnvMode
                } deriving (Show, Eq)
 
+newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
+
+instance Show TypeEnv where
+  show (TypeEnv env) = "(TypeEnv " ++ show env ++ ")"
+
 safeEnvModuleName :: Env -> String
 safeEnvModuleName env =
   case envModuleName env of
