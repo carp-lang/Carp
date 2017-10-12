@@ -29,3 +29,4 @@
 * Refactorings at the REPL
 * Hide instances of templates/generic functions when printing the environment (by default)
 * Warnings about giving away values should be compiler errors and not Haskell trace:s
+* Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
