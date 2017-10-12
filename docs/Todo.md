@@ -11,17 +11,17 @@
 ## Smaller Language Features ("niceties")
 
 ## Language Design Considerations
-* The type of the variable in a set!-form, i.e. (set! &x 10)
-* 'copy' should probably be a special form, just like 'ref'?
+* What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
+* The 'copy' function should probably be a special form, just like 'ref'?
 * Is some kind of interface/typeclass construct worthwhile?
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
+* How to handle heap allocated values? Box type with reference count?
 
 ## Code generation
 * LLVM backend
 * Emit #LINE macros in the generated C code
 
 ## Tooling
-* Allow checking type of a function from the REPL
 * Store line numbers with forms and present them in error messages
 * Proper error handling when defining invalid struct types (right now it crashes)
 * Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error

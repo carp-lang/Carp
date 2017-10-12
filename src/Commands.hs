@@ -226,8 +226,8 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                Just (_, Binder (XObj (Mod moduleEnv) _ _)) ->
                  do putStrLnWithColor White (prettyEnvironment moduleEnv)
                     return ctx
-               Just (_, Binder (XObj _ _ (Just t))) ->
-                 do putStrLnWithColor White (show t)
+               Just (_, Binder (XObj _ (Just i) (Just t))) ->
+                 do putStrLnWithColor White (show path ++ " of type " ++ show t ++ " is defined at " ++ prettyInfo i)
                     return ctx
                Just _ ->
                  do putStrLnWithColor Red "Type missing."
