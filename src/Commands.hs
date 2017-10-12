@@ -33,7 +33,7 @@ data ReplCommand = Define XObj
                  | RegisterType String
                  | AddCFlag String
                  | AddLibraryFlag String
-                 | DefineModule String [XObj]
+                 | DefineModule String [XObj] (Maybe Info)
                  | DefineType XObj [XObj]
                  | DefineMacro String XObj XObj
                  | DefineDynamic String XObj XObj
@@ -78,10 +78,10 @@ objToCommand ctx xobj =
       Lst lst -> case lst of
                    XObj Defn _ _ : _ : _ : _ : [] -> Define xobj
                    XObj Def _ _ : _ : _ : [] -> Define xobj
-                   XObj (Sym (SymPath _ "module")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions
-                   XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions
+                   XObj (Sym (SymPath _ "module")) i _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
+                     DefineModule name innerExpressions i
+                   XObj (Sym (SymPath _ "defmodule")) i _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
+                     DefineModule name innerExpressions i
                    XObj (Sym (SymPath _ "defmacro")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
                      DefineMacro name params body
                    XObj (Sym (SymPath _ "defdynamic")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
@@ -161,7 +161,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                       Left err -> executeCommand ctx (ReplTypeError (show err))
                       Right annXObjs -> foldM define ctx annXObjs
 
-       DefineModule moduleName innerExpressions ->
+       DefineModule moduleName innerExpressions moduleInfoFromSourceLocation ->
          case lookupInEnv (SymPath pathStrings moduleName) env of
            Just (_, Binder (XObj (Mod _) _ _)) ->
              do ctxAfterModuleAdditions <- foldM folder (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput) innerExpressions
@@ -172,7 +172,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
            Nothing ->
              do let parentEnv = getEnv env pathStrings
                     innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
-                    newModule = XObj (Mod innerEnv) Nothing (Just ModuleTy)
+                    newModule = XObj (Mod innerEnv) moduleInfoFromSourceLocation (Just ModuleTy)
                     globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
                 ctxAfterModuleDef <- foldM folder (Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput) innerExpressions
                 return (popModulePath ctxAfterModuleDef)
@@ -221,39 +221,47 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
 
        GetInfo xobj ->
          case xobj of
-           XObj (Sym path) _ _ ->
+           XObj (Sym path@(SymPath _ name)) _ _ ->
              case lookupInEnv path env of
-               Just (_, Binder (XObj (Mod moduleEnv) _ _)) ->
-                 do putStrLnWithColor White (prettyEnvironment moduleEnv)
+               Just (_, binder@(Binder (XObj _ (Just i) _))) ->
+                 do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
                     return ctx
-               Just (_, Binder (XObj _ (Just i) (Just t))) ->
-                 do putStrLnWithColor White (show path ++ " of type " ++ show t ++ " is defined at " ++ prettyInfo i)
-                    return ctx
-               Just _ ->
-                 do putStrLnWithColor Red "Type missing."
+               Just (_, binder) ->
+                 do putStrLnWithColor White (show binder)
                     return ctx
                Nothing ->
-                 do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                    return ctx
+                 case multiLookupALL name env of
+                   [] ->
+                     do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                        return ctx
+                   binders ->
+                     do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                                 case i of
+                                   Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
+                                   Nothing -> putStrLnWithColor White (show binder))
+                          binders
+                        return ctx
            _ ->
              do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
                 return ctx
                 
        Type xobj ->
          case xobj of
-           XObj (Sym path) _ _ ->
+           XObj (Sym path@(SymPath _ name)) _ _ ->
              case lookupInEnv path env of               
-               Just (_, Binder (XObj _ _ (Just t))) ->
-                 do putStrLnWithColor White (show t)
-                    return ctx
-               Just _ ->
-                 do putStrLnWithColor Red "Type missing."
+               Just (_, binder) ->
+                 do putStrLnWithColor White (show binder)
                     return ctx
                Nothing ->
-                 do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                    return ctx
+                 case multiLookupALL name env of
+                   [] ->
+                     do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                        return ctx
+                   binders ->
+                     do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
+                        return ctx
            _ ->
-             do putStrLnWithColor Red ("Can't take the type of non-symbol: " ++ pretty xobj)
+             do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
                 return ctx
 
        Register name xobj ->

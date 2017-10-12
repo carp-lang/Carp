@@ -35,8 +35,8 @@ instance Show ToCError where
   show CannotEmitModKeyword = "Can't emit code for Mod."
   show (BinderIsMissingType b) = "Binder is missing type: " ++ show b
   show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
-    "Found ambiguous symbol " ++ symName ++
-    " (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
+    "Found ambiguous symbol '" ++ symName ++
+    "' (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
     " at " ++ prettyInfoFromXObj xobj
 
 data EmitterState = EmitterState { emitterSrc :: String }

@@ -111,6 +111,7 @@ getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path) _ _ : _)) _ _) = 
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj External _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Sym path) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -146,7 +147,9 @@ pretty root = visit 0 root
             While -> "while"
             Do -> "do"
             Let -> "let"
-            Mod _ -> "module"
+            Mod env -> case envModuleName env of
+                         Just name -> name
+                         Nothing -> "module"
             Typ -> "deftype"
             Deftemplate _ -> "deftemplate"
             Instantiate _ -> "instantiate"
