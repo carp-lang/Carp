@@ -15,6 +15,6 @@
   (let [stack0 (range 1 5 1)
         stack1 (push-back stack0 6)]
     (do
-      ;;(print-stack &stack0)
+      (print-stack &stack0)
       (print-stack &stack1)
       )))

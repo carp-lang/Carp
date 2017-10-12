@@ -111,9 +111,13 @@ manageMemory typeEnv globalEnv root =
                              return (XObj (Lst (theExpr : typeXObj : okValue : [])) i t)
             refExpr@(XObj Ref _ _) : value : [] ->
               do visitedValue <- visit value
-                 refCheck value
-                 return $ do okValue <- visitedValue
-                             return (XObj (Lst (refExpr : okValue : [])) i t)
+                 case visitedValue of
+                   Left e -> return (Left e)
+                   Right visitedValue ->
+                     do checkResult <- refCheck visitedValue
+                        case checkResult of
+                          Left e -> return (Left e)
+                          Right () -> return $ Right (XObj (Lst (refExpr : visitedValue : [])) i t)
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM visit expressions
                  transferOwnership (last expressions) xobj
@@ -238,19 +242,17 @@ manageMemory typeEnv globalEnv root =
              else return ()
 
         -- | Check that the value being referenced hasn't already been given away
-        refCheck :: XObj -> State MemState ()
+        refCheck :: XObj -> State MemState (Either TypeError ())
         refCheck xobj =
           let Just i = info xobj
               Just t = ty xobj
           in if isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
                      case deletersMatchingXObj xobj deleters of
-                       [] -> trace ("Trying to get reference from '" ++ getName xobj ++
-                                    "' (expression " ++ freshVar i ++ ") at " ++ prettyInfoFromXObj xobj ++
-                                    " but it has already been given away.") (return ())
-                       [_] -> return ()
+                       [] ->  return (Left (GettingReferenceToUnownedValue xobj))
+                       [_] -> return (return ())
                        _ -> error "Too many variables with the same name in set."                                  
-             else return ()
+             else return (return ())
 
         transferOwnership :: XObj -> XObj -> State MemState ()
         transferOwnership from to =
