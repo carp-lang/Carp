@@ -10,6 +10,7 @@
 
 ## Smaller Language Features ("niceties")
 
+
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
 * The 'copy' function should probably be a special form, just like 'ref'?
@@ -22,8 +23,9 @@
 * Emit #LINE macros in the generated C code
 
 ## Tooling
-* Store line numbers with forms and present them in error messages
 * Proper error handling when defining invalid struct types (right now it crashes)
 * Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
 * Built in REPL history (without using rlwrap)
 * Preserve whitespace to allow saving forms back to disk
+* Refactorings at the REPL
+* Hide instances of templates/generic functions when printing the environment (by default)

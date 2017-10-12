@@ -8,5 +8,3 @@
 (use Char)
 (use Bool)
 
-(defn f []
-  (Int.+ 231))

@@ -144,9 +144,9 @@ char* String_cstr(string *s) {
 }
 
 string String_str(string *s) {
-    int n = strlen(*s) + 3;
+    int n = strlen(*s) + 4;
     string buffer = malloc(n);
-    snprintf(buffer, n, "\"%s\"", *s);
+    snprintf(buffer, n, "@\"%s\"", *s);
     return buffer;
 }
 
