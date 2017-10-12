@@ -10,17 +10,15 @@
 
 (defn main []
   (let [a [0 1 2 3 4 5 6 7 8 9]
-        ;;b (Array.replicate 5 (ref "hej"))
-        ]
+        b (Array.replicate 5 "Hi")]
     (do
       (println (ref (Int.str (Int.copy (nth (ref a) 5)))))
       (println (ref (str &[10 11 12 13 14 15])))
-      (println (ref (str (ref (map excl (replicate 5 "Hi"))))))
+      (println (ref (str (ref (map excl b)))))
       (println (ref (Array.str (ref [@"hej" @"san" @"!"]))))
       (println (ref (str (nth (ref (nested)) 0))))
       (println (ref (str (nth (ref (nested)) 1))))
-      (println (ref (str (nth (ref (nested)) 2))))
-      )))
+      (println (ref (str (nth (ref (nested)) 2)))))))
 
 (build)
 (run)
