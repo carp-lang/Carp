@@ -8,11 +8,11 @@
 
 ---
 # Motivation
-## (why make a language, apart from that it's fun)
+## (why make a language, apart from the fun)
 
-* Lisp is fun (and has the best syntax!)
-* I make games
-* Most lisps are garbage collected, won't work well for games
+* Lisp is great
+* Most lisps are garbage collected, won't work well for games, etc.
+* But I want to make games!
 
 ---
 # Preliminary use cases
