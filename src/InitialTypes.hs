@@ -137,8 +137,9 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
              return $ do okBody <- visitedBody
                          okArgs <- sequence visitedArgs
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
-                 
-        XObj Defn _ _ : _ -> return (Left (InvalidObj Defn xobj))
+
+        XObj Defn _ _ : (XObj (Sym _) _ _) : (XObj (Arr _) _ _) : [] -> return (Left (NoFormsInBody xobj))
+        XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
 
         -- Def
         def@(XObj Def _ _) : nameSymbol : expression : [] ->

@@ -14,7 +14,7 @@ import Debug.Trace
 templateCopyingMap :: (String, Binder)
 templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
   where fTy = FuncTy [VarTy "a"] (VarTy "b")
-        aTy = StructTy "Array" [VarTy "a"]
+        aTy = RefTy (StructTy "Array" [VarTy "a"])
         bTy = StructTy "Array" [VarTy "b"]
         path = SymPath ["Array"] "transform"
         t = FuncTy [fTy, aTy] bTy
@@ -22,23 +22,27 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
           \typeEnv env -> 
             Template
             t
-            (const (toTemplate "Array $NAME($(Fn [a] b) f, Array a)"))
-            (\(FuncTy [(FuncTy [_] _), _] _) ->
+            (const (toTemplate "Array $NAME($(Fn [a] b) f, Array* a)"))
+            (\(FuncTy [(FuncTy [_] outputTy), _] _) ->
                (toTemplate $ unlines $                
                   [ "$DECL { "
                   , "    Array b;"
-                  , "    b.len = a.len;"
-                  , "    b.data = CARP_MALLOC(sizeof($b) * a.len);"
-                  , "    for(int i = 0; i < a.len; ++i) {"
-                  , "        (($b*)b.data)[i] = f((($a*)a.data)[i]); "
+                  , "    b.len = a->len;"
+                  , "    b.data = CARP_MALLOC(sizeof($b) * a->len);"
+                  , "    for(int i = 0; i < a->len; ++i) {"
+                  , if outputTy == UnitTy
+                    then "        f((($a*)a->data)[i]); "
+                    else "        (($b*)b.data)[i] = f((($a*)a->data)[i]);"
                   , "    }"
-                  , "    CARP_FREE(a.data);"
                   , "    return b;"
                   , "}"
                   ]))
-            (\(FuncTy [ft@(FuncTy [insideTypeA] _), arrayTypeA] arrayTypeB) ->
-               [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayTypeA, defineArrayTypeAlias arrayTypeB] ++
-                depsForDeleteFunc typeEnv env insideTypeA)
+            (\(FuncTy [ft@(FuncTy [_] _), (RefTy arrayTypeA)] arrayTypeB) ->
+               [defineFunctionTypeAlias ft,
+                defineArrayTypeAlias arrayTypeA,
+                defineArrayTypeAlias arrayTypeB] ++
+                depsForDeleteFunc typeEnv env arrayTypeA ++
+                depsForDeleteFunc typeEnv env arrayTypeB)
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)

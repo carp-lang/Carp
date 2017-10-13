@@ -116,7 +116,7 @@
 
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce + 0 (transform square (filter even? stuff)))]
+        after (reduce + 0 (transform square &(filter even? stuff)))]
     (println (refstr after))))
 
 (defn get-last-string [xs] ;; Should be generic preferably...

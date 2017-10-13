@@ -1,2 +1,9 @@
+(defn print-char [c]
+  (IO.println &(Char.str c)))
+
 (defn to-robber-lang [s]
-  )
+  (let [cs (String.chars s)]
+    (let [temp (Array.transform print-char &cs)] ())))
+
+(defn main []
+  (to-robber-lang "erik"))
