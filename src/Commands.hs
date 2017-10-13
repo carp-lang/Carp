@@ -70,7 +70,15 @@ consumeExpr (Context globalEnv typeEnv _ _ _) xobj =
     Right expanded -> 
       case annotate typeEnv globalEnv (setFullyQualifiedSymbols globalEnv expanded) of
         Left err -> ReplTypeError (show err)
-        Right annXObjs -> ListOfCommands (map (Print . strWithColor Green . toC) annXObjs)
+        Right annXObjs -> ListOfCommands (map printC annXObjs)
+
+printC :: XObj -> ReplCommand
+printC xobj =
+  case checkForUnresolvedSymbols xobj of
+    Left e ->
+      (Print . strWithColor Red) (show e ++ ", can't print resulting code.\n")
+    Right _ ->
+      (Print . strWithColor Green . toC) xobj
 
 objToCommand :: Context -> XObj -> ReplCommand
 objToCommand ctx xobj =
