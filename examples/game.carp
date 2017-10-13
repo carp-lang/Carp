@@ -59,7 +59,7 @@
                           img
                           (address (dimensions img))
                           (address (make-rect 100 100 300 300))
-                          (* 0.1 (fromInt (SDL_GetTicks)))
+                          (* 0.1 (from-int (SDL_GetTicks)))
                           (address (make-point 150 150))
                           SDL_FLIP_NONE))
       (SDL_RenderPresent rend)

@@ -174,11 +174,11 @@ int exmod__bleh(int x) {
 }
 
 // Double.toInt : Double -> Int
-int Double_toInt(double x) {
+int Double_to_MINUS_int(double x) {
     return (int)x;
 }
 
-double Double_fromInt(int x) {
+double Double_from_MINUS_int(int x) {
     return (double)x;
 }
 
@@ -196,7 +196,7 @@ string Double_str(double x) {
     return buffer;
 }
 
-int Float_toInt(double x) {
+int Float_to_MINUS_int(double x) {
     return (int)x;
 }
 

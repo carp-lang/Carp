@@ -4,5 +4,5 @@
   (register - (Fn [Float Float] Float))
   (register * (Fn [Float Float] Float))
   (register / (Fn [Float Float] Float))
-  (register toInt (Fn [Float] Int))
+  (register to-int (Fn [Float] Int))
   (register str (Fn [Float] String)))

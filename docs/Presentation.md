@@ -303,8 +303,45 @@ inc : (λ [Int] Int)
 ```
 
 ---
+# Inspecting modules at the REPL
+
+```
+鲮 (type Double)
+
+Double : Module = {
+    * : (λ [Double Double] Double)
+    + : (λ [Double Double] Double)
+    - : (λ [Double Double] Double)
+    / : (λ [Double Double] Double)
+    cos : (λ [Double] Double)
+    from-int : (λ [Int] Double)
+    sin : (λ [Double] Double)
+    str : (λ [Double] String)
+    to-int : (λ [Double] Int)
+    π : Double
+}
+```
+
+---
 # 4. Defining data types
 
+---
+# Structs
+
+```
+(deftype Point
+  [x Int
+   y Int])
+```
+
+---
+# [fit] Defining a struct will create a module with the same name
+
+```
+(deftype Point
+  [x Int
+   y Int])
+```
 
 ---
 # 5. Array processing

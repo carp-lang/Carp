@@ -18,7 +18,7 @@
     (inside (String.copy "Hello"))))
 
 (defn use-doubles []
-  (println (ref (str (Double.toInt (Double.+ 2.0 3.0))))))
+  (println (ref (str (Double.to-int (Double.+ 2.0 3.0))))))
 
 (deftype Person
     [name String
@@ -98,7 +98,7 @@
 
 (defn negative-numbers []
   (let [x -10.0 y -20.0f z -30]
-    (* (*(toInt x) (toInt y)) z)))
+    (* (* (to-int x) (to-int y)) z)))
 
 (defn square [x]
   (Int.* x x))
