@@ -341,10 +341,100 @@ Double : Module = {
 (deftype Point
   [x Int
    y Int])
+   
+Point : Module = {
+    init : (λ [Int Int] Point)
+    new : (λ [Int Int] (Ptr Point))
+    copy : (λ [(Ref Point)] Point)
+    delete : (λ [Point] ())
+    str : (λ [(Ref Point)] String)
+    x : (λ [(Ref Point)] Int)
+    y : (λ [(Ref Point)] Int)
+    set-x : (λ [Point Int] Point)
+    set-y : (λ [Point Int] Point)
+    update-x : (λ [Point (λ [Int] Int)] Point)
+    update-y : (λ [Point (λ [Int] Int)] Point)
+}
+```
+
+---
+# Allows structs to share member names
+
+```
+(deftype Vec2
+  [x Int
+   y Int])
+
+(deftype Vec3
+  [x Int
+   y Int
+   z Int])
+   
+(let [v (Vec2.init 11 35)]
+  (Vec2.x &v))
+
+(let [v (Vec3.init 300 400 500)]
+  (Vec3.set-y v 0))
 ```
 
 ---
 # 5. Array processing
 
+---
+# Creating arrays
+
+```
+[1 2 3 4 5]
+```
 
 ---
+# [fit] Arrays can also be generated using various functions
+
+```
+Array.range : (λ [t t t] (Array t))
+Array.repeat : (λ [Int (λ [] t)] (Array t))
+Array.replicate : (λ [Int (Ref t)] (Array t))
+```
+
+Yes, the 't' in 'range' is too general.
+
+---
+# Mapping functions over arrays is useful
+
+---
+# Transforming from one type to another
+
+Will allocate new memory and leave the old data as it was.
+
+```
+(let [xs [1 2 3 4 5]]
+  (transform Int.str &xs))
+  
+transform : (λ [(λ [a] b) (Ref (Array a))] (Array b)) ;; This type might be buggy!!!
+```
+
+---
+# When mapping from one type to itself, the copying is unnecessary
+
+```
+(let [xs [1 2 3 4 5]]
+  (map square xs))
+```
+
+Ownership of 'xs' is passed to the map function, which will mutate the array and return it.
+
+---
+# Behind the scenes
+
+---
+# Written in Haskell
+
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Haskell                         23            607            330           4350
+-------------------------------------------------------------------------------
+SUM:                            23            607            330           4350
+-------------------------------------------------------------------------------
+```

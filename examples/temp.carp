@@ -19,15 +19,11 @@
 ;;       (print-stack &stack1)
 ;;       )))
 
-(defmodule Goods
-  (defn cost [] (random-between 100 200))
-  (def amount 75600))
-
-(defn total-cost []
-  (* (Goods.cost) Goods.amount))
-
 (defn main []
-  (println (refstr (total-cost))))
-
-;; (defn main []
-;;   (println &Me.name))
+  (println
+   (ref
+    (Array.str
+     (ref
+      (let [xs [1 2 3 4 5]]
+        (transform Int.str &xs))
+      )))))

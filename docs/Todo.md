@@ -4,6 +4,8 @@
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Go over all the Array functions and make sure they are memory safe
 * Can't define globals of type String or String-ref.
+* Just entering '=' at the REPL leads ot strange type error.
+* The lambda sent to 'transform' should probably have type (λ [(Ref a)] b) to prevent it from touching the contents of the source array
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -13,6 +15,7 @@
 ## Smaller Language Features ("niceties")
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
+* Allow lambda ("λ") as an alias for Fn when defining types
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
