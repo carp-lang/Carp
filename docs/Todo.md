@@ -3,6 +3,7 @@
 ## Critical Bugs
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Go over all the Array functions and make sure they are memory safe
+* Can't define globals of type String or String-ref.
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -26,6 +27,7 @@
 * Emit #LINE macros in the generated C code
 
 ## Tooling
+* Enable printing of typed AST:s at the REPL to help debug unresolved type variables etc.
 * Proper error handling when defining invalid struct types (right now it crashes)
 * Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
 * Built in REPL history (without using rlwrap)

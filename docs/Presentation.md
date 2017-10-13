@@ -24,14 +24,23 @@
 ---
 # Main ideas of Carp
 
-* A simple ML-like type system
+* A basic static type system
 * Linear types, very similar to Rust
-* Clojure-like syntax + macros
-* An interactive environment where you can work efficiently using a REPL
+* Lisp (Clojure) syntax
+* An interactive environment
 * High performance functional programming
 
 ---
-# [fit] 鲮
+# Workflow
+
+* REPL = project
+* (load <file>) and (reload)
+* (build) and (run)
+* GHCI-style shortcuts, i.e. ":rbx"
+* A lispy kind of build system
+
+---
+# 鲮
 
 ---
 # Language basics
@@ -43,27 +52,27 @@
 5. Array processing
 
 ---
-# 1. Functions, values & types
+# [fit] 1. Functions, values & types
 
 ---
 # Defining things
 ```
-(defn tenfold [x] (* x 10))
+(defn circle-area [r] (* π (* r r))
 
 (defn id [x] x)
 
-(def pi 3.14)
+(def gravity 9.8)
 ```
 
 ---
 # Type inference
 
 ```
-(defn tenfold [x] (* x 10)) : (λ [Int] Int)
+(defn circle-area [r] (* π (* r r)) : (λ [Float] Float)
 
 (defn id [x] x) : (λ [a] a)
 
-(def pi 3.14) : Double
+(def gravity 9.8) : Double
 ```
 
 ---
@@ -184,15 +193,121 @@ invalid : (λ [] (Ref String))
 ```
 
 ---
-# [fit] Modules
+# Sometimes you need a copy
+
+The 'copy' functions take Ref:s and return non-Ref:s.
+
+```
+
+(defn name []
+  (copy "John McCarthy"))
+  
+  
+name : (λ [] String)
+String.copy : (λ [(Ref String)] String)
+```
+
+---
+# Syntactic sugar for 'copy' is '@'
+
+```
+(defn name []
+  @"John McCarthy")
+```
+
+---
+# 3. Modules
+
+---
+# Purpose
+- Allow sharing of names
+- Clarify which function or value that is used in the code
+
+---
+# Defining and using a module
+
+```
+(defmodule Goods
+  (defn cost [] (random-between 100 200))
+  (def amount 75600))
+
+(defn total-cost []
+  (* (Goods.cost) Goods.amount))
+```
+
+---
+# Not tied to files
+
+```
+;; stuff.carp
+
+(defmodule A
+  (defn f [] ...)
+  (defn g [] ...))
+  
+(defmodule B
+  (defn f [] ...)
+  (defn g [] ...)
+  (defn h [] ...))
+```
+
+---
+# Open to extension
+
+```
+(defmodule A
+  (defn f [] ...))
+  
+(defmodule A
+  (defn g [] ...))
+```
+
+---
+# [fit] To avoid qualifying the module name: 'use'
+
+```
+(use Int)
+
+(defn twice [x] (+ x x))
+
+twice : (λ [Int] Int)
+```
+
+---
+# Multiple modules can contain a function with the same name
+
+<!-- The type checker tries to figure out the correct one to use based on other types. -->
+
+```
+(use Int)
+(use Double)
+(use Float)
+
+(defn inc [x] (+ x 1))
+
+1 : Int
+inc : (λ [Int] Int)
+
+'+' resolves to 'Int.+'
+```
+
+---
+# Not a replacement for type classes
+
+```
+(use Int)
+(use Double)
+(use Float)
+
+(defn confused-twice [x] (+ x x))
+```
+
+---
+# 4. Defining data types
 
 
 ---
-# Defining data types
-
-
----
-# Array processing
+# 5. Array processing
 
 
 ---

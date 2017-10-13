@@ -8,13 +8,26 @@
 (use Char)
 (use Bool)
 
-(defn print-stack [s]
-  (println &(Array.str s)))
+;; (defn print-stack [s]
+;;   (println &(Array.str s)))
+
+;; (defn main []
+;;   (let [stack0 (range 1 5 1)
+;;         stack1 (push-back stack0 6)]
+;;     (do
+;;       (print-stack &stack0)
+;;       (print-stack &stack1)
+;;       )))
+
+(defmodule Goods
+  (defn cost [] (random-between 100 200))
+  (def amount 75600))
+
+(defn total-cost []
+  (* (Goods.cost) Goods.amount))
 
 (defn main []
-  (let [stack0 (range 1 5 1)
-        stack1 (push-back stack0 6)]
-    (do
-      (print-stack &stack0)
-      (print-stack &stack1)
-      )))
+  (println (refstr (total-cost))))
+
+;; (defn main []
+;;   (println &Me.name))

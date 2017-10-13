@@ -1,4 +1,5 @@
 (defmodule Double
+  (def π 3.1415926536)
   (register + (Fn [Double Double] Double))
   (register - (Fn [Double Double] Double))
   (register * (Fn [Double Double] Double))
