@@ -23,11 +23,10 @@
 ---
 # Main ideas of Carp
 
-* A basic static type system
-* Linear types, very similar to Rust
+* Static type system
+* No garbage collection (a la Rust)
 * Lisp (Clojure) syntax
-* An interactive environment
-* High performance functional programming
+* A helpful and interactive programming environment
 
 ---
 # Workflow
@@ -36,10 +35,11 @@
 * (load <file>) and (reload)
 * (build) and (run)
 * GHCI-style shortcuts, i.e. ":rbx"
-* A lispy kind of build system
+* A build system
 
 ---
-# 鲮
+# The prompt
+## 鲮
 
 ---
 # Language basics
@@ -377,6 +377,12 @@ Point : Module = {
 ```
 
 ---
+# Possible extensions to the type system
+
+* Tagged unions
+* Generic data types
+
+---
 # 5. Array processing
 
 ---
@@ -403,7 +409,7 @@ Yes, the 't' in 'range' is too general.
 ---
 # Transforming from one type to another
 
-Will allocate new memory and leave the old data as it was.
+Will allocate new memory and leave the old data as-is.
 
 ```
 (let [xs [1 2 3 4 5]]
