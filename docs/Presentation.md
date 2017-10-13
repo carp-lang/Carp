@@ -1,5 +1,4 @@
 # Introduction to Carp
-## A slide show presentation by Erik Svedäng
 
 ---
 # Slogan
