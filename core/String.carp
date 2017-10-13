@@ -7,4 +7,5 @@
   (register duplicate (Fn [(Ref String)] String))
   (register cstr (Fn [(Ref String)] (Ptr Char)))
   (register str (Fn [(Ref String)] String))
+  (register chars (Fn [(Ref String)] (Array Char)))
   )

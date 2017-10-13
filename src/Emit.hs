@@ -465,7 +465,7 @@ checkForUnresolvedSymbols root = visit root
   where
     visit :: XObj -> Either ToCError ()
     visit xobj =   
-      case ty (trace (show $ ty xobj) xobj) of
+      case ty xobj of
         Nothing -> visitXObj
         Just t -> if typeIsGeneric t
                   then Left (UnresolvedGenericType xobj)

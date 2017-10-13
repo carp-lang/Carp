@@ -32,6 +32,12 @@ void logged_free(void *ptr) {
 
 typedef char* string;
 
+// Array
+typedef struct {
+    int len;
+    void *data;
+} Array;
+
 bool not(bool b) {
     return !b;
 }
@@ -150,6 +156,13 @@ string String_str(string *s) {
     return buffer;
 }
 
+Array String_chars(string *s) {
+    Array chars;
+    chars.len = strlen(*s);
+    chars.data = strdup(*s);
+    return chars;
+}
+
 string Char_str(char c) {
     char *buffer = CARP_MALLOC(3);
     snprintf(buffer, 3, "\\%c", c);
@@ -201,12 +214,6 @@ string Bool_str(bool b) {
         return strdup("false");
     }
 }
-
-// Array
-typedef struct {
-    int len;
-    void *data;
-} Array;
 
 void System_exit(int code) {
     exit(code);
