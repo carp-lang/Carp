@@ -34,3 +34,10 @@
 (defmacro refstr [x]
   (list (quote ref)
         (list (quote str) x)))
+
+(defmacro foreach [f xs]
+  (list (quote let)
+        (array
+         (quote temp)
+         (list (quote Array.transform) f xs))
+        ()))
