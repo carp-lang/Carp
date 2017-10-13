@@ -17,9 +17,7 @@
                 (println "Good bye...")
                 (set! &play false))
               (do
-                (if (< num answer)
-                  (println "Too low.")
-                  (if (> num answer)
-                    (println "Too high.")
-                    (println "Correct!")))
+                (cond (< num answer) (println "Too low.")
+                      (> num answer) (println "Too high.")
+                      (println "Correct!"))
                 (print "Please guess again: "))))))))
