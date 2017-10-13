@@ -10,6 +10,7 @@
 * Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
+* Good string functions
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
