@@ -6,6 +6,7 @@
 * Can't define globals of type String or String-ref.
 * Just entering '=' at the REPL leads ot strange type error.
 * The lambda sent to 'transform' should probably have type (λ [(Ref a)] b) to prevent it from touching the contents of the source array
+* The 'foreach' macro should not make use of 'transform' (it allocates an array)
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)

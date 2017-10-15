@@ -23,7 +23,7 @@
 ---
 # Main ideas of Carp
 
-* Static type system
+* Static type system (subset of ML)
 * No garbage collection (a la Rust)
 * Lisp (Clojure) syntax
 * A helpful and interactive programming environment
