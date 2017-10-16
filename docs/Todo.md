@@ -17,6 +17,10 @@
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow lambda ("λ") as an alias for Fn when defining types
+* Quote
+* Quasiquote
+* Splicing in macros
+* Pattern matchin on arguments in macros?
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
