@@ -8,15 +8,14 @@
 ## Ugliness
 * Just entering '=' at the REPL leads ot strange type error.
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
+* Remove unnecessary Array-functions and rewrite them in Carp
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
 * Tagged unions (also known as "sum types" or "enums")
 * Lambdas (anonymous functions)
-* Remove unnecessary Array-functions and rewrite them in Carp
 
 ## Smaller Language Features ("niceties")
-* Allow lambda ("λ") as an alias for Fn when defining types
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))
@@ -32,6 +31,7 @@
 * How to handle heap allocated values? Box type with reference count?
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
 * Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
+* Macros in modules must be qualified right now, is that a good long-term solution?
 
 ## Code generation
 * LLVM backend

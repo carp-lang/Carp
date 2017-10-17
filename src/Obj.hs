@@ -530,7 +530,9 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref")) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref")) _ _ : _)) _ _) =
-  do Nothing  
+  do Nothing
+xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ")) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
+  xobjToTy (XObj (Lst [XObj (Sym (SymPath path "Fn")) fi ft, XObj (Arr argTys) ai at, retTy]) i t)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn")) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
