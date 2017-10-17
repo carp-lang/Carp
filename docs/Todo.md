@@ -14,6 +14,7 @@
 * Generic data types (apart from Array, which already is)
 * Tagged unions (also known as "sum types" or "enums")
 * Lambdas (anonymous functions)
+* Doc strings
 
 ## Smaller Language Features ("niceties")
 * Good string functions
