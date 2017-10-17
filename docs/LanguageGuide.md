@@ -9,6 +9,8 @@ When a value is returned or passed to another function the initial function will
 and any subsequent use will lead to a compiler error. To temporarily lend a value to another function
 (i.e. to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
 
+To learn more about the details of memory management, check out ![Memory.md](https://github.com/carp-lang/Carp/blob/master/docs/Memory.md)
+
 ### Comments
 ```
 ;; Comments begin with a semicolon and continue until the end of the line.
