@@ -97,33 +97,34 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++
             depsForDeleteFunc typeEnv env insideType)
 
-templateReduce :: (String, Binder)
-templateReduce = defineTypeParameterizedTemplate templateCreator path t
-  where
-    fTy = FuncTy [bTy, (RefTy aTy)] bTy
-    arrTy = StructTy "Array" [aTy]
-    aTy = VarTy "a"
-    bTy = VarTy "b"
-    path = SymPath ["Array"] "reduce"
-    t = (FuncTy [fTy, bTy, arrTy] bTy)
-    templateCreator = TemplateCreator $
-      \_ _ ->
-        Template
-        t
-        (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))
-        (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
-           (toTemplate $ unlines $
-               [ "$DECL { "
-               , "    $b b = initial_value;"
-               , "    for(int i = 0; i < a.len; ++i) {"
-               , "        b = f(b, &((($a*)a.data)[i]));"
-               , "    }"
-               , "    CARP_FREE(a.data); // Can't call Array_delete since it will destroy the items that have been handed off to f()."
-               , "    return b;"
-               , "}"
-               ]))
-        (\(FuncTy [ft@(FuncTy [_, _] _), _, arrayType] _) ->
-           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType])
+-- templateReduce :: (String, Binder)
+-- templateReduce = defineTypeParameterizedTemplate templateCreator path t
+--   where
+--     fTy = FuncTy [bTy, (RefTy aTy)] bTy
+--     arrTy = StructTy "Array" [aTy]
+--     aTy = VarTy "a"
+--     bTy = VarTy "b"
+--     path = SymPath ["Array"] "reduce"
+--     t = (FuncTy [fTy, bTy, arrTy] bTy)
+--     templateCreator = TemplateCreator $
+--       \typeEnv env ->
+--         Template
+--         t
+--         (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))        
+--         (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
+--            let deleter = insideArrayDeletion typeEnv env arrTy
+--            in (toTemplate $ unlines $
+--                 [ "$DECL { "
+--                 , "    $b b = initial_value;"
+--                 , "    for(int i = 0; i < a.len; ++i) {"
+--                 , "        b = f(b, &((($a*)a.data)[i]));"
+--                 , "    }"               
+--                 , "    " ++ deleter
+--                 , "    return b;"
+--                 , "}"
+--                 ]))
+--         (\(FuncTy [ft@(FuncTy [_, _] _), _, arrayType] _) ->
+--            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++ depsForDeleteFunc typeEnv env arrTy)
 
 templatePushBack :: (String, Binder)
 templatePushBack = 

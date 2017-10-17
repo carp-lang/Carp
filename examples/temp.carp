@@ -8,22 +8,14 @@
 (use Char)
 (use Bool)
 
-;; (defn print-stack [s]
-;;   (println &(Array.str s)))
+(defn l [a b]
+  (String.append @a @b))
 
-;; (defn main []
-;;   (let [stack0 (range 1 5 1)
-;;         stack1 (push-back stack0 6)]
-;;     (do
-;;       (print-stack &stack0)
-;;       (print-stack &stack1)
-;;       )))
+(defn f []
+  (let [strings [@"hej" @"san"]]
+    (println (refstr &(reduce l @"START" &strings)))))
 
 (defn main []
-  (println
-   (ref
-    (Array.str
-     (ref
-      (let [xs [1 2 3 4 5]]
-        (transform Int.str &xs))
-      )))))
+  ;;(f)
+  (while true (f))
+  )

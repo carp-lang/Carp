@@ -44,7 +44,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateCopyingMap
                                 , templateEMap
                                 , templateFilter
-                                , templateReduce
+                                --, templateReduce
                                 , templateRange
                                 , templateRaw
                                 , templateAset
@@ -76,7 +76,8 @@ startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
 
 preludeModules :: String -> [String]
-preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Int"
+preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
+                                                                         , "Int"
                                                                          , "Double"
                                                                          , "Float"
                                                                          , "Array"
@@ -85,7 +86,6 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Int"
                                                                          , "Bool"
                                                                          , "IO"
                                                                          , "System"
-                                                                         , "Macros"
                                                                          ]
 
 main :: IO ()

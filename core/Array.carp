@@ -3,6 +3,13 @@
   (defn sum [xs]
     123456)
 
+  (defn reduce [f x xs]
+    (let [total x]
+      (do
+        (for [i 0 (count xs)]
+          (set! &total (f &total (nth xs i))))
+        total)))
+
   )
 
 ;; Defined internally in the compiler
