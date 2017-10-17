@@ -16,7 +16,7 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
   where fTy = FuncTy [VarTy "a"] (VarTy "b")
         aTy = RefTy (StructTy "Array" [VarTy "a"])
         bTy = StructTy "Array" [VarTy "b"]
-        path = SymPath ["Array"] "transform"
+        path = SymPath ["Array"] "copy-map"
         t = FuncTy [fTy, aTy] bTy
         templateCreator = TemplateCreator $
           \typeEnv env -> 
@@ -51,7 +51,7 @@ templateEMap =
       aTy = StructTy "Array" [VarTy "a"]
       bTy = StructTy "Array" [VarTy "a"]
   in  defineTemplate
-      (SymPath ["Array"] "map")
+      (SymPath ["Array"] "endo-map")
       (FuncTy [fTy, aTy] bTy)
       (toTemplate "Array $NAME($(Fn [a] a) f, Array a)")
       (toTemplate $ unlines

@@ -3,7 +3,7 @@
 (use Array)
 
 (defmodule ArrayExtension
-  (defn fmap [f a] (Array.map f a))
+  (defn fmap [f a] (Array.endo-map f a))
   )
 
 (deftype Box [x Int])

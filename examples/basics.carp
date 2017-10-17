@@ -105,7 +105,7 @@
 
 (defn endofunctor-mapping []
   (let [stuff [1 2 3 4 5]
-        after (map square stuff)]
+        after (endo-map square stuff)]
     (println (refstr &after))))
 
 (defn square [x]
@@ -119,7 +119,7 @@
 
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce add-with-refs 0 &(transform square &(filter even? stuff)))]
+        after (reduce add-with-refs 0 &(copy-map square &(filter even? stuff)))]
     (do
       (print "ANSWER: ")
       (println (refstr after)))))
@@ -171,7 +171,7 @@
       (heap-allocations)
       (println (ref (str (refer-up))))
       (println (ref (str (ref [10 20 30 40 50]))))
-      ;;(println (ref (str (ref (map Thing.val [(Thing.init 100) (Thing.init 200)])))))
+      ;;(println (ref (str (ref (endo-map Thing.val [(Thing.init 100) (Thing.init 200)])))))
       (println (ref (str (Int.mod 30 7))))
       (set-stuff-in-array)
       (more-array)
@@ -187,7 +187,7 @@
       (map-filter-reduce-stuff)
       (print-last-string)
       (let [stuff (replicate 3 "Yo")]
-        (println &(Array.str &(map exclaim stuff))))
+        (println &(Array.str &(endo-map exclaim stuff))))
       (print-structs)
       (turn-any-array-into-string)
       (convert-struct-with-array-member-to-string)

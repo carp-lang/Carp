@@ -14,7 +14,7 @@
     (do
       (println (ref (Int.str (Int.copy (nth (ref a) 5)))))
       (println (ref (str &(range 10 15 1))))
-      (println (ref (str (ref (map excl b)))))
+      (println (ref (str (ref (endo-map excl b)))))
       (println (ref (Array.str (ref [@"hej" @"san" @"!"]))))
       (println (ref (str (nth (ref (nested)) 0))))
       (println (ref (str (nth (ref (nested)) 1))))
