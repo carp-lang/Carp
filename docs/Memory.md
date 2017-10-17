@@ -1,68 +1,34 @@
 # Memory Management - a closer look
 
-A simple piece of code:
+The goals of the memory management system in Carp are the following:
 
-```clojure
-(use String)
-(use IO)
+* Predictable
+* Efficient
+* Safe
 
-(defn say-hi [text]
-  (while true
-    (if (< (count text) 10)
-      (println &"Too short!")
-      (println text))))
+This is achieved through a linear type system where memory is owned by the function or let-scope that allocated it. When the scope is exited the memory is deleted, unless it was returned to it's outer scope or handed off to another function (passed as an argument). The other thing that can be done is temporarily lending out some piece of memory to another function using a ref:
+
+```
+(let [s (make-string)]
+  (println &s))
 ```
 
-This compiles to the following C program:
-```C
-void say_MINUS_hi(string* text) {
-  bool _55 = true;
-  while (_55) {
-    int _62 = String_count(text);
-    bool _60 = Int__LT_(_62, 10);
-    if (_60) {
-      string _69 = strdup("Too short!");
-      string* _68 = &_69; // ref
-      IO_println(_68);
-    } else {
-      IO_println(text);
-    }
-    _55 = true;
-  }
-}
+In the example above s is of type String and it's contents are temporarily borrowed by 'println'. When the let-scope ends Carp will make sure that a call to (String.delete s) is inserted at the correct position. To avoid 's' being deleted, the let-expression could return it:
+
+```
+(let [s (make-string)]
+  (do (println &s)
+      s))
 ```
 
-If-statements are kind of tricky in regards to memory management:
-```clojure
-(defn say-what [text]
-  (let [manage-me (copy text)]
-    (if (< (count text) 10)
-      (copy "Too short")
-      manage-me)))
-```
+## Rule of thumb
 
-The 'manage-me' variable is the return value in the second branch, but should get freed if "Too short" is returned.
-The output is a somewhat noisy C program:
-```C
-string say_MINUS_what(string text) {
-    string _78;
-    string* _84 = &text; // ref
-    int _82 = String_count(_84);
-    bool _80 = Int__LT_(_82, 10);
-    if (_80) {
-        string _90 = strdup("Too short");
-        string* _89 = &_90; // ref
-        string _87 = String_copy(_89);
-        String_delete(text);
-        _78 = _87;
-    } else {
-        _78 = text;
-    }
-    return _78;
-}
-```
+To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the function (right now the easiest way to do that is with the ```(env)``` command). If the value is a non-referenced struct type like String, Vector3, or similar, it means that the memory ownership gets handed over. If it's a reference signature (i.e. ```(Ref String)```), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's often correct to send your data structures to C as refs or pointers (using ```(address <variable>)```), keeping the memory management inside the Carp section of the program.
 
-The most important thing in Carp is to work with arrays of data. Here's an example of how that is supposed to look:
+
+## Working with arrays
+
+The most important thing in Carp is to process arrays of data. Here's an example of how that is supposed to look:
 
 ```clojure
 (defn weird-sum []
@@ -74,4 +40,79 @@ All the array transforming functions 'endo-map' and 'filter' use C-style mutatio
 
 The restriction of 'endo-map' is that it must return an array of the same type as the input. If that's not possible, use 'copy-map' instead. It works like the normal 'map' found in other functional languages. The 'copy-' prefix is there to remind you of the fact that the function is allocating memory.
 
-To know whether a function takes over the responsibility of freeing some memory (through its args) or generates some new memory that the caller has to handle (through the return value), just look at the type of the function (right now the easiest way to do that is with the ```(env)``` command). If the value is a simple type like String, Vector3, or similar, it means that the memory ownership gets handed over. If it's a reference signature (i.e. ```(Ref String)```), the memory is just temporarily lended out and someone else will make sure it gets deleted. When interoping with existing C code it's often correct to send your data structures to C as refs or pointers (using ```(address <variable>)```), keeping the memory management inside the Carp section of the program.
+
+## Under the hood
+
+A simple piece of code:
+
+```clojure
+(use Int)
+(use String)
+(use IO)
+
+(defn say-hi [text]
+  (while true
+    (if (< (count &text) 10)
+      (println "Too short!")
+      (println &text))))
+```
+
+This compiles to the following C program:
+```C
+void say_MINUS_hi(string text) {
+    bool _5 = true;
+    while (_5) {
+        string* _14 = &text; // ref
+        int _12 = String_count(_14);
+        bool _10 = Int__LT_(_12, 10);
+        if (_10) {
+            string _19 = "Too short!";
+            string *_19_ref = &_19;
+            IO_println(_19_ref);
+        } else {
+            string* _22 = &text; // ref
+            IO_println(_22);
+        }
+        _5 = true;
+    }
+    String_delete(text);
+}
+```
+
+If-statements are kind of tricky in regards to memory management:
+```clojure
+(defn say-what [text]
+  (let [manage (copy &text)]
+    (if (< (count &text) 10)
+      (copy "Too short")
+      manage)))
+```
+
+The 'manage-me' variable is the return value in the second branch, but should get freed if "Too short" is returned.
+The output is a somewhat noisy C program:
+```C
+string say_MINUS_what(string text) {
+    string _5;
+    /* let */ {
+        string* _11 = &text; // ref
+        string _9 = String_copy(_11);
+        string manage = _9;
+        string _13;
+        string* _19 = &text; // ref
+        int _17 = String_count(_19);
+        bool _15 = Int__LT_(_17, 10);
+        if (_15) {
+            string _24 = "Too short";
+            string *_24_ref = &_24;
+            string _22 = String_copy(_24_ref);
+            String_delete(manage);
+            _13 = _22;
+        } else {
+            _13 = manage;
+        }
+        _5 = _13;
+    }
+    String_delete(text);
+    return _5;
+}
+```
