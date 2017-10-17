@@ -8,4 +8,11 @@
 (use Char)
 (use Bool)
 
+(defn pred [s]
+  (< (String.count s) 3))
 
+(defn f [xs]
+  (println (refstr (ref (filter pred xs)))))
+
+(defn main []
+  (while true (f [@"hej" @"san!!!" @"?"])))

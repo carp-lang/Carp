@@ -67,7 +67,7 @@ templateEMap =
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
   where
-    fTy = FuncTy [VarTy "a"] BoolTy
+    fTy = FuncTy [(RefTy (VarTy "a"))] BoolTy
     aTy = StructTy "Array" [VarTy "a"]
     path = SymPath ["Array"] "filter"
     t = (FuncTy [fTy, aTy] aTy)
@@ -75,14 +75,14 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
       \typeEnv env ->
         Template
         t
-        (const (toTemplate "Array $NAME($(Fn [a] Bool) predicate, Array a)"))
+        (const (toTemplate "Array $NAME($(Fn [(Ref a)] Bool) predicate, Array a)"))
         (\(FuncTy [(FuncTy [insideTy] BoolTy), _] _) ->
            (toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        if(predicate((($a*)a.data)[i])) {"
+               , "        if(predicate(&((($a*)a.data)[i]))) {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
                , "        " ++ deleter
@@ -93,7 +93,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "    return a;"
                , "}"
                ]))
-        (\(FuncTy [ft@(FuncTy [insideType] BoolTy), arrayType] _) ->
+        (\(FuncTy [ft@(FuncTy [(RefTy insideType)] BoolTy), arrayType] _) ->
            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++
             depsForDeleteFunc typeEnv env insideType)
 
