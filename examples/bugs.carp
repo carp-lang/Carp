@@ -1,4 +1,4 @@
 ;; This file contains examples of unsolved bugs
 
-(defn main []
-  (Array.foreach println [@"A" @"B" @"C"]))
+;; (defn main []
+;;   (Array.foreach println [@"A" @"B" @"C"]))

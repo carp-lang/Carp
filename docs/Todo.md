@@ -4,7 +4,6 @@
 * Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of type String or String-ref.
 * The 'foreach' macro should not make use of 'transform' (it allocates an array)
-* A dash in the name of a let binding fails to compile to C.
 
 ## Ugliness
 * Just entering '=' at the REPL leads ot strange type error.

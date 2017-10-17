@@ -319,7 +319,7 @@ delete indent i = mapM_ deleterToC (infoDelete i)
         deleterToC FakeDeleter {} =
           return ()
         deleterToC deleter@(ProperDeleter {}) =
-          appendToSrc $ (addIndent indent) ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ (deleterVariable deleter) ++ ");\n"
+          appendToSrc $ (addIndent indent) ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 
 defnToDeclaration :: SymPath -> [XObj] -> Ty -> String
 defnToDeclaration path@(SymPath _ name) argList retTy =
