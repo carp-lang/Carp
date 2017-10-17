@@ -6,7 +6,7 @@
       (if (= (count xs) 1)
         (car xs)
         (list
-         (quote if)
+         'if
          (car xs)
          (car (cdr xs))
          (cond-internal (cdr (cdr xs))))))))
@@ -16,29 +16,29 @@
 
 (defmacro for [settings body] ;; settings = variable, from, to, <step>
   (list
-   (quote let)
+   'let
    (array (car settings) (car (cdr settings)))
    (list
-    (quote while)
-    (list (quote Int.<) (car settings) (car (cdr (cdr settings))))
-    (list (quote do)
+    'while
+    (list 'Int.< (car settings) (car (cdr (cdr settings))))
+    (list 'do
           body
           (list
-           (quote set!) (list (quote ref) (car settings))
-           (list (quote Int.+)
+           'set! (list 'ref (car settings))
+           (list 'Int.+
                  (car settings)
                  (if (= 4 (count settings)) ;; optional arg for step
                    (car (cdr (cdr (cdr settings))))
                    1)))))))
 
 (defmacro refstr [x]
-  (list (quote ref)
-        (list (quote str) x)))
+  (list 'ref
+        (list 'str x)))
 
 (defmodule Array
   (defmacro foreach [f xs]
-    (list (quote let)
+    (list 'let
           (array
-           (quote temp)
-           (list (quote Array.transform) f xs))
+           'temp
+           (list 'Array.transform f xs))
           ())))

@@ -201,9 +201,16 @@ copy = do i1 <- createInfo
           _ <- Parsec.char '@'
           expr <- sexpr
           return (XObj (Lst [(XObj (Sym (SymPath [] "copy")) i1 Nothing), expr]) i2 Nothing)
-  
+
+quote :: Parsec.Parsec String ParseState XObj
+quote = do i1 <- createInfo
+           i2 <- createInfo
+           _ <- Parsec.char '\''
+           expr <- sexpr
+           return (XObj (Lst [(XObj (Sym (SymPath [] "quote")) i1 Nothing), expr]) i2 Nothing)
+           
 sexpr :: Parsec.Parsec String ParseState XObj
-sexpr = do x <- Parsec.choice [ref, copy, list, array, atom]
+sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]
            _ <- whitespaceOrNothing
            return x
 

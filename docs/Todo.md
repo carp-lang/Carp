@@ -1,11 +1,13 @@
 # Todo
 
 ## Critical Bugs
-* The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Go over all the Array functions and make sure they are memory safe
 * Can't define globals of type String or String-ref.
-* Just entering '=' at the REPL leads ot strange type error.
 * The 'foreach' macro should not make use of 'transform' (it allocates an array)
+
+## Ugliness
+* Just entering '=' at the REPL leads ot strange type error.
+* The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -18,7 +20,6 @@
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))
-* Quote
 * Quasiquote
 * Splicing in macros
 * Pattern matching on arguments in macros?
