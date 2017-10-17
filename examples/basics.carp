@@ -114,10 +114,15 @@
 (defn even? [x]
   (= (Int.mod x 2) 0))
 
+(defn add-with-ref [x y]
+  (Int.+ x @y))
+
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce + 0 (transform square &(filter even? stuff)))]
-    (println (refstr after))))
+        after (reduce add-with-ref 0 (transform square &(filter even? stuff)))]
+    (do
+      (print "ANSWER: ")
+      (println (refstr after)))))
 
 (defn get-last-string [xs] ;; Should be generic preferably...
   (let [i (dec (Array.count &xs))]

@@ -100,7 +100,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
 templateReduce :: (String, Binder)
 templateReduce = defineTypeParameterizedTemplate templateCreator path t
   where
-    fTy = FuncTy [bTy, aTy] bTy
+    fTy = FuncTy [bTy, (RefTy aTy)] bTy
     arrTy = StructTy "Array" [aTy]
     aTy = VarTy "a"
     bTy = VarTy "b"
@@ -110,13 +110,13 @@ templateReduce = defineTypeParameterizedTemplate templateCreator path t
       \_ _ ->
         Template
         t
-        (const (toTemplate "$b $NAME($(Fn [b a] a) f, $b initial_value, Array a)"))
+        (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))
         (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
            (toTemplate $ unlines $
                [ "$DECL { "
                , "    $b b = initial_value;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        b = f(b, (($a*)a.data)[i]);"
+               , "        b = f(b, &((($a*)a.data)[i]));"
                , "    }"
                , "    CARP_FREE(a.data); // Can't call Array_delete since it will destroy the items that have been handed off to f()."
                , "    return b;"
