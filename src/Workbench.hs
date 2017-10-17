@@ -16,14 +16,3 @@ import qualified Data.Map as Map
 pt :: XObj -> IO ()
 pt = putStrLn . prettyTyped 
 
-f = case (parse "(Ref Int)" "") of
-  Left e -> error (show e)
-  Right [x] -> x
-
-g = case (parse "&Int" "") of
-  Left e -> error (show e)
-  Right [x] -> x
-
-h = case xobjToTy g of
-      Just x -> x
-      Nothing -> error ""

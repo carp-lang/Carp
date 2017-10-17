@@ -146,6 +146,11 @@ space = do incColumn 1
            _ <- Parsec.char ' '
            return ()
 
+comma :: Parsec.Parsec String ParseState ()
+comma = do incColumn 1
+           _ <- Parsec.char ','
+           return ()
+
 tab :: Parsec.Parsec String ParseState ()
 tab = do incColumn 1
          _ <- Parsec.char '\t'
@@ -156,7 +161,7 @@ eof = do _ <- Parsec.char '\0'
          return ()
 
 emptyCharacters :: [Parsec.Parsec String ParseState ()]
-emptyCharacters = [space, tab, linebreak, eof, comment]
+emptyCharacters = [space, tab, comma, linebreak, eof, comment]
            
 whitespace :: Parsec.Parsec String ParseState ()
 whitespace = do _ <- Parsec.many1 (Parsec.choice emptyCharacters)

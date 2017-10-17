@@ -44,13 +44,13 @@ instance Show Ty where
   show BoolTy                = "Bool"
   show StringTy              = "String"
   show CharTy                = "Char"
-  show (FuncTy argTys retTy) = "(λ [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")"
+  show (FuncTy argTys retTy) = "(λ [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
   show (VarTy t)             = t
   show UnitTy                = "()"
   show ModuleTy              = "Module"
   show TypeTy                = "Type"
   show (StructTy s [])       = s
-  show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
+  show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithComma (map show typeArgs) ++ ")"
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"
   show (RefTy r)             =
     case r of
