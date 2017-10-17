@@ -3,10 +3,10 @@
 ## Critical Bugs
 * Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of type String or String-ref.
-* The 'foreach' macro should not make use of 'transform' (it allocates an array)
+* The 'foreach' macro doesn't work. Also, move it to global scope?
 
 ## Ugliness
-* Just entering '=' at the REPL leads ot strange type error.
+* Just entering '=' at the REPL leads to strange type error.
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Remove unnecessary Array-functions and rewrite them in Carp
 
