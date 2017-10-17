@@ -15,4 +15,6 @@
   (println (refstr (ref (filter pred xs)))))
 
 (defn main []
-  (while true (f [@"hej" @"san!!!" @"?"])))
+  (while true
+    (f [@"hej" @"san!!!" @"?"]))
+  )

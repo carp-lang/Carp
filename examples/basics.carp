@@ -112,7 +112,7 @@
   (Int.* x x))
 
 (defn even? [x]
-  (= (Int.mod x 2) 0))
+  (= (Int.mod @x 2) 0))
 
 (defn add-with-refs [x y]
   (Int.+ @x @y))

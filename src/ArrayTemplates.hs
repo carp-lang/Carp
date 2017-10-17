@@ -76,7 +76,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
         Template
         t
         (const (toTemplate "Array $NAME($(Fn [(Ref a)] Bool) predicate, Array a)"))
-        (\(FuncTy [(FuncTy [insideTy] BoolTy), _] _) ->
+        (\(FuncTy [(FuncTy [(RefTy insideTy)] BoolTy), _] _) ->
            (toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
