@@ -22,6 +22,7 @@
 * Quasiquote
 * Splicing in macros
 * Pattern matching on arguments in macros?
+* Printing of floats/doubles should remove superfluos zeros at the end
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
