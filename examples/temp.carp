@@ -8,14 +8,4 @@
 (use Char)
 (use Bool)
 
-(defn l [a b]
-  (String.append @a @b))
 
-(defn f []
-  (let [strings [@"hej" @"san"]]
-    (println (refstr &(reduce l @"START" &strings)))))
-
-(defn main []
-  ;;(f)
-  (while true (f))
-  )

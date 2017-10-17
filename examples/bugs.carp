@@ -1,8 +1,4 @@
 ;; This file contains examples of unsolved bugs
 
-(use IO)
-
-(use Int)
-(use Float)
-
-(+ ?a ?b)
+(defn main []
+  (Array.foreach println [@"A" @"B" @"C"]))
