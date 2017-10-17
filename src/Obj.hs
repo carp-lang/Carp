@@ -529,6 +529,9 @@ xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr")) _ _ : _)) _ _) =
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref")) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
+xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '&'
+  do okInnerTy <- xobjToTy innerTy
+     return (RefTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref")) _ _ : _)) _ _) =
   do Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ")) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =

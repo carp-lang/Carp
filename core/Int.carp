@@ -11,10 +11,10 @@
   (register random (λ [] Int))
   (register random-between (λ [Int Int] Int))
   (register str (λ [Int] String))
-  (register from-string (λ [(Ref String)] Int))
+  (register from-string (λ [&String] Int))
   (register mask (λ [Int Int] Bool))
   (register inc (λ [Int] Int))
   (register dec (λ [Int] Int))
-  (register copy (λ [(Ref Int)] Int)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
+  (register copy (λ [&Int] Int)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
   )
 
