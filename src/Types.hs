@@ -52,7 +52,13 @@ instance Show Ty where
   show (StructTy s [])       = s
   show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"
-  show (RefTy r)             = "(Ref " ++ show r ++ ")"
+  show (RefTy r)             =
+    case r of
+      PointerTy _ -> listView
+      StructTy _ _ -> listView
+      FuncTy _ _ -> listView
+      _ -> "&" ++ show r
+    where listView = "(Ref " ++ show r ++ ")"
   show MacroTy               = "Macro"
   show DynamicTy             = "Dynamic"
 
