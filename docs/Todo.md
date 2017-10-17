@@ -16,6 +16,7 @@
 * Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
+* Allow &t instead of (Ref t) in type declarations
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))
