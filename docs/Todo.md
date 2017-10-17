@@ -1,7 +1,7 @@
 # Todo
 
 ## Critical Bugs
-* Go over all the Array functions and make sure they are memory safe
+* Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of type String or String-ref.
 * The 'foreach' macro should not make use of 'transform' (it allocates an array)
 
