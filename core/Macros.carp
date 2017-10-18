@@ -35,7 +35,6 @@
   (list 'ref
         (list 'str x)))
 
-(defmodule Array
-  (defmacro foreach [f xs]
+(defmacro foreach [f xs]
     (list 'for ['i 0 (list 'count (list 'ref xs))]
-          (list f (list 'nth (list 'ref xs) 'i)))))
+          (list f (list 'nth (list 'ref xs) 'i))))

@@ -8,5 +8,5 @@
 (use Char)
 (use Bool)
 
-(def x "hej")
-
+(defn main []
+  (foreach println [@"Yay" @"Nay" @"!"]))

@@ -3,6 +3,7 @@ module Eval (expandAll, eval, EvalError(..)) where
 import qualified Data.Map as Map
 import Data.List (foldl', null)
 import Data.List.Split (splitWhen)
+import Control.Monad.State
 import Obj
 import Types
 import Util
@@ -165,75 +166,102 @@ expandAll env xobj =
                       else expandAll env expanded
     err -> err
 
+type ExpandState = Int
+
+bumpIdentifier :: State ExpandState ()
+bumpIdentifier = do identifier <- get
+                    put (identifier + 1)
+
+setNewIdentifier :: Info -> State ExpandState Info
+setNewIdentifier i = do bumpIdentifier
+                        newIdentifier <- get
+                        return (i { infoIdentifier = newIdentifier })
+
 expand :: Env -> XObj -> Either EvalError XObj
-expand env xobj =
-  case obj xobj of 
-  --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
-    Lst _ -> expandList xobj
-    Arr _ -> expandArray xobj
-    Sym _ -> expandSymbol xobj
-    _     -> Right xobj
+expand env root =
+  evalState (expandInternal root) 0
 
   where
-    expandList :: XObj -> Either EvalError XObj
-    expandList (XObj (Lst xobjs) i t) =
+    expandInternal :: XObj -> State ExpandState (Either EvalError XObj)
+    expandInternal xobj =
+      case obj xobj of 
+        --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
+        Lst _ -> expandList xobj
+        Arr _ -> expandArray xobj
+        Sym _ -> expandSymbol xobj
+        _     -> return (Right xobj)
+    
+    expandList :: XObj -> State ExpandState (Either EvalError XObj)
+    expandList xobj@(XObj (Lst xobjs) i t) =
       case xobjs of
-        [] -> Right xobj
-        XObj External _ _ : _ -> Right xobj
-        XObj (Instantiate _) _ _ : _ -> Right xobj
-        XObj (Deftemplate _) _ _ : _ -> Right xobj
-        XObj (Defalias _) _ _ : _ -> Right xobj
+        [] -> return (Right xobj)
+        XObj External _ _ : _ -> return (Right xobj)
+        XObj (Instantiate _) _ _ : _ -> return (Right xobj)
+        XObj (Deftemplate _) _ _ : _ -> return (Right xobj)
+        XObj (Defalias _) _ _ : _ -> return (Right xobj)
         defnExpr@(XObj Defn _ _) : name : args : body : [] ->
-          do expandedBody <- expand env body
-             Right (XObj (Lst [defnExpr, name, args, expandedBody]) i t)
+          do expandedBody <- expandInternal body
+             return $ do okBody <- expandedBody
+                         Right (XObj (Lst [defnExpr, name, args, okBody]) i t)
         defExpr@(XObj Def _ _) : name : expr : [] ->
-          do expandedExpr <- expand env expr
-             Right (XObj (Lst [defExpr, name, expandedExpr]) i t)
+          do expandedExpr <- expandInternal expr
+             return $ do okExpr <- expandedExpr
+                         Right (XObj (Lst [defExpr, name, okExpr]) i t)
         theExpr@(XObj The _ _) : typeXObj : value : [] ->
-          do expandedValue <- expand env value
-             Right (XObj (Lst [theExpr, typeXObj, expandedValue]) i t)
+          do expandedValue <- expandInternal value
+             return $ do okValue <- expandedValue
+                         Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
         letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
           if even (length bindings)
-          then do bind <- mapM (\(n, x) -> do x' <- expand env x
-                                              return [n, x'])
-                            (pairwise bindings)
-                  let expandedBindings = concat bind
-                  expandedBody <- expand env body
-                  Right (XObj (Lst [letExpr, XObj (Arr expandedBindings) bindi bindt, expandedBody]) i t)
-          else Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj))
+          then do bind <- mapM mapper (pairwise bindings)
+                  expandedBody <- expandInternal body
+                  return $ do okBindings <- fmap concat (sequence bind)
+                              okBody <- expandedBody
+                              (Right (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i t))
+          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
+          where mapper :: (XObj, XObj) -> State ExpandState (Either EvalError [XObj])
+                mapper (n, x) =
+                  do x' <- expandInternal x
+                     case x' of
+                       Left e -> return (Left e)
+                       Right ok -> return (Right [n, ok]) -- [n, ok]
         doExpr@(XObj Do _ _) : expressions ->
-          do expandedExpressions <- mapM (expand env) expressions
-             Right (XObj (Lst (doExpr : expandedExpressions)) i t)
+          do expandedExpressions <- mapM expandInternal expressions
+             return $ do okExpressions <- sequence expandedExpressions
+                         Right (XObj (Lst (doExpr : okExpressions)) i t)
         (XObj (Mod _) _ _) : _ ->
-          Left (EvalError "Can't eval module")
-        f:args -> do expandedF <- expand env f
-                     expandedArgs <- mapM (expand env) args
-                     case expandedF of
-                       XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _ ->
-                         --trace ("Found dynamic: " ++ pretty xobj)
-                         eval env xobj
-                       XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _ ->
-                         --trace ("Found macro: " ++ pretty xobj)
-                         eval env xobj
-                       _ ->
-                         Right (XObj (Lst (expandedF : expandedArgs)) i t)
+          return (Left (EvalError "Can't eval module"))
+        f:args -> do expandedF <- expandInternal f
+                     expandedArgs <- mapM expandInternal args
+                     return $ do okF <- expandedF
+                                 okArgs <- sequence expandedArgs
+                                 case okF of
+                                   XObj (Lst [XObj Dynamic _ _, _, XObj (Arr _) _ _, _]) _ _ ->
+                                     --trace ("Found dynamic: " ++ pretty xobj)
+                                     (eval env xobj)
+                                   XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _ ->
+                                     --trace ("Found macro: " ++ pretty xobj)
+                                     (eval env xobj)
+                                   _ ->
+                                     (Right (XObj (Lst (okF : okArgs)) i t))
     expandList _ = error "Can't expand non-list in expandList."
 
-    expandArray :: XObj -> Either EvalError XObj
+    expandArray :: XObj -> State ExpandState (Either EvalError XObj)
     expandArray (XObj (Arr xobjs) i t) =
-      do evaledXObjs <- mapM (expand env) xobjs
-         return (XObj (Arr evaledXObjs) i t)
+      do evaledXObjs <- mapM expandInternal xobjs
+         return $ do okXObjs <- sequence evaledXObjs
+                     Right (XObj (Arr okXObjs) i t)
     expandArray _ = error "Can't expand non-array in expandArray."
     
-    expandSymbol :: XObj -> Either a XObj
-    expandSymbol (XObj (Sym path) _ _) =
+    expandSymbol :: XObj -> State ExpandState (Either a XObj)
+    expandSymbol xobj@(XObj (Sym path) _ _) =
       case lookupInEnv path env of
-        Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> Right xobj
-        Just (_, Binder found) -> Right found -- use the found value
-        Nothing -> Right xobj -- symbols that are not found are left as-is
+        Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder found) -> return (Right found) -- use the found value
+        Nothing -> return (Right xobj) -- symbols that are not found are left as-is
     expandSymbol _ = error "Can't expand non-symbol in expandSymbol."
