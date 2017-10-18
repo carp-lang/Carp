@@ -45,3 +45,7 @@
         (println (ref (Array.str &monsters)))
         (let [new-monsters (Array.endo-map Monster.move monsters)]
           (println (ref (Array.str &new-monsters))))))))
+
+(build)
+(run)
+(quit)
