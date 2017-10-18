@@ -40,8 +40,7 @@ instance Show ToCError where
     "' (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
     " at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
-    "Found unresolved generic type '" ++ show t ++
-    " at " ++ prettyInfoFromXObj xobj
+    "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
     
 data EmitterState = EmitterState { emitterSrc :: String }
 
