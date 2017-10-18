@@ -1,0 +1,26 @@
+;; A slightly bigger example of how to work with structs and arrays that change
+
+(use IO)
+
+(deftype Pos
+    [x Float
+     y Float])
+
+(deftype Monster
+    [pos Pos
+     hp Int
+     name String])
+
+(defmodule Monster
+  (defn init-random [name]
+    (Monster.init
+     (Pos.init (Float.random-between 0.0f 100.0f)
+               (Float.random-between 0.0f 100.0f))
+     100
+     name)))
+
+(defn main []
+  (do
+    (System.srand (System.time))
+    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+      (println (ref (Array.str &monsters))))))

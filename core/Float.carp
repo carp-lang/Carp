@@ -5,4 +5,5 @@
   (register * (Fn [Float Float] Float))
   (register / (Fn [Float Float] Float))
   (register to-int (Fn [Float] Int))
+  (register random-between (λ [Float Float] Float))
   (register str (Fn [Float] String)))

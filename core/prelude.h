@@ -8,6 +8,7 @@
 #include <math.h>
 #include <time.h>
 #include <assert.h>
+#include <limits.h>
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
@@ -192,36 +193,7 @@ double Double_cos(double x) {
 
 string Double_str(double x) {
     char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%f", x);
-    int len = strlen(buffer);
-    bool has_period = false;
-    for(int i = 0; i < len; i++) {
-        if(buffer[i] == '.') {
-            has_period = true;
-        }
-    }
-    if(!has_period) {
-        return buffer;
-    }
-    bool past_period = false;
-    for(int i = 0; i < len; i++) {
-        if(buffer[i] == '0') {
-            if(past_period) {
-                // Trailing 0
-                if(buffer[i - 1] == '.') {
-                    buffer[i + 1] = '\0';
-                } else {
-                    buffer[i] = '\0';
-                }
-                break;         
-            } else {
-                // do nothing
-            }
-        }
-        if(buffer[i] == '.') {
-            past_period = true;
-        }
-    }
+    snprintf(buffer, 32, "%g", x);
     return buffer;
 }
 
@@ -229,40 +201,15 @@ int Float_to_MINUS_int(double x) {
     return (int)x;
 }
 
+float Float_random_MINUS_between(float lower, float upper) {
+    float diff = upper - lower;
+    float r = ((float)(rand() % INT_MAX)) / ((float)INT_MAX);
+    return lower + diff * r;
+}
+
 string Float_str(float x) {
     char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%ff", x);
-    int len = strlen(buffer);
-    bool has_period = false;
-    for(int i = 0; i < len; i++) {
-        if(buffer[i] == '.') {
-            has_period = true;
-        }
-    }
-    if(!has_period) {
-        return buffer;
-    }
-    bool past_period = false;
-    for(int i = 0; i < len - 1; i++) {
-        if(buffer[i] == '0') {
-            if(past_period) {
-                // Trailing 0
-                if(buffer[i - 1] == '.') {
-                    buffer[i + 1] = 'f';
-                    buffer[i + 2] = '\0';
-                } else {
-                    buffer[i + 0] = 'f';
-                    buffer[i + 1] = '\0';
-                }                
-                break;         
-            } else {
-                // do nothing
-            }
-        }
-        if(buffer[i] == '.') {
-            past_period = true;
-        }
-    }
+    snprintf(buffer, 32, "%gf", x);
     return buffer;
 }
 
@@ -285,6 +232,10 @@ void System_CARP_FREE__string_MUL_(void *p) {
 
 int System_time() {
     return time(0);
+}
+
+void System_srand(int x) {
+    srand(x);
 }
 
 #endif

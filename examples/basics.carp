@@ -163,6 +163,14 @@
   (let [b (Outer.init [(Inner.init) (Inner.init) (Inner.init)])]
     (println (ref (Outer.str &b)))))
 
+(defn random-float []
+  (Float.random-between 10.0f 20.0f))
+
+(defn print-random-floats []
+  (do (System.srand (System.time))
+      (let [rands (Array.repeat 10 random-float)]
+        (println (ref (Array.str &rands))))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -190,6 +198,7 @@
       (let [stuff (replicate 3 "Yo")]
         (println &(Array.str &(endo-map exclaim stuff))))
       (print-structs)
+      (print-random-floats)
       (turn-any-array-into-string)
       (convert-struct-with-array-member-to-string)
       ))
