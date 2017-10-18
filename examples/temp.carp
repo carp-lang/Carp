@@ -10,3 +10,4 @@
 
 (defn main []
   (foreach println [@"Yay" @"Nay" @"!"]))
+
