@@ -38,8 +38,9 @@
 (defn main []
   (do
     (System.srand (System.time))
-    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
-      (do
-        (println (ref (Array.str &monsters)))
-        (let [new-monsters (Array.endo-map Monster.move monsters)]
-          (println (ref (Array.str &new-monsters))))))))
+    (while true
+      (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+        (do
+          (println (ref (Array.str &monsters)))
+          (let [new-monsters (Array.endo-map Monster.move monsters)]
+            (println (ref (Array.str &new-monsters)))))))))
