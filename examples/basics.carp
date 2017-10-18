@@ -186,6 +186,7 @@
       (endofunctor-mapping)
       (map-filter-reduce-stuff)
       (print-last-string)
+      (foreach println [@"Yo" @"Hola" @"Hej"])
       (let [stuff (replicate 3 "Yo")]
         (println &(Array.str &(endo-map exclaim stuff))))
       (print-structs)
