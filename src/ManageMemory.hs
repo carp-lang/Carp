@@ -144,12 +144,14 @@ manageMemory typeEnv globalEnv root =
                  manage body
                  postDeleters <- get
                  -- Visit an extra time to simulate repeated use
-                 _ <- visit expr
-                 _ <- visit body
+                 visitedExpr2 <- visit expr
+                 visitedBody2 <- visit body
                  let diff = postDeleters Set.\\ preDeleters
                  put (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
                              okBody <- visitedBody
+                             okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
+                             okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
                              return (XObj (Lst (whileExpr : okExpr : okBody : [])) newInfo t)
               
