@@ -4,6 +4,7 @@
 * Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of with heap allocated types (String, structs, etc.)
 * Looping over a block of code where an external array is endo-map:ed over.
+* Arrays can contain references, this will lead to dangling pointers.
 
 ## Ugliness
 * Just entering '=' at the REPL leads to strange type error.
