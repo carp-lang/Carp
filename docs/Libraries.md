@@ -15,5 +15,5 @@
 ### Misc
 * [IO](../core/IO.carp)
 * [System](../core/System.carp)
-* [SDL](../core/SDL.carp)
+* [SDL](../core/sdl.carp)
 * [Macros](../core/Macros.carp)
