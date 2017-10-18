@@ -22,6 +22,7 @@
       ;; Weird ranges
       (println (ref (str (ref (range 10 0 -1)))))
       (println (ref (str (ref (range 1.0 2.0 0.1)))))
+      (println (ref (str (ref (range 1.0f 2.0f 0.1f)))))
       (println (ref (str (ref (range 1 10 2)))))
       )))
 

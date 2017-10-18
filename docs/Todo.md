@@ -9,6 +9,7 @@
 * Just entering '=' at the REPL leads to strange type error.
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Remove unnecessary Array-functions and rewrite them in Carp
+* Create a proper .c file for the core library C functions
 
 ## Big Language Features
 * Generic data types (apart from Array, which already is)
@@ -23,7 +24,6 @@
 * Quasiquote
 * Splicing in macros
 * Pattern matching on arguments in macros?
-* Printing of floats/doubles should remove superfluos zeros at the end
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)

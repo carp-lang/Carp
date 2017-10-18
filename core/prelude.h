@@ -193,6 +193,35 @@ double Double_cos(double x) {
 string Double_str(double x) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%f", x);
+    int len = strlen(buffer);
+    bool has_period = false;
+    for(int i = 0; i < len; i++) {
+        if(buffer[i] == '.') {
+            has_period = true;
+        }
+    }
+    if(!has_period) {
+        return buffer;
+    }
+    bool past_period = false;
+    for(int i = 0; i < len; i++) {
+        if(buffer[i] == '0') {
+            if(past_period) {
+                // Trailing 0
+                if(buffer[i - 1] == '.') {
+                    buffer[i + 1] = '\0';
+                } else {
+                    buffer[i] = '\0';
+                }
+                break;         
+            } else {
+                // do nothing
+            }
+        }
+        if(buffer[i] == '.') {
+            past_period = true;
+        }
+    }
     return buffer;
 }
 
@@ -203,6 +232,37 @@ int Float_to_MINUS_int(double x) {
 string Float_str(float x) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%ff", x);
+    int len = strlen(buffer);
+    bool has_period = false;
+    for(int i = 0; i < len; i++) {
+        if(buffer[i] == '.') {
+            has_period = true;
+        }
+    }
+    if(!has_period) {
+        return buffer;
+    }
+    bool past_period = false;
+    for(int i = 0; i < len - 1; i++) {
+        if(buffer[i] == '0') {
+            if(past_period) {
+                // Trailing 0
+                if(buffer[i - 1] == '.') {
+                    buffer[i + 1] = 'f';
+                    buffer[i + 2] = '\0';
+                } else {
+                    buffer[i + 0] = 'f';
+                    buffer[i + 1] = '\0';
+                }                
+                break;         
+            } else {
+                // do nothing
+            }
+        }
+        if(buffer[i] == '.') {
+            past_period = true;
+        }
+    }
     return buffer;
 }
 
