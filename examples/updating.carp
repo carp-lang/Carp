@@ -6,22 +6,40 @@
     [x Float
      y Float])
 
+(defn incf [x]
+  (Float.+ x 1.0f))
+
+(defmodule Pos
+
+  (defn move [pos]
+    (Pos.update-y (Pos.update-x pos incf) incf)) ;; Threading macro to the rescue!
+
+  )
+
 (deftype Monster
     [pos Pos
      hp Int
      name String])
 
 (defmodule Monster
+
   (defn init-random [name]
     (Monster.init
      (Pos.init (Float.random-between 0.0f 100.0f)
                (Float.random-between 0.0f 100.0f))
      100
-     @name)))
+     @name))
+  
+  (defn move [monster]
+    (Monster.update-pos monster Pos.move))
+
+  )
 
 (defn main []
   (do
     (System.srand (System.time))
-    (while true
-      (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
-        (println (ref (Array.str &monsters)))))))
+    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+      (do
+        (println (ref (Array.str &monsters)))
+        (let [new-monsters (Array.endo-map Monster.move monsters)]
+          (println (ref (Array.str &new-monsters))))))))
