@@ -2,7 +2,7 @@
 
 ## Critical Bugs
 * Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
-* Can't define globals of type String or String-ref.
+* Can't define globals of with heap allocated types (String, structs, etc.)
 * The 'foreach' macro doesn't work. Also, move it to global scope?
 
 ## Ugliness
