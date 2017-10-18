@@ -12,7 +12,9 @@
 (defmodule Pos
 
   (defn move [pos]
-    (Pos.update-y (Pos.update-x pos incf) incf)) ;; Threading macro to the rescue!
+    (=> pos
+        (Pos.update-x incf)
+        (Pos.update-y incf)))
 
   )
 
@@ -38,9 +40,8 @@
 (defn main []
   (do
     (System.srand (System.time))
-    (while true
-      (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
-        (do
-          (println (ref (Array.str &monsters)))
-          (let [new-monsters (Array.endo-map Monster.move monsters)]
-            (println (ref (Array.str &new-monsters)))))))))
+    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+      (do
+        (println (ref (Array.str &monsters)))
+        (let [new-monsters (Array.endo-map Monster.move monsters)]
+          (println (ref (Array.str &new-monsters))))))))
