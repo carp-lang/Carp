@@ -38,3 +38,33 @@
 (defmacro foreach [f xs]
   (list 'for ['i 0 (list 'count (list 'ref xs))]
         (list f (list 'nth (list 'ref xs) 'i))))
+
+(defdynamic thread-first-internal [xs]
+  (if (= (count xs) 2)
+    (if (list? (last xs))
+      (cons (car (car (cdr xs)))
+            (cons (car xs)
+                  (cdr (car (cdr xs)))))
+      (list (car (cdr xs)) (car xs)))
+    (if (list? (last xs))
+      (append
+       (list
+        (car (last xs))
+        (thread-first-internal (init xs)))
+       (cdr (last xs)))
+      (list (last xs) (thread-first-internal (init xs))))))
+
+(defdynamic thread-last-internal [xs]
+  (if (= (count xs) 2)
+    (if (list? (last xs))
+      (cons-last (car xs) (last xs))
+      (list (car (cdr xs)) (car xs)))
+    (if (list? (last xs))
+      (cons-last (thread-last-internal (init xs)) (last xs))
+      (list (last xs) (thread-last-internal (init xs))))))
+
+(defmacro => [:rest forms]
+  (thread-first-internal forms))
+
+(defmacro ==> [:rest forms]
+  (thread-last-internal forms))

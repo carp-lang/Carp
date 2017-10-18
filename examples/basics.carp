@@ -171,6 +171,18 @@
       (let [rands (Array.repeat 10 random-float)]
         (println (ref (Array.str &rands))))))
 
+(defn threading []
+  (do
+    (print "(==> 8 inc inc (Int./ 100) dec) = ")
+    (println (refstr (==> 8 inc inc (Int./ 100) dec)))
+    (print "(=> 8 inc inc (Int./ 2) dec) = ")
+    (println (refstr (=> 8 inc inc (Int./ 2) dec)))
+    (print "(==> 5 (Int.- 2)) = ")
+    (println (refstr (==> 5 (Int.- 2))))
+    (print "(=> 5 (Int.- 2)) = ")
+    (println (refstr (=> 5 (Int.- 2))))
+    ))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -201,6 +213,7 @@
       (print-random-floats)
       (turn-any-array-into-string)
       (convert-struct-with-array-member-to-string)
+      (threading)
       ))
 
 (build)

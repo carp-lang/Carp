@@ -36,6 +36,11 @@ eval env xobj =
         XObj (Sym (SymPath [] "list")) _ _ : rest ->
           do evaledList <- mapM (eval env) rest
              return (XObj (Lst evaledList) i t)
+        XObj (Sym (SymPath [] "list?")) _ _ : x : [] ->
+          do evaled <- eval env x
+             case evaled of
+               XObj (Lst _) _ _ -> Right trueXObj
+               _ -> Right falseXObj
         XObj (Sym (SymPath [] "array")) _ _ : rest ->
           do evaledArray <- mapM (eval env) rest
              return (XObj (Arr evaledArray) i t)
@@ -67,12 +72,37 @@ eval env xobj =
                XObj (Lst (_ : cdr)) _ _ -> return (XObj (Lst cdr) Nothing Nothing)
                XObj (Arr (_ : cdr)) _ _ -> return (XObj (Arr cdr) Nothing Nothing)
                _ -> Left (EvalError "Applying 'cdr' to non-list or empty list")
+        XObj (Sym (SymPath [] "last")) _ _ : target : [] ->
+          do evaled <- eval env target
+             case evaled of
+               XObj (Lst lst) _ _ -> return (last lst)
+               XObj (Arr arr) _ _ -> return (last arr)
+               _ -> Left (EvalError "Applying 'last' to non-list or empty list")
+        XObj (Sym (SymPath [] "init")) _ _ : target : [] ->
+          do evaled <- eval env target
+             case evaled of
+               XObj (Lst lst) _ _ -> return (XObj (Lst (init lst)) Nothing Nothing)
+               XObj (Arr arr) _ _ -> return (XObj (Arr (init arr)) Nothing Nothing)
+               _ -> Left (EvalError "Applying 'init' to non-list or empty list")
         XObj (Sym (SymPath [] "cons")) _ _ : x : xs : [] ->
           do evaledX <- eval env x
              evaledXS <- eval env xs
              case evaledXS of
-               XObj (Lst lst) _ _ -> return (XObj (Lst (evaledX : lst)) Nothing Nothing)
+               XObj (Lst lst) _ _ -> return (XObj (Lst (evaledX : lst)) i t) -- TODO: probably not correct to just copy 'i' and 't'?
                _ -> Left (EvalError "Applying 'cons' to non-list or empty list")
+        XObj (Sym (SymPath [] "cons-last")) _ _ : x : xs : [] ->
+          do evaledX <- eval env x
+             evaledXS <- eval env xs
+             case evaledXS of
+               XObj (Lst lst) _ _ -> return (XObj (Lst (lst ++ [evaledX])) i t) -- TODO: should they get their own i:s and t:s
+               _ -> Left (EvalError "Applying 'cons-last' to non-list or empty list")
+        XObj (Sym (SymPath [] "append")) _ _ : xs : ys : [] ->
+          do evaledXS <- eval env xs
+             evaledYS <- eval env ys
+             case (evaledXS, evaledYS) of
+               (XObj (Lst lst1) _ _, XObj (Lst lst2) _ _) ->
+                 return (XObj (Lst (lst1 ++ lst2)) i t) -- TODO: should they get their own i:s and t:s
+               _ -> Left (EvalError "Applying 'append' to non-list or empty list")
         XObj If _ _ : condition : ifTrue : ifFalse : [] ->
           do evaledCondition <- eval env condition
              case obj evaledCondition of
