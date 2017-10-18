@@ -8,5 +8,13 @@
 (use Char)
 (use Bool)
 
-(def x "hej")
+(defn main []
+  (foreach println [@"Yo" @"Hola" @"Hej"]))
+
+;; (defn main []
+;;   (let [i 0]
+;;     (while (Int.< i (count (ref [(copy "Yo") (copy "Hola") (copy "Hej")])))
+;;       (do
+;;         (println (nth (ref [(copy "Yo") (copy "Hola") (copy "Hej")]) i))
+;;         (set! (ref i) (Int.+ i 1))))))
 

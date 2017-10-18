@@ -3,6 +3,7 @@ module Eval (expandAll, eval, EvalError(..)) where
 import qualified Data.Map as Map
 import Data.List (foldl', null)
 import Data.List.Split (splitWhen)
+import Control.Monad.State
 import Obj
 import Types
 import Util
@@ -158,13 +159,50 @@ falseXObj = XObj (Bol False) Nothing Nothing
 -- | Keep expanding the form until it doesn't change anymore.
 expandAll :: Env -> XObj -> Either EvalError XObj
 expandAll env xobj =
-  case expand env xobj of
-    -- | Note: comparing environments is tricky! Make sure they *can* be equal, otherwise this won't work at all:
-    Right expanded -> if expanded == xobj
-                      then Right expanded
-                      else expandAll env expanded
-    err -> err
+  fmap setNewIdentifiers $ case expand env xobj of
+                             -- | Note: comparing environments is tricky! Make sure they *can* be equal, otherwise this won't work at all:
+                             Right expanded -> if expanded == xobj
+                                               then Right expanded
+                                               else expandAll env expanded
+                             err -> err
 
+-- | Replace all the infoIdentifier:s on all nested XObj:s
+-- | TODO: This might make setting the identifiers in Parse.hs redundant?!
+setNewIdentifiers :: XObj -> XObj
+setNewIdentifiers root = let final = evalState (visit root) 0
+                         in final
+                           --trace ("ROOT: " ++ prettyTyped root ++ "FINAL: " ++ prettyTyped final) final
+  where
+    visit :: XObj -> State Int XObj
+    visit xobj =
+      case obj xobj of
+        (Lst _) -> visitList xobj
+        (Arr _) -> visitArray xobj
+        _ -> bumpAndSet xobj
+
+    visitList :: XObj -> State Int XObj
+    visitList (XObj (Lst xobjs) i t) =
+      do visited <- mapM visit xobjs
+         let xobj' = XObj (Lst visited) i t
+         bumpAndSet xobj'
+    visitList _ = compilerError "The function 'visitList' only accepts XObjs with lists in them."
+
+    visitArray :: XObj -> State Int XObj
+    visitArray (XObj (Arr xobjs) i t) =
+      do visited <- mapM visit xobjs
+         let xobj' = XObj (Arr visited) i t
+         bumpAndSet xobj'
+    visitArray _ = compilerError "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    bumpAndSet :: XObj -> State Int XObj
+    bumpAndSet xobj =
+      do counter <- get
+         put (counter + 1)
+         case info xobj of
+           Just i -> return (xobj { info = Just (i { infoIdentifier = counter })})
+           Nothing -> return xobj
+
+-- | Macro expansion of a single form
 expand :: Env -> XObj -> Either EvalError XObj
 expand env xobj =
   case obj xobj of 
