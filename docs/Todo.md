@@ -12,6 +12,8 @@
 * Create a proper .c file for the core library C functions
 
 ## Big Language Features
+* Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code
+* Platform defines and optional compilation
 * Generic data types (apart from Array, which already is)
 * Tagged unions (also known as "sum types" or "enums")
 * Lambdas (anonymous functions)
