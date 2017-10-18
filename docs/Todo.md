@@ -41,6 +41,7 @@
 * Emit #LINE macros in the generated C code
 
 ## Tooling
+* Warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * Enable printing of typed AST:s at the REPL to help debug unresolved type variables etc.
 * Proper error handling when defining invalid struct types (right now it crashes)
 * Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error

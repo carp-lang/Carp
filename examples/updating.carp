@@ -17,10 +17,11 @@
      (Pos.init (Float.random-between 0.0f 100.0f)
                (Float.random-between 0.0f 100.0f))
      100
-     name)))
+     @name)))
 
 (defn main []
   (do
     (System.srand (System.time))
-    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
-      (println (ref (Array.str &monsters))))))
+    (while true
+      (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+        (println (ref (Array.str &monsters)))))))

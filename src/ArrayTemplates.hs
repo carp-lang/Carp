@@ -13,7 +13,7 @@ import Debug.Trace
 
 templateCopyingMap :: (String, Binder)
 templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
-  where fTy = FuncTy [VarTy "a"] (VarTy "b")
+  where fTy = FuncTy [(RefTy (VarTy "a"))] (VarTy "b")
         aTy = RefTy (StructTy "Array" [VarTy "a"])
         bTy = StructTy "Array" [VarTy "b"]
         path = SymPath ["Array"] "copy-map"
@@ -22,7 +22,7 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
           \typeEnv env -> 
             Template
             t
-            (const (toTemplate "Array $NAME($(Fn [a] b) f, Array* a)"))
+            (const (toTemplate "Array $NAME($(Fn [(Ref a)] b) f, Array* a)"))
             (\(FuncTy [(FuncTy [_] outputTy), _] _) ->
                (toTemplate $ unlines $                
                   [ "$DECL { "
@@ -31,8 +31,8 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
                   , "    b.data = CARP_MALLOC(sizeof($b) * a->len);"
                   , "    for(int i = 0; i < a->len; ++i) {"
                   , if outputTy == UnitTy
-                    then "        f((($a*)a->data)[i]); "
-                    else "        (($b*)b.data)[i] = f((($a*)a->data)[i]);"
+                    then "        f(&(($a*)a->data)[i]); "
+                    else "        (($b*)b.data)[i] = f(&(($a*)a->data)[i]);"
                   , "    }"
                   , "    return b;"
                   , "}"
@@ -62,7 +62,9 @@ templateEMap =
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy [t, arrayType] _) -> [defineFunctionTypeAlias t, defineArrayTypeAlias arrayType])
+      (\(FuncTy [t, arrayType] _) ->
+         [defineFunctionTypeAlias t,
+          defineArrayTypeAlias arrayType])
 
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
