@@ -65,10 +65,9 @@ data ReplCommand = Define XObj
 
 consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _) xobj =
-  case expandAll 0 globalEnv xobj of
-    (Left err, newIdentifier) ->
-      ReplMacroError (show err)
-    (Right expanded, newIdentifier) -> 
+  case expandAll globalEnv xobj of
+    Left err -> ReplMacroError (show err)
+    Right expanded -> 
       case annotate typeEnv globalEnv (setFullyQualifiedSymbols globalEnv expanded) of
         Left err -> ReplTypeError (show err)
         Right annXObjs -> ListOfCommands (map printC annXObjs)
@@ -161,10 +160,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
 
        Define xobj ->
          let innerEnv = getEnv env pathStrings
-         in  case expandAll 0 env xobj of
-               (Left err, newIdentifier) ->
-                 executeCommand ctx (ReplMacroError (show err))
-               (Right expanded, newIdentifier) ->
+         in  case expandAll env xobj of
+               Left err -> executeCommand ctx (ReplMacroError (show err))
+               Right expanded ->
                  let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
                      xobjFullSymbols = setFullyQualifiedSymbols innerEnv xobjFullPath
                  in case annotate typeEnv env xobjFullSymbols of
@@ -312,20 +310,20 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
          in  return (ctx { contextGlobalEnv = envInsertAt env path dynamic })
          
        Eval xobj ->
-         case eval 0 env xobj of
-           (Left e, newIdentifier) ->
+         case eval env xobj of
+           Left e ->
              do putStrLnWithColor Red (show e)
                 return ctx
-           (Right evaled, newIdentifier) ->
+           Right evaled ->
              do putStrLnWithColor Yellow (pretty evaled)
                 return ctx
 
        Expand xobj ->
-         case expandAll 0 env xobj of
-           (Left e, newIdentifier) ->
+         case expandAll env xobj of
+           Left e ->
              do putStrLnWithColor Red (show e)
                 return ctx
-           (Right expanded, newIdentifier) ->
+           Right expanded ->
              do putStrLnWithColor Yellow (pretty expanded)
                 return ctx
                 
