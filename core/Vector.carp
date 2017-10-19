@@ -34,6 +34,15 @@
     (V.init (Double./ (V.x a) n)
             (Double./ (V.y a) n)))
 
+  (defn doubeq [a, b]
+    (if (Double.> a b)
+      (Double.< (Double.- a b) 0.00001)
+      (Double.< (Double.- b a) 0.00001)))
+
+  (defn = [a, b]
+    (and (doubeq (V.x a) (V.x b))
+         (doubeq (V.y a) (V.y b))))
+
   (defn mag-sq [o]
     (let [x (V.x o)
           y (V.y o)]
@@ -111,3 +120,60 @@
               (Double.+ (Double.* (V.y x) (V.y y))
                         (Double.* (V.z x) (V.z y)))))
 )
+
+;(defmodule VectorN
+;  (deftype V [n Int, v (Array Double)])
+;
+;  (defn init [n, v]
+;    (V.init n v))
+;
+;  (defn str [o]
+;    (append-multi @"VectorN(dim=" (Int.str (V.n o)) ;", vals=" (Array.str (V.v o))
+;                  @")"))
+;
+;  (register zip- (Fn [(Fn [Double, Double] Double) &(Array Double) &(Array Double)] V))
+;  (defn zip- [f, a, b]
+;    (let [total []]
+;      (do
+;        (for [i 0 (Array.count a)]
+;          (set! &total (Array.push-back (Array.copy &total) (f (Array.nth a i) (Array.nth b i)))))
+;        (V.init (Array.count a) total))))
+;
+;  (register zip (Fn [(Fn [Double, Double] Double) &V &V] V))
+;  (defn zip [f, a, b]
+;    (if (Int.= (V.n a) (V.n b))
+;      (zip- f (V.v a) (V.v b))
+;      (do
+;        (IO.println "Error: vectors are of wrong dimensionality")
+;        (V.copy a))))
+;
+;  (defn + [a, b]
+;    (zip add- a b))
+;
+;  (defn - [a, b]
+;    (zip Double.- a b))
+;
+;  (defn * [a, n]
+;    (zip- Double.* (V.v a) &(Array.repeat (V.n a) n)))
+;
+;  (defn / [a, n]
+;    (zip- Double./ (V.v a) &(Array.repeat (V.n a) n)))
+;
+;  (defn square- [n]
+;    (Double.* (Double.copy n) (Double.copy n)))
+;
+;  (defn add- [x, y]
+;    (Double.+ (Double.copy x) (Double.copy y)))
+;
+;  (defn mag-sq [o]
+;    (Array.reduce add- 0.0 &(Array.copy-map square- (V.v o))))
+;
+;  ;(defn mag [o]
+;  ;  (Double.sqrt (mag-sq o)))
+;
+;  ;(defn normalize [o]
+;  ;  (let [m (mag o)]
+;  ;    (if (= m 0)
+;  ;      o
+;  ;      (div o n))))
+;)
