@@ -23,7 +23,6 @@
 ;; push-back : (λ [(Array a) a] (Array a))
 ;; range : (λ [t t t] (Array t))
 ;; raw : (λ [(Array t)] (Ptr t))
-;; reduce : (λ [(λ [b a] b) b (Array a)] b)
 ;; repeat : (λ [Int (λ [] t)] (Array t))
 ;; replicate : (λ [Int &t] (Array t))
 ;; str : (λ [&(Array a)] String)
