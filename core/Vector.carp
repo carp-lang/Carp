@@ -104,10 +104,10 @@
       (Double.- (Double.* (V.z x) (V.x y))
                 (Double.* (V.x x) (V.z y)))
       (Double.- (Double.* (V.x x) (V.y y))
-                (Double.* (V.y x) (V.x y))))))
+                (Double.* (V.y x) (V.x y)))))
 
   (defn dot [x, y]
     (Double.+ (Double.* (V.x x) (V.x y))
-              (Double.* (V.y x) (V.y y))
-              (Double.* (V.z x) (V.z y))))))
+              (Double.+ (Double.* (V.y x) (V.y y))
+                        (Double.* (V.z x) (V.z y)))))
 )
