@@ -34,40 +34,40 @@
     (V.init (Double./ (V.x a) n)
             (Double./ (V.y a) n)))
 
-  (defn doubeq [a, b]
+  (defn doubleq [a, b]
     (if (Double.> a b)
       (Double.< (Double.- a b) 0.00001)
       (Double.< (Double.- b a) 0.00001)))
 
   (defn = [a, b]
-    (and (doubeq (V.x a) (V.x b))
-         (doubeq (V.y a) (V.y b))))
+    (and (doubleq (V.x a) (V.x b))
+         (doubleq (V.y a) (V.y b))))
 
   (defn mag-sq [o]
     (let [x (V.x o)
           y (V.y o)]
       (Double.+ (Double.* x x) (Double.* y y))))
 
-  ;(defn mag [o]
-  ;  (Double.sqrt (mag-sq o)))
+  (defn mag [o]
+    (Double.sqrt (mag-sq o)))
 
-  ;(defn normalize [o]
-  ;  (let [m (mag o)]
-  ;    (if (= m 0)
-  ;      o
-  ;      (div o n))))
+  (defn normalize [o]
+    (let [m (mag o)]
+      (if (doubleq m 0.0)
+        (V.copy o)
+        (/ o m))))
 
-  ;(defn dist [a, b]
-  ;  (let [b (- b a)]
-  ;    (mag b)))
+  (defn dist [a, b]
+    (let [s (- &b &a)]
+      (mag &s)))
 
-  ;(defn heading [a]
-  ;  (Double.atan2 (V.y a) (V.x a)))
+  (defn heading [a]
+    (Double.atan2 (V.y a) (V.x a)))
 
-  ;(defn rotate [a n]
-  ;  (let [h (Double.+ (heading a) n)
-  ;        m (mag a)]
-  ;    (V.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
+  (defn rotate [a n]
+    (let [h (Double.+ (heading a) n)
+          m (mag a)]
+      (V.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
 
   (defn dot [x, y]
     (Double.+ (Double.* (V.x x) (V.x y))

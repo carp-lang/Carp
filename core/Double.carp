@@ -1,5 +1,7 @@
 (defmodule Double
   (def π 3.1415926536)
+  (register < (Fn [Double Double] Bool))
+  (register > (Fn [Double Double] Bool))
   (register + (Fn [Double Double] Double))
   (register - (Fn [Double Double] Double))
   (register * (Fn [Double Double] Double))
@@ -8,6 +10,8 @@
   (register from-int (Fn [Int] Double))
   (register sin (Fn [Double] Double))
   (register cos (Fn [Double] Double))
+  (register atan2 (Fn [Double Double] Double))
+  (register sqrt (Fn [Double] Double))
   (register str (Fn [Double] String))
   (register copy (Fn [(Ref Double)] Double))
   )

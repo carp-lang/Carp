@@ -63,6 +63,8 @@ double Double_copy(double *x) { return *x; }
 #define Double__MINUS_(x, y) ((x) - (y))
 #define Double__MUL_(x, y) ((x) * (y))
 #define Double__DIV_(x, y) ((x) / (y))
+#define Double__LT_(x, y) ((x) < (y))
+#define Double__GT_(x, y) ((x) > (y))
 
 #define Float__PLUS_(x, y) ((x) + (y))
 #define Float__MINUS_(x, y) ((x) - (y))
@@ -201,6 +203,14 @@ double Double_sin(double x) {
 
 double Double_cos(double x) {
     return cos(x);
+}
+
+double Double_sqrt(double x) {
+    return sqrt(x);
+}
+
+double Double_atan2(double x, double y) {
+    return atan2(x, y);
 }
 
 string Double_str(double x) {
