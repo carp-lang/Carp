@@ -1,15 +1,12 @@
 (defmodule Array
 
-  (defn sum [xs]
-    123456)
-
   (defn reduce [f x xs]
     (let [total x]
       (do
         (for [i 0 (count xs)]
           (set! &total (f &total (nth xs i))))
         total)))
-
+  
   )
 
 ;; Defined internally in the compiler
@@ -32,3 +29,10 @@
 ;; str : (λ [&(Array a)] String)
 ;; transform : (λ [(λ [a] b) (Array a)] (Array b))
 ;; -----------------------------------------------
+
+;; Extending the Int module
+(defmodule Int
+  (defn add-ref [x y]
+    (Int.+ @x @y))
+  (defn sum [xs]
+    (Array.reduce add-ref 0 xs)))

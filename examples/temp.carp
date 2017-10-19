@@ -8,4 +8,5 @@
 (use Char)
 (use Bool)
 
-
+(defn main []
+  (println (refstr (Int.sum &[1 2 3 4 5]))))
