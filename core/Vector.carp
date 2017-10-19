@@ -1,4 +1,4 @@
-; missing: heading, rotation, angle between two vectors, lerp, equals
+; missing: lerp
 
 
 (defdynamic append-multi- [strs]
@@ -57,9 +57,25 @@
   ;      o
   ;      (div o n))))
 
+  ;(defn dist [a, b]
+  ;  (let [b (- b a)]
+  ;    (mag b)))
+
+  ;(defn heading [a]
+  ;  (Double.atan2 (V.y a) (V.x a)))
+
+  ;(defn rotate [a n]
+  ;  (let [h (Double.+ (heading a) n)
+  ;        m (mag a)]
+  ;    (V.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
+
   (defn dot [x, y]
     (Double.+ (Double.* (V.x x) (V.x y))
               (Double.* (V.y x) (V.y y))))
+
+  ;(defn angle-between [a b]
+  ;  (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
+  ;    (Double.acos (Double.clamp -1.0 1.0 dmm))))
 )
 
 (defmodule Vector3
@@ -119,6 +135,10 @@
     (Double.+ (Double.* (V.x x) (V.x y))
               (Double.+ (Double.* (V.y x) (V.y y))
                         (Double.* (V.z x) (V.z y)))))
+
+  ;(defn angle-between [a b]
+  ;  (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
+  ;    (Double.acos (Double.clamp -1.0 1.0 dmm))))
 )
 
 ;(defmodule VectorN
@@ -170,6 +190,11 @@
 ;
 ;  ;(defn mag [o]
 ;  ;  (Double.sqrt (mag-sq o)))
+;
+;  ;(defn dist [a, b]
+;  ;  (let [b (- b a)]
+;  ;    (mag b)))
+;
 ;
 ;  ;(defn normalize [o]
 ;  ;  (let [m (mag o)]
