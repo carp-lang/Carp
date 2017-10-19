@@ -31,6 +31,7 @@
 * Quasiquote
 * Splicing in macros
 * Pattern matching on arguments in macros?
+* 'not=' function/macro
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
