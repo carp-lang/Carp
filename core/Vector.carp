@@ -1,0 +1,113 @@
+; missing: heading, rotation, angle between two vectors, lerp, equals
+
+
+(defdynamic append-multi- [strs]
+  (if (= (count strs) 0)
+    '@""
+    (list 'String.append (car strs) (append-multi- (cdr strs)))))
+
+(defmacro append-multi [:rest strs]
+  (append-multi- strs))
+
+(defmodule Vector2
+  (deftype V [x Double, y Double])
+
+  (defn init [x, y]
+    (V.init x y))
+
+  (defn str [o]
+    (append-multi @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @")"))
+
+  (defn + [a, b]
+    (V.init (Double.+ (V.x a) (V.x b))
+            (Double.+ (V.y a) (V.y b))))
+
+  (defn - [a, b]
+    (V.init (Double.- (V.x a) (V.x b))
+            (Double.- (V.y a) (V.y b))))
+
+  (defn * [a, n]
+    (V.init (Double.* (V.x a) n)
+            (Double.* (V.y a) n)))
+
+  (defn / [a, n]
+    (V.init (Double./ (V.x a) n)
+            (Double./ (V.y a) n)))
+
+  (defn mag-sq [o]
+    (let [x (V.x o)
+          y (V.y o)]
+      (Double.+ (Double.* x x) (Double.* y y))))
+
+  ;(defn mag [o]
+  ;  (Double.sqrt (mag-sq o)))
+
+  ;(defn normalize [o]
+  ;  (let [m (mag o)]
+  ;    (if (= m 0)
+  ;      o
+  ;      (div o n))))
+
+  (defn dot [x, y]
+    (Double.+ (Double.* (V.x x) (V.x y))
+              (Double.* (V.y x) (V.y y))))
+)
+
+(defmodule Vector3
+  (deftype V [x Double, y Double, z Double])
+
+  (defn init [x, y, z]
+    (V.init x y z))
+
+  (defn str [o]
+    (append-multi @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @", " (Double.str (V.z o)) @")"))
+
+  (defn + [a, b]
+    (V.init (Double.+ (V.x a) (V.x b))
+            (Double.+ (V.y a) (V.y b))
+            (Double.+ (V.z a) (V.z b))))
+
+  (defn - [a, b]
+    (V.init (Double.- (V.x a) (V.x b))
+            (Double.- (V.y a) (V.y b))
+            (Double.- (V.z a) (V.z b))))
+
+  (defn * [a, n]
+    (V.init (Double.* (V.x a) n)
+            (Double.* (V.y a) n)
+            (Double.* (V.z a) n)))
+
+  (defn / [a, n]
+    (V.init (Double./ (V.x a) n)
+            (Double./ (V.y a) n)
+            (Double./ (V.z a) n)))
+
+  (defn mag-sq [o]
+    (let [x (V.x o)
+          y (V.y o)
+          z (V.z o)]
+      (Double.+ (Double.* x x) (Double.+ (Double.* y y) (Double.* z z)))))
+
+  ;(defn mag [o]
+  ;  (Double.sqrt (mag-sq o)))
+
+  ;(defn normalize [o]
+  ;  (let [m (mag o)]
+  ;    (if (= m 0)
+  ;      o
+  ;      (div o n))))
+
+  (defn cross [x, y]
+    (V.init
+      (Double.- (Double.* (V.y x) (V.z y))
+                (Double.* (V.z x) (V.y y)))
+      (Double.- (Double.* (V.z x) (V.x y))
+                (Double.* (V.x x) (V.z y)))
+      (Double.- (Double.* (V.x x) (V.y y))
+                (Double.* (V.y x) (V.x y))))))
+
+  (defn dot [x, y]
+    (Double.+ (Double.* (V.x x) (V.x y))
+              (Double.* (V.y x) (V.y y))
+              (Double.* (V.z x) (V.z y))))))
+)

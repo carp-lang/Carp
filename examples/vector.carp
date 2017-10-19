@@ -1,0 +1,10 @@
+(use IO)
+(use Vector2)
+
+(defn main []
+  (let [x (Vector2.init 1 2)
+        y (Vector2.init 3 4)]
+    (do
+      (println &(Vector2.str &(+ &x &y)))
+      (println &(Vector2.str &x))
+      (println &(Vector2.str &y)))))

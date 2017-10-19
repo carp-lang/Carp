@@ -157,6 +157,7 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macr
                                                                          , "IO"
                                                                          , "System"
                                                                          , "Test"
+                                                                         , "Vector"
                                                                          ]
 
 main :: IO ()
