@@ -2,7 +2,7 @@ module Main where
 
 import Control.Monad
 import qualified System.Environment as SystemEnvironment
-import System.IO (hFlush, stdout)
+import System.IO (hFlush, stdout, isEOF)
 import System.Info (os)
 import qualified Data.Map as Map
 import ColorText
@@ -29,12 +29,16 @@ repl :: Context -> String -> IO ()
 repl context readSoFar =
   do putStrWithColor Yellow (if null readSoFar then (projectPrompt (contextProj context)) else "     ") -- 鲤 / 鲮
      hFlush stdout
-     input <- fmap (\s -> readSoFar ++ s ++ "\n") getLine
-     case balance input of
-       0 -> do let input' = if input == "\n" then contextLastInput context else input
-               context' <- executeString context input' "REPL"
-               repl (context' { contextLastInput = input' }) ""
-       _ -> repl context input
+     quit <- isEOF
+     if quit
+       then return ()
+       else do
+         input <- fmap (\s -> readSoFar ++ s ++ "\n") getLine
+         case balance input of
+           0 -> do let input' = if input == "\n" then contextLastInput context else input
+                   context' <- executeString context input' "REPL"
+                   repl (context' { contextLastInput = input' }) ""
+           _ -> repl context input
 
 arrayModule :: Env
 arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
@@ -102,4 +106,4 @@ main = do putStrLn "Welcome to Carp 0.2.0"
                                           (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
           context' <- foldM executeCommand context (map Load args)
           repl context' ""
-          
+
