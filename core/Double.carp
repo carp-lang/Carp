@@ -9,4 +9,5 @@
   (register sin (Fn [Double] Double))
   (register cos (Fn [Double] Double))
   (register str (Fn [Double] String))
+  (register copy (Fn [(Ref Double)] Double))
   )

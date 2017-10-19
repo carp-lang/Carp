@@ -4,6 +4,8 @@
 * Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of with heap allocated types (String, structs, etc.)
 * Arrays can contain references, this will lead to dangling pointers.
+* Type declarations inside other modules can't be unqualified even though the outer module is 'use':d
+* A program using references to arrays but nothing else produces invalid typedefs (see sum-functions for adding the elements of an array)
 
 ## Ugliness
 * Just entering '=' at the REPL leads to strange type error.
@@ -21,6 +23,7 @@
 * Doc strings
 
 ## Smaller Language Features ("niceties")
+* All the math functions!
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))

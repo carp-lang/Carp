@@ -9,29 +9,28 @@
   
   )
 
-;; Defined internally in the compiler
-;; -----------------------------------------------
-;; aset : (λ [(Array t) Int t] (Array t))
-;; aset! : (λ [&(Array t) Int t] ())
-;; copy : (λ [&(Array a)] (Array a))
-;; count : (λ [&(Array t)] Int)
-;; delete : (λ [(Array a)] ())
-;; filter : (λ [(λ [a] Bool) (Array a)] (Array a))
-;; map : (λ [(λ [a] a) (Array a)] (Array a))
-;; nth : (λ [&(Array t) Int] &t)
-;; pop-back : (λ [(Array a)] (Array a))
-;; push-back : (λ [(Array a) a] (Array a))
-;; range : (λ [t t t] (Array t))
-;; raw : (λ [(Array t)] (Ptr t))
-;; repeat : (λ [Int (λ [] t)] (Array t))
-;; replicate : (λ [Int &t] (Array t))
-;; str : (λ [&(Array a)] String)
-;; transform : (λ [(λ [a] b) (Array a)] (Array b))
-;; -----------------------------------------------
+;; BUGS! These function definitions will not create the required typedef for Array, for instance:
+;; typedef Array Array__int;
+;; INSTEAD they will create the following (wrong) typedef:
+;; typedef Array Array__int_MUL_;
 
-;; Extending the Int module
-(defmodule Int
-  (defn add-ref [x y]
-    (Int.+ @x @y))
-  (defn sum [xs]
-    (Array.reduce add-ref 0 xs)))
+;; ;; Extending the Int module with Array functions
+;; (defmodule Int
+;;   (defn add-ref [x y]
+;;     (Int.+ (Int.copy x) (Int.copy y)))
+;;   (defn sum [xs]
+;;     (Array.reduce Int.add-ref 0 xs)))
+
+;; ;; Extending the Float module with Array functions
+;; (defmodule Float
+;;   (defn add-ref [x y]
+;;     (Float.+ (Float.copy x) (Float.copy y)))
+;;   (defn sum [xs]
+;;     (Array.reduce Float.add-ref 0.0f xs)))
+
+;; ;; Extending the Double module with Array functions
+;; (defmodule Double
+;;   (defn add-ref [x y]
+;;     (Double.+ (Double.copy x) (Double.copy y)))
+;;   (defn sum [xs]
+;;     (Array.reduce Double.add-ref 0.0 xs)))

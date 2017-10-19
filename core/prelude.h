@@ -55,6 +55,8 @@ int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
 
 int Int_copy(int *x) { return *x; }
+float Float_copy(float *x) { return *x; }
+double Double_copy(double *x) { return *x; }
 
 #define Double__PLUS_(x, y) ((x) + (y))
 #define Double__MINUS_(x, y) ((x) - (y))
