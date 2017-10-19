@@ -1,6 +1,5 @@
 ; missing: lerp
 
-
 (defdynamic append-multi- [strs]
   (if (= (count strs) 0)
     '@""
@@ -8,6 +7,11 @@
 
 (defmacro append-multi [:rest strs]
   (append-multi- strs))
+
+(defn doubleq [a, b]
+  (if (Double.> a b)
+    (Double.< (Double.- a b) 0.00001)
+    (Double.< (Double.- b a) 0.00001)))
 
 (defmodule Vector2
   (deftype V [x Double, y Double])
@@ -33,11 +37,6 @@
   (defn / [a, n]
     (V.init (Double./ (V.x a) n)
             (Double./ (V.y a) n)))
-
-  (defn doubleq [a, b]
-    (if (Double.> a b)
-      (Double.< (Double.- a b) 0.00001)
-      (Double.< (Double.- b a) 0.00001)))
 
   (defn = [a, b]
     (and (doubleq (V.x a) (V.x b))
@@ -73,9 +72,9 @@
     (Double.+ (Double.* (V.x x) (V.x y))
               (Double.* (V.y x) (V.y y))))
 
-  ;(defn angle-between [a b]
-  ;  (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
-  ;    (Double.acos (Double.clamp -1.0 1.0 dmm))))
+  (defn angle-between [a b]
+    (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
+      (Double.acos (Double.clamp -1.0 1.0 dmm))))
 )
 
 (defmodule Vector3
@@ -113,14 +112,14 @@
           z (V.z o)]
       (Double.+ (Double.* x x) (Double.+ (Double.* y y) (Double.* z z)))))
 
-  ;(defn mag [o]
-  ;  (Double.sqrt (mag-sq o)))
+  (defn mag [o]
+    (Double.sqrt (mag-sq o)))
 
-  ;(defn normalize [o]
-  ;  (let [m (mag o)]
-  ;    (if (= m 0)
-  ;      o
-  ;      (div o n))))
+  (defn normalize [o]
+    (let [m (mag o)]
+      (if (doubleq m 0.0)
+        (V.copy o)
+        (/ o m))))
 
   (defn cross [x, y]
     (V.init
@@ -136,9 +135,9 @@
               (Double.+ (Double.* (V.y x) (V.y y))
                         (Double.* (V.z x) (V.z y)))))
 
-  ;(defn angle-between [a b]
-  ;  (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
-  ;    (Double.acos (Double.clamp -1.0 1.0 dmm))))
+  (defn angle-between [a b]
+    (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
+      (Double.acos (Double.clamp -1.0 1.0 dmm))))
 )
 
 ;(defmodule VectorN

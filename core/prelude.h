@@ -209,6 +209,10 @@ double Double_sqrt(double x) {
     return sqrt(x);
 }
 
+double Double_acos(double x) {
+    return acos(x);
+}
+
 double Double_atan2(double x, double y) {
     return atan2(x, y);
 }
