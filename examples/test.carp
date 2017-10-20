@@ -1,0 +1,13 @@
+(use Test)
+
+;(deftest my-test test
+;  (assert-int-equal test 1 2 "1 == 2")
+;  (assert-true test (Int.> (Array.count &[1 2 3]) 1) "len([1 2 3]) == 1")
+;  (assert-str-not-equal test "hi" "bye" "hi != bye"))
+
+(defn main []
+  (with-test test
+    (assert-int-equal test 1 2 "1 == 2")
+    (assert-true test (Int.> (Array.count &[1 2 3]) 1) "len([1 2 3]) == 1")
+    (assert-str-not-equal test "hi" "bye" "hi != bye")
+    (print-test-results test)))

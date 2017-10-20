@@ -6,6 +6,7 @@
   (register < (λ [Int Int] Bool))
   (register > (λ [Int Int] Bool))
   (register = (λ [Int Int] Bool))
+  (register /= (λ [Int Int] Bool))
   (register mod (λ [Int Int] Int))
   (register seed (λ [Int] ()))
   (register random (λ [] Int))

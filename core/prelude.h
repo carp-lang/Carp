@@ -43,13 +43,14 @@ bool not(bool b) {
     return !b;
 }
 
-int Int__PLUS_(x, y)  { return x + y; }
-int Int__MINUS_(x, y) { return x - y; }
-int Int__MUL_(x, y)   { return x * y; }
-int Int__DIV_(x, y)   { return x / y; } 
-bool Int__EQ_(x, y)    { return x == y; } 
-int Int__LT_(x, y)    { return x < y; } 
-int Int__GT_(x, y)    { return x > y; } 
+int Int__PLUS_(x, y)   { return x + y; }
+int Int__MINUS_(x, y)  { return x - y; }
+int Int__MUL_(x, y)    { return x * y; }
+int Int__DIV_(x, y)    { return x / y; }
+int Int__EQ_(x, y)     { return x == y; }
+int Int__DIV__EQ_(x, y) { return x != y; }
+int Int__LT_(x, y)    { return x < y; }
+int Int__GT_(x, y)    { return x > y; }
 
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
@@ -128,6 +129,9 @@ bool String__EQ_(string *a, string *b) {
     return strcmp(*a, *b) == 0;
 }
 
+bool String__DIV__EQ_(string *a, string *b) {
+    return strcmp(*a, *b) == 0;
+}
 string String_append(string a, string b) {
     int la = strlen(a);
     int lb = strlen(b);
@@ -164,6 +168,12 @@ Array String_chars(string *s) {
     chars.len = strlen(*s);
     chars.data = strdup(*s);
     return chars;
+}
+
+string String_from_MINUS_chars(Array a) {
+    string s = malloc(a.len);
+    snprintf(s, a.len, "%s", a.data);
+    return s;
 }
 
 string Char_str(char c) {
@@ -216,6 +226,14 @@ string Float_str(float x) {
 }
 
 // Bool
+bool Bool__EQ_(bool a, bool b) {
+  return a == b;
+}
+
+bool Bool__DIV__EQ_(bool a, bool b) {
+  return a != b;
+}
+
 string Bool_str(bool b) {
     if(b) {
         return strdup("true");
