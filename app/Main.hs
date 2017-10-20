@@ -1,8 +1,10 @@
 module Main where
 
 import Control.Monad
+import Control.Monad.IO.Class
+import System.Console.Haskeline (getInputLine, InputT, runInputT, defaultSettings)
 import qualified System.Environment as SystemEnvironment
-import System.IO (hFlush, stdout, isEOF)
+import System.IO (stdout)
 import System.Info (os)
 import qualified Data.Map as Map
 import ColorText
@@ -25,20 +27,19 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectPrompt = if os == "darwin" then "鲮 " else "> "
                          }
 
-repl :: Context -> String -> IO ()
+repl :: Context -> String -> InputT IO ()
 repl context readSoFar =
-  do putStrWithColor Yellow (if null readSoFar then (projectPrompt (contextProj context)) else "     ") -- 鲤 / 鲮
-     hFlush stdout
-     quit <- isEOF
-     if quit
-       then return ()
-       else do
-         input <- fmap (\s -> readSoFar ++ s ++ "\n") getLine
-         case balance input of
-           0 -> do let input' = if input == "\n" then contextLastInput context else input
-                   context' <- executeString context input' "REPL"
-                   repl (context' { contextLastInput = input' }) ""
-           _ -> repl context input
+  do let prompt = strWithColor Yellow (if null readSoFar then (projectPrompt (contextProj context)) else "     ") -- 鲤 / 鲮
+     input <- (getInputLine prompt)
+     case input of
+        Nothing -> return ()
+        Just i -> do
+          let concat = readSoFar ++ i ++ "\n"
+          case balance concat of
+            0 -> do let input' = if concat == "\n" then contextLastInput context else concat
+                    context' <- liftIO $ executeString context input' "REPL"
+                    repl (context' { contextLastInput = input' }) ""
+            _ -> repl context concat
 
 arrayModule :: Env
 arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
@@ -105,5 +106,5 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           context <- foldM executeCommand (Context startingGlobalEnv (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
           context' <- foldM executeCommand context (map Load args)
-          repl context' ""
+          runInputT defaultSettings (repl context' "")
 
