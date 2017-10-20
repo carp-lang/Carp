@@ -7,3 +7,16 @@
 (use String)
 (use Char)
 (use Bool)
+
+(defn handler [x y op]
+  (if (op x y)
+    (IO.println "Test passed!")
+    (IO.println "Test failed!")))
+
+(defn assert-eq [x y]
+  (handler x y =))
+
+(defn main []
+  (do
+    (assert-eq 1 2)
+    (assert-eq "hi" "bye")))
