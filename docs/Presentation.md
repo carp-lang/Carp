@@ -1,3 +1,5 @@
+<!-- This presentation is made to be run in the Deckset app. -->
+
 # Introduction to Carp
 
 ---
@@ -413,9 +415,9 @@ Will allocate new memory and leave the old data as-is.
 
 ```
 (let [xs [1 2 3 4 5]]
-  (transform Int.str &xs))
+  (copy-map Int.str &xs))
   
-transform : (λ [(λ [a] b) (Ref (Array a))] (Array b)) ;; This type might be buggy!!!
+copy-map : (λ [(λ [a] b) (Ref (Array a))] (Array b)) ;; This type might be buggy!!!
 ```
 
 ---
@@ -423,10 +425,10 @@ transform : (λ [(λ [a] b) (Ref (Array a))] (Array b)) ;; This type might be bu
 
 ```
 (let [xs [1 2 3 4 5]]
-  (map square xs))
+  (endo-map square xs))
 ```
 
-Ownership of 'xs' is passed to the map function, which will mutate the array and return it.
+Ownership of 'xs' is passed to the 'endo-map' function, which will mutate the array and return it.
 
 ---
 # Behind the scenes
