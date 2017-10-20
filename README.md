@@ -70,6 +70,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Reini Urban
 * Anes Lihovac
 * Jonas Granquist
+* Veit Heller
 
 
 ## License
