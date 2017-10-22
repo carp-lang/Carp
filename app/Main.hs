@@ -2,7 +2,16 @@ module Main where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import System.Console.Haskeline (getInputLine, InputT, runInputT, defaultSettings)
+import Data.List (isPrefixOf)
+import System.Console.Haskeline ( getInputLine
+                                , InputT
+                                , runInputT
+                                , Settings(..)
+                                , Completion
+                                , simpleCompletion
+                                , completeWordWithPrev
+                                )
+import System.Directory (getHomeDirectory)
 import qualified System.Environment as SystemEnvironment
 import System.IO (stdout)
 import System.Info (os)
@@ -26,6 +35,61 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectOutDir = "./out/"
                          , projectPrompt = if os == "darwin" then "鲮 " else "> "
                          }
+
+completeKeywords :: Monad m => String -> String -> m [Completion]
+completeKeywords _ word = return $ findKeywords word keywords []
+  where
+        findKeywords match [] res = res
+        findKeywords match (x : xs) res =
+          if isPrefixOf match x
+            then findKeywords match xs (res ++ [simpleCompletion x])
+            else findKeywords match xs res
+        keywords = [ "Int" -- we should probably have a list of those somewhere
+                   , "Float"
+                   , "Double"
+                   , "Bool"
+                   , "String"
+                   , "Char"
+                   , "Array"
+                   , "Fn"
+
+                   , "def"
+                   , "defn"
+                   , "let"
+                   , "do"
+                   , "if"
+                   , "while"
+                   , "ref"
+                   , "address"
+                   , "set!"
+                   , "the"
+
+                   , "defmacro"
+                   , "dynamic"
+                   , "quote"
+                   , "car"
+                   , "cdr"
+                   , "cons"
+                   , "list"
+                   , "array"
+
+                   , "deftype"
+
+                   , "register"
+
+                   , "true"
+                   , "false"
+                   ]
+
+
+readlineSettings :: Monad m => IO (Settings m)
+readlineSettings = do
+  home <- getHomeDirectory
+  return $ Settings {
+    complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] completeKeywords,
+    historyFile = Just $ home ++ "/.carp_history",
+    autoAddHistory = True
+  }
 
 repl :: Context -> String -> InputT IO ()
 repl context readSoFar =
@@ -106,5 +170,6 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           context <- foldM executeCommand (Context startingGlobalEnv (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
           context' <- foldM executeCommand context (map Load args)
-          runInputT defaultSettings (repl context' "")
+          settings <- readlineSettings
+          runInputT settings (repl context' "")
 

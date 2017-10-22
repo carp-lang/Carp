@@ -53,6 +53,7 @@ executable carp
   build-depends:       base
                      , CarpHask
                      , containers
+                     , directory
                      , haskeline
                      , process
   default-language:    Haskell2010
