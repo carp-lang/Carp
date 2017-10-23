@@ -41,7 +41,7 @@ instance Show ToCError where
     " at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
-    
+
 data EmitterState = EmitterState { emitterSrc :: String }
 
 appendToSrc :: String -> State EmitterState ()
@@ -91,10 +91,13 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
           -- | This will use the statically allocated string in the C binary (can't be freed):
           do let var = freshVar i
                  varRef = freshVar i ++ "_ref";
-             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ str ++ "\";\n")
+             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ (escapeString str) ++ "\";\n")
              appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
         visitString _ _ = error "Not a string."
+        escapeString [] = ""
+        escapeString ('\"':xs) = "\\\"" ++ escapeString xs
+        escapeString (x:xs) = x : escapeString xs
 
         visitSymbol :: XObj -> State EmitterState String
         visitSymbol xobj@(XObj (Sym path) _ t) = let Just t' = t
@@ -158,7 +161,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                        let Just ifT = ty ifTrue
                        in  appendToSrc (addIndent indent ++ tyToC ifT ++ " " ++ ifRetVar ++ ";\n")
                      exprVar <- visit indent expr
-                     appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n") 
+                     appendToSrc (addIndent indent ++ "if (" ++ exprVar ++ ") {\n")
                      trueVar <- visit indent' ifTrue
                      let Just ifTrueInfo = info ifTrue
                      delete indent' ifTrueInfo
@@ -178,9 +181,9 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
               let indent' = indent + indentAmount
                   Just exprTy = ty expr
                   conditionVar = freshVar i
-              in  do exprRetVar <- visitWhileExpression indent           
+              in  do exprRetVar <- visitWhileExpression indent
                      appendToSrc (addIndent indent ++ tyToC exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
-                     appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n") 
+                     appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                      _ <- visit indent' body
                      exprRetVar' <- visitWhileExpression indent'
                      delete indent' i
@@ -201,7 +204,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             XObj Do _ _ : expressions ->
               do let lastExpr = last expressions
                      retVar = freshVar i
-                 _ <- mapM (visit indent) (init expressions)                 
+                 _ <- mapM (visit indent) (init expressions)
                  let (Just lastTy) = ty lastExpr
                  if lastTy == UnitTy
                    then do _ <- visit indent lastExpr
@@ -241,7 +244,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      fresh = mangle (freshVar i)
                  appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
-                 
+
             -- Deftype
             XObj Typ _ _ : XObj (Sym _) _ _ : _ ->
               return ""
@@ -249,7 +252,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             -- Template
             (XObj (Deftemplate _) _ _) : (XObj (Sym _) _ _) : [] ->
               return ""
-              
+
             (XObj (Instantiate template) _ _) : (XObj (Sym path) _ _) : [] ->
               do let Just t' = t
                  appendToSrc (templateToC template path t')
@@ -270,7 +273,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             -- Dynamic
             (XObj Dynamic _ _) : _ ->
               return ""
-              
+
             -- Function application
             func : args ->
               do funcToCall <- visit indent func
@@ -295,7 +298,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
         visitArray :: Int -> XObj -> State EmitterState String
         visitArray indent (XObj (Arr xobjs) (Just i) t) =
           do let arrayVar = freshVar i
-                 len = length xobjs                 
+                 len = length xobjs
                  Just (StructTy "Array" [innerTy]) = t
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                           " = { .len = " ++ show len ++ "," ++
@@ -346,14 +349,14 @@ templateToDeclaration template path actualTy =
 
 deftypeToDeclaration :: SymPath -> [XObj] -> String
 deftypeToDeclaration path rest =
-  let indent' = indentAmount  
+  let indent' = indentAmount
       (SymPath _ typeName) = path
       --p = (PointerTy (StructTy typeName []))
-      
+
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM memberToDecl (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
-                
+
       memberToDecl :: (XObj, XObj) -> State EmitterState ()
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
@@ -364,7 +367,7 @@ deftypeToDeclaration path rest =
       visit = do appendToSrc "typedef struct {\n"
                  _ <- mapM typedefCaseToMemberDecl rest
                  appendToSrc ("} " ++ typeName ++ ";\n")
-                                  
+
   in emitterSrc (execState visit (EmitterState ""))
 
 defaliasToDeclaration :: Ty -> SymPath -> String
@@ -433,9 +436,9 @@ binderToDeclaration typeEnv binder =
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
         _ -> case ty xobj of
-               Just t -> if typeIsGeneric t then Right "" else Right (toDeclaration xobj ++ "") 
+               Just t -> if typeIsGeneric t then Right "" else Right (toDeclaration xobj ++ "")
                Nothing -> Left (BinderIsMissingType binder)
-                                          
+
 envToC :: Env -> Either ToCError String
 envToC env = let binders = map snd (Map.toList (envBindings env))
              in  do okCodes <- mapM binderToC binders
@@ -463,7 +466,7 @@ checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols root = visit root
   where
     visit :: XObj -> Either ToCError ()
-    visit xobj =   
+    visit xobj =
       case ty xobj of
         Nothing -> visitXObj
         Just t -> if typeIsGeneric t
@@ -481,7 +484,7 @@ checkForUnresolvedSymbols root = visit root
     visitList (XObj (Lst xobjs) i t) =
       case mapM visit xobjs of
         Left e -> Left e
-        Right _ -> return ()  
+        Right _ -> return ()
     visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
 
     visitArray :: XObj -> Either ToCError ()

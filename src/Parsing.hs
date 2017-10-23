@@ -8,6 +8,8 @@ import qualified Data.Set as Set
 import Obj
 import Types
 
+import Debug.Trace
+
 newtype ParseState = ParseState { parseInfo :: Info }
 
 bumpIdentifier :: Parsec.Parsec String ParseState ()
@@ -70,10 +72,15 @@ number = Parsec.try float <|>
 string :: Parsec.Parsec String ParseState XObj
 string = do i <- createInfo
             _ <- Parsec.char '"'
-            str <- Parsec.many (Parsec.noneOf ['"'])
+            str <- Parsec.many ((Parsec.try escaped) <|> Parsec.noneOf ['"'])
             _ <- Parsec.char '"'
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
+
+escaped =  do
+    _ <- Parsec.char '\\'
+    _ <- Parsec.char '\"'
+    return '\"'
 
 aChar :: Parsec.Parsec String ParseState XObj
 aChar = do i <- createInfo
@@ -90,7 +97,7 @@ symbolSegment = do sym <- Parsec.many1 validInSymbol
                    incColumn (length sym)
                    return sym
   where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharacters]
-  
+
 symbol :: Parsec.Parsec String ParseState XObj
 symbol = do i <- createInfo
             segments <- Parsec.sepBy1 symbolSegment (Parsec.char '.')
@@ -110,7 +117,7 @@ symbol = do i <- createInfo
               "the" -> return (XObj The i Nothing)
               "ref" -> return (XObj Ref i Nothing)
               name   -> return (XObj (Sym (SymPath (init segments) name)) i Nothing)
-                        
+
 atom :: Parsec.Parsec String ParseState XObj
 atom = Parsec.choice [number, string, aChar, symbol]
 
@@ -162,7 +169,7 @@ eof = do _ <- Parsec.char '\0'
 
 emptyCharacters :: [Parsec.Parsec String ParseState ()]
 emptyCharacters = [space, tab, comma, linebreak, eof, comment]
-           
+
 whitespace :: Parsec.Parsec String ParseState ()
 whitespace = do _ <- Parsec.many1 (Parsec.choice emptyCharacters)
                 return ()
@@ -175,11 +182,11 @@ readObjs :: Parsec.Parsec String ParseState [XObj]
 readObjs = do padding <- Parsec.many whitespace
               incColumn (length padding)
               Parsec.many sexpr
-                         
+
 array :: Parsec.Parsec String ParseState XObj
 array = do i <- createInfo
            _ <- Parsec.char '['
-           incColumn 1              
+           incColumn 1
            objs <- readObjs
            _ <- Parsec.char ']'
            incColumn 1
@@ -188,7 +195,7 @@ array = do i <- createInfo
 list :: Parsec.Parsec String ParseState XObj
 list = do i <- createInfo
           _ <- Parsec.char '('
-          incColumn 1              
+          incColumn 1
           objs <- readObjs
           _ <- Parsec.char ')'
           incColumn 1
@@ -213,7 +220,7 @@ quote = do i1 <- createInfo
            _ <- Parsec.char '\''
            expr <- sexpr
            return (XObj (Lst [(XObj (Sym (SymPath [] "quote")) i1 Nothing), expr]) i2 Nothing)
-           
+
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]
            _ <- whitespaceOrNothing
@@ -236,10 +243,10 @@ balance text =
   case Parsec.runParser parenSyntax [] "(parens)" text of
     Left err -> error (show err)
     Right ok -> ok
-                    
+
   where parenSyntax :: Parsec.Parsec String [Char] Int
         parenSyntax = do _ <- Parsec.many character
-                         parens <- Parsec.getState 
+                         parens <- Parsec.getState
                          return (length parens)
 
         character :: Parsec.Parsec String [Char] ()
@@ -248,6 +255,8 @@ balance text =
                        case parens of
                          [] -> push c
                          '"':xs -> case c of
+                                     '\\' -> do c <- Parsec.anyChar -- consume next
+                                                return ()
                                      '"' -> Parsec.putState xs -- close string
                                      _ -> return () -- inside string
                          (x:xs) -> case (x, c) of
@@ -256,7 +265,7 @@ balance text =
                                      ('"', '"') -> Parsec.putState xs
                                      --('\\', _) -> Parsec.putState xs -- ignore char after '\'
                                      _ -> push c
-                                     
+
         push :: Char -> Parsec.Parsec String String ()
         push c =
           do parens <- Parsec.getState
