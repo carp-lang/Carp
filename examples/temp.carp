@@ -1,22 +1,17 @@
-(use IO)
-(use Int)
-(use Float)
-(use Double)
-(use Array)
-(use System)
-(use String)
-(use Char)
-(use Bool)
+;; (use IO)
+;; (use Int)
+;; (use Float)
+;; (use Double)
+;; (use Array)
+;; (use System)
+;; (use String)
+;; (use Char)
+;; (use Bool)
 
-(defn handler [x y op]
-  (if (op x y)
-    (IO.println "Test passed!")
-    (IO.println "Test failed!")))
-
-(defn assert-eq [x y]
-  (handler x y =))
+(defn f []
+  (let [thing @"THING"
+        xs [&thing]] ;; <- should fail!
+    xs))
 
 (defn main []
-  (do
-    (assert-eq 1 2)
-    (assert-eq "hi" "bye")))
+  (IO.println (ref (Array.str &(f)))))

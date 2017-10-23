@@ -275,7 +275,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
        Register name xobj ->
          case xobjToTy xobj of
            Just t -> let path = SymPath pathStrings name
-                         binding = XObj (Lst [XObj External Nothing Nothing, XObj (Sym path) Nothing Nothing]) (info xobj) (Just t)
+                         binding = XObj (Lst [XObj External Nothing Nothing,
+                                              XObj (Sym path) Nothing Nothing])
+                                   (info xobj) (Just t)
                          env' = envInsertAt env path binding
                      in  return (ctx { contextGlobalEnv = env' })
            Nothing -> do putStrLnWithColor Red ("Can't understand type when registering '" ++ name ++ "'")
