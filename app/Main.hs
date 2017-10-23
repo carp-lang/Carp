@@ -72,6 +72,7 @@ completeKeywords _ word = return $ findKeywords word keywords []
                    , "cons"
                    , "list"
                    , "array"
+                   , "expand"
 
                    , "deftype"
 
