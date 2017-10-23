@@ -42,6 +42,7 @@
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
 * Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
 * Macros in modules must be qualified right now, is that a good long-term solution?
+* Should macros calling non-macros/non-dynamicfunctions just fail instead of returning an unvealuated list which is pretty confusing?
 
 ## Code generation
 * LLVM backend
