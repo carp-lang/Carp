@@ -153,11 +153,13 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
     case definition of
       XObj (Lst ((XObj Defn _ _) : _)) _ _ ->
         let withNewPath = setPath definition newPath
-            mappings = unifySignatures polyType concreteType
-            typed = assignTypes mappings withNewPath
-        in  do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv typed
+            mappings = unifySignatures polyType concreteType            
+        in case assignTypes mappings withNewPath of
+          Right typed -> 
+            do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv typed
                managed <- manageMemory typeEnv globalEnv concrete
                return (managed, deps)
+          Left e -> Left e
       XObj (Lst ((XObj (Deftemplate (TemplateCreator templateCreator)) _ _) : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
         in  Right (instantiateTemplate newPath concreteType template)

@@ -8,10 +8,3 @@
 ;; (use Char)
 ;; (use Bool)
 
-(defn f []
-  (let [thing @"THING"
-        xs [&thing]] ;; <- should fail!
-    xs))
-
-(defn main []
-  (IO.println (ref (Array.str &(f)))))

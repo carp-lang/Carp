@@ -28,6 +28,7 @@ data TypeError = SymbolMissingType XObj Env
                | LetCantReturnRefTy XObj Ty
                | GettingReferenceToUnownedValue XObj
                | UsingUnownedValue XObj
+               | ArraysCannotContainRefs XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -90,6 +91,8 @@ instance Show TypeError where
     prettyInfoFromXObj xobj
   show (UsingUnownedValue xobj) =
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (ArraysCannotContainRefs xobj) =
+    "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
     
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
