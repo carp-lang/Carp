@@ -1,25 +1,16 @@
 ;; This file contains examples of unsolved bugs
 
-;; (defmodule A
+(defmodule A
+  (defmodule B
+    (defn f [] 123)
+    )
+  (use B)
+  (defn g []
+    (f))
+  )
 
-;;   (deftype B [])
+(use A)
 
-;;   )
-
-;; (use A)
-
-;; (defn f []
-;;   (B.init) ;; <- this should resolve
-;;   )
-
-
-
-
-
-
-;;;;
-
-(defmodule MutableState
-  (def x 1)
-  (defn set-x [new-x]
-    (set! &x new-x)))
+(defn main []
+  (B.f) ;; <- this should resolve
+  )
