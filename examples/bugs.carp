@@ -1,6 +1,13 @@
 ;; This file contains examples of unsolved bugs
 
-(defn main []
-  (let [stuff [@"a" @"b" @"c"]]
-    (while true
-      (Array.delete stuff))))
+(defmodule A
+
+  (deftype B [])
+
+  )
+
+(use A)
+
+(defn f []
+  (B.init) ;; <- this should resolve
+  )
