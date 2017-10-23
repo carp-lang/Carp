@@ -1,5 +1,5 @@
 ;; (use IO)
-;; (use Int)
+(use Int)
 ;; (use Float)
 ;; (use Double)
 ;; (use Array)
@@ -8,3 +8,8 @@
 ;; (use Char)
 ;; (use Bool)
 
+(defn reducer [x y]
+  (Int.+ @x @y))
+
+(defn f [xs]
+  (Array.reduce reducer 0 xs))

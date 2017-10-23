@@ -13,6 +13,7 @@
 * Create a proper .c file for the core library C functions
 * No need to set unique identifiers on XObj:s in Parse.hs?
 * References to 'map' in the docs
+* Better error message (with name and location) when giving an external function the wrong types.
 
 ## Big Language Features
 * Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code

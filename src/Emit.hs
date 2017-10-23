@@ -127,7 +127,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             XObj Def _ _ : XObj (Sym path) _ _ : expr : [] ->
               do ret <- visit 0 expr
                  let Just t' = t
-                 appendToSrc ("const " ++ tyToC t' ++ " " ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                 appendToSrc ("" ++ tyToC t' ++ " " ++ pathToC path ++ " = " ++ ret ++ ";\n")
                  return ""
 
             -- Let
@@ -221,9 +221,10 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             -- Set!
             XObj SetBang _ _ : variable : value : [] ->
               do valueVar <- visit indent value
-                 let properVariableName = case variable of
-                                            (XObj (Lst (XObj Ref _ _ : x : _)) _ _) -> mangle (getName x)
-                                            _ -> error "How to handle setting of refs?" -- mangle (getName variable)
+                 let properVariableName =
+                       case variable of
+                         (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym) _ _) : _)) _ _) -> pathToC sym
+                         _ -> error "How to handle setting of refs?"
                      Just varInfo = info variable
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ ";\n")
@@ -385,7 +386,7 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       in  defnToDeclaration path argList retTy ++ ";\n"
     (XObj Def _ _) : (XObj (Sym path) _ _) : _ : [] ->
       let Just t' = t
-      in "const " ++ tyToC t' ++ " " ++ pathToC path ++ ";\n"
+      in "" ++ tyToC t' ++ " " ++ pathToC path ++ ";\n"
     (XObj Typ _ _) : (XObj (Sym path) _ _) : rest ->
       deftypeToDeclaration path rest
     (XObj (Deftemplate _) _ _) : _ ->
