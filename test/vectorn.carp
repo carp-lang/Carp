@@ -1,0 +1,73 @@
+(use Test)
+(use VectorN)
+(use Geometry)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  &(init 4 [1.0 2.0 3.0 4.0]) &(init 4 [1.0 2.0 3.0 4.0])
+                  "= operator works"
+                  =
+                  str)
+    (assert-equal test
+                  &(init 4 [1.0 2.0 3.0 4.0]) &(init 4 [1.0 1.0 3.0 4.0])
+                  "/= operator works"
+                  /=
+                  str)
+    (assert-equal test
+                  &(init 3 [3.0 3.0 4.5])
+                  &(+ &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 2.5]))
+                  "+ operator works"
+                  =
+                  str)
+    (assert-equal test
+                  &(init 3 [1.0 -1.0 -1.5])
+                  &(- &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 3.5]))
+                  "- operator works"
+                  =
+                  str)
+    (assert-equal test
+                  &(init 3 [4.0 2.0 2.2])
+                  &(* &(init 3 [2.0 1.0 1.1]) 2.0)
+                  "* operator works"
+                  =
+                  str)
+    (assert-equal test
+                  &(init 3 [1.0 0.5 0.25])
+                  &(/ &(init 3 [2.0 1.0 0.5]) 2.0)
+                  "/ operator works"
+                  =
+                  str)
+    (assert-equal test
+                  5.0
+                  (mag &(init 3 [3.0 4.0 0.0]))
+                  "mag works"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  101.0
+                  (mag-sq &(init 3 [10.0 1.0 0.0]))
+                  "mag-sq works"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  &(init 3 [0.6 0.8 0.0])
+                  &(normalize &(init 3 [3.0 4.0 0.0]))
+                  "normalize works"
+                  Vector2.=
+                  Vector2.str)
+    (assert-equal test
+                  90.0
+                  (radians-to-degree (Vector2.angle-between &(init 3 [1.0 0.0 0.0])
+                                                            &(init 3 [0.0 1.0 0.0])))
+                  "angle-between works"
+                  Double.approx
+                  Double.str)
+    (assert-equal test
+                  44.0
+                  (dot &(init 3 [10.0 2.0 3.0]) &(init 3 [2.0 12.0 3.0]))
+                  "dot works"
+                  Double.=
+                  Double.str)
+    (print-test-results test)
+))

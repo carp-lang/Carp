@@ -1,59 +1,59 @@
 ; missing: lerp
 
 (defmodule Vector2
-  (deftype V [x Double, y Double])
+  (deftype V2 [x Double, y Double])
 
   (defn init [x y]
-    (V.init x y))
+    (V2.init x y))
 
   (defn copy [v]
-    (V.copy v))
+    (V2.copy v))
 
   (defn get-x [o]
-    (V.x o))
+    (V2.x o))
 
   (defn get-y [o]
-    (V.y o))
+    (V2.y o))
 
   (defn set-x [o v]
-    (V.set-x o v))
+    (V2.set-x o v))
 
   (defn set-y [o v]
-    (V.set-y o v))
+    (V2.set-y o v))
 
   (defn str [o]
-    (string-join @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @")"))
+    (string-join @"Vector2(" (Double.str (V2.x o)) @", " (Double.str (V2.y o)) @")"))
 
   (defn + [a b]
-    (V.init (Double.+ (V.x a) (V.x b))
-            (Double.+ (V.y a) (V.y b))))
+    (V2.init (Double.+ (V2.x a) (V2.x b))
+            (Double.+ (V2.y a) (V2.y b))))
 
   (defn - [a b]
-    (V.init (Double.- (V.x a) (V.x b))
-            (Double.- (V.y a) (V.y b))))
+    (V2.init (Double.- (V2.x a) (V2.x b))
+            (Double.- (V2.y a) (V2.y b))))
 
   (defn * [a n]
-    (V.init (Double.* (V.x a) n)
-            (Double.* (V.y a) n)))
+    (V2.init (Double.* (V2.x a) n)
+            (Double.* (V2.y a) n)))
 
   (defn / [a n]
-    (V.init (Double./ (V.x a) n)
-            (Double./ (V.y a) n)))
+    (V2.init (Double./ (V2.x a) n)
+            (Double./ (V2.y a) n)))
 
   (defn = [a b]
-    (and (Double.= (V.x a) (V.x b))
-         (Double.= (V.y a) (V.y b))))
+    (and (Double.= (V2.x a) (V2.x b))
+         (Double.= (V2.y a) (V2.y b))))
 
   (defn /= [a b]
     (not (= a b)))
 
   (defn approx [a b]
-    (and (Double.approx (V.x a) (V.x b))
-         (Double.approx (V.y a) (V.y b))))
+    (and (Double.approx (V2.x a) (V2.x b))
+         (Double.approx (V2.y a) (V2.y b))))
 
   (defn mag-sq [o]
-    (let [x (V.x o)
-          y (V.y o)]
+    (let [x (V2.x o)
+          y (V2.y o)]
       (Double.+ (Double.* x x) (Double.* y y))))
 
   (defn mag [o]
@@ -62,7 +62,7 @@
   (defn normalize [o]
     (let [m (mag o)]
       (if (Double.= m 0.0)
-        (V.copy o)
+        (V2.copy o)
         (/ o m))))
 
   (defn dist [a b]
@@ -70,16 +70,16 @@
       (mag &s)))
 
   (defn heading [a]
-    (Double.atan2 (V.y a) (V.x a)))
+    (Double.atan2 (V2.y a) (V2.x a)))
 
   (defn rotate [a n]
     (let [h (Double.+ (heading a) n)
           m (mag a)]
-      (V.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
+      (V2.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
 
   (defn dot [x y]
-    (Double.+ (Double.* (V.x x) (V.x y))
-              (Double.* (V.y x) (V.y y))))
+    (Double.+ (Double.* (V2.x x) (V2.x y))
+              (Double.* (V2.y x) (V2.y y))))
 
   (defn angle-between [a b]
     (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
@@ -87,42 +87,42 @@
 )
 
 (defmodule Vector3
-  (deftype V [x Double, y Double, z Double])
+  (deftype V3 [x Double, y Double, z Double])
 
   (defn init [x y z]
-    (V.init x y z))
+    (V3.init x y z))
 
   (defn copy [v]
-    (V.copy v))
+    (V3.copy v))
 
   (defn str [o]
-    (string-join @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o))
-                 @", " (Double.str (V.z o)) @")"))
+    (string-join @"Vector2(" (Double.str (V3.x o)) @", " (Double.str (V3.y o))
+                 @", " (Double.str (V3.z o)) @")"))
 
   (defn + [a b]
-    (V.init (Double.+ (V.x a) (V.x b))
-            (Double.+ (V.y a) (V.y b))
-            (Double.+ (V.z a) (V.z b))))
+    (V3.init (Double.+ (V3.x a) (V3.x b))
+            (Double.+ (V3.y a) (V3.y b))
+            (Double.+ (V3.z a) (V3.z b))))
 
   (defn - [a b]
-    (V.init (Double.- (V.x a) (V.x b))
-            (Double.- (V.y a) (V.y b))
-            (Double.- (V.z a) (V.z b))))
+    (V3.init (Double.- (V3.x a) (V3.x b))
+            (Double.- (V3.y a) (V3.y b))
+            (Double.- (V3.z a) (V3.z b))))
 
   (defn * [a n]
-    (V.init (Double.* (V.x a) n)
-            (Double.* (V.y a) n)
-            (Double.* (V.z a) n)))
+    (V3.init (Double.* (V3.x a) n)
+            (Double.* (V3.y a) n)
+            (Double.* (V3.z a) n)))
 
   (defn / [a n]
-    (V.init (Double./ (V.x a) n)
-            (Double./ (V.y a) n)
-            (Double./ (V.z a) n)))
+    (V3.init (Double./ (V3.x a) n)
+            (Double./ (V3.y a) n)
+            (Double./ (V3.z a) n)))
 
   (defn mag-sq [o]
-    (let [x (V.x o)
-          y (V.y o)
-          z (V.z o)]
+    (let [x (V3.x o)
+          y (V3.y o)
+          z (V3.z o)]
       (Double.+ (Double.* x x) (Double.+ (Double.* y y) (Double.* z z)))))
 
   (defn mag [o]
@@ -131,86 +131,86 @@
   (defn normalize [o]
     (let [m (mag o)]
       (if (Double.= m 0.0)
-        (V.copy o)
+        (V3.copy o)
         (/ o m))))
 
   (defn cross [x y]
-    (V.init
-      (Double.- (Double.* (V.y x) (V.z y))
-                (Double.* (V.z x) (V.y y)))
-      (Double.- (Double.* (V.z x) (V.x y))
-                (Double.* (V.x x) (V.z y)))
-      (Double.- (Double.* (V.x x) (V.y y))
-                (Double.* (V.y x) (V.x y)))))
+    (V3.init
+      (Double.- (Double.* (V3.y x) (V3.z y))
+                (Double.* (V3.z x) (V3.y y)))
+      (Double.- (Double.* (V3.z x) (V3.x y))
+                (Double.* (V3.x x) (V3.z y)))
+      (Double.- (Double.* (V3.x x) (V3.y y))
+                (Double.* (V3.y x) (V3.x y)))))
 
   (defn dot [x y]
-    (Double.+ (Double.* (V.x x) (V.x y))
-              (Double.+ (Double.* (V.y x) (V.y y))
-                        (Double.* (V.z x) (V.z y)))))
+    (Double.+ (Double.* (V3.x x) (V3.x y))
+              (Double.+ (Double.* (V3.y x) (V3.y y))
+                        (Double.* (V3.z x) (V3.z y)))))
 
   (defn angle-between [a b]
     (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
 )
 
-;(defmodule VectorN
-;  (deftype V [n Int, v (Array Double)])
-;
-;  (defn init [n v]
-;    (V.init n v))
-;
-;  (defn str [o]
-;    (string-join @"VectorN(dim=" (Int.str (V.n o)) ;", vals=" (Array.str (V.v o))
-;                  @")"))
-;
-;  (register zip- (Fn [(Fn [Double, Double] Double) &(Array Double) &(Array Double)] V))
-;  (defn zip- [f a b]
-;    (let [total []]
-;      (do
-;        (for [i 0 (Array.count a)]
-;          (set! &total (Array.push-back (Array.copy &total) (f (Array.nth a i) (Array.nth b i)))))
-;        (V.init (Array.count a) total))))
-;
-;  (register zip (Fn [(Fn [Double, Double] Double) &V &V] V))
-;  (defn zip [f a b]
-;    (if (Int.= (V.n a) (V.n b))
-;      (zip- f (V.v a) (V.v b))
-;      (do
-;        (IO.println "Error: vectors are of wrong dimensionality")
-;        (V.copy a))))
-;
-;  (defn + [a b]
-;    (zip add- a b))
-;
-;  (defn - [a b]
-;    (zip Double.- a b))
-;
-;  (defn * [a n]
-;    (zip- Double.* (V.v a) &(Array.repeat (V.n a) n)))
-;
-;  (defn / [a n]
-;    (zip- Double./ (V.v a) &(Array.repeat (V.n a) n)))
-;
-;  (defn square- [n]
-;    (Double.* (Double.copy n) (Double.copy n)))
-;
-;  (defn add- [x y]
-;    (Double.+ (Double.copy x) (Double.copy y)))
-;
-;  (defn mag-sq [o]
-;    (Array.reduce add- 0.0 &(Array.copy-map square- (V.v o))))
-;
-;  ;(defn mag [o]
-;  ;  (Double.sqrt (mag-sq o)))
-;
-;  ;(defn dist [a b]
-;  ;  (let [b (- b a)]
-;  ;    (mag b)))
-;
-;
-;  ;(defn normalize [o]
-;  ;  (let [m (mag o)]
-;  ;    (if (= m 0)
-;  ;      o
-;  ;      (div o n))))
-;)
+(defmodule VectorN
+  (deftype VN [n Int, v (Array Double)])
+
+  (defn init [n v]
+    (VN.init n v))
+
+  (defn str [o]
+    (string-join @"VectorN(dim=" (Int.str (VN.n o)) ;", vals=" (Array.str (VN.v o))
+                  @")"))
+
+  (defn zip- [f a b]
+    (let [total []]
+      (do
+        (for [i 0 (Array.count a)]
+          (set! &total (Array.push-back (Array.copy &total) (f (Double.copy (Array.nth a i)) (Double.copy (Array.nth b i))))))
+        (VN.init (Array.count a) total))))
+
+  (defn zip [f a b]
+    (if (Int.= (VN.n a) (VN.n b))
+      (zip- f (VN.v a) (VN.v b))
+      (do
+        (IO.println "Error: vectors are of wrong dimensionality")
+        (VN.copy a))))
+
+  (defn + [a b]
+    (zip Double.+ a b))
+
+  (defn - [a b]
+    (zip Double.- a b))
+
+  (defn * [a n]
+    (zip- Double.* (VN.v a) &(Array.replicate (VN.n a) &n)))
+
+  (defn / [a n]
+    (zip- Double./ (VN.v a) &(Array.replicate (VN.n a) &n)))
+
+  (defn square- [n]
+    (Double.* (Double.copy n) (Double.copy n)))
+
+  (defn add- [x y]
+    (Double.+ (Double.copy x) (Double.copy y)))
+
+  (defn mag-sq [o]
+    (Array.reduce add- 0.0 &(Array.copy-map square- (VN.v o))))
+
+  (defn mag [o]
+    (Double.sqrt (mag-sq o)))
+
+  (defn dist [a b]
+    (let [s (- b a)]
+      (mag &s)))
+
+  (defn normalize [o]
+    (let [m (mag o)]
+      (if (Double.= m 0.0)
+        (VN.copy o)
+        (/ o m))))
+
+  (defn dot [x y]
+    (Array.reduce add- 0.0 (VN.v &(zip Double.* x y))))
+)

@@ -19,12 +19,12 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
         path = SymPath ["Array"] "copy-map"
         t = FuncTy [fTy, aTy] bTy
         templateCreator = TemplateCreator $
-          \typeEnv env -> 
+          \typeEnv env ->
             Template
             t
             (const (toTemplate "Array $NAME($(Fn [(Ref a)] b) f, Array* a)"))
             (\(FuncTy [(FuncTy [_] outputTy), _] _) ->
-               (toTemplate $ unlines $                
+               (toTemplate $ unlines $
                   [ "$DECL { "
                   , "    Array b;"
                   , "    b.len = a->len;"
@@ -46,7 +46,7 @@ templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
-templateEMap = 
+templateEMap =
   let fTy = FuncTy [VarTy "a"] (VarTy "a")
       aTy = StructTy "Array" [VarTy "a"]
       bTy = StructTy "Array" [VarTy "a"]
@@ -112,7 +112,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
 --       \typeEnv env ->
 --         Template
 --         t
---         (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))        
+--         (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))
 --         (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
 --            let deleter = insideArrayDeletion typeEnv env arrTy
 --            in (toTemplate $ unlines $
@@ -120,7 +120,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
 --                 , "    $b b = initial_value;"
 --                 , "    for(int i = 0; i < a.len; ++i) {"
 --                 , "        b = f(b, &((($a*)a.data)[i]));"
---                 , "    }"               
+--                 , "    }"
 --                 , "    " ++ deleter
 --                 , "    return b;"
 --                 , "}"
@@ -129,7 +129,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
 --            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++ depsForDeleteFunc typeEnv env arrTy)
 
 templatePushBack :: (String, Binder)
-templatePushBack = 
+templatePushBack =
   let aTy = StructTy "Array" [VarTy "a"]
       valTy = VarTy "a"
   in  defineTemplate
@@ -150,7 +150,7 @@ templatePushBack =
       (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
 
 templatePopBack :: (String, Binder)
-templatePopBack = 
+templatePopBack =
   let aTy = StructTy "Array" [VarTy "a"]
   in  defineTemplate
       (SymPath ["Array"] "pop-back")
@@ -185,7 +185,7 @@ templateNth =
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
   (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
-  
+
 templateReplicate :: (String, Binder)
 templateReplicate = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "replicate"
@@ -275,7 +275,7 @@ templateAsetBang = defineTemplate
                         ,"    (($t*)a.data)[n] = newValue;"
                         ,"}"])
   (\(FuncTy [arrayType, _, _] _) -> [defineArrayTypeAlias arrayType])
-  
+
 templateCount :: (String, Binder)
 templateCount = defineTemplate
   (SymPath ["Array"] "count")
@@ -308,7 +308,7 @@ templateRange = defineTypeParameterizedTemplate templateCreator path t
                defineArrayTypeAlias arrayType :
                depsForDeleteFunc typeEnv env arrayType ++
                depsForCopyFunc typeEnv env insideType)
-    
+
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
   where templateCreator = TemplateCreator $
@@ -324,7 +324,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
                 defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
         path = SymPath ["Array"] "delete"
         t = (FuncTy [(StructTy "Array" [VarTy "a"])] UnitTy)
-        
+
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
 deleteTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
@@ -341,7 +341,7 @@ insideArrayDeletion typeEnv env t =
       "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
-  
+
 templateCopyArray :: (String, Binder)
 templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
   where templateCreator = TemplateCreator $
@@ -366,7 +366,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
              )
         path = SymPath ["Array"] "copy"
         t = (FuncTy [(RefTy (StructTy "Array" [VarTy "a"]))] (StructTy "Array" [VarTy "a"]))
-        
+
 copyTy :: TypeEnv -> Env -> Ty -> [Token]
 copyTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
@@ -383,7 +383,7 @@ insideArrayCopying typeEnv env t =
       "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ functionFullName ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
-  
+
 templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t
   where templateCreator = TemplateCreator $
