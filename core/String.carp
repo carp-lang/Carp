@@ -1,11 +1,29 @@
 (defmodule String
-  (register =         (Fn [&String &String] Bool))
-  (register append    (Fn [String String] String)) ;; TODO: should take a &String as its second argument?
-  (register delete    (Fn [String] ()))
-  (register copy      (Fn [&String] String))
-  (register count     (Fn [&String] Int))
-  (register duplicate (Fn [&String] String))
-  (register cstr      (Fn [&String] (Ptr Char)))
-  (register str       (Fn [&String] String))
-  (register chars     (Fn [&String] (Array Char)))
+  (register =          (Fn [&String &String] Bool))
+  (register /=         (Fn [&String &String] Bool))
+  (register append     (Fn [String String] String)) ;; TODO: should take a &String as its second argument?
+  (register delete     (Fn [String] ()))
+  (register copy       (Fn [&String] String))
+  (register count      (Fn [&String] Int))
+  (register duplicate  (Fn [&String] String))
+  (register cstr       (Fn [&String] (Ptr Char)))
+  (register str        (Fn [&String] String))
+  (register chars      (Fn [&String] (Array Char)))
+  (register from-chars (Fn [(Array Char)] &String))
+
+  (defn repeat [n inpt]
+    (let [str ""]
+      (do
+        (for [i 0 n]
+          (set! &str &(append @str @inpt)))
+        @str)))
   )
+
+
+(defdynamic string-join- [strs]
+  (if (= (count strs) 0)
+    (String.copy "")
+    (list 'String.append (car strs) (string-join- (cdr strs)))))
+
+(defmacro string-join [:rest strs]
+  (string-join- strs))

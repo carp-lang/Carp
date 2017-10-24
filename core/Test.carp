@@ -1,0 +1,139 @@
+(use Bool)
+(use Int)
+(use String)
+
+(defmodule IO
+  (defn color-table []
+    [[@"black" @"30"]
+     [@"red" @"31"]
+     [@"green" @"32"]
+     [@"yellow" @"33"]
+     [@"blue" @"34"]
+     [@"magenta" @"35"]
+     [@"cyan" @"36"]
+     [@"white" @"37"]
+     [@"reset" @"0"]
+     [@"none" @"0"]
+     [@"bold" @"1"]
+     [@"italic" @"3"]
+     [@"underline" @"4"]
+     [@"blink-slow" @"5"]
+     [@"blink-rapid" @"6"]
+     [@"bg-black" @"40"]
+     [@"bg-red" @"41"]
+     [@"bg-green" @"42"]
+     [@"bg-yellow" @"43"]
+     [@"bg-blue" @"44"]
+     [@"bg-magenta" @"45"]
+     [@"bg-cyan" @"46"]
+     [@"bg-white" @"47"]])
+
+  (def len-color-table 23) ; should be a count-macro
+
+  (defn color-name-to-ansi [cname]
+    (let [res @""]
+      (do
+        (for [i 0 len-color-table]
+          (if (String.= cname (Array.nth (Array.nth &(color-table) i) 0))
+             (set! &res @(Array.nth (Array.nth &(color-table) i) 1))
+             ()))
+        (String.append @"\x1b[" (String.append res @"m")))))
+
+
+  (defn color [cname]
+    (print &(color-name-to-ansi cname)))
+  )
+
+(defmodule Test
+  (deftype State [passed Int, failed Int])
+
+  (defn handler [state expected actual descr what op]
+    (if (op expected actual)
+      (do
+        (IO.color "green")
+        (IO.println &(string-join @"Test '" @descr @"' passed"))
+        (IO.color "reset")
+        (State.update-passed (State.copy state) Int.inc))
+      (do
+        (IO.color "red")
+        (IO.print &(string-join @"Expected " @what @": '"))
+        (IO.print &(str expected))
+        (IO.println &(string-join @"', actual value: '" (str actual) @"'"))
+        (IO.color "reset")
+        (State.update-failed (State.copy state) Int.inc))))
+
+  (defn assert-equal [state x y descr op]
+    (handler state x y descr "value" op))
+
+  (defn assert-str-equal [state x y descr]
+    (assert-equal state x y descr String.=))
+
+  (defn assert-int-equal [state x y descr]
+    (assert-equal state x y descr Int.=))
+
+  (defn assert-bool-equal [state x y descr]
+    (assert-equal state x y descr Bool.=))
+
+  (defn assert-not-equal [state x y descr op]
+    (handler state x y descr "not value" op))
+
+  (defn assert-bool-not-equal [state x y descr]
+    (assert-equal state x y descr Bool./=))
+
+  (defn assert-str-not-equal [state x y descr]
+    (assert-equal state x y descr String./=))
+
+  (defn assert-int-not-equal [state x y descr]
+    (assert-equal state x y descr Int./=))
+
+  (defn assert-true [state x descr]
+    (assert-bool-equal state true x descr))
+
+  (defn assert-false [state x descr]
+    (assert-bool-equal state false x descr))
+
+  (defn reset [state]
+    (State.set-failed (State.set-passed state 0) 0))
+
+  (defn print-test-results [state]
+    (let [passed (State.passed state)
+          failed (State.failed state)]
+      (do
+        (IO.println "Results:")
+        (if (Int.> (Int.+ passed failed) 0)
+          (do
+            (IO.color "green")
+            (if (Int.> passed 0) (IO.print &(String.append @"\t|" (String.repeat passed "="))) ())
+            (if (Int.= failed 0) (IO.print "|") ())
+            (IO.color "red")
+            (if (Int.= passed 0) (IO.print "\t|") ())
+            (if (Int.> failed 0) (IO.print &(String.append (String.repeat failed "=") @"|")) ())
+            (IO.println ""))
+          ())
+        (IO.color "green")
+        (IO.print "\tPassed: ")
+        (IO.print &(Int.str passed))
+        (IO.color "red")
+        (IO.print "\tFailed: ")
+        (IO.println &(Int.str failed))
+        (IO.color "reset")
+        (State.copy state))))
+)
+
+(defdynamic with-test-internal [name forms]
+  (if (= (count forms) 1)
+    (list (list 'set! (list 'ref name) (list 'ref (car forms))))
+    (cons (list 'set! (list 'ref name) (list 'ref (car forms)))
+          (with-test-internal name (cdr forms)))))
+
+
+(defmacro with-test [name :rest forms]
+  (list 'let [name &(Test.State.init 0 0)]
+    (cons 'do (with-test-internal name forms))))
+
+(defmacro deftest [name state-name :rest forms]
+  (list 'defn name []
+    (list 'let [state-name &(Test.State.init 0 0)]
+      (cons-last
+        (list Test.print-test-results state-name)
+        (cons 'do (with-test-internal state-name forms))))))
