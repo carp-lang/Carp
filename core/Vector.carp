@@ -1,46 +1,55 @@
 ; missing: lerp
 
-(defdynamic append-multi- [strs]
-  (if (= (count strs) 0)
-    '@""
-    (list 'String.append (car strs) (append-multi- (cdr strs)))))
-
-(defmacro append-multi [:rest strs]
-  (append-multi- strs))
-
-(defn doubleq [a, b]
-  (if (Double.> a b)
-    (Double.< (Double.- a b) 0.00001)
-    (Double.< (Double.- b a) 0.00001)))
-
 (defmodule Vector2
   (deftype V [x Double, y Double])
 
-  (defn init [x, y]
+  (defn init [x y]
     (V.init x y))
 
-  (defn str [o]
-    (append-multi @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @")"))
+  (defn copy [v]
+    (V.copy v))
 
-  (defn + [a, b]
+  (defn get-x [o]
+    (V.x o))
+
+  (defn get-y [o]
+    (V.y o))
+
+  (defn set-x [o v]
+    (V.set-x o v))
+
+  (defn set-y [o v]
+    (V.set-y o v))
+
+  (defn str [o]
+    (string-join @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @")"))
+
+  (defn + [a b]
     (V.init (Double.+ (V.x a) (V.x b))
             (Double.+ (V.y a) (V.y b))))
 
-  (defn - [a, b]
+  (defn - [a b]
     (V.init (Double.- (V.x a) (V.x b))
             (Double.- (V.y a) (V.y b))))
 
-  (defn * [a, n]
+  (defn * [a n]
     (V.init (Double.* (V.x a) n)
             (Double.* (V.y a) n)))
 
-  (defn / [a, n]
+  (defn / [a n]
     (V.init (Double./ (V.x a) n)
             (Double./ (V.y a) n)))
 
-  (defn = [a, b]
-    (and (doubleq (V.x a) (V.x b))
-         (doubleq (V.y a) (V.y b))))
+  (defn = [a b]
+    (and (Double.= (V.x a) (V.x b))
+         (Double.= (V.y a) (V.y b))))
+
+  (defn /= [a b]
+    (not (= a b)))
+
+  (defn approx [a b]
+    (and (Double.approx (V.x a) (V.x b))
+         (Double.approx (V.y a) (V.y b))))
 
   (defn mag-sq [o]
     (let [x (V.x o)
@@ -52,12 +61,12 @@
 
   (defn normalize [o]
     (let [m (mag o)]
-      (if (doubleq m 0.0)
+      (if (Double.= m 0.0)
         (V.copy o)
         (/ o m))))
 
-  (defn dist [a, b]
-    (let [s (- &b &a)]
+  (defn dist [a b]
+    (let [s (- b a)]
       (mag &s)))
 
   (defn heading [a]
@@ -68,7 +77,7 @@
           m (mag a)]
       (V.init (Double.* (Double.cos h) m) (Double.* (Double.sin h) m))))
 
-  (defn dot [x, y]
+  (defn dot [x y]
     (Double.+ (Double.* (V.x x) (V.x y))
               (Double.* (V.y x) (V.y y))))
 
@@ -80,28 +89,32 @@
 (defmodule Vector3
   (deftype V [x Double, y Double, z Double])
 
-  (defn init [x, y, z]
+  (defn init [x y z]
     (V.init x y z))
 
-  (defn str [o]
-    (append-multi @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o)) @", " (Double.str (V.z o)) @")"))
+  (defn copy [v]
+    (V.copy v))
 
-  (defn + [a, b]
+  (defn str [o]
+    (string-join @"Vector2(" (Double.str (V.x o)) @", " (Double.str (V.y o))
+                 @", " (Double.str (V.z o)) @")"))
+
+  (defn + [a b]
     (V.init (Double.+ (V.x a) (V.x b))
             (Double.+ (V.y a) (V.y b))
             (Double.+ (V.z a) (V.z b))))
 
-  (defn - [a, b]
+  (defn - [a b]
     (V.init (Double.- (V.x a) (V.x b))
             (Double.- (V.y a) (V.y b))
             (Double.- (V.z a) (V.z b))))
 
-  (defn * [a, n]
+  (defn * [a n]
     (V.init (Double.* (V.x a) n)
             (Double.* (V.y a) n)
             (Double.* (V.z a) n)))
 
-  (defn / [a, n]
+  (defn / [a n]
     (V.init (Double./ (V.x a) n)
             (Double./ (V.y a) n)
             (Double./ (V.z a) n)))
@@ -117,11 +130,11 @@
 
   (defn normalize [o]
     (let [m (mag o)]
-      (if (doubleq m 0.0)
+      (if (Double.= m 0.0)
         (V.copy o)
         (/ o m))))
 
-  (defn cross [x, y]
+  (defn cross [x y]
     (V.init
       (Double.- (Double.* (V.y x) (V.z y))
                 (Double.* (V.z x) (V.y y)))
@@ -130,7 +143,7 @@
       (Double.- (Double.* (V.x x) (V.y y))
                 (Double.* (V.y x) (V.x y)))))
 
-  (defn dot [x, y]
+  (defn dot [x y]
     (Double.+ (Double.* (V.x x) (V.x y))
               (Double.+ (Double.* (V.y x) (V.y y))
                         (Double.* (V.z x) (V.z y)))))
@@ -143,15 +156,15 @@
 ;(defmodule VectorN
 ;  (deftype V [n Int, v (Array Double)])
 ;
-;  (defn init [n, v]
+;  (defn init [n v]
 ;    (V.init n v))
 ;
 ;  (defn str [o]
-;    (append-multi @"VectorN(dim=" (Int.str (V.n o)) ;", vals=" (Array.str (V.v o))
+;    (string-join @"VectorN(dim=" (Int.str (V.n o)) ;", vals=" (Array.str (V.v o))
 ;                  @")"))
 ;
 ;  (register zip- (Fn [(Fn [Double, Double] Double) &(Array Double) &(Array Double)] V))
-;  (defn zip- [f, a, b]
+;  (defn zip- [f a b]
 ;    (let [total []]
 ;      (do
 ;        (for [i 0 (Array.count a)]
@@ -159,29 +172,29 @@
 ;        (V.init (Array.count a) total))))
 ;
 ;  (register zip (Fn [(Fn [Double, Double] Double) &V &V] V))
-;  (defn zip [f, a, b]
+;  (defn zip [f a b]
 ;    (if (Int.= (V.n a) (V.n b))
 ;      (zip- f (V.v a) (V.v b))
 ;      (do
 ;        (IO.println "Error: vectors are of wrong dimensionality")
 ;        (V.copy a))))
 ;
-;  (defn + [a, b]
+;  (defn + [a b]
 ;    (zip add- a b))
 ;
-;  (defn - [a, b]
+;  (defn - [a b]
 ;    (zip Double.- a b))
 ;
-;  (defn * [a, n]
+;  (defn * [a n]
 ;    (zip- Double.* (V.v a) &(Array.repeat (V.n a) n)))
 ;
-;  (defn / [a, n]
+;  (defn / [a n]
 ;    (zip- Double./ (V.v a) &(Array.repeat (V.n a) n)))
 ;
 ;  (defn square- [n]
 ;    (Double.* (Double.copy n) (Double.copy n)))
 ;
-;  (defn add- [x, y]
+;  (defn add- [x y]
 ;    (Double.+ (Double.copy x) (Double.copy y)))
 ;
 ;  (defn mag-sq [o]
@@ -190,7 +203,7 @@
 ;  ;(defn mag [o]
 ;  ;  (Double.sqrt (mag-sq o)))
 ;
-;  ;(defn dist [a, b]
+;  ;(defn dist [a b]
 ;  ;  (let [b (- b a)]
 ;  ;    (mag b)))
 ;

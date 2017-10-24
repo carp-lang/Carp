@@ -1,5 +1,6 @@
 (defmodule Double
   (def π 3.1415926536)
+  (register = (Fn [Double Double] Bool))
   (register < (Fn [Double Double] Bool))
   (register > (Fn [Double Double] Bool))
   (register + (Fn [Double Double] Double))
@@ -22,4 +23,10 @@
       (if (< val min)
         min
         val)))
-  )
+
+  (defn approx [x y]
+    (if (> x y)
+      (< (- x y) 0.00001)
+      (< (- y x) 0.00001)))
+
+)

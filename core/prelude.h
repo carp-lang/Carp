@@ -59,17 +59,18 @@ int Int_copy(int *x) { return *x; }
 float Float_copy(float *x) { return *x; }
 double Double_copy(double *x) { return *x; }
 
-#define Double__PLUS_(x, y) ((x) + (y))
-#define Double__MINUS_(x, y) ((x) - (y))
-#define Double__MUL_(x, y) ((x) * (y))
-#define Double__DIV_(x, y) ((x) / (y))
-#define Double__LT_(x, y) ((x) < (y))
-#define Double__GT_(x, y) ((x) > (y))
+double Double__PLUS_(double x, double y) { return x + y; }
+double Double__MINUS_(double x, double y) { return x - y; }
+double Double__MUL_(double x, double y) { return x * y; }
+double Double__DIV_(double x, double y) { return x / y; }
+bool Double__LT_(double x, double y) { return x < y; }
+bool Double__GT_(double x, double y) { return x > y; }
+bool Double__EQ_(double x, double y) { return x == y; }
 
-#define Float__PLUS_(x, y) ((x) + (y))
-#define Float__MINUS_(x, y) ((x) - (y))
-#define Float__MUL_(x, y) ((x) * (y))
-#define Float__DIV_(x, y) ((x) / (y))
+float Float__PLUS_(float x, float y) { return x + y; }
+float Float__MINUS_(float x, float y) { return x - y; }
+float Float__MUL_(float x, float y) { return x * y; }
+float Float__DIV_(float x, float y) { return x / y; }
 
 #define and(x, y) ((x) && (y))
 #define or(x, y) ((x) || (y))
