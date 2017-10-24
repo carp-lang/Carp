@@ -1,5 +1,3 @@
-; missing: lerp
-
 (defmodule Vector2
   (deftype V2 [x Double, y Double])
 
@@ -84,6 +82,10 @@
   (defn angle-between [a b]
     (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
+
+  (defn lerp [a b amnt]
+    (init (Double.* (Double.- (V2.x b) (V2.x a)) amnt)
+          (Double.* (Double.- (V2.y b) (V2.y a)) amnt)))
 )
 
 (defmodule Vector3
@@ -151,6 +153,11 @@
   (defn angle-between [a b]
     (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
+
+  (defn lerp [a b amnt]
+    (init (Double.* (Double.- (V3.x b) (V3.x a)) amnt)
+          (Double.* (Double.- (V3.y b) (V3.y a)) amnt)
+          (Double.* (Double.- (V3.z b) (V3.z a)) amnt)))
 )
 
 (defmodule VectorN
@@ -213,4 +220,9 @@
 
   (defn dot [x y]
     (Array.reduce add- 0.0 (VN.v &(zip Double.* x y))))
+
+  (defn lerp [a b amnt]
+    (init (VN.n a) (Array.copy (VN.v &(zip- Double.*
+                                            &(Array.replicate (VN.n a) amnt)
+                                            (VN.v &(zip Double.- b a)))))))
 )
