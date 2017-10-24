@@ -69,7 +69,11 @@
                   "dot works"
                   Double.=
                   Double.str)
+    (assert-equal test
+                  &(init 2.5 5.0 1.0)
+                  &(lerp &(init 0.0 0.0 0.5) &(init 5.0 10.0 2.0) 0.5)
+                  "lerp works"
+                  =
+                  str)
     (print-test-results test)
 ))
-
-(build)
