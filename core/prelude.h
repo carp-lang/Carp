@@ -72,8 +72,8 @@ float Float__MINUS_(float x, float y) { return x - y; }
 float Float__MUL_(float x, float y) { return x * y; }
 float Float__DIV_(float x, float y) { return x / y; }
 
-#define and(x, y) ((x) && (y))
-#define or(x, y) ((x) || (y))
+bool and(bool x, bool y) { return x && y; }
+bool or(bool x, bool y) { return x || y; }
 
 void IO_println(string *s) { puts(*s); }
 void IO_print(string *s) { printf("%s", *s); }
