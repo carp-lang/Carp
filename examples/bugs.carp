@@ -5,8 +5,7 @@
     (defn f [] 123)
     )
   (use B)
-  (defn g []
-    (f))
+  (defn g [] (f))
   )
 
 (use A)

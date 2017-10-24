@@ -332,11 +332,7 @@ multiLookupALL = multiLookupInternal True
 multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
 multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
                            
-  where getEnvFromBinder :: (a, Binder) -> Env
-        getEnvFromBinder (_, Binder (XObj (Mod foundEnv) _ _)) = foundEnv
-        getEnvFromBinder (_, Binder err) = error ("Can't handle imports of non modules yet: " ++ show err)
-  
-        lookupInLocalEnv :: String -> Env -> Maybe (Env, Binder)
+  where lookupInLocalEnv :: String -> Env -> Maybe (Env, Binder)
         lookupInLocalEnv n localEnv = case Map.lookup n (envBindings localEnv) of -- No recurse!
                                         Just b -> Just (localEnv, b)
                                         Nothing -> Nothing
@@ -346,8 +342,8 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                       then let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
                            in  envs ++ (concatMap imports envs)
                       -- Only lookup in imported modules:
-                      else let paths = envUseModules env
-                           in  mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) paths 
+                      else let envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
+                           in  envs ++ (concatMap imports envs)                               
 
         binderToEnv :: Binder -> Maybe Env
         binderToEnv (Binder (XObj (Mod e) _ _)) = Just e
@@ -366,6 +362,35 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                         Just parent -> recursiveLookup parent
                         Nothing -> []
           in  spine ++ leafs ++ above
+
+getEnvFromBinder :: (a, Binder) -> Env
+getEnvFromBinder (_, Binder (XObj (Mod foundEnv) _ _)) = foundEnv
+getEnvFromBinder (_, Binder err) = error ("Can't handle imports of non modules yet: " ++ show err)
+
+-- | Enables look up "semi qualified" (and fully qualified) symbols.
+-- | i.e. if there are nested environments with a function A.B.f
+-- | you can find it by doing "(use A)" and then "(B.f)".
+multiLookupQualified :: SymPath -> Env -> [(Env, Binder)]
+multiLookupQualified (SymPath [] name) rootEnv =
+  -- This case is just like normal multiLookup, we have a name but no qualifyers:
+  multiLookup name rootEnv
+multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
+  case lookupInEnv (SymPath [] p) rootEnv of
+    Just (_, Binder (XObj (Mod _) _ _)) ->
+      -- Found a module with the correct name, that means we should not look at anything else:
+      case lookupInEnv path rootEnv of
+        Just found -> [found]
+        Nothing -> []
+    Nothing ->
+      -- No exact match on the first qualifier, will look in various places for a match:
+      let fromParent = case envParent rootEnv of
+                            Just parent -> multiLookupQualified path parent
+                            Nothing -> []
+          fromUsedModules = let usedModules = envUseModules rootEnv
+                                envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path rootEnv)) usedModules
+                            in  concatMap (\usedEnv -> multiLookupQualified path usedEnv) envs
+      in fromParent ++ fromUsedModules
+
 
 -- | Add an XObj to a specific environment. TODO: rename to envInsert
 extendEnv :: Env -> String -> XObj -> Env
@@ -453,22 +478,19 @@ setFullyQualifiedSymbols env (XObj (Lst (letExpr@(XObj Let _ _) : bind@(XObj (Ar
 setFullyQualifiedSymbols env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols env xobj@(XObj (Sym (SymPath [] name)) i t) = -- Only do this on unqualified symbols (just 'foo', not 'A.B.foo')
-  case multiLookup name env of
+setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) = 
+  case multiLookupQualified path env of
     [] -> xobj
     [(_, Binder foundOne)] -> XObj (Sym (getPath foundOne)) i t
     multiple -> 
       case filter (not . envIsExternal . fst) multiple of
       -- There is at least one local binding, use the path of that one:
-      (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
+        (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
       -- There are no local bindings, this is allowed to become a multi lookup symbol:
-      _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
-           XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
-        
-setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) =
-  case lookupInEnv path env of
-    Just (_, Binder found) -> XObj (Sym (getPath found)) i t
-    Nothing -> xobj
+        _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
+          case path of
+            (SymPath [] name) -> XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t -- Create a MultiSym!
+            pathWithQualifiers -> trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t) -- The symbol IS qualified but can't be found, should produce an error later during compilation.
 setFullyQualifiedSymbols env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols env) array
   in  XObj (Arr array') i t
