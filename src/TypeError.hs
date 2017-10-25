@@ -58,7 +58,7 @@ instance Show TypeError where
   show (NoFormsInBody xobj) =
     "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
-    "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++ 
+    "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++
     "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\nwith \n\n" ++
     "  " ++ pretty bObj ++ " : " ++ show (recursiveLookupTy mappings b) ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
@@ -93,7 +93,7 @@ instance Show TypeError where
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (ArraysCannotContainRefs xobj) =
     "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-    
+
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> case recursiveLookup mappings v of

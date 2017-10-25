@@ -48,10 +48,10 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
          visitedBody <- (visit envWithArgs) body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
-                     
+
     visitList env (letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : []) =
       do visitedBindings <- fmap sequence (mapM (visit env) bindings)
-         visitedBody <- (visit env) body         
+         visitedBody <- (visit env) body
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
@@ -76,12 +76,12 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                                        return (Right ())
         _ -> return (Right ())
     checkForNeedOfTypedefs _ = error "Missing type."
-    
+
     visitSymbol :: Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol env xobj@(XObj (Sym path) i t) =
       case lookupInEnv path env of
         Just (foundEnv, binder)
-          | envIsExternal foundEnv -> 
+          | envIsExternal foundEnv ->
             let theXObj = binderXObj binder
                 Just theType = ty theXObj
                 Just typeOfVisited = t
@@ -127,7 +127,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                             else return (Left (CantDisambiguate xobj originalSymbolName actualType severalPaths))
       where matchingSignature :: Ty -> (Ty, SymPath) -> Bool
             matchingSignature tA (tB, _) = areUnifiable tA tB
-            
+
     visitMultiSym _ _ = error "Not a multi symbol."
 
 -- | Get the type of a symbol at a given path.
@@ -153,9 +153,9 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
     case definition of
       XObj (Lst ((XObj Defn _ _) : _)) _ _ ->
         let withNewPath = setPath definition newPath
-            mappings = unifySignatures polyType concreteType            
+            mappings = unifySignatures polyType concreteType
         in case assignTypes mappings withNewPath of
-          Right typed -> 
+          Right typed ->
             do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv typed
                managed <- manageMemory typeEnv globalEnv concrete
                return (managed, deps)
@@ -193,7 +193,7 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
         Right (ok, deps) -> (ok : deps)
     _ ->
       (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
-      []  
+      []
 
 -- | Helper for finding the 'delete' function for a type.
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
@@ -260,4 +260,3 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
       in  FunctionFound (pathToC concretizedPath)
     _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
                            memberName ++ "' of type " ++ show functionType)
-

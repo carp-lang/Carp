@@ -26,4 +26,3 @@ nameOfPolymorphicFunction typeEnv env functionType functionName =
              concretizedPath = SymPath pathStrings (name ++ suffix)
          in  Just concretizedPath
        _ -> Nothing
-

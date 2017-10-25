@@ -30,7 +30,7 @@ import Concretize
 -- | Performs all the steps of creating initial types, solving constraints and assigning the types.
 -- | Returns a list of all the bindings that need to be added for the new form to work.
 -- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
--- | makes it possible to solve more types so let's do it several times.  
+-- | makes it possible to solve more types so let's do it several times.
 annotate :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
 annotate typeEnv globalEnv xobj =
   do initiated <- initialTypes globalEnv xobj
@@ -49,7 +49,7 @@ annotateOne typeEnv env xobj allowAmbiguity = do
   mappings <- solveConstraintsAndConvertErrorIfNeeded constraints
   typed <- assignTypes mappings xobj
   concretizeXObj allowAmbiguity typeEnv env typed
-       
+
 -- | Convert from the type 'UnificationFailure' to 'TypeError' (enables monadic chaining of Either).
 solveConstraintsAndConvertErrorIfNeeded :: [Constraint] -> Either TypeError TypeMappings
 solveConstraintsAndConvertErrorIfNeeded constraints =
@@ -59,4 +59,4 @@ solveConstraintsAndConvertErrorIfNeeded constraints =
                                                    (unificationMappings failure)
                                                    constraints)
     Left (Holes holes) -> Left (HolesFound holes)
-    Right ok -> Right ok 
+    Right ok -> Right ok

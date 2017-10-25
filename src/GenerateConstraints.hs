@@ -37,7 +37,7 @@ genConstraints root = fmap sort (gen root)
                            XObj Let _ _ : XObj (Arr bindings) _ _ : body : [] ->
                              do insideBodyConstraints <- gen body
                                 insideBindingsConstraints <- fmap join (mapM gen bindings)
-                                bodyType <- toEither (ty body) (ExpressionMissingType body)                                
+                                bodyType <- toEither (ty body) (ExpressionMissingType body)
                                 let Just xobjTy = ty xobj
                                     wholeStatementConstraint = Constraint bodyType xobjTy body xobj OrdLetBody
                                     bindingsConstraints = zipWith (\(symTy, exprTy) (symObj, exprObj) ->
@@ -46,7 +46,7 @@ genConstraints root = fmap sort (gen root)
                                                                   (pairwise bindings)
                                 return (wholeStatementConstraint : insideBodyConstraints ++
                                         bindingsConstraints ++ insideBindingsConstraints)
-                           
+
                            -- If
                            XObj If _ _ : expr : ifTrue : ifFalse : [] ->
                              do insideConditionConstraints <- gen expr
@@ -69,14 +69,14 @@ genConstraints root = fmap sort (gen root)
                              do insideConditionConstraints <- gen expr
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
-                                bodyType <- toEither (ty body) (ExpressionMissingType body)                                
+                                bodyType <- toEither (ty body) (ExpressionMissingType body)
                                 let expectedCond = XObj (Sym (SymPath [] "condition in while-expression")) (info xobj) (ty xobj)
                                     expectedBody = XObj (Sym (SymPath [] "body in while-expression")) (info xobj) (ty xobj)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
                                 return (conditionConstraint : wholeStatementConstraint :
                                         insideConditionConstraints ++ insideBodyConstraints)
-                                  
+
                            -- Do
                            XObj Do _ _ : expressions ->
                              case expressions of
@@ -115,7 +115,7 @@ genConstraints root = fmap sort (gen root)
                            -- Ref
                            XObj Ref _ _ : value : [] ->
                              gen value
-                             
+
                            -- Function application
                            func : args ->
                              do insideArgsConstraints <- fmap join (mapM gen args)
@@ -140,7 +140,7 @@ genConstraints root = fmap sort (gen root)
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : insideArgsConstraints)
                                   _ -> Left (NotAFunction func)
-                               
+
                            -- Empty list
                            [] -> Right []
 
@@ -152,6 +152,6 @@ genConstraints root = fmap sort (gen root)
                                Just (StructTy "Array" [t]) = ty xobj
                                betweenExprConstraints = map (\o -> Constraint headTy (forceTy o) x o OrdArrBetween) xs
                                headConstraint = Constraint headTy t x xobj OrdArrHead
-                           return (headConstraint : insideExprConstraints ++ betweenExprConstraints)              
-                           
+                           return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
+
             _ -> Right []

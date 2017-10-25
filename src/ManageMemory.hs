@@ -33,7 +33,7 @@ manageMemory typeEnv globalEnv root =
         Left err -> Left err
         Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
                     in  Right $ ok { info = newInfo }
-                                          
+
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
           case obj xobj of
@@ -154,11 +154,11 @@ manageMemory typeEnv globalEnv root =
                              okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
                              return (XObj (Lst (whileExpr : okExpr : okBody : [])) newInfo t)
-              
+
             ifExpr@(XObj If _ _) : expr : ifTrue : ifFalse : [] ->
               do visitedExpr <- visit expr
                  deleters <- get
-                 
+
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
                                                                       result <- transferOwnership ifTrue xobj;
                                                                       return $ case result of
@@ -166,7 +166,7 @@ manageMemory typeEnv globalEnv root =
                                                                                  Right _ -> v
                                                                     })
                                                        deleters
-                                                       
+
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
                                                                       result <- transferOwnership ifFalse xobj;
                                                                       return $ case result of
@@ -186,7 +186,7 @@ manageMemory typeEnv globalEnv root =
 
                  put stillAlive
                  manage xobj
-                     
+
                  return $ do okExpr  <- visitedExpr
                              okTrue  <- visitedTrue
                              okFalse <- visitedFalse
@@ -199,7 +199,7 @@ manageMemory typeEnv globalEnv root =
                              okArgs <- visitedArgs
                              (Right (XObj (Lst (okF : okArgs)) i t))
 
-            [] -> return (Right xobj)              
+            [] -> return (Right xobj)
         visitList _ = error "Must visit list."
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
@@ -236,7 +236,7 @@ manageMemory typeEnv globalEnv root =
                                             Just (FakeDeleter var)
                           else Nothing
             Nothing -> error ("No type, can't manage " ++ show xobj)
-          
+
         manage :: XObj -> State MemState ()
         manage xobj =
           case createDeleter xobj of
@@ -253,7 +253,7 @@ manageMemory typeEnv globalEnv root =
 
         unmanage :: XObj -> State MemState (Either TypeError ())
         unmanage xobj =
-          let Just t = ty xobj 
+          let Just t = ty xobj
               Just i = info xobj
           in if isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
@@ -262,7 +262,7 @@ manageMemory typeEnv globalEnv root =
                        [one] -> let newDeleters = Set.delete one deleters
                                 in  do put newDeleters
                                        return (Right ())
-                       _ -> error "Too many variables with the same name in set."                                  
+                       _ -> error "Too many variables with the same name in set."
              else return (Right ())
 
         -- | Check that the value being referenced hasn't already been given away
@@ -275,7 +275,7 @@ manageMemory typeEnv globalEnv root =
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
                        [_] -> return (return ())
-                       _ -> error "Too many variables with the same name in set."                                  
+                       _ -> error "Too many variables with the same name in set."
              else return (return ())
 
         transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())

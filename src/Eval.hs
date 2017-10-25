@@ -59,7 +59,7 @@ eval env xobj =
              case evaled of
                XObj (Lst lst) _ _ -> return (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing)
                XObj (Arr arr) _ _ -> return (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing)
-               _ -> Left (EvalError ("Applying 'count' to non-list: " ++ pretty evaled))             
+               _ -> Left (EvalError ("Applying 'count' to non-list: " ++ pretty evaled))
         XObj (Sym (SymPath [] "car")) _ _ : target : [] ->
           do evaled <- eval env target
              case evaled of
@@ -133,13 +133,13 @@ eval env xobj =
                      case evaledF of
                        XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _ ->
                          do evaledArgs <- mapM (eval env) args
-                            apply env body params evaledArgs                    
+                            apply env body params evaledArgs
                        XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _ ->
                          apply env body params args
                        _ ->
                          Right xobj
                          --Left (EvalError ("Can't eval non-macro / non-dynamic function: " ++ pretty xobj))
-                       
+
     evalList _ = error "Can't eval non-list in evalList."
 
     evalSymbol :: XObj -> Either EvalError XObj
@@ -154,7 +154,7 @@ eval env xobj =
         Just (_, Binder found) -> Right found -- use the found value
         Nothing -> Left (EvalError ("Can't find symbol '" ++ show path ++ "'."))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
-    
+
     evalArray :: XObj -> Either EvalError XObj
     evalArray (XObj (Arr xobjs) i t) =
       do evaledXObjs <- mapM (eval env) xobjs
@@ -176,7 +176,7 @@ apply env body params args =
                     else extendEnv insideEnv'
                          (head restParams)
                          (XObj (Lst (drop n args)) Nothing Nothing)
-      result = eval insideEnv'' body                     
+      result = eval insideEnv'' body
   in  --trace ("Result: " ++ show result)
       result
 
@@ -235,7 +235,7 @@ setNewIdentifiers root = let final = evalState (visit root) 0
 -- | Macro expansion of a single form
 expand :: Env -> XObj -> Either EvalError XObj
 expand env xobj =
-  case obj xobj of 
+  case obj xobj of
   --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
@@ -292,7 +292,7 @@ expand env xobj =
       do evaledXObjs <- mapM (expand env) xobjs
          return (XObj (Arr evaledXObjs) i t)
     expandArray _ = error "Can't expand non-array in expandArray."
-    
+
     expandSymbol :: XObj -> Either a XObj
     expandSymbol (XObj (Sym path) _ _) =
       case lookupInEnv path env of

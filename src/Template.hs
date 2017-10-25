@@ -12,7 +12,7 @@ import Parsing
 import Infer
 import Concretize
 
--- | Templates are instructions for the compiler to generate some C-code 
+-- | Templates are instructions for the compiler to generate some C-code
 -- | based on some template and the names and types to fill into the template.
 -- | Templates are generic and need to be given an explicit type to generate the
 -- | correct code.
@@ -24,7 +24,7 @@ import Concretize
 
 -- | Create a binding pair used for adding a template definition to an environment.
 defineTemplate :: SymPath -> Ty -> [Token] -> [Token] -> (Ty -> [XObj]) -> (String, Binder)
-defineTemplate path t declaration definition depsFunc = 
+defineTemplate path t declaration definition depsFunc =
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
@@ -33,7 +33,7 @@ defineTemplate path t declaration definition depsFunc =
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
 defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> (String, Binder)
-defineTypeParameterizedTemplate templateCreator path t = 
+defineTypeParameterizedTemplate templateCreator path t =
   let (SymPath _ name) = path
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path) Nothing Nothing]
   in  (name, Binder (XObj (Lst defLst) Nothing (Just t)))
@@ -68,21 +68,21 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
   where
     templateSyntax :: Parsec.Parsec String Int [Token]
     templateSyntax = Parsec.many parseTok
-    
+
     parseTok = Parsec.try parseTokDecl <|>      --- $DECL
                Parsec.try parseTokName <|>      --- $NAME
                Parsec.try parseTokTyGrouped <|> --- i.e. $(Fn [Int] t)
-               Parsec.try parseTokTy <|>        --- i.e. $t               
+               Parsec.try parseTokTy <|>        --- i.e. $t
                parseTokC                        --- Anything else...
-    
+
     parseTokDecl :: Parsec.Parsec String Int Token
     parseTokDecl = do _ <- Parsec.string "$DECL"
                       return TokDecl
-    
+
     parseTokName :: Parsec.Parsec String Int Token
     parseTokName = do _ <- Parsec.string "$NAME"
                       return TokName
-    
+
     parseTokC :: Parsec.Parsec String Int Token
     parseTokC = do s <- Parsec.many1 validInSymbol
                    return (TokC s)
@@ -93,10 +93,10 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     parseTokTy = do _ <- Parsec.char '$'
                     s <- Parsec.many1 Parsec.letter
                     return (toTokTy s)
-    
+
     parseTokTyGrouped :: Parsec.Parsec String Int Token
     parseTokTyGrouped = do _ <- Parsec.char '$'
-                           _ <- Parsec.char '(' 
+                           _ <- Parsec.char '('
                            Parsec.putState 1 -- One paren to close.
                            s <- fmap ('(' :) (Parsec.many parseCharBalanced)
                            -- Note: The closing paren is read by parseCharBalanced.
@@ -114,7 +114,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     openParen = do _ <- Parsec.char '('
                    Parsec.modifyState (+1)
                    return '('
-                    
+
     closeParen :: Parsec.Parsec String Int Char
     closeParen = do _ <- Parsec.char ')'
                     Parsec.modifyState (\x -> x - 1)

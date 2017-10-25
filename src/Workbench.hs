@@ -35,7 +35,7 @@ startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleN
 
 
 pt :: XObj -> IO ()
-pt = putStrLn . prettyTyped 
+pt = putStrLn . prettyTyped
 
 Right [parsed] = parse "(defn f [x] (Int.+ x 10))" ""
 

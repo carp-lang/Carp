@@ -22,7 +22,7 @@ genVarTy = genVarTyWithPrefix "t"
 genVarTys :: Int -> State Integer [Ty]
 genVarTys n = replicateM n genVarTy
 
--- | Gives all type variables new names ("t<n>", counting from current state) while 
+-- | Gives all type variables new names ("t<n>", counting from current state) while
 --   still preserving the same name for type variables with a shared name.
 --   Example: (t0, t1, t1) -> t0
 --   becomes: (r2, r3, r3) -> r2
@@ -35,7 +35,7 @@ renameVarTys rootType = do n <- get
     rename :: Ty -> State (Integer, Map.Map String Ty) Ty
     rename (FuncTy argTys retTy) = do argTys' <- mapM rename argTys
                                       retTy' <- rename retTy
-                                      return (FuncTy argTys' retTy')                                      
+                                      return (FuncTy argTys' retTy')
     rename (VarTy v) = do (n, mappings) <- get
                           case Map.lookup v mappings of
                             Just found -> return found
@@ -51,9 +51,9 @@ renameVarTys rootType = do n <- get
 
     rename (RefTy x) = do x' <- rename x
                           return (RefTy x')
-                                       
+
     rename x = return x
-    
+
 -- | Adds initial types to a s-expression and all its sub-nodes.
 -- | Example: (f 10) => <(<f : (Fn [Int] Bool>) <10 : Int>) : t0>
 initialTypes :: Env -> XObj -> Either TypeError XObj
@@ -97,7 +97,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
         SymPath _ (':' : _) -> return (Left (LeadingColon xobj))
         _ ->
           case lookupInEnv symPath env of
-            Just (foundEnv, binder) -> 
+            Just (foundEnv, binder) ->
               case ty (binderXObj binder) of
                 -- Don't rename internal symbols like parameters etc!
                 Just theType | envIsExternal foundEnv -> do renamed <- renameVarTys theType
@@ -117,9 +117,9 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
          arrayVarTy <- genVarTy
          return $ do okVisited <- sequence visited
                      Right (XObj (Arr okVisited) i (Just (StructTy "Array" [arrayVarTy])))
-         
+
     visitArray _ _ = compilerError "The function 'visitArray' only accepts XObj:s with arrays in them."
-      
+
     visitList :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
@@ -131,7 +131,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
              let funcTy = Just (FuncTy argTypes returnType)
                  typedNameSymbol = nameSymbol { ty = funcTy }
                  -- This environment binding is for self-recursion, allows lookup of the symbol:
-                 envWithSelf = extendEnv funcScopeEnv name typedNameSymbol 
+                 envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
              visitedBody <- visit envWithSelf body
              visitedArgs <- mapM (visit envWithSelf) argList
              return $ do okBody <- visitedBody
@@ -149,13 +149,13 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst [def, nameSymbol, okExpr]) i (Just definitionType))
 
         (XObj Def _ _) : _ -> return (Left (InvalidObj Def xobj))
-        
+
         -- Let binding
         letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
           do wholeExprType <- genVarTy
              letScopeEnv <- extendEnvWithLetBindings env bindings
              case letScopeEnv of
-               Right okLetScopeEnv -> 
+               Right okLetScopeEnv ->
                  do visitedBindings <- mapM (visit okLetScopeEnv) bindings
                     visitedBody <- visit okLetScopeEnv body
                     return $ do okBindings <- sequence visitedBindings
@@ -169,7 +169,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
           return (Left (TooManyFormsInBody xobj))
         XObj Let _ _ : _ ->
           return (Left (InvalidObj Let xobj))
-                         
+
         -- If
         ifExpr@(XObj If _ _) : expr : ifTrue : ifFalse : [] ->
           do visitedExpr <- visit env expr
@@ -195,7 +195,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
           return (Left (NoFormsInBody xobj))
         XObj While _ _ : _ ->
           return (Left (TooManyFormsInBody xobj))
-        
+
         -- Do
         doExpr@(XObj Do _ _) : expressions ->
           do t <- genVarTy
@@ -234,7 +234,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
                          return (XObj (Lst (refExpr : okValue : [])) i (Just (RefTy valueTy)))
-     
+
         -- Function application
         func : args ->
           do t <- genVarTy
@@ -243,10 +243,10 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
              return $ do okFunc <- visitedFunc
                          okArgs <- visitedArgs
                          return (XObj (Lst (okFunc : okArgs)) i (Just t))
-             
+
         -- Empty list
         [] -> return (Right xobj { ty = Just UnitTy })
-             
+
     visitList _ _ = compilerError "Must match on list!"
 
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
