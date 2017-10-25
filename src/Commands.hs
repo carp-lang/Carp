@@ -67,7 +67,7 @@ consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _) xobj =
   case expandAll globalEnv xobj of
     Left err -> ReplMacroError (show err)
-    Right expanded -> 
+    Right expanded ->
       case annotate typeEnv globalEnv (setFullyQualifiedSymbols globalEnv expanded) of
         Left err -> ReplTypeError (show err)
         Right annXObjs -> ListOfCommands (map printC annXObjs)
@@ -118,7 +118,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "add-lib")) _ _ : XObj (Str flag) _ _ : [] -> AddLibraryFlag flag
                    XObj (Sym (SymPath _ "project")) _ _ : [] -> DisplayProject
                    XObj (Sym (SymPath _ "load")) _ _ : XObj (Str path) _ _ : [] -> Load path
-                   XObj (Sym (SymPath _ "reload")) _ _ : [] -> Reload                   
+                   XObj (Sym (SymPath _ "reload")) _ _ : [] -> Reload
                    _ -> consumeExpr ctx xobj
       Sym (SymPath [] (':' : text)) -> ListOfCommands (mapMaybe charToCommand text)
       _ -> consumeExpr ctx xobj
@@ -252,11 +252,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
            _ ->
              do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
                 return ctx
-                
+
        Type xobj ->
          case xobj of
            XObj (Sym path@(SymPath _ name)) _ _ ->
-             case lookupInEnv path env of               
+             case lookupInEnv path env of
                Just (_, binder) ->
                  do putStrLnWithColor White (show binder)
                     return ctx
@@ -310,7 +310,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
              dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body])
                        (info body) (Just DynamicTy)
          in  return (ctx { contextGlobalEnv = envInsertAt env path dynamic })
-         
+
        Eval xobj ->
          case eval env xobj of
            Left e ->
@@ -328,7 +328,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
            Right expanded ->
              do putStrLnWithColor Yellow (pretty expanded)
                 return ctx
-                
+
        Use path xobj ->
          let e = getEnv env pathStrings
              useThese = envUseModules e
@@ -499,6 +499,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                              putStrLn ""
                              putStrLn "Number literals:"
                              putStrLn "1      Int"
+                             putStrLn "1l     Int"
                              putStrLn "1.0    Double"
                              putStrLn "1.0f   Float"
                              putStrLn ""

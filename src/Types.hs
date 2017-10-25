@@ -20,6 +20,7 @@ import Util
 
 -- | Carp types.
 data Ty = IntTy
+        | LongTy
         | BoolTy
         | FloatTy
         | DoubleTy
@@ -41,6 +42,7 @@ instance Show Ty where
   show IntTy                 = "Int"
   show FloatTy               = "Float"
   show DoubleTy              = "Double"
+  show LongTy                = "Long"
   show BoolTy                = "Bool"
   show StringTy              = "String"
   show CharTy                = "Char"
@@ -74,6 +76,7 @@ tyToCManglePtr _ IntTy                 = "int"
 tyToCManglePtr _ BoolTy                = "bool"
 tyToCManglePtr _ FloatTy               = "float"
 tyToCManglePtr _ DoubleTy              = "double"
+tyToCManglePtr _ LongTy                = "long"
 tyToCManglePtr _ StringTy              = "string"
 tyToCManglePtr _ CharTy                = "char"
 tyToCManglePtr _ UnitTy                = "void"
@@ -140,7 +143,7 @@ unifySignatures v t = Map.fromList (unify v t)
 
         unify (RefTy a) (RefTy b) = unify a b
         unify a@(RefTy _) b = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
-        
+
         unify (FuncTy argTysA retTyA) (FuncTy argTysB retTyB) = let argToks = concat (zipWith unify argTysA argTysB)
                                                                     retToks = unify retTyA retTyB
                                                                 in  argToks ++ retToks
@@ -152,7 +155,7 @@ unifySignatures v t = Map.fromList (unify v t)
 areUnifiable :: Ty -> Ty -> Bool
 areUnifiable (VarTy _) (VarTy _) = True
 areUnifiable (VarTy _) _ = True
-areUnifiable _ (VarTy _) = True        
+areUnifiable _ (VarTy _) = True
 areUnifiable (StructTy a aArgs) (StructTy b bArgs)
   | length aArgs /= length bArgs = False
   | a == b = let argBools = zipWith areUnifiable aArgs bArgs
@@ -167,7 +170,7 @@ areUnifiable (FuncTy argTysA retTyA) (FuncTy argTysB retTyB)
   | length argTysA /= length argTysB = False
   | otherwise = let argBools = zipWith areUnifiable argTysA argTysB
                     retBool = areUnifiable retTyA retTyB
-                in  all (== True) (retBool : argBools)                            
+                in  all (== True) (retBool : argBools)
 areUnifiable (FuncTy _ _) _ = False
 areUnifiable a b | a == b    = True
           | otherwise = False

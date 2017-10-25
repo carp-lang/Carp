@@ -133,6 +133,7 @@ pretty root = visit 0 root
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Num IntTy num -> show (round num :: Int)
+            Num LongTy num -> show num ++ "l"
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
             Num _ _ -> compilerError "Invalid number type."
@@ -540,6 +541,7 @@ xobjToTy :: XObj -> Maybe Ty
 xobjToTy (XObj (Sym (SymPath _ "Int")) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float")) _ _) = Just FloatTy
 xobjToTy (XObj (Sym (SymPath _ "Double")) _ _) = Just DoubleTy
+xobjToTy (XObj (Sym (SymPath _ "Long")) _ _) = Just LongTy
 xobjToTy (XObj (Sym (SymPath _ "String")) _ _) = Just StringTy
 xobjToTy (XObj (Sym (SymPath _ "Char")) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool")) _ _) = Just BoolTy

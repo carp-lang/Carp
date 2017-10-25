@@ -1,0 +1,21 @@
+(defmodule Long
+  (register + (λ [Long Long] Long))
+  (register - (λ [Long Long] Long))
+  (register * (λ [Long Long] Long))
+  (register / (λ [Long Long] Long))
+  (register < (λ [Long Long] Bool))
+  (register > (λ [Long Long] Bool))
+  (register = (λ [Long Long] Bool))
+  (register /= (λ [Long Long] Bool))
+  (register mod (λ [Long Long] Long))
+  (register seed (λ [Long] ()))
+  (register random (λ [] Long))
+  (register random-between (λ [Long Long] Long))
+  (register str (λ [Long] String))
+  (register from-string (λ [&String] Long))
+  (register mask (λ [Long Long] Bool))
+  (register inc (λ [Long] Long))
+  (register dec (λ [Long] Long))
+  (register copy (λ [&Long] Long)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
+  )
+

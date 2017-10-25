@@ -64,9 +64,22 @@ integer = do i <- createInfo
                then return (XObj (Sym (SymPath [] "-")) i Nothing)
                else return (XObj (Num IntTy (read num)) i Nothing)
 
+long :: Parsec.Parsec String ParseState XObj
+long = do i <- createInfo
+          num0 <- firstDigit
+          num1 <- Parsec.many Parsec.digit
+          let num = num0 : num1
+          incColumn (length num)
+          _ <- Parsec.char 'l'
+          incColumn 1
+          if num == "-"
+            then return (XObj (Sym (SymPath [] "-")) i Nothing)
+            else return (XObj (Num LongTy (read num)) i Nothing)
+
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
          Parsec.try double <|>
+         Parsec.try long <|>
          Parsec.try integer
 
 string :: Parsec.Parsec String ParseState XObj

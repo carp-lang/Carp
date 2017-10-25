@@ -148,6 +148,7 @@ startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleN
 preludeModules :: String -> [String]
 preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
                                                                          , "Int"
+                                                                         , "Long"
                                                                          , "Double"
                                                                          , "Float"
                                                                          , "Array"

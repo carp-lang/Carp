@@ -55,6 +55,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
             Num IntTy num -> return (show ((round num) :: Int))
+            Num LongTy num -> return (show ((round num) :: Int) ++ "l")
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)
             Num _ _ -> error "Can't emit invalid number type."
