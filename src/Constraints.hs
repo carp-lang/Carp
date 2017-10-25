@@ -15,25 +15,25 @@ import Obj
 import Types
 
 data ConstraintOrder = OrdNo
-                     | OrdArrHead        
-                     | OrdArg            
-                     | OrdDefnBody       
-                     | OrdDefExpr        
-                     | OrdLetBind        
-                     | OrdLetBody        
-                     | OrdIfCondition    
-                     | OrdIfReturn       
-                     | OrdIfWhole        
-                     | OrdWhileBody      
-                     | OrdWhileCondition 
-                     | OrdDoReturn       
-                     | OrdDoStatement    
-                     | OrdSetBang        
-                     | OrdThe            
-                     | OrdFuncAppVarTy   
-                     | OrdArrBetween     
-                     | OrdMultiSym       
-                     | OrdFuncAppRet     
+                     | OrdArrHead
+                     | OrdArg
+                     | OrdDefnBody
+                     | OrdDefExpr
+                     | OrdLetBind
+                     | OrdLetBody
+                     | OrdIfCondition
+                     | OrdIfReturn
+                     | OrdIfWhole
+                     | OrdWhileBody
+                     | OrdWhileCondition
+                     | OrdDoReturn
+                     | OrdDoStatement
+                     | OrdSetBang
+                     | OrdThe
+                     | OrdFuncAppVarTy
+                     | OrdArrBetween
+                     | OrdMultiSym
+                     | OrdFuncAppRet
                      | OrdFuncAppArg
                      deriving (Show, Ord, Eq)
 
@@ -64,7 +64,7 @@ recursiveLookup mappings name = innerLookup name []
                              actualType -> Just actualType
                            where
                              stop = Just (minimum (exists : visited))
-            Nothing -> Nothing          
+            Nothing -> Nothing
 
 -- | This is the entry-point function that takes a list of constraints
 --   (for example [t0 == Int, t1 == t0, t1 == t2])
@@ -85,8 +85,8 @@ isTypeHole ('?' : _, _) = True
 isTypeHole _ = False
 
 solveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
-solveOne mappings constraint = solveOneInternal mappings constraint                                  
-                    
+solveOne mappings constraint = solveOneInternal mappings constraint
+
 debugSolveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
 debugSolveOne mappings constraint = let m' = solveOneInternal mappings constraint
                                     in trace ("" ++ show constraint ++ ", MAPPINGS: " ++ show m')
@@ -103,7 +103,7 @@ solveOneInternal mappings constraint =
               checkForConflict m' constraint bName aTy
 
     -- One type variable
-    Constraint (VarTy aName) bTy           _ _ _ -> checkForConflict mappings constraint aName bTy 
+    Constraint (VarTy aName) bTy           _ _ _ -> checkForConflict mappings constraint aName bTy
     Constraint aTy           (VarTy bName) _ _ _ -> checkForConflict mappings constraint bName aTy
 
     -- Struct types
@@ -137,34 +137,35 @@ solveOneInternal mappings constraint =
       then Right mappings
       else Left (UnificationFailure constraint mappings)
 
-mkConstraint :: Ty -> Ty -> Constraint
-mkConstraint t1 t2 = Constraint t1 t2 dummy dummy OrdNo
-  where dummy = XObj External Nothing Nothing
+mkConstraint :: XObj -> XObj -> Ty -> Ty -> Constraint
+mkConstraint xobj1 xobj2 t1 t2 = Constraint t1 t2 xobj1 xobj2 OrdNo
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
 checkForConflict mappings constraint name otherTy =
+  let (Constraint _ _ xobj1 xobj2 _) = constraint
+  in
   case recursiveLookup mappings name of
     Just (VarTy _) -> ok
     Just (StructTy structName structTyVars) ->
       case otherTy of
         StructTy otherStructName otherTyVars | structName == otherStructName ->
-                                               foldM solveOneInternal mappings (zipWith mkConstraint structTyVars otherTyVars)
+                                               foldM solveOneInternal mappings (zipWith (mkConstraint xobj1 xobj2) structTyVars otherTyVars)
         VarTy _ -> Right mappings
         _ -> Left (UnificationFailure constraint mappings)
     Just (FuncTy argTys retTy) ->
       case otherTy of
-        FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith mkConstraint argTys otherArgTys)
-                                            solveOneInternal m (mkConstraint retTy otherRetTy)
+        FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint xobj1 xobj2) argTys otherArgTys)
+                                            solveOneInternal m (mkConstraint xobj1 xobj2 retTy otherRetTy)
         VarTy _ -> Right mappings
         _ -> Left (UnificationFailure constraint mappings)
     Just (PointerTy innerTy) ->
       case otherTy of
-        PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint innerTy otherInnerTy)
+        PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint xobj1 xobj2 innerTy otherInnerTy)
         VarTy _ -> Right mappings
         _ -> Left (UnificationFailure constraint mappings)
     Just (RefTy innerTy) ->
       case otherTy of
-        RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint innerTy otherInnerTy)
+        RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint xobj1 xobj2 innerTy otherInnerTy)
         VarTy _ -> Right mappings
         _ -> Left (UnificationFailure constraint mappings)
     Just foundNonVar -> case otherTy of
@@ -186,7 +187,7 @@ debugResolveFully :: TypeMappings -> String -> Either UnificationFailure TypeMap
 debugResolveFully mappings var = trace ("Mappings: " ++ show mappings ++ ", will resolve " ++ show var) (resolveFully mappings var)
 
 resolveFully :: TypeMappings -> String -> Either UnificationFailure TypeMappings
-resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy varName)) mappings)  
+resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy varName)) mappings)
 
   where fullResolve :: Ty -> Ty
         fullResolve x@(VarTy var) =
@@ -194,7 +195,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
             Just (StructTy name varTys) -> StructTy name (map fullLookup varTys)
             Just (FuncTy argTys retTy) -> FuncTy (map fullLookup argTys) (fullLookup retTy)
             Just found -> found
-            Nothing -> x -- still not found, must be a generic variable  
+            Nothing -> x -- still not found, must be a generic variable
         fullResolve x = x
 
         fullLookup :: Ty -> Ty
