@@ -378,12 +378,12 @@ copyTy _ _ _ = []
 -- | The "memberCopy" and "memberDeletion" functions in Deftype are very similar!
 insideArrayCopying :: TypeEnv -> Env -> Ty -> String
 insideArrayCopying typeEnv env t =
-  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType t) ("Inside array.", t) of
+  case findFunctionForMemberIncludePrimitives typeEnv env "copy" (typesCopyFunctionType t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ functionFullName ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
     FunctionNotFound msg -> error msg
     FunctionIgnored ->
-      "    ((" ++ tyToC t ++"*)(copy.data))[i] = ((" ++ tyToC t ++ "*)a->data)[i];\n"
+      "    /* Ignore type inside Array when copying: '" ++ show t ++ "' (no copy function known)*/\n"
 
 templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t
