@@ -17,5 +17,6 @@
   (register inc (λ [Long] Long))
   (register dec (λ [Long] Long))
   (register copy (λ [&Long] Long)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
+  (register from-int (λ [Int] Long))
   )
 

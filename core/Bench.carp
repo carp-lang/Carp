@@ -1,0 +1,35 @@
+(defmodule Bench
+  (system-include "bench.h")
+
+  (register get-time-elapsed (Fn [] Double))
+
+  (defn get-unit [n]
+    (cond
+      (> n 1000.0) (String.append (Double.str n) "µs")
+      (> n 1000000.0) (String.append (Double.str (/ n 1000.0)) "ms")
+      (> n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) "s")
+      (String.append (Double.str (/ n 1000000000.0)) "s")))
+
+  (defn print [title n]
+    (let [unit (get-unit n)]
+      (do
+        (IO.println title)
+        (IO.println &unit))))
+
+(defmacro bench [n form]
+  (list 'let ['before (Bench.get-time-elapsed)
+              'times []]
+    (list 'do
+      (list 'for ['i 0 n]
+        (list 'let ['before-once (Bench.get-time-elapsed)]
+          (list 'do
+            form
+            (list 'set! &times (Array.push-back (Array.copy &times) (Double.- (get-time-elapsed) before-once))))))
+      (list 'let ['total (Double.- (Bench.get-time-elapsed) before)
+                  'per (list 'Double./ 'total (list 'Double.from-int n))]
+        (do
+          (Bench.print "Total time elapsed: " total)
+          (Bench.print "Time elapsed per run (average): " per)
+          (Bench.print "Best case: " (Statistics.min &times))
+          (Bench.print "Worst case: " (Statistics.max &times))
+          (Bench.print "Standard deviation: " (Statistics.stdev &times)))))))
