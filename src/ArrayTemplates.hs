@@ -382,7 +382,8 @@ insideArrayCopying typeEnv env t =
     FunctionFound functionFullName ->
       "    ((" ++ tyToC t ++ "*)(copy.data))[i] = " ++ functionFullName ++ "(&(((" ++ tyToC t ++ "*)a->data)[i]));\n"
     FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
+    FunctionIgnored ->
+      "    ((" ++ tyToC t ++"*)(copy.data))[i] = ((" ++ tyToC t ++ "*)a->data)[i];\n"
 
 templateStrArray :: (String, Binder)
 templateStrArray = defineTypeParameterizedTemplate templateCreator path t

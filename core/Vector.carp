@@ -101,6 +101,13 @@
     (string-join @"Vector2(" (Double.str (V3.x o)) @", " (Double.str (V3.y o))
                  @", " (Double.str (V3.z o)) @")"))
 
+  (defn = [a b]
+    (and (Double.= (V3.x a) (V3.x b))
+         (and (Double.= (V3.y a) (V3.y b))
+              (Double.= (V3.z a) (V3.z b)))))
+
+  (defn /= [a b]
+    (not (= a b)))
   (defn + [a b]
     (V3.init (Double.+ (V3.x a) (V3.x b))
             (Double.+ (V3.y a) (V3.y b))
@@ -167,7 +174,7 @@
     (VN.init n v))
 
   (defn str [o]
-    (string-join @"VectorN(dim=" (Int.str (VN.n o)) ;", vals=" (Array.str (VN.v o))
+    (string-join @"VectorN(dim=" (Int.str (VN.n o)) @", vals=" (Array.str (VN.v o))
                   @")"))
 
   (defn zip- [f a b]
@@ -183,6 +190,20 @@
       (do
         (IO.println "Error: vectors are of wrong dimensionality")
         (VN.copy a))))
+
+  (defn all-eq [a b]
+    (let [e true]
+      (do
+        (for [i 0 (Array.count a)]
+          (set! &e (and e (Double.= (Double.copy (Array.nth a i)) (Double.copy (Array.nth b i))))))
+        e)))
+
+  (defn = [a b]
+    (and (Int.= (VN.n a) (VN.n b))
+         (all-eq (VN.v a) (VN.v b))))
+
+  (defn /= [a b]
+    (not (= a b)))
 
   (defn + [a b]
     (zip Double.+ a b))
@@ -221,8 +242,12 @@
   (defn dot [x y]
     (Array.reduce add- 0.0 (VN.v &(zip Double.* x y))))
 
+  (defn angle-between [a b]
+    (let [dmm (Double./ (dot a b) (Double.* (mag a) (mag b)))]
+      (Double.acos (Double.clamp -1.0 1.0 dmm))))
+
   (defn lerp [a b amnt]
     (init (VN.n a) (Array.copy (VN.v &(zip- Double.*
-                                            &(Array.replicate (VN.n a) amnt)
+                                            &(Array.replicate (VN.n a) &amnt)
                                             (VN.v &(zip Double.- b a)))))))
 )

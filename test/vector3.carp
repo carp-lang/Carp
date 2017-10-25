@@ -54,23 +54,23 @@
                   &(init 0.6 0.8 0.0)
                   &(normalize &(init 3.0 4.0 0.0))
                   "normalize works"
-                  Vector2.=
-                  Vector2.str)
+                  =
+                  str)
     (assert-equal test
                   90.0
-                  (radians-to-degree (Vector2.angle-between &(init 1.0 0.0 0.0)
-                                                            &(init 0.0 1.0 0.0)))
+                  (radians-to-degree (angle-between &(init 1.0 0.0 0.0)
+                                                    &(init 0.0 1.0 0.0)))
                   "angle-between works"
                   Double.approx
                   Double.str)
     (assert-equal test
-                  44.0
+                  53.0
                   (dot &(init 10.0 2.0 3.0) &(init 2.0 12.0 3.0))
                   "dot works"
                   Double.=
                   Double.str)
     (assert-equal test
-                  &(init 2.5 5.0 1.0)
+                  &(init 2.5 5.0 0.75)
                   &(lerp &(init 0.0 0.0 0.5) &(init 5.0 10.0 2.0) 0.5)
                   "lerp works"
                   =
