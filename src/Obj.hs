@@ -227,10 +227,10 @@ dependencyDepthOfTypedef _ xobj =
 
 depthOfType :: TypeEnv -> String -> Maybe Ty -> Int
 depthOfType typeEnv selfName ty = visitType ty
-  where  
+  where
     visitType :: Maybe Ty -> Int
     visitType (Just (StructTy name _)) = depthOfStructType name
-    visitType (Just (FuncTy argTys retTy)) = 
+    visitType (Just (FuncTy argTys retTy)) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       (maximum (visitType (Just retTy) : (map (visitType . Just) argTys))) + 1
     visitType (Just (PointerTy p)) = visitType (Just p)
@@ -304,19 +304,19 @@ envIsExternal env =
 
 -- | Find the Binder at a specified path.
 lookupInEnv :: SymPath -> Env -> Maybe (Env, Binder)
-lookupInEnv (SymPath [] name) env = 
+lookupInEnv (SymPath [] name) env =
   case Map.lookup name (envBindings env) of
     Just found -> Just (env, found)
     Nothing -> case envParent env of
                  Just parent -> lookupInEnv (SymPath [] name) parent
                  Nothing -> Nothing
-lookupInEnv path@(SymPath (p : ps) name) env = 
+lookupInEnv path@(SymPath (p : ps) name) env =
   case Map.lookup p (envBindings env) of
-    Just (Binder xobj) -> 
+    Just (Binder xobj) ->
       case xobj of
         (XObj (Mod modEnv) _ _) -> lookupInEnv (SymPath ps name) modEnv
         _ -> Nothing
-    Nothing -> 
+    Nothing ->
       case envParent env of
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
@@ -331,7 +331,7 @@ multiLookupALL = multiLookupInternal True
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
 multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
 multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
-                           
+
   where lookupInLocalEnv :: String -> Env -> Maybe (Env, Binder)
         lookupInLocalEnv n localEnv = case Map.lookup n (envBindings localEnv) of -- No recurse!
                                         Just b -> Just (localEnv, b)
@@ -343,7 +343,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                            in  envs ++ (concatMap imports envs)
                       -- Only lookup in imported modules:
                       else let envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
-                           in  envs ++ (concatMap imports envs)                               
+                           in  envs ++ (concatMap imports envs)
 
         binderToEnv :: Binder -> Maybe Env
         binderToEnv (Binder (XObj (Mod e) _ _)) = Just e
@@ -351,9 +351,9 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
 
         importsLookup :: Env -> [(Env, Binder)]
         importsLookup env = mapMaybe (lookupInLocalEnv name) (imports env)
-                            
+
         recursiveLookup :: Env -> [(Env, Binder)]
-        recursiveLookup env = 
+        recursiveLookup env =
           let spine = case Map.lookup name (envBindings env) of
                         Just found -> [(env, found)]
                         Nothing -> []
@@ -381,15 +381,17 @@ multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
       case lookupInEnv path rootEnv of
         Just found -> [found]
         Nothing -> []
-    Nothing ->
-      -- No exact match on the first qualifier, will look in various places for a match:
-      let fromParent = case envParent rootEnv of
-                            Just parent -> multiLookupQualified path parent
-                            Nothing -> []
-          fromUsedModules = let usedModules = envUseModules rootEnv
-                                envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path rootEnv)) usedModules
-                            in  concatMap (\usedEnv -> multiLookupQualified path usedEnv) envs
-      in fromParent ++ fromUsedModules
+    Just _ -> inexactMatch
+    Nothing -> inexactMatch
+  where inexactMatch =
+          -- No exact match on the first qualifier, will look in various places for a match:
+          let fromParent = case envParent rootEnv of
+                                Just parent -> multiLookupQualified path parent
+                                Nothing -> []
+              fromUsedModules = let usedModules = envUseModules rootEnv
+                                    envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path rootEnv)) usedModules
+                                in  concatMap (\usedEnv -> multiLookupQualified path usedEnv) envs
+          in fromParent ++ fromUsedModules
 
 
 -- | Add an XObj to a specific environment. TODO: rename to envInsert
@@ -399,7 +401,7 @@ extendEnv env name xobj = envAddBinding env name (Binder xobj)
 -- | Add a Binder to an environment at a specific path location.
 envInsertAt :: Env -> SymPath -> XObj -> Env
 envInsertAt env (SymPath [] name) xobj = envAddBinding env name (Binder xobj)
-envInsertAt env (SymPath (p:ps) name) xobj = 
+envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
     Just (Binder (XObj (Mod innerEnv) i t)) ->
       let newInnerEnv = Binder (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
@@ -409,7 +411,7 @@ envInsertAt env (SymPath (p:ps) name) xobj =
 
 envReplaceEnvAt :: Env -> [String] -> Env -> Env
 envReplaceEnvAt _ [] replacement = replacement
-envReplaceEnvAt env (p:ps) replacement = 
+envReplaceEnvAt env (p:ps) replacement =
   case Map.lookup p (envBindings env) of
     Just (Binder (XObj (Mod innerEnv) i t)) ->
       let newInnerEnv = Binder (XObj (Mod (envReplaceEnvAt innerEnv ps replacement)) i t)
@@ -459,10 +461,10 @@ setFullyQualifiedSymbols env (XObj (Lst (defn@(XObj Defn _ _) :
   in  (XObj (Lst [defn, sym, args, setFullyQualifiedSymbols envWithArgs body]) i t)
 setFullyQualifiedSymbols env (XObj (Lst (the@(XObj The _ _) : typeXObj : value : [])) i t) =
   let value' = setFullyQualifiedSymbols env value
-  in  (XObj (Lst [the, typeXObj, value']) i t)  
+  in  (XObj (Lst [the, typeXObj, value']) i t)
 setFullyQualifiedSymbols env (XObj (Lst (def@(XObj Def _ _) : sym : expr : [])) i t) =
   let expr' = setFullyQualifiedSymbols env expr
-  in  (XObj (Lst [def, sym, expr']) i t)  
+  in  (XObj (Lst [def, sym, expr']) i t)
 setFullyQualifiedSymbols env (XObj (Lst (letExpr@(XObj Let _ _) : bind@(XObj (Arr bindings) bindi bindt) : body : [])) i t) =
   if even (length bindings)
   then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
@@ -478,11 +480,11 @@ setFullyQualifiedSymbols env (XObj (Lst (letExpr@(XObj Let _ _) : bind@(XObj (Ar
 setFullyQualifiedSymbols env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) = 
+setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) =
   case multiLookupQualified path env of
     [] -> xobj
     [(_, Binder foundOne)] -> XObj (Sym (getPath foundOne)) i t
-    multiple -> 
+    multiple ->
       case filter (not . envIsExternal . fst) multiple of
       -- There is at least one local binding, use the path of that one:
         (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
@@ -528,7 +530,7 @@ instance Show Project where
 data Includer = SystemInclude String
               | LocalInclude String
               deriving Eq
-              
+
 instance Show Includer where
   show (SystemInclude file) = "<" ++ file ++ ">"
   show (LocalInclude file) = "\"" ++ file ++ "\""
@@ -650,7 +652,7 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
--- | Find out if a type is "external", meaning it is not defined by the user 
+-- | Find out if a type is "external", meaning it is not defined by the user
 --   in this program but instead imported from another C library or similar.
 isExternalType :: TypeEnv -> Ty -> Bool
 isExternalType typeEnv (PointerTy p) =

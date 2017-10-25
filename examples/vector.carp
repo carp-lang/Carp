@@ -1,0 +1,14 @@
+(use IO)
+(use Vector2)
+(use Geometry)
+
+(defn main []
+  (let [x (Vector2.init 1.0 2.0)
+        y (Vector2.init 3.0 4.0)]
+    (do
+      (println &(Vector2.str &(+ &x &y)))
+      (println &(Vector2.str &x))
+      (println &(Vector2.str &y))
+      (println &(Double.str (Vector2.mag &y)))
+      (println &(Vector2.str &(Vector2.rotate &x (Geometry.degree-to-radians 90.0))))
+      (println &(Double.str (Geometry.radians-to-degree (Vector2.angle-between &x &y)))))))
