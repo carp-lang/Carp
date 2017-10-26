@@ -4,6 +4,7 @@
 * [Int](../core/Int.carp)
 * [Float](../core/Float.carp)
 * [Double](../core/Double.carp)
+* [Vector](../core/Vector.carp)
 
 ### Text
 * [String](../core/String.carp)
@@ -17,3 +18,4 @@
 * [System](../core/System.carp)
 * [SDL](../core/sdl.carp)
 * [Macros](../core/Macros.carp)
+* [Test](../core/Test.carp)
