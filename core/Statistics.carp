@@ -1,0 +1,119 @@
+(use Int)
+(use Double)
+
+(defmodule Statistics
+  (defn sorter [a b]
+    (to-int (- @a @b)))
+
+  (defn sum [data]
+    (if (= 0 (Array.count data))
+      0.0
+      (let [total @(Array.nth data 0)]
+        (do
+          (for [i 1 (Array.count data)]
+            (set! &total (+ total @(Array.nth data i))))
+          total))))
+
+  (defn mean [data]
+    (/ (sum data) (from-int (Array.count data))))
+
+  (defn min [a]
+    (let [m (Double.copy (Array.nth a 0))]
+      (do
+        (for [i 1 (Array.count a)]
+          (let [el (Double.copy (Array.nth a i))]
+            (if (Double.< el m)
+              (set! &m el)
+              ())))
+        m)))
+
+  (defn max [a]
+    (let [m (Double.copy (Array.nth a 0))]
+      (do
+        (for [i 1 (Array.count a)]
+          (let [el (Double.copy (Array.nth a i))]
+            (if (Double.> el m)
+              (set! &m el)
+              ())))
+        m)))
+
+  (defn _pp [a mean]
+    (let [sum 0.0]
+      (do
+        (for [i 0 (Array.count a)]
+          (let [tmp (Double.- (Double.copy (Array.nth a i)) mean)]
+            (set! &sum (Double.* tmp tmp))))
+        sum)))
+
+  (defn _xx [a mean]
+    (let [sum 0.0]
+      (do
+        (for [i 0 (Array.count a)]
+          (set! &sum (Double.- (Double.copy (Array.nth a i)) mean)))
+        sum)))
+
+  (defn _ss [data]
+    (let [m (mean data)
+          tmp (_xx data m)]
+      (Double.- (_pp data m)
+                (Double./ (Double.* tmp tmp)
+                          (Double.from-int (Array.count data))))))
+
+  (defn median [data]
+    (let [n (Array.count data)
+          sorted (Array.copy (Array.sort data sorter))]
+      (if (= n 0)
+        0.0
+        (if (= (mod n 2) 1)
+          @(Array.nth data (/ n 2))
+          (let [mid (/ n 2)]
+            (/ (+ (the Double @(Array.nth data (dec mid)))
+                  @(Array.nth data mid))
+                2.0))))))
+
+  (defn low-median [data]
+    (let [n (Array.count data)
+          sorted (Array.copy (Array.sort data sorter))]
+      (if (= n 0)
+        0.0
+        (if (= (mod n 2) 1)
+          @(Array.nth data (/ n 2))
+          @(Array.nth data (dec (/ n 2)))))))
+
+  (defn high-median [data]
+    (let [n (Array.count data)
+          sorted (Array.copy (Array.sort data sorter))]
+      (if (= n 0)
+        0.0
+        @(Array.nth data (/ n 2)))))
+
+  (defn grouped-median [data interval]
+    (let [n (Array.count data)
+          sorted (Array.copy (Array.sort data sorter))]
+      (if (= n 0)
+        0.0
+        (if (= n 1)
+          @(Array.nth data 0)
+          (let [x @(Array.nth data (/ n 2))
+                l (- x (/ (from-int interval) 2.0))
+                cf (Array.index-of data x)
+                f (Array.element-count data x)]
+            (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
+                    (from-int f))))))))
+
+  (defn variance [data]
+    (let [n (Array.count data)
+          ss (_ss data)]
+      (/ ss (from-int (dec n)))))
+
+  (defn pvariance [data]
+    (let [n (Array.count data)
+          ss (_ss data)]
+      (/ ss (from-int n))))
+
+  (defn stdev [data]
+    (Double.sqrt (variance data)))
+
+  (defn pstdev [data]
+    (Double.sqrt (pvariance data)))
+)

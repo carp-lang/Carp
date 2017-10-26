@@ -6,8 +6,8 @@
         (for [i 0 (count xs)]
           (set! &total (f &total (nth xs i))))
         total)))
-  
-  )
+
+)
 
 ;; BUGS! These function definitions will not create the required typedef for Array, for instance:
 ;; typedef Array Array__int;

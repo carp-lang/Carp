@@ -186,6 +186,53 @@ templateNth =
                         ,"}"])
   (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
 
+templateSort :: (String, Binder)
+templateSort =
+  let t = VarTy "t"
+  in defineTemplate
+  (SymPath ["Array"] "sort")
+  (FuncTy [RefTy (StructTy "Array" [t]), FuncTy [RefTy t, RefTy t] IntTy] (RefTy (StructTy "Array" [t])))
+  (toTemplate "Array* $NAME (Array *a, $(Fn [(Ref t), (Ref t)] Int) f)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    qsort(a->data, a->len, sizeof($t), (int(*)(const void*, const void*))f);"
+                        ,"    return a;"
+                        ,"}"])
+  (\(FuncTy [arrayType, sortType] _) -> [defineFunctionTypeAlias sortType,
+                                         defineArrayTypeAlias arrayType])
+
+templateIndexOf :: (String, Binder)
+templateIndexOf =
+  let t = VarTy "t"
+  in defineTemplate
+  (SymPath ["Array"] "index-of")
+  (FuncTy [RefTy (StructTy "Array" [t]), t] IntTy)
+  (toTemplate "int $NAME (Array *a, $t elem)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    int i;"
+                        ,"    for (i = 0; i < a->len; i++) {"
+                        ,"      if ((($t*)a->data)[i] == elem) return i;"
+                        ,"    }"
+                        ,"    return -1;"
+                        ,"}"])
+  (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
+
+templateElemCount :: (String, Binder)
+templateElemCount =
+  let t = VarTy "t"
+  in defineTemplate
+  (SymPath ["Array"] "element-count")
+  (FuncTy [RefTy (StructTy "Array" [t]), t] IntTy)
+  (toTemplate "int $NAME (Array *a, $t elem)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    int i;"
+                        ,"    int count = 0;"
+                        ,"    for (i = 0; i < a->len; i++) {"
+                        ,"      if ((($t*)a->data)[i] == elem) count++;"
+                        ,"    }"
+                        ,"    return count;"
+                        ,"}"])
+  (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
+
 templateReplicate :: (String, Binder)
 templateReplicate = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "replicate"
