@@ -1,0 +1,66 @@
+(use Test)
+(use Statistics)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  2.0
+                  (median &[1.0 2.0 3.0])
+                  "median works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  2.5
+                  (mean &[1.0 2.0 4.5])
+                  "mean works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  2.0
+                  (low-median &[1.0 2.0 4.0 5.0])
+                  "low-median works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  4.0
+                  (high-median &[1.0 2.0 4.0 5.0])
+                  "high-median works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  3.0
+                  (grouped-median &[1.0 2.0 4.0 5.0] 2)
+                  "grouped-median works as expected I"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  2.5
+                  (grouped-median &[1.0 2.0 4.0 5.0] 3)
+                  "grouped-median works as expected II"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  1.0
+                  (variance &[1.0 2.0 4.0 5.0])
+                  "variance works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  0.75
+                  (pvariance &[1.0 2.0 4.0 5.0])
+                  "pvariance works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  2.0
+                  (stdev &[1.0 1.0 9.0 9.0])
+                  "stdev works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  2.0
+                  (pstdev &[1.0 9.0])
+                  "pstdev works as expected"
+                  Double.=
+                  Double.str)
+    (print-test-results test)))
