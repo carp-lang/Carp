@@ -125,6 +125,9 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
+                                , templateSort
+                                , templateIndexOf
+                                , templateElemCount
                                 ]
 
 startingGlobalEnv :: Env
@@ -160,6 +163,7 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macr
                                                                          , "Vector"
                                                                          , "Geometry"
                                                                          , "Test"
+                                                                         , "Statistics"
                                                                          ]
 
 main :: IO ()
