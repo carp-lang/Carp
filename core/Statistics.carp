@@ -62,23 +62,19 @@
   (defn median [data]
     (let [n (Array.count data)
           sorted (Array.copy (Array.sort data sorter))]
-      (if (= n 0)
-        0.0
-        (if (= (mod n 2) 1)
-          @(Array.nth data (/ n 2))
-          (let [mid (/ n 2)]
-            (/ (+ (the Double @(Array.nth data (dec mid)))
-                  @(Array.nth data mid))
-                2.0))))))
+      (cond (= n 0) 0.0
+            (= (mod n 2) 1) @(Array.nth data (/ n 2))
+            (let [mid (/ n 2)] ; else
+              (/ (+ (the Double @(Array.nth data (dec mid)))
+                    @(Array.nth data mid))
+                  2.0)))))
 
   (defn low-median [data]
     (let [n (Array.count data)
           sorted (Array.copy (Array.sort data sorter))]
-      (if (= n 0)
-        0.0
-        (if (= (mod n 2) 1)
-          @(Array.nth data (/ n 2))
-          @(Array.nth data (dec (/ n 2)))))))
+      (cond (= n 0) 0.0
+            (= (mod n 2) 1) @(Array.nth data (/ n 2))
+            @(Array.nth data (dec (/ n 2)))))) ; else
 
   (defn high-median [data]
     (let [n (Array.count data)
@@ -90,16 +86,14 @@
   (defn grouped-median [data interval]
     (let [n (Array.count data)
           sorted (Array.copy (Array.sort data sorter))]
-      (if (= n 0)
-        0.0
-        (if (= n 1)
-          @(Array.nth data 0)
-          (let [x @(Array.nth data (/ n 2))
-                l (- x (/ (from-int interval) 2.0))
-                cf (Array.index-of data x)
-                f (Array.element-count data x)]
-            (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
-                    (from-int f))))))))
+      (cond (= n 0) 0.0
+            (= n 1) @(Array.nth data 0)
+            (let [x @(Array.nth data (/ n 2)) ; else
+                  l (- x (/ (from-int interval) 2.0))
+                  cf (Array.index-of data x)
+                  f (Array.element-count data x)]
+              (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
+                      (from-int f)))))))
 
   (defn variance [data]
     (let [n (Array.count data)
