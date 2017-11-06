@@ -143,7 +143,8 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      let letBindingToC (XObj (Sym (SymPath _ symName)) _ _) expr =
                            do ret <- visit indent' expr
                               let Just bindingTy = ty expr
-                              appendToSrc (addIndent indent' ++ tyToC bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
+                              when (bindingTy /= UnitTy) $
+                                appendToSrc (addIndent indent' ++ tyToC bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                          letBindingToC _ _ = error "Invalid binding."
                      _ <- mapM (\(sym, expr) -> letBindingToC sym expr) (pairwise bindings)
                      ret <- visit indent' body
@@ -241,7 +242,6 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
 
             -- Ref
             XObj Ref _ _ : value : [] ->
-              if isNumeric
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
