@@ -14,13 +14,21 @@
     (let [unit (get-unit n)]
       (do
         (IO.println title)
-        (IO.println &unit)))
+        (IO.println &unit))))
 
   (defn ns-iter-inner [f k]
     (let [start (get-time-elapsed)]
       (do
         (for [i 0 n] (f))
         (Double.- (Bench.get-time-elapsed) before))))
+
+  (defn dbl-cmp [a b]
+    (Double.- a b))
+
+  (defn winsorize [samples pct]
+    (let [tmp (Array.sort samples dbl-cmp)
+      ; and now?
+      ))
 
   (defn bench [f]
     (let [ns (ns-iter-inner f 1)
