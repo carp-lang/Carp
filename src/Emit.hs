@@ -241,6 +241,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
 
             -- Ref
             XObj Ref _ _ : value : [] ->
+              if isNumeric
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
@@ -362,7 +363,7 @@ deftypeToDeclaration path rest =
       memberToDecl :: (XObj, XObj) -> State EmitterState ()
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
-          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ getName memberName ++ ";\n")
+          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
           Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced

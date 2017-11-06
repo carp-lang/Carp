@@ -1,60 +1,86 @@
-(defmodule Bench
-  (system-include "bench.h")
+(system-include "bench.h")
+(register get-time-elapsed (Fn [] Double))
 
-  (register get-time-elapsed (Fn [] Double))
+(defmodule Bench
 
   (defn get-unit [n]
     (cond
-      (> n 1000.0) (String.append (Double.str n) "µs")
-      (> n 1000000.0) (String.append (Double.str (/ n 1000.0)) "ms")
-      (> n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) "s")
-      (String.append (Double.str (/ n 1000000000.0)) "s")))
+      (< n 1000.0) (String.append (Double.str n) @"µs")
+      (< n 1000000.0) (String.append (Double.str (/ n 1000.0)) @"ms")
+      (< n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) @"s")
+      (String.append (Double.str (/ n 1000000000.0)) @"s")))
 
   (defn print [title n]
     (let [unit (get-unit n)]
       (do
-        (IO.println title)
+        (IO.print title)
         (IO.println &unit))))
 
-  (defn ns-iter-inner [f k]
+  (defn ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
-        (for [i 0 n] (f))
-        (Double.- (Bench.get-time-elapsed) before))))
-
-  (defn dbl-cmp [a b]
-    (Double.- a b))
-
-  (defn winsorize [samples pct]
-    (let [tmp (Array.sort samples dbl-cmp)
-      ; and now?
-      ))
+        (for [i 0 n]
+          (let [x (f)] ; this little trick guarantees that f can be any snippet and return whatever
+            ()))
+        (Double.- (get-time-elapsed) start))))
 
   (defn bench [f]
     (let [ns (ns-iter-inner f 1)
           ns-target-total 1000000.0
-          n (Double./ ns-target-total (if (> 1 ns) 1 ns))
-          n (if (> 1 n) 1 n)
-          total 0
-          samples []]
-      (while (< total 3000000000)
-        (let [loop-start (get-time-elapsed)]
-          (do
-            (for [i 0 50]
-              (set! &samples &(Array.push-back (Double./ (ns-iter-inner f n) n))))
-            ; and now?
-            ))))))
+          _n (Double./ ns-target-total (if (> 1.0 ns) 1.0 ns))
+          n (if (> 1.0 _n) 1.0 _n)
+          total 0.0
+          zero 0.0
+          samples (Array.replicate 50 &zero)
+          done false
+          res &(Statistics.summary &[0.0])]
+      (do
+        (while (and (Double.< total 3000000000.0) (not done))
+          (let [loop-start (get-time-elapsed)]
+            (do
+              (for [i 0 50]
+                (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
+              (let [summ (Statistics.summary &(Statistics.winsorize &samples 5.0))]
+                (do
+                  (for [i 0 50]
+                    (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
+                  (let [summ5 (Statistics.summary &(Statistics.winsorize &samples 5.0))]
+                    (let [loop-run (- (get-time-elapsed) loop-start)]
+                      (if (and
+                            (Double.> loop-run 100000.0)
+                            (and
+                              (Double.< (Statistics.Summary.median-abs-dev-pct &summ) 1.0)
+                              (Double.< (Double.- (Statistics.Summary.median &summ)
+                                                  (Statistics.Summary.median &summ5))
+                                        (Statistics.Summary.median-abs-dev &summ5))))
+                        (do
+                          (set! &done true)
+                          (set! &res &summ5))
+                        (do
+                          (set! &total (Double.+ total loop-run))
+                          (cond
+                            (< (Double.* n 10.0) n) (set! &total (Double.+ total 30000000000.0)) ; abort
+                            (set! &n (Double.* n 2.0))))))))))))
+          (if done
+            (do
+              (print "Total time elapsed: " total)
+              (print "Best case: " (Statistics.Summary.min res))
+              (print "Worst case: " (Statistics.Summary.max res))
+              (print "Standard deviation: " (Statistics.Summary.stdev res)))
+            (IO.println "Could not stabilize benchmark after 3 seconds!")))))
+)
+
 
 (defmacro benchn [n form]
-  (list 'let ['before (Bench.get-time-elapsed)
+  (list 'let ['before (get-time-elapsed)
               'times []]
     (list 'do
       (list 'for ['i 0 n]
-        (list 'let ['before-once (Bench.get-time-elapsed)]
+        (list 'let ['before-once (get-time-elapsed)]
           (list 'do
             form
             (list 'set! &times (Array.push-back (Array.copy &times) (Double.- (get-time-elapsed) before-once))))))
-      (list 'let ['total (Double.- (Bench.get-time-elapsed) before)
+      (list 'let ['total (Double.- (get-time-elapsed) before)
                   'per (list 'Double./ 'total (list 'Double.from-int n))]
         (do
           (Bench.print "Total time elapsed: " total)

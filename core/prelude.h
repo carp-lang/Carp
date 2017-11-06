@@ -262,6 +262,10 @@ double Double_atan2(double x, double y) {
     return atan2(x, y);
 }
 
+double Double_floor(double x) {
+    return floor(x);
+}
+
 string Double_str(double x) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%g", x);
