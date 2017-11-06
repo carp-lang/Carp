@@ -23,6 +23,8 @@
             ()))
         (Double.- (get-time-elapsed) start))))
 
+  ; it is actually possible to make this run forever by supplying a _really_ longrunning
+  ; function, where long-running is everything over 30ms.
   (defn bench [f]
     (let [ns (ns-iter-inner f 1)
           ns-target-total 1000000.0
@@ -67,7 +69,7 @@
               (print "Best case: " (Statistics.Summary.min res))
               (print "Worst case: " (Statistics.Summary.max res))
               (print "Standard deviation: " (Statistics.Summary.stdev res)))
-            (IO.println "Could not stabilize benchmark after 3 seconds!")))))
+            (IO.println "Could not stabilize benchmark after more than 3 seconds!")))))
 )
 
 
