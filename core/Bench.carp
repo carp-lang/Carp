@@ -14,9 +14,30 @@
     (let [unit (get-unit n)]
       (do
         (IO.println title)
-        (IO.println &unit))))
+        (IO.println &unit)))
 
-(defmacro bench [n form]
+  (defn ns-iter-inner [f k]
+    (let [start (get-time-elapsed)]
+      (do
+        (for [i 0 n] (f))
+        (Double.- (Bench.get-time-elapsed) before))))
+
+  (defn bench [f]
+    (let [ns (ns-iter-inner f 1)
+          ns-target-total 1000000.0
+          n (Double./ ns-target-total (if (> 1 ns) 1 ns))
+          n (if (> 1 n) 1 n)
+          total 0
+          samples []]
+      (while (< total 3000000000)
+        (let [loop-start (get-time-elapsed)]
+          (do
+            (for [i 0 50]
+              (set! &samples &(Array.push-back (Double./ (ns-iter-inner f n) n))))
+            ; and now?
+            ))))))
+
+(defmacro benchn [n form]
   (list 'let ['before (Bench.get-time-elapsed)
               'times []]
     (list 'do
