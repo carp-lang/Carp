@@ -2,12 +2,11 @@
 (register get-time-elapsed (Fn [] Double))
 
 (defmodule Bench
-
   (defn get-unit [n]
     (cond
-      (< n 1000.0) (String.append (Double.str n) @"µs")
-      (< n 1000000.0) (String.append (Double.str (/ n 1000.0)) @"ms")
-      (< n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) @"s")
+      (< n 1000.0) (String.append (Double.str n) @"ns")
+      (< n 1000000.0) (String.append (Double.str (/ n 1000.0)) @"µs")
+      (< n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) @"ms")
       (String.append (Double.str (/ n 1000000000.0)) @"s")))
 
   (defn print [title n]
@@ -54,12 +53,13 @@
                                                   (Statistics.Summary.median &summ5))
                                         (Statistics.Summary.median-abs-dev &summ5))))
                         (do
+                          (set! &total (Double.+ total loop-run))
                           (set! &done true)
                           (set! &res &summ5))
                         (do
                           (set! &total (Double.+ total loop-run))
                           (cond
-                            (< (Double.* n 10.0) n) (set! &total (Double.+ total 30000000000.0)) ; abort
+                            (< (Double.* n 10.0) n) (set! &total (Double.+ total 3000000000.0)) ; abort
                             (set! &n (Double.* n 2.0))))))))))))
           (if done
             (do
