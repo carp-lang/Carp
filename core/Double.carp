@@ -17,6 +17,7 @@
   (register str (Fn [Double] String))
   (register floor (Fn [Double] Double))
   (register copy (Fn [(Ref Double)] Double))
+  (register abs (Fn [Double] Double))
 
   (defn clamp [min, max, val]
     (if (> val max)

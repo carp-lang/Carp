@@ -136,7 +136,7 @@
           n 1.4826] ; taken from Rust and R, because that’s how it’s done apparently
       (do
         (for [i 0 (Array.count data)]
-          (Array.aset! &abs-devs i (- med @(Array.nth data i))))
+          (Array.aset! &abs-devs i (abs (- med @(Array.nth data i)))))
         (* (median &abs-devs) n))))
 
   (defn median-abs-dev-pct [data]

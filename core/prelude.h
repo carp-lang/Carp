@@ -266,6 +266,10 @@ double Double_floor(double x) {
     return floor(x);
 }
 
+double Double_abs(double x) {
+    return fabs(x);
+}
+
 string Double_str(double x) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%g", x);
