@@ -143,7 +143,8 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      let letBindingToC (XObj (Sym (SymPath _ symName)) _ _) expr =
                            do ret <- visit indent' expr
                               let Just bindingTy = ty expr
-                              appendToSrc (addIndent indent' ++ tyToC bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
+                              when (bindingTy /= UnitTy) $
+                                appendToSrc (addIndent indent' ++ tyToC bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                          letBindingToC _ _ = error "Invalid binding."
                      _ <- mapM (\(sym, expr) -> letBindingToC sym expr) (pairwise bindings)
                      ret <- visit indent' body
@@ -362,7 +363,7 @@ deftypeToDeclaration path rest =
       memberToDecl :: (XObj, XObj) -> State EmitterState ()
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
-          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ getName memberName ++ ";\n")
+          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
           Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced

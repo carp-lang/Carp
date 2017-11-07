@@ -130,7 +130,7 @@ templateForCopy _ _ _ _ _ = Nothing
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
-memberXObjsToPairs xobjs = map (\(n, t) -> (getName n, fromJust (xobjToTy t))) (pairwise xobjs)
+memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ([(String, Binder)], [XObj])
@@ -146,11 +146,11 @@ templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
       p = StructTy typeName []
       memberName = getName nameXObj
       fixedMemberTy = if isManaged typeEnv t then (RefTy t) else t
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [(RefTy p)] fixedMemberTy) (templateGetter memberName fixedMemberTy)
-     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env memberName t)
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [(RefTy p)] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
+     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
                                                             (FuncTy [p, (FuncTy [t] t)] p)
-                                                            (templateUpdater memberName)]
+                                                            (templateUpdater (mangle memberName))]
 
 -- | The template for the 'init' and 'new' functions for a deftype.
 templateInit :: AllocationMode -> String -> [(String, Ty)] -> Template

@@ -15,6 +15,7 @@
   (register atan2 (Fn [Double Double] Double))
   (register sqrt (Fn [Double] Double))
   (register str (Fn [Double] String))
+  (register floor (Fn [Double] Double))
   (register copy (Fn [(Ref Double)] Double))
 
   (defn clamp [min, max, val]

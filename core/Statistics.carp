@@ -2,6 +2,21 @@
 (use Double)
 
 (defmodule Statistics
+  (deftype Summary [
+    sum Double,
+    min Double,
+    max Double,
+    mean Double,
+    median Double,
+    var Double,
+    stdev Double,
+    stdev-pct Double,
+    median-abs-dev Double,
+    median-abs-dev-pct Double,
+    quartiles (Array Double),
+    iqr Double
+  ])
+
   (defn sorter [a b]
     (to-int (- @a @b)))
 
@@ -110,4 +125,78 @@
 
   (defn pstdev [data]
     (Double.sqrt (pvariance data)))
+
+  (defn stdev-pct [data]
+    (* (/ (stdev data) (mean data)) 100.0))
+
+  (defn median-abs-dev [data]
+    (let [med (median data)
+          zero 0.0
+          abs-devs (Array.replicate (Array.count data) &zero)
+          n 1.4826] ; taken from Rust and R, because that’s how it’s done apparently
+      (do
+        (for [i 0 (Array.count data)]
+          (Array.aset! &abs-devs i (- med @(Array.nth data i))))
+        (* (median &abs-devs) n))))
+
+  (defn median-abs-dev-pct [data]
+    (* (/ (median-abs-dev data) (median data)) 100.0))
+
+  (defn percentile-of-sorted [sorted pct]
+    (cond
+      (Int.= 0 (Array.count sorted)) -1.0 ; should abort here
+      (Double.< pct 0.0) -1.0 ; should abort here
+      (Double.> pct 100.0) -1.0 ; should abort here
+      (Int.= 1 (Array.count sorted)) @(Array.nth sorted 0)
+      (Double.= 100.0 pct) @(Array.nth sorted (Int.dec (Array.count sorted)))
+      (let [len (Int.dec (Array.count sorted))
+            rank (Double.* (Double./ pct 100.0) (Double.from-int len))
+            lrank (Double.floor rank)
+            d (Double.- rank lrank)
+            n (Double.to-int lrank)
+            lo @(Array.nth sorted n)
+            hi @(Array.nth sorted (Int.inc n))]
+        (Double.+ lo (Double.* d (Double.- hi lo))))))
+
+  (defn quartiles [data]
+    (let [tmp (Array.sort data sorter)
+          first 25.0
+          second 50.0
+          third 75.0
+          a (percentile-of-sorted tmp first)
+          b (percentile-of-sorted tmp second)
+          c (percentile-of-sorted tmp third)]
+      [a b c]))
+
+  (defn iqr [data]
+    (let [s &(quartiles data)]
+      (the Double (- @(Array.nth s 2) @(Array.nth s 0)))))
+
+  (defn winsorize [samples pct]
+    (let [tmp (the (Ref (Array Double)) (Array.sort samples sorter))
+          lo (Statistics.percentile-of-sorted tmp pct)
+          hi (Statistics.percentile-of-sorted tmp (Double.- 100.0 pct))]
+      (do
+        (for [i 0 (Array.count tmp)]
+          (let [samp @(Array.nth tmp i)]
+            (cond
+              (> samp hi) (Array.aset! tmp i hi)
+              (< samp lo) (Array.aset! tmp i lo))))
+        (Array.copy tmp))))
+
+  (defn summary [samples]
+    (Summary.init
+      (sum samples)
+      (min samples)
+      (max samples)
+      (mean samples)
+      (median samples)
+      (variance samples)
+      (stdev samples)
+      (stdev-pct samples)
+      (median-abs-dev samples)
+      (median-abs-dev-pct samples)
+      (quartiles samples)
+      (iqr samples)))
+
 )
