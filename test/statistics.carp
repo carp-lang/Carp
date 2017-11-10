@@ -1,5 +1,17 @@
+(use Double)
 (use Test)
 (use Statistics)
+
+(defn all-eq [a b]
+  (if (/= (Array.count a) (Array.count b))
+    false
+    (let [res true]
+      (do
+        (for [i 0 (Array.count a)]
+          (if (not (Double.= @(Array.nth a i) @(Array.nth b i)))
+            (set! &res false)
+            ()))
+        res))))
 
 (defn main []
   (with-test test
@@ -61,6 +73,66 @@
                   2.0
                   (pstdev &[1.0 9.0])
                   "pstdev works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  &[0.0 0.0 0.0 0.0 0.0]
+                  &(winsorize &[0.0 0.0 0.0 0.0 10.0] 90.0)
+                  "winsorizing works as expected"
+                  all-eq
+                  Array.str)
+    (assert-equal test
+                  &[2.5 5.0 7.5]
+                  &(quartiles &[0.0 2.5 5.0 7.5 10.0])
+                  "quartiles work as expected"
+                  all-eq
+                  Array.str)
+    (assert-equal test
+                  5.0
+                  (iqr &[0.0 2.5 5.0 7.5 10.0])
+                  "iqr works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  10.0
+                  (sum &[2.5 5.0 2.0 0.5])
+                  "sum works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  0.5
+                  (min &[2.5 5.0 2.0 0.5])
+                  "min works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  5.0
+                  (max &[2.5 5.0 2.0 0.5])
+                  "max works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  40.0
+                  (stdev-pct &[1.0 1.0 9.0 9.0])
+                  "stdev-pct works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
+                  3.7065
+                  (median-abs-dev &[5.0 10.0])
+                  "median-abs-dev works as expected"
+                  Double.approx
+                  Double.str)
+    (assert-equal test
+                  49.42
+                  (median-abs-dev-pct &[5.0 10.0])
+                  "median-abs-dev-pct works as expected"
+                  Double.approx
+                  Double.str)
+    (assert-equal test
+                  2.0
+                  (Summary.median &(summary &[1.0 2.0 3.0]))
+                  "summary works as expected"
                   Double.=
                   Double.str)
     (print-test-results test)))
