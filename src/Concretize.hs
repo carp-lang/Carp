@@ -86,6 +86,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                 Just theType = ty theXObj
                 Just typeOfVisited = t
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show t) $
+                  -- Current BUG produces this output: CHECKING a : (λ [] t0) with visited type Just (λ [] ())
                   typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbiguity typeEnv env theXObj typeOfVisited of
                          Left err -> return (Left err)
