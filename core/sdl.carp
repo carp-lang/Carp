@@ -78,7 +78,11 @@
 (register SDLK_DOWN SDL_Keycode)
 
 (defmodule Keycode
-  (register = (Fn [SDL_Keycode SDL_Keycode] Bool)))
+  (register = (Fn [SDL_Keycode SDL_Keycode] Bool))
+
+  (defn /= [x y]
+    (not (= x y)))
+)
 
 ;; Mouse
 (register SDL_GetMouseState (Fn [(Ptr Int) (Ptr Int)] Int))
