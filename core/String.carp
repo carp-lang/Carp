@@ -9,7 +9,7 @@
   (register cstr       (Fn [&String] (Ptr Char)))
   (register str        (Fn [&String] String))
   (register chars      (Fn [&String] (Array Char)))
-  (register from-chars (Fn [(Array Char)] &String))
+  (register from-chars (Fn [(Array Char)] String))
 
   (defn repeat [n inpt]
     (let [str ""]
