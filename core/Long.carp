@@ -6,7 +6,6 @@
   (register < (λ [Long Long] Bool))
   (register > (λ [Long Long] Bool))
   (register = (λ [Long Long] Bool))
-  (register /= (λ [Long Long] Bool))
   (register mod (λ [Long Long] Long))
   (register seed (λ [Long] ()))
   (register random (λ [] Long))

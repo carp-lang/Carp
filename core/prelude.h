@@ -60,7 +60,6 @@ long Long__MINUS_(long x, long y)  { return x - y; }
 long Long__MUL_(long x, long y)    { return x * y; }
 long Long__DIV_(long x, long y)    { return x / y; }
 bool Long__EQ_(long x, long y)     { return x == y; }
-bool Long__DIV__EQ_(long x, long y) { return x != y; }
 bool Long__LT_(long x, long y)    { return x < y; }
 bool Long__GT_(long x, long y)    { return x > y; }
 
