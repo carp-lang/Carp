@@ -218,8 +218,8 @@ Array String_chars(string *s) {
 }
 
 string String_from_MINUS_chars(Array a) {
-    string s = malloc(a.len);
-    snprintf(s, a.len, "%s", a.data);
+    string s = malloc(a.len+1);
+    snprintf(s, a.len+1, "%s", a.data);
     return s;
 }
 
@@ -227,6 +227,14 @@ string Char_str(char c) {
     char *buffer = CARP_MALLOC(3);
     snprintf(buffer, 3, "\\%c", c);
     return buffer;
+}
+
+int Char_to_MINUS_int(char c) {
+  return (int)c;
+}
+
+char Char_from_MINUS_int(int i) {
+  return (char)i;
 }
 
 int exmod__bleh(int x) {
