@@ -236,10 +236,6 @@ char Char_from_MINUS_int(int i) {
   return (char)i;
 }
 
-int exmod__bleh(int x) {
-    return x * 1000;
-}
-
 // Double.toInt : Double -> Int
 int Double_to_MINUS_int(double x) {
     return (int)x;

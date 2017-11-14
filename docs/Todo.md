@@ -10,7 +10,7 @@
 * Just entering '=' at the REPL leads to strange type error.
 * The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type
 * Remove unnecessary Array-functions and rewrite them in Carp?
-* Create a proper .c file for the core library C functions
+* Create a proper .c file for the core library C functions. Or at least rename the prelude.h file to core.h
 * No need to set unique identifiers on XObj:s in Parse.hs?
 
 ## Big Language Features
