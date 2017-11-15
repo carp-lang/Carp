@@ -52,7 +52,8 @@
         (State.update-passed (State.copy state) Int.inc))
       (do
         (IO.color "red")
-        (IO.print &(string-join @"Expected " @what @": '"))
+        (IO.println &(string-join @"Test '" @descr @"' failed:"))
+        (IO.print &(string-join @"\tExpected " @what @": '"))
         (IO.print &(str expected))
         (IO.println &(string-join @"', actual value: '" (str actual) @"'"))
         (IO.color "reset")

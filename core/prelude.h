@@ -245,32 +245,88 @@ double Double_from_MINUS_int(int x) {
     return (double)x;
 }
 
-double Double_sin(double x) {
-    return sin(x);
-}
-
-double Double_cos(double x) {
-    return cos(x);
-}
-
-double Double_sqrt(double x) {
-    return sqrt(x);
+double Double_abs(double x) {
+    return fabs(x);
 }
 
 double Double_acos(double x) {
     return acos(x);
 }
 
-double Double_atan2(double x, double y) {
-    return atan2(x, y);
+double Double_asin(double x) {
+    return asin(x);
+}
+
+double Double_atan(double x) {
+    return atan(x);
+}
+
+double Double_atan2(double y, double x) {
+    return atan2(y, x);
+}
+
+double Double_cos(double x) {
+    return cos(x);
+}
+
+double Double_cosh(double x) {
+    return cosh(x);
+}
+
+double Double_sin(double x) {
+    return sin(x);
+}
+
+double Double_sinh(double x) {
+    return sinh(x);
+}
+
+double Double_tanh(double x) {
+    return tanh(x);
+}
+
+double Double_exp(double x) {
+    return exp(x);
+}
+
+double Double_frexp(double x, int* exponent) {
+    return frexp(x, exponent);
+}
+
+double Double_ldexp(double x, int exponent) {
+    return ldexp(x, exponent);
+}
+
+double Double_log(double x) {
+    return log(x);
+}
+
+double Double_log10(double x) {
+    return log10(x);
+}
+
+double Double_modf(double x, double* integer) {
+    return modf(x, integer);
+}
+
+double Double_pow(double x, double y) {
+    return pow(x, y);
+}
+
+double Double_sqrt(double x) {
+    return sqrt(x);
+}
+
+double Double_ceil(double x) {
+    return ceil(x);
 }
 
 double Double_floor(double x) {
     return floor(x);
 }
 
-double Double_abs(double x) {
-    return fabs(x);
+double Double_mod(double x, double y) {
+    return fmod(x, y);
 }
 
 string Double_str(double x) {
