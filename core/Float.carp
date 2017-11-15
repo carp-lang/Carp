@@ -1,5 +1,6 @@
 (defmodule Float
   (def π 3.1415926536f)
+  (register neg (Fn [Float] Float))
   (register + (Fn [Float Float] Float))
   (register - (Fn [Float Float] Float))
   (register * (Fn [Float Float] Float))
@@ -8,4 +9,47 @@
   (register random-between (λ [Float Float] Float))
   (register str (Fn [Float] String))
   (register copy (Fn [(Ref Float)] Float))
-  )
+
+  (register = (Fn [Float Float] Bool))
+  (defn /= [x y]
+    (not (= x y)))
+  (register < (Fn [Float Float] Bool))
+  (register > (Fn [Float Float] Bool))
+
+  (defn clamp [min, max, val]
+    (if (> val max)
+      max
+      (if (< val min)
+        min
+        val)))
+
+  (defn approx [x y]
+    (if (> x y)
+      (< (- x y) 0.00001f)
+      (< (- y x) 0.00001f)))
+
+  (register sin (Fn [Float] Float))
+  (register cos (Fn [Float] Float))
+  (register tan (Fn [Float] Float))
+  (register acos (Fn [Float] Float))
+  (register asin (Fn [Float] Float))
+  (register atan (Fn [Float] Float))
+  (register atan2 (Fn [Float Float] Float))
+  (register cosh (Fn [Float] Float))
+  (register sinh (Fn [Float] Float))
+  (register tanh (Fn [Float] Float))
+  (register exp (Fn [Float] Float))
+  (register frexp (Fn [Float (Ref Int)] Float))
+  (register ldexp (Fn [Float Int] Float))
+  (register log (Fn [Float] Float))
+  (register log10 (Fn [Float] Float))
+  (register modf (Fn [Float (Ref Float)] Float))
+  (register pow (Fn [Float Float] Float))
+  (register sqrt (Fn [Float] Float))
+  (register str (Fn [Float] String))
+  (register floor (Fn [Float] Float))
+  (register ceil (Fn [Float] Float))
+  (register mod (Fn [Float Float] Float))
+  (register copy (Fn [(Ref Float)] Float))
+  (register abs (Fn [Float] Float))
+)
