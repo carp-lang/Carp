@@ -1,0 +1,133 @@
+(use Bool)
+(use Int)
+(use Long)
+(use Test)
+
+(def i 1)
+(def l 1l)
+
+(defn return-res-int [f a b]
+  (let [c 0
+        _ false]
+    (do
+      (set! &_ (f a b &c))
+      c)))
+
+(defn return-res-long [f a b]
+  (let [c 0l
+        _ false]
+    (do
+      (set! &_ (f a b &c))
+      c)))
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  false
+                  (safe-add 1 2 &i)
+                  "safe-add is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  3
+                  (return-res-int safe-add 1 2)
+                  "safe-add really adds"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-add 1000000000 2000000000 &i)
+                  "safe-add is true with overflow"
+                  =
+                  str)
+    (assert-equal test
+                  false
+                  (safe-sub 1 2 &i)
+                  "safe-sub is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  -1
+                  (return-res-int safe-sub 1 2)
+                  "safe-sub really subs"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-sub -1000000000 2000000000 &i)
+                  "safe-sub is true with overflow"
+                  =
+                  str)
+    (assert-equal test
+                  false
+                  (safe-mul 1 2 &i)
+                  "safe-mul is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  4
+                  (return-res-int safe-mul 2 2)
+                  "safe-mul really muls"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-mul 1000000000 2000000000 &i)
+                  "safe-mul is true with overflow"
+                  =
+                  str)
+    (assert-equal test
+                  false
+                  (safe-add 1l 2l &l)
+                  "safe-add is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  3l
+                  (return-res-long safe-add 1l 2l)
+                  "safe-add really adds"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-add 9000000000000000000l 2000000000000000000l &l)
+                  "safe-add is true with overflow"
+                  =
+                  str)
+    (assert-equal test
+                  false
+                  (safe-sub 1l 2l &l)
+                  "safe-sub is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  -1l
+                  (return-res-long safe-sub 1l 2l)
+                  "safe-sub really subs"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-sub 9000000000000000000l -2000000000000000000l &l)
+                  "safe-sub is true with overflow"
+                  =
+                  str)
+    (assert-equal test
+                  false
+                  (safe-mul 1l 2l &l)
+                  "safe-mul is false without overflow"
+                  =
+                  str)
+    (assert-equal test
+                  4l
+                  (return-res-long safe-mul 2l 2l)
+                  "safe-mul really muls"
+                  =
+                  str)
+    (assert-equal test
+                  true
+                  (safe-mul 9000000000000000000l 2000000000000000000l &l)
+                  "safe-mul is true with overflow"
+                  =
+                  str)
+    (print-test-results test)))
