@@ -43,6 +43,7 @@
 * Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
 * Macros in modules must be qualified right now, is that a good long-term solution?
 * Should macros calling non-macros/non-dynamicfunctions just fail instead of returning an unvealuated list which is pretty confusing?
+* Make @ work for all types, not just the 'use':d ones
 
 ## Code generation
 * LLVM backend
