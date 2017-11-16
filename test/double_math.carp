@@ -4,6 +4,12 @@
 (defn main []
   (with-test test
     (assert-equal test
+                  -1.0
+                  (neg 1.0)
+                  "neg works as expected"
+                  Double.=
+                  Double.str)
+    (assert-equal test
                   0.0
                   (acos 1.0)
                   "acos works as expected"
