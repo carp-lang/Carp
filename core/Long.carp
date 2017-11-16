@@ -19,4 +19,8 @@
 
   (defn /= [x y]
     (not (= x y)))
+
+  (register safe-add (λ [Long Long (Ref Long)] Bool))
+  (register safe-sub (λ [Long Long (Ref Long)] Bool))
+  (register safe-mul (λ [Long Long (Ref Long)] Bool))
 )
