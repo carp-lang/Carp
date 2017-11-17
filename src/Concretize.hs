@@ -2,6 +2,7 @@ module Concretize where
 
 import Control.Monad.State
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Data.List (foldl')
 import Debug.Trace
 
@@ -39,13 +40,23 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
     visitList :: Env -> [XObj] -> State [XObj] (Either TypeError [XObj])
     visitList _ [] = return (Right [])
 
+    visitList env (defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym (SymPath [] "main")) _ _) : args@(XObj (Arr argsArr) _ _) : body : []) =
+      do if not (null argsArr)
+         then return $ Left (MainCannotHaveArguments (length argsArr))
+         else do visitedBody <- visit env body
+                 return $ do okBody <- visitedBody
+                             let t = fromMaybe UnitTy (ty okBody)
+                             if t /= UnitTy && t /= IntTy
+                             then Left (MainCanOnlyReturnUnitOrInt t)
+                             else return [defn, nameSymbol, args, okBody]
+
     visitList env (defn@(XObj Defn _ _) : nameSymbol : args@(XObj (Arr argsArr) _ _) : body : []) =
       do mapM_ checkForNeedOfTypedefs argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
-         visitedBody <- (visit envWithArgs) body
+         visitedBody <- visit envWithArgs body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 

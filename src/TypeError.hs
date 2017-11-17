@@ -29,6 +29,8 @@ data TypeError = SymbolMissingType XObj Env
                | GettingReferenceToUnownedValue XObj
                | UsingUnownedValue XObj
                | ArraysCannotContainRefs XObj
+               | MainCanOnlyReturnUnitOrInt Ty
+               | MainCannotHaveArguments Int
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -93,6 +95,11 @@ instance Show TypeError where
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (ArraysCannotContainRefs xobj) =
     "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (MainCanOnlyReturnUnitOrInt t) =
+    "Main function can only return Int or (), got " ++ show t
+  show (MainCannotHaveArguments c) =
+    "Main function can not have arguments, got " ++ show c
+
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
