@@ -399,13 +399,29 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                 return ctx
 
        Load path ->
-         do contents <- readFile path
-            let files = projectFiles proj
-                files' = if path `elem` files
-                         then files
-                         else path : files
-                proj' = proj { projectFiles = files' }
-            executeString (ctx { contextProj = proj' }) contents path
+         do let carpDir = projectCarpDir proj
+                fullSearchPaths =
+                  path :
+                  ("./" ++ path) :                                            -- the path from the current directory
+                  (map (++ "/" ++ path) (projectCarpSearchPaths proj)) ++     -- user defined search paths
+                  [carpDir ++ "/core/" ++ path]
+            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
+            existingPaths <- filterM doesPathExist fullSearchPaths
+            case existingPaths of
+              [] ->
+                do putStrLnWithColor Red ("Invalid path " ++ path)
+                   return ctx
+              firstPathFound : _ ->
+                do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
+                   performLoad firstPathFound
+         where performLoad thePath =
+                 do contents <- readFile thePath
+                    let files = projectFiles proj
+                        files' = if thePath `elem` files
+                                 then files
+                                 else thePath : files
+                        proj' = proj { projectFiles = files' }
+                    executeString (ctx { contextProj = proj' }) contents thePath
 
        Reload ->
          do let paths = projectFiles proj
