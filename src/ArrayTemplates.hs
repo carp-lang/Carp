@@ -87,7 +87,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "        if(predicate(&((($a*)a.data)[i]))) {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
-               , "        " ++ deleter
+               , "        " ++ deleter "i"
                , "        }"
                , "    }"
                , "    a.len = insertIndex;"
@@ -150,26 +150,35 @@ templatePushBack =
       (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
 
 templatePopBack :: (String, Binder)
-templatePopBack =
-  let aTy = StructTy "Array" [VarTy "a"]
-  in  defineTemplate
-      (SymPath ["Array"] "pop-back")
-      (FuncTy [aTy] aTy)
-      (toTemplate "Array $NAME(Array a)")
-      (toTemplate $ unlines
-        ["$DECL { "
-        ,"    a.len--;"
-        -- TODO: Free the element that is removed!!!
-        ,"    if(a.len > 0) {"
-        ,"        a.data = realloc(a.data, sizeof($a) * a.len);"
-        -- ,"        void *pre = a.data;"
-        -- ,"        a.data = CARP_MALLOC(sizeof($a) * a.len);"
-        -- ,"        CARP_FREE(pre);"
-        ,"    }"
-        ,"    return a;"
-        ,"}"
-        ])
-      (\(FuncTy [arrayType] _) -> [defineArrayTypeAlias arrayType])
+templatePopBack = defineTypeParameterizedTemplate templateCreator path t
+  where path = (SymPath ["Array"] "pop-back")
+        aTy = StructTy "Array" [VarTy "a"]
+        t = (FuncTy [aTy] aTy)
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "Array $NAME(Array a)"))
+            (\(FuncTy [arrayType@(StructTy _ [insideTy])] _) ->
+               let deleteElement = insideArrayDeletion typeEnv env insideTy
+               in (toTemplate (unlines
+                               ["$DECL { "
+                               ,"  a.len--;"
+                               ,"  " ++ deleteElement "a.len"
+                               ,"  a.data = realloc(a.data, sizeof($a) * a.len);"
+                               ,"  void *pre = a.data;"
+                               ,"  unsigned long s = sizeof($a) * a.len;"
+                               ,"  a.data = CARP_MALLOC(s);"
+                               ,"  memcpy(a.data, pre, s);"
+                               ,"  CARP_FREE(pre);"
+                               ,"  return a;"
+                               ,"}"
+                               ])))
+            (\(FuncTy [arrayType@(StructTy _ [insideTy])] _) ->
+               defineArrayTypeAlias arrayType :
+               depsForDeleteFunc typeEnv env arrayType ++
+               depsForCopyFunc typeEnv env insideTy
+            )
 
 templateNth :: (String, Binder)
 templateNth =
@@ -375,17 +384,17 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
 deleteTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
-  , TokC $ "    " ++ insideArrayDeletion typeEnv env innerType
+  , TokC $ "    " ++ insideArrayDeletion typeEnv env innerType "i"
   , TokC   "    }\n"
   , TokC   "    CARP_FREE(a.data);\n"
   ]
 deleteTy _ _ _ = []
 
-insideArrayDeletion :: TypeEnv -> Env -> Ty -> String
-insideArrayDeletion typeEnv env t =
+insideArrayDeletion :: TypeEnv -> Env -> Ty -> String -> String
+insideArrayDeletion typeEnv env t indexer =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType t) ("Inside array.", t) of
     FunctionFound functionFullName ->
-      "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[i]);\n"
+      "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[" ++ indexer ++ "]);\n"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
 

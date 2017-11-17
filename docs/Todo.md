@@ -1,7 +1,6 @@
 # Todo
 
 ## Critical Bugs
-* Ensure 'Array.pop-back' is memory safe and shrinks the array properly.
 * Can't define globals of with heap allocated types (String, structs, etc.)
 * A program using references to arrays but nothing else produces invalid typedefs (see sum-functions for adding the elements of an array)
 * Compiling a self recursing function (of type (λ [] ()) at least) hangs the compiler.
