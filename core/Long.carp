@@ -23,4 +23,9 @@
   (register safe-add (λ [Long Long (Ref Long)] Bool))
   (register safe-sub (λ [Long Long (Ref Long)] Bool))
   (register safe-mul (λ [Long Long (Ref Long)] Bool))
+
+  (register abs (λ [Long] Long))
+
+  (defn max [a b] (if (> a b) a b))
+  (defn min [a b] (if (< a b) a b))
 )
