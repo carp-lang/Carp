@@ -31,7 +31,7 @@
                (Float.random-between 0.0f 100.0f))
      100
      @name))
-  
+
   (defn move [monster]
     (Monster.update-pos monster Pos.move))
 
@@ -44,7 +44,11 @@
       (do
         (println (ref (Array.str &monsters)))
         (let [new-monsters (Array.endo-map Monster.move monsters)]
-          (println (ref (Array.str &new-monsters))))))))
+          (println (ref (Array.str &new-monsters))))))
+
+    0 ;; <- Return value, should not be needed?!
+
+    ))
 
 (build)
 (run)

@@ -7,12 +7,3 @@
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
-
-(local-include "../examples/banana.h")
-
-(register-type Apple)
-(register-type Banana [price Double, size Int])
-
-(defn main []
-  (let [b (Banana.init 2.3 1000)]
-    (IO.println &(Banana.str &b))))

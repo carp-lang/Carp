@@ -11,6 +11,7 @@ stack exec Carp ./examples/functor.carp;
 stack exec Carp ./examples/vec2.carp;
 stack exec Carp ./examples/array.carp;
 stack exec Carp ./examples/updating.carp;
+stack exec Carp ./examples/external_struct.carp;
 
 # Game will run until closed:
 stack exec Carp ./examples/game.carp;
