@@ -1,0 +1,23 @@
+(use Int)
+(use Test)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  1
+                  (min 1 2)
+                  "min works as expected"
+                  =
+                  str)
+    (assert-equal test
+                  2
+                  (max 1 2)
+                  "max works as expected"
+                  =
+                  str)
+    (assert-equal test
+                  1
+                  (abs -1)
+                  "abs works as expected"
+                  =
+                  str)))

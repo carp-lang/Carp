@@ -21,5 +21,10 @@
   (register safe-add (λ [Int Int (Ref Int)] Bool))
   (register safe-sub (λ [Int Int (Ref Int)] Bool))
   (register safe-mul (λ [Int Int (Ref Int)] Bool))
+
+  (register abs (λ [Int] Int))
+
+  (defn max [a b] (if (> a b) a b))
+  (defn min [a b] (if (< a b) a b))
   )
 

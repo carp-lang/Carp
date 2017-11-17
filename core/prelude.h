@@ -57,6 +57,7 @@ bool Int__GT_(int x, int y)    { return x > y; }
 
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
+int Int_abs(int x) { return abs(x); }
 
 long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
@@ -71,6 +72,7 @@ bool Long__GT_(long x, long y)    { return x > y; }
 
 long Long_inc(long x) { return x + 1; }
 long Long_dec(long x) { return x - 1; }
+long Long_abs(long x) { return labs(x); }
 
 int Int_copy(int *x) { return *x; }
 int Long_copy(long *x) { return *x; }
