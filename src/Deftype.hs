@@ -326,10 +326,16 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
   in case validateMembers typeEnv rest of
        Left err -> Left err
        Right _ ->
-         case templatesForMembers typeEnv env insidePath typeName rest of
-           Just (binders, deps) ->
-             let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv binders
-                 typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-             in  return (typeModuleName, typeModuleXObj, deps)
+         case
+           do okInit <- templateForInit insidePath typeName rest
+              okNew <- templateForNew insidePath typeName rest
+              (okStr, strDeps) <- templateForStr typeEnv env insidePath typeName rest
+              (binders, deps) <- templatesForMembers typeEnv env insidePath typeName rest
+              let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okNew : okStr : binders)
+                  typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
+              return (typeModuleName, typeModuleXObj, deps ++ strDeps)
+         of
+           Just ok ->
+             Right ok
            Nothing ->
              Left "Something's wrong with the templates..." -- TODO: Better messages here!

@@ -5,6 +5,7 @@
 
 typedef struct {
     double price;
+    int size;
 } Banana;
 
 #endif
