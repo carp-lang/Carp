@@ -12,14 +12,8 @@ import Debug.Trace
 
 newtype ParseState = ParseState { parseInfo :: Info }
 
-bumpIdentifier :: Parsec.Parsec String ParseState ()
-bumpIdentifier = do i <- fmap parseInfo Parsec.getState
-                    let current = infoIdentifier i
-                    Parsec.putState (ParseState (i { infoIdentifier = current + 1 }))
-
 createInfo :: Parsec.Parsec String ParseState (Maybe Info)
 createInfo = do i <- fmap parseInfo Parsec.getState
-                bumpIdentifier
                 return (Just i)
 
 firstDigit :: Parsec.Parsec String ParseState Char

@@ -197,7 +197,6 @@ expandAll env xobj =
                              err -> err
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
--- | TODO: This might make setting the identifiers in Parse.hs redundant?!
 setNewIdentifiers :: XObj -> XObj
 setNewIdentifiers root = let final = evalState (visit root) 0
                          in final
