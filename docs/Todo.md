@@ -57,3 +57,4 @@
 * Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * Rename type variables from t0, t1, t2 to a, b, c, etc.
+* A way to run the compiler without entering the REPL, just build (and potentially run) all the code and then exit.
