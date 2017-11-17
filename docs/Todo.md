@@ -23,7 +23,6 @@
 
 ## Smaller Language Features ("niceties")
 * Enable interop with existing C structs. Proposed syntax: "(register-type my_position_struct [x Int, y Int])"
-* All the math functions! (getting there...)
 * Good string functions
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))
