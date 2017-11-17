@@ -30,7 +30,7 @@ data Context = Context { contextGlobalEnv :: Env
 data ReplCommand = Define XObj
                  | AddInclude Includer
                  | Register String XObj
-                 | RegisterType String
+                 | RegisterType String [XObj]
                  | AddCFlag String
                  | AddLibraryFlag String
                  | DefineModule String [XObj] (Maybe Info)
@@ -111,7 +111,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "use")) _ _ : XObj (Sym path) _ _ : [] -> Use path xobj
                    XObj (Sym (SymPath _ "project-set!")) _ _ : XObj (Sym (SymPath _ key)) _ _ : XObj (Str value) _ _ : [] -> ProjectSet key value
                    XObj (Sym (SymPath _ "register")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> Register name t
-                   XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : [] -> RegisterType name
+                   XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest -> RegisterType name rest
                    XObj (Sym (SymPath _ "local-include")) _ _ : XObj (Str file) _ _ : [] -> AddInclude (LocalInclude file)
                    XObj (Sym (SymPath _ "system-include")) _ _ : XObj (Str file) _ _ : [] -> AddInclude (SystemInclude file)
                    XObj (Sym (SymPath _ "add-cflag")) _ _ : XObj (Str flag) _ _ : [] -> AddCFlag flag
@@ -283,11 +283,23 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
            Nothing -> do putStrLnWithColor Red ("Can't understand type when registering '" ++ name ++ "'")
                          return ctx
 
-       RegisterType name ->
-         let path = SymPath pathStrings name
-             binding = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path) Nothing Nothing]) Nothing (Just TypeTy)
-             typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) path binding)
-         in  return (ctx { contextTypeEnv = typeEnv' })
+       RegisterType typeName rest ->
+         let path = SymPath pathStrings typeName
+             typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path) Nothing Nothing]) Nothing (Just TypeTy)
+             i = Nothing
+         in  case rest of
+               [] ->
+                 return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition) })
+               members ->
+                 case bindingsForRegisteredType typeEnv env pathStrings typeName members i of
+                   Left errorMessage ->
+                     do putStrLnWithColor Red errorMessage
+                        return ctx
+                   Right (typeModuleName, typeModuleXObj, deps) ->
+                     let ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
+                                     , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
+                                     })
+                     in foldM define ctx' deps
 
        DefineAlias name typeXObj ->
          case xobjToTy typeXObj of
@@ -468,16 +480,16 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                                     \http://www.apache.org/licenses/LICENSE-2.0"
                           putStrLn ""
                           putStrLn "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY \n\
-	                           \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
-	                           \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
-	                           \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
-	                           \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
-	                           \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
-	                           \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
-	                           \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
-	                           \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
-	                           \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
-	                           \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+                                   \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
+                                   \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
+                                   \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
+                                   \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
+                                   \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
+                                   \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
+                                   \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
+                                   \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
+                                   \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
+                                   \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
                           putStrLn ""
                           return ctx
 

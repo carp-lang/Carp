@@ -1,4 +1,4 @@
-module Deftype (moduleForDeftype) where
+module Deftype (moduleForDeftype, bindingsForRegisteredType) where
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -314,3 +314,22 @@ memberCopy typeEnv env (memberName, memberType) =
       "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+
+
+-- | Will generate getters/setters/updaters when registering external types
+-- | i.e. (register-type VRUnicornData [hp Int, magic Float])
+bindingsForRegisteredType :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe Info -> Either String (String, XObj, [XObj])
+bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
+  let typeModuleName = typeName
+      emptyTypeModuleEnv = Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv
+      insidePath = pathStrings ++ [typeModuleName]
+  in case validateMembers typeEnv rest of
+       Left err -> Left err
+       Right _ ->
+         case templatesForMembers typeEnv env insidePath typeName rest of
+           Just (binders, deps) ->
+             let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv binders
+                 typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
+             in  return (typeModuleName, typeModuleXObj, deps)
+           Nothing ->
+             Left "Something's wrong with the templates..." -- TODO: Better messages here!

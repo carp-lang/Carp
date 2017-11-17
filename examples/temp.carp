@@ -1,5 +1,5 @@
 ;; (use IO)
-(use Int)
+;;(use Int)
 ;; (use Float)
 ;; (use Double)
 ;; (use Array)
@@ -8,8 +8,11 @@
 ;; (use Char)
 ;; (use Bool)
 
-(defn reducer [x y]
-  (Int.+ @x @y))
+(local-include "../examples/banana.h")
 
-(defn f [xs]
-  (Array.reduce reducer 0 xs))
+(register-type Apple)
+(register-type Banana [price Double])
+
+;; (defn main []
+;;   (let [b (Banana.init 2.3)]
+;;     (IO.println &(Double.str (Banana.price &b)))))

@@ -182,4 +182,3 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           context' <- foldM executeCommand context (map Load args)
           settings <- readlineSettings
           runInputT settings (repl context' "")
-
