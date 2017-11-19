@@ -31,8 +31,8 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
                                         return $ do okVisited <- visited
                                                     Right (XObj (Lst okVisited) i t)
     visit env (XObj (Arr arr) i (Just t)) = do visited <- fmap sequence (mapM (visit env) arr)
-                                               modify ((depsForDeleteFunc typeEnv env t) ++ )
-                                               modify ((defineArrayTypeAlias t) : )
+                                               modify (depsForDeleteFunc typeEnv env t ++)
+                                               modify (defineArrayTypeAlias t : )
                                                return $ do okVisited <- visited
                                                            Right (XObj (Arr okVisited) i (Just t))
     visit _ x = return (Right x)
@@ -40,17 +40,17 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
     visitList :: Env -> [XObj] -> State [XObj] (Either TypeError [XObj])
     visitList _ [] = return (Right [])
 
-    visitList env (defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym (SymPath [] "main")) _ _) : args@(XObj (Arr argsArr) _ _) : body : []) =
-      do if not (null argsArr)
-         then return $ Left (MainCannotHaveArguments (length argsArr))
-         else do visitedBody <- visit env body
-                 return $ do okBody <- visitedBody
-                             let t = fromMaybe UnitTy (ty okBody)
-                             if t /= UnitTy && t /= IntTy
-                             then Left (MainCanOnlyReturnUnitOrInt t)
-                             else return [defn, nameSymbol, args, okBody]
+    visitList env [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main")) _ _), args@(XObj (Arr argsArr) _ _), body] =
+      if not (null argsArr)
+      then return $ Left (MainCannotHaveArguments (length argsArr))
+      else do visitedBody <- visit env body
+              return $ do okBody <- visitedBody
+                          let t = fromMaybe UnitTy (ty okBody)
+                          if t /= UnitTy && t /= IntTy
+                          then Left (MainCanOnlyReturnUnitOrInt t)
+                          else return [defn, nameSymbol, args, okBody]
 
-    visitList env (defn@(XObj Defn _ _) : nameSymbol : args@(XObj (Arr argsArr) _ _) : body : []) =
+    visitList env [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body] =
       do mapM_ checkForNeedOfTypedefs argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) ->
@@ -60,14 +60,14 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
-    visitList env (letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : []) =
+    visitList env [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] =
       do visitedBindings <- fmap sequence (mapM (visit env) bindings)
-         visitedBody <- (visit env) body
+         visitedBody <- visit env body
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
 
-    visitList env (theExpr@(XObj The _ _) : typeXObj : value : []) =
+    visitList env [theExpr@(XObj The _ _), typeXObj, value] =
       do visitedValue <- visit env value
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
@@ -163,7 +163,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
       newPath = SymPath pathStrings (name ++ suffix)
   in
     case definition of
-      XObj (Lst ((XObj Defn _ _) : _)) _ _ ->
+      XObj (Lst (XObj Defn _ _ : _)) _ _ ->
         let withNewPath = setPath definition newPath
             mappings = unifySignatures polyType concreteType
         in case assignTypes mappings withNewPath of
@@ -172,10 +172,10 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
                managed <- manageMemory typeEnv globalEnv concrete
                return (managed, deps)
           Left e -> Left e
-      XObj (Lst ((XObj (Deftemplate (TemplateCreator templateCreator)) _ _) : _)) _ _ ->
+      XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
         in  Right (instantiateTemplate newPath concreteType template)
-      XObj (Lst ((XObj External _ _) : _ : [])) _ _ ->
+      XObj (Lst [XObj External _ _, _]) _ _ ->
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
@@ -188,7 +188,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
 allFunctionsWithNameAndSignature env functionName functionType =
   filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
   where
-    predicate = \(Just t) -> areUnifiable functionType t
+    predicate (Just t) = areUnifiable functionType t
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> String -> Ty -> [XObj]
@@ -197,12 +197,12 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
     [] ->
       (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
-    [(_, Binder (XObj (Lst ((XObj (Instantiate _) _ _) : _)) _ _))] ->
+    [(_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _))] ->
       []
     [(_, Binder single)] ->
       case concretizeDefinition False typeEnv env single functionType of
         Left err -> error (show err)
-        Right (ok, deps) -> (ok : deps)
+        Right (ok, deps) -> ok : deps
     _ ->
       (trace $ "Too many '" ++ functionName ++ "' functions found with type " ++ show functionType ++ ", can't figure out dependencies.")
       []
@@ -218,28 +218,35 @@ depsForDeleteFunc typeEnv env t =
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [(RefTy t)] t)
+  then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [RefTy t] t)
   else []
 
 -- | Helper for finding the 'str' function for a type.
 depsForStrFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForStrFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [(RefTy t)] StringTy)
+  then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [RefTy t] StringTy)
   else depsOfPolymorphicFunction typeEnv env "str" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
 typesStrFunctionType typeEnv memberType =
   if isManaged typeEnv memberType
-  then (FuncTy [(RefTy memberType)] StringTy)
-  else (FuncTy [memberType] StringTy)
+  then FuncTy [RefTy memberType] StringTy
+  else FuncTy [memberType] StringTy
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult = FunctionFound String
                           | FunctionNotFound String
                           | FunctionIgnored
                           deriving (Show)
+
+getConcretizedPath :: XObj -> Ty -> SymPath
+getConcretizedPath single functionType =
+  let Just t' = ty single
+      (SymPath pathStrings name) = getPath single
+      suffix = polymorphicSuffix t' functionType
+  in SymPath pathStrings (name ++ suffix)
 
 -- | Used for finding functions like 'delete' or 'copy' for members of a Deftype (or Array).
 findFunctionForMember :: TypeEnv -> Env -> String -> Ty -> (String, Ty) -> FunctionFinderResult
@@ -249,10 +256,7 @@ findFunctionForMember typeEnv env functionName functionType (memberName, memberT
       [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
                               memberName ++ "' of type " ++ show functionType)
       [(_, Binder single)] ->
-        let Just t' = ty single
-            (SymPath pathStrings name) = getPath single
-            suffix = polymorphicSuffix t' functionType
-            concretizedPath = SymPath pathStrings (name ++ suffix)
+        let concretizedPath = getConcretizedPath single functionType
         in  FunctionFound (pathToC concretizedPath)
       _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
                              memberName ++ "' of type " ++ show functionType)
@@ -265,10 +269,7 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
     [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
                             memberName ++ "' of type " ++ show functionType)
     [(_, Binder single)] ->
-      let Just t' = ty single
-          (SymPath pathStrings name) = getPath single
-          suffix = polymorphicSuffix t' functionType
-          concretizedPath = SymPath pathStrings (name ++ suffix)
+      let concretizedPath = getConcretizedPath single functionType
       in  FunctionFound (pathToC concretizedPath)
     _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
                            memberName ++ "' of type " ++ show functionType)

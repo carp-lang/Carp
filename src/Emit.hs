@@ -54,14 +54,14 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
           case obj xobj of
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
-            Num IntTy num -> return (show ((round num) :: Int))
-            Num LongTy num -> return (show ((round num) :: Int) ++ "l")
+            Num IntTy num -> return (show (round num :: Int))
+            Num LongTy num -> return (show (round num :: Int) ++ "l")
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)
             Num _ _ -> error "Can't emit invalid number type."
             Bol b -> return (if b then "true" else "false")
             Str _ -> visitString indent xobj
-            Chr c -> return ('\'' : c : '\'' : [])
+            Chr c -> return ['\'', c, '\'']
             Sym _ -> visitSymbol xobj
             Defn -> error (show (DontVisitObj Defn))
             Def -> error (show (DontVisitObj Def))
@@ -92,7 +92,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
           -- | This will use the statically allocated string in the C binary (can't be freed):
           do let var = freshVar i
                  varRef = freshVar i ++ "_ref";
-             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ (escapeString str) ++ "\";\n")
+             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
              appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
         visitString _ _ = error "Not a string."
@@ -112,7 +112,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
         visitList indent (XObj (Lst xobjs) (Just i) t) =
           case xobjs of
             -- Defn
-            XObj Defn _ _ : XObj (Sym path) _ _ : XObj (Arr argList) _ _ : body : [] ->
+            [XObj Defn _ _, XObj (Sym path) _ _, XObj (Arr argList) _ _, body] ->
               do let innerIndent = indent + indentAmount
                      Just (FuncTy _ retTy) = t
                      defnDecl = defnToDeclaration path argList retTy
@@ -125,14 +125,14 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                  return ""
 
             -- Def
-            XObj Def _ _ : XObj (Sym path) _ _ : expr : [] ->
+            [XObj Def _ _, XObj (Sym path) _ _, expr] ->
               do ret <- visit 0 expr
                  let Just t' = t
                  appendToSrc ("" ++ tyToC t' ++ " " ++ pathToC path ++ " = " ++ ret ++ ";\n")
                  return ""
 
             -- Let
-            (XObj Let _ _) : (XObj (Arr bindings) _ _) : body : [] ->
+            [XObj Let _ _, XObj (Arr bindings) _ _, body] ->
               let indent' = indent + indentAmount
               in  do let Just bodyTy = ty body
                          isNotVoid = bodyTy /= UnitTy
@@ -146,7 +146,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                               when (bindingTy /= UnitTy) $
                                 appendToSrc (addIndent indent' ++ tyToC bindingTy ++ " " ++ mangle symName ++ " = " ++ ret ++ ";\n")
                          letBindingToC _ _ = error "Invalid binding."
-                     _ <- mapM (\(sym, expr) -> letBindingToC sym expr) (pairwise bindings)
+                     _ <- mapM (uncurry letBindingToC) (pairwise bindings)
                      ret <- visit indent' body
                      when isNotVoid $
                        appendToSrc (addIndent indent' ++ letBodyRet ++ " = " ++ ret ++ ";\n")
@@ -155,7 +155,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      return letBodyRet
 
             -- If
-            XObj If _ _ : expr : ifTrue : ifFalse : [] ->
+            [XObj If _ _, expr, ifTrue, ifFalse] ->
               let indent' = indent + indentAmount
               in  do let isNotVoid = ty ifTrue /= Just UnitTy
                          ifRetVar = freshVar i
@@ -179,7 +179,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      return ifRetVar
 
             -- While
-            XObj While _ _ : expr : body : [] ->
+            [XObj While _ _, expr, body] ->
               let indent' = indent + indentAmount
                   Just exprTy = ty expr
                   conditionVar = freshVar i
@@ -216,12 +216,12 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                            return retVar
 
             -- Address
-            XObj Address _ _ : value : [] ->
+            [XObj Address _ _, value] ->
               do valueVar <- visit indent value
                  return ("&" ++ valueVar)
 
             -- Set!
-            XObj SetBang _ _ : variable : value : [] ->
+            [XObj SetBang _ _, variable, value] ->
               do valueVar <- visit indent value
                  let properVariableName =
                        case variable of
@@ -233,7 +233,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                  return ""
 
             -- The
-            XObj The _ _ : _ : value : [] ->
+            [XObj The _ _, _, value] ->
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
@@ -241,7 +241,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                  return fresh
 
             -- Ref
-            XObj Ref _ _ : value : [] ->
+            [XObj Ref _ _, value] ->
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
@@ -253,28 +253,28 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
               return ""
 
             -- Template
-            (XObj (Deftemplate _) _ _) : (XObj (Sym _) _ _) : [] ->
+            [XObj (Deftemplate _) _ _, XObj (Sym _) _ _] ->
               return ""
 
-            (XObj (Instantiate template) _ _) : (XObj (Sym path) _ _) : [] ->
+            [XObj (Instantiate template) _ _, XObj (Sym path) _ _] ->
               do let Just t' = t
                  appendToSrc (templateToC template path t')
                  return ""
 
             -- Alias
-            (XObj (Defalias _) _ _) : _ ->
+            XObj (Defalias _) _ _ : _ ->
               return ""
 
             -- External
-            (XObj External _ _) : _ ->
+            XObj External _ _ : _ ->
               return ""
 
             -- Macro
-            (XObj Macro _ _) : _ ->
+            XObj Macro _ _ : _ ->
               return ""
 
             -- Dynamic
-            (XObj Dynamic _ _) : _ ->
+            XObj Dynamic _ _ : _ ->
               return ""
 
             -- Function application
@@ -323,8 +323,8 @@ delete indent i = mapM_ deleterToC (infoDelete i)
   where deleterToC :: Deleter -> State EmitterState ()
         deleterToC FakeDeleter {} =
           return ()
-        deleterToC deleter@(ProperDeleter {}) =
-          appendToSrc $ (addIndent indent) ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
+        deleterToC deleter@ProperDeleter{} =
+          appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 
 defnToDeclaration :: SymPath -> [XObj] -> Ty -> String
 defnToDeclaration path@(SymPath _ name) argList retTy =
@@ -337,8 +337,8 @@ defnToDeclaration path@(SymPath _ name) argList retTy =
 templateToC :: Template -> SymPath -> Ty -> String
 templateToC template path actualTy =
   let mappings = unifySignatures (templateSignature template) actualTy
-      declaration = (templateDeclaration template) actualTy
-      definition = (templateDefinition template) actualTy
+      declaration = templateDeclaration template actualTy
+      definition = templateDefinition template actualTy
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) declaration) definition
   in  concatMap show tokens ++ "\n"
 
@@ -346,7 +346,7 @@ templateToDeclaration :: Template -> SymPath -> Ty -> String
 templateToDeclaration template path actualTy =
   let mappings = unifySignatures (templateSignature template) actualTy
       e = error "Can't refer to declaration in declaration."
-      declaration = (templateDeclaration template) actualTy
+      declaration = templateDeclaration template actualTy
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) e) declaration
   in  concatMap show tokens ++ ";\n"
 
@@ -383,28 +383,28 @@ defaliasToDeclaration t path =
 toDeclaration :: XObj -> String
 toDeclaration xobj@(XObj (Lst xobjs) _ t) =
   case xobjs of
-    (XObj Defn _ _) : (XObj (Sym path) _ _) : (XObj (Arr argList) _ _) : _ : [] ->
+    [XObj Defn _ _, XObj (Sym path) _ _, XObj (Arr argList) _ _, _] ->
       let (Just (FuncTy _ retTy)) = t
       in  defnToDeclaration path argList retTy ++ ";\n"
-    (XObj Def _ _) : (XObj (Sym path) _ _) : _ : [] ->
+    [XObj Def _ _, XObj (Sym path) _ _, _] ->
       let Just t' = t
       in "" ++ tyToC t' ++ " " ++ pathToC path ++ ";\n"
-    (XObj Typ _ _) : (XObj (Sym path) _ _) : rest ->
+    XObj Typ _ _ : XObj (Sym path) _ _ : rest ->
       deftypeToDeclaration path rest
-    (XObj (Deftemplate _) _ _) : _ ->
+    XObj (Deftemplate _) _ _ : _ ->
       ""
-    (XObj Macro _ _) : _ ->
+    XObj Macro _ _ : _ ->
       ""
-    (XObj Dynamic _ _) : _ ->
+    XObj Dynamic _ _ : _ ->
       ""
-    (XObj (Instantiate template) _ _) : (XObj (Sym path) _ _) : [] ->
+    [XObj (Instantiate template) _ _, XObj (Sym path) _ _] ->
       let Just t' = t
       in templateToDeclaration template path t'
-    (XObj (Defalias aliasTy) _ _) : (XObj (Sym path) _ _) : [] ->
+    [XObj (Defalias aliasTy) _ _, XObj (Sym path) _ _] ->
       defaliasToDeclaration aliasTy path
-    (XObj External _ _) : _ ->
+    XObj External _ _ : _ ->
       ""
-    (XObj ExternalType _ _) : _ ->
+    XObj ExternalType _ _ : _ ->
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."
@@ -466,7 +466,7 @@ sortDeclarationBinders typeEnv binders =
   sortOn fst (map (scoreBinder typeEnv) binders)
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
-checkForUnresolvedSymbols root = visit root
+checkForUnresolvedSymbols = visit
   where
     visit :: XObj -> Either ToCError ()
     visit xobj =

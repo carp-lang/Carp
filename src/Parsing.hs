@@ -19,12 +19,16 @@ createInfo = do i <- fmap parseInfo Parsec.getState
 firstDigit :: Parsec.Parsec String ParseState Char
 firstDigit = Parsec.choice [Parsec.digit, Parsec.char '-']
 
+maybeSigned :: Parsec.Parsec String ParseState (Maybe Info, String)
+maybeSigned = do i <- createInfo
+                 num0 <- firstDigit
+                 num1 <- Parsec.many Parsec.digit
+                 let num = num0 : num1
+                 incColumn (length num)
+                 return (i, num)
+
 double :: Parsec.Parsec String ParseState XObj
-double = do i <- createInfo
-            num0 <- firstDigit
-            num1 <- Parsec.many Parsec.digit
-            let num = num0 : num1
-            incColumn (length num)
+double = do (i, num) <- maybeSigned
             _ <- Parsec.char '.'
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
@@ -33,11 +37,7 @@ double = do i <- createInfo
               else return (XObj (Num DoubleTy (read (num ++ "." ++ decimals))) i Nothing)
 
 float :: Parsec.Parsec String ParseState XObj
-float = do i <- createInfo
-           num0 <- firstDigit
-           num1 <- Parsec.many Parsec.digit
-           let num = num0 : num1
-           incColumn (length num)
+float = do (i, num) <- maybeSigned
            _ <- Parsec.char '.'
            incColumn 1
            decimals <- Parsec.many1 Parsec.digit
@@ -49,21 +49,13 @@ float = do i <- createInfo
              else return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
 
 integer :: Parsec.Parsec String ParseState XObj
-integer = do i <- createInfo
-             num0 <- firstDigit
-             num1 <- Parsec.many Parsec.digit
-             let num = num0 : num1
-             incColumn (length num)
+integer = do (i, num) <- maybeSigned
              if num == "-"
                then return (XObj (Sym (SymPath [] "-")) i Nothing)
                else return (XObj (Num IntTy (read num)) i Nothing)
 
 long :: Parsec.Parsec String ParseState XObj
-long = do i <- createInfo
-          num0 <- firstDigit
-          num1 <- Parsec.many Parsec.digit
-          let num = num0 : num1
-          incColumn (length num)
+long = do (i, num) <- maybeSigned
           _ <- Parsec.char 'l'
           incColumn 1
           if num == "-"
@@ -79,7 +71,7 @@ number = Parsec.try float <|>
 string :: Parsec.Parsec String ParseState XObj
 string = do i <- createInfo
             _ <- Parsec.char '"'
-            str <- Parsec.many ((Parsec.try escaped) <|> Parsec.noneOf ['"'])
+            str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
             _ <- Parsec.char '"'
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
@@ -96,7 +88,7 @@ aChar = do i <- createInfo
            incColumn 2
            return (XObj (Chr c) i Nothing)
 
-validCharacters :: [Char]
+validCharacters :: String
 validCharacters = "+-*/?!><=_:"
 
 symbolSegment :: Parsec.Parsec String ParseState String
@@ -212,21 +204,21 @@ ref :: Parsec.Parsec String ParseState XObj
 ref = do i <- createInfo
          _ <- Parsec.char '&'
          expr <- sexpr
-         return (XObj (Lst [(XObj Ref Nothing Nothing), expr]) i Nothing)
+         return (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
 
 copy :: Parsec.Parsec String ParseState XObj
 copy = do i1 <- createInfo
           i2 <- createInfo
           _ <- Parsec.char '@'
           expr <- sexpr
-          return (XObj (Lst [(XObj (Sym (SymPath [] "copy")) i1 Nothing), expr]) i2 Nothing)
+          return (XObj (Lst [XObj (Sym (SymPath [] "copy")) i1 Nothing, expr]) i2 Nothing)
 
 quote :: Parsec.Parsec String ParseState XObj
 quote = do i1 <- createInfo
            i2 <- createInfo
            _ <- Parsec.char '\''
            expr <- sexpr
-           return (XObj (Lst [(XObj (Sym (SymPath [] "quote")) i1 Nothing), expr]) i2 Nothing)
+           return (XObj (Lst [XObj (Sym (SymPath [] "quote")) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]
@@ -251,12 +243,12 @@ balance text =
     Left err -> error (show err)
     Right ok -> ok
 
-  where parenSyntax :: Parsec.Parsec String [Char] Int
+  where parenSyntax :: Parsec.Parsec String String Int
         parenSyntax = do _ <- Parsec.many character
                          parens <- Parsec.getState
                          return (length parens)
 
-        character :: Parsec.Parsec String [Char] ()
+        character :: Parsec.Parsec String String ()
         character = do c <- Parsec.anyChar
                        parens <- Parsec.getState
                        case parens of

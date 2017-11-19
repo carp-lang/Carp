@@ -48,13 +48,12 @@ moduleForDeftype typeEnv env pathStrings typeName rest i =
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
 -- | TODO: What a mess this function is, clean it up!
 validateMembers :: TypeEnv -> [XObj] -> Either String ()
-validateMembers typeEnv rest =
-  mapM_ validateOneCase rest
+validateMembers typeEnv = mapM_ validateOneCase
   where
     validateOneCase :: XObj -> Either String ()
     validateOneCase (XObj (Arr arr) _ _) =
       if length arr `mod` 2 == 0
-      then do mapM_ okXObjForType (map snd (pairwise arr))
+      then mapM_ (okXObjForType . snd) (pairwise arr)
       else Left "Uneven nr of members / types."
     validateOneCase XObj {} =
       Left "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]"
@@ -103,9 +102,9 @@ templateForNew _ _ _ = Nothing
 -- | Helper function to create the binder for the 'str' template.
 templateForStr :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForStr typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
-  Just $ (instanceBinderWithDeps (SymPath insidePath "str")
-                                 (FuncTy [(RefTy (StructTy typeName []))] StringTy)
-                                 (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs)))
+  Just (instanceBinderWithDeps (SymPath insidePath "str")
+                               (FuncTy [RefTy (StructTy typeName [])] StringTy)
+                               (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs)))
 templateForStr _ _ _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
@@ -115,17 +114,17 @@ initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 -- | Helper function to create the binder for the 'delete' template.
 templateForDelete :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForDelete typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
-  Just $ (instanceBinderWithDeps (SymPath insidePath "delete")
-                                 (FuncTy [(StructTy typeName [])] UnitTy)
-                                 (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
+  Just (instanceBinderWithDeps (SymPath insidePath "delete")
+                               (FuncTy [StructTy typeName []] UnitTy)
+                               (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForDelete _ _ _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'copy' template.
 templateForCopy :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForCopy typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
-  Just $ (instanceBinderWithDeps (SymPath insidePath "copy")
-                                 (FuncTy [(RefTy (StructTy typeName []))] (StructTy typeName []))
-                                 (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
+  Just (instanceBinderWithDeps (SymPath insidePath "copy")
+                               (FuncTy [RefTy (StructTy typeName [])] (StructTy typeName []))
+                               (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 
 -- | Get a list of pairs from a deftype declaration.
@@ -145,11 +144,11 @@ templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       p = StructTy typeName []
       memberName = getName nameXObj
-      fixedMemberTy = if isManaged typeEnv t then (RefTy t) else t
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [(RefTy p)] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
+      fixedMemberTy = if isManaged typeEnv t then RefTy t else t
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
-                                                            (FuncTy [p, (FuncTy [t] t)] p)
+                                                            (FuncTy [p, FuncTy [t] t] p)
                                                             (templateUpdater (mangle memberName))]
 
 -- | The template for the 'init' and 'new' functions for a deftype.
@@ -172,7 +171,7 @@ templateInit allocationMode typeName members =
 templateStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Template
 templateStr typeEnv env typeName members =
   Template
-    (FuncTy [(RefTy (StructTy typeName []))] StringTy)
+    (FuncTy [RefTy (StructTy typeName [])] StringTy)
     (const (toTemplate $ "string $NAME(" ++ typeName ++ " *p)"))
     (const (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
@@ -187,8 +186,8 @@ templateStr typeEnv env typeName members =
                                  , "  snprintf(bufferPtr, 1024, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
-    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "str" . (typesStrFunctionType typeEnv))
-                     (filter (not . (isExternalType typeEnv)) (map snd members)))
+    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "str" . typesStrFunctionType typeEnv)
+                     (filter (not . isExternalType typeEnv) (map snd members)))
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
@@ -202,10 +201,10 @@ memberStr typeEnv env (memberName, memberTy) =
                ]
   else let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
            maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
-           strFuncType = (FuncTy [refOrNotRefType] StringTy)
+           strFuncType = FuncTy [refOrNotRefType] StringTy
        in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
             Just strFunctionPath ->
-              unlines [("  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");")
+              unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
                       , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
                       , "  bufferPtr += strlen(temp) + 1;"
                       , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
@@ -254,7 +253,7 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    return p;"
                                 ,"}\n"])))
     (\_ -> if isManaged typeEnv memberTy
-           then (depsOfPolymorphicFunction typeEnv env "delete" (typesDeleterFunctionType memberTy))
+           then depsOfPolymorphicFunction typeEnv env "delete" (typesDeleterFunctionType memberTy)
            else [])
 
 -- | The template for updater functions of a deftype
@@ -262,7 +261,7 @@ templateSetter typeEnv env memberName memberTy =
 templateUpdater :: String -> Template
 templateUpdater member =
   Template
-    (FuncTy [VarTy "p", (FuncTy [VarTy "t"] (VarTy "t"))] (VarTy "p"))
+    (FuncTy [VarTy "p", FuncTy [VarTy "t"] (VarTy "t")] (VarTy "p"))
     (const (toTemplate "$p $NAME($p p, $(Fn [t] t) updater)"))
     (const (toTemplate (unlines ["$DECL {"
                                 ,"    p." ++ member ++ " = updater(p." ++ member ++ ");"
@@ -274,10 +273,10 @@ templateUpdater member =
 templateDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
 templateDelete typeEnv env members =
   Template
-   (FuncTy [(VarTy "p")] UnitTy)
-   (const (toTemplate $ "void $NAME($p p)"))
+   (FuncTy [VarTy "p"] UnitTy)
+   (const (toTemplate "void $NAME($p p)"))
    (const (toTemplate $ unlines [ "$DECL {"
-                                , (joinWith "\n" (map (memberDeletion typeEnv env) members))
+                                , joinWith "\n" (map (memberDeletion typeEnv env) members)
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
@@ -295,11 +294,11 @@ memberDeletion typeEnv env (memberName, memberType) =
 templateCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
 templateCopy typeEnv env members =
   Template
-   (FuncTy [(RefTy (VarTy "p"))] (VarTy "p"))
-   (const (toTemplate $ "$p $NAME($p* pRef)"))
+   (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+   (const (toTemplate "$p $NAME($p* pRef)"))
    (const (toTemplate $ unlines [ "$DECL {"
                                 , "    $p copy = *pRef;"
-                                , (joinWith "\n" (map (memberCopy typeEnv env) members))
+                                , joinWith "\n" (map (memberCopy typeEnv env) members)
                                 , "    return copy;"
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . typesCopyFunctionType)

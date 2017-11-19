@@ -85,7 +85,7 @@ isTypeHole ('?' : _, _) = True
 isTypeHole _ = False
 
 solveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
-solveOne mappings constraint = solveOneInternal mappings constraint
+solveOne = solveOneInternal
 
 debugSolveOne :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
 debugSolveOne mappings constraint = let m' = solveOneInternal mappings constraint

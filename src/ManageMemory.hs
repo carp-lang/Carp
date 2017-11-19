@@ -17,7 +17,7 @@ setDeletersOnInfo i deleters = fmap (\i' -> i' { infoDelete = deleters }) i
 
 -- | Helper function for setting the deleters for an XObj.
 del :: XObj -> Set.Set Deleter -> XObj
-del xobj deleters = xobj { info = (setDeletersOnInfo (info xobj) deleters) }
+del xobj deleters = xobj { info = setDeletersOnInfo (info xobj) deleters }
 
 -- | To keep track of the deleters when recursively walking the form.
 type MemState = Set.Set Deleter
@@ -41,7 +41,7 @@ manageMemory typeEnv globalEnv root =
             Arr _ -> visitArray xobj
             Str _ -> do manage xobj
                         return (Right xobj)
-            _ -> do return (Right xobj)
+            _ -> return (Right xobj)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
         visitArray xobj@(XObj (Arr arr) _ _) =
@@ -58,7 +58,7 @@ manageMemory typeEnv globalEnv root =
         visitList :: XObj -> State MemState (Either TypeError XObj)
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
-            defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym _) _ _) : args@(XObj (Arr argList) _ _) : body : [] ->
+            [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
                    RefTy _ ->
@@ -72,8 +72,8 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ ->
                               do okBody <- visitedBody
-                                 return (XObj (Lst (defn : nameSymbol : args : okBody : [])) i t)
-            letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
+                                 return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+            [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
               let Just letReturnType = t
               in case letReturnType of
                 RefTy _ ->
@@ -89,14 +89,14 @@ manageMemory typeEnv globalEnv root =
                          do postDeleters <- get
                             let diff = postDeleters Set.\\ preDeleters
                                 newInfo = setDeletersOnInfo i diff
-                                survivors = (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
+                                survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
                             put survivors
                             --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
                             manage xobj
                             return $ do okBody <- visitedBody
                                         okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
-                                        return (XObj (Lst (letExpr : (XObj (Arr okBindings) bindi bindt) : okBody : [])) newInfo t)
-            setbangExpr@(XObj SetBang _ _) : variable : value : [] ->
+                                        return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+            [setbangExpr@(XObj SetBang _ _), variable, value] ->
               do visitedValue <- visit value
                  unmanage value
                  let varInfo = info variable
@@ -109,19 +109,19 @@ manageMemory typeEnv globalEnv root =
                      newVarInfo = setDeletersOnInfo varInfo deleters
                      newVariable = variable { info = newVarInfo }
                  return $ do okValue <- visitedValue
-                             return (XObj (Lst (setbangExpr : newVariable : okValue : [])) i t)
-            addressExpr@(XObj Address _ _) : value : [] ->
+                             return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
+            [addressExpr@(XObj Address _ _), value] ->
               do visitedValue <- visit value
                  return $ do okValue <- visitedValue
-                             return (XObj (Lst (addressExpr : okValue : [])) i t)
-            theExpr@(XObj The _ _) : typeXObj : value : [] ->
+                             return (XObj (Lst [addressExpr, okValue]) i t)
+            [theExpr@(XObj The _ _), typeXObj, value] ->
               do visitedValue <- visit value
                  result <- transferOwnership value xobj
                  return $ case result of
                             Left e -> Left e
                             Right _ -> do okValue <- visitedValue
-                                          return (XObj (Lst (theExpr : typeXObj : okValue : [])) i t)
-            refExpr@(XObj Ref _ _) : value : [] ->
+                                          return (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+            [refExpr@(XObj Ref _ _), value] ->
               do visitedValue <- visit value
                  case visitedValue of
                    Left e -> return (Left e)
@@ -129,7 +129,7 @@ manageMemory typeEnv globalEnv root =
                      do checkResult <- refCheck visitedValue
                         case checkResult of
                           Left e -> return (Left e)
-                          Right () -> return $ Right (XObj (Lst (refExpr : visitedValue : [])) i t)
+                          Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM visit expressions
                  result <- transferOwnership (last expressions) xobj
@@ -137,7 +137,7 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ -> do okExpressions <- sequence visitedExpressions
                                           return (XObj (Lst (doExpr : okExpressions)) i t)
-            whileExpr@(XObj While _ _) : expr : body : [] ->
+            [whileExpr@(XObj While _ _), expr, body] ->
               do preDeleters <- get
                  visitedExpr <- visit expr
                  visitedBody <- visit body
@@ -153,9 +153,9 @@ manageMemory typeEnv globalEnv root =
                              okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
                              okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
-                             return (XObj (Lst (whileExpr : okExpr : okBody : [])) newInfo t)
+                             return (XObj (Lst [whileExpr, okExpr, okBody]) newInfo t)
 
-            ifExpr@(XObj If _ _) : expr : ifTrue : ifFalse : [] ->
+            [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr
                  deleters <- get
 
@@ -182,7 +182,7 @@ manageMemory typeEnv globalEnv root =
                      common = Set.intersection deletedInTrue deletedInFalse
                      delsTrue  = deletedInFalse Set.\\ common
                      delsFalse = deletedInTrue  Set.\\ common
-                     stillAlive = deleters Set.\\ (Set.union deletedInTrue deletedInFalse)
+                     stillAlive = deleters Set.\\ Set.union deletedInTrue deletedInFalse
 
                  put stillAlive
                  manage xobj
@@ -190,14 +190,14 @@ manageMemory typeEnv globalEnv root =
                  return $ do okExpr  <- visitedExpr
                              okTrue  <- visitedTrue
                              okFalse <- visitedFalse
-                             return (XObj (Lst (ifExpr : okExpr : (del okTrue delsTrue) : (del okFalse delsFalse) : [])) i t)
+                             return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
             f : args ->
               do visitedF <- visit f
-                 visitedArgs <- fmap sequence $ mapM visitArg args
+                 visitedArgs <- sequence <$> mapM visitArg args
                  manage xobj
                  return $ do okF <- visitedF
                              okArgs <- visitedArgs
-                             (Right (XObj (Lst (okF : okArgs)) i t))
+                             Right (XObj (Lst (okF : okArgs)) i t)
 
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
@@ -218,11 +218,9 @@ manageMemory typeEnv globalEnv root =
                   result <- unmanage xobj
                   case result of
                     Left e  -> return (Left e)
-                    Right _ -> return $ do okXObj <- visitedXObj
-                                           return okXObj
-          else do --(trace ("Ignoring arg " ++ show xobj ++ " because it's not managed."))
-                    (visit xobj)
-        visitArg xobj@(XObj _ _ _) =
+                    Right _ -> return visitedXObj
+          else visit xobj
+        visitArg xobj@XObj{} =
           visit xobj
 
         createDeleter :: XObj -> Maybe Deleter
