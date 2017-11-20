@@ -32,7 +32,6 @@
 
 ## Tooling
 * [0.3] Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
-* [0.3] A way to run the compiler without entering the REPL, just build (and potentially run) all the code and then exit.
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
