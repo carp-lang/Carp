@@ -595,6 +595,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                     putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
                     putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
                     putStrLn ""
+                    putStrLn "Compiler flags:"
+                    putStrLn "-b                               - Build."
+                    putStrLn "-x                               - Build and run."
                     return ctx
 
        DoNothing -> return ctx

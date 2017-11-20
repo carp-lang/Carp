@@ -168,6 +168,20 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macr
                                                                          , "Bench"
                                                                          ]
 
+-- | How should the compiler be run? Interactively or just build / build & run and then quit?
+data ExecutionMode = Repl | Build | BuildAndRun
+
+-- | Parse the arguments sent to the compiler from the terminal
+parseArgs :: [String] -> ([FilePath], ExecutionMode)
+parseArgs args = parseArgsInternal [] Repl args
+  where parseArgsInternal filesToLoad execMode [] =
+          (filesToLoad, execMode)
+        parseArgsInternal filesToLoad execMode (arg:restArgs) =
+          case arg of
+            "-b" -> parseArgsInternal filesToLoad Build restArgs
+            "-x" -> parseArgsInternal filesToLoad BuildAndRun restArgs
+            file -> parseArgsInternal (filesToLoad ++ [file]) execMode restArgs
+
 main :: IO ()
 main = do putStrLn "Welcome to Carp 0.2.0"
           putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
@@ -178,8 +192,14 @@ main = do putStrLn "Welcome to Carp 0.2.0"
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
+              (filesToLoad, execMode) = parseArgs args
           context <- foldM executeCommand (Context startingGlobalEnv (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
-          context' <- foldM executeCommand context (map Load args)
+          context' <- foldM executeCommand context (map Load filesToLoad)
           settings <- readlineSettings
-          runInputT settings (repl context' "")
+          case execMode of
+            Repl -> runInputT settings (repl context' "")
+            Build -> do _ <- executeString context' ":b" "Compiler (Build)"
+                        return ()
+            BuildAndRun -> do _ <- executeString context' ":bx" "Compiler (Build & Run)"
+                              return ()

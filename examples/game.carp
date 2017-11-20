@@ -73,7 +73,7 @@
               (= et SDL_KEYDOWN) (let [key (event-keycode &event)]
                                    (cond
                                      (= key SDLK_ESCAPE) (quit &app)
-                                     (println "Unrecognized key.")))              
+                                     (println "Unrecognized key.")))
               (println "Some other event happened..."))))))
 
 (defn main []
