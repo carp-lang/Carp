@@ -88,7 +88,8 @@ aChar = do i <- createInfo
            incColumn 2
            return (XObj (Chr c) i Nothing)
 
-validCharacters :: String
+{-# ANN validCharacters "HLint: ignore Use String" #-}
+validCharacters :: [Char]
 validCharacters = "+-*/?!><=_:"
 
 symbolSegment :: Parsec.Parsec String ParseState String
@@ -236,6 +237,7 @@ parse text fileName = let initState = ParseState (Info 1 0 fileName (Set.fromLis
 
 
 
+{-# ANN balance "HLint: ignore Use String" #-}
 -- | For detecting the parenthesis balance in a string, i.e. "((( ))" = 1
 balance :: String -> Int
 balance text =
@@ -243,12 +245,13 @@ balance text =
     Left err -> error (show err)
     Right ok -> ok
 
-  where parenSyntax :: Parsec.Parsec String String Int
+  where
+        parenSyntax :: Parsec.Parsec String [Char] Int
         parenSyntax = do _ <- Parsec.many character
                          parens <- Parsec.getState
                          return (length parens)
 
-        character :: Parsec.Parsec String String ()
+        character :: Parsec.Parsec String [Char] ()
         character = do c <- Parsec.anyChar
                        parens <- Parsec.getState
                        case parens of

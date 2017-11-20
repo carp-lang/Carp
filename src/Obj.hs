@@ -329,9 +329,10 @@ multiLookup = multiLookupInternal False
 multiLookupALL :: String -> Env -> [(Env, Binder)]
 multiLookupALL = multiLookupInternal True
 
+{-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
 multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
-multiLookupInternal allowLookupInAllModules name = recursiveLookup
+multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
 
   where lookupInLocalEnv :: String -> Env -> Maybe (Env, Binder)
         lookupInLocalEnv n localEnv = case Map.lookup n (envBindings localEnv) of -- No recurse!
@@ -424,9 +425,10 @@ envReplaceEnvAt env (p:ps) replacement =
 envAddBinding :: Env -> String -> Binder -> Env
 envAddBinding env name binder = env { envBindings = Map.insert name binder (envBindings env) }
 
+{-# ANN addListOfBindings "HLint: ignore Eta reduce" #-}
 -- | Add a list of bindings to an environment
 addListOfBindings :: Env -> [(String, Binder)] -> Env
-addListOfBindings = foldl' (\e (n, b) -> envAddBinding e n b)
+addListOfBindings env bindingsToAdd = foldl' (\e (n, b) -> envAddBinding e n b) env bindingsToAdd
 
 -- | Get an inner environment.
 getEnv :: Env -> [String] -> Env

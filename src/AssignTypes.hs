@@ -5,9 +5,10 @@ import Obj
 import Util
 import TypeError
 
+{-# ANN assignTypes "HLint: ignore Eta reduce" #-}
 -- | Walk the whole expression tree and replace all occurences of VarTy with their corresponding actual type.
 assignTypes :: TypeMappings -> XObj -> Either TypeError XObj
-assignTypes mappings = visit
+assignTypes mappings root = visit root
   where
     visit xobj =
       case obj xobj of
