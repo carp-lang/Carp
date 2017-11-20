@@ -34,3 +34,9 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 <!-- If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations. -->
 
 <!-- If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded). This files is intended for setting up the build process of this particular project, for example by loading the correct source files, configuring the compiler variables, etc. -->
+
+### Compiler flags
+When invoking the compiler from the command line you can supply the following flags to configure the behaviour:
+
+```-b``` Build the code, then quit the compiler.
+```-x``` Build and run the code (make sure it has a main function defined), then quit the compiler.
