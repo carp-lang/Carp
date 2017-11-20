@@ -2,21 +2,22 @@ module Util where
 
 import Data.List
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 
 joinWith :: String -> [String] -> String
-joinWith s = concat . (intersperse s)
+joinWith = intercalate
 
 joinWithSpace :: [String] -> String
-joinWithSpace = joinWith " "
+joinWithSpace = unwords
 
 joinWithComma :: [String] -> String
-joinWithComma = joinWith ", "
+joinWithComma = intercalate", "
 
 joinWithUnderscore :: [String] -> String
-joinWithUnderscore = joinWith "_"
+joinWithUnderscore = intercalate"_"
 
 joinWithPeriod :: [String] -> String
-joinWithPeriod = joinWith "."
+joinWithPeriod = intercalate"."
 
 pairwise :: Show a => [a] -> [(a, a)]
 pairwise [] = []
@@ -33,10 +34,8 @@ toEither a b = case a of
                  Nothing -> Left b
 
 replaceChars :: Map.Map Char String -> String -> String
-replaceChars dict input = concat (map replacer input)
-  where replacer c = case Map.lookup c dict of
-                       Just s -> s
-                       Nothing -> [c]
+replaceChars dict = concatMap replacer
+  where replacer c = fromMaybe [c] (Map.lookup c dict)
 
 addIfNotPresent :: Eq a => a -> [a] -> [a]
 addIfNotPresent x xs =

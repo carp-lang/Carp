@@ -5,6 +5,7 @@ import Obj
 import Util
 import TypeError
 
+{-# ANN assignTypes "HLint: ignore Eta reduce" #-}
 -- | Walk the whole expression tree and replace all occurences of VarTy with their corresponding actual type.
 assignTypes :: TypeMappings -> XObj -> Either TypeError XObj
 assignTypes mappings root = visit root
@@ -32,7 +33,7 @@ assignTypes mappings root = visit root
     assignType :: XObj -> Either TypeError XObj
     assignType xobj = case ty xobj of
       Just startingType ->
-        let finalType = (replaceTyVars mappings startingType)
+        let finalType = replaceTyVars mappings startingType
         in  if isArrayTypeOK finalType
             then Right (xobj { ty = Just finalType })
             else Left  (ArraysCannotContainRefs xobj)
@@ -40,5 +41,5 @@ assignTypes mappings root = visit root
 
 
 isArrayTypeOK :: Ty -> Bool
-isArrayTypeOK (StructTy "Array" [(RefTy _)]) = False -- An array containing refs!
+isArrayTypeOK (StructTy "Array" [RefTy _]) = False -- An array containing refs!
 isArrayTypeOK _ = True

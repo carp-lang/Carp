@@ -1,22 +1,24 @@
 module GenerateConstraints (genConstraints) where
 
+import Data.List (foldl', sort)
+import Control.Arrow
+import Control.Monad.State
+import Data.Maybe (mapMaybe)
+
 import Types
 import Obj
 import Constraints
 import Util
 import TypeError
-import Data.List (foldl', sort)
-import Control.Monad.State
-import Data.Maybe (mapMaybe)
 
 -- | Will create a list of type constraints for a form.
 genConstraints :: XObj -> Either TypeError [Constraint]
 genConstraints root = fmap sort (gen root)
   where gen xobj =
           case obj xobj of
-            (Lst lst) -> case lst of
+            Lst lst -> case lst of
                            -- Defn
-                           (XObj Defn _ _) : _ : (XObj (Arr args) _ _) : body : [] ->
+                           [XObj Defn _ _, _, XObj (Arr args) _ _, body] ->
                              do insideBodyConstraints <- gen body
                                 xobjType <- toEither (ty xobj) (DefnMissingType xobj)
                                 bodyType <- toEither (ty body) (ExpressionMissingType xobj)
@@ -26,7 +28,7 @@ genConstraints root = fmap sort (gen root)
                                 return (bodyConstr : argConstrs ++ insideBodyConstraints)
 
                            -- Def
-                           (XObj Def _ _) : _ : expr : [] ->
+                           [XObj Def _ _, _, expr] ->
                              do insideExprConstraints <- gen expr
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 exprType <- toEither (ty expr) (ExpressionMissingType xobj)
@@ -34,7 +36,7 @@ genConstraints root = fmap sort (gen root)
                                 return (defConstraint : insideExprConstraints)
 
                            -- Let
-                           XObj Let _ _ : XObj (Arr bindings) _ _ : body : [] ->
+                           [XObj Let _ _, XObj (Arr bindings) _ _, body] ->
                              do insideBodyConstraints <- gen body
                                 insideBindingsConstraints <- fmap join (mapM gen bindings)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
@@ -42,13 +44,13 @@ genConstraints root = fmap sort (gen root)
                                     wholeStatementConstraint = Constraint bodyType xobjTy body xobj OrdLetBody
                                     bindingsConstraints = zipWith (\(symTy, exprTy) (symObj, exprObj) ->
                                                                      Constraint symTy exprTy symObj exprObj OrdLetBind)
-                                                                  (map (\(a, b) -> (forceTy a, forceTy b)) (pairwise bindings))
+                                                                  (map (forceTy *** forceTy) (pairwise bindings))
                                                                   (pairwise bindings)
                                 return (wholeStatementConstraint : insideBodyConstraints ++
                                         bindingsConstraints ++ insideBindingsConstraints)
 
                            -- If
-                           XObj If _ _ : expr : ifTrue : ifFalse : [] ->
+                           [XObj If _ _, expr, ifTrue, ifFalse] ->
                              do insideConditionConstraints <- gen expr
                                 insideTrueConstraints <- gen ifTrue
                                 insideFalseConstraints <- gen ifFalse
@@ -65,7 +67,7 @@ genConstraints root = fmap sort (gen root)
                                         insideTrueConstraints ++ insideFalseConstraints)
 
                            -- While
-                           XObj While _ _ : expr : body : [] ->
+                           [XObj While _ _, expr, body] ->
                              do insideConditionConstraints <- gen expr
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
@@ -93,11 +95,11 @@ genConstraints root = fmap sort (gen root)
                                           return (retConstraint : insideExpressionsConstraints ++ expressionsShouldReturnUnit)
 
                            -- Address
-                           XObj Address _ _ : value : [] ->
+                           [XObj Address _ _, value] ->
                              gen value
 
                            -- Set!
-                           XObj SetBang _ _ : variable : value : [] ->
+                           [XObj SetBang _ _, variable, value] ->
                              do insideValueConstraints <- gen value
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
@@ -105,7 +107,7 @@ genConstraints root = fmap sort (gen root)
                                 return (sameTypeConstraint : insideValueConstraints)
 
                            -- The
-                           XObj The _ _ : _ : value : [] ->
+                           [XObj The _ _, _, value] ->
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 valueType <- toEither (ty value) (DefMissingType value)
@@ -113,7 +115,7 @@ genConstraints root = fmap sort (gen root)
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Ref
-                           XObj Ref _ _ : value : [] ->
+                           [XObj Ref _ _, value] ->
                              gen value
 
                            -- Function application

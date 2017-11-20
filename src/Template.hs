@@ -139,7 +139,7 @@ toTokTy s =
 templateNoop :: (String, Binder)
 templateNoop = defineTemplate
   (SymPath [] "noop")
-  (FuncTy [(PointerTy (VarTy "a"))] UnitTy)
+  (FuncTy [PointerTy (VarTy "a")] UnitTy)
   (toTemplate "void $NAME ($a* a)")
   (toTemplate "$DECL { }")
   (const [])

@@ -31,12 +31,12 @@ eval env xobj =
     evalList (XObj (Lst xobjs) i t) =
       case xobjs of
         [] -> Right xobj
-        XObj (Sym (SymPath [] "quote")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "quote")) _ _, target] ->
           return target
         XObj (Sym (SymPath [] "list")) _ _ : rest ->
           do evaledList <- mapM (eval env) rest
              return (XObj (Lst evaledList) i t)
-        XObj (Sym (SymPath [] "list?")) _ _ : x : [] ->
+        [XObj (Sym (SymPath [] "list?")) _ _, x] ->
           do evaled <- eval env x
              case evaled of
                XObj (Lst _) _ _ -> Right trueXObj
@@ -44,80 +44,80 @@ eval env xobj =
         XObj (Sym (SymPath [] "array")) _ _ : rest ->
           do evaledArray <- mapM (eval env) rest
              return (XObj (Arr evaledArray) i t)
-        XObj (Sym (SymPath [] "=")) _ _ : a : b : [] ->
+        [XObj (Sym (SymPath [] "=")) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              case (evaledA, evaledB) of
                (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-                 if ((round aNum) :: Int) == ((round bNum) :: Int)
+                 if (round aNum :: Int) == (round bNum :: Int)
                  then Right trueXObj else Right falseXObj
                _ ->
                  --Right falseXObj
                  Left (EvalError ("Can't compare " ++ pretty evaledA ++ " with " ++ pretty evaledB))
-        XObj (Sym (SymPath [] "count")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "count")) _ _, target] ->
           do evaled <- eval env target
              case evaled of
                XObj (Lst lst) _ _ -> return (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing)
                XObj (Arr arr) _ _ -> return (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing)
                _ -> Left (EvalError ("Applying 'count' to non-list: " ++ pretty evaled))
-        XObj (Sym (SymPath [] "car")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "car")) _ _, target] ->
           do evaled <- eval env target
              case evaled of
                XObj (Lst (car : _)) _ _ -> return car
                XObj (Arr (car : _)) _ _ -> return car
                _ -> Left (EvalError ("Applying 'car' to non-list: " ++ pretty evaled))
-        XObj (Sym (SymPath [] "cdr")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "cdr")) _ _, target] ->
           do evaled <- eval env target
              case evaled of
                XObj (Lst (_ : cdr)) _ _ -> return (XObj (Lst cdr) Nothing Nothing)
                XObj (Arr (_ : cdr)) _ _ -> return (XObj (Arr cdr) Nothing Nothing)
                _ -> Left (EvalError "Applying 'cdr' to non-list or empty list")
-        XObj (Sym (SymPath [] "last")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "last")) _ _, target] ->
           do evaled <- eval env target
              case evaled of
                XObj (Lst lst) _ _ -> return (last lst)
                XObj (Arr arr) _ _ -> return (last arr)
                _ -> Left (EvalError "Applying 'last' to non-list or empty list")
-        XObj (Sym (SymPath [] "init")) _ _ : target : [] ->
+        [XObj (Sym (SymPath [] "init")) _ _, target] ->
           do evaled <- eval env target
              case evaled of
                XObj (Lst lst) _ _ -> return (XObj (Lst (init lst)) Nothing Nothing)
                XObj (Arr arr) _ _ -> return (XObj (Arr (init arr)) Nothing Nothing)
                _ -> Left (EvalError "Applying 'init' to non-list or empty list")
-        XObj (Sym (SymPath [] "cons")) _ _ : x : xs : [] ->
+        [XObj (Sym (SymPath [] "cons")) _ _, x, xs] ->
           do evaledX <- eval env x
              evaledXS <- eval env xs
              case evaledXS of
                XObj (Lst lst) _ _ -> return (XObj (Lst (evaledX : lst)) i t) -- TODO: probably not correct to just copy 'i' and 't'?
                _ -> Left (EvalError "Applying 'cons' to non-list or empty list")
-        XObj (Sym (SymPath [] "cons-last")) _ _ : x : xs : [] ->
+        [XObj (Sym (SymPath [] "cons-last")) _ _, x, xs] ->
           do evaledX <- eval env x
              evaledXS <- eval env xs
              case evaledXS of
                XObj (Lst lst) _ _ -> return (XObj (Lst (lst ++ [evaledX])) i t) -- TODO: should they get their own i:s and t:s
                _ -> Left (EvalError "Applying 'cons-last' to non-list or empty list")
-        XObj (Sym (SymPath [] "append")) _ _ : xs : ys : [] ->
+        [XObj (Sym (SymPath [] "append")) _ _, xs, ys] ->
           do evaledXS <- eval env xs
              evaledYS <- eval env ys
              case (evaledXS, evaledYS) of
                (XObj (Lst lst1) _ _, XObj (Lst lst2) _ _) ->
                  return (XObj (Lst (lst1 ++ lst2)) i t) -- TODO: should they get their own i:s and t:s
                _ -> Left (EvalError "Applying 'append' to non-list or empty list")
-        XObj If _ _ : condition : ifTrue : ifFalse : [] ->
+        [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
              case obj evaledCondition of
                Bol b -> if b then eval env ifTrue else eval env ifFalse
                _ -> Left (EvalError ("Non-boolean expression in if-statement: " ++ pretty evaledCondition))
-        defnExpr@(XObj Defn _ _) : name : args : body : [] ->
+        [defnExpr@(XObj Defn _ _), name, args, body] ->
           do evaledBody <- eval env body
              Right (XObj (Lst [defnExpr, name, args, evaledBody]) i t)
-        defExpr@(XObj Def _ _) : name : expr : [] ->
+        [defExpr@(XObj Def _ _), name, expr] ->
           do evaledExpr <- expand env expr
              Right (XObj (Lst [defExpr, name, evaledExpr]) i t)
-        theExpr@(XObj The _ _) : typeXObj : value : [] ->
+        [theExpr@(XObj The _ _), typeXObj, value] ->
           do evaledValue <- expand env value
              Right (XObj (Lst [theExpr, typeXObj, evaledValue]) i t)
-        letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           if even (length bindings)
           then do bind <- mapM (\(n, x) -> do x' <- eval env x
                                               return [n, x'])
@@ -250,16 +250,16 @@ expand env xobj =
         XObj (Instantiate _) _ _ : _ -> Right xobj
         XObj (Deftemplate _) _ _ : _ -> Right xobj
         XObj (Defalias _) _ _ : _ -> Right xobj
-        defnExpr@(XObj Defn _ _) : name : args : body : [] ->
+        [defnExpr@(XObj Defn _ _), name, args, body] ->
           do expandedBody <- expand env body
              Right (XObj (Lst [defnExpr, name, args, expandedBody]) i t)
-        defExpr@(XObj Def _ _) : name : expr : [] ->
+        [defExpr@(XObj Def _ _), name, expr] ->
           do expandedExpr <- expand env expr
              Right (XObj (Lst [defExpr, name, expandedExpr]) i t)
-        theExpr@(XObj The _ _) : typeXObj : value : [] ->
+        [theExpr@(XObj The _ _), typeXObj, value] ->
           do expandedValue <- expand env value
              Right (XObj (Lst [theExpr, typeXObj, expandedValue]) i t)
-        letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           if even (length bindings)
           then do bind <- mapM (\(n, x) -> do x' <- expand env x
                                               return [n, x'])
@@ -271,7 +271,7 @@ expand env xobj =
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand env) expressions
              Right (XObj (Lst (doExpr : expandedExpressions)) i t)
-        (XObj (Mod _) _ _) : _ ->
+        XObj Mod{} _ _ : _ ->
           Left (EvalError "Can't eval module")
         f:args -> do expandedF <- expand env f
                      expandedArgs <- mapM (expand env) args

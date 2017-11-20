@@ -1,5 +1,7 @@
 module TypeError where
 
+import Data.Maybe (fromMaybe)
+
 import Types
 import Obj
 import Constraints
@@ -103,9 +105,7 @@ instance Show TypeError where
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
-                                 (VarTy v) -> case recursiveLookup mappings v of
-                                                Just ok -> ok
-                                                Nothing -> t
+                                 (VarTy v) -> fromMaybe t (recursiveLookup mappings v)
                                  (RefTy r) -> RefTy (recursiveLookupTy mappings r)
                                  (PointerTy p) -> PointerTy (recursiveLookupTy mappings p)
                                  (StructTy n innerTys) -> StructTy n (map (recursiveLookupTy mappings) innerTys)

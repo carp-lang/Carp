@@ -124,7 +124,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
         -- Defn
-        defn@(XObj Defn _ _) : nameSymbol@(XObj (Sym (SymPath _ name)) _ _) : (XObj (Arr argList) argsi argst) : body : [] ->
+        [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name)) _ _), XObj (Arr argList) argsi argst, body] ->
           do argTypes <- genVarTys (length argList)
              returnType <- genVarTy
              funcScopeEnv <- extendEnvWithParamList env argList
@@ -138,20 +138,20 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                          okArgs <- sequence visitedArgs
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
-        XObj Defn _ _ : (XObj (Sym _) _ _) : (XObj (Arr _) _ _) : [] -> return (Left (NoFormsInBody xobj))
+        [XObj Defn _ _, XObj (Sym _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
         XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
 
         -- Def
-        def@(XObj Def _ _) : nameSymbol : expression : [] ->
+        [def@(XObj Def _ _), nameSymbol, expression]->
           do definitionType <- genVarTy
              visitedExpr <- visit env expression
              return $ do okExpr <- visitedExpr
                          return (XObj (Lst [def, nameSymbol, okExpr]) i (Just definitionType))
 
-        (XObj Def _ _) : _ -> return (Left (InvalidObj Def xobj))
+        XObj Def _ _ : _ -> return (Left (InvalidObj Def xobj))
 
         -- Let binding
-        letExpr@(XObj Let _ _) : (XObj (Arr bindings) bindi bindt) : body : [] ->
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           do wholeExprType <- genVarTy
              letScopeEnv <- extendEnvWithLetBindings env bindings
              case letScopeEnv of
@@ -163,7 +163,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                                 return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i (Just wholeExprType))
                Left err -> return (Left err)
 
-        XObj Let _ _ : XObj (Arr _) _ _ : [] ->
+        [XObj Let _ _, XObj (Arr _) _ _] ->
           return (Left (NoFormsInBody xobj))
         XObj Let _ _ : XObj (Arr _) _ _ : _ ->
           return (Left (TooManyFormsInBody xobj))
@@ -171,7 +171,7 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
           return (Left (InvalidObj Let xobj))
 
         -- If
-        ifExpr@(XObj If _ _) : expr : ifTrue : ifFalse : [] ->
+        [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
           do visitedExpr <- visit env expr
              visitedTrue <- visit env ifTrue
              visitedFalse <- visit env ifFalse
@@ -184,14 +184,14 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
         XObj If _ _ : _ -> return (Left (InvalidObj If xobj))
 
         -- While (always return Unit)
-        whileExpr@(XObj While _ _) : expr : body : [] ->
+        [whileExpr@(XObj While _ _), expr, body] ->
           do visitedExpr <- visit env expr
              visitedBody <- visit env body
              return $ do okExpr <- visitedExpr
                          okBody <- visitedBody
                          return (XObj (Lst [whileExpr, okExpr, okBody]) i (Just UnitTy))
 
-        XObj While _ _ : _ : [] ->
+        [XObj While _ _, _] ->
           return (Left (NoFormsInBody xobj))
         XObj While _ _ : _ ->
           return (Left (TooManyFormsInBody xobj))
@@ -204,36 +204,36 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst (doExpr : okExpressions)) i (Just t))
 
         -- Address
-        addressExpr@(XObj Address _ _) : value : [] ->
+        [addressExpr@(XObj Address _ _), value] ->
           do visitedValue <- visit env value
              return $ do okValue <- visitedValue
                          let Just t' = ty okValue
                          return (XObj (Lst [addressExpr, okValue]) i (Just (PointerTy t')))
 
         -- Set!
-        setExpr@(XObj SetBang _ _) : variable : value : [] ->
+        [setExpr@(XObj SetBang _ _), variable, value] ->
           do visitedVariable <- visit env variable
              visitedValue <- visit env value
              return $ do okVariable <- visitedVariable
                          okValue <- visitedValue
-                         return (XObj (Lst (setExpr : okVariable : okValue : [])) i (Just UnitTy))
+                         return (XObj (Lst [setExpr, okVariable, okValue]) i (Just UnitTy))
         XObj SetBang _ _ : _ -> return (Left (InvalidObj SetBang xobj))
 
         -- The
-        theExpr@(XObj The _ _) : typeXObj : value : [] ->
+        [theExpr@(XObj The _ _), typeXObj, value] ->
           do visitedValue <- visit env value
              return $ do okValue <- visitedValue
                          case xobjToTy typeXObj of
                            Just okType -> return (XObj (Lst [theExpr, typeXObj, okValue]) i (Just okType))
                            Nothing -> error ("Not a type: " ++ show typeXObj)
-        (XObj The _ _) : _ -> return (Left (InvalidObj The xobj))
+        XObj The _ _ : _ -> return (Left (InvalidObj The xobj))
 
         -- Ref
-        refExpr@(XObj Ref _ _) : value : [] ->
+        [refExpr@(XObj Ref _ _), value] ->
           do visitedValue <- visit env value
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
-                         return (XObj (Lst (refExpr : okValue : [])) i (Just (RefTy valueTy)))
+                         return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
 
         -- Function application
         func : args ->

@@ -59,7 +59,7 @@ data Info = Info { infoLine :: Int
                  } deriving (Show, Eq)
 
 dummyInfo :: Info
-dummyInfo = Info 0 0 "dummy-file" (Set.empty) (-1)
+dummyInfo = Info 0 0 "dummy-file" Set.empty (-1)
 
 data Deleter = ProperDeleter { deleterPath :: SymPath
                              , deleterVariable :: String
@@ -119,14 +119,14 @@ getPath x = SymPath [] (pretty x)
 setPath :: XObj -> SymPath -> XObj
 setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _) si st : rest)) i t) newPath =
   XObj (Lst (defn : XObj (Sym newPath) si st : rest)) i t
-setPath (XObj (Lst (extr@(XObj External _ _) : XObj (Sym _) si st : [])) i t) newPath =
-  XObj (Lst (extr : XObj (Sym newPath) si st : [])) i t
+setPath (XObj (Lst [extr@(XObj External _ _), XObj (Sym _) si st]) i t) newPath =
+  XObj (Lst [extr, XObj (Sym newPath) si st]) i t
 setPath x _ =
   compilerError ("Can't set path on " ++ show x)
 
 -- | Convert an XObj to a pretty string representation.
 pretty :: XObj -> String
-pretty root = visit 0 root
+pretty = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
           case obj xobj of
@@ -221,19 +221,19 @@ dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName))
     xs -> maximum xs
   where
     expandCase :: XObj -> [Int]
-    expandCase (XObj (Arr arr) _ _) = map ((depthOfType typeEnv selfName) . xobjToTy . snd) (pairwise arr)
+    expandCase (XObj (Arr arr) _ _) = map (depthOfType typeEnv selfName . xobjToTy . snd) (pairwise arr)
     expandCase _ = compilerError "Malformed case in typedef."
 dependencyDepthOfTypedef _ xobj =
   compilerError ("Can't get dependency depth from " ++ show xobj)
 
 depthOfType :: TypeEnv -> String -> Maybe Ty -> Int
-depthOfType typeEnv selfName ty = visitType ty
+depthOfType typeEnv selfName = visitType
   where
     visitType :: Maybe Ty -> Int
     visitType (Just (StructTy name _)) = depthOfStructType name
     visitType (Just (FuncTy argTys retTy)) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      (maximum (visitType (Just retTy) : (map (visitType . Just) argTys))) + 1
+      maximum (visitType (Just retTy) : map (visitType . Just) argTys) + 1
     visitType (Just (PointerTy p)) = visitType (Just p)
     visitType (Just (RefTy r)) = visitType (Just r)
     visitType (Just _) = 0
@@ -288,10 +288,10 @@ prettyEnvironment = prettyEnvironmentIndented 0
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
   joinWith "\n" $ map (showBinderIndented indent) (Map.toList (envBindings env)) ++
-                  let modules = (envUseModules env)
+                  let modules = envUseModules env
                   in  if null modules
                       then []
-                      else ["\n" ++ replicate indent ' ' ++ "Used modules:"] ++ map (showImportIndented indent) modules
+                      else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
 
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
@@ -329,6 +329,7 @@ multiLookup = multiLookupInternal False
 multiLookupALL :: String -> Env -> [(Env, Binder)]
 multiLookupALL = multiLookupInternal True
 
+{-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
 multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
 multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
@@ -341,10 +342,10 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
         imports :: Env -> [Env]
         imports env = if allowLookupInAllModules
                       then let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
-                           in  envs ++ (concatMap imports envs)
+                           in  envs ++ concatMap imports envs
                       -- Only lookup in imported modules:
                       else let envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
-                           in  envs ++ (concatMap imports envs)
+                           in  envs ++ concatMap imports envs
 
         binderToEnv :: Binder -> Maybe Env
         binderToEnv (Binder (XObj (Mod e) _ _)) = Just e
@@ -391,7 +392,7 @@ multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
                                 Nothing -> []
               fromUsedModules = let usedModules = envUseModules rootEnv
                                     envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path rootEnv)) usedModules
-                                in  concatMap (\usedEnv -> multiLookupQualified path usedEnv) envs
+                                in  concatMap (multiLookupQualified path) envs
           in fromParent ++ fromUsedModules
 
 
@@ -424,6 +425,7 @@ envReplaceEnvAt env (p:ps) replacement =
 envAddBinding :: Env -> String -> Binder -> Env
 envAddBinding env name binder = env { envBindings = Map.insert name binder (envBindings env) }
 
+{-# ANN addListOfBindings "HLint: ignore Eta reduce" #-}
 -- | Add a list of bindings to an environment
 addListOfBindings :: Env -> [(String, Binder)] -> Env
 addListOfBindings env bindingsToAdd = foldl' (\e (n, b) -> envAddBinding e n b) env bindingsToAdd
@@ -439,34 +441,34 @@ getEnv env (p:ps) = case Map.lookup p (envBindings env) of
 -- | Changes the symbol part of a defn (the name) to a new symbol path
 -- | Example: (defn foo () 123) => (defn GreatModule.foo () 123)
 setFullyQualifiedDefn :: XObj -> SymPath -> XObj
-setFullyQualifiedDefn (XObj (Lst (defn : (XObj _ symi symt) : args : body : [])) i t) newPath =
-  XObj (Lst (defn : (XObj (Sym newPath) symi symt) : args : body : [])) i t
-setFullyQualifiedDefn (XObj (Lst (def : (XObj _ symi symt) : expr : [])) i t) newPath =
-  XObj (Lst (def : (XObj (Sym newPath) symi symt) : expr : [])) i t
+setFullyQualifiedDefn (XObj (Lst [defn, XObj _ symi symt, args, body]) i t) newPath =
+  XObj (Lst [defn, XObj (Sym newPath) symi symt, args, body]) i t
+setFullyQualifiedDefn (XObj (Lst [def, XObj _ symi symt, expr]) i t) newPath =
+  XObj (Lst [def, XObj (Sym newPath) symi symt, expr]) i t
 setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 
 -- | Changes all symbols EXCEPT bound vars (defn names, variable names, etc) to their fully qualified paths.
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
 -- | This function does NOT go into function-body scope environments and the like.
 setFullyQualifiedSymbols :: Env -> XObj -> XObj
-setFullyQualifiedSymbols env (XObj (Lst (defn@(XObj Defn _ _) :
-                                         sym@(XObj (Sym (SymPath _ functionName)) _ _) :
-                                         args@(XObj (Arr argsArr) _ _) :
-                                         body : []))
+setFullyQualifiedSymbols env (XObj (Lst [defn@(XObj Defn _ _),
+                                         sym@(XObj (Sym (SymPath _ functionName)) _ _),
+                                         args@(XObj (Arr argsArr) _ _),
+                                         body])
                                i t) =
   -- For self-recursion, there must be a binding to the function in the inner env.
   -- Note: This inner env is ephemeral since it is not stored in a module or global scope.
   let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
       envWithSelf = extendEnv functionEnv functionName sym
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
-  in  (XObj (Lst [defn, sym, args, setFullyQualifiedSymbols envWithArgs body]) i t)
-setFullyQualifiedSymbols env (XObj (Lst (the@(XObj The _ _) : typeXObj : value : [])) i t) =
+  in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols envWithArgs body]) i t
+setFullyQualifiedSymbols env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
   let value' = setFullyQualifiedSymbols env value
-  in  (XObj (Lst [the, typeXObj, value']) i t)
-setFullyQualifiedSymbols env (XObj (Lst (def@(XObj Def _ _) : sym : expr : [])) i t) =
+  in  XObj (Lst [the, typeXObj, value']) i t
+setFullyQualifiedSymbols env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
   let expr' = setFullyQualifiedSymbols env expr
-  in  (XObj (Lst [def, sym, expr']) i t)
-setFullyQualifiedSymbols env (XObj (Lst (letExpr@(XObj Let _ _) : bind@(XObj (Arr bindings) bindi bindt) : body : [])) i t) =
+  in  XObj (Lst [def, sym, expr']) i t
+setFullyQualifiedSymbols env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
   if even (length bindings)
   then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
            envWithBindings = foldl' (\e (binderSym@(XObj (Sym (SymPath _ binderName)) _ _), _) ->
@@ -476,8 +478,8 @@ setFullyQualifiedSymbols env (XObj (Lst (letExpr@(XObj Let _ _) : bind@(XObj (Ar
            newBinders = XObj (Arr (concatMap (\(s, o) -> [s, setFullyQualifiedSymbols envWithBindings o])
                                    (pairwise bindings))) bindi bindt
            newBody = setFullyQualifiedSymbols envWithBindings body
-       in  (XObj (Lst [letExpr, newBinders, newBody]) i t)
-  else (XObj (Lst [letExpr, bind, body]) i t) -- Leave it untouched for the compiler to find the error.
+       in  XObj (Lst [letExpr, newBinders, newBody]) i t
+  else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
 setFullyQualifiedSymbols env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols env) xobjs
   in  XObj (Lst xobjs') i t
@@ -553,7 +555,7 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr")) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr")) _ _ : _)) _ _) =
-  do Nothing
+  Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref")) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
@@ -561,7 +563,7 @@ xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref")) _ _ : _)) _ _) =
-  do Nothing
+  Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ")) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
   xobjToTy (XObj (Lst [XObj (Sym (SymPath path "Fn")) fi ft, XObj (Arr argTys) ai at, retTy]) i t)
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn")) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
@@ -622,7 +624,7 @@ instance Show Template where
 -- | Note: This is to make comparisons of Environments possible, otherwise
 -- | they are always different when they contain Templates.
 instance Eq Template where
-  a == b = (templateSignature a) == (templateSignature b)
+  a == b = templateSignature a == templateSignature b
 
 -- | Tokens are used for emitting C code from templates.
 data Token = TokTy Ty        -- | Some kind of type, will be looked up if it's a type variable.
@@ -671,19 +673,16 @@ isExternalType _ _ =
 
 -- | Unsafe way of getting the type from an XObj
 forceTy :: XObj -> Ty
-forceTy xobj = case ty xobj of
-                 Just t -> t
-                 Nothing -> error ("No type in " ++ show xobj)
+forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
 
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
-  if name == "Array"
-  then True
-  else case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+  (name == "Array") || (
+    case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder (XObj (Lst (XObj Typ _ _ : _)) _ _)) -> True
          Just (_, Binder (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
-         Nothing -> error ("Can't find " ++ name ++ " in type env.")
+         Nothing -> error ("Can't find " ++ name ++ " in type env."))
 isManaged _ StringTy = True
 isManaged _ _ = False

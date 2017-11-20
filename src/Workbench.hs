@@ -19,7 +19,7 @@ startingGlobalEnv :: Env
 startingGlobalEnv = Env { envBindings = bs,
                           envParent = Nothing,
                           envModuleName = Nothing,
-                          envUseModules = [(SymPath [] "String")],
+                          envUseModules = [SymPath [] "String"],
                           envMode = ExternalEnv
                         }
   where bs = Map.fromList [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)

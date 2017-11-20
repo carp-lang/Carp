@@ -190,10 +190,8 @@ replaceTyVars mappings t =
 
 -- | The type of a type's copying function.
 typesCopyFunctionType :: Ty -> Ty
-typesCopyFunctionType memberType =
-  (FuncTy [(RefTy memberType)] memberType)
+typesCopyFunctionType memberType = FuncTy [RefTy memberType] memberType
 
 -- | The type of a type's deleter function.
 typesDeleterFunctionType :: Ty -> Ty
-typesDeleterFunctionType memberType =
-  (FuncTy [memberType] UnitTy)
+typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy

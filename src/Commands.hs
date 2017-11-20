@@ -84,41 +84,41 @@ objToCommand :: Context -> XObj -> ReplCommand
 objToCommand ctx xobj =
   case obj xobj of
       Lst lst -> case lst of
-                   XObj Defn _ _ : _ : _ : _ : [] -> Define xobj
-                   XObj Def _ _ : _ : _ : [] -> Define xobj
+                   [XObj Defn _ _, _, _, _] -> Define xobj
+                   [XObj Def _ _, _, _] -> Define xobj
                    XObj (Sym (SymPath _ "module")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
                      DefineModule name innerExpressions (info xobj)
                    XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
                      DefineModule name innerExpressions (info xobj)
-                   XObj (Sym (SymPath _ "defmacro")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
+                   [XObj (Sym (SymPath _ "defmacro")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
                      DefineMacro name params body
-                   XObj (Sym (SymPath _ "defdynamic")) _ _ : XObj (Sym (SymPath _ name)) _ _ : params@(XObj (Arr _) _ _) : body : [] ->
+                   [XObj (Sym (SymPath _ "defdynamic")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
                      DefineDynamic name params body
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest -> DefineType name rest
-                   XObj (Sym (SymPath _ "defalias")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> DefineAlias name t
-                   XObj (Sym (SymPath _ "eval")) _ _ : form : [] -> Eval form
-                   XObj (Sym (SymPath _ "expand")) _ _ : form : [] -> Expand form
-                   XObj (Sym (SymPath _ "instantiate")) _ _ : name : signature : [] -> InstantiateTemplate name signature
-                   XObj (Sym (SymPath _ "type")) _ _ : form : [] -> Type form
-                   XObj (Sym (SymPath _ "info")) _ _ : form : [] -> GetInfo form
-                   XObj (Sym (SymPath _ "help")) _ _ : XObj (Sym (SymPath _ chapter)) _ _ : [] -> Help chapter
-                   XObj (Sym (SymPath _ "help")) _ _ : [] -> Help ""
-                   XObj (Sym (SymPath _ "quit")) _ _ : [] -> Quit
-                   XObj (Sym (SymPath _ "env")) _ _ : [] -> ListBindingsInEnv
-                   XObj (Sym (SymPath _ "build")) _ _ : [] -> BuildExe
-                   XObj (Sym (SymPath _ "run")) _ _ : [] -> RunExe
-                   XObj (Sym (SymPath _ "cat")) _ _ : [] -> Cat
-                   XObj (Sym (SymPath _ "use")) _ _ : XObj (Sym path) _ _ : [] -> Use path xobj
-                   XObj (Sym (SymPath _ "project-set!")) _ _ : XObj (Sym (SymPath _ key)) _ _ : XObj (Str value) _ _ : [] -> ProjectSet key value
-                   XObj (Sym (SymPath _ "register")) _ _ : XObj (Sym (SymPath _ name)) _ _ : t : [] -> Register name t
+                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineAlias name t
+                   [XObj (Sym (SymPath _ "eval")) _ _, form] -> Eval form
+                   [XObj (Sym (SymPath _ "expand")) _ _, form] -> Expand form
+                   [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] -> InstantiateTemplate name signature
+                   [XObj (Sym (SymPath _ "type")) _ _, form] -> Type form
+                   [XObj (Sym (SymPath _ "info")) _ _, form] -> GetInfo form
+                   [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] -> Help chapter
+                   [XObj (Sym (SymPath _ "help")) _ _] -> Help ""
+                   [XObj (Sym (SymPath _ "quit")) _ _] -> Quit
+                   [XObj (Sym (SymPath _ "env")) _ _] -> ListBindingsInEnv
+                   [XObj (Sym (SymPath _ "build")) _ _] -> BuildExe
+                   [XObj (Sym (SymPath _ "run")) _ _] -> RunExe
+                   [XObj (Sym (SymPath _ "cat")) _ _] -> Cat
+                   [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] -> Use path xobj
+                   [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] -> ProjectSet key value
+                   [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> Register name t
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest -> RegisterType name rest
-                   XObj (Sym (SymPath _ "local-include")) _ _ : XObj (Str file) _ _ : [] -> AddInclude (LocalInclude file)
-                   XObj (Sym (SymPath _ "system-include")) _ _ : XObj (Str file) _ _ : [] -> AddInclude (SystemInclude file)
-                   XObj (Sym (SymPath _ "add-cflag")) _ _ : XObj (Str flag) _ _ : [] -> AddCFlag flag
-                   XObj (Sym (SymPath _ "add-lib")) _ _ : XObj (Str flag) _ _ : [] -> AddLibraryFlag flag
-                   XObj (Sym (SymPath _ "project")) _ _ : [] -> DisplayProject
-                   XObj (Sym (SymPath _ "load")) _ _ : XObj (Str path) _ _ : [] -> Load path
-                   XObj (Sym (SymPath _ "reload")) _ _ : [] -> Reload
+                   [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] -> AddInclude (LocalInclude file)
+                   [XObj (Sym (SymPath _ "system-include")) _ _, XObj (Str file) _ _] -> AddInclude (SystemInclude file)
+                   [XObj (Sym (SymPath _ "add-cflag")) _ _, XObj (Str flag) _ _] -> AddCFlag flag
+                   [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] -> AddLibraryFlag flag
+                   [XObj (Sym (SymPath _ "project")) _ _] -> DisplayProject
+                   [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] -> Load path
+                   [XObj (Sym (SymPath _ "reload")) _ _] -> Reload
                    _ -> consumeExpr ctx xobj
       Sym (SymPath [] (':' : text)) -> ListOfCommands (mapMaybe charToCommand text)
       _ -> consumeExpr ctx xobj
@@ -139,7 +139,7 @@ define ctx@(Context globalEnv typeEnv _ proj _) annXObj =
   -- Sort different kinds of definitions into the globalEnv or the typeEnv:
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-      do --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
+      --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
@@ -196,8 +196,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                      ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
                                  , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                                  })
-                 in  do ctx'' <- foldM define ctx' deps
-                        return ctx''
+                 in foldM define ctx' deps
                Left errorMessage ->
                  do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
                     return ctx
@@ -403,7 +402,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                 fullSearchPaths =
                   path :
                   ("./" ++ path) :                                            -- the path from the current directory
-                  (map (++ "/" ++ path) (projectCarpSearchPaths proj)) ++     -- user defined search paths
+                  map (++ "/" ++ path) (projectCarpSearchPaths proj) ++     -- user defined search paths
                   [carpDir ++ "/core/" ++ path]
             -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
             existingPaths <- filterM doesPathExist fullSearchPaths
@@ -412,7 +411,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                 do putStrLnWithColor Red ("Invalid path " ++ path)
                    return ctx
               firstPathFound : _ ->
-                do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
+                --putStrLn ("Will load '" ++ firstPathFound ++ "'")
                    performLoad firstPathFound
          where performLoad thePath =
                  do contents <- readFile thePath
