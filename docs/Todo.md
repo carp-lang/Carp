@@ -8,19 +8,19 @@
 ## Critical Bugs
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] A program using references to arrays but nothing else produces invalid typedefs (see sum-functions for adding the elements of an array)
-* [0.3] The compiler just crashes when defining invalid struct types
+* [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
 
 ## Big Language Features
 * [0.3] Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code
-* [0.3] Platform defines and optional compilation
+* [0.3] Platform defines and optional compilation (requires dynamic evaluation of code at the REPL)
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings
 * [1.0] Tagged unions (also known as "sum types" or "enums")
 * [1.0] Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
-* [0.4] Good string functions
-* [0.4] A way to assert compiler errors in tests
+* [0.3] Good string functions
+* [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
 
 ## Macro System
