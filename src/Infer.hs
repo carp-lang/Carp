@@ -3,7 +3,6 @@ module Infer (annotate
              ,genConstraints
              ,assignTypes
              ,concretizeXObj
-             ,concretizeDefinition
              ,manageMemory
              ,depsOfPolymorphicFunction
              ) where

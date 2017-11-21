@@ -1,15 +1,9 @@
 ;; This file contains examples of unsolved bugs
 
-(defmodule A
-  (defmodule B
-    (defn f [] 123)
-    )
-  (use B)
-  (defn g [] (f))
-  )
+(defn f []
+  (f))
 
-(use A)
-
-(defn main []
-  (B.f) ;; <- this should resolve
-  )
+(defn g []
+  (do
+    (f)
+    ()))
