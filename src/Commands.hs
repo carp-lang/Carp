@@ -63,6 +63,9 @@ data ReplCommand = Define XObj
                  | ListOfCommands [ReplCommand]
                  deriving Show
 
+printTypedAST :: Bool
+printTypedAST = True
+
 consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _) xobj =
   case expandAll globalEnv xobj of
@@ -230,11 +233,13 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
          case xobj of
            XObj (Sym path@(SymPath _ name)) _ _ ->
              case lookupInEnv path env of
-               Just (_, binder@(Binder (XObj _ (Just i) _))) ->
+               Just (_, binder@(Binder xobj@(XObj _ (Just i) _))) ->
                  do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
+                    when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
                     return ctx
-               Just (_, binder) ->
+               Just (_, binder@(Binder xobj)) ->
                  do putStrLnWithColor White (show binder)
+                    when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
                     return ctx
                Nothing ->
                  case multiLookupALL name env of

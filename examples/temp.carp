@@ -1,6 +1,6 @@
 ;; (use IO)
-;;(use Int)
-;; (use Float)
+(use Int)
+(use Float)
 ;; (use Double)
 ;; (use Array)
 ;; (use System)
@@ -8,4 +8,10 @@
 ;; (use Char)
 ;; (use Bool)
 
-:p
+;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
+
+(defn f [a b]
+  (= @(Array.nth a 0) @(Array.nth b 0)))
+
+(defn main []
+  (IO.println &(Bool.str (f &[1 2 3] &[1 10 100]))))
