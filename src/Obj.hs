@@ -528,7 +528,7 @@ instance Show Project where
             , "Output directory: " ++ outDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
-            , "Search paths for (load ...) command:\n    " ++ joinWith  "\n    " searchPaths
+            , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
             ]
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"

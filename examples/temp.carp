@@ -8,11 +8,4 @@
 ;; (use Char)
 ;; (use Bool)
 
-(defn pop-things []
-  (let [xs1 [@"A" @"B" @"C"]
-        xs2 (Array.pop-back xs1)]
-    (IO.println &(Array.str &xs2))))
-
-(defn main []
-  (while true
-    (pop-things)))
+:p

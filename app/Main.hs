@@ -163,10 +163,10 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
                                                                          ]
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun
+data ExecutionMode = Repl | Build | BuildAndRun deriving Show
 
 -- | Other options for how to run the compiler
-data OtherOptions = NoCore deriving (Eq)
+data OtherOptions = NoCore deriving (Show, Eq)
 
 -- | Parse the arguments sent to the compiler from the terminal
 parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
@@ -186,8 +186,8 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           putStrLn "Evaluate (help) for more information."
           args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
-          let projectWithFiles = defaultProject { projectFiles = args }
-              (filesToLoad, execMode, otherOptions) = parseArgs args
+          let (argFilesToLoad, execMode, otherOptions) = parseArgs args
+              projectWithFiles = defaultProject { projectFiles = argFilesToLoad }
               noCore = NoCore `elem` otherOptions
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
@@ -195,7 +195,7 @@ main = do putStrLn "Welcome to Carp 0.2.0"
                                      Nothing -> projectWithFiles
           context <- foldM executeCommand (Context (startingGlobalEnv noCore) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load coreModulesToLoad)
-          context' <- foldM executeCommand context (map Load filesToLoad)
+          context' <- foldM executeCommand context (map Load argFilesToLoad)
           settings <- readlineSettings
           case execMode of
             Repl -> runInputT settings (repl context' "")
