@@ -148,8 +148,8 @@ startingGlobalEnv noCore =
 startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
 
-preludeModules :: String -> [String]
-preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
+coreModules :: String -> [String]
+coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
                                                                          , "Int"
                                                                          , "Long"
                                                                          , "Double"
@@ -189,12 +189,12 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           let projectWithFiles = defaultProject { projectFiles = args }
               (filesToLoad, execMode, otherOptions) = parseArgs args
               noCore = NoCore `elem` otherOptions
-              preludeModulesToLoad = if noCore then [] else (preludeModules (projectCarpDir projectWithCarpDir))
+              coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
           context <- foldM executeCommand (Context (startingGlobalEnv noCore) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
-                                          (map Load preludeModulesToLoad)
+                                          (map Load coreModulesToLoad)
           context' <- foldM executeCommand context (map Load filesToLoad)
           settings <- readlineSettings
           case execMode of
