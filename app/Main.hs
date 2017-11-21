@@ -26,7 +26,7 @@ import Parsing
 
 defaultProject :: Project
 defaultProject = Project { projectTitle = "Untitled"
-                         , projectIncludes = [SystemInclude "prelude.h"]
+                         , projectIncludes = [SystemInclude "core.h"]
                          , projectCFlags = ["-fPIC"]
                          , projectLibFlags = ["-lm"]
                          , projectFiles = []
@@ -131,20 +131,19 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateElemCount
                                 ]
 
-startingGlobalEnv :: Env
-startingGlobalEnv = Env { envBindings = bs,
-                          envParent = Nothing,
-                          envModuleName = Nothing,
-                          envUseModules = [(SymPath [] "String")],
-                          envMode = ExternalEnv
-                        }
-  where bs = Map.fromList [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
-                          , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
-                          , register "not" (FuncTy [BoolTy] BoolTy)
-                          , templateNoop
-                          , ("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))
-                          , register "NULL" (VarTy "a")
-                          ]
+startingGlobalEnv :: Bool -> Env
+startingGlobalEnv noCore =
+  Env { envBindings = bindings,
+        envParent = Nothing,
+        envModuleName = Nothing,
+        envUseModules = [(SymPath [] "String")],
+        envMode = ExternalEnv
+      }
+  where bindings = Map.fromList $ [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
+                                  , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
+                                  , register "not" (FuncTy [BoolTy] BoolTy)
+                                  , register "NULL" (VarTy "a")
+                                  ] ++ (if noCore then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
@@ -166,16 +165,20 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macr
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
 data ExecutionMode = Repl | Build | BuildAndRun
 
+-- | Other options for how to run the compiler
+data OtherOptions = NoCore deriving (Eq)
+
 -- | Parse the arguments sent to the compiler from the terminal
-parseArgs :: [String] -> ([FilePath], ExecutionMode)
-parseArgs args = parseArgsInternal [] Repl args
-  where parseArgsInternal filesToLoad execMode [] =
-          (filesToLoad, execMode)
-        parseArgsInternal filesToLoad execMode (arg:restArgs) =
+parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
+parseArgs args = parseArgsInternal [] Repl [] args
+  where parseArgsInternal filesToLoad execMode otherOptions [] =
+          (filesToLoad, execMode, otherOptions)
+        parseArgsInternal filesToLoad execMode otherOptions (arg:restArgs) =
           case arg of
-            "-b" -> parseArgsInternal filesToLoad Build restArgs
-            "-x" -> parseArgsInternal filesToLoad BuildAndRun restArgs
-            file -> parseArgsInternal (filesToLoad ++ [file]) execMode restArgs
+            "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
+            "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
+            "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
+            file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
 
 main :: IO ()
 main = do putStrLn "Welcome to Carp 0.2.0"
@@ -184,12 +187,14 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
           let projectWithFiles = defaultProject { projectFiles = args }
+              (filesToLoad, execMode, otherOptions) = parseArgs args
+              noCore = NoCore `elem` otherOptions
+              preludeModulesToLoad = if noCore then [] else (preludeModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
-              (filesToLoad, execMode) = parseArgs args
-          context <- foldM executeCommand (Context startingGlobalEnv (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
-                                          (map Load (preludeModules (projectCarpDir projectWithCarpDir)))
+          context <- foldM executeCommand (Context (startingGlobalEnv noCore) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
+                                          (map Load preludeModulesToLoad)
           context' <- foldM executeCommand context (map Load filesToLoad)
           settings <- readlineSettings
           case execMode of

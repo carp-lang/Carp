@@ -43,7 +43,6 @@
 * [?] Emit #LINE macros in the generated C code
 
 ## Ugliness
-* [0.3] Create a proper .c file for the core library C functions. Or at least rename the prelude.h file to core.h
 * [0.3] The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type. Make a check for this in the template.
 * [1.0] Remove unnecessary Array-functions and rewrite them in Carp?
 
