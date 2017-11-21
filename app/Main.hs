@@ -149,18 +149,19 @@ startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
 
 coreModules :: String -> [String]
-coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macros"
-                                                                         , "Int"
-                                                                         , "Long"
-                                                                         , "Double"
-                                                                         , "Float"
-                                                                         , "Array"
-                                                                         , "String"
-                                                                         , "Char"
-                                                                         , "Bool"
-                                                                         , "IO"
-                                                                         , "System"
-                                                                         ]
+coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
+                                                                      , "Macros"
+                                                                      , "Int"
+                                                                      , "Long"
+                                                                      , "Double"
+                                                                      , "Float"
+                                                                      , "Array"
+                                                                      , "String"
+                                                                      , "Char"
+                                                                      , "Bool"
+                                                                      , "IO"
+                                                                      , "System"
+                                                                      ]
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
 data ExecutionMode = Repl | Build | BuildAndRun deriving Show

@@ -36,6 +36,7 @@ data Ty = IntTy
         | TypeTy -- the type of types
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
+        | InterfaceTy
         deriving (Eq, Ord)
 
 instance Show Ty where
@@ -51,6 +52,7 @@ instance Show Ty where
   show UnitTy                = "()"
   show ModuleTy              = "Module"
   show TypeTy                = "Type"
+  show InterfaceTy           = "Interface"
   show (StructTy s [])       = s
   show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithComma (map show typeArgs) ++ ")"
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"

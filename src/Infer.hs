@@ -32,7 +32,7 @@ import Concretize
 -- | makes it possible to solve more types so let's do it several times.
 annotate :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
 annotate typeEnv globalEnv xobj =
-  do initiated <- initialTypes globalEnv xobj
+  do initiated <- initialTypes typeEnv globalEnv xobj
      (annotated, dependencies) <- foldM (\(x, deps) allowAmbiguity ->
                                            do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
                                               return (x', deps ++ deps'))

@@ -1,0 +1,2 @@
+(definterface = (λ [a a] Bool))
+(definterface copy (λ [&a] a))

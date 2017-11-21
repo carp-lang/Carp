@@ -56,8 +56,8 @@ renameVarTys rootType = do n <- get
 
 -- | Adds initial types to a s-expression and all its sub-nodes.
 -- | Example: (f 10) => <(<f : (Fn [Int] Bool>) <10 : Int>) : t0>
-initialTypes :: Env -> XObj -> Either TypeError XObj
-initialTypes rootEnv root = evalState (visit rootEnv root) 0
+initialTypes :: TypeEnv -> Env -> XObj -> Either TypeError XObj
+initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
   where
     visit :: Env -> XObj -> State Integer (Either TypeError XObj)
     visit env xobj = case obj xobj of
@@ -108,10 +108,10 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
-      do freshTy <- case name of -- BIG FAT HACK, FOR NOW!!!!! TODO: Change to lookup of "interfaces" or whatever
-                      "=" -> renameVarTys (FuncTy [(VarTy "a"), (VarTy "a")] BoolTy)
-                      "copy" -> renameVarTys (FuncTy [(RefTy (VarTy "a"))] (VarTy "a"))
-                      _ -> genVarTy
+      do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+                      Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+                      Just (_, Binder x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+                      Nothing -> genVarTy
          return (Right xobj { ty = Just freshTy })
 
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)

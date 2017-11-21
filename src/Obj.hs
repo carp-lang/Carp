@@ -38,6 +38,7 @@ data Obj = Sym SymPath
          | Dynamic
          | The
          | Ref
+         | Interface Ty
          deriving (Show, Eq)
 
 newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
@@ -96,6 +97,7 @@ getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _) _ _ : _)) 
 getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj Typ _ _ : XObj (Sym _) _ _ : _)) _ _) = "deftype"
+getBinderDescription (XObj (Lst (XObj (Interface _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "interface"
 getBinderDescription _ = "?"
 
 getName :: XObj -> String
@@ -161,6 +163,7 @@ pretty = visit 0
             Dynamic -> "dynamic"
             The -> "the"
             Ref -> "ref"
+            Interface _ -> "interface"
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
@@ -657,6 +660,12 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
+
+-- |
+defineInterface :: String -> Ty -> XObj
+defineInterface name t = XObj (Lst [XObj (Interface t) Nothing Nothing
+                                   ,XObj (Sym (SymPath [] name)) Nothing Nothing
+                                   ]) (Just dummyInfo) (Just InterfaceTy)
 
 -- | Find out if a type is "external", meaning it is not defined by the user
 --   in this program but instead imported from another C library or similar.
