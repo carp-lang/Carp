@@ -107,9 +107,13 @@ initialTypes rootEnv root = evalState (visit rootEnv root) 0
             Nothing -> return (Left (SymbolNotDefined symPath xobj))
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
-    visitMultiSym _ xobj _ =
+    visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
       do freshTy <- genVarTy
-         return (Right xobj { ty = Just freshTy })
+         return (Right xobj { ty = Just (case name of -- BIG FAT HACK, FOR NOW!!!!! TODO: Change to lookup of "interfaces" or whatever
+                                           "=" -> (FuncTy [freshTy, freshTy] BoolTy)
+                                           "copy" -> (FuncTy [(RefTy freshTy)] freshTy)
+                                           _ -> freshTy
+                                        ) })
 
     visitArray :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitArray env (XObj (Arr xobjs) i _) =
