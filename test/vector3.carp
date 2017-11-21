@@ -1,3 +1,7 @@
+(load "Test.carp")
+(load "Vector.carp")
+(load "Geometry.carp")
+
 (use Test)
 (use Vector3)
 (use Geometry)

@@ -1,3 +1,5 @@
+(load "Test.carp")
+
 (use Bool)
 (use Int)
 (use Long)

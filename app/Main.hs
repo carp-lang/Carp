@@ -161,11 +161,6 @@ preludeModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Macr
                                                                          , "Bool"
                                                                          , "IO"
                                                                          , "System"
-                                                                         , "Vector"
-                                                                         , "Geometry"
-                                                                         , "Test"
-                                                                         , "Statistics"
-                                                                         , "Bench"
                                                                          ]
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
