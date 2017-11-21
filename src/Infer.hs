@@ -47,7 +47,7 @@ annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
   mappings <- solveConstraintsAndConvertErrorIfNeeded constraints
   typed <- assignTypes mappings xobj
-  concretizeXObj allowAmbiguity typeEnv env typed
+  concretizeXObj allowAmbiguity typeEnv env [] typed
 
 -- | Convert from the type 'UnificationFailure' to 'TypeError' (enables monadic chaining of Either).
 solveConstraintsAndConvertErrorIfNeeded :: [Constraint] -> Either TypeError TypeMappings

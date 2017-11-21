@@ -3,7 +3,7 @@
 (defn f []
   (f))
 
-(defn g []
+(defn main []
   (do
     (f)
-    ()))
+    (IO.println "will never get here...")))

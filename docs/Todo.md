@@ -8,7 +8,6 @@
 ## Critical Bugs
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] A program using references to arrays but nothing else produces invalid typedefs (see sum-functions for adding the elements of an array)
-* [0.3] Compiling a self recursing function (of type (λ [] ()) at least) hangs the compiler
 * [0.3] The compiler just crashes when defining invalid struct types
 
 ## Big Language Features

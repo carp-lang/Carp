@@ -188,7 +188,7 @@ templateStr typeEnv env typeName members =
                                  , "  snprintf(bufferPtr, 1024, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
-    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "str" . typesStrFunctionType typeEnv)
+    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
                      (filter (not . isExternalType typeEnv) (map snd members)))
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
@@ -255,7 +255,7 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    return p;"
                                 ,"}\n"])))
     (\_ -> if isManaged typeEnv memberTy
-           then depsOfPolymorphicFunction typeEnv env "delete" (typesDeleterFunctionType memberTy)
+           then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
            else [])
 
 -- | The template for updater functions of a deftype
@@ -280,7 +280,7 @@ templateDelete typeEnv env members =
    (const (toTemplate $ unlines [ "$DECL {"
                                 , joinWith "\n" (map (memberDeletion typeEnv env) members)
                                 , "}"]))
-   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "delete" . typesDeleterFunctionType)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
 
 -- | Generate the C code for deleting a single member of the deftype.
@@ -303,7 +303,7 @@ templateCopy typeEnv env members =
                                 , joinWith "\n" (map (memberCopy typeEnv env) members)
                                 , "    return copy;"
                                 , "}"]))
-   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env "copy" . typesCopyFunctionType)
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
 
 -- | Generate the C code for copying the member of a deftype.

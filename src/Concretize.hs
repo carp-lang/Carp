@@ -18,8 +18,8 @@ import ManageMemory
 --   1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
 --   2. Changes the name of symbols at call sites so they use the polymorphic name
 --   Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
-concretizeXObj :: Bool -> TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
-concretizeXObj allowAmbiguity typeEnv rootEnv root =
+concretizeXObj :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Either TypeError (XObj, [XObj])
+concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
   case runState (visit rootEnv root) [] of
     (Left err, _) -> Left err
     (Right xobj, deps) -> Right (xobj, deps)
@@ -96,9 +96,9 @@ concretizeXObj allowAmbiguity typeEnv rootEnv root =
             let theXObj = binderXObj binder
                 Just theType = ty theXObj
                 Just typeOfVisited = t
-            in if (trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited) $
+            in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
-                  then case concretizeDefinition allowAmbiguity typeEnv env theXObj typeOfVisited of
+                  then case concretizeDefinition allowAmbiguity typeEnv env visitedDefinitions theXObj typeOfVisited of
                          Left err -> return (Left err)
                          Right (concrete, deps) ->
                            do modify (concrete :)
@@ -154,8 +154,8 @@ typeFromPath env p =
 --   a concrete type (a type without any type variables)
 --   this function returns a new definition with the concrete
 --   types assigned, and a list of dependencies.
-concretizeDefinition :: Bool -> TypeEnv -> Env -> XObj -> Ty -> Either TypeError (XObj, [XObj])
-concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
+concretizeDefinition :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Ty -> Either TypeError (XObj, [XObj])
+concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definition concreteType =
   let SymPath pathStrings name = getPath definition
       Just polyType = ty definition
       suffix = polymorphicSuffix polyType concreteType
@@ -167,9 +167,11 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv definition concreteType =
             mappings = unifySignatures polyType concreteType
         in case assignTypes mappings withNewPath of
           Right typed ->
-            do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv typed
-               managed <- manageMemory typeEnv globalEnv concrete
-               return (managed, deps)
+            if newPath `elem` visitedDefinitions
+            then return (withNewPath, [])
+            else do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
+                    managed <- manageMemory typeEnv globalEnv concrete
+                    return (managed, deps)
           Left e -> Left e
       XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
@@ -190,8 +192,8 @@ allFunctionsWithNameAndSignature env functionName functionType =
     predicate (Just t) = areUnifiable functionType t
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
-depsOfPolymorphicFunction :: TypeEnv -> Env -> String -> Ty -> [XObj]
-depsOfPolymorphicFunction typeEnv env functionName functionType =
+depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
+depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] ->
       (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
@@ -199,7 +201,7 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
     [(_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _))] ->
       []
     [(_, Binder single)] ->
-      case concretizeDefinition False typeEnv env single functionType of
+      case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
         Left err -> error (show err)
         Right (ok, deps) -> ok : deps
     _ ->
@@ -210,22 +212,22 @@ depsOfPolymorphicFunction typeEnv env functionName functionType =
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env "delete" (FuncTy [t] UnitTy)
+  then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy)
   else []
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env "copy" (FuncTy [RefTy t] t)
+  then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy [RefTy t] t)
   else []
 
 -- | Helper for finding the 'str' function for a type.
 depsForStrFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForStrFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env "str" (FuncTy [RefTy t] StringTy)
-  else depsOfPolymorphicFunction typeEnv env "str" (FuncTy [t] StringTy)
+  then depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [RefTy t] StringTy)
+  else depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
