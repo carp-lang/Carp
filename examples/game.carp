@@ -90,5 +90,5 @@
           (draw rend &images)
           (SDL_Delay 30))))))
 
-(build)
-(run)
+;; (build)
+;; (run)
