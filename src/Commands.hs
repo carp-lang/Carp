@@ -45,7 +45,7 @@ data ReplCommand = Define XObj
                  | DefineMacro String XObj XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
-                 | DefineInterface String XObj
+                 | DefineInterface String XObj (Maybe Info)
                  | Eval XObj
                  | Expand XObj
                  | Type XObj
@@ -107,7 +107,7 @@ objToCommand ctx xobj =
                      DefineDynamic name params body
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest -> DefineType name rest
                    [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineAlias name t
-                   [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineInterface name t
+                   [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineInterface name t (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] -> Eval form
                    [XObj (Sym (SymPath _ "expand")) _ _, form] -> Expand form
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] -> InstantiateTemplate name signature
@@ -263,27 +263,34 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
        GetInfo xobj ->
          case xobj of
            XObj (Sym path@(SymPath _ name)) _ _ ->
-             case lookupInEnv path env of
-               Just (_, binder@(Binder xobj@(XObj _ (Just i) _))) ->
-                 do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
-                    when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
-                    return ctx
-               Just (_, binder@(Binder xobj)) ->
-                 do putStrLnWithColor White (show binder)
-                    when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
-                    return ctx
-               Nothing ->
-                 case multiLookupALL name env of
-                   [] ->
-                     do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                        return ctx
-                   binders ->
-                     do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
-                                 case i of
-                                   Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
-                                   Nothing -> putStrLnWithColor White (show binder))
-                          binders
-                        return ctx
+             -- First look in the type env, then in the global env:
+             do case lookupInEnv path (getTypeEnv typeEnv) of
+                  Nothing -> return ()
+                  found -> printer found
+                printer (lookupInEnv path env)
+                return ctx
+                  where printer binderPair =
+                         case binderPair of
+                           Just (_, binder@(Binder xobj@(XObj _ (Just i) _))) ->
+                             do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
+                                when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
+                                return ()
+                           Just (_, binder@(Binder xobj)) ->
+                             do putStrLnWithColor White (show binder)
+                                when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
+                                return ()
+                           Nothing ->
+                             case multiLookupALL name env of
+                               [] ->
+                                 do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                                    return ()
+                               binders ->
+                                 do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                                             case i of
+                                               Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
+                                               Nothing -> putStrLnWithColor White (show binder))
+                                      binders
+                                    return ()
            _ ->
              do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
                 return ctx
@@ -347,10 +354,10 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
              do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
                 return ctx
 
-       DefineInterface name typeXObj ->
+       DefineInterface name typeXObj i ->
          case xobjToTy typeXObj of
            Just t ->
-             let interface = defineInterface name t []
+             let interface = defineInterface name t [] i
                  typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) interface)
              in  return (ctx { contextTypeEnv = typeEnv' })
            Nothing ->

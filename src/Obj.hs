@@ -667,12 +667,12 @@ defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
 -- |
-defineInterface :: String -> Ty -> [SymPath] -> XObj
-defineInterface name t paths =
+defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
+defineInterface name t paths info =
   XObj (Lst [XObj (Interface t paths) Nothing Nothing
             ,XObj (Sym (SymPath [] name)) Nothing Nothing
             ])
-  (Just dummyInfo) (Just InterfaceTy)
+  info (Just InterfaceTy)
 
 -- | Find out if a type is "external", meaning it is not defined by the user
 --   in this program but instead imported from another C library or similar.

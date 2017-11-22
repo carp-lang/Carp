@@ -16,6 +16,7 @@ import qualified System.Environment as SystemEnvironment
 import System.IO (stdout)
 import System.Info (os)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import ColorText
 import Obj
 import Types
@@ -153,12 +154,13 @@ startingTypeEnv = Env { envBindings = bindings
                       , envMode = ExternalEnv
                       }
   where bindings = Map.fromList
-          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"]
+          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"] arrayModuleInfo
               -- TODO: Implement! ("=", Binder (defineInterface "=" (FuncTy [(VarTy "a"), (VarTy "a")] BoolTy)))
             ]
+        arrayModuleInfo = Info (-1) (-1) "Array" Set.empty (-1)
 
-interfaceBinder :: String -> Ty -> [SymPath] -> (String, Binder)
-interfaceBinder name t paths = (name, Binder (defineInterface name t paths))
+interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)
+interfaceBinder name t paths i = (name, Binder (defineInterface name t paths (Just i)))
 
 coreModules :: String -> [String]
 coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
