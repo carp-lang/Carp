@@ -132,7 +132,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 ]
 
 startingGlobalEnv :: Bool -> Env
-startingGlobalEnv noCore =
+startingGlobalEnv noArray =
   Env { envBindings = bindings,
         envParent = Nothing,
         envModuleName = Nothing,
@@ -143,7 +143,7 @@ startingGlobalEnv noCore =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
-                                  ] ++ (if noCore then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
+                                  ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
@@ -190,11 +190,12 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               projectWithFiles = defaultProject { projectFiles = argFilesToLoad }
               noCore = NoCore `elem` otherOptions
+              noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
-          context <- foldM executeCommand (Context (startingGlobalEnv noCore) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
+          context <- foldM executeCommand (Context (startingGlobalEnv noArray) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
                                           (map Load coreModulesToLoad)
           context' <- foldM executeCommand context (map Load argFilesToLoad)
           settings <- readlineSettings

@@ -99,35 +99,6 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++
             depsForDeleteFunc typeEnv env insideType)
 
--- templateReduce :: (String, Binder)
--- templateReduce = defineTypeParameterizedTemplate templateCreator path t
---   where
---     fTy = FuncTy [bTy, (RefTy aTy)] bTy
---     arrTy = StructTy "Array" [aTy]
---     aTy = VarTy "a"
---     bTy = VarTy "b"
---     path = SymPath ["Array"] "reduce"
---     t = (FuncTy [fTy, bTy, arrTy] bTy)
---     templateCreator = TemplateCreator $
---       \typeEnv env ->
---         Template
---         t
---         (const (toTemplate "$b $NAME($(Fn [b (Ref a)] a) f, $b initial_value, Array a)"))
---         (\(FuncTy [(FuncTy [_, _] _), _, _] _) ->
---            let deleter = insideArrayDeletion typeEnv env arrTy
---            in (toTemplate $ unlines $
---                 [ "$DECL { "
---                 , "    $b b = initial_value;"
---                 , "    for(int i = 0; i < a.len; ++i) {"
---                 , "        b = f(b, &((($a*)a.data)[i]));"
---                 , "    }"
---                 , "    " ++ deleter
---                 , "    return b;"
---                 , "}"
---                 ]))
---         (\(FuncTy [ft@(FuncTy [_, _] _), _, arrayType] _) ->
---            [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++ depsForDeleteFunc typeEnv env arrTy)
-
 templatePushBack :: (String, Binder)
 templatePushBack =
   let aTy = StructTy "Array" [VarTy "a"]
@@ -193,8 +164,10 @@ templateNth =
                         ,"    assert(n < a.len);"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
-  (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
+  (\(FuncTy [(RefTy arrayType), _] _) ->
+     [defineArrayTypeAlias arrayType])
 
+-- | TODO: Needs to call "depsForDeleteFunc typeEnv env arrayType"
 templateSort :: (String, Binder)
 templateSort =
   let t = VarTy "t"
@@ -206,9 +179,11 @@ templateSort =
                         ,"    qsort(a->data, a->len, sizeof($t), (int(*)(const void*, const void*))f);"
                         ,"    return a;"
                         ,"}"])
-  (\(FuncTy [arrayType, sortType] _) -> [defineFunctionTypeAlias sortType,
-                                         defineArrayTypeAlias arrayType])
+  (\(FuncTy [(RefTy arrayType), sortType] _) ->
+     [defineFunctionTypeAlias sortType
+     ,defineArrayTypeAlias arrayType])
 
+-- | TODO: Needs to call "depsForDeleteFunc typeEnv env arrayType"
 templateIndexOf :: (String, Binder)
 templateIndexOf =
   let t = VarTy "t"
@@ -225,6 +200,7 @@ templateIndexOf =
                         ,"}"])
   (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
 
+-- | TODO: Needs to call "depsForDeleteFunc typeEnv env arrayType"
 templateElemCount :: (String, Binder)
 templateElemCount =
   let t = VarTy "t"
@@ -330,7 +306,8 @@ templateAsetBang = defineTemplate
                         ,"    assert(n < a.len);"
                         ,"    (($t*)a.data)[n] = newValue;"
                         ,"}"])
-  (\(FuncTy [arrayType, _, _] _) -> [defineArrayTypeAlias arrayType])
+  (\(FuncTy [(RefTy arrayType), _, _] _) ->
+     [defineArrayTypeAlias arrayType])
 
 templateCount :: (String, Binder)
 templateCount = defineTemplate

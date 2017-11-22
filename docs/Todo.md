@@ -19,6 +19,7 @@
 * [1.0] Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
+* [0.3] Rename 'aset!' to 'set!'
 * [0.3] Good string functions
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.

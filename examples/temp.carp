@@ -1,6 +1,6 @@
 ;; (use IO)
-(use Int)
-(use Float)
+;;(use Int)
+;;(use Float)
 ;; (use Double)
 ;; (use Array)
 ;; (use System)
@@ -8,10 +8,28 @@
 ;; (use Char)
 ;; (use Bool)
 
+;;; Ranges of non-numbers (bug)
 ;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
 
-(defn f [a b]
-  (= @(Array.nth a 0) @(Array.nth b 0)))
+;;; Interfaces
+;; (defn f [a b]
+;;   (= @(Array.nth a 0) @(Array.nth b 0)))
 
-(defn main []
-  (IO.println &(Bool.str (f &[1 2 3] &[1 10 100]))))
+;; (defn main []
+;;   (IO.println &(Bool.str (f &[1 2 3] &[1 10 100]))))
+
+;;; Creating typedefs in all cases
+
+(load "Macros.carp")
+(load "Int.carp")
+(load "String.carp")
+(use Int)
+
+(defn g [x y]
+  (+ @x @y))
+
+(defn h []
+  123)
+
+(defn f [xs]
+  (Array.aset! &xs 1 @"hej"))
