@@ -32,4 +32,4 @@
   123)
 
 (defn f [xs]
-  (Array.aset! &xs 1 @"hej"))
+  (Array.copy &(the (Array Foo) xs)))
