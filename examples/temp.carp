@@ -1,6 +1,6 @@
 ;; (use IO)
-;;(use Int)
-;;(use Float)
+(use Int)
+(use Float)
 ;; (use Double)
 ;; (use Array)
 ;; (use System)
@@ -20,16 +20,8 @@
 
 ;;; Creating typedefs in all cases
 
-(load "Macros.carp")
-(load "Int.carp")
-(load "String.carp")
-(use Int)
-
 (defn g [x y]
   (+ @x @y))
 
-(defn h []
-  123)
-
 (defn f [xs]
-  (Array.copy &(the (Array Foo) xs)))
+  (Array.element-count &xs 123))
