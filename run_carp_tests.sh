@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e; # will make the script stop if there are any errors
+
 stack build;
 stack install;
 
