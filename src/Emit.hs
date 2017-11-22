@@ -83,7 +83,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Dynamic -> error (show (DontVisitObj Dynamic))
             The -> error (show (DontVisitObj The))
             Ref -> error (show (DontVisitObj Ref))
-            e@(Interface _) -> error (show (DontVisitObj e))
+            e@(Interface _ _) -> error (show (DontVisitObj e))
 
         visitString indent (XObj (Str str) (Just i) _) =
           -- | This will allocate a new string every time the code runs:
@@ -279,7 +279,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
               return ""
 
             -- Interface
-            XObj (Interface _) _ _ : _ ->
+            XObj (Interface _ _) _ _ : _ ->
               return ""
 
             -- Function application
@@ -407,7 +407,7 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       in templateToDeclaration template path t'
     [XObj (Defalias aliasTy) _ _, XObj (Sym path) _ _] ->
       defaliasToDeclaration aliasTy path
-    [XObj (Interface _) _ _, _] ->
+    [XObj (Interface _ _) _ _, _] ->
       ""
     XObj External _ _ : _ ->
       ""

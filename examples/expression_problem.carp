@@ -16,3 +16,6 @@
 ;; Now I want to use 'Young.=' in with 'Ur.compare'
 (defn f []
   (Ur.compare &(Young.init 100) &(Young.init 200)))
+
+(defn main []
+  (IO.println &(Bool.str (f))))

@@ -38,7 +38,7 @@ data Obj = Sym SymPath
          | Dynamic
          | The
          | Ref
-         | Interface Ty
+         | Interface Ty [SymPath]
          deriving (Show, Eq)
 
 newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
@@ -97,7 +97,7 @@ getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _) _ _ : _)) 
 getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj Typ _ _ : XObj (Sym _) _ _ : _)) _ _) = "deftype"
-getBinderDescription (XObj (Lst (XObj (Interface _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "interface"
 getBinderDescription _ = "?"
 
 getName :: XObj -> String
@@ -114,6 +114,7 @@ getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path) _ _ : _)) _ _) = pat
 getPath (XObj (Lst (XObj External _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
 getPath (XObj (Sym path) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -163,7 +164,7 @@ pretty = visit 0
             Dynamic -> "dynamic"
             The -> "the"
             Ref -> "ref"
-            Interface _ -> "interface"
+            Interface _ _ -> "interface"
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
@@ -192,6 +193,10 @@ showBinderIndented :: Int -> (String, Binder) -> String
 showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n" ++
   prettyEnvironmentIndented (indent + 4) env ++
+  "\n" ++ replicate indent ' ' ++ "}"
+showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface _ paths) _ _, _]) _ _)) =
+  replicate indent ' ' ++ name ++ " : Interface = {\n    " ++
+  joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
@@ -663,7 +668,7 @@ defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
 -- |
 defineInterface :: String -> Ty -> XObj
-defineInterface name t = XObj (Lst [XObj (Interface t) Nothing Nothing
+defineInterface name t = XObj (Lst [XObj (Interface t []) Nothing Nothing
                                    ,XObj (Sym (SymPath [] name)) Nothing Nothing
                                    ]) (Just dummyInfo) (Just InterfaceTy)
 

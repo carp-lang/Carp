@@ -110,8 +110,13 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
     visitSymbol _ _ = error "Not a symbol."
 
     visitMultiSym :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitMultiSym env xobj@(XObj (MultiSym originalSymbolName paths) i t) =
+    visitMultiSym env xobj@(XObj (MultiSym originalSymbolName paths_not_needed_anymore) i t) =
       let Just actualType = t
+          paths = case lookupInEnv (SymPath [] originalSymbolName) (getTypeEnv typeEnv) of
+                    Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
+                        interfacePaths
+                    Nothing ->
+                        paths_not_needed_anymore -- TODO: Remove?!
           tys = map (typeFromPath env) paths
           tysToPathsDict = zip tys paths
       in  case filter (matchingSignature actualType) tysToPathsDict of

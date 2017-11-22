@@ -157,7 +157,29 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
            putStrLn (toC annXObj)
-         return (ctx { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+         let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
+         return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+
+registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
+registerDefnInInterfaceIfNeeded ctx xobj =
+  case xobj of
+    XObj (Lst [XObj Defn _ _, XObj (Sym path) _ _, _, _]) _ _ ->
+      -- This is a function, does it belong to an interface?
+      registerInInterfaceIfNeeded ctx path
+    _ ->
+      ctx
+
+registerInInterfaceIfNeeded :: Context -> SymPath -> Context
+registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
+  let typeEnv = (getTypeEnv (contextTypeEnv ctx))
+  in case lookupInEnv (SymPath [] name) typeEnv of
+       Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
+         let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
+         in  ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
+       Just (_, Binder x) ->
+         error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+       Nothing ->
+         ctx
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
@@ -292,7 +314,8 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                               XObj (Sym path) Nothing Nothing])
                                    (info xobj) (Just t)
                          env' = envInsertAt env path binding
-                     in  return (ctx { contextGlobalEnv = env' })
+                         ctx' = registerInInterfaceIfNeeded ctx path
+                     in  return (ctx' { contextGlobalEnv = env' })
            Nothing -> do putStrLnWithColor Red ("Can't understand type when registering '" ++ name ++ "'")
                          return ctx
 

@@ -109,7 +109,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
       do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                      Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+                      Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
                       Just (_, Binder x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
                       Nothing -> genVarTy
          return (Right xobj { ty = Just freshTy })
