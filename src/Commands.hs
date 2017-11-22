@@ -1,6 +1,6 @@
 module Commands where
 
-import System.Exit (exitSuccess)
+import System.Exit (exitSuccess, exitFailure)
 import System.Process (callCommand)
 import System.Directory
 import qualified Data.Map as Map
@@ -20,11 +20,16 @@ import Template
 import Util
 import Eval
 
+-- | How should the compiler be run? Interactively or just build / build & run and then quit?
+data ExecutionMode = Repl | Build | BuildAndRun deriving Show
+
+-- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env
                        , contextTypeEnv :: TypeEnv
                        , contextPath :: [String]
                        , contextProj :: Project
                        , contextLastInput :: String
+                       , contextExecMode :: ExecutionMode
                        } deriving Show
 
 data ReplCommand = Define XObj
@@ -68,7 +73,7 @@ printTypedAST :: Bool
 printTypedAST = True
 
 consumeExpr :: Context -> XObj -> ReplCommand
-consumeExpr (Context globalEnv typeEnv _ _ _) xobj =
+consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =
   case expandAll globalEnv xobj of
     Left err -> ReplMacroError (show err)
     Right expanded ->
@@ -140,7 +145,7 @@ charToCommand 'q' = Just Quit
 charToCommand _ = Nothing
 
 define :: Context -> XObj -> IO Context
-define ctx@(Context globalEnv typeEnv _ proj _) annXObj =
+define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   -- Sort different kinds of definitions into the globalEnv or the typeEnv:
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
@@ -156,7 +161,7 @@ popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
 
 executeCommand :: Context -> ReplCommand -> IO Context
-executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
+executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd =
 
   do when (isJust (envModuleName env)) $
        compilerError ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
@@ -177,7 +182,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
        DefineModule moduleName innerExpressions moduleInfoFromSourceLocation ->
          case lookupInEnv (SymPath pathStrings moduleName) env of
            Just (_, Binder (XObj (Mod _) _ _)) ->
-             do ctxAfterModuleAdditions <- foldM folder (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput) innerExpressions
+             do ctxAfterModuleAdditions <- foldM folder (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
                 return (popModulePath ctxAfterModuleAdditions)
            Just _ ->
              do putStrLnWithColor Red ("Can't redefine '" ++ moduleName ++ "' as module.")
@@ -187,7 +192,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
                     innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
                     newModule = XObj (Mod innerEnv) moduleInfoFromSourceLocation (Just ModuleTy)
                     globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
-                ctxAfterModuleDef <- foldM folder (Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput) innerExpressions
+                ctxAfterModuleDef <- foldM folder (Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
                 return (popModulePath ctxAfterModuleDef)
 
        DefineType nameXObj rest ->
@@ -624,7 +629,10 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput) cmd =
 
 catcher :: Context -> IOException -> IO Context
 catcher ctx err = do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ show err)
-                     return ctx
+                     case contextExecMode ctx of
+                       Repl -> return ctx
+                       Build -> exitFailure
+                       BuildAndRun -> exitFailure
 
 executeString :: Context -> String -> String -> IO Context
 executeString ctx input fileName = catch exec (catcher ctx)

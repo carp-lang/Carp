@@ -163,9 +163,6 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       , "System"
                                                                       ]
 
--- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun deriving Show
-
 -- | Other options for how to run the compiler
 data OtherOptions = NoCore deriving (Show, Eq)
 
@@ -195,7 +192,13 @@ main = do putStrLn "Welcome to Carp 0.2.0"
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
-          context <- foldM executeCommand (Context (startingGlobalEnv noArray) (TypeEnv startingTypeEnv) [] projectWithCarpDir "")
+          context <- foldM executeCommand (Context
+                                            (startingGlobalEnv noArray)
+                                            (TypeEnv startingTypeEnv)
+                                            []
+                                            projectWithCarpDir
+                                            ""
+                                            execMode)
                                           (map Load coreModulesToLoad)
           context' <- foldM executeCommand context (map Load argFilesToLoad)
           settings <- readlineSettings
