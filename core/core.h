@@ -10,20 +10,29 @@
 #include <assert.h>
 #include <limits.h>
 
+#define LOG_MEMORY 1
+
+#if LOG_MEMORY
+int malloc_balance_counter = 0;
+
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
     printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    malloc_balance_counter++;
     return ptr;
 }
 
 void logged_free(void *ptr) {
     printf("FREE: %p\n", ptr);
     free(ptr);
+    malloc_balance_counter--;
+    if(malloc_balance_counter == 0) {
+        printf("malloc is balanced! (this should be the last thing you see)\n");
+    }
+    else if(malloc_balance_counter < 0) {
+        printf("malloc is %d, that is bad!\n", malloc_balance_counter);
+    }
 }
-
-#define LOG_MEMORY 0
-
-#if LOG_MEMORY
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
 #else
@@ -217,7 +226,7 @@ char* String_cstr(string *s) {
 
 string String_str(string *s) {
     int n = strlen(*s) + 4;
-    string buffer = malloc(n);
+    string buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "@\"%s\"", *s);
     return buffer;
 }
@@ -230,7 +239,7 @@ Array String_chars(string *s) {
 }
 
 string String_from_MINUS_chars(Array a) {
-    string s = malloc(a.len+1);
+    string s = CARP_MALLOC(a.len+1);
     snprintf(s, a.len+1, "%s", a.data);
     return s;
 }

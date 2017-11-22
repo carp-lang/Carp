@@ -485,9 +485,9 @@ insideArrayStr typeEnv env t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
-                  , "  bufferPtr += strlen(temp) + 1;"
-                  , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                  , "    snprintf(bufferPtr, 1024, \"%s \", temp);"
+                  , "    bufferPtr += strlen(temp) + 1;"
+                  , "    if(temp) { CARP_FREE(temp); temp = NULL; }"
                   ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"

@@ -20,8 +20,15 @@
 
 ;;; Creating typedefs in all cases
 
-(defn g [x y]
-  (+ @x @y))
+;; (defn g [x y]
+;;   (+ @x @y))
 
-(defn f [xs]
-  (Array.element-count &xs 123))
+;; (defn f [xs]
+;;   (Array.element-count &xs 123))
+
+(defn f [x] (Int.str @x))
+
+(defn main []
+  (let [xs [1 -2 -3 4 -5]
+        ys (Array.copy-map f &xs)]
+    (IO.println &(Array.str &ys))))
