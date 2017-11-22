@@ -12,9 +12,7 @@
 
 typedef char* string;
 
-#define LOG_MEMORY 0
-
-#if LOG_MEMORY
+#ifdef LOG_MEMORY
 int malloc_balance_counter = 0;
 
 void *logged_malloc(size_t size) {

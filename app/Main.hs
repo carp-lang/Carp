@@ -164,7 +164,7 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       ]
 
 -- | Other options for how to run the compiler
-data OtherOptions = NoCore deriving (Show, Eq)
+data OtherOptions = NoCore | LogMemory deriving (Show, Eq)
 
 -- | Parse the arguments sent to the compiler from the terminal
 parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
@@ -176,6 +176,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
             "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
+            "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
 
 main :: IO ()
@@ -185,7 +186,11 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
-              projectWithFiles = defaultProject { projectFiles = argFilesToLoad }
+              logMemory = LogMemory `elem` otherOptions
+              projectWithFiles = defaultProject { projectFiles = argFilesToLoad
+                                                , projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
+                                                                  (projectCFlags defaultProject)
+                                                }
               noCore = NoCore `elem` otherOptions
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
