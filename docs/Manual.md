@@ -38,7 +38,7 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 ### Compiler flags
 When invoking the compiler from the command line you can supply the following flags to configure the behaviour:
 
-```-b``` Build the code, then quit the compiler.
-```-x``` Build and run the code (make sure it has a main function defined), then quit the compiler.
-```--no-core``` Run the compiler without loading any of the core libraries.
-```--log-memory``` The executable will log all calls to malloc and free.
+* ```-b``` Build the code, then quit the compiler.
+* ```-x``` Build and run the code (make sure it has a main function defined), then quit the compiler.
+* ```--no-core``` Run the compiler without loading any of the core libraries.
+* ```--log-memory``` The executable will log all calls to malloc and free.
