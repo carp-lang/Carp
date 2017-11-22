@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <limits.h>
 
-#define LOG_MEMORY 1
+#define LOG_MEMORY 0
 
 #if LOG_MEMORY
 int malloc_balance_counter = 0;
@@ -189,6 +189,7 @@ string String_copy(string *s) {
     char *ptr = strdup(*s);
     #if LOG_MEMORY
     printf("STRDUP: %p\n", ptr);
+    malloc_balance_counter++;
     #endif
     return ptr;
 }

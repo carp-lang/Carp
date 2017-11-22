@@ -1,4 +1,4 @@
-;; (use IO)
+(use IO)
 (use Int)
 (use Float)
 ;; (use Double)
@@ -26,9 +26,13 @@
 ;; (defn f [xs]
 ;;   (Array.element-count &xs 123))
 
-(defn f [x] (Int.str @x))
+(deftype Person
+    [name String
+     age Int])
+
+(defn use-person []
+  (let [me (Person.init (String.copy "Erik") 30)]
+    (println (Person.name (ref me)))))
 
 (defn main []
-  (let [xs [1 -2 -3 4 -5]
-        ys (Array.copy-map f &xs)]
-    (IO.println &(Array.str &ys))))
+  (use-person))
