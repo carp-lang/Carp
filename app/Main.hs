@@ -146,7 +146,19 @@ startingGlobalEnv noArray =
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env
-startingTypeEnv = Env { envBindings = Map.empty, envParent = Nothing, envModuleName = Nothing, envUseModules = [], envMode = ExternalEnv }
+startingTypeEnv = Env { envBindings = bindings
+                      , envParent = Nothing
+                      , envModuleName = Nothing
+                      , envUseModules = []
+                      , envMode = ExternalEnv
+                      }
+  where bindings = Map.fromList
+          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"]
+              -- TODO: Implement! ("=", Binder (defineInterface "=" (FuncTy [(VarTy "a"), (VarTy "a")] BoolTy)))
+            ]
+
+interfaceBinder :: String -> Ty -> [SymPath] -> (String, Binder)
+interfaceBinder name t paths = (name, Binder (defineInterface name t paths))
 
 coreModules :: String -> [String]
 coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"

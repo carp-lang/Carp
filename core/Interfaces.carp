@@ -1,2 +1,2 @@
 (definterface = (λ [a a] Bool))
-(definterface copy (λ [&a] a))
+;;(definterface copy (λ [&a] a)) ;; This is defined internally now! Don't override it.

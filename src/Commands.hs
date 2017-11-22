@@ -350,7 +350,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
        DefineInterface name typeXObj ->
          case xobjToTy typeXObj of
            Just t ->
-             let interface = defineInterface name t
+             let interface = defineInterface name t []
                  typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) interface)
              in  return (ctx { contextTypeEnv = typeEnv' })
            Nothing ->
