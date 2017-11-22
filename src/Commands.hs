@@ -1,7 +1,9 @@
 module Commands where
 
-import System.Exit (exitSuccess, exitFailure)
-import System.Process (callCommand)
+import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.Process (callCommand, spawnCommand, waitForProcess)
+import System.IO (hPutStr)
+import Control.Concurrent (forkIO)
 import System.Directory
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -411,8 +413,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
        RunExe ->
          let outDir = projectOutDir proj
              outExe = outDir ++ "a.out"
-         in  do callCommand outExe
-                return ctx
+         in  do handle <- spawnCommand outExe
+                exitCode <- waitForProcess handle
+                case exitCode of
+                  ExitSuccess -> return ctx
+                  ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
 
        Cat ->
          let outDir = projectOutDir proj
@@ -627,12 +632,17 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 
        ListOfCommands commands -> foldM executeCommand ctx commands
 
-catcher :: Context -> IOException -> IO Context
-catcher ctx err = do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ show err)
-                     case contextExecMode ctx of
-                       Repl -> return ctx
-                       Build -> exitFailure
-                       BuildAndRun -> exitFailure
+data ShellOutException = ShellOutException { message :: String, returnCode :: Int } deriving (Eq, Show)
+
+instance Exception ShellOutException
+
+catcher :: Context -> ShellOutException -> IO Context
+catcher ctx (ShellOutException message returnCode) =
+  do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ message)
+     case contextExecMode ctx of
+       Repl -> return ctx
+       Build -> exitWith (ExitFailure returnCode)
+       BuildAndRun -> exitWith (ExitFailure returnCode)
 
 executeString :: Context -> String -> String -> IO Context
 executeString ctx input fileName = catch exec (catcher ctx)
