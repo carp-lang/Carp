@@ -16,13 +16,13 @@ carp ./examples/array.carp;
 carp ./examples/updating.carp;
 carp ./examples/external_struct.carp;
 
-carp ./test/double_math.carp -x;
-carp ./test/float_math.carp -x;
-carp ./test/int_math.carp -x;
-carp ./test/safe_artihmetic.carp -x;
-carp ./test/statistics.carp -x;
-carp ./test/vector2.carp -x;
-carp ./test/vector3.carp -x;
-carp ./test/vectorn.carp -x;
+carp ./test/double_math.carp -b; ./out/a.out;
+carp ./test/float_math.carp -b; ./out/a.out;
+carp ./test/int_math.carp -b; ./out/a.out;
+carp ./test/safe_artihmetic.carp -b; ./out/a.out;
+carp ./test/statistics.carp -b; ./out/a.out;
+carp ./test/vector2.carp -b; ./out/a.out;
+carp ./test/vector3.carp -b; ./out/a.out;
+carp ./test/vectorn.carp -b; ./out/a.out;
 
 carp ./examples/game.carp -b;

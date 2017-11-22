@@ -204,4 +204,5 @@ main = do putStrLn "Welcome to Carp 0.2.0"
             Build -> do _ <- executeString context' ":b" "Compiler (Build)"
                         return ()
             BuildAndRun -> do _ <- executeString context' ":bx" "Compiler (Build & Run)"
+                              -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
