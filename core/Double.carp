@@ -1,6 +1,6 @@
 (defmodule Double
-  (def π 3.1415926536)
-  (def e 2.7182818285)
+  (def π 3.141592653589793)
+  (def e 2.718281828459045)
   (register = (Fn [Double Double] Bool))
   (register < (Fn [Double Double] Bool))
   (register > (Fn [Double Double] Bool))
