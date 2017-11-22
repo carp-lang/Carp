@@ -1,0 +1,18 @@
+(use Int)
+(use IO)
+
+;; Ur is created first and will not know about any other modules
+(defmodule Ur
+  (defn compare [a b]
+    (= a b)))
+
+;; Young is created later
+(deftype Young [age Int])
+
+(defmodule Young
+  (defn = [y1 y2]
+    (Int.= (age y1) (age y2))))
+
+;; Now I want to use 'Young.=' in with 'Ur.compare'
+(defn f []
+  (Ur.compare &(Young.init 100) &(Young.init 200)))
