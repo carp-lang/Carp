@@ -449,7 +449,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
              t
              (const (toTemplate "string $NAME (Array* a)"))
              (\(FuncTy [RefTy arrayType] StringTy) ->
-                [TokDecl, TokC "{\n"] ++
+                [TokDecl, TokC " {\n"] ++
                 strTy typeEnv env arrayType ++
                 [TokC "}\n"])
              (\(FuncTy [RefTy arrayType@(StructTy "Array" [insideType])] StringTy) ->
