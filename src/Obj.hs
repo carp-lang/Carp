@@ -194,8 +194,8 @@ showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n" ++
   prettyEnvironmentIndented (indent + 4) env ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface _ paths) _ _, _]) _ _)) =
-  replicate indent ' ' ++ name ++ " : Interface = {\n    " ++
+showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
+  replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    " ++
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
