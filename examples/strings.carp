@@ -1,11 +1,12 @@
 (use Char)
+(use Array)
 
 (defn print-char [c]
-  (IO.println (refstr c)))
+  (IO.println &(Char.str (Char.copy c))))
 
 (defn to-robber-lang [s]
   (let [cs (String.chars s)]
-    (Array.foreach print-char &cs)))
+    (foreach print-char cs)))
 
 (defn main []
   (to-robber-lang "erik"))

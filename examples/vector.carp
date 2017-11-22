@@ -1,3 +1,6 @@
+(load "Vector.carp")
+(load "Geometry.carp")
+
 (use IO)
 (use Vector2)
 (use Geometry)

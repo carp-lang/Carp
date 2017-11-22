@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <limits.h>
 
+typedef char* string;
+
 #define LOG_MEMORY 0
 
 #if LOG_MEMORY
@@ -18,6 +20,13 @@ int malloc_balance_counter = 0;
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
     printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    malloc_balance_counter++;
+    return ptr;
+}
+
+string logged_strdup(string s) {
+    string ptr = strdup(s);
+    printf("STRDUP: %p\n", ptr);
     malloc_balance_counter++;
     return ptr;
 }
@@ -33,14 +42,18 @@ void logged_free(void *ptr) {
         printf("malloc is %d, that is bad!\n", malloc_balance_counter);
     }
 }
+
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
+#define CARP_STRDUP(ptr) logged_strdup(ptr)
+
 #else
+
+#define CARP_STRDUP(s) strdup(s)
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
-#endif
 
-typedef char* string;
+#endif
 
 // Array
 typedef struct {
@@ -186,11 +199,7 @@ void String_delete(string s) {
 }
 
 string String_copy(string *s) {
-    char *ptr = strdup(*s);
-    #if LOG_MEMORY
-    printf("STRDUP: %p\n", ptr);
-    malloc_balance_counter++;
-    #endif
+    char *ptr = CARP_STRDUP(*s);
     return ptr;
 }
 
@@ -218,7 +227,7 @@ int String_count(string *s) {
 
 // Replace with 'copy' later:
 string String_duplicate(string *s) {
-    return strdup(*s);
+    return CARP_STRDUP(*s);
 }
 
 char* String_cstr(string *s) {
@@ -235,7 +244,7 @@ string String_str(string *s) {
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
-    chars.data = strdup(*s);
+    chars.data = CARP_STRDUP(*s);
     return chars;
 }
 
@@ -257,6 +266,10 @@ int Char_to_MINUS_int(char c) {
 
 char Char_from_MINUS_int(int i) {
   return (char)i;
+}
+
+char Char_copy(char *c) {
+  return *c;
 }
 
 // Double.toInt : Double -> Int
@@ -477,9 +490,9 @@ bool Bool__DIV__EQ_(bool a, bool b) {
 
 string Bool_str(bool b) {
     if(b) {
-        return strdup("true");
+        return CARP_STRDUP("true");
     } else {
-        return strdup("false");
+        return CARP_STRDUP("false");
     }
 }
 

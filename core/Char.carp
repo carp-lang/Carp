@@ -2,4 +2,5 @@
   (register str (Fn [Char] String))
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
+  (register copy (Fn [&Char] Char))
 )

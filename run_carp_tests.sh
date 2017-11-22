@@ -15,6 +15,7 @@ carp ./examples/vec2.carp;
 carp ./examples/array.carp;
 carp ./examples/updating.carp;
 carp ./examples/external_struct.carp;
+carp ./examples/strings.carp -x;
 
 carp ./test/double_math.carp -b; ./out/a.out;
 carp ./test/float_math.carp -b; ./out/a.out;
