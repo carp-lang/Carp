@@ -42,3 +42,6 @@ When invoking the compiler from the command line you can supply the following fl
 * ```-x``` Build and run the code (make sure it has a main function defined), then quit the compiler.
 * ```--no-core``` Run the compiler without loading any of the core libraries.
 * ```--log-memory``` The executable will log all calls to malloc and free.
+
+### Adding search paths
+Use `(project-set! search-path "path/to/directory/")` to add more search paths. These will be available for the `(load ...)` command.

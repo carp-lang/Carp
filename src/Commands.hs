@@ -72,7 +72,7 @@ data ReplCommand = Define XObj
                  deriving Show
 
 printTypedAST :: Bool
-printTypedAST = True
+printTypedAST = False
 
 consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =
@@ -381,6 +381,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
            "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
            "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
            "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
+           "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent value (projectCarpSearchPaths proj) } }
            _ ->
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx
