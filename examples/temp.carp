@@ -1,6 +1,6 @@
-(use IO)
-(use Int)
-(use Float)
+;; (use IO)
+;; (use Int)
+;; (use Float)
 ;; (use Double)
 ;; (use Array)
 ;; (use System)
@@ -26,13 +26,5 @@
 ;; (defn f [xs]
 ;;   (Array.element-count &xs 123))
 
-(deftype Person
-    [name String
-     age Int])
-
-(defn use-person []
-  (let [me (Person.init (String.copy "Erik") 30)]
-    (println (Person.name (ref me)))))
-
-(defn main []
-  (use-person))
+(defn f [x]
+  (IO.println (ref (Float.str @x))))

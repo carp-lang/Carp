@@ -458,56 +458,60 @@ setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 -- | Changes all symbols EXCEPT bound vars (defn names, variable names, etc) to their fully qualified paths.
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
 -- | This function does NOT go into function-body scope environments and the like.
-setFullyQualifiedSymbols :: Env -> XObj -> XObj
-setFullyQualifiedSymbols env (XObj (Lst [defn@(XObj Defn _ _),
-                                         sym@(XObj (Sym (SymPath _ functionName)) _ _),
-                                         args@(XObj (Arr argsArr) _ _),
-                                         body])
-                               i t) =
+setFullyQualifiedSymbols :: TypeEnv -> Env -> XObj -> XObj
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [defn@(XObj Defn _ _),
+                                                 sym@(XObj (Sym (SymPath _ functionName)) _ _),
+                                                 args@(XObj (Arr argsArr) _ _),
+                                                 body])
+                                      i t) =
   -- For self-recursion, there must be a binding to the function in the inner env.
   -- Note: This inner env is ephemeral since it is not stored in a module or global scope.
   let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
       envWithSelf = extendEnv functionEnv functionName sym
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
-  in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols envWithArgs body]) i t
-setFullyQualifiedSymbols env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
-  let value' = setFullyQualifiedSymbols env value
+  in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv envWithArgs body]) i t
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
+  let value' = setFullyQualifiedSymbols typeEnv env value
   in  XObj (Lst [the, typeXObj, value']) i t
-setFullyQualifiedSymbols env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
-  let expr' = setFullyQualifiedSymbols env expr
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
+  let expr' = setFullyQualifiedSymbols typeEnv env expr
   in  XObj (Lst [def, sym, expr']) i t
-setFullyQualifiedSymbols env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
   if even (length bindings)
   then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
            envWithBindings = foldl' (\e (binderSym@(XObj (Sym (SymPath _ binderName)) _ _), _) ->
                                        extendEnv e binderName binderSym)
                                     innerEnv
                                     (pairwise bindings)
-           newBinders = XObj (Arr (concatMap (\(s, o) -> [s, setFullyQualifiedSymbols envWithBindings o])
+           newBinders = XObj (Arr (concatMap (\(s, o) -> [s, setFullyQualifiedSymbols typeEnv envWithBindings o])
                                    (pairwise bindings))) bindi bindt
-           newBody = setFullyQualifiedSymbols envWithBindings body
+           newBody = setFullyQualifiedSymbols typeEnv envWithBindings body
        in  XObj (Lst [letExpr, newBinders, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
-setFullyQualifiedSymbols env (XObj (Lst xobjs) i t) =
-  let xobjs' = map (setFullyQualifiedSymbols env) xobjs
+setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
+  let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols env xobj@(XObj (Sym path) i t) =
-  case multiLookupQualified path env of
-    [] -> xobj
-    [(_, Binder foundOne)] -> XObj (Sym (getPath foundOne)) i t
-    multiple ->
-      case filter (not . envIsExternal . fst) multiple of
-      -- There is at least one local binding, use the path of that one:
-        (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
-      -- There are no local bindings, this is allowed to become a multi lookup symbol:
-        _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
-          case path of
-            (SymPath [] name) -> XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t -- Create a MultiSym!
-            pathWithQualifiers -> trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t) -- The symbol IS qualified but can't be found, should produce an error later during compilation.
-setFullyQualifiedSymbols env xobj@(XObj (Arr array) i t) =
-  let array' = map (setFullyQualifiedSymbols env) array
+setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path@(SymPath _ name)) i t) =
+  -- First look for a matching interface
+  case lookupInEnv path (getTypeEnv typeEnv) of
+    Just found -> XObj (MultiSym name []) i t -- Create an empty multisym. TODO: Should be it's own kind of Sym maybe?
+    Nothing ->
+      case multiLookupQualified path env of
+        [] -> xobj
+        [(_, Binder foundOne)] -> XObj (Sym (getPath foundOne)) i t
+        multiple ->
+          case filter (not . envIsExternal . fst) multiple of
+          -- There is at least one local binding, use the path of that one:
+            (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
+          -- There are no local bindings, this is allowed to become a multi lookup symbol:
+            _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
+              case path of
+                (SymPath [] name) -> XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t -- Create a MultiSym!
+                pathWithQualifiers -> trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t) -- The symbol IS qualified but can't be found, should produce an error later during compilation.
+setFullyQualifiedSymbols typeEnv env xobj@(XObj (Arr array) i t) =
+  let array' = map (setFullyQualifiedSymbols typeEnv env) array
   in  XObj (Arr array') i t
-setFullyQualifiedSymbols _ xobj = xobj
+setFullyQualifiedSymbols _ _ xobj = xobj
 
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String

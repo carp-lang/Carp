@@ -79,7 +79,7 @@ consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =
   case expandAll globalEnv xobj of
     Left err -> ReplMacroError (show err)
     Right expanded ->
-      case annotate typeEnv globalEnv (setFullyQualifiedSymbols globalEnv expanded) of
+      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
         Left err -> ReplTypeError (show err)
         Right annXObjs -> ListOfCommands (map printC annXObjs)
 
@@ -198,7 +198,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                Left err -> executeCommand ctx (ReplMacroError (show err))
                Right expanded ->
                  let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
-                     xobjFullSymbols = setFullyQualifiedSymbols innerEnv xobjFullPath
+                     xobjFullSymbols = setFullyQualifiedSymbols typeEnv innerEnv xobjFullPath
                  in case annotate typeEnv env xobjFullSymbols of
                       Left err -> executeCommand ctx (ReplTypeError (show err))
                       Right annXObjs -> foldM define ctx annXObjs
