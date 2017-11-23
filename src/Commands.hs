@@ -230,7 +230,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                      ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
                                  , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                                  })
-                 in foldM define ctx' deps
+                 in do ctxWithDeps <- foldM define ctx' deps
+                       return $ foldl (\context path -> registerInInterfaceIfNeeded context path) ctxWithDeps
+                         [(SymPath (pathStrings ++ [typeModuleName]) "str")
+                         ,(SymPath (pathStrings ++ [typeModuleName]) "copy")
+                         ]
                Left errorMessage ->
                  do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
                     return ctx

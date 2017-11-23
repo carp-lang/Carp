@@ -154,10 +154,11 @@ startingTypeEnv = Env { envBindings = bindings
                       , envMode = ExternalEnv
                       }
   where bindings = Map.fromList
-          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"] arrayModuleInfo
+          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"] builtInSymbolInfo
+            , interfaceBinder "str" (FuncTy [(VarTy "a")] StringTy) [SymPath ["Array"] "str"] builtInSymbolInfo
               -- TODO: Implement! ("=", Binder (defineInterface "=" (FuncTy [(VarTy "a"), (VarTy "a")] BoolTy)))
             ]
-        arrayModuleInfo = Info (-1) (-1) "Array" Set.empty (-1)
+        builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
 
 interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)
 interfaceBinder name t paths i = (name, Binder (defineInterface name t paths (Just i)))
