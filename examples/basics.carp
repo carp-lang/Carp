@@ -50,7 +50,7 @@
 (defn more-array []
   (let [xs [1 2 3 4]
         xs2 (pop-back xs)]
-    (do      
+    (do
       (println (refstr &(push-back xs2 500))))))
 
 (defn using-the-form-to-specialize [x y]
@@ -143,20 +143,6 @@
       (println (ref (Simple.str &s)))
       (println (ref (Complex.str &c))))))
 
-(deftype Thing [x Int y Bool])
-
-(defn turn-any-array-into-string []
-  (let [a [(Thing.init 10 false) (Thing.init 20 true)]
-        b [1 2 3 4 5]
-        c (the (Array Bool) [])
-        d [[4.3f 2.1f] [0.1f 0.2f 0.3f]]]
-    (do
-      (println &(Array.str &a))
-      (println &(Array.str &b))
-      (println &(Array.str &c))
-      (println &(Array.str &d))
-      )))
-
 (deftype Inner [])
 (deftype Outer [as (Array Inner)])
 (defn convert-struct-with-array-member-to-string []
@@ -211,7 +197,7 @@
         (println &(Array.str &(endo-map exclaim stuff))))
       (print-structs)
       (print-random-floats)
-      (turn-any-array-into-string)
+      ;;(turn-any-array-into-string) <- BUGGY FOR NOW!
       (convert-struct-with-array-member-to-string)
       (threading)
       ))

@@ -72,7 +72,7 @@ data ReplCommand = Define XObj
                  deriving Show
 
 printTypedAST :: Bool
-printTypedAST = False
+printTypedAST = True
 
 consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =

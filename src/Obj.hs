@@ -491,22 +491,47 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(X
 setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path@(SymPath _ name)) i t) =
-  case multiLookupQualified path env of
-    [] -> xobj
-    [(_, Binder foundOne)] ->
+setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path) i t) =
+  case path of
+    -- Unqualified:
+    SymPath [] name ->
       case lookupInEnv path (getTypeEnv typeEnv) of
-        Just found -> XObj (MultiSym name []) i t -- Create an empty multisym. TODO: Should be it's own kind of Sym maybe?
-        Nothing -> XObj (Sym (getPath foundOne)) i t
-    multiple ->
-      case filter (not . envIsExternal . fst) multiple of
-      -- There is at least one local binding, use the path of that one:
-        (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
-      -- There are no local bindings, this is allowed to become a multi lookup symbol:
-        _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
-          case path of
-            (SymPath [] name) -> XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t -- Create a MultiSym!
-            pathWithQualifiers -> trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t) -- The symbol IS qualified but can't be found, should produce an error later during compilation.
+        Just found ->
+          -- Found an interface with the same path!
+          -- Have to ensure it's not a local variable with the same name as the interface
+          case lookupInEnv path env of
+            Just (foundEnv, _) ->
+              if envIsExternal foundEnv
+              then emptyMultiSym name
+              else doesNotBelongToAnInterface
+            Nothing ->
+              --trace ("Will turn " ++ show path ++ " into an empty multi sym (found no local symbol with same name)")
+              emptyMultiSym name
+        Nothing ->
+          doesNotBelongToAnInterface
+    -- Qualified:
+    _ ->
+      doesNotBelongToAnInterface
+  where
+    emptyMultiSym name = XObj (MultiSym name []) i t -- TODO: Should be it's own kind of Sym maybe?
+    doesNotBelongToAnInterface =
+      case multiLookupQualified path env of
+          [] -> xobj
+          [(_, Binder foundOne)] ->
+            XObj (Sym (getPath foundOne)) i t
+          multiple ->
+            case filter (not . envIsExternal . fst) multiple of
+            -- There is at least one local binding, use the path of that one:
+              (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
+            -- There are no local bindings, this is allowed to become a multi lookup symbol:
+              _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
+                case path of
+                  (SymPath [] name) ->
+                     -- Create a MultiSym!
+                    XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
+                  pathWithQualifiers ->
+                    -- The symbol IS qualified but can't be found, should produce an error later during compilation.
+                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t)
 setFullyQualifiedSymbols typeEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv env) array
   in  XObj (Arr array') i t

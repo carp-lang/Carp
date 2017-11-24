@@ -120,7 +120,10 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
           tys = map (typeFromPath env) paths
           tysToPathsDict = zip tys paths
       in  case filter (matchingSignature actualType) tysToPathsDict of
-            [] -> return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
+            [] ->
+              if allowAmbiguity
+              then return (Right xobj)
+              else return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
             [(theType, singlePath)] -> let Just t' = t
                                            fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
                                            fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing

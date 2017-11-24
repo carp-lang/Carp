@@ -20,6 +20,7 @@ carp ./examples/strings.carp -x;
 carp ./test/double_math.carp -b; ./out/a.out;
 carp ./test/float_math.carp -b; ./out/a.out;
 carp ./test/int_math.carp -b; ./out/a.out;
+carp ./test/long_math.carp -b; ./out/a.out;
 carp ./test/safe_artihmetic.carp -b; ./out/a.out;
 carp ./test/statistics.carp -b; ./out/a.out;
 carp ./test/vector2.carp -b; ./out/a.out;
