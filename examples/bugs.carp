@@ -1,9 +1,4 @@
 ;; This file contains examples of unsolved bugs
 
-(defn f []
-  (f))
-
-(defn main []
-  (do
-    (f)
-    (IO.println "will never get here...")))
+;;; Ranges of non-numbers (bug)
+;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))

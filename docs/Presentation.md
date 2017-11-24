@@ -102,7 +102,7 @@ An idea stolen from Idris.
 鲮 (+ 1.0f ?w00t)
 
 => ?w00t : Float
-    
+
 ```
 
 ---
@@ -115,7 +115,7 @@ An idea stolen from Idris.
 (let [s (get-line)]
   (println "OK")
   <here>)
-  
+
 get-line : (λ [] String)
 ```
 
@@ -125,10 +125,10 @@ get-line : (λ [] String)
 ```
 (let [s (get-line)]
   (validate-string s))
-  
+
 (let [s (get-line)]
   s)
-  
+
 validate-string : (λ [String] Bool)
 ```
 
@@ -140,7 +140,7 @@ validate-string : (λ [String] Bool)
   (do (validate s)
       (validate s)
       (validate s)))
-      
+
 => Using a given-away value 's'
 ```
 
@@ -152,7 +152,7 @@ validate-string : (λ [String] Bool)
   (do (println (ref s))
       (println (ref s))
       (println (ref s))))
-      
+
 s : String
 println : (λ [(Ref String)] ())
 ```
@@ -202,8 +202,8 @@ The 'copy' functions take Ref:s and return non-Ref:s.
 
 (defn name []
   (copy "John McCarthy"))
-  
-  
+
+
 name : (λ [] String)
 String.copy : (λ [(Ref String)] String)
 ```
@@ -245,7 +245,7 @@ String.copy : (λ [(Ref String)] String)
 (defmodule A
   (defn f [] ...)
   (defn g [] ...))
-  
+
 (defmodule B
   (defn f [] ...)
   (defn g [] ...)
@@ -258,7 +258,7 @@ String.copy : (λ [(Ref String)] String)
 ```
 (defmodule A
   (defn f [] ...))
-  
+
 (defmodule A
   (defn g [] ...))
 ```
@@ -293,14 +293,54 @@ inc : (λ [Int] Int)
 ```
 
 ---
-# Not a replacement for type classes
+# The Expression Problem
 
 ```
-(use Int)
-(use Double)
-(use Float)
+(defmodule Ur
+  (defn f [x]
+    (foo x)))
 
-(defn confused-twice [x] (+ x x))
+(defmodule A
+  (defn foo [x]
+    (+ x 1)))
+
+(defmodule B
+  (defn foo [x]
+    (+ x 1.0f)))
+
+(defn tester []
+  (Ur.f 42))
+```
+
+---
+# Interfaces to the rescue
+
+```
+(definterface foo (λ [a] a))
+
+(defmodule Ur
+  (defn f [x]
+    (foo x)))
+
+(defmodule A
+  (defn foo [x]
+    (+ x 1)))
+
+(defmodule B
+  (defn foo [x]
+    (+ x 1.0f)))
+
+(defn tester []
+  (Ur.f 42))
+```
+
+---
+# Some built-in interfaces
+
+```
+copy : (λ [&a] a)
+str : (λ [a] String)
+= : (λ [a, a] Bool)
 ```
 
 ---
@@ -342,7 +382,7 @@ Double : Module = {
 (deftype Point
   [x Int
    y Int])
-   
+
 Point : Module = {
     init : (λ [Int Int] Point)
     new : (λ [Int Int] (Ptr Point))
@@ -370,7 +410,7 @@ Point : Module = {
   [x Int
    y Int
    z Int])
-   
+
 (let [v (Vec2.init 11 35)]
   (Vec2.x &v))
 
@@ -416,8 +456,8 @@ Will allocate new memory and leave the old data as-is.
 ```
 (let [xs [1 2 3 4 5]]
   (copy-map Int.str &xs))
-  
-copy-map : (λ [(λ [a] b) (Ref (Array a))] (Array b)) ;; This type might be buggy!!!
+
+copy-map : (λ [(λ [&a] b), &(Array a)] (Array b))
 ```
 
 ---

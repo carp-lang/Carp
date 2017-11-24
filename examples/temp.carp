@@ -1,30 +1,26 @@
-;; (use IO)
-;; (use Int)
-;; (use Float)
-;; (use Double)
+(use IO)
+(use Int)
+(use Float)
+(use Double)
 ;; (use Array)
 ;; (use System)
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
 
-;;; Ranges of non-numbers (bug)
-;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
+(definterface foo (λ [a] a))
 
-;;; Interfaces
-;; (defn f [a b]
-;;   (= @(Array.nth a 0) @(Array.nth b 0)))
+(defmodule Ur
+  (defn f [x]
+    (foo x)))
 
-;; (defn main []
-;;   (IO.println &(Bool.str (f &[1 2 3] &[1 10 100]))))
+(defmodule A
+  (defn foo [x]
+    (+ x 1)))
 
-;;; Creating typedefs in all cases
+(defmodule B
+  (defn foo [x]
+    (+ x 1.0f)))
 
-;; (defn g [x y]
-;;   (+ @x @y))
-
-;; (defn f [xs]
-;;   (Array.element-count &xs 123))
-
-(defn f [x]
-  (IO.println (ref (Float.str @x))))
+(defn tester []
+  (Ur.f 42))
