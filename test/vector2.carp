@@ -16,7 +16,7 @@
     (assert-equal test
                   &(init 1.0 2.0) &(init 1.0 1.0)
                   "/= operator works"
-                  /=
+                  Vector2./=
                   Vector2.str)
     (assert-equal test
                   &(init 3.0 3.0)
