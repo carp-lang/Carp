@@ -22,5 +22,5 @@
   (defn foo [x]
     (+ x 1.0f)))
 
-(defn tester []
-  (Ur.f 42))
+(defn main []
+  (println &(str (Ur.f 42))))
