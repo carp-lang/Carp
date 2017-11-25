@@ -1,0 +1,21 @@
+(use IO)
+(use Int)
+(use Float)
+(use Double)
+
+(definterface foo (λ [a] a))
+
+(defmodule Ur
+  (defn f [x]
+    (foo x)))
+
+(defmodule A
+  (defn foo [x]
+    (+ x 1)))
+
+(defmodule B
+  (defn foo [x]
+    (+ x 1.0f)))
+
+(defn main []
+  (println &(str (Ur.f 42))))
