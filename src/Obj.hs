@@ -548,13 +548,14 @@ data Project = Project { projectTitle :: String
                        , projectOutDir :: FilePath
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
+                       , projectPrintTypedAST :: Bool
                        }
 
 projectFlags :: Project -> String
 projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)
 
 instance Show Project where
-  show (Project title incl cFlags libFlags srcFiles echoC carpDir outDir prompt searchPaths) =
+  show (Project title incl cFlags libFlags srcFiles echoC carpDir outDir prompt searchPaths printTypedAST) =
     unlines [ "Title: " ++ title
             , "Includes:\n    " ++ joinWith "\n    " (map show incl)
             , "Cflags:\n    " ++ joinWith "\n    " cFlags
@@ -565,6 +566,7 @@ instance Show Project where
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
+            , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
             ]
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"

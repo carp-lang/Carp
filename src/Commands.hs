@@ -71,9 +71,6 @@ data ReplCommand = Define XObj
                  | ListOfCommands [ReplCommand]
                  deriving Show
 
-printTypedAST :: Bool
-printTypedAST = True
-
 consumeExpr :: Context -> XObj -> ReplCommand
 consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =
   case expandAll globalEnv xobj of
@@ -277,11 +274,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                          case binderPair of
                            Just (_, binder@(Binder xobj@(XObj _ (Just i) _))) ->
                              do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
-                                when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
+                                when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped xobj)
                                 return ()
                            Just (_, binder@(Binder xobj)) ->
                              do putStrLnWithColor White (show binder)
-                                when printTypedAST $ putStrLnWithColor Yellow (prettyTyped xobj)
+                                when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped xobj)
                                 return ()
                            Nothing ->
                              case multiLookupALL name env of
@@ -416,6 +413,8 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
            "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
            "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
            "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent value (projectCarpSearchPaths proj) } }
+           "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (value == "true") } }
+           "echoC" -> return ctx { contextProj = proj { projectEchoC = (value == "true") } }
            _ ->
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx

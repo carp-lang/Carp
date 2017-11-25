@@ -1,2 +1,6 @@
 (definterface = (λ [a a] Bool))
-;;(definterface copy (λ [&a] a)) ;; This is defined internally now! Don't override it.
+(definterface /= (λ [a a] Bool))
+
+;; These interfaces are defined internally, don't override them:
+;;(definterface copy (λ [&a] a))
+;;(definterface str (λ [a] String))

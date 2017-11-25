@@ -36,6 +36,7 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectOutDir = "./out/"
                          , projectPrompt = if os == "darwin" then "鲮 " else "> "
                          , projectCarpSearchPaths = []
+                         , projectPrintTypedAST = False
                          }
 
 completeKeywords :: Monad m => String -> String -> m [Completion]
