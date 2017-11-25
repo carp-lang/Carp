@@ -18,4 +18,4 @@
   (Ur.compare &(Young.init 100) &(Young.init 200)))
 
 (defn main []
-  (IO.println &(Bool.str (f))))
+  (println &(str (f))))
