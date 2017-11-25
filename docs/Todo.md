@@ -22,6 +22,7 @@
 * [0.3] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * Missing info - Thing.str : (λ [(Ref Thing)] String) Defined at line 0, column 0 in 'dummy-file'
 * [0.3] Good string functions
+* [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
 
