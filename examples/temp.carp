@@ -7,3 +7,8 @@
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
+
+(defn main []
+  (do
+    (println &(str 3.0f))
+    (println &(str 123))))
