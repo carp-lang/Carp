@@ -103,6 +103,11 @@ eval env xobj =
                (XObj (Lst lst1) _ _, XObj (Lst lst2) _ _) ->
                  return (XObj (Lst (lst1 ++ lst2)) i t) -- TODO: should they get their own i:s and t:s
                _ -> Left (EvalError "Applying 'append' to non-list or empty list")
+        [XObj (Sym (SymPath [] "macro-error")) _ _, arg] ->
+          do evaledArg <- eval env arg
+             case evaledArg of
+              XObj (Str msg) _ _ -> Left (EvalError msg)
+              _                  -> Left (EvalError "Calling 'macro-error' with non-string argument")
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
              case obj evaledCondition of
