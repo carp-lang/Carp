@@ -21,121 +21,85 @@
     (assert-equal test
                   2.0
                   (median &[1.0 2.0 3.0])
-                  "median works as expected"
-                  Double.=
-                  Double.str)
+                  "median works as expected")
     (assert-equal test
                   2.5
                   (mean &[1.0 2.0 4.5])
-                  "mean works as expected"
-                  Double.=
-                  Double.str)
+                  "mean works as expected")
     (assert-equal test
                   2.0
                   (low-median &[1.0 2.0 4.0 5.0])
-                  "low-median works as expected"
-                  Double.=
-                  Double.str)
+                  "low-median works as expected")
     (assert-equal test
                   4.0
                   (high-median &[1.0 2.0 4.0 5.0])
-                  "high-median works as expected"
-                  Double.=
-                  Double.str)
+                  "high-median works as expected")
     (assert-equal test
                   3.0
                   (grouped-median &[1.0 2.0 4.0 5.0] 2)
-                  "grouped-median works as expected I"
-                  Double.=
-                  Double.str)
+                  "grouped-median works as expected I")
     (assert-equal test
                   2.5
                   (grouped-median &[1.0 2.0 4.0 5.0] 3)
-                  "grouped-median works as expected II"
-                  Double.=
-                  Double.str)
+                  "grouped-median works as expected II")
     (assert-equal test
                   1.0
                   (variance &[1.0 2.0 4.0 5.0])
-                  "variance works as expected"
-                  Double.=
-                  Double.str)
+                  "variance works as expected")
     (assert-equal test
                   0.75
                   (pvariance &[1.0 2.0 4.0 5.0])
-                  "pvariance works as expected"
-                  Double.=
-                  Double.str)
+                  "pvariance works as expected")
     (assert-equal test
                   2.0
                   (stdev &[1.0 1.0 9.0 9.0])
-                  "stdev works as expected"
-                  Double.=
-                  Double.str)
+                  "stdev works as expected")
     (assert-equal test
                   2.0
                   (pstdev &[1.0 9.0])
-                  "pstdev works as expected"
-                  Double.=
-                  Double.str)
-    (assert-equal test
-                  &[0.0 0.0 0.0 0.0 0.0]
-                  &(winsorize &[0.0 0.0 0.0 0.0 10.0] 90.0)
-                  "winsorizing works as expected"
-                  all-eq
-                  Array.str)
-    (assert-equal test
-                  &[2.5 5.0 7.5]
-                  &(quartiles &[0.0 2.5 5.0 7.5 10.0])
-                  "quartiles work as expected"
-                  all-eq
-                  Array.str)
+                  "pstdev works as expected")
+    (assert-op test
+               &[0.0 0.0 0.0 0.0 0.0]
+               &(winsorize &[0.0 0.0 0.0 0.0 10.0] 90.0)
+               "winsorizing works as expected"
+               all-eq)
+    (assert-op test
+               &[2.5 5.0 7.5]
+               &(quartiles &[0.0 2.5 5.0 7.5 10.0])
+               "quartiles work as expected"
+               all-eq)
     (assert-equal test
                   5.0
                   (iqr &[0.0 2.5 5.0 7.5 10.0])
-                  "iqr works as expected"
-                  Double.=
-                  Double.str)
+                  "iqr works as expected")
     (assert-equal test
                   10.0
                   (sum &[2.5 5.0 2.0 0.5])
-                  "sum works as expected"
-                  Double.=
-                  Double.str)
+                  "sum works as expected")
     (assert-equal test
                   0.5
                   (min &[2.5 5.0 2.0 0.5])
-                  "min works as expected"
-                  Double.=
-                  Double.str)
+                  "min works as expected")
     (assert-equal test
                   5.0
                   (max &[2.5 5.0 2.0 0.5])
-                  "max works as expected"
-                  Double.=
-                  Double.str)
+                  "max works as expected")
     (assert-equal test
                   40.0
                   (stdev-pct &[1.0 1.0 9.0 9.0])
-                  "stdev-pct works as expected"
-                  Double.=
-                  Double.str)
-    (assert-equal test
-                  3.7065
-                  (median-abs-dev &[5.0 10.0])
-                  "median-abs-dev works as expected"
-                  Double.approx
-                  Double.str)
-    (assert-equal test
-                  49.42
-                  (median-abs-dev-pct &[5.0 10.0])
-                  "median-abs-dev-pct works as expected"
-                  Double.approx
-                  Double.str)
+                  "stdev-pct works as expected")
+    (assert-op test
+               3.7065
+               (median-abs-dev &[5.0 10.0])
+               "median-abs-dev works as expected"
+               Double.approx)
+    (assert-op test
+               49.42
+               (median-abs-dev-pct &[5.0 10.0])
+               "median-abs-dev-pct works as expected"
+               Double.approx)
     (assert-equal test
                   2.0
                   (Summary.median &(summary &[1.0 2.0 3.0]))
-                  "summary works as expected"
-                  Double.=
-                  Double.str)
+                  "summary works as expected")
     (print-test-results test)))

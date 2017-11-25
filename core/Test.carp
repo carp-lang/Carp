@@ -43,7 +43,7 @@
 (defmodule Test
   (deftype State [passed Int, failed Int])
 
-  (defn handler [state expected actual descr what op str]
+  (defn handler [state expected actual descr what op]
     (if (op expected actual)
       (do
         (IO.color "green")
@@ -59,35 +59,20 @@
         (IO.color "reset")
         (State.update-failed (State.copy state) Int.inc))))
 
-  (defn assert-equal [state x y descr op str]
-    (handler state x y descr "value" op str))
+  (defn assert-op [state x y descr op]
+    (handler state x y descr "value" op))
 
-  (defn assert-str-equal [state x y descr]
-    (assert-equal state x y descr String.= String.str))
+  (defn assert-equal [state x y descr]
+    (handler state x y descr "value" =))
 
-  (defn assert-int-equal [state x y descr]
-    (assert-equal state x y descr Int.= Int.str))
-
-  (defn assert-bool-equal [state x y descr]
-    (assert-equal state x y descr Bool.= Bool.str))
-
-  (defn assert-not-equal [state x y descr op str]
-    (handler state x y descr "not value" op str))
-
-  (defn assert-bool-not-equal [state x y descr]
-    (assert-equal state x y descr Bool./= Bool.str))
-
-  (defn assert-str-not-equal [state x y descr]
-    (assert-equal state x y descr String./= String.str))
-
-  (defn assert-int-not-equal [state x y descr]
-    (assert-equal state x y descr Int./= Int.str))
+  (defn assert-not-equal [state x y descr]
+    (handler state x y descr "not value" /=))
 
   (defn assert-true [state x descr]
-    (assert-bool-equal state true x descr))
+    (assert-equal state true x descr))
 
   (defn assert-false [state x descr]
-    (assert-bool-equal state false x descr))
+    (assert-equal state false x descr))
 
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))

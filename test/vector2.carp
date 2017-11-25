@@ -5,96 +5,67 @@
 (use Test)
 (use Vector2)
 (use Geometry)
+(use Double)
 
 (defn main []
   (with-test test
     (assert-equal test
                   &(init 1.0 2.0) &(init 1.0 2.0)
-                  "= operator works"
-                  =
-                  Vector2.str)
+                  "= operator works")
     (assert-equal test
                   &(init 1.0 2.0) &(init 1.0 1.0)
-                  "/= operator works"
-                  Vector2./=
-                  Vector2.str)
+                  "/= operator works")
     (assert-equal test
                   &(init 3.0 3.0)
                   &(+ &(init 2.0 1.0) &(init 1.0 2.0))
-                  "+ operator works"
-                  =
-                  Vector2.str)
+                  "+ operator works")
     (assert-equal test
                   &(init 1.0 -1.0)
                   &(- &(init 2.0 1.0) &(init 1.0 2.0))
-                  "- operator works"
-                  =
-                  Vector2.str)
+                  "- operator works")
     (assert-equal test
                   &(init 4.0 2.0)
                   &(* &(init 2.0 1.0) 2.0)
-                  "* operator works"
-                  =
-                  Vector2.str)
+                  "* operator works")
     (assert-equal test
                   &(init 1.0 0.5)
                   &(/ &(init 2.0 1.0) 2.0)
-                  "/ operator works"
-                  =
-                  Vector2.str)
+                  "/ operator works")
     (assert-equal test
                   5.0
                   (mag &(init 3.0 4.0))
-                  "mag works"
-                  Double.=
-                  Double.str)
+                  "mag works")
     (assert-equal test
                   101.0
                   (mag-sq &(init 10.0 1.0))
-                  "mag-sq works"
-                  Double.=
-                  Double.str)
+                  "mag-sq works")
     (assert-equal test
                   &(init 0.6 0.8)
                   &(normalize &(init 3.0 4.0))
-                  "normalize works"
-                  Vector2.=
-                  Vector2.str)
+                  "normalize works")
     (assert-equal test
                   5.0
                   (dist &(init 10.0 10.0) &(init 7.0 6.0))
-                  "dist works"
-                  Double.=
-                  Double.str)
+                  "dist works")
     (assert-equal test
                   0.0
                   (heading &(init 1.0 0.0))
-                  "heading works"
-                  Double.=
-                  Double.str)
+                  "heading works")
     (assert-equal test
                   &(init -2.0 1.0)
                   &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
-                  "rotate works"
-                  Vector2.approx
-                  Vector2.str)
+                  "rotate works")
     (assert-equal test
                   90.0
                   (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
-                  "angle-between works"
-                  Double.approx
-                  Double.str)
+                  "angle-between works")
     (assert-equal test
                   44.0
                   (dot &(init 10.0 2.0) &(init 2.0 12.0))
-                  "dot works"
-                  Double.=
-                  Double.str)
+                  "dot works")
     (assert-equal test
                   &(init 2.5 5.0)
                   &(lerp &(init 0.0 0.0) &(init 5.0 10.0) 0.5)
-                  "lerp works"
-                  =
-                  Vector2.str)
+                  "lerp works")
     (print-test-results test)
 ))
