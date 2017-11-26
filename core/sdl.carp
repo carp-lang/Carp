@@ -4,6 +4,7 @@
 
 ;; Compiler flags
 (add-cflag "-I/usr/local/include/SDL2")
+(add-cflag "-I/usr/include/SDL2")
 (add-cflag "-D_THREAD_SAFE")
 (add-lib "-L/usr/local/lib")
 (add-lib "-lSDL2")
