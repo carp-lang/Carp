@@ -8,11 +8,6 @@
 ## Critical Bugs
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
-* [0.3] Confusion with interfaces
-            * When defining /= in terms of = in modules, the type becomes generic. Should it default to the = inside the module instead?
-            * When one or more of the instances of a interface is generic, the final type becomes generic too
-            * matching = filter (\(t, s) -> matchingSignature actualType (t, s) && not (typeIsGeneric t)) tysToPathsDict
-* [0.3] Error message with refs is wrong, see Constraints.hs:131
 
 ## Big Language Features
 * [0.3] Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code
