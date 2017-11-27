@@ -1,6 +1,12 @@
 (definterface = (λ [a a] Bool))
 (definterface /= (λ [a a] Bool))
 
+;; These interfaces would be desirable also? Produces errors in Vector module for now...
+;; (definterface + (λ [a a] a))
+;; (definterface - (λ [a a] a))
+;; (definterface * (λ [a a] a))
+;; (definterface / (λ [a a] a))
+
 ;; These interfaces are defined internally, don't override them:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))
