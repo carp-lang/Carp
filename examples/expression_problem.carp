@@ -9,6 +9,7 @@
 ;; Young is created later
 (deftype Young [age Int])
 
+;; A function with correct nr of args but just generic types used to really confuse the type checker:
 (defmodule Confuse
   (defn = [a b]
     true))
@@ -27,4 +28,4 @@
   (println &(str (f))))
 
 (build)
-;;(run)
+(run)
