@@ -162,7 +162,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                     case filter (\(tt, _) -> actualType == tt) severalPaths of
                       []      -> return (Right xobj) -- No exact match of types
                       [(theType, singlePath)] -> replace theType singlePath -- Found an exact match, will ignore any "half matched" functions that might have slipped in.
-                      _       -> error "Several exact matches."
+                      _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
                       let Just t' = t
                           fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing

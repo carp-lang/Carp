@@ -23,6 +23,7 @@ data TypeError = SymbolMissingType XObj Env
                | UnificationFailed Constraint TypeMappings [Constraint]
                | CantDisambiguate XObj String Ty [(Ty, SymPath)]
                | CantDisambiguateInterfaceLookup XObj String Ty [(Ty, SymPath)]
+               | SeveralExactMatches XObj String Ty [(Ty, SymPath)]
                | NoMatchingSignature XObj String Ty [(Ty, SymPath)]
                | HolesFound [(String, Ty)]
                | FailedToExpand XObj EvalError
@@ -81,6 +82,9 @@ instance Show TypeError where
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (CantDisambiguateInterfaceLookup xobj name theType options) =
     "Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  show (SeveralExactMatches xobj name theType options) =
+    "Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (NoMatchingSignature xobj originalName theType options) =
     "Can't find matching lookup for symbol '" ++ originalName ++
