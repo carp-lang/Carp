@@ -45,7 +45,7 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
         (while play
           (let [guess (get-line)
                 num (from-string &guess)]
-            (if (= (ref guess) "q\n")
+            (if (= &guess "q\n")
               (do
                 (println "Good bye...")
                 (set! &play false))
