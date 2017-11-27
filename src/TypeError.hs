@@ -74,7 +74,7 @@ instance Show TypeError where
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
     where showTypeFromXObj :: XObj -> String
           showTypeFromXObj xobj = case ty xobj of
-                                    Just t -> show t
+                                    Just t -> show (recursiveLookupTy mappings t)
                                     Nothing -> "Type missing"
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
