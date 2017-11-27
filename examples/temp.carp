@@ -24,19 +24,13 @@
 ;; (defn main [] (println (ref (str (ref (Ur.f &[1 2 3]))))))
 
 
-(defmodule A (defn str [x] (String.str x)))
-(defmodule B (defn str [x] (String.str x)))
-
 ;; Ur is created first and will not know about any other modules
 (defmodule Ur
   (defn stringify [a]
-    (str &a)))
+    (str a)))
 
 ;; Young is created later
 (deftype Young [age Int])
 
 (defn main []
-  (IO.println &(Ur.stringify (Young.init 20))))
-
-(defn g []
-  (str "hej"))
+  (IO.println &(Ur.stringify &(Young.init 20))))

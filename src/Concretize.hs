@@ -19,63 +19,67 @@ import ManageMemory
 -- |  2. Changes the name of symbols at call sites so they use the polymorphic name
 -- |  Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
 concretizeXObj :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Either TypeError (XObj, [XObj])
-concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
-  case runState (visit rootEnv root) [] of
+concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
+  case runState (visit allowAmbiguityRoot rootEnv root) [] of
     (Left err, _) -> Left err
     (Right xobj, deps) -> Right (xobj, deps)
   where
-    visit :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visit env xobj@(XObj (Sym _) _ _) = visitSymbol env xobj
-    visit env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym env xobj
-    visit env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym env xobj
-    visit env (XObj (Lst lst) i t) = do visited <- visitList env lst
-                                        return $ do okVisited <- visited
-                                                    Right (XObj (Lst okVisited) i t)
-    visit env (XObj (Arr arr) i (Just t)) = do visited <- fmap sequence (mapM (visit env) arr)
-                                               modify (depsForDeleteFunc typeEnv env t ++)
-                                               modify (defineArrayTypeAlias t : )
-                                               return $ do okVisited <- visited
-                                                           Right (XObj (Arr okVisited) i (Just t))
-    visit _ x = return (Right x)
+    visit :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visit allowAmbig env xobj@(XObj (Sym _) _ _) = visitSymbol allowAmbig env xobj
+    visit allowAmbig env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym allowAmbig env xobj
+    visit allowAmbig env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym allowAmbig env xobj
+    visit allowAmbig env xobj@(XObj (Lst _) i t) =
+      do visited <- visitList allowAmbig env xobj
+         return $ do okVisited <- visited
+                     Right (XObj (Lst okVisited) i t)
+    visit allowAmbig env (XObj (Arr arr) i (Just t)) =
+      do visited <- fmap sequence (mapM (visit allowAmbig env) arr)
+         modify (depsForDeleteFunc typeEnv env t ++)
+         modify (defineArrayTypeAlias t : )
+         return $ do okVisited <- visited
+                     Right (XObj (Arr okVisited) i (Just t))
+    visit _ _ x = return (Right x)
 
-    visitList :: Env -> [XObj] -> State [XObj] (Either TypeError [XObj])
-    visitList _ [] = return (Right [])
+    visitList :: Bool -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
+    visitList _ _ (XObj (Lst []) _ _) = return (Right [])
 
-    visitList env [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main")) _ _), args@(XObj (Arr argsArr) _ _), body] =
+    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main")) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then return $ Left (MainCannotHaveArguments (length argsArr))
-      else do visitedBody <- visit env body
+      else do visitedBody <- visit False env body -- allowAmbig == 'False'
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if t /= UnitTy && t /= IntTy
                           then Left (MainCanOnlyReturnUnitOrInt t)
                           else return [defn, nameSymbol, args, okBody]
 
-    visitList env [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body] =
+    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do mapM_ checkForNeedOfTypedefs argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
-         visitedBody <- visit envWithArgs body
+             Just funcTy = t
+             allowAmbig = typeIsGeneric funcTy
+         visitedBody <- visit allowAmbig envWithArgs body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
-    visitList env [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] =
-      do visitedBindings <- fmap sequence (mapM (visit env) bindings)
-         visitedBody <- visit env body
+    visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
+      do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
+         visitedBody <- visit allowAmbig env body
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
 
-    visitList env [theExpr@(XObj The _ _), typeXObj, value] =
-      do visitedValue <- visit env value
+    visitList allowAmbig env (XObj (Lst [theExpr@(XObj The _ _), typeXObj, value]) _ _) =
+      do visitedValue <- visit allowAmbig env value
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
-    visitList env (func : args) =
-      do f <- visit env func
-         a <- fmap sequence (mapM (visit env) args)
+    visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
+      do f <- visit allowAmbig env func
+         a <- fmap sequence (mapM (visit allowAmbig env) args)
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
@@ -89,8 +93,8 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
         _ -> return (Right ())
     checkForNeedOfTypedefs _ = error "Missing type."
 
-    visitSymbol :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitSymbol env xobj@(XObj (Sym path) i t) =
+    visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visitSymbol allowAmbig env xobj@(XObj (Sym path) i t) =
       case lookupInEnv path env of
         Just (foundEnv, binder)
           | envIsExternal foundEnv ->
@@ -99,7 +103,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                 Just typeOfVisited = t
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
-                  then case concretizeDefinition allowAmbiguity typeEnv env visitedDefinitions theXObj typeOfVisited of
+                  then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
                          Left err -> return (Left err)
                          Right (concrete, deps) ->
                            do modify (concrete :)
@@ -108,10 +112,10 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                   else return (Right xobj)
           | otherwise -> return (Right xobj)
         Nothing -> return (Right xobj)
-    visitSymbol _ _ = error "Not a symbol."
+    visitSymbol _ _ _ = error "Not a symbol."
 
-    visitMultiSym :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitMultiSym env xobj@(XObj (MultiSym originalSymbolName paths) i t) =
+    visitMultiSym :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visitMultiSym allowAmbig env xobj@(XObj (MultiSym originalSymbolName paths) i t) =
       let Just actualType = t
           tys = map (typeFromPath env) paths
           tysToPathsDict = zip tys paths
@@ -128,9 +132,9 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
                                                    normalSymbol = XObj (Sym singlePath) i (Just replaced)
-                                               in visitSymbol env --- $ (trace ("Disambiguated " ++ pretty xobj ++
+                                               in visitSymbol allowAmbig env --- $ (trace ("Disambiguated " ++ pretty xobj ++
                                                                   ---   " to " ++ show singlePath ++ " : " ++ show replaced))
-                                                                    normalSymbol
+                                                              normalSymbol
                                              Left failure@(UnificationFailure _ _) ->
                                                return $ Left (UnificationFailed
                                                               (unificationFailure failure)
@@ -138,14 +142,15 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                                                               [])
                                              Left (Holes holes) ->
                                                return $ Left (HolesFound holes)
-            severalPaths -> if allowAmbiguity
-                            then return (Right xobj)
-                            else return (Left (CantDisambiguate xobj originalSymbolName actualType severalPaths))
+            severalPaths -> return (Right xobj)
+                            -- if allowAmbig
+                            -- then
+                            -- else return (Left (CantDisambiguate xobj originalSymbolName actualType severalPaths))
 
-    visitMultiSym _ _ = error "Not a multi symbol."
+    visitMultiSym _ _ _ = error "Not a multi symbol."
 
-    visitInterfaceSym :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitInterfaceSym env xobj@(XObj (InterfaceSym name) i t) =
+    visitInterfaceSym :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visitInterfaceSym allowAmbig env xobj@(XObj (InterfaceSym name) i t) =
       case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
         Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
           let Just actualType = t
@@ -153,7 +158,10 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
               tysToPathsDict = zip tys interfacePaths
           in  case filter (matchingSignature actualType) tysToPathsDict of
                 [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict)))
-                               (Right xobj)
+                               --(Right xobj)
+                                 if allowAmbig
+                                 then (Right xobj) -- No exact match of types
+                                 else (Left (NoMatchingSignature xobj name actualType tysToPathsDict))
                 [(theType, singlePath)] ->
                   replace theType singlePath
                 severalPaths ->
@@ -171,8 +179,8 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
                             Right mappings ->
                               let replaced = replaceTyVars mappings t'
                                   normalSymbol = XObj (Sym singlePath) i (Just replaced)
-                              in visitSymbol env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
-                                                 normalSymbol
+                              in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                                             normalSymbol
                             Left failure@(UnificationFailure _ _) ->
                               return $ Left (UnificationFailed
                                              (unificationFailure failure)
