@@ -6,7 +6,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important!</i>
 
-<i>Update (June 26, 2017): The total rewrite is now live, if you want to look at the old version it's under the branch named "c" in this repository.</i>
+<i>Update (June 26, 2017): The total rewrite is now live; if you want to look at the old version, it's under the branch named "c" in this repository.</i>
 
 ## About
 
@@ -15,20 +15,20 @@ Carp is a small programming language designed to work well for interactive and p
 The key features of Carp are the following:
 * Automatic and deterministic memory management (no garbage collector or VM)
 * Inferred static types for great speed and reliability
-* Ownership tracking enables a functional programming style while still using mutation of cache friendly data structures under the hood
-* No hidden performance penalties – allocation and copying is explicit
-* Straight-forward integration with existing C code
+* Ownership tracking enables a functional programming style while still using mutation of cache-friendly data structures under the hood
+* No hidden performance penalties – allocation and copying are explicit
+* Straightforward integration with existing C code
 
 ## Learn more
 
 * [Installation](docs/Install.md) - how to build the Carp compiler
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
-* [Libraries](docs/Libraries.md) - the various libraries that come built-in to Carp
+* [Libraries](docs/Libraries.md) - the various libraries that come built into Carp
 * [Tooling](docs/Tooling.md) - supported editors
 * [Game Example](examples/game.carp) - an example of how to use SDL with Carp
 
-The Carp REPL has built in documentation, run ```(help)``` to access it!
+The Carp REPL has built-in documentation, run ```(help)``` to access it!
 
 ## A Small Example
 
@@ -56,7 +56,7 @@ The Carp REPL has built in documentation, run ```(help)``` to access it!
                 (print "Please guess again: "))))))))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable.
+To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
 
 
 ### Contributors
