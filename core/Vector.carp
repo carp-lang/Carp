@@ -19,7 +19,7 @@
   (defn set-y [o v]
     (V2.set-y o v))
 
-  (defn str [o]
+  (defn to-string [o]
     (string-join @"Vector2(" (Double.str (V2.x o)) @", " (Double.str (V2.y o)) @")"))
 
   (defn + [a b]
@@ -97,7 +97,7 @@
   (defn copy [v]
     (V3.copy v))
 
-  (defn str [o]
+  (defn to-string [o]
     (string-join @"Vector2(" (Double.str (V3.x o)) @", " (Double.str (V3.y o))
                  @", " (Double.str (V3.z o)) @")"))
 
@@ -173,7 +173,7 @@
   (defn init [n v]
     (VN.init n v))
 
-  (defn str [o]
+  (defn to-string [o]
     (string-join @"VectorN(dim=" (Int.str (VN.n o)) @", vals=" (Array.str (VN.v o))
                   @")"))
 
