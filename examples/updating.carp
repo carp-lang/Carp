@@ -10,13 +10,10 @@
   (Float.+ x 1.0f))
 
 (defmodule Pos
-
   (defn move [pos]
     (=> pos
         (Pos.update-x incf)
-        (Pos.update-y incf)))
-
-  )
+        (Pos.update-y incf))))
 
 (deftype Monster
     [pos Pos
@@ -24,18 +21,14 @@
      name String])
 
 (defmodule Monster
-
   (defn init-random [name]
     (Monster.init
      (Pos.init (Float.random-between 0.0f 100.0f)
                (Float.random-between 0.0f 100.0f))
      100
      @name))
-
   (defn move [monster]
-    (Monster.update-pos monster Pos.move))
-
-  )
+    (Monster.update-pos monster Pos.move)))
 
 (defn main []
   (do
