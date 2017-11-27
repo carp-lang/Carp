@@ -12,7 +12,8 @@ import Debug.Trace
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath
-         | MultiSym String [SymPath]
+         | MultiSym String [SymPath] -- refering to multiple functions with the same name
+         | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
          | Num Ty Double
          | Str String
          | Chr Char
@@ -144,6 +145,7 @@ pretty = visit 0
             Chr c -> '\\' : c : ""
             Sym path -> show path
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
+            InterfaceSym name -> "(InterfaceSym " ++ name ++ ")"
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
@@ -502,21 +504,21 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path) i t) =
           case lookupInEnv path env of
             Just (foundEnv, _) ->
               if envIsExternal foundEnv
-              then emptyMultiSym name
+              then createInterfaceSym name
               else doesNotBelongToAnInterface
             Nothing ->
-              --trace ("Will turn " ++ show path ++ " into an empty multi sym (found no local symbol with same name)")
-              emptyMultiSym name
+              --trace ("Will turn '" ++ show path ++ "' " ++ prettyInfoFromXObj xobj ++ " into an interface symbol.")
+                createInterfaceSym name
         Nothing ->
           doesNotBelongToAnInterface
     -- Qualified:
     _ ->
       doesNotBelongToAnInterface
   where
-    emptyMultiSym name = XObj (MultiSym name []) i t -- TODO: Should be it's own kind of Sym maybe?
+    createInterfaceSym name = XObj (InterfaceSym name) i t
     doesNotBelongToAnInterface =
       case multiLookupQualified path env of
-          [] -> xobj
+          [] -> xobj -- Nothing found, leave the symbol as is
           [(_, Binder foundOne)] ->
             XObj (Sym (getPath foundOne)) i t
           multiple ->

@@ -12,7 +12,7 @@
 
   (register = (Fn [Float Float] Bool))
   (defn /= [x y]
-    (not (= x y)))
+    (not (Float.= x y)))
   (register < (Fn [Float Float] Bool))
   (register > (Fn [Float Float] Bool))
 

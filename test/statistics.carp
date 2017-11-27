@@ -6,7 +6,7 @@
 (use Statistics)
 
 (defn all-eq [a b]
-  (if (Double./= (Array.count a) (Array.count b))
+  (if (Int./= (Array.count a) (Array.count b))
     false
     (let [res true]
       (do

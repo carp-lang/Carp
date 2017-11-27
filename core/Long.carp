@@ -18,7 +18,7 @@
   (register copy (λ [&Long] Long)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
 
   (defn /= [x y]
-    (not (= x y)))
+    (not (Long.= x y)))
 
   (register safe-add (λ [Long Long (Ref Long)] Bool))
   (register safe-sub (λ [Long Long (Ref Long)] Bool))

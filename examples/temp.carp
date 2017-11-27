@@ -2,13 +2,23 @@
 (use Int)
 (use Float)
 (use Double)
-;; (use Array)
+(use Array)
 ;; (use System)
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
 
-(defn main []
-  (do
-    (println &(str 3.0f))
-    (println &(str 123))))
+;; (defn main []
+;;   (do
+;;     (println &(str 3.0f))
+;;     (println &(str 123))))
+
+(project-set! printAST "true")
+
+(deftype Blah [])
+
+(defmodule Ur
+  (defn f [x]
+    (str x)))
+
+(defn main [] (println (ref (str (ref (Ur.f &[1 2 3]))))))

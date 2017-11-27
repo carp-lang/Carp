@@ -9,8 +9,14 @@
 ;; Young is created later
 (deftype Young [age Int])
 
+;; (defmodule Confuse
+;;   (defn = [a b]
+;;     true))
+
 (defmodule Young
   (defn = [y1 y2]
+    (Int.= (age y1) (age y2)))
+  (defn /= [y1 y2]
     (Int.= (age y1) (age y2))))
 
 ;; Now I want to use 'Young.=' in with 'Ur.compare'
@@ -19,3 +25,6 @@
 
 (defn main []
   (println &(str (f))))
+
+(build)
+(run)

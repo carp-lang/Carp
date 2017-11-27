@@ -45,7 +45,7 @@ annotate typeEnv globalEnv xobj =
 annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
-  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints
+  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints --(trace ("CONSTRAINTS:\n" ++ joinWith "\n" (map show constraints)) constraints)
   typed <- assignTypes mappings xobj
   concretizeXObj allowAmbiguity typeEnv env [] typed
 

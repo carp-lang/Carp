@@ -15,6 +15,7 @@ import Obj
 import Types
 
 data ConstraintOrder = OrdNo
+                     | OrdFuncAppArg
                      | OrdArrHead
                      | OrdArg
                      | OrdDefnBody
@@ -33,8 +34,8 @@ data ConstraintOrder = OrdNo
                      | OrdFuncAppVarTy
                      | OrdArrBetween
                      | OrdMultiSym
+                     | OrdInterfaceSym
                      | OrdFuncAppRet
-                     | OrdFuncAppArg
                      deriving (Show, Ord, Eq)
 
 data Constraint = Constraint Ty Ty XObj XObj ConstraintOrder deriving Eq
@@ -49,7 +50,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b _ _ ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")}"
+  show (Constraint a b xa xb ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb))
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty
@@ -127,6 +128,7 @@ solveOneInternal mappings constraint =
       in  solveOneInternal mappings (Constraint a b i1 i2 ord)
 
     -- Ref types
+    -- TODO: This messes up the error message since the constraint is between non-reffed types so the refs don't show in the error message!!!
     Constraint (RefTy a) (RefTy b) _ _ _ ->
       let (Constraint _ _ i1 i2 ord) = constraint
       in  solveOneInternal mappings (Constraint a b i1 i2 ord)

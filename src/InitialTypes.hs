@@ -69,6 +69,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Arr _)            -> visitArray env xobj
                        (Sym symPath)      -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
+                       (InterfaceSym _)   -> visitInterfaceSym env xobj
                        Defn               -> return (Left (InvalidObj Defn xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
@@ -108,6 +109,11 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
+      do freshTy <- genVarTy
+         return (Right xobj { ty = Just freshTy })
+
+    visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
+    visitInterfaceSym env xobj@(XObj (InterfaceSym name) _ _) =
       do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                       Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
                       Just (_, Binder x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)

@@ -15,9 +15,9 @@ import AssignTypes
 import ManageMemory
 
 -- | This function performs two things:
---   1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
---   2. Changes the name of symbols at call sites so they use the polymorphic name
---   Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
+-- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
+-- |  2. Changes the name of symbols at call sites so they use the polymorphic name
+-- |  Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
 concretizeXObj :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Either TypeError (XObj, [XObj])
 concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
   case runState (visit rootEnv root) [] of
@@ -27,6 +27,7 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
     visit :: Env -> XObj -> State [XObj] (Either TypeError XObj)
     visit env xobj@(XObj (Sym _) _ _) = visitSymbol env xobj
     visit env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym env xobj
+    visit env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym env xobj
     visit env (XObj (Lst lst) i t) = do visited <- visitList env lst
                                         return $ do okVisited <- visited
                                                     Right (XObj (Lst okVisited) i t)
@@ -110,20 +111,16 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
     visitSymbol _ _ = error "Not a symbol."
 
     visitMultiSym :: Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitMultiSym env xobj@(XObj (MultiSym originalSymbolName paths_not_needed_anymore) i t) =
+    visitMultiSym env xobj@(XObj (MultiSym originalSymbolName paths) i t) =
       let Just actualType = t
-          paths = case lookupInEnv (SymPath [] originalSymbolName) (getTypeEnv typeEnv) of
-                    Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
-                        interfacePaths
-                    Nothing ->
-                        paths_not_needed_anymore -- TODO: Remove?!
           tys = map (typeFromPath env) paths
           tysToPathsDict = zip tys paths
       in  case filter (matchingSignature actualType) tysToPathsDict of
             [] ->
-              if allowAmbiguity
-              then return (Right xobj)
-              else return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
+              --if allowAmbiguity
+              --then return (Right xobj)
+              --else
+              return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
             [(theType, singlePath)] -> let Just t' = t
                                            fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
                                            fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
@@ -144,10 +141,49 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
             severalPaths -> if allowAmbiguity
                             then return (Right xobj)
                             else return (Left (CantDisambiguate xobj originalSymbolName actualType severalPaths))
-      where matchingSignature :: Ty -> (Ty, SymPath) -> Bool
-            matchingSignature tA (tB, _) = areUnifiable tA tB
 
     visitMultiSym _ _ = error "Not a multi symbol."
+
+    visitInterfaceSym :: Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visitInterfaceSym env xobj@(XObj (InterfaceSym name) i t) =
+      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+        Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
+          let Just actualType = t
+              tys = map (typeFromPath env) interfacePaths
+              tysToPathsDict = zip tys interfacePaths
+          in  case filter (matchingSignature actualType) tysToPathsDict of
+                [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                               (Right xobj)
+                [(theType, singlePath)] -> let Just t' = t
+                                               fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
+                                               fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
+                                           in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
+                                                 Right mappings ->
+                                                   let replaced = replaceTyVars mappings t'
+                                                       normalSymbol = XObj (Sym singlePath) i (Just replaced)
+                                                   in visitSymbol env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                                                                      normalSymbol
+                                                 Left failure@(UnificationFailure _ _) ->
+                                                   return $ Left (UnificationFailed
+                                                                  (unificationFailure failure)
+                                                                  (unificationMappings failure)
+                                                                  [])
+                                                 Left (Holes holes) ->
+                                                   return $ Left (HolesFound holes)
+                severalPaths ->
+                  return $ --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths))))
+                    --(Left (CantDisambiguateInterfaceLookup xobj name interfaceType severalPaths)) -- TODO unnecessary error?
+                    (Right xobj)
+        Nothing ->
+          error ("No interface named '" ++ name ++ "' found.")
+
+matchingSignature :: Ty -> (Ty, SymPath) -> Bool
+matchingSignature tA (tB, _) =
+  areUnifiable tA tB
+
+-- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
+-- matchingNonGenericSignature actualType (t, s) =
+--   matchingSignature actualType (t, s) && not (typeIsGeneric t)
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
@@ -176,7 +212,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         in case assignTypes mappings withNewPath of
           Right typed ->
             if newPath `elem` visitedDefinitions
-            then return (withNewPath, [])
+            then return (trace ("Already visited " ++ show newPath) (withNewPath, []))
             else do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
                     managed <- manageMemory typeEnv globalEnv concrete
                     return (managed, deps)

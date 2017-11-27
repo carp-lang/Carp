@@ -25,6 +25,7 @@ data ToCError = InvalidParameter XObj
               | CannotEmitModKeyword
               | BinderIsMissingType Binder
               | UnresolvedMultiSymbol XObj
+              | UnresolvedInterfaceSymbol XObj
               | UnresolvedGenericType XObj
 
 instance Show ToCError where
@@ -38,6 +39,9 @@ instance Show ToCError where
   show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
     "Found ambiguous symbol '" ++ symName ++
     "' (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
+    " at " ++ prettyInfoFromXObj xobj
+  show (UnresolvedInterfaceSymbol xobj@(XObj (InterfaceSym symName) _ _)) =
+    "Found unresolved use of interface '" ++ symName ++ "'" ++
     " at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
@@ -77,6 +81,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             e@(Instantiate _) ->  error (show (DontVisitObj e))
             e@(Defalias _) -> error (show (DontVisitObj e))
             e@(MultiSym _ _) -> error (show (DontVisitObj e))
+            e@(InterfaceSym _) -> error (show (DontVisitObj e))
             Address -> error (show (DontVisitObj Address))
             SetBang -> error (show (DontVisitObj SetBang))
             Macro -> error (show (DontVisitObj Macro))
@@ -488,6 +493,7 @@ checkForUnresolvedSymbols = visit
             (Lst _) -> visitList xobj
             (Arr _) -> visitArray xobj
             (MultiSym _ _) -> Left (UnresolvedMultiSymbol xobj)
+            (InterfaceSym _) -> Left (UnresolvedInterfaceSymbol xobj)
             _ -> return ()
 
     visitList :: XObj -> Either ToCError ()

@@ -51,5 +51,5 @@
       (< (- y x) 0.00001)))
 
   (defn /= [x y]
-    (not (= x y)))
+    (not (Double.= x y)))
 )

@@ -22,6 +22,7 @@ data TypeError = SymbolMissingType XObj Env
                | LeadingColon XObj
                | UnificationFailed Constraint TypeMappings [Constraint]
                | CantDisambiguate XObj String Ty [(Ty, SymPath)]
+               | CantDisambiguateInterfaceLookup XObj String Ty [(Ty, SymPath)]
                | NoMatchingSignature XObj String Ty [(Ty, SymPath)]
                | HolesFound [(String, Ty)]
                | FailedToExpand XObj EvalError
@@ -62,16 +63,24 @@ instance Show TypeError where
   show (NoFormsInBody xobj) =
     "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
-    "Can't unify \n\n" ++ --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++
-    "  " ++ pretty aObj ++ " : " ++ show (recursiveLookupTy mappings a) ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
+    "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
+    --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++
+    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\nwith \n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ show (recursiveLookupTy mappings b) ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
+    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
     -- ++
     -- "Constraint: " ++ show constraint ++ "\n\n" ++
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
+    where showTypeFromXObj :: XObj -> String
+          showTypeFromXObj xobj = case ty xobj of
+                                    Just t -> show t
+                                    Nothing -> "No type on " ++ show xobj
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  show (CantDisambiguateInterfaceLookup xobj name theType options) =
+    "Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (NoMatchingSignature xobj originalName theType options) =
     "Can't find matching lookup for symbol '" ++ originalName ++
