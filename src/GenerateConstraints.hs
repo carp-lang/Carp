@@ -57,7 +57,7 @@ genConstraints root = fmap sort (gen root)
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "condition in if-value")) (info xobj) (ty xobj)
+                                let expected = XObj (Sym (SymPath [] "condition in if-value")) (info xobj) (Just BoolTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
                                     sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
                                     Just t = ty xobj
@@ -72,8 +72,8 @@ genConstraints root = fmap sort (gen root)
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
-                                let expectedCond = XObj (Sym (SymPath [] "condition in while-expression")) (info xobj) (ty xobj)
-                                    expectedBody = XObj (Sym (SymPath [] "body in while-expression")) (info xobj) (ty xobj)
+                                let expectedCond = XObj (Sym (SymPath [] "condition in while-expression")) (info xobj) (Just BoolTy)
+                                    expectedBody = XObj (Sym (SymPath [] "body in while-expression")) (info xobj) (Just UnitTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
                                 return (conditionConstraint : wholeStatementConstraint :
@@ -88,7 +88,7 @@ genConstraints root = fmap sort (gen root)
                                           xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                           lastExprType <- toEither (ty lastExpr) (ExpressionMissingType xobj)
                                           let retConstraint = Constraint xobjType lastExprType xobj lastExpr OrdDoReturn
-                                              must = XObj (Sym (SymPath [] "statement in do-expression")) (info xobj) (ty xobj)
+                                              must = XObj (Sym (SymPath [] "statement in do-expression")) (info xobj) (Just UnitTy)
                                               mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must OrdDoStatement)
                                               mkConstr _ = Nothing
                                               expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
@@ -128,7 +128,7 @@ genConstraints root = fmap sort (gen root)
                                       Left (WrongArgCount func)
                                     else
                                       let expected = XObj (Sym (SymPath [] ("expected argument to '" ++ getName func ++ "'")))
-                                                          (info func) Nothing
+                                                          (info func) (Just funcTy)
                                           argConstraints = zipWith3 (\a t aObj -> Constraint a t aObj expected OrdFuncAppArg)
                                                                     (map forceTy args)
                                                                     argTys

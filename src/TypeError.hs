@@ -67,7 +67,7 @@ instance Show TypeError where
     "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
     --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++
     "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
-    "\n\nwith \n\n" ++
+    "\n\n" ++
     "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
     -- ++
     -- "Constraint: " ++ show constraint ++ "\n\n" ++
@@ -76,7 +76,7 @@ instance Show TypeError where
     where showTypeFromXObj :: XObj -> String
           showTypeFromXObj xobj = case ty xobj of
                                     Just t -> show t
-                                    Nothing -> "No type on " ++ show xobj
+                                    Nothing -> "Type missing"
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
