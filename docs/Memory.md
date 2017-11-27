@@ -33,7 +33,7 @@ The most important thing in Carp is to process arrays of data. Here's an example
 ```clojure
 (defn weird-sum []
   (let [stuff [3 5 8 9 10]]
-    (reduce + 0 (emap square (filter even? stuff)))))
+    (reduce add 0 &(endo-map square (filter even? stuff)))))
 ```
 
 All the array transforming functions 'endo-map' and 'filter' use C-style mutation of the array and return the same data structure back afterwards, no allocation or deallocation needed. The lifetime analyzer ("borrow checker" in [Rust](https://www.rust-lang.org) parlance) makes sure that the same data structure isn't used in several places.
