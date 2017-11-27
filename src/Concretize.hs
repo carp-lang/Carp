@@ -154,26 +154,33 @@ concretizeXObj allowAmbiguity typeEnv rootEnv visitedDefinitions root =
           in  case filter (matchingSignature actualType) tysToPathsDict of
                 [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict)))
                                (Right xobj)
-                [(theType, singlePath)] -> let Just t' = t
-                                               fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
-                                               fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
-                                           in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
-                                                 Right mappings ->
-                                                   let replaced = replaceTyVars mappings t'
-                                                       normalSymbol = XObj (Sym singlePath) i (Just replaced)
-                                                   in visitSymbol env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
-                                                                      normalSymbol
-                                                 Left failure@(UnificationFailure _ _) ->
-                                                   return $ Left (UnificationFailed
-                                                                  (unificationFailure failure)
-                                                                  (unificationMappings failure)
-                                                                  [])
-                                                 Left (Holes holes) ->
-                                                   return $ Left (HolesFound holes)
+                [(theType, singlePath)] ->
+                  replace theType singlePath
                 severalPaths ->
-                  return $ --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths))))
+                  --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths))))
                     --(Left (CantDisambiguateInterfaceLookup xobj name interfaceType severalPaths)) -- TODO unnecessary error?
-                    (Right xobj)
+                    case filter (\(tt, _) -> actualType == tt) severalPaths of
+                      []      -> return (Right xobj) -- No exact match of types
+                      [(theType, singlePath)] -> replace theType singlePath -- Found an exact match, will ignore any "half matched" functions that might have slipped in.
+                      _       -> error "Several exact matches."
+              where replace theType singlePath =
+                      let Just t' = t
+                          fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
+                          fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
+                      in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
+                            Right mappings ->
+                              let replaced = replaceTyVars mappings t'
+                                  normalSymbol = XObj (Sym singlePath) i (Just replaced)
+                              in visitSymbol env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                                                 normalSymbol
+                            Left failure@(UnificationFailure _ _) ->
+                              return $ Left (UnificationFailed
+                                             (unificationFailure failure)
+                                             (unificationMappings failure)
+                                             [])
+                            Left (Holes holes) ->
+                              return $ Left (HolesFound holes)
+
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
 

@@ -9,9 +9,9 @@
 ;; Young is created later
 (deftype Young [age Int])
 
-;; (defmodule Confuse
-;;   (defn = [a b]
-;;     true))
+(defmodule Confuse
+  (defn = [a b]
+    true))
 
 (defmodule Young
   (defn = [y1 y2]
@@ -27,4 +27,4 @@
   (println &(str (f))))
 
 (build)
-(run)
+;;(run)
