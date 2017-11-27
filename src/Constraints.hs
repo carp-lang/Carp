@@ -15,7 +15,7 @@ import Obj
 import Types
 
 data ConstraintOrder = OrdNo
-                     | OrdFuncAppArg
+                     | OrdFuncAppRet
                      | OrdArrHead
                      | OrdArg
                      | OrdDefnBody
@@ -32,10 +32,10 @@ data ConstraintOrder = OrdNo
                      | OrdSetBang
                      | OrdThe
                      | OrdFuncAppVarTy
+                     | OrdFuncAppArg
                      | OrdArrBetween
                      | OrdMultiSym
                      | OrdInterfaceSym
-                     | OrdFuncAppRet
                      deriving (Show, Ord, Eq)
 
 data Constraint = Constraint Ty Ty XObj XObj ConstraintOrder deriving Eq

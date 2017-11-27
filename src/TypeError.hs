@@ -69,8 +69,7 @@ instance Show TypeError where
     "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
     "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
-    -- ++
-    -- "Constraint: " ++ show constraint ++ "\n\n" ++
+    -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
     where showTypeFromXObj :: XObj -> String
