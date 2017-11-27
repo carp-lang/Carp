@@ -12,9 +12,10 @@
     (assert-equal test
                   &(init 1.0 2.0) &(init 1.0 2.0)
                   "= operator works")
-    (assert-equal test
-                  &(init 1.0 2.0) &(init 1.0 1.0)
-                  "/= operator works")
+    (assert-op test
+               &(init 1.0 2.0) &(init 1.0 1.0)
+               "/= operator works"
+               Vector2./=)
     (assert-equal test
                   &(init 3.0 3.0)
                   &(+ &(init 2.0 1.0) &(init 1.0 2.0))
@@ -51,10 +52,11 @@
                   0.0
                   (heading &(init 1.0 0.0))
                   "heading works")
-    (assert-equal test
-                  &(init -2.0 1.0)
-                  &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
-                  "rotate works")
+    (assert-op test
+               &(init -2.0 1.0)
+               &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
+               "rotate works"
+               approx)
     (assert-equal test
                   90.0
                   (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
