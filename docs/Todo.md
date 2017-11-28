@@ -35,6 +35,7 @@
 * [0.3] Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
+* [0.4] Prevent interfaces from being redefined.
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
