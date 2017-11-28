@@ -66,9 +66,9 @@ instance Show TypeError where
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
     --show aObj ++ " WITH " ++ show bObj ++ "\n\n" ++
-    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  " ++ prettyInfoFromXObj aObj ++ "" ++
+    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  " ++ prettyInfoFromXObj bObj ++ "\n\n"
+    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
     -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"

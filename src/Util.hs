@@ -45,3 +45,13 @@ addIfNotPresent x xs =
 
 remove :: (a -> Bool) -> [a] -> [a]
 remove f = filter (not . f)
+
+enumerate :: Int -> String
+enumerate 0 = "first"
+enumerate 1 = "second"
+enumerate 2 = "third"
+enumerate 3 = "fourth"
+enumerate 4 = "fifth"
+enumerate 5 = "sixth"
+enumerate 6 = "seventh"
+enumerate n = show n ++ ":th"
