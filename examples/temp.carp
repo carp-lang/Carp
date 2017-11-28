@@ -1,17 +1,17 @@
 (project-set! printAST "true")
 
+;; (use System)
+;; (use String)
+;; (use Char)
+;; (use Bool)
+
 (use IO)
 (use Int)
 (use Float)
 (use Double)
 (use Array)
-(use System)
-(use String)
-(use Char)
-(use Bool)
 
 (definterface zero (λ [] a))
-(definterface add (λ [a a] a))
 (definterface add-ref (λ [&a &a] a))
 
 (defmodule Int
