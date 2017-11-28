@@ -519,7 +519,7 @@ string IO_read_MINUS_file(string *filename) {
         fseek (f, 0, SEEK_END);
         length = ftell (f);
         fseek (f, 0, SEEK_SET);
-        buffer = malloc (length + 1);
+        buffer = CARP_MALLOC (length + 1);
         if (buffer)	{
             fread (buffer, 1, length, f);
             buffer[length] = '\0';
