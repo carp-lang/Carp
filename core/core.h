@@ -498,7 +498,7 @@ void System_exit(int code) {
     exit(code);
 }
 
-void System_CARP_FREE__string_MUL_(void *p) {
+void System_free(void *p) {
     CARP_FREE(p);
 }
 
@@ -508,6 +508,34 @@ int System_time() {
 
 void System_srand(int x) {
     srand(x);
+}
+
+string IO_read_MINUS_file(string *filename) {
+    string buffer = 0;
+    long length;
+    FILE *f = fopen(*filename, "rb");
+
+    if(f) {
+        fseek (f, 0, SEEK_END);
+        length = ftell (f);
+        fseek (f, 0, SEEK_SET);
+        buffer = malloc (length + 1);
+        if (buffer)	{
+            fread (buffer, 1, length, f);
+            buffer[length] = '\0';
+        }
+        fclose (f);
+    } else {
+        printf("Failed to open file: %s\n", *filename);
+        return "";
+    }
+
+    if (buffer) {
+        return buffer;
+    } else {
+        printf("Failed to open buffer from file: %s\n", *filename);
+        return "";
+    }
 }
 
 #endif
