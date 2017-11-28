@@ -18,7 +18,6 @@
 * [1.0] Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
-* [0.3] Rename 'aset!' to 'set!'
 * [0.3] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * Missing info - Thing.str : (λ [(Ref Thing)] String) Defined at line 0, column 0 in 'dummy-file'
 * [0.3] Good string functions
