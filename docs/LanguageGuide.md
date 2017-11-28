@@ -22,7 +22,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 3.14f   ;; Float
 10.0    ;; Double
 true    ;; Bool
-"hello" ;; String
+"hello" ;; &String
 \e      ;; Char
 [1 2 3] ;; (Array Int)
 ```
@@ -49,7 +49,7 @@ foo ; symbol
 ```
 
 ### Special Forms
-The following forms can be used in Carp source code and will be compiled to C after type checking 
+The following forms can be used in Carp source code and will be compiled to C after type checking
 and other static analysis. Please note that they can not be executed at the REPL.
 
 ```
@@ -156,4 +156,3 @@ Specifying the type solves this error:
 (register blah (Fn (Int Int) String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
 ```
-
