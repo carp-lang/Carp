@@ -734,3 +734,15 @@ isManaged typeEnv (StructTy name _) =
          Nothing -> error ("Can't find " ++ name ++ " in type env."))
 isManaged _ StringTy = True
 isManaged _ _ = False
+
+-- | How should the compiler be run? Interactively or just build / build & run and then quit?
+data ExecutionMode = Repl | Build | BuildAndRun deriving Show
+
+-- | Information needed by the REPL
+data Context = Context { contextGlobalEnv :: Env
+                       , contextTypeEnv :: TypeEnv
+                       , contextPath :: [String]
+                       , contextProj :: Project
+                       , contextLastInput :: String
+                       , contextExecMode :: ExecutionMode
+                       } deriving Show

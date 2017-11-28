@@ -4,6 +4,7 @@ import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (hPutStr)
 import Control.Concurrent (forkIO)
+import Control.Monad.State.Lazy (StateT(..), runStateT)
 import System.Directory
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -21,18 +22,6 @@ import ColorText
 import Template
 import Util
 import Eval
-
--- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun deriving Show
-
--- | Information needed by the REPL
-data Context = Context { contextGlobalEnv :: Env
-                       , contextTypeEnv :: TypeEnv
-                       , contextPath :: [String]
-                       , contextProj :: Project
-                       , contextLastInput :: String
-                       , contextExecMode :: ExecutionMode
-                       } deriving Show
 
 data ReplCommand = Define XObj
                  | AddInclude Includer
@@ -71,14 +60,15 @@ data ReplCommand = Define XObj
                  | ListOfCommands [ReplCommand]
                  deriving Show
 
-consumeExpr :: Context -> XObj -> ReplCommand
-consumeExpr (Context globalEnv typeEnv _ _ _ _) xobj =
-  case expandAll globalEnv xobj of
-    Left err -> ReplMacroError (show err)
-    Right expanded ->
-      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
-        Left err -> ReplTypeError (show err)
-        Right annXObjs -> ListOfCommands (map printC annXObjs)
+consumeExpr :: Context -> XObj -> IO ReplCommand
+consumeExpr ctx@(Context globalEnv typeEnv _ _ _ _) xobj =
+  do (expansionResult, newCtx) <- runStateT (expandAll globalEnv xobj) ctx
+     case expansionResult of
+       Left err -> return (ReplMacroError (show err))
+       Right expanded ->
+         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
+           Left err -> return (ReplTypeError (show err))
+           Right annXObjs -> return (ListOfCommands (map printC annXObjs))
 
 printC :: XObj -> ReplCommand
 printC xobj =
@@ -88,48 +78,58 @@ printC xobj =
     Right _ ->
       (Print . strWithColor Green . toC) xobj
 
-objToCommand :: Context -> XObj -> ReplCommand
+objToCommand :: Context -> XObj -> IO ReplCommand
 objToCommand ctx xobj =
   case obj xobj of
       Lst lst -> case lst of
-                   [XObj Defn _ _, _, _, _] -> Define xobj
-                   [XObj Def _ _, _, _] -> Define xobj
+                   [XObj Defn _ _, _, _, _] -> return $ Define xobj
+                   [XObj Def _ _, _, _] ->return $  Define xobj
                    XObj (Sym (SymPath _ "module")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions (info xobj)
+                     return $ DefineModule name innerExpressions (info xobj)
                    XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     DefineModule name innerExpressions (info xobj)
+                     return $ DefineModule name innerExpressions (info xobj)
                    [XObj (Sym (SymPath _ "defmacro")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
-                     DefineMacro name params body
+                     return $ DefineMacro name params body
                    [XObj (Sym (SymPath _ "defdynamic")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
-                     DefineDynamic name params body
-                   XObj (Sym (SymPath _ "deftype")) _ _ : name : rest -> DefineType name rest
-                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineAlias name t
-                   [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> DefineInterface name t (info xobj)
-                   [XObj (Sym (SymPath _ "eval")) _ _, form] -> Eval form
-                   [XObj (Sym (SymPath _ "expand")) _ _, form] -> Expand form
-                   [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] -> InstantiateTemplate name signature
-                   [XObj (Sym (SymPath _ "type")) _ _, form] -> Type form
-                   [XObj (Sym (SymPath _ "info")) _ _, form] -> GetInfo form
-                   [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] -> Help chapter
-                   [XObj (Sym (SymPath _ "help")) _ _] -> Help ""
-                   [XObj (Sym (SymPath _ "quit")) _ _] -> Quit
-                   [XObj (Sym (SymPath _ "env")) _ _] -> ListBindingsInEnv
-                   [XObj (Sym (SymPath _ "build")) _ _] -> BuildExe
-                   [XObj (Sym (SymPath _ "run")) _ _] -> RunExe
-                   [XObj (Sym (SymPath _ "cat")) _ _] -> Cat
-                   [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] -> Use path xobj
-                   [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] -> ProjectSet key value
-                   [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] -> Register name t
-                   XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest -> RegisterType name rest
-                   [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] -> AddInclude (LocalInclude file)
-                   [XObj (Sym (SymPath _ "system-include")) _ _, XObj (Str file) _ _] -> AddInclude (SystemInclude file)
-                   [XObj (Sym (SymPath _ "add-cflag")) _ _, XObj (Str flag) _ _] -> AddCFlag flag
-                   [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] -> AddLibraryFlag flag
-                   [XObj (Sym (SymPath _ "project")) _ _] -> DisplayProject
-                   [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] -> Load path
-                   [XObj (Sym (SymPath _ "reload")) _ _] -> Reload
+                     return $ DefineDynamic name params body
+                   XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->return $  DefineType name rest
+                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineAlias name t
+                   [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
+                   [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
+                   [XObj (Sym (SymPath _ "expand")) _ _, form] ->return $  Expand form
+                   [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
+                   [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
+                   [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
+                   [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] ->return $  Help chapter
+                   [XObj (Sym (SymPath _ "help")) _ _] ->return $  Help ""
+                   [XObj (Sym (SymPath _ "quit")) _ _] ->return $  Quit
+                   [XObj (Sym (SymPath _ "env")) _ _] ->return $  ListBindingsInEnv
+                   [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
+                   [XObj (Sym (SymPath _ "run")) _ _] ->return $  RunExe
+                   [XObj (Sym (SymPath _ "cat")) _ _] ->return $  Cat
+                   [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
+                   [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
+                     return $  ProjectSet key value
+                   [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
+                     return $ Register name t
+                   XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
+                     return $  RegisterType name rest
+                   [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] ->
+                     return $ AddInclude (LocalInclude file)
+                   [XObj (Sym (SymPath _ "system-include")) _ _, XObj (Str file) _ _] ->
+                     return $ AddInclude (SystemInclude file)
+                   [XObj (Sym (SymPath _ "add-cflag")) _ _, XObj (Str flag) _ _] ->
+                     return $ AddCFlag flag
+                   [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] ->
+                     return $ AddLibraryFlag flag
+                   [XObj (Sym (SymPath _ "project")) _ _] ->
+                     return $  DisplayProject
+                   [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] ->
+                     return $ Load path
+                   [XObj (Sym (SymPath _ "reload")) _ _] ->
+                     return $ Reload
                    _ -> consumeExpr ctx xobj
-      Sym (SymPath [] (':' : text)) -> ListOfCommands (mapMaybe charToCommand text)
+      Sym (SymPath [] (':' : text)) -> return $ ListOfCommands (mapMaybe charToCommand text)
       _ -> consumeExpr ctx xobj
 
 charToCommand :: Char -> Maybe ReplCommand
@@ -191,14 +191,15 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 
        Define xobj ->
          let innerEnv = getEnv env pathStrings
-         in  case expandAll env xobj of
-               Left err -> executeCommand ctx (ReplMacroError (show err))
-               Right expanded ->
-                 let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
-                     xobjFullSymbols = setFullyQualifiedSymbols typeEnv innerEnv xobjFullPath
-                 in case annotate typeEnv env xobjFullSymbols of
-                      Left err -> executeCommand ctx (ReplTypeError (show err))
-                      Right annXObjs -> foldM define ctx annXObjs
+         in  do (expansionResult, newCtx) <- runStateT (expandAll env xobj) ctx
+                case expansionResult of
+                  Left err -> executeCommand newCtx (ReplMacroError (show err))
+                  Right expanded ->
+                    let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
+                        xobjFullSymbols = setFullyQualifiedSymbols typeEnv innerEnv xobjFullPath
+                    in case annotate typeEnv env xobjFullSymbols of
+                         Left err -> executeCommand newCtx (ReplTypeError (show err))
+                         Right annXObjs -> foldM define newCtx annXObjs
 
        DefineModule moduleName innerExpressions moduleInfoFromSourceLocation ->
          case lookupInEnv (SymPath pathStrings moduleName) env of
@@ -379,22 +380,24 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          in  return (ctx { contextGlobalEnv = envInsertAt env path dynamic })
 
        Eval xobj ->
-         case eval env xobj of
-           Left e ->
-             do putStrLnWithColor Red (show e)
-                return ctx
-           Right evaled ->
-             do putStrLnWithColor Yellow (pretty evaled)
-                return ctx
+         do (result, newCtx) <- runStateT (eval env xobj) ctx
+            case result of
+              Left e ->
+                do putStrLnWithColor Red (show e)
+                   return newCtx
+              Right evaled ->
+                do putStrLnWithColor Yellow (pretty evaled)
+                   return newCtx
 
        Expand xobj ->
-         case expandAll env xobj of
-           Left e ->
-             do putStrLnWithColor Red (show e)
-                return ctx
-           Right expanded ->
-             do putStrLnWithColor Yellow (pretty expanded)
-                return ctx
+         do (result, newCtx) <- runStateT (expandAll env xobj) ctx
+            case result of
+              Left e ->
+                do putStrLnWithColor Red (show e)
+                   return newCtx
+              Right expanded ->
+                do putStrLnWithColor Yellow (pretty expanded)
+                   return newCtx
 
        Use path xobj ->
          let e = getEnv env pathStrings
@@ -685,4 +688,6 @@ executeString ctx input fileName = catch exec (catcher ctx)
                  Right xobjs -> foldM folder ctx xobjs
 
 folder :: Context -> XObj -> IO Context
-folder context xobj = executeCommand context (objToCommand context xobj)
+folder context xobj =
+  do cmd <- objToCommand context xobj
+     executeCommand context cmd
