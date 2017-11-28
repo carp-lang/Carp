@@ -1,36 +1,40 @@
+(project-set! printAST "true")
+
 (use IO)
 (use Int)
 (use Float)
 (use Double)
 (use Array)
-;; (use System)
-;; (use String)
-;; (use Char)
-;; (use Bool)
+(use System)
+(use String)
+(use Char)
+(use Bool)
 
-;; (defn main []
-;;   (do
-;;     (println &(str 3.0f))
-;;     (println &(str 123))))
+(definterface zero (λ [] a))
+(definterface add (λ [a a] a))
+(definterface add-ref (λ [&a &a] a))
 
-(project-set! printAST "true")
+(defmodule Int
+  (defn zero []
+    0))
 
-;; (deftype Blah [])
+(defmodule Float
+  (defn zero []
+    0.0f))
 
-;; (defmodule Ur
-;;   (defn f [x]
-;;     (str x)))
+(defmodule Double
+  (defn zero []
+    0.0))
 
-;; (defn main [] (println (ref (str (ref (Ur.f &[1 2 3]))))))
+(defmodule Array
+  (defn sum [xs]
+    (Array.reduce add-ref (zero) xs)))
 
-
-;; Ur is created first and will not know about any other modules
-(defmodule Ur
-  (defn stringify [a]
-    (str a)))
-
-;; Young is created later
-(deftype Young [age Int])
+(defn add-ref [x y]
+  (+ @x @y))
 
 (defn main []
-  (IO.println &(Ur.stringify &(Young.init 20))))
+  (do
+    (println (refstr (sum &[1 2 3])))
+    (println (refstr (sum &[1.1 2.1 3.1])))
+    (println (refstr (sum &[1.2f 2.2f 3.2f])))))
