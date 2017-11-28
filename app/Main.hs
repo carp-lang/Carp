@@ -145,6 +145,7 @@ startingGlobalEnv noArray =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
+                                  , addCommand "destroy" (CommandFunction commandDestroy)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env

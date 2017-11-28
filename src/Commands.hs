@@ -4,7 +4,7 @@ import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (hPutStr)
 import Control.Concurrent (forkIO)
-import Control.Monad.State.Lazy (StateT(..), runStateT)
+import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify)
 import System.Directory
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -691,3 +691,20 @@ folder :: Context -> XObj -> IO Context
 folder context xobj =
   do cmd <- objToCommand context xobj
      executeCommand context cmd
+
+addCommand :: String -> CommandFunctionType -> (String, Binder)
+addCommand name callback =
+  let path = SymPath [] name
+      cmd = XObj (Lst [XObj (Command callback) (Just dummyInfo) Nothing
+                      ,XObj (Sym path) Nothing Nothing
+                      ])
+            (Just dummyInfo) (Just DynamicTy)
+  in (name, Binder cmd)
+
+commandDestroy :: [XObj] -> StateT Context IO (Either EvalError XObj)
+commandDestroy args =
+  do liftIO (putStrLn "DESTROY EVERYTHING!")
+     modify (\ctx -> ctx { contextGlobalEnv = Env (Map.fromList []) Nothing Nothing [] ExternalEnv
+                         , contextTypeEnv   = TypeEnv (Env (Map.fromList []) Nothing Nothing [] ExternalEnv)
+                         })
+     return dynamicNil

@@ -37,10 +37,21 @@ data Obj = Sym SymPath
          | SetBang
          | Macro
          | Dynamic
+         | Command CommandFunctionType
          | The
          | Ref
          | Interface Ty [SymPath]
          deriving (Show, Eq)
+
+
+newtype CommandFunctionType = CommandFunction { getCommand :: ([XObj] -> StateT Context IO (Either EvalError XObj)) }
+
+instance Eq CommandFunctionType where
+  a == b = True
+
+instance Show CommandFunctionType where
+  show t = "CommandFunction { ... }"
+
 
 newtype TemplateCreator = TemplateCreator { getTemplateCreator :: TypeEnv -> Env -> Template }
 
@@ -164,9 +175,15 @@ pretty = visit 0
             SetBang -> "set!"
             Macro -> "macro"
             Dynamic -> "dynamic"
+            Command _ -> "command"
             The -> "the"
             Ref -> "ref"
             Interface _ _ -> "interface"
+
+newtype EvalError = EvalError String deriving (Eq)
+
+instance Show EvalError where
+  show (EvalError msg) = msg
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String

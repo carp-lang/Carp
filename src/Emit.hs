@@ -77,6 +77,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Mod _ -> error (show CannotEmitModKeyword)
             External -> error (show CannotEmitExternal)
             ExternalType -> error (show (DontVisitObj ExternalType))
+            e@(Command _) -> error (show (DontVisitObj e))
             e@(Deftemplate _) ->  error (show (DontVisitObj e))
             e@(Instantiate _) ->  error (show (DontVisitObj e))
             e@(Defalias _) -> error (show (DontVisitObj e))
@@ -283,6 +284,10 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             XObj Dynamic _ _ : _ ->
               return ""
 
+            -- Command
+            XObj (Command _) _ _ : _ ->
+              return ""
+
             -- Interface
             XObj (Interface _ _) _ _ : _ ->
               return ""
@@ -418,6 +423,8 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       ""
     XObj ExternalType _ _ : _ ->
       ""
+    XObj (Command _) _ _ : _ ->
+      ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."
 
@@ -437,6 +444,7 @@ binderToC binder = let xobj = binderXObj binder
                    in  case xobj of
                          XObj External _ _ -> Right ""
                          XObj ExternalType _ _ -> Right ""
+                         XObj (Command _) _ _ -> Right ""
                          XObj (Mod env) _ _ -> envToC env
                          _ -> case ty xobj of
                                 Just t -> if typeIsGeneric t

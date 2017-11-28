@@ -1,4 +1,4 @@
-module Eval (expandAll, eval, EvalError(..)) where
+module Eval (expandAll, eval, EvalError(..), dynamicNil) where
 
 import qualified Data.Map as Map
 import Data.List (foldl', null)
@@ -10,14 +10,11 @@ import Types
 import Util
 import Debug.Trace
 
-newtype EvalError = EvalError String deriving (Eq)
-
-instance Show EvalError where
-  show (EvalError msg) = msg
-
 isRestArgSeparator :: String -> Bool
 isRestArgSeparator ":rest" = True
 isRestArgSeparator _ = False
+
+dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy))
 
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj =
@@ -131,7 +128,7 @@ eval env xobj =
           do evaledArg <- eval env arg
              case evaledArg of
                Right okArg -> do liftIO (putStrLn (pretty okArg))
-                                 return (Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy)))
+                                 return dynamicNil
                Left err -> return (Left err)
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
@@ -179,6 +176,8 @@ eval env xobj =
                               Left err -> return (Left err)
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          apply env body params args
+                       Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
+                         getCommand callback args
                        _ ->
                          return (Right xobj)
                          --Left (EvalError ("Can't eval non-macro / non-dynamic function: " ++ pretty xobj))
