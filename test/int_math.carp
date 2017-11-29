@@ -25,4 +25,28 @@
                   true
                   (odd? 3)
                   "odd? works as expected")
+    (assert-equal test
+                  1
+                  (bit-and 3 5)
+                  "bit-and works as expected")
+    (assert-equal test
+                  5
+                  (bit-or 1 4)
+                  "bit-or works as expected")
+    (assert-equal test
+                  4
+                  (bit-xor 1 5)
+                  "bit-xor works as expected")
+    (assert-equal test
+                  -2
+                  (bit-not 1)
+                  "bit-not works as expected")
+    (assert-equal test
+                  8
+                  (bit-shift-left 2 2)
+                  "bit-shift-left works as expected")
+    (assert-equal test
+                  2
+                  (bit-shift-right 16 3)
+                  "bit-shift-right works as expected")
     (print-test-results test)))

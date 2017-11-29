@@ -100,8 +100,8 @@
   (let [x 0
         y 0
         state (SDL_GetMouseState (address x) (address y))
-        l (Int.mask state (SDL_BUTTON SDL_BUTTON_LEFT))
-        r (Int.mask state (SDL_BUTTON SDL_BUTTON_RIGHT))]
+        l (/= 0 (Int.bit-and state (SDL_BUTTON SDL_BUTTON_LEFT)))
+        r (/= 0 (Int.bit-and state (SDL_BUTTON SDL_BUTTON_RIGHT)))]
     (MouseState.init x y l r)))
 
 ;; Time
