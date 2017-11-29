@@ -192,6 +192,15 @@ bool Long_mask(long a, long b) {
     return a & b;
 }
 
+int Long_to_MINUS_int(long a) {
+  return (int) a;
+}
+
+long Long_from_MINUS_int(int a) {
+  return (long) a;
+}
+
+
 void String_delete(string s) {
     CARP_FREE(s);
 }
