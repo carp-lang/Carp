@@ -186,6 +186,16 @@ string Int_str(int x) {
     return buffer;
 }
 
+string Int_format(string str, int x) {
+    char *buffer = CARP_MALLOC(64);
+    snprintf(buffer, 64, str, x);
+    return buffer;
+}
+
+bool Int_mask(int a, int b) {
+    return a & b;
+}
+
 long Long_from_MINUS_string(string *s) {
     return atol(*s);
 }
@@ -211,6 +221,16 @@ string Long_str(long x) {
     char *buffer = CARP_MALLOC(64);
     snprintf(buffer, 64, "%ldl", x);
     return buffer;
+}
+
+string Long_format(string str, long x) {
+    char *buffer = CARP_MALLOC(64);
+    snprintf(buffer, 64, str, x);
+    return buffer;
+}
+
+bool Long_mask(long a, long b) {
+    return a & b;
 }
 
 int Long_to_MINUS_int(long a) {
@@ -273,6 +293,13 @@ string String_str(string *s) {
 
 char String_char_MINUS_at(string* s, int i) {
   return (*s)[i];
+}
+
+string String_format(string str, string s) {
+    int n = strlen(s);
+    string buffer = CARP_MALLOC(n);
+    snprintf(buffer, n, str, *s);
+    return buffer;
 }
 
 Array String_chars(string *s) {
@@ -441,6 +468,12 @@ double Double_random_MINUS_between(double lower, double upper) {
     return lower + diff * r;
 }
 
+string Double_format(string s, double x) {
+    char *buffer = CARP_MALLOC(32);
+    snprintf(buffer, 32, s, x);
+    return buffer;
+}
+
 int Float_to_MINUS_int(float x) {
     return (int)x;
 }
@@ -546,6 +579,12 @@ float Float_mod(float x, float y) {
 string Float_str(float x) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%gf", x);
+    return buffer;
+}
+
+string Float_format(string str, float x) {
+    char *buffer = CARP_MALLOC(32);
+    snprintf(buffer, 32, str, x);
     return buffer;
 }
 
