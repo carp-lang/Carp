@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad
 import Control.Exception
---import Debug.Trace
+import Debug.Trace
 
 import Parsing
 import Emit
@@ -47,14 +47,8 @@ data ReplCommand = Define XObj
                  | ReplTypeError String
                  | ReplParseError String
                  | ReplCodegenError String
-                 | Load FilePath
-                 | Reload
-                 | BuildExe
-                 | RunExe
-                 | Cat
                  | Print String
                  | ListBindingsInEnv
-                 | DisplayProject
                  | Help String
                  | ListOfCommands [ReplCommand]
                  | ListOfCallbacks [CommandCallback]
@@ -118,8 +112,6 @@ objToCommand ctx xobj =
                      return $ AddCFlag flag
                    [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] ->
                      return $ AddLibraryFlag flag
-                   [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] ->
-                     return $ Load path
                    _ -> return (Eval xobj)
       Sym (SymPath [] (':' : text)) -> return $ ListOfCallbacks (mapMaybe charToCommand text)
       _ -> return (Eval xobj)
@@ -416,31 +408,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx
 
-       Load path ->
-         do let carpDir = projectCarpDir proj
-                fullSearchPaths =
-                  path :
-                  ("./" ++ path) :                                            -- the path from the current directory
-                  map (++ "/" ++ path) (projectCarpSearchPaths proj) ++     -- user defined search paths
-                  [carpDir ++ "/core/" ++ path]
-            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
-            existingPaths <- filterM doesPathExist fullSearchPaths
-            case existingPaths of
-              [] ->
-                do putStrLnWithColor Red ("Invalid path " ++ path)
-                   return ctx
-              firstPathFound : _ ->
-                --putStrLn ("Will load '" ++ firstPathFound ++ "'")
-                   performLoad firstPathFound
-         where performLoad thePath =
-                 do contents <- readFile thePath
-                    let files = projectFiles proj
-                        files' = if thePath `elem` files
-                                 then files
-                                 else thePath : files
-                        proj' = proj { projectFiles = files' }
-                    executeString (ctx { contextProj = proj' }) contents thePath
-
        AddInclude includer ->
          let includers = projectIncludes proj
              includers' = if includer `elem` includers
@@ -569,11 +536,11 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 
        ListOfCommands commands -> foldM executeCommand ctx commands
 
-       ListOfCallbacks callbacks -> foldM callCallbackWithNoArgs ctx callbacks
+       ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
 
-callCallbackWithNoArgs :: Context -> CommandCallback -> IO Context
-callCallbackWithNoArgs ctx callback =
-  do (result, newCtx) <- runStateT (callback []) ctx
+callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
+callCallbackWithArgs ctx callback args =
+  do (_, newCtx) <- runStateT (callback args) ctx
      return newCtx
 
 data ShellOutException = ShellOutException { message :: String, returnCode :: Int } deriving (Eq, Show)
@@ -737,3 +704,37 @@ commandProject args =
   do ctx <- get
      liftIO (print (contextProj ctx))
      return dynamicNil
+
+commandLoad :: CommandCallback
+commandLoad [XObj (Str path) _ _] =
+  do ctx <- get
+     let proj = contextProj ctx
+         carpDir = projectCarpDir proj
+         fullSearchPaths =
+           path :
+           ("./" ++ path) :                                      -- the path from the current directory
+           map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+           [carpDir ++ "/core/" ++ path]
+            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
+     existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
+     case existingPaths of
+       [] ->
+         liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
+                     return dynamicNil
+       firstPathFound : _ ->
+         do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
+                                    readFile firstPathFound
+            let files = projectFiles proj
+                files' = if firstPathFound `elem` files
+                         then files
+                         else firstPathFound : files
+                proj' = proj { projectFiles = files' }
+            newCtx <- liftIO $ executeString (ctx { contextProj = proj' }) contents firstPathFound
+            put newCtx
+            return dynamicNil
+
+loadFiles :: Context -> [FilePath] -> IO Context
+loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
+  where folder :: Context -> FilePath -> IO Context
+        folder ctx file =
+          callCallbackWithArgs ctx commandLoad [XObj (Str file) Nothing Nothing]

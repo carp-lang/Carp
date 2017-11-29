@@ -1,4 +1,5 @@
 (project-set! printAST "true")
+(macro-log "hej")
 
 ;; (use System)
 ;; (use String)

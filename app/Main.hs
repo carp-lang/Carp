@@ -154,6 +154,7 @@ startingGlobalEnv noArray =
                                   , addCommand "env" (CommandFunction commandListBindings)
                                   , addCommand "help" (CommandFunction commandHelp)
                                   , addCommand "project" (CommandFunction commandProject)
+                                  , addCommand "load" (CommandFunction commandLoad)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env
@@ -222,15 +223,15 @@ main = do putStrLn "Welcome to Carp 0.2.0"
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
-          context <- foldM executeCommand (Context
-                                            (startingGlobalEnv noArray)
-                                            (TypeEnv startingTypeEnv)
-                                            []
-                                            projectWithCarpDir
-                                            ""
-                                            execMode)
-                                          (map Load coreModulesToLoad)
-          context' <- foldM executeCommand context (map Load argFilesToLoad)
+              startingContext = (Context
+                                 (startingGlobalEnv noArray)
+                                 (TypeEnv startingTypeEnv)
+                                  []
+                                  projectWithCarpDir
+                                  ""
+                                  execMode)
+          context <- loadFiles startingContext coreModulesToLoad
+          context' <- loadFiles context argFilesToLoad
           settings <- readlineSettings
           case execMode of
             Repl -> runInputT settings (repl context' "")
