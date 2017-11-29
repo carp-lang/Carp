@@ -1,4 +1,5 @@
 (defmodule Char
+  (register = (Fn [Char Char] Bool))
   (register str (Fn [Char] String))
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))

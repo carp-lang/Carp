@@ -7,6 +7,11 @@
           (set! &total (f &total (nth xs i))))
         total)))
 
+  (defn first [a]
+    @(Array.nth a 0))
+
+  (defn last [a]
+    @(Array.nth a (Int.dec (Array.count a))))
 )
 
 ;; BUGS! These function definitions will not create the required typedef for Array, for instance:

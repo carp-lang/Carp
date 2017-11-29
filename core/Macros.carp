@@ -68,3 +68,6 @@
 
 (defmacro ==> [:rest forms]
   (thread-last-internal forms))
+
+(defmacro swap! [x y]
+  (list 'let (array 'tmp y) (list 'do (list 'set! &y x) (list 'set! &x 'tmp))))

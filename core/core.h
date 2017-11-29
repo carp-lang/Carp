@@ -261,6 +261,10 @@ string String_from_MINUS_chars(Array a) {
     return s;
 }
 
+bool Char__EQ_(char a, char b) {
+  return a == b;
+}
+
 string Char_str(char c) {
     char *buffer = CARP_MALLOC(3);
     snprintf(buffer, 3, "\\%c", c);
