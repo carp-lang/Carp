@@ -78,8 +78,8 @@ bool Int__GT_(int x, int y)    { return x > y; }
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
 int Int_abs(int x) { return abs(x); }
-int Int_bit_shift_MINUS_left(int x, int y) { return x << y; }
-int Int_bit_shift_MINUS_right(int x, int y) { return x >> y; }
+int Int_bit_MINUS_shift_MINUS_left(int x, int y) { return x << y; }
+int Int_bit_MINUS_shift_MINUS_right(int x, int y) { return x >> y; }
 int Int_bit_MINUS_and(int x, int y) { return x & y; }
 int Int_bit_MINUS_or(int x, int y) { return x | y; }
 int Int_bit_MINUS_xor(int x, int y) { return x ^ y; }
@@ -99,8 +99,8 @@ bool Long__GT_(long x, long y)    { return x > y; }
 long Long_inc(long x) { return x + 1; }
 long Long_dec(long x) { return x - 1; }
 long Long_abs(long x) { return labs(x); }
-long Long_bit_shift_MINUS_left(long x, long y) { return x << y; }
-long Long_bit_shift_MINUS_right(long x, long y) { return x >> y; }
+long Long_bit_MINUS_shift_MINUS_left(long x, long y) { return x << y; }
+long Long_bit_MINUS_shift_MINUS_right(long x, long y) { return x >> y; }
 long Long_bit_MINUS_and(long x, long y) { return x & y; }
 long Long_bit_MINUS_or(long x, long y) { return x | y; }
 long Long_bit_MINUS_xor(long x, long y) { return x ^ y; }
