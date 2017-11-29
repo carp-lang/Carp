@@ -416,48 +416,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx
 
-       -- DUPLICATED
-       BuildExe ->
-         let src = do decl <- envToDeclarations typeEnv env
-                      typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-                      c <- envToC env
-                      return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
-         in case src of
-              Left err -> do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
-                             return ctx
-              Right okSrc -> do let incl = projectIncludesToC proj
-                                    includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-                                    switches = " -g "
-                                    flags = projectFlags proj ++ includeCorePath ++ switches
-                                    outDir = projectOutDir proj
-                                    outMain = outDir ++ "main.c"
-                                    outExe = outDir ++ "a.out"
-                                    outLib = outDir ++ "lib.so"
-                                createDirectoryIfMissing False outDir
-                                writeFile outMain (incl ++ okSrc)
-                                case Map.lookup "main" (envBindings env) of
-                                  Just _ -> do callCommand ("clang " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags)
-                                               putStrLn ("Compiled to '" ++ outExe ++ "'")
-                                  Nothing -> do callCommand ("clang " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags)
-                                                putStrLn ("Compiled to '" ++ outLib ++ "'")
-                                return ctx
-
-       RunExe ->
-         let outDir = projectOutDir proj
-             outExe = outDir ++ "a.out"
-         in  do handle <- spawnCommand outExe
-                exitCode <- waitForProcess handle
-                case exitCode of
-                  ExitSuccess -> return ctx
-                  ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
-
-       -- DUPLICATED BY COMMAND
-       Cat ->
-         let outDir = projectOutDir proj
-             outMain = outDir ++ "main.c"
-         in  do callCommand ("cat -n " ++ outMain)
-                return ctx
-
        Load path ->
          do let carpDir = projectCarpDir proj
                 fullSearchPaths =
@@ -482,14 +440,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                  else thePath : files
                         proj' = proj { projectFiles = files' }
                     executeString (ctx { contextProj = proj' }) contents thePath
-
-       -- DUPLICATED
-       Reload ->
-         do let paths = projectFiles proj
-                f :: Context -> FilePath -> IO Context
-                f context filepath = do contents <- readFile filepath
-                                        executeString context contents filepath
-            foldM f ctx paths
 
        AddInclude includer ->
          let includers = projectIncludes proj
@@ -533,20 +483,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 
        Print s ->
          do putStr s
-            return ctx
-
-       -- DUPLICATED
-       ListBindingsInEnv ->
-         do putStrLn "Types:\n"
-            putStrLn (prettyEnvironment (getTypeEnv typeEnv))
-            putStrLn "\nGlobal environment:\n"
-            putStrLn (prettyEnvironment env)
-            putStrLn ""
-            return ctx
-
-       -- DUPLICATED
-       DisplayProject ->
-         do print proj
             return ctx
 
        Help "about" -> do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
@@ -628,40 +564,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                               putStrLn "The shortcuts can be combined like this: \":rbx\""
                               putStrLn ""
                               return ctx
-
-       -- DUPLICATED
-       Help _ -> do putStrLn "Compiler commands:"
-                    putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
-                    putStrLn "(reload)           - Reload all the project files."
-                    putStrLn "(build)            - Produce an executable or shared library."
-                    putStrLn "(run)              - Run the executable produced by 'build' (if available)."
-                    putStrLn "(cat)              - Look at the generated C code (make sure you build first)."
-                    putStrLn "(env)              - List the bindings in the global environment."
-                    putStrLn "(type <symbol>)    - Get the type of a binding."
-                    putStrLn "(info <symbol>)    - Get information about a binding."
-                    putStrLn "(project)          - Display information about your project."
-                    putStrLn "(quit)             - Terminate this Carp REPL."
-                    putStrLn "(help <chapter>)   - Available chapters: language, macros, structs, shortcuts, about."
-                    putStrLn ""
-                    putStrLn "To define things:"
-                    putStrLn "(def <name> <constant>)           - Define a global variable."
-                    putStrLn "(defn <name> [<args>] <body>)     - Define a function."
-                    putStrLn "(module <name> <def1> <def2> ...) - Define a module and/or add definitions to an existing one."
-                    putStrLn "(deftype <name> ...)              - Define a new type."
-                    putStrLn "(register <name> <type>)          - Make an external variable or function available for usage."
-                    putStrLn "(defalias <name> <type>)          - Create another name for a type."
-                    putStrLn ""
-                    putStrLn "C-compiler configuration:"
-                    putStrLn "(system-include <file>)          - Include a system header file."
-                    putStrLn "(local-include <file>)           - Include a local header file."
-                    putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
-                    putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
-                    putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
-                    putStrLn ""
-                    putStrLn "Compiler flags:"
-                    putStrLn "-b                               - Build."
-                    putStrLn "-x                               - Build and run."
-                    return ctx
 
        DoNothing -> return ctx
 
