@@ -56,7 +56,6 @@ data ReplCommand = Define XObj
                  | ListBindingsInEnv
                  | DisplayProject
                  | Help String
-                 | Quit
                  | ListOfCommands [ReplCommand]
                  deriving Show
 
@@ -106,7 +105,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "help")) _ _] ->return $  Help ""
                    [XObj (Sym (SymPath _ "env")) _ _] ->return $  ListBindingsInEnv
                    [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
-                   [XObj (Sym (SymPath _ "run")) _ _] ->return $  RunExe
                    [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
@@ -126,8 +124,6 @@ objToCommand ctx xobj =
                      return $  DisplayProject
                    [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] ->
                      return $ Load path
-                   [XObj (Sym (SymPath _ "reload")) _ _] ->
-                     return $ Reload
                    _ -> return (Eval xobj)
       Sym (SymPath [] (':' : text)) -> return $ ListOfCommands (mapMaybe charToCommand text)
       _ -> return (Eval xobj)
@@ -140,7 +136,7 @@ charToCommand 'c' = Just Cat
 charToCommand 'e' = Just ListBindingsInEnv
 charToCommand 'h' = Just (Help "")
 charToCommand 'p' = Just DisplayProject
-charToCommand 'q' = Just Quit
+--charToCommand 'q' = Just Quit
 charToCommand _ = Nothing
 
 define :: Context -> XObj -> IO Context
@@ -488,6 +484,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                         proj' = proj { projectFiles = files' }
                     executeString (ctx { contextProj = proj' }) contents thePath
 
+       -- DUPLICATED
        Reload ->
          do let paths = projectFiles proj
                 f :: Context -> FilePath -> IO Context
@@ -550,8 +547,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
        DisplayProject ->
          do print proj
             return ctx
-
-       Quit -> exitSuccess -- DUPLICATED BY COMMAND BELOW
 
        Help "about" -> do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
                           putStrLn ""
@@ -725,3 +720,37 @@ commandCat args =
          outMain = outDir ++ "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
+
+commandRunExe :: CommandCallback
+commandRunExe args =
+  do ctx <- get
+     let outDir = projectOutDir (contextProj ctx)
+         outExe = outDir ++ "a.out"
+     liftIO $ do handle <- spawnCommand outExe
+                 exitCode <- waitForProcess handle
+                 case exitCode of
+                   ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
+                   ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
+
+commandReload :: CommandCallback
+commandReload args =
+  do ctx <- get
+     let paths = projectFiles (contextProj ctx)
+         f :: Context -> FilePath -> IO Context
+         f context filepath = do contents <- readFile filepath
+                                 executeString context contents filepath
+     newCtx <- liftIO (foldM f ctx paths)
+     put newCtx
+     return dynamicNil
+
+-- commandListBindings :: CommandCallback
+-- commandListBindings args =
+--   do _
+
+-- commandHelp :: CommandCallback
+-- commandHelp args =
+--   do _
+
+-- commandDisplayProject :: CommandCallback
+-- commandDisplayProject args =
+--   do _
