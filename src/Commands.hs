@@ -57,7 +57,8 @@ data ReplCommand = Define XObj
                  | DisplayProject
                  | Help String
                  | ListOfCommands [ReplCommand]
-                 deriving Show
+                 | ListOfCallbacks [CommandCallback]
+                 --deriving Show
 
 -- | This function will show the resulting code of non-definitions.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -102,7 +103,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
                    [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] ->return $  Help chapter
-                   [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
                    [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
@@ -121,19 +121,19 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] ->
                      return $ Load path
                    _ -> return (Eval xobj)
-      Sym (SymPath [] (':' : text)) -> return $ ListOfCommands (mapMaybe charToCommand text)
+      Sym (SymPath [] (':' : text)) -> return $ ListOfCallbacks (mapMaybe charToCommand text)
       _ -> return (Eval xobj)
 
-charToCommand :: Char -> Maybe ReplCommand
-charToCommand 'x' = Just RunExe
-charToCommand 'r' = Just Reload
-charToCommand 'b' = Just BuildExe
-charToCommand 'c' = Just Cat
-charToCommand 'e' = Just ListBindingsInEnv
-charToCommand 'h' = Just (Help "")
-charToCommand 'p' = Just DisplayProject
---charToCommand 'q' = Just Quit
-charToCommand _ = Nothing
+charToCommand :: Char -> Maybe CommandCallback
+charToCommand 'x' = Just commandRunExe
+charToCommand 'r' = Just commandReload
+charToCommand 'b' = Just commandBuild
+charToCommand 'c' = Just commandCat
+charToCommand 'e' = Just commandListBindings
+charToCommand 'h' = Just commandHelp
+charToCommand 'p' = Just commandProject
+charToCommand 'q' = Just commandQuit
+charToCommand _   = Just (\_ -> return dynamicNil)
 
 define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
@@ -377,8 +377,10 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Left e ->
                 do putStrLnWithColor Red (show e)
                    return newCtx
+              Right (XObj (Lst []) _ _) ->
+                do return newCtx
               Right evaled ->
-                do putStrLnWithColor Yellow (pretty evaled)
+                do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
                    return newCtx
 
        Expand xobj ->
@@ -414,6 +416,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
              do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                 return ctx
 
+       -- DUPLICATED
        BuildExe ->
          let src = do decl <- envToDeclarations typeEnv env
                       typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
@@ -664,6 +667,13 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 
        ListOfCommands commands -> foldM executeCommand ctx commands
 
+       ListOfCallbacks callbacks -> foldM callCallbackWithNoArgs ctx callbacks
+
+callCallbackWithNoArgs :: Context -> CommandCallback -> IO Context
+callCallbackWithNoArgs ctx callback =
+  do (result, newCtx) <- runStateT (callback []) ctx
+     return newCtx
+
 data ShellOutException = ShellOutException { message :: String, returnCode :: Int } deriving (Eq, Show)
 
 instance Exception ShellOutException
@@ -730,6 +740,39 @@ commandRunExe args =
                  case exitCode of
                    ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
                    ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
+
+commandBuild :: CommandCallback
+commandBuild args =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+         proj = contextProj ctx
+         src = do decl <- envToDeclarations typeEnv env
+                  typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
+                  c <- envToC env
+                  return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
+     case src of
+       Left err ->
+         liftIO $ do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
+                     return dynamicNil
+       Right okSrc ->
+         liftIO $ do let incl = projectIncludesToC proj
+                         includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
+                         switches = " -g "
+                         flags = projectFlags proj ++ includeCorePath ++ switches
+                         outDir = projectOutDir proj
+                         outMain = outDir ++ "main.c"
+                         outExe = outDir ++ "a.out"
+                         outLib = outDir ++ "lib.so"
+                     createDirectoryIfMissing False outDir
+                     writeFile outMain (incl ++ okSrc)
+                     case Map.lookup "main" (envBindings env) of
+                       Just _ -> do callCommand ("clang " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags)
+                                    putStrLn ("Compiled to '" ++ outExe ++ "'")
+                                    return dynamicNil
+                       Nothing -> do callCommand ("clang " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags)
+                                     putStrLn ("Compiled to '" ++ outLib ++ "'")
+                                     return dynamicNil
 
 commandReload :: CommandCallback
 commandReload args =

@@ -149,6 +149,7 @@ startingGlobalEnv noArray =
                                   , addCommand "quit" (CommandFunction commandQuit)
                                   , addCommand "cat" (CommandFunction commandCat)
                                   , addCommand "run" (CommandFunction commandRunExe)
+                                  , addCommand "build" (CommandFunction commandBuild)
                                   , addCommand "reload" (CommandFunction commandReload)
                                   , addCommand "env" (CommandFunction commandListBindings)
                                   , addCommand "help" (CommandFunction commandHelp)
