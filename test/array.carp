@@ -1,0 +1,16 @@
+(load "Test.carp")
+
+(use Array)
+(use Test)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  1
+                  (first &[1 2 3])
+                  "first works as expected")
+    (assert-equal test
+                  \c
+                  (last &[\a \b \c])
+                  "last works as expected")
+    (print-test-results test)))

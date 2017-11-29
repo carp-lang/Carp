@@ -26,5 +26,7 @@
 
   (defn max [a b] (if (> a b) a b))
   (defn min [a b] (if (< a b) a b))
-  )
 
+  (defn even? [a] (= (mod a 2) 0))
+  (defn odd? [a] (not (even? a)))
+)

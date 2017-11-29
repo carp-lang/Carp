@@ -17,4 +17,12 @@
                   1
                   (abs -1)
                   "abs works as expected")
+    (assert-equal test
+                  false
+                  (even? 3)
+                  "even? works as expected")
+    (assert-equal test
+                  true
+                  (odd? 3)
+                  "odd? works as expected")
     (print-test-results test)))
