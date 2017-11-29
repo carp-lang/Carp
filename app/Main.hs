@@ -150,6 +150,9 @@ startingGlobalEnv noArray =
                                   , addCommand "cat" (CommandFunction commandCat)
                                   , addCommand "run" (CommandFunction commandRunExe)
                                   , addCommand "reload" (CommandFunction commandReload)
+                                  , addCommand "env" (CommandFunction commandListBindings)
+                                  , addCommand "help" (CommandFunction commandHelp)
+                                  , addCommand "project" (CommandFunction commandProject)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env

@@ -102,8 +102,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
                    [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] ->return $  Help chapter
-                   [XObj (Sym (SymPath _ "help")) _ _] ->return $  Help ""
-                   [XObj (Sym (SymPath _ "env")) _ _] ->return $  ListBindingsInEnv
                    [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
                    [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
@@ -120,8 +118,6 @@ objToCommand ctx xobj =
                      return $ AddCFlag flag
                    [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] ->
                      return $ AddLibraryFlag flag
-                   [XObj (Sym (SymPath _ "project")) _ _] ->
-                     return $  DisplayProject
                    [XObj (Sym (SymPath _ "load")) _ _, XObj (Str path) _ _] ->
                      return $ Load path
                    _ -> return (Eval xobj)
@@ -536,6 +532,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do putStr s
             return ctx
 
+       -- DUPLICATED
        ListBindingsInEnv ->
          do putStrLn "Types:\n"
             putStrLn (prettyEnvironment (getTypeEnv typeEnv))
@@ -544,6 +541,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
             putStrLn ""
             return ctx
 
+       -- DUPLICATED
        DisplayProject ->
          do print proj
             return ctx
@@ -628,6 +626,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                               putStrLn ""
                               return ctx
 
+       -- DUPLICATED
        Help _ -> do putStrLn "Compiler commands:"
                     putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
                     putStrLn "(reload)           - Reload all the project files."
@@ -743,14 +742,53 @@ commandReload args =
      put newCtx
      return dynamicNil
 
--- commandListBindings :: CommandCallback
--- commandListBindings args =
---   do _
+commandListBindings :: CommandCallback
+commandListBindings args =
+  do ctx <- get
+     liftIO $ do putStrLn "Types:\n"
+                 putStrLn (prettyEnvironment (getTypeEnv (contextTypeEnv ctx)))
+                 putStrLn "\nGlobal environment:\n"
+                 putStrLn (prettyEnvironment (contextGlobalEnv ctx))
+                 putStrLn ""
+                 return dynamicNil
 
--- commandHelp :: CommandCallback
--- commandHelp args =
---   do _
+commandHelp :: CommandCallback
+commandHelp args =
+  liftIO $ do putStrLn "Compiler commands:"
+              putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
+              putStrLn "(reload)           - Reload all the project files."
+              putStrLn "(build)            - Produce an executable or shared library."
+              putStrLn "(run)              - Run the executable produced by 'build' (if available)."
+              putStrLn "(cat)              - Look at the generated C code (make sure you build first)."
+              putStrLn "(env)              - List the bindings in the global environment."
+              putStrLn "(type <symbol>)    - Get the type of a binding."
+              putStrLn "(info <symbol>)    - Get information about a binding."
+              putStrLn "(project)          - Display information about your project."
+              putStrLn "(quit)             - Terminate this Carp REPL."
+              putStrLn "(help <chapter>)   - Available chapters: language, macros, structs, shortcuts, about."
+              putStrLn ""
+              putStrLn "To define things:"
+              putStrLn "(def <name> <constant>)           - Define a global variable."
+              putStrLn "(defn <name> [<args>] <body>)     - Define a function."
+              putStrLn "(module <name> <def1> <def2> ...) - Define a module and/or add definitions to an existing one."
+              putStrLn "(deftype <name> ...)              - Define a new type."
+              putStrLn "(register <name> <type>)          - Make an external variable or function available for usage."
+              putStrLn "(defalias <name> <type>)          - Create another name for a type."
+              putStrLn ""
+              putStrLn "C-compiler configuration:"
+              putStrLn "(system-include <file>)          - Include a system header file."
+              putStrLn "(local-include <file>)           - Include a local header file."
+              putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
+              putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
+              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
+              putStrLn ""
+              putStrLn "Compiler flags:"
+              putStrLn "-b                               - Build."
+              putStrLn "-x                               - Build and run."
+              return dynamicNil
 
--- commandDisplayProject :: CommandCallback
--- commandDisplayProject args =
---   do _
+commandProject :: CommandCallback
+commandProject args =
+  do ctx <- get
+     liftIO (print (contextProj ctx))
+     return dynamicNil
