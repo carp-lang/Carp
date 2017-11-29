@@ -78,6 +78,12 @@ bool Int__GT_(int x, int y)    { return x > y; }
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
 int Int_abs(int x) { return abs(x); }
+int Int_bit_shift_MINUS_left(int x, int y) { return x << y; }
+int Int_bit_shift_MINUS_right(int x, int y) { return x >> y; }
+int Int_bit_MINUS_and(int x, int y) { return x & y; }
+int Int_bit_MINUS_or(int x, int y) { return x | y; }
+int Int_bit_MINUS_xor(int x, int y) { return x ^ y; }
+int Int_bit_MINUS_not(int x) { return ~x; }
 
 long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
@@ -93,6 +99,12 @@ bool Long__GT_(long x, long y)    { return x > y; }
 long Long_inc(long x) { return x + 1; }
 long Long_dec(long x) { return x - 1; }
 long Long_abs(long x) { return labs(x); }
+long Long_bit_shift_MINUS_left(long x, long y) { return x << y; }
+long Long_bit_shift_MINUS_right(long x, long y) { return x >> y; }
+long Long_bit_MINUS_and(long x, long y) { return x & y; }
+long Long_bit_MINUS_or(long x, long y) { return x | y; }
+long Long_bit_MINUS_xor(long x, long y) { return x ^ y; }
+long Long_bit_MINUS_not(long x) { return ~x; }
 
 int Int_copy(int *x) { return *x; }
 int Long_copy(long *x) { return *x; }
@@ -157,10 +169,6 @@ string Int_str(int x) {
     return buffer;
 }
 
-bool Int_mask(int a, int b) {
-    return a & b;
-}
-
 long Long_from_MINUS_string(string *s) {
     return atol(*s);
 }
@@ -188,10 +196,6 @@ string Long_str(long x) {
     return buffer;
 }
 
-bool Long_mask(long a, long b) {
-    return a & b;
-}
-
 int Long_to_MINUS_int(long a) {
   return (int) a;
 }
@@ -199,7 +203,6 @@ int Long_to_MINUS_int(long a) {
 long Long_from_MINUS_int(int a) {
   return (long) a;
 }
-
 
 void String_delete(string s) {
     CARP_FREE(s);
