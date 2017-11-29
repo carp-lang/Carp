@@ -4,7 +4,7 @@ import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import System.IO (hPutStr)
 import Control.Concurrent (forkIO)
-import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify)
+import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Directory
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -107,7 +107,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "env")) _ _] ->return $  ListBindingsInEnv
                    [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
                    [XObj (Sym (SymPath _ "run")) _ _] ->return $  RunExe
-                   [XObj (Sym (SymPath _ "cat")) _ _] ->return $  Cat
                    [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
@@ -457,6 +456,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                   ExitSuccess -> return ctx
                   ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
 
+       -- DUPLICATED BY COMMAND
        Cat ->
          let outDir = projectOutDir proj
              outMain = outDir ++ "main.c"
@@ -717,3 +717,11 @@ commandQuit :: CommandCallback
 commandQuit args =
   do liftIO exitSuccess
      return dynamicNil
+
+commandCat :: CommandCallback
+commandCat args =
+  do ctx <- get
+     let outDir = projectOutDir (contextProj ctx)
+         outMain = outDir ++ "main.c"
+     liftIO $ do callCommand ("cat -n " ++ outMain)
+                 return dynamicNil
