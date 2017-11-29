@@ -60,6 +60,8 @@ data ReplCommand = Define XObj
                  | ListOfCommands [ReplCommand]
                  deriving Show
 
+-- | This function will show the resulting code of non-definitions.
+-- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 consumeExpr :: Context -> XObj -> IO ReplCommand
 consumeExpr ctx@(Context globalEnv typeEnv _ _ _ _) xobj =
   do (expansionResult, newCtx) <- runStateT (expandAll globalEnv xobj) ctx
@@ -102,7 +104,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
                    [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] ->return $  Help chapter
                    [XObj (Sym (SymPath _ "help")) _ _] ->return $  Help ""
-                   [XObj (Sym (SymPath _ "quit")) _ _] ->return $  Quit
                    [XObj (Sym (SymPath _ "env")) _ _] ->return $  ListBindingsInEnv
                    [XObj (Sym (SymPath _ "build")) _ _] ->return $  BuildExe
                    [XObj (Sym (SymPath _ "run")) _ _] ->return $  RunExe
@@ -128,9 +129,9 @@ objToCommand ctx xobj =
                      return $ Load path
                    [XObj (Sym (SymPath _ "reload")) _ _] ->
                      return $ Reload
-                   _ -> consumeExpr ctx xobj
+                   _ -> return (Eval xobj)
       Sym (SymPath [] (':' : text)) -> return $ ListOfCommands (mapMaybe charToCommand text)
-      _ -> consumeExpr ctx xobj
+      _ -> return (Eval xobj)
 
 charToCommand :: Char -> Maybe ReplCommand
 charToCommand 'x' = Just RunExe
@@ -550,7 +551,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do print proj
             return ctx
 
-       Quit -> exitSuccess
+       Quit -> exitSuccess -- DUPLICATED BY COMMAND BELOW
 
        Help "about" -> do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
                           putStrLn ""
@@ -701,10 +702,18 @@ addCommand name callback =
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder cmd)
 
-commandDestroy :: [XObj] -> StateT Context IO (Either EvalError XObj)
+type CommandCallback = [XObj] -> StateT Context IO (Either EvalError XObj)
+
+-- | A toy command for trying out the new command system. TODO: Remove?
+commandDestroy :: CommandCallback
 commandDestroy args =
   do liftIO (putStrLn "DESTROY EVERYTHING!")
      modify (\ctx -> ctx { contextGlobalEnv = Env (Map.fromList []) Nothing Nothing [] ExternalEnv
                          , contextTypeEnv   = TypeEnv (Env (Map.fromList []) Nothing Nothing [] ExternalEnv)
                          })
+     return dynamicNil
+
+commandQuit :: CommandCallback
+commandQuit args =
+  do liftIO exitSuccess
      return dynamicNil
