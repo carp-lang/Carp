@@ -1,6 +1,9 @@
 (project-set! printAST "true")
 (macro-log "hej")
 
+(mac-only
+ (macro-log "You're using macOS!"))
+
 ;; (use System)
 ;; (use String)
 ;; (use Char)

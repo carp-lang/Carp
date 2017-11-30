@@ -55,6 +55,8 @@ eval env xobj =
                            (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
                              if (round aNum :: Int) == (round bNum :: Int)
                              then Right trueXObj else Right falseXObj
+                           (XObj (Str a) _ _, XObj (Str b) _ _) ->
+                             if a == b then Right trueXObj else Right falseXObj
                            _ ->
                              Left (EvalError ("Can't compare " ++ pretty okA ++ " with " ++ pretty okB))
         [XObj (Sym (SymPath [] "count")) _ _, target] ->
