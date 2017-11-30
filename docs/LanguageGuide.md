@@ -153,6 +153,6 @@ Specifying the type solves this error:
 
 ### C Interop
 ```
-(register blah (Fn (Int Int) String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
+(register blah (Fn [Int Int] String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
 ```
