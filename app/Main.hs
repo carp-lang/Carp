@@ -167,6 +167,7 @@ startingGlobalEnv noArray =
                                   , addCommand "defmacro" (CommandFunction commandDefmacro)
                                   , addCommand "defdynamic" (CommandFunction commandDefdynamic)
                                   , addCommand "deftype" (CommandFunction commandDeftype)
+                                  , addCommand "defmodule" (CommandFunction commandDefmodule)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env

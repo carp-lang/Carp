@@ -29,7 +29,6 @@ data ReplCommand = Define XObj
                  | RegisterType String [XObj]
                  | AddCFlag String
                  | AddLibraryFlag String
-                 | DefineModule String [XObj] (Maybe Info)
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -67,10 +66,6 @@ objToCommand ctx xobj =
       Lst lst -> case lst of
                    [XObj Defn _ _, _, _, _] -> return $ Define xobj
                    [XObj Def _ _, _, _] ->return $  Define xobj
-                   XObj (Sym (SymPath _ "module")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     return $ DefineModule name innerExpressions (info xobj)
-                   XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
-                     return $ DefineModule name innerExpressions (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->
                      return $ Eval form
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
@@ -155,22 +150,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                     in case annotate typeEnv env xobjFullSymbols of
                          Left err -> executeCommand newCtx (ReplTypeError (show err))
                          Right annXObjs -> foldM define newCtx annXObjs
-
-       DefineModule moduleName innerExpressions moduleInfoFromSourceLocation ->
-         case lookupInEnv (SymPath pathStrings moduleName) env of
-           Just (_, Binder (XObj (Mod _) _ _)) ->
-             do ctxAfterModuleAdditions <- foldM folder (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
-                return (popModulePath ctxAfterModuleAdditions)
-           Just _ ->
-             do putStrLnWithColor Red ("Can't redefine '" ++ moduleName ++ "' as module.")
-                return ctx
-           Nothing ->
-             do let parentEnv = getEnv env pathStrings
-                    innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
-                    newModule = XObj (Mod innerEnv) moduleInfoFromSourceLocation (Just ModuleTy)
-                    globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
-                ctxAfterModuleDef <- foldM folder (Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
-                return (popModulePath ctxAfterModuleDef)
 
        RegisterType typeName rest ->
          let path = SymPath pathStrings typeName
@@ -749,3 +728,30 @@ commandDeftype (nameXObj : rest) =
        _ ->
          liftIO $ do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
                      return dynamicNil
+
+commandDefmodule :: CommandCallback
+commandDefmodule (xobj@(XObj (Sym (SymPath [] moduleName)) _ _) : innerExpressions) =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+         lastInput = contextLastInput ctx
+         execMode = contextExecMode ctx
+         proj = contextProj ctx
+     case lookupInEnv (SymPath pathStrings moduleName) env of
+       Just (_, Binder (XObj (Mod _) _ _)) ->
+         do ctxAfterModuleAdditions <- liftIO $ foldM folder (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
+            put (popModulePath ctxAfterModuleAdditions)
+            return dynamicNil
+       Just _ ->
+         liftIO $ do putStrLnWithColor Red ("Can't redefine '" ++ moduleName ++ "' as module.")
+                     return dynamicNil
+       Nothing ->
+         do let parentEnv = getEnv env pathStrings
+                innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
+                newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
+                globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
+                ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode
+            ctxAfterModuleDef <- liftIO (foldM folder ctx' innerExpressions)
+            put (popModulePath ctxAfterModuleDef)
+            return dynamicNil
