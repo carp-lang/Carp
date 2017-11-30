@@ -6,6 +6,7 @@ import System.IO (hPutStr)
 import Control.Concurrent (forkIO)
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Directory
+import System.Info (os)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad
@@ -766,3 +767,7 @@ commandProjectSet [XObj (Sym (SymPath [] key)) _ _, XObj (Str value) _ _] =
 commandProjectSet args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
               return dynamicNil
+
+commandOS :: CommandCallback
+commandOS _ =
+  return (Right (XObj (Str os) Nothing Nothing))
