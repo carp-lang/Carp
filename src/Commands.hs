@@ -36,7 +36,6 @@ data ReplCommand = Define XObj
                  | DefineAlias String XObj
                  | DefineInterface String XObj (Maybe Info)
                  | InstantiateTemplate XObj XObj
-                 | ProjectSet String String
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -87,8 +86,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
-                   [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
-                     return $  ProjectSet key value
                    [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
                      return $ Register name t
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
@@ -309,19 +306,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Right evaled ->
                 do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
                    return newCtx
-
-       -- | A more general way to set project settings, will replace other means later probably.
-       ProjectSet key value ->
-         case key of
-           "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
-           "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
-           "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
-           "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent value (projectCarpSearchPaths proj) } }
-           "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (value == "true") } }
-           "echoC" -> return ctx { contextProj = proj { projectEchoC = (value == "true") } }
-           _ ->
-             do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
-                return ctx
 
        AddInclude includer ->
          let includers = projectIncludes proj
@@ -761,4 +745,24 @@ commandInfo [xobj@(XObj (Sym path@(SymPath _ name)) _ _)] =
                      return dynamicNil
 commandInfo args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'info' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
+
+commandProjectSet :: CommandCallback
+commandProjectSet [XObj (Sym (SymPath [] key)) _ _, XObj (Str value) _ _] =
+  do ctx <- get
+     let proj = contextProj ctx
+     newCtx <- case key of
+                 "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
+                 "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
+                 "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
+                 "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent value (projectCarpSearchPaths proj) } }
+                 "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (value == "true") } }
+                 "echoC" -> return ctx { contextProj = proj { projectEchoC = (value == "true") } }
+                 _ ->
+                   liftIO $ do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
+                               return ctx
+     put newCtx
+     return dynamicNil
+commandProjectSet args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
               return dynamicNil
