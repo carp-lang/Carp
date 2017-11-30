@@ -26,7 +26,6 @@ import Eval
 
 data ReplCommand = Define XObj
                  | AddInclude Includer
-                 | Register String XObj
                  | RegisterType String [XObj]
                  | AddCFlag String
                  | AddLibraryFlag String
@@ -87,8 +86,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
-                   [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
-                     return $ Register name t
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
                      return $  RegisterType name rest
                    [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] ->
@@ -232,18 +229,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
            _ ->
              do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
                 return ctx
-
-       Register name xobj ->
-         case xobjToTy xobj of
-           Just t -> let path = SymPath pathStrings name
-                         binding = XObj (Lst [XObj External Nothing Nothing,
-                                              XObj (Sym path) Nothing Nothing])
-                                   (info xobj) (Just t)
-                         env' = envInsertAt env path binding
-                         ctx' = registerInInterfaceIfNeeded ctx path
-                     in  return (ctx' { contextGlobalEnv = env' })
-           Nothing -> do putStrLnWithColor Red ("Can't understand type when registering '" ++ name ++ "'")
-                         return ctx
 
        RegisterType typeName rest ->
          let path = SymPath pathStrings typeName
@@ -771,3 +756,23 @@ commandProjectSet args =
 commandOS :: CommandCallback
 commandOS _ =
   return (Right (XObj (Str os) Nothing Nothing))
+
+commandRegister :: CommandCallback
+commandRegister [(XObj (Sym (SymPath _ name)) _ _), typeXObj] =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+     case xobjToTy typeXObj of
+           Just t -> let path = SymPath pathStrings name
+                         binding = XObj (Lst [XObj External Nothing Nothing,
+                                              XObj (Sym path) Nothing Nothing])
+                                   (info typeXObj) (Just t)
+                         env' = envInsertAt env path binding
+                         ctx' = registerInInterfaceIfNeeded ctx path
+                     in  do put (ctx' { contextGlobalEnv = env' })
+                            return dynamicNil
+           Nothing -> do liftIO $ putStrLnWithColor Red ("Can't understand type when registering '" ++ name ++ "'")
+                         return dynamicNil
+commandRegister args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'register' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
