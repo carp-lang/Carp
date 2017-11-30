@@ -1,0 +1,8 @@
+(defmodule Dynamic
+  ;; Functions for doing things at the REPL and during compile time.
+
+  (defmodule String
+    (defdynamic append [s1 s2]
+      (macro-log "Can't append strings in dynamic runtime yet.")).)
+
+  )

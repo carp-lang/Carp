@@ -190,6 +190,7 @@ interfaceBinder name t paths i = (name, Binder (defineInterface name t paths (Ju
 coreModules :: String -> [String]
 coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
                                                                       , "Macros"
+                                                                      , "Dynamic"
                                                                       , "Int"
                                                                       , "Long"
                                                                       , "Double"
