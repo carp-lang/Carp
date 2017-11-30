@@ -34,7 +34,6 @@ data ReplCommand = Define XObj
                  | DefineMacro String XObj XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
-                 | DefineInterface String XObj (Maybe Info)
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -80,10 +79,12 @@ objToCommand ctx xobj =
                      return $ DefineMacro name params body
                    [XObj (Sym (SymPath _ "defdynamic")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
                      return $ DefineDynamic name params body
-                   XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->return $  DefineType name rest
-                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineAlias name t
-                   [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
-                   [XObj (Sym (SymPath _ "eval")) _ _, form] -> return $  Eval form
+                   XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->
+                     return $ DefineType name rest
+                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
+                     return $ DefineAlias name t
+                   [XObj (Sym (SymPath _ "eval")) _ _, form] ->
+                     return $ Eval form
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
                      return $  RegisterType name rest
                    [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] ->
@@ -232,17 +233,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
              in  return (ctx { contextTypeEnv = typeEnv' })
            Nothing ->
              do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
-                return ctx
-
-       DefineInterface name typeXObj i ->
-         case xobjToTy typeXObj of
-           Just t ->
-             let interface = defineInterface name t [] i
-                 typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) interface)
-             in  return (ctx { contextTypeEnv = typeEnv' })
-           Nothing ->
-             do putStrLnWithColor Red ("Invalid type for interface '" ++ name ++ "': " ++
-                                       pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
                 return ctx
 
        DefineMacro name params body ->
@@ -752,3 +742,19 @@ commandRegister [(XObj (Sym (SymPath _ name)) _ _), typeXObj] =
 commandRegister args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'register' command: " ++ joinWithComma (map pretty args))
               return dynamicNil
+
+commandDefinterface :: CommandCallback
+commandDefinterface [nameXObj@(XObj (Sym (SymPath [] name)) _ _), typeXObj] =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+     case xobjToTy typeXObj of
+       Just t ->
+         let interface = defineInterface name t [] (info nameXObj)
+             typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) interface)
+         in  do put (ctx { contextTypeEnv = typeEnv' })
+                return dynamicNil
+       Nothing ->
+         liftIO $ do putStrLnWithColor Red ("Invalid type for interface '" ++ name ++ "': " ++
+                                            pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
+                     return dynamicNil
