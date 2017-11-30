@@ -625,7 +625,7 @@ commandProjectSet args =
 
 commandOS :: CommandCallback
 commandOS _ =
-  return (Right (XObj (Str os) Nothing Nothing))
+  return (Right (XObj (Str os) (Just dummyInfo) (Just StringTy)))
 
 commandRegister :: CommandCallback
 commandRegister [(XObj (Sym (SymPath _ name)) _ _), typeXObj] =

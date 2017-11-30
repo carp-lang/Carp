@@ -232,14 +232,15 @@ falseXObj = XObj (Bol False) Nothing Nothing
 -- | Keep expanding the form until it doesn't change anymore.
 -- | Note: comparing environments is tricky! Make sure they *can* be equal, otherwise this won't work at all!
 expandAll :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
-expandAll env xobj =
-  do expansionResult <- expand env xobj
-     let resultWithNewIds = fmap setNewIdentifiers expansionResult
-     case resultWithNewIds of
-       Right expanded -> if expanded == xobj
-                         then return (Right expanded)
-                         else expandAll env expanded
-       err -> return err
+expandAll env root = do fullyExpanded <- expandAllInternal root
+                        return (fmap setNewIdentifiers fullyExpanded)
+  where expandAllInternal xobj =
+          do expansionResult <- expand env xobj
+             case expansionResult of
+               Right expanded -> if expanded == xobj
+                                 then return (Right expanded)
+                                 else expandAll env expanded
+               err -> return err
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
 setNewIdentifiers :: XObj -> XObj
@@ -333,6 +334,8 @@ expand env xobj =
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
                          --trace ("Found macro: " ++ pretty xobj)
                          eval env xobj
+                       Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
+                         (getCommand callback) args
                        Right _ ->
                          return $ do okF <- expandedF
                                      okArgs <- expandedArgs
