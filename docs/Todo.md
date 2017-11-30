@@ -12,7 +12,6 @@
 * [0.3] Can run (type NONEXISTINGNAMESPACE.println)
 
 ## Big Language Features
-* [0.3] Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code
 * [0.3] Platform defines and optional compilation (requires dynamic evaluation of code at the REPL)
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings
@@ -41,7 +40,6 @@
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
-* [?] Enable printing of typed AST:s at the REPL to help debug unresolved type variables etc.
 
 ## Code generation
 * [1.X] LLVM backend
@@ -53,7 +51,6 @@
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
-* Is some kind of interface/typeclass construct worthwhile?
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
