@@ -35,7 +35,6 @@ data ReplCommand = Define XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
                  | DefineInterface String XObj (Maybe Info)
-                 | Expand XObj
                  | Type XObj
                  | GetInfo XObj
                  | InstantiateTemplate XObj XObj
@@ -89,7 +88,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineAlias name t
                    [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
-                   [XObj (Sym (SymPath _ "expand")) _ _, form] ->return $  Expand form
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
                    [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
@@ -369,16 +367,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                 do return newCtx
               Right evaled ->
                 do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
-                   return newCtx
-
-       Expand xobj ->
-         do (result, newCtx) <- runStateT (expandAll env xobj) ctx
-            case result of
-              Left e ->
-                do putStrLnWithColor Red (show e)
-                   return newCtx
-              Right expanded ->
-                do putStrLnWithColor Yellow (pretty expanded)
                    return newCtx
 
        Use path xobj ->
@@ -743,3 +731,18 @@ commandPrint :: CommandCallback
 commandPrint args =
   do liftIO $ mapM_ (putStrLn . pretty) args
      return dynamicNil
+
+commandExpand :: CommandCallback
+commandExpand [xobj] =
+  do ctx <- get
+     result <-expandAll (contextGlobalEnv ctx) xobj
+     case result of
+       Left e ->
+         liftIO $ do putStrLnWithColor Red (show e)
+                     return dynamicNil
+       Right expanded ->
+         liftIO $ do putStrLnWithColor Yellow (pretty expanded)
+                     return dynamicNil
+commandExpand args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'commandExpand':" ++ joinWithComma (map pretty args))
+              return dynamicNil
