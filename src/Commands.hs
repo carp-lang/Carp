@@ -35,7 +35,6 @@ data ReplCommand = Define XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
                  | DefineInterface String XObj (Maybe Info)
-                 | Type XObj
                  | GetInfo XObj
                  | InstantiateTemplate XObj XObj
                  | ProjectSet String String
@@ -89,7 +88,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
-                   [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
@@ -272,25 +270,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                     return ()
            _ ->
              do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
-                return ctx
-
-       Type xobj ->
-         case xobj of
-           XObj (Sym path@(SymPath _ name)) _ _ ->
-             case lookupInEnv path env of
-               Just (_, binder) ->
-                 do putStrLnWithColor White (show binder)
-                    return ctx
-               Nothing ->
-                 case multiLookupALL name env of
-                   [] ->
-                     do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                        return ctx
-                   binders ->
-                     do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
-                        return ctx
-           _ ->
-             do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
                 return ctx
 
        Register name xobj ->
@@ -733,7 +712,7 @@ commandExpand [xobj] =
          liftIO $ do putStrLnWithColor Yellow (pretty expanded)
                      return dynamicNil
 commandExpand args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'commandExpand':" ++ joinWithComma (map pretty args))
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand':" ++ joinWithComma (map pretty args))
               return dynamicNil
 
 commandUse :: CommandCallback
@@ -752,3 +731,28 @@ commandUse [xobj@(XObj (Sym path) _ _)] =
        Nothing ->
          liftIO $ do putStrLnWithColor Red ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
                      return dynamicNil
+
+commandType :: CommandCallback
+commandType [xobj] =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+     case xobj of
+           XObj (Sym path@(SymPath _ name)) _ _ ->
+             case lookupInEnv path env of
+               Just (_, binder) ->
+                 liftIO $ do putStrLnWithColor White (show binder)
+                             return dynamicNil
+               Nothing ->
+                 case multiLookupALL name env of
+                   [] ->
+                     liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                                 return dynamicNil
+                   binders ->
+                     liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
+                                 return dynamicNil
+           _ ->
+             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
+                         return dynamicNil
+commandType args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'type':" ++ joinWithComma (map pretty args))
+              return dynamicNil

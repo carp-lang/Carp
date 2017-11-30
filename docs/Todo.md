@@ -9,6 +9,7 @@
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
 * [0.3] When loading game.carp the SDL modules fail because of invalid paths, the CARP_DIR + path isn't searched it seems
+* [0.3] Can run (type NONEXISTINGNAMESPACE.println)
 
 ## Big Language Features
 * [0.3] Allow evaluation of dynamic functions in the REPL and give access to the Commands from dynamic code
