@@ -35,7 +35,6 @@ data ReplCommand = Define XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
                  | DefineInterface String XObj (Maybe Info)
-                 | InstantiateTemplate XObj XObj
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -84,8 +83,7 @@ objToCommand ctx xobj =
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->return $  DefineType name rest
                    [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineAlias name t
                    [XObj (Sym (SymPath _ "definterface")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->return $  DefineInterface name t (info xobj)
-                   [XObj (Sym (SymPath _ "eval")) _ _, form] ->return $  Eval form
-                   [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
+                   [XObj (Sym (SymPath _ "eval")) _ _, form] -> return $  Eval form
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
                      return $  RegisterType name rest
                    [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] ->
@@ -204,28 +202,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                Left errorMessage ->
                  do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
                     return ctx
-           _ ->
-             do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
-                return ctx
-
-       InstantiateTemplate nameXObj typeXObj ->
-         case nameXObj of
-           XObj (Sym path@(SymPath _ templateName)) _ _ ->
-             case xobjToTy typeXObj of
-               Just actualTypeSignature ->
-                 case lookupInEnv path env of
-                   Just (_, Binder (XObj (Lst [XObj (Deftemplate (TemplateCreator templateCreator)) _ _, _]) _ t)) ->
-                     let Just t' = t
-                         nameWithTypeArgSuffix = templateName ++ polymorphicSuffix t' actualTypeSignature
-                         path' = SymPath pathStrings nameWithTypeArgSuffix
-                         template = templateCreator typeEnv env
-                         (instName, instBinder) = instanceBinder path' actualTypeSignature template
-                     in  return (ctx { contextGlobalEnv = envAddBinding env instName instBinder })
-                   Just _ -> do putStrLnWithColor Red ("Can't find a template named '" ++ templateName ++ "'")
-                                return ctx
-                   Nothing -> do putStrLnWithColor Red ("Can't find a template named '" ++ templateName ++ "'")
-                                 return ctx
-               Nothing -> error ("Internal compiler error: No type signature on template '" ++ templateName ++ "'")
            _ ->
              do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
                 return ctx
