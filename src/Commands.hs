@@ -33,7 +33,6 @@ data ReplCommand = Define XObj
                  | DefineType XObj [XObj]
                  | DefineMacro String XObj XObj
                  | DefineDynamic String XObj XObj
-                 | DefineAlias String XObj
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -81,8 +80,6 @@ objToCommand ctx xobj =
                      return $ DefineDynamic name params body
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->
                      return $ DefineType name rest
-                   [XObj (Sym (SymPath _ "defalias")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
-                     return $ DefineAlias name t
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->
                      return $ Eval form
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
@@ -224,16 +221,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                      , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                                      })
                      in foldM define ctx' deps
-
-       DefineAlias name typeXObj ->
-         case xobjToTy typeXObj of
-           Just t ->
-             let alias = defineTypeAlias name t
-                 typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) alias)
-             in  return (ctx { contextTypeEnv = typeEnv' })
-           Nothing ->
-             do putStrLnWithColor Red ("Invalid type for alias '" ++ name ++ "': " ++ pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
-                return ctx
 
        DefineMacro name params body ->
          let path = SymPath pathStrings name
