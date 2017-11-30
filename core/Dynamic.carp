@@ -3,6 +3,15 @@
 
   (defmodule String
     (defdynamic append [s1 s2]
-      (macro-log "Can't append strings in dynamic runtime yet.")).)
+      (macro-log "Can't append strings in dynamic runtime yet.")))
 
   )
+
+
+;; The following functions are not put into a module for now:
+
+(defdynamic add-cflag [flag]
+  (project-set! "cflag" flag))
+
+(defdynamic add-lib [lib]
+  (project-set! "libflag" lib))

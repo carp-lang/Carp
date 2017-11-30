@@ -27,15 +27,13 @@ import Eval
 data ReplCommand = Define XObj
                  | AddInclude Includer
                  | RegisterType String [XObj]
-                 | AddCFlag String
-                 | AddLibraryFlag String
 
                  | ReplMacroError String
                  | ReplTypeError String
                  | ReplParseError String
                  | ReplCodegenError String
 
-                 | Eval XObj
+                 | ReplEval XObj
                  | ListOfCommands [ReplCommand]
                  | ListOfCallbacks [CommandCallback]
                  --deriving Show
@@ -63,24 +61,16 @@ printC xobj =
 objToCommand :: Context -> XObj -> IO ReplCommand
 objToCommand ctx xobj =
   case obj xobj of
-      Lst lst -> case lst of
-                   [XObj Defn _ _, _, _, _] -> return $ Define xobj
-                   [XObj Def _ _, _, _] ->return $  Define xobj
-                   [XObj (Sym (SymPath _ "eval")) _ _, form] ->
-                     return $ Eval form
-                   XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
-                     return $  RegisterType name rest
-                   [XObj (Sym (SymPath _ "local-include")) _ _, XObj (Str file) _ _] ->
-                     return $ AddInclude (LocalInclude file)
-                   [XObj (Sym (SymPath _ "system-include")) _ _, XObj (Str file) _ _] ->
-                     return $ AddInclude (SystemInclude file)
-                   [XObj (Sym (SymPath _ "add-cflag")) _ _, XObj (Str flag) _ _] ->
-                     return $ AddCFlag flag
-                   [XObj (Sym (SymPath _ "add-lib")) _ _, XObj (Str flag) _ _] ->
-                     return $ AddLibraryFlag flag
-                   _ -> return (Eval xobj)
-      Sym (SymPath [] (':' : text)) -> return $ ListOfCallbacks (mapMaybe charToCommand text)
-      _ -> return (Eval xobj)
+    Lst lst -> case lst of
+                 [XObj Defn _ _, _, _, _] -> return $ Define xobj
+                 [XObj Def _ _, _, _] ->return $  Define xobj
+                 [XObj (Sym (SymPath _ "eval")) _ _, form] ->
+                   return $ ReplEval form
+                 XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
+                   return $  RegisterType name rest
+                 _ -> return (ReplEval xobj)
+    Sym (SymPath [] (':' : text)) -> return $ ListOfCallbacks (mapMaybe charToCommand text)
+    _ -> return (ReplEval xobj)
 
 charToCommand :: Char -> Maybe CommandCallback
 charToCommand 'x' = Just commandRunExe
@@ -169,8 +159,21 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                      })
                      in foldM define ctx' deps
 
-       Eval xobj ->
-         do (result, newCtx) <- runStateT (eval env xobj) ctx
+       ReplEval xobj ->
+         do (result, newCtx) <- case xobj of
+                                  XObj (Lst (f : args)) _ _ ->
+                                    do (result', ctx') <- runStateT (eval env f) ctx
+                                       case result' of
+                                         Right (XObj (Lst ((XObj (Command callback) _ _) : _)) _ _) ->
+                                           -- If a Command is called at the REPL it won't eval its args for the moment:
+                                           runStateT ((getCommand callback) args) ctx'
+                                         Right _ ->
+                                           -- Not a Command, so will just eval normally:
+                                           runStateT (eval env xobj) ctx'
+                                         Left err ->
+                                           return (Left err, ctx')
+                                  _ ->
+                                    runStateT (eval env xobj) ctx
             case result of
               Left e ->
                 do putStrLnWithColor Red (show e)
@@ -180,30 +183,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Right evaled ->
                 do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
                    return newCtx
-
-       AddInclude includer ->
-         let includers = projectIncludes proj
-             includers' = if includer `elem` includers
-                          then includers
-                          else includer : includers
-             proj' = proj { projectIncludes = includers' }
-         in  return (ctx { contextProj = proj' })
-
-       AddCFlag flag ->
-         let flags = projectCFlags proj
-             flags' = if flag `elem` flags
-                      then flags
-                      else flag : flags
-             proj' = proj { projectCFlags = flags' }
-         in  return (ctx { contextProj = proj' })
-
-       AddLibraryFlag flag ->
-         let flags = projectLibFlags proj
-             flags' = if flag `elem` flags
-                      then flags
-                      else flag : flags
-             proj' = proj { projectLibFlags = flags' }
-         in  return (ctx { contextProj = proj' })
 
        ReplParseError e ->
          do putStrLnWithColor Red ("[PARSE ERROR] " ++ e)
@@ -622,16 +601,19 @@ commandInfo args =
               return dynamicNil
 
 commandProjectSet :: CommandCallback
-commandProjectSet [XObj (Sym (SymPath [] key)) _ _, XObj (Str value) _ _] =
+commandProjectSet [XObj (Str key) _ _, value] =
   do ctx <- get
      let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+     Right evaledValue <- eval env value -- TODO: fix!!!
+     let (XObj (Str valueStr) _ _) = evaledValue
      newCtx <- case key of
-                 "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
-                 "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent value (projectCFlags proj) } }
-                 "prompt" -> return ctx { contextProj = proj { projectPrompt = value } }
-                 "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent value (projectCarpSearchPaths proj) } }
-                 "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (value == "true") } }
-                 "echoC" -> return ctx { contextProj = proj { projectEchoC = (value == "true") } }
+                 "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                 "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                 "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
+                 "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
+                 "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
+                 "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
                  _ ->
                    liftIO $ do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                                return ctx
@@ -690,6 +672,9 @@ commandDefmacro [(XObj (Sym (SymPath [] name)) _ _), params, body] =
          macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just MacroTy)
      put (ctx { contextGlobalEnv = envInsertAt env path macro })
      return dynamicNil
+commandMacro args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'defmacro' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
 
 commandDefdynamic :: CommandCallback
 commandDefdynamic [(XObj (Sym (SymPath [] name)) _ _), params, body] =
@@ -700,6 +685,9 @@ commandDefdynamic [(XObj (Sym (SymPath [] name)) _ _), params, body] =
          dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
      put (ctx { contextGlobalEnv = envInsertAt env path dynamic })
      return dynamicNil
+commandDefdynamic args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'defdynamic' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
 
 commandDeftype :: CommandCallback
 commandDeftype (nameXObj : rest) =
@@ -728,6 +716,9 @@ commandDeftype (nameXObj : rest) =
        _ ->
          liftIO $ do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
                      return dynamicNil
+commandDeftype args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'deftype' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
 
 commandDefmodule :: CommandCallback
 commandDefmodule (xobj@(XObj (Sym (SymPath [] moduleName)) _ _) : innerExpressions) =
@@ -755,3 +746,22 @@ commandDefmodule (xobj@(XObj (Sym (SymPath [] moduleName)) _ _) : innerExpressio
             ctxAfterModuleDef <- liftIO (foldM folder ctx' innerExpressions)
             put (popModulePath ctxAfterModuleDef)
             return dynamicNil
+commandDefmodule args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'defmodule' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
+
+commandAddInclude :: (String -> Includer) -> CommandCallback
+commandAddInclude includerConstructor [XObj (Str file) _ _] =
+  do ctx <- get
+     let proj = contextProj ctx
+         includer = includerConstructor file
+         includers = projectIncludes proj
+         includers' = if includer `elem` includers
+                      then includers
+                      else includer : includers
+         proj' = proj { projectIncludes = includers' }
+     put (ctx { contextProj = proj' })
+     return dynamicNil
+
+commandAddSystemInclude = commandAddInclude SystemInclude
+commandAddLocalInclude  = commandAddInclude LocalInclude

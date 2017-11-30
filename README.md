@@ -58,10 +58,13 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
 
+### Language Design & Lead Developer
+[Erik Svedäng](http://www.eriksvedang.com) [@e_svedang](https://twitter.com/e_svedang)
+
+### Core Contributor(s)
+* [Veit Heller](http://veitheller.de)
 
 ### Contributors
-
-* Erik Svedäng [@e_svedang](https://twitter.com/e_svedang)
 * Markus Gustavsson
 * Fyodor Shchukin
 * Anes Lihovac
@@ -69,10 +72,9 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Tom Smeding
 * Dan Connolly
 * Reini Urban
-* Anes Lihovac
 * Jonas Granquist
-* Veit Heller
 
+Are you missing from the contributors list? Please send a pull request!
 
 ## License
 

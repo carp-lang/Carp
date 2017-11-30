@@ -1,4 +1,4 @@
-module Eval (expandAll, eval, EvalError(..), dynamicNil) where
+module Eval (expandAll, eval, apply, EvalError(..), dynamicNil) where
 
 import qualified Data.Map as Map
 import Data.List (foldl', null)
@@ -18,7 +18,8 @@ dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy))
 
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj =
-  case obj xobj of -- (trace ("Eval " ++ pretty xobj) xobj) of
+  case obj xobj of
+  --case obj (trace ("Eval " ++ pretty xobj) xobj) of
     Lst _ -> evalList xobj
     Arr _ -> evalArray xobj
     Sym _ -> evalSymbol xobj
@@ -173,7 +174,10 @@ eval env xobj =
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          apply env body params args
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
-                         getCommand callback args
+                         do evaledArgs <- fmap sequence (mapM (eval env) args)
+                            case evaledArgs of
+                              Right okArgs -> getCommand callback okArgs
+                              Left err -> return (Left err)
                        _ ->
                          return (Right xobj)
                          --Left (EvalError ("Can't eval non-macro / non-dynamic function: " ++ pretty xobj))
