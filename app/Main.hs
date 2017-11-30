@@ -157,6 +157,7 @@ startingGlobalEnv noArray =
                                   , addCommand "load" (CommandFunction commandLoad)
                                   , addCommand "macro-log" (CommandFunction commandPrint)
                                   , addCommand "expand" (CommandFunction commandExpand)
+                                  , addCommand "use" (CommandFunction commandUse)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env

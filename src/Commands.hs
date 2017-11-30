@@ -38,8 +38,8 @@ data ReplCommand = Define XObj
                  | Type XObj
                  | GetInfo XObj
                  | InstantiateTemplate XObj XObj
-                 | Use SymPath XObj
                  | ProjectSet String String
+
                  | ReplMacroError String
                  | ReplTypeError String
                  | ReplParseError String
@@ -91,7 +91,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
                    [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
-                   [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
                    [XObj (Sym (SymPath _ "register")) _ _, XObj (Sym (SymPath _ name)) _ _, t] ->
@@ -368,16 +367,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Right evaled ->
                 do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
                    return newCtx
-
-       Use path xobj ->
-         let e = getEnv env pathStrings
-             useThese = envUseModules e
-             e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
-             innerEnv = getEnv env pathStrings
-         in case lookupInEnv path innerEnv of
-           Just (_, Binder _) ->  return ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
-           Nothing -> do putStrLnWithColor Red ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
-                         return ctx
 
        -- | A more general way to set project settings, will replace other means later probably.
        ProjectSet key value ->
@@ -746,3 +735,20 @@ commandExpand [xobj] =
 commandExpand args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'commandExpand':" ++ joinWithComma (map pretty args))
               return dynamicNil
+
+commandUse :: CommandCallback
+commandUse [xobj@(XObj (Sym path) _ _)] =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         e = getEnv env pathStrings
+         useThese = envUseModules e
+         e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
+         innerEnv = getEnv env pathStrings -- Duplication of e?
+     case lookupInEnv path innerEnv of
+       Just (_, Binder _) ->
+         do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
+            return dynamicNil
+       Nothing ->
+         liftIO $ do putStrLnWithColor Red ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
+                     return dynamicNil
