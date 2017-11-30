@@ -49,7 +49,6 @@ data ReplCommand = Define XObj
                  | ReplCodegenError String
                  | Print String
                  | ListBindingsInEnv
-                 | Help String
                  | ListOfCommands [ReplCommand]
                  | ListOfCallbacks [CommandCallback]
                  --deriving Show
@@ -96,7 +95,6 @@ objToCommand ctx xobj =
                    [XObj (Sym (SymPath _ "instantiate")) _ _, name, signature] ->return $  InstantiateTemplate name signature
                    [XObj (Sym (SymPath _ "type")) _ _, form] ->return $  Type form
                    [XObj (Sym (SymPath _ "info")) _ _, form] ->return $  GetInfo form
-                   [XObj (Sym (SymPath _ "help")) _ _, XObj (Sym (SymPath _ chapter)) _ _] ->return $  Help chapter
                    [XObj (Sym (SymPath _ "use")) _ _, XObj (Sym path) _ _] ->return $  Use path xobj
                    [XObj (Sym (SymPath _ "project-set!")) _ _, XObj (Sym (SymPath _ key)) _ _, XObj (Str value) _ _] ->
                      return $  ProjectSet key value
@@ -452,86 +450,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do putStr s
             return ctx
 
-       Help "about" -> do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
-                          putStrLn ""
-                          putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
-                                    \you may not use this file except in compliance with the License. \n\
-                                    \You may obtain a copy of the License at \n\
-                                    \http://www.apache.org/licenses/LICENSE-2.0"
-                          putStrLn ""
-                          putStrLn "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY \n\
-                                   \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
-                                   \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
-                                   \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
-                                   \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
-                                   \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
-                                   \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
-                                   \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
-                                   \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
-                                   \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
-                                   \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-                          putStrLn ""
-                          return ctx
-
-       Help "language" -> do putStrLn "Special forms:"
-                             putStrLn "(if <condition> <then> <else>)"
-                             putStrLn "(while <condition> <body>)"
-                             putStrLn "(do <statement1> <statement2> ... <exprN>)"
-                             putStrLn "(let [<sym1> <expr1> <name2> <expr2> ...] <body>)"
-                             --putStrLn "(fn [<args>] <body>)"
-                             putStrLn "(the <type> <expression>)"
-                             putStrLn "(ref <expression>)"
-                             putStrLn "(address <expr>)"
-                             putStrLn "(set! <var> <value>)"
-                             putStrLn ""
-                             putStrLn "To use functions in modules without qualifying them:"
-                             putStrLn "(use <module>)"
-                             putStrLn ""
-                             putStrLn ("Valid non-alphanumerics: " ++ validCharacters)
-                             putStrLn ""
-                             putStrLn "Number literals:"
-                             putStrLn "1      Int"
-                             putStrLn "1l     Int"
-                             putStrLn "1.0    Double"
-                             putStrLn "1.0f   Float"
-                             putStrLn ""
-                             putStrLn "Reader macros:"
-                             putStrLn "&<expr>   (ref <expr>)"
-                             putStrLn "@<expr>   (copy <expr>)"
-                             putStrLn ""
-                             return ctx
-
-       Help "macros" -> do putStrLn "Some useful macros:"
-                           putStrLn "(cond <condition1> <expr1> ... <else-condition>)"
-                           putStrLn "(for [<var> <from> <to>] <body>)"
-                           putStrLn ""
-                           return ctx
-
-       Help "structs" -> do putStrLn "A type definition will generate the following methods:"
-                            putStrLn "Getters  (<method-name> (Ref <struct>))"
-                            putStrLn "Setters  (set-<method-name> <struct> <new-value>)"
-                            putStrLn "Updaters (update-<method-name> <struct> <new-value>)"
-                            putStrLn "init (stack allocation)"
-                            putStrLn "new (heap allocation)"
-                            putStrLn "copy"
-                            putStrLn "delete (used internally, no need to call this explicitly)"
-                            putStrLn ""
-                            return ctx
-
-       Help "shortcuts" -> do putStrLn "GHC-style shortcuts at the repl:"
-                              putStrLn "(reload)   :r"
-                              putStrLn "(build)    :b"
-                              putStrLn "(run)      :x"
-                              putStrLn "(cat)      :c"
-                              putStrLn "(env)      :e"
-                              putStrLn "(help)     :h"
-                              putStrLn "(project)  :p"
-                              putStrLn "(quit)     :q"
-                              putStrLn ""
-                              putStrLn "The shortcuts can be combined like this: \":rbx\""
-                              putStrLn ""
-                              return ctx
-
        DoNothing -> return ctx
 
        ListOfCommands commands -> foldM executeCommand ctx commands
@@ -665,7 +583,93 @@ commandListBindings args =
                  return dynamicNil
 
 commandHelp :: CommandCallback
-commandHelp args =
+
+commandHelp [XObj (Sym (SymPath [] "about")) _ _] =
+  liftIO $ do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
+              putStrLn ""
+              putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
+                       \you may not use this file except in compliance with the License. \n\
+                       \You may obtain a copy of the License at \n\
+                       \http://www.apache.org/licenses/LICENSE-2.0"
+              putStrLn ""
+              putStrLn "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY \n\
+                       \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
+                       \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
+                       \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
+                       \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
+                       \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
+                       \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
+                       \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
+                       \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
+                       \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
+                       \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+              putStrLn ""
+              return dynamicNil
+
+commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
+  liftIO $ do putStrLn "Special forms:"
+              putStrLn "(if <condition> <then> <else>)"
+              putStrLn "(while <condition> <body>)"
+              putStrLn "(do <statement1> <statement2> ... <exprN>)"
+              putStrLn "(let [<sym1> <expr1> <name2> <expr2> ...] <body>)"
+              --putStrLn "(fn [<args>] <body>)"
+              putStrLn "(the <type> <expression>)"
+              putStrLn "(ref <expression>)"
+              putStrLn "(address <expr>)"
+              putStrLn "(set! <var> <value>)"
+              putStrLn ""
+              putStrLn "To use functions in modules without qualifying them:"
+              putStrLn "(use <module>)"
+              putStrLn ""
+              putStrLn ("Valid non-alphanumerics: " ++ validCharacters)
+              putStrLn ""
+              putStrLn "Number literals:"
+              putStrLn "1      Int"
+              putStrLn "1l     Int"
+              putStrLn "1.0    Double"
+              putStrLn "1.0f   Float"
+              putStrLn ""
+              putStrLn "Reader macros:"
+              putStrLn "&<expr>   (ref <expr>)"
+              putStrLn "@<expr>   (copy <expr>)"
+              putStrLn ""
+              return dynamicNil
+
+commandHelp [XObj (Sym (SymPath [] "macros")) _ _] =
+  liftIO $ do putStrLn "Some useful macros:"
+              putStrLn "(cond <condition1> <expr1> ... <else-condition>)"
+              putStrLn "(for [<var> <from> <to>] <body>)"
+              putStrLn ""
+              return dynamicNil
+
+commandHelp [XObj (Sym (SymPath [] "structs")) _ _] =
+  liftIO $ do putStrLn "A type definition will generate the following methods:"
+              putStrLn "Getters  (<method-name> (Ref <struct>))"
+              putStrLn "Setters  (set-<method-name> <struct> <new-value>)"
+              putStrLn "Updaters (update-<method-name> <struct> <new-value>)"
+              putStrLn "init (stack allocation)"
+              putStrLn "new (heap allocation)"
+              putStrLn "copy"
+              putStrLn "delete (used internally, no need to call this explicitly)"
+              putStrLn ""
+              return dynamicNil
+
+commandHelp [XObj (Sym (SymPath [] "shortcuts")) _ _] =
+  liftIO $ do putStrLn "GHC-style shortcuts at the repl:"
+              putStrLn "(reload)   :r"
+              putStrLn "(build)    :b"
+              putStrLn "(run)      :x"
+              putStrLn "(cat)      :c"
+              putStrLn "(env)      :e"
+              putStrLn "(help)     :h"
+              putStrLn "(project)  :p"
+              putStrLn "(quit)     :q"
+              putStrLn ""
+              putStrLn "The shortcuts can be combined like this: \":rbx\""
+              putStrLn ""
+              return dynamicNil
+
+commandHelp [] =
   liftIO $ do putStrLn "Compiler commands:"
               putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
               putStrLn "(reload)           - Reload all the project files."
@@ -698,6 +702,10 @@ commandHelp args =
               putStrLn "-b                               - Build."
               putStrLn "-x                               - Build and run."
               return dynamicNil
+
+commandHelp args =
+  do liftIO $ putStrLn ("Can't find help for " ++ joinWithComma (map pretty args))
+     return dynamicNil
 
 commandProject :: CommandCallback
 commandProject args =
