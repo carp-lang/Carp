@@ -59,7 +59,7 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
 
 ### Language Designer & Lead Developer
-[Erik Svedäng](http://www.eriksvedang.com) [@e_svedang](https://twitter.com/e_svedang)
+[Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
 
 ### Core Contributor
 [Veit Heller](http://veitheller.de)
