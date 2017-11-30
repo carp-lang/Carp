@@ -233,7 +233,7 @@ lispSyntax = do padding <- Parsec.many whitespace
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
 parse text fileName = let initState = ParseState (Info 1 0 fileName (Set.fromList []) 0)
-                      in  Parsec.runParser lispSyntax initState "(source)" text
+                      in  Parsec.runParser lispSyntax initState fileName text
 
 
 
