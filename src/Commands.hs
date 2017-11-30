@@ -30,7 +30,6 @@ data ReplCommand = Define XObj
                  | AddCFlag String
                  | AddLibraryFlag String
                  | DefineModule String [XObj] (Maybe Info)
-                 | DefineType XObj [XObj]
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -72,8 +71,6 @@ objToCommand ctx xobj =
                      return $ DefineModule name innerExpressions (info xobj)
                    XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
                      return $ DefineModule name innerExpressions (info xobj)
-                   XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->
-                     return $ DefineType name rest
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->
                      return $ Eval form
                    XObj (Sym (SymPath _ "register-type")) _ _ : XObj (Sym (SymPath _ name)) _ _ : rest ->
@@ -174,29 +171,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                     globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
                 ctxAfterModuleDef <- foldM folder (Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) innerExpressions
                 return (popModulePath ctxAfterModuleDef)
-
-       DefineType nameXObj rest ->
-         case nameXObj of
-           XObj (Sym (SymPath _ typeName)) i _ ->
-             case moduleForDeftype typeEnv env pathStrings typeName rest i of
-               Right (typeModuleName, typeModuleXObj, deps) ->
-                 let typeDefinition =
-                       -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                       XObj (Lst (XObj Typ Nothing Nothing : XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing : rest)) i (Just TypeTy)
-                     ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
-                                 , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
-                                 })
-                 in do ctxWithDeps <- foldM define ctx' deps
-                       return $ foldl (\context path -> registerInInterfaceIfNeeded context path) ctxWithDeps
-                         [(SymPath (pathStrings ++ [typeModuleName]) "str")
-                         ,(SymPath (pathStrings ++ [typeModuleName]) "copy")
-                         ]
-               Left errorMessage ->
-                 do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
-                    return ctx
-           _ ->
-             do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
-                return ctx
 
        RegisterType typeName rest ->
          let path = SymPath pathStrings typeName
@@ -747,3 +721,31 @@ commandDefdynamic [(XObj (Sym (SymPath [] name)) _ _), params, body] =
          dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
      put (ctx { contextGlobalEnv = envInsertAt env path dynamic })
      return dynamicNil
+
+commandDeftype :: CommandCallback
+commandDeftype (nameXObj : rest) =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+     case nameXObj of
+       XObj (Sym (SymPath _ typeName)) i _ ->
+         case moduleForDeftype typeEnv env pathStrings typeName rest i of
+           Right (typeModuleName, typeModuleXObj, deps) ->
+             let typeDefinition =
+                   -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
+                   XObj (Lst (XObj Typ Nothing Nothing : XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing : rest)) i (Just TypeTy)
+                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
+                             , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
+                             })
+             in do ctxWithDeps <- liftIO (foldM define ctx' deps)
+                   put $ foldl (\context path -> registerInInterfaceIfNeeded context path) ctxWithDeps
+                               [(SymPath (pathStrings ++ [typeModuleName]) "str")
+                               ,(SymPath (pathStrings ++ [typeModuleName]) "copy")]
+                   return dynamicNil
+           Left errorMessage ->
+             liftIO $ do putStrLnWithColor Red ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)
+                         return dynamicNil
+       _ ->
+         liftIO $ do putStrLnWithColor Red ("Invalid name for type definition: " ++ pretty nameXObj)
+                     return dynamicNil
