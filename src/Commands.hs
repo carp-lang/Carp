@@ -35,20 +35,18 @@ data ReplCommand = Define XObj
                  | DefineDynamic String XObj XObj
                  | DefineAlias String XObj
                  | DefineInterface String XObj (Maybe Info)
-                 | Eval XObj
                  | Expand XObj
                  | Type XObj
                  | GetInfo XObj
                  | InstantiateTemplate XObj XObj
                  | Use SymPath XObj
                  | ProjectSet String String
-                 | DoNothing
                  | ReplMacroError String
                  | ReplTypeError String
                  | ReplParseError String
                  | ReplCodegenError String
-                 | Print String
-                 | ListBindingsInEnv
+
+                 | Eval XObj
                  | ListOfCommands [ReplCommand]
                  | ListOfCallbacks [CommandCallback]
                  --deriving Show
@@ -63,15 +61,15 @@ consumeExpr ctx@(Context globalEnv typeEnv _ _ _ _) xobj =
        Right expanded ->
          case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
            Left err -> return (ReplTypeError (show err))
-           Right annXObjs -> return (ListOfCommands (map printC annXObjs))
+           Right annXObjs -> return (ListOfCallbacks (map printC annXObjs))
 
-printC :: XObj -> ReplCommand
+printC :: XObj -> CommandCallback
 printC xobj =
   case checkForUnresolvedSymbols xobj of
     Left e ->
-      (Print . strWithColor Red) (show e ++ ", can't print resulting code.\n")
+      (const (commandPrint [(XObj (Str (strWithColor Red (show e ++ ", can't print resulting code.\n"))) Nothing Nothing)]))
     Right _ ->
-      (Print . strWithColor Green . toC) xobj
+      (const (commandPrint [(XObj (Str (strWithColor Green (toC xobj))) Nothing Nothing)]))
 
 objToCommand :: Context -> XObj -> IO ReplCommand
 objToCommand ctx xobj =
@@ -446,12 +444,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ e)
             return ctx
 
-       Print s ->
-         do putStr s
-            return ctx
-
-       DoNothing -> return ctx
-
        ListOfCommands commands -> foldM executeCommand ctx commands
 
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
@@ -746,3 +738,8 @@ loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
   where folder :: Context -> FilePath -> IO Context
         folder ctx file =
           callCallbackWithArgs ctx commandLoad [XObj (Str file) Nothing Nothing]
+
+commandPrint :: CommandCallback
+commandPrint args =
+  do liftIO $ mapM_ (putStrLn . pretty) args
+     return dynamicNil

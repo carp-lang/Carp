@@ -124,12 +124,6 @@ eval env xobj =
                          case okArg of
                            XObj (Str msg) _ _ -> Left (EvalError msg)
                            _                  -> Left (EvalError "Calling 'macro-error' with non-string argument")
-        [XObj (Sym (SymPath [] "macro-log")) _ _, arg] ->
-          do evaledArg <- eval env arg
-             case evaledArg of
-               Right okArg -> do liftIO (putStrLn (pretty okArg))
-                                 return dynamicNil
-               Left err -> return (Left err)
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
              case evaledCondition of
