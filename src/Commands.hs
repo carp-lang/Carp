@@ -31,8 +31,6 @@ data ReplCommand = Define XObj
                  | AddLibraryFlag String
                  | DefineModule String [XObj] (Maybe Info)
                  | DefineType XObj [XObj]
-                 | DefineMacro String XObj XObj
-                 | DefineDynamic String XObj XObj
 
                  | ReplMacroError String
                  | ReplTypeError String
@@ -74,10 +72,6 @@ objToCommand ctx xobj =
                      return $ DefineModule name innerExpressions (info xobj)
                    XObj (Sym (SymPath _ "defmodule")) _ _ : XObj (Sym (SymPath _ name)) _ _ : innerExpressions ->
                      return $ DefineModule name innerExpressions (info xobj)
-                   [XObj (Sym (SymPath _ "defmacro")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
-                     return $ DefineMacro name params body
-                   [XObj (Sym (SymPath _ "defdynamic")) _ _, XObj (Sym (SymPath _ name)) _ _, params@(XObj (Arr _) _ _), body] ->
-                     return $ DefineDynamic name params body
                    XObj (Sym (SymPath _ "deftype")) _ _ : name : rest ->
                      return $ DefineType name rest
                    [XObj (Sym (SymPath _ "eval")) _ _, form] ->
@@ -221,18 +215,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                                      , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                                      })
                      in foldM define ctx' deps
-
-       DefineMacro name params body ->
-         let path = SymPath pathStrings name
-             macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body])
-                     (info body) (Just MacroTy)
-         in  return (ctx { contextGlobalEnv = envInsertAt env path macro })
-
-       DefineDynamic name params body ->
-         let path = SymPath pathStrings name
-             dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body])
-                       (info body) (Just DynamicTy)
-         in  return (ctx { contextGlobalEnv = envInsertAt env path dynamic })
 
        Eval xobj ->
          do (result, newCtx) <- runStateT (eval env xobj) ctx
@@ -745,3 +727,23 @@ commandDefinterface [nameXObj@(XObj (Sym (SymPath [] name)) _ _), typeXObj] =
          liftIO $ do putStrLnWithColor Red ("Invalid type for interface '" ++ name ++ "': " ++
                                             pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")
                      return dynamicNil
+
+commandDefmacro :: CommandCallback
+commandDefmacro [(XObj (Sym (SymPath [] name)) _ _), params, body] =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         path = SymPath pathStrings name
+         macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just MacroTy)
+     put (ctx { contextGlobalEnv = envInsertAt env path macro })
+     return dynamicNil
+
+commandDefdynamic :: CommandCallback
+commandDefdynamic [(XObj (Sym (SymPath [] name)) _ _), params, body] =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         path = SymPath pathStrings name
+         dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
+     put (ctx { contextGlobalEnv = envInsertAt env path dynamic })
+     return dynamicNil
