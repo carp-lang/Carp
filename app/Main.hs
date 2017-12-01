@@ -24,6 +24,7 @@ import Commands
 import Template
 import ArrayTemplates
 import Parsing
+import Eval
 
 defaultProject :: Project
 defaultProject = Project { projectTitle = "Untitled"
@@ -145,7 +146,6 @@ startingGlobalEnv noArray =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
-                                  , addCommand "destroy" (CommandFunction commandDestroy)
                                   , addCommand "quit" (CommandFunction commandQuit)
                                   , addCommand "cat" (CommandFunction commandCat)
                                   , addCommand "run" (CommandFunction commandRunExe)
@@ -156,18 +156,11 @@ startingGlobalEnv noArray =
                                   , addCommand "project" (CommandFunction commandProject)
                                   , addCommand "load" (CommandFunction commandLoad)
                                   , addCommand "macro-log" (CommandFunction commandPrint)
-                                  , addCommand "expand" (CommandFunction commandExpand)
-                                  , addCommand "use" (CommandFunction commandUse)
-                                  , addCommand "type" (CommandFunction commandType)
-                                  , addCommand "info" (CommandFunction commandInfo)
+                                  , addCommand "expand" (CommandFunction commandExpand) -- not autoquoting it's arg for now
+                                  , addCommand "type" (CommandFunction commandType) -- not autoquoting it's arg for now
+                                  , addCommand "info" (CommandFunction commandInfo) -- not autoquoting it's arg for now
                                   , addCommand "project-set!" (CommandFunction commandProjectSet)
                                   , addCommand "os" (CommandFunction commandOS)
-                                  , addCommand "register" (CommandFunction commandRegister)
-                                  , addCommand "definterface" (CommandFunction commandDefinterface)
-                                  , addCommand "defmacro" (CommandFunction commandDefmacro)
-                                  , addCommand "defdynamic" (CommandFunction commandDefdynamic)
-                                  , addCommand "deftype" (CommandFunction commandDeftype)
-                                  , addCommand "defmodule" (CommandFunction commandDefmodule)
                                   , addCommand "system-include" (CommandFunction commandAddSystemInclude)
                                   , addCommand "local-include" (CommandFunction commandAddLocalInclude)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])

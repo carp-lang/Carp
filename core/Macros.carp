@@ -50,9 +50,9 @@
       (append
        (list
         (car (last xs))
-        (thread-first-internal (init xs)))
+        (thread-first-internal (all-but-last xs)))
        (cdr (last xs)))
-      (list (last xs) (thread-first-internal (init xs))))))
+      (list (last xs) (thread-first-internal (all-but-last xs))))))
 
 (defdynamic thread-last-internal [xs]
   (if (= (count xs) 2)
@@ -60,8 +60,8 @@
       (cons-last (car xs) (last xs))
       (list (car (cdr xs)) (car xs)))
     (if (list? (last xs))
-      (cons-last (thread-last-internal (init xs)) (last xs))
-      (list (last xs) (thread-last-internal (init xs))))))
+      (cons-last (thread-last-internal (all-but-last xs)) (last xs))
+      (list (last xs) (thread-last-internal (all-but-last xs))))))
 
 (defmacro => [:rest forms]
   (thread-first-internal forms))

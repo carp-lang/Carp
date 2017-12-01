@@ -5,7 +5,6 @@ import Data.Maybe (fromMaybe)
 import Types
 import Obj
 import Constraints
-import Eval
 import Util
 
 data TypeError = SymbolMissingType XObj Env
