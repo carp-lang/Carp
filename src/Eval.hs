@@ -304,16 +304,24 @@ eval env xobj =
         XObj (Sym (SymPath [] "register")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'register' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "definterface")) _ _, nameXObj@(XObj (Sym (SymPath [] name)) _ _), typeXObj] ->
+        [XObj (Sym (SymPath [] "definterface")) _ _, nameXObj@(XObj (Sym path@(SymPath [] name)) _ _), typeXObj] ->
           do ctx <- get
              let env = contextGlobalEnv ctx
-                 typeEnv = contextTypeEnv ctx
+                 typeEnv = getTypeEnv (contextTypeEnv ctx)
              case xobjToTy typeXObj of
                Just t ->
-                 let interface = defineInterface name t [] (info nameXObj)
-                     typeEnv' = TypeEnv (envInsertAt (getTypeEnv typeEnv) (SymPath [] name) interface)
-                 in  do put (ctx { contextTypeEnv = typeEnv' })
-                        return dynamicNil
+                 case lookupInEnv path typeEnv of
+                   Just (_, Binder (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _)) ->
+                     -- The interface already exists, so it will be left as-is.
+                     if foundType == t
+                     then return dynamicNil
+                     else liftIO $ do putStrLn ("[WARNING] Changed the type of interface '" ++ show path ++ "' from " ++ show foundType ++ " to " ++ show t)
+                                      return dynamicNil
+                   Nothing ->
+                     let interface = defineInterface name t [] (info nameXObj)
+                         typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) interface)
+                     in  do put (ctx { contextTypeEnv = typeEnv' })
+                            return dynamicNil
                Nothing ->
                  return (Left (EvalError ("Invalid type for interface '" ++ name ++ "': " ++
                                            pretty typeXObj ++ " at " ++ prettyInfoFromXObj typeXObj ++ ".")))
