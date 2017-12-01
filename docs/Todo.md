@@ -6,11 +6,10 @@
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
-* [0.3] Reloading destroys interfaces!!!
 * [0.3] Allocate enough memory in the Array.str and struct.str functions
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
-* [0.3] When loading game.carp the SDL modules fail because of invalid paths, the CARP_DIR + path isn't searched it seems
+* [0.3] When loading game.carp from outside, the SDL modules fail because of invalid paths, the CARP_DIR + path isn't searched it seems
 * [0.3] Can run (type NONEXISTINGNAMESPACE.println)
 
 ## Big Language Features
