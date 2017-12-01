@@ -315,7 +315,7 @@ eval env xobj =
                      -- The interface already exists, so it will be left as-is.
                      if foundType == t
                      then return dynamicNil
-                     else liftIO $ do putStrLn ("[WARNING] Changed the type of interface '" ++ show path ++ "' from " ++ show foundType ++ " to " ++ show t)
+                     else liftIO $ do putStrLn ("[FORBIDDEN] Tried to change the type of interface '" ++ show path ++ "' from " ++ show foundType ++ " to " ++ show t)
                                       return dynamicNil
                    Nothing ->
                      let interface = defineInterface name t [] (info nameXObj)
@@ -412,9 +412,8 @@ eval env xobj =
                XObj (Sym path@(SymPath _ name)) _ _ ->
                  -- First look in the type env, then in the global env:
                  do case lookupInEnv path (getTypeEnv typeEnv) of
-                      Nothing -> return ()
+                      Nothing -> liftIO (printer (lookupInEnv path env))
                       found -> liftIO (printer found)
-                    liftIO (printer (lookupInEnv path env))
                     return dynamicNil
                _ ->
                  liftIO $ do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
