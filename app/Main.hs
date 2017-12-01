@@ -157,8 +157,6 @@ startingGlobalEnv noArray =
                                   , addCommand "load" (CommandFunction commandLoad)
                                   , addCommand "macro-log" (CommandFunction commandPrint)
                                   , addCommand "expand" (CommandFunction commandExpand) -- not autoquoting it's arg for now
-                                  , addCommand "type" (CommandFunction commandType) -- not autoquoting it's arg for now
-                                  , addCommand "info" (CommandFunction commandInfo) -- not autoquoting it's arg for now
                                   , addCommand "project-set!" (CommandFunction commandProjectSet)
                                   , addCommand "os" (CommandFunction commandOS)
                                   , addCommand "system-include" (CommandFunction commandAddSystemInclude)

@@ -373,6 +373,70 @@ eval env xobj =
         XObj (Sym (SymPath [] "defmodule")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'defmodule' command: " ++ pretty xobj)))
 
+        [XObj (Sym (SymPath [] "info")) _ _, target@(XObj (Sym path@(SymPath _ name)) _ _)] ->
+          do ctx <- get
+             let env = contextGlobalEnv ctx
+                 typeEnv = contextTypeEnv ctx
+                 proj = contextProj ctx
+                 printer binderPair =
+                   case binderPair of
+                     Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
+                       do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
+                          when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
+                          return ()
+                     Just (_, binder@(Binder x)) ->
+                       do putStrLnWithColor White (show binder)
+                          when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
+                          return ()
+                     Nothing ->
+                       case multiLookupALL name env of
+                         [] ->
+                           do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                              return ()
+                         binders ->
+                           do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                                       case i of
+                                         Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
+                                         Nothing -> putStrLnWithColor White (show binder))
+                                binders
+                              return ()
+             case target of
+               XObj (Sym path@(SymPath _ name)) _ _ ->
+                 -- First look in the type env, then in the global env:
+                 do case lookupInEnv path (getTypeEnv typeEnv) of
+                      Nothing -> return ()
+                      found -> liftIO (printer found)
+                    liftIO (printer (lookupInEnv path env))
+                    return dynamicNil
+               _ ->
+                 liftIO $ do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
+                             return dynamicNil
+        XObj (Sym (SymPath [] "info")) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'info' command: " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "type")) _ _, target] ->
+          do ctx <- get
+             let env = contextGlobalEnv ctx
+             case target of
+                   XObj (Sym path@(SymPath _ name)) _ _ ->
+                     case lookupInEnv path env of
+                       Just (_, binder) ->
+                         liftIO $ do putStrLnWithColor White (show binder)
+                                     return dynamicNil
+                       Nothing ->
+                         case multiLookupALL name env of
+                           [] ->
+                             liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                                         return dynamicNil
+                           binders ->
+                             liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
+                                         return dynamicNil
+                   _ ->
+                     liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
+                                 return dynamicNil
+        XObj (Sym (SymPath [] "type")) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
+
         [XObj (Sym (SymPath [] "use")) _ _, xobj@(XObj (Sym path) _ _)] ->
           do ctx <- get
              let pathStrings = contextPath ctx
@@ -950,74 +1014,6 @@ commandExpand [xobj] =
                      return dynamicNil
 commandExpand args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
-
-commandType :: CommandCallback
-commandType [xobj] =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-     case xobj of
-           XObj (Sym path@(SymPath _ name)) _ _ ->
-             case lookupInEnv path env of
-               Just (_, binder) ->
-                 liftIO $ do putStrLnWithColor White (show binder)
-                             return dynamicNil
-               Nothing ->
-                 case multiLookupALL name env of
-                   [] ->
-                     liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                                 return dynamicNil
-                   binders ->
-                     liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
-                                 return dynamicNil
-           _ ->
-             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
-                         return dynamicNil
-commandType args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'type' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
-
-commandInfo :: CommandCallback
-commandInfo [xobj@(XObj (Sym path@(SymPath _ name)) _ _)] =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         proj = contextProj ctx
-         printer binderPair =
-           case binderPair of
-             Just (_, binder@(Binder xobj@(XObj _ (Just i) _))) ->
-               do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
-                  when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped xobj)
-                  return ()
-             Just (_, binder@(Binder xobj)) ->
-               do putStrLnWithColor White (show binder)
-                  when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped xobj)
-                  return ()
-             Nothing ->
-               case multiLookupALL name env of
-                 [] ->
-                   do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                      return ()
-                 binders ->
-                   do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
-                               case i of
-                                 Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
-                                 Nothing -> putStrLnWithColor White (show binder))
-                        binders
-                      return ()
-     case xobj of
-       XObj (Sym path@(SymPath _ name)) _ _ ->
-         -- First look in the type env, then in the global env:
-         do case lookupInEnv path (getTypeEnv typeEnv) of
-              Nothing -> return ()
-              found -> liftIO (printer found)
-            liftIO (printer (lookupInEnv path env))
-            return dynamicNil
-       _ ->
-         liftIO $ do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
-                     return dynamicNil
-commandInfo args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'info' command: " ++ joinWithComma (map pretty args))
               return dynamicNil
 
 commandProjectSet :: CommandCallback
