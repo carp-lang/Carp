@@ -462,11 +462,11 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
 strTy :: TypeEnv -> Env -> Ty -> [Token]
 strTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   ""
-  , TokC   "  string buffer = CARP_MALLOC(1024);\n"
+  , TokC   "  string buffer = CARP_MALLOC(32768); // very arbitrary! TODO: CALCULATE!\n"
   , TokC   "  string bufferPtr = buffer;\n"
   , TokC   "  string temp = NULL;\n"
   , TokC   "\n"
-  , TokC   "  snprintf(buffer, 1024, \"[\");\n"
+  , TokC   "  snprintf(buffer, 32768, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"
   , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
@@ -474,7 +474,7 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  }\n"
   , TokC   "\n"
   , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
-  , TokC   "  snprintf(bufferPtr, 1024, \"]\");\n"
+  , TokC   "  snprintf(bufferPtr, 32768, \"]\");\n"
   , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
@@ -485,9 +485,13 @@ insideArrayStr typeEnv env t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "    snprintf(bufferPtr, 1024, \"%s \", temp);"
+                  , "    snprintf(bufferPtr, 32768, \"%s \", temp);"
                   , "    bufferPtr += strlen(temp) + 1;"
-                  , "    if(temp) { CARP_FREE(temp); temp = NULL; }"
+                  , "    assert((bufferPtr - buffer) < 16000); // out of bounds"
+                  , "    if(temp) {"
+                  , "      CARP_FREE(temp);"
+                  , "      temp = NULL;"
+                  , "    }"
                   ]
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
