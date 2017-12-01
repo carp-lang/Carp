@@ -753,7 +753,7 @@ isManaged _ StringTy = True
 isManaged _ _ = False
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun deriving Show
+data ExecutionMode = Repl | Build | BuildAndRun deriving (Show, Eq)
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env

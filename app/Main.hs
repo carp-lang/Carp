@@ -213,10 +213,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
 
 main :: IO ()
-main = do putStrLn "Welcome to Carp 0.2.0"
-          putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
-          putStrLn "Evaluate (help) for more information."
-          args <- SystemEnvironment.getArgs
+main = do args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               logMemory = LogMemory `elem` otherOptions
@@ -241,7 +238,10 @@ main = do putStrLn "Welcome to Carp 0.2.0"
           context' <- loadFiles context argFilesToLoad
           settings <- readlineSettings
           case execMode of
-            Repl -> runInputT settings (repl context' "")
+            Repl -> do putStrLn "Welcome to Carp 0.2.0"
+                       putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
+                       putStrLn "Evaluate (help) for more information."
+                       runInputT settings (repl context' "")
             Build -> do _ <- executeString context' ":b" "Compiler (Build)"
                         return ()
             BuildAndRun -> do _ <- executeString context' ":bx" "Compiler (Build & Run)"

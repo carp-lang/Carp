@@ -783,6 +783,7 @@ commandBuild args =
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          proj = contextProj ctx
+         execMode = contextExecMode ctx
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                   c <- envToC env
@@ -804,10 +805,10 @@ commandBuild args =
                      writeFile outMain (incl ++ okSrc)
                      case Map.lookup "main" (envBindings env) of
                        Just _ -> do callCommand ("clang " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags)
-                                    putStrLn ("Compiled to '" ++ outExe ++ "'")
+                                    when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "'"))
                                     return dynamicNil
                        Nothing -> do callCommand ("clang " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags)
-                                     putStrLn ("Compiled to '" ++ outLib ++ "'")
+                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "'"))
                                      return dynamicNil
 
 commandReload :: CommandCallback
