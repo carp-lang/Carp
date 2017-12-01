@@ -4,4 +4,18 @@
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
+
+  (defn meaning [char-ref]
+    (cond
+      (= @char-ref \0) 0
+      (= @char-ref \1) 1
+      (= @char-ref \2) 2
+      (= @char-ref \3) 3
+      (= @char-ref \4) 4
+      (= @char-ref \5) 5
+      (= @char-ref \6) 6
+      (= @char-ref \7) 7
+      (= @char-ref \8) 8
+      (= @char-ref \9) 9
+      -1))
 )
