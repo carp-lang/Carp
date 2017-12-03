@@ -22,13 +22,6 @@ void *logged_malloc(size_t size) {
     return ptr;
 }
 
-string logged_strdup(string s) {
-    string ptr = strdup(s);
-    printf("STRDUP: %p\n", ptr);
-    malloc_balance_counter++;
-    return ptr;
-}
-
 void logged_free(void *ptr) {
     printf("FREE: %p\n", ptr);
     free(ptr);
@@ -43,11 +36,9 @@ void logged_free(void *ptr) {
 
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
-#define CARP_STRDUP(ptr) logged_strdup(ptr)
 
 #else
 
-#define CARP_STRDUP(s) strdup(s)
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
 
@@ -209,8 +200,14 @@ void String_delete(string s) {
 }
 
 string String_copy(string *s) {
-    char *ptr = CARP_STRDUP(*s);
-    return ptr;
+    size_t len = strlen(*s) + 1;
+    char *ptr = CARP_MALLOC(len);
+
+    if (ptr == NULL) {
+      return NULL;
+    }
+
+    return (char *) memcpy(ptr, *s, len);
 }
 
 bool String__EQ_(string *a, string *b) {
@@ -237,7 +234,7 @@ int String_count(string *s) {
 
 // Replace with 'copy' later:
 string String_duplicate(string *s) {
-    return CARP_STRDUP(*s);
+    return String_copy(s);
 }
 
 char* String_cstr(string *s) {
@@ -254,7 +251,7 @@ string String_str(string *s) {
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
-    chars.data = CARP_STRDUP(*s);
+    chars.data = String_copy(s);
     return chars;
 }
 
@@ -503,10 +500,12 @@ bool Bool__DIV__EQ_(bool a, bool b) {
 }
 
 string Bool_str(bool b) {
+    char *true_str = "true";
+    char *false_str = "false";
     if(b) {
-        return CARP_STRDUP("true");
+        return String_copy(&true_str);
     } else {
-        return CARP_STRDUP("false");
+        return String_copy(&false_str);
     }
 }
 
