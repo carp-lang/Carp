@@ -177,9 +177,10 @@ templateStr typeEnv env typeName members =
     (const (toTemplate $ "string $NAME(" ++ typeName ++ " *p)"))
     (const (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
-                                 , "  string buffer = CARP_MALLOC(1024); // TODO: dynamic length"
-                                 , "  string bufferPtr = buffer;"
-                                 , "  string temp = NULL;"
+                                 , "  string buffer;"
+                                 , "  string_constructor(&buffer, 1024);  // TODO: dynamic length"
+                                 , "  char *bufferPtr = buffer.data;"
+                                 , "  char *temp = NULL;"
                                  , ""
                                  , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ typeName ++ "\");"
                                  , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
@@ -206,7 +207,7 @@ memberStr typeEnv env (memberName, memberTy) =
            strFuncType = FuncTy [refOrNotRefType] StringTy
        in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
             Just strFunctionPath ->
-              unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
+              unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ").data;"
                       , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
                       , "  bufferPtr += strlen(temp) + 1;"
                       , "  if(temp) { CARP_FREE(temp); temp = NULL; }"

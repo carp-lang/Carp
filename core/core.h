@@ -10,7 +10,10 @@
 #include <assert.h>
 #include <limits.h>
 
-typedef char* string;
+typedef struct {
+    size_t size;  // size of the allocated data buffer including the NUL-terminator.
+    char *data;
+} string;
 
 #ifdef LOG_MEMORY
 int malloc_balance_counter = 0;
@@ -43,6 +46,24 @@ void logged_free(void *ptr) {
 #define CARP_FREE(ptr) free(ptr)
 
 #endif
+
+void string_constructor(string *s, size_t size) {
+    assert(size >= 1); // At least one char is needed for the NUL-terminator.
+    s->data = CARP_MALLOC(size);
+    s->size = size;
+}
+
+void string_destructor(string *s) {
+    CARP_FREE(s->data);
+}
+
+string string_from_cstr(const char *s) {
+    string ret;
+    string_constructor(&ret, strlen(s) + 1);
+    memcpy(ret.data, s, ret.size);
+    return ret;
+}
+
 
 // Array
 typedef struct {
@@ -123,18 +144,21 @@ double Float_neg(float x) { return -x; }
 bool and(bool x, bool y) { return x && y; }
 bool or(bool x, bool y) { return x || y; }
 
-void IO_println(string *s) { puts(*s); }
-void IO_print(string *s) { printf("%s", *s); }
+void IO_println(string *s) { puts(s->data); }
+void IO_print(string *s) { printf("%s", s->data); }
 
 string IO_get_MINUS_line() {
-    size_t size = 1024;
-    char *buffer = CARP_MALLOC(size);
-    getline(&buffer, &size, stdin);
-    return buffer;
+    size_t buffer_size = 1024;  // including NUL-terminator
+    char *buffer = CARP_MALLOC(buffer_size);
+    getline(&buffer, &buffer_size, stdin);
+    string s;
+    s.data = buffer;
+    s.size = buffer_size;
+    return s;
 }
 
 int Int_from_MINUS_string(string *s) {
-    return atoi(*s);
+    return atoi(s->data);
 }
 
 int Int_mod(int x, int divider) {
@@ -155,13 +179,15 @@ int Int_random_MINUS_between(int lower, int upper) {
 }
 
 string Int_str(int x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, "%d", x);
-    return buffer;
+    string s;
+    string_constructor(&s, 64);
+    snprintf(s.data, 64, "%d", x);
+    s.size = strlen(s.data) + 1;
+    return s;
 }
 
 long Long_from_MINUS_string(string *s) {
-    return atol(*s);
+    return atol(s->data);
 }
 
 long Long_mod(long x, long divider) {
@@ -182,9 +208,11 @@ long Long_random_MINUS_between(long lower, long upper) {
 }
 
 string Long_str(long x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, "%ldl", x);
-    return buffer;
+    string s;
+    string_constructor(&s, 64);
+    snprintf(s.data, 64, "%ldl", x);
+    s.size = strlen(s.data) + 1;
+    return s;
 }
 
 int Long_to_MINUS_int(long a) {
@@ -196,40 +224,40 @@ long Long_from_MINUS_int(int a) {
 }
 
 void String_delete(string s) {
-    CARP_FREE(s);
+    string_destructor(&s);
 }
 
 string String_copy(string *s) {
-    size_t len = strlen(*s) + 1;
-    char *ptr = CARP_MALLOC(len);
-
-    if (ptr == NULL) {
-      return NULL;
-    }
-
-    return (char *) memcpy(ptr, *s, len);
+    string ret;
+    string_constructor(&ret, s->size);
+    memcpy(ret.data, s->data, s->size);
+    return ret;
 }
 
 bool String__EQ_(string *a, string *b) {
-    return strcmp(*a, *b) == 0;
+    return strcmp(a->data, b->data) == 0;
 }
 
 bool String__DIV__EQ_(string *a, string *b) {
-    return strcmp(*a, *b) == 0;
+    return strcmp(a->data, b->data) == 0;
 }
 string String_append(string a, string b) {
-    int la = strlen(a);
-    int lb = strlen(b);
-    int total = la + lb + 1;
-    string buffer = CARP_MALLOC(total);
-    snprintf(buffer, total, "%s%s", a, b);
-    CARP_FREE(a);
-    CARP_FREE(b);
+    size_t la = a.size - 1;
+    size_t lb = b.size - 1;
+    size_t total = la + lb + 1;
+    string buffer;
+    string_constructor(&buffer, total);
+    // TODO(philix): Implement String_append more efficiently
+    snprintf(buffer.data, total, "%s%s", a.data, b.data);
+    buffer.size = strlen(buffer.data) + 1;
+    string_destructor(&a);
+    string_destructor(&b);
     return buffer;
 }
 
 int String_count(string *s) {
-    return strlen(*s);
+    assert(s->size >= 1);
+    return s->size - 1;
 }
 
 // Replace with 'copy' later:
@@ -237,27 +265,35 @@ string String_duplicate(string *s) {
     return String_copy(s);
 }
 
-char* String_cstr(string *s) {
-    return *s;
+char* String_cstr(const string *s) {
+    // TODO(philix): Carp doesn't have to repeat C++'s mistake of requiring
+    // NUL-terminators in its string type
+    return s->data;
 }
 
 string String_str(string *s) {
-    int n = strlen(*s) + 4;
-    string buffer = CARP_MALLOC(n);
-    snprintf(buffer, n, "@\"%s\"", *s);
+    size_t n = String_count(s) + 4;
+    string buffer;
+    string_constructor(&buffer, n);
+    // TODO(philix): Implement String_str more efficiently
+    snprintf(buffer.data, n, "@\"%s\"", s->data);
+    buffer.size = strlen(buffer.data) + 1;
     return buffer;
 }
 
 Array String_chars(string *s) {
+    string copy = String_copy(s);
     Array chars;
-    chars.len = strlen(*s);
-    chars.data = String_copy(s);
+    chars.len = String_count(&copy);
+    chars.data = copy.data;
     return chars;
 }
 
 string String_from_MINUS_chars(Array a) {
-    string s = CARP_MALLOC(a.len+1);
-    snprintf(s, a.len+1, "%s", a.data);
+    string s;
+    string_constructor(&s, a.len+1);
+    memcpy(s.data, a.data, a.len);
+    s.data[a.len] = '\0';
     return s;
 }
 
@@ -266,9 +302,12 @@ bool Char__EQ_(char a, char b) {
 }
 
 string Char_str(char c) {
-    char *buffer = CARP_MALLOC(3);
-    snprintf(buffer, 3, "\\%c", c);
-    return buffer;
+    string s;
+    string_constructor(&s, 3);
+    s.data[0] = '\\';
+    s.data[1] = c;
+    s.data[2] = '\0';
+    return s;
 }
 
 int Char_to_MINUS_int(char c) {
@@ -385,9 +424,11 @@ double Double_mod(double x, double y) {
 }
 
 string Double_str(double x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%g", x);
-    return buffer;
+    string s;
+    string_constructor(&s, 32);
+    snprintf(s.data, 32, "%g", x);
+    s.size = strlen(s.data) + 1;
+    return s;
 }
 
 int Float_to_MINUS_int(double x) {
@@ -485,9 +526,11 @@ float Float_mod(float x, float y) {
 }
 
 string Float_str(float x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%gf", x);
-    return buffer;
+    string s;
+    string_constructor(&s, 32);
+    snprintf(s.data, 32, "%gf", x);
+    s.size = strlen(s.data) + 1;
+    return s;
 }
 
 // Bool
@@ -500,12 +543,10 @@ bool Bool__DIV__EQ_(bool a, bool b) {
 }
 
 string Bool_str(bool b) {
-    char *true_str = "true";
-    char *false_str = "false";
     if(b) {
-        return String_copy(&true_str);
+        return string_from_cstr("true");
     } else {
-        return String_copy(&false_str);
+        return string_from_cstr("false");
     }
 }
 
@@ -526,9 +567,11 @@ void System_srand(int x) {
 }
 
 string IO_read_MINUS_file(string *filename) {
-    string buffer = 0;
+    string empty_s;
+    string ret;
+    char *buffer = 0;
     long length;
-    FILE *f = fopen(*filename, "rb");
+    FILE *f = fopen(filename->data, "rb");
 
     if(f) {
         fseek (f, 0, SEEK_END);
@@ -541,15 +584,19 @@ string IO_read_MINUS_file(string *filename) {
         }
         fclose (f);
     } else {
-        printf("Failed to open file: %s\n", *filename);
-        return "";
+        printf("Failed to open file: %s\n", filename->data);
+        string_constructor(&empty_s, 1);
+        return empty_s;
     }
 
     if (buffer) {
-        return buffer;
+        string_constructor(&ret, length + 1);
+        memcpy(ret.data, buffer, length + 1);
+        return ret;
     } else {
-        printf("Failed to open buffer from file: %s\n", *filename);
-        return "";
+        printf("Failed to open buffer from file: %s\n", filename->data);
+        string_constructor(&empty_s, 1);
+        return empty_s;
     }
 }
 
