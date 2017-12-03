@@ -99,7 +99,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
           -- | This will use the statically allocated string in the C binary (can't be freed):
           do let var = freshVar i
                  varRef = freshVar i ++ "_ref";
-             appendToSrc (addIndent indent ++ "string " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
+             appendToSrc (addIndent indent ++ "string " ++ var ++ " = string_from_cstr(\"" ++ escapeString str ++ "\");\n")
              appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
         visitString _ _ = error "Not a string."
