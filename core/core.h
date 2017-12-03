@@ -46,7 +46,7 @@ void logged_free(void *ptr) {
 
 // Array
 typedef struct {
-    int len;
+    size_t len;
     void *data;
 } Array;
 
