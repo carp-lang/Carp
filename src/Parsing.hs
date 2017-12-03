@@ -76,15 +76,40 @@ string = do i <- createInfo
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
 
+escaped :: Parsec.Parsec String ParseState Char
 escaped =  do
     _ <- Parsec.char '\\'
     _ <- Parsec.char '\"'
     return '\"'
 
+escapedQuoteChar :: Parsec.Parsec String ParseState Char
+escapedQuoteChar = do c <- Parsec.string "\""
+                      incColumn 2
+                      return '\"'
+
+escapedSpaceChar :: Parsec.Parsec String ParseState Char
+escapedSpaceChar = do c <- Parsec.string "space"
+                      incColumn 5
+                      return ' '
+
+escapedNewlineChar :: Parsec.Parsec String ParseState Char
+escapedNewlineChar = do c <- Parsec.string "newline"
+                        incColumn 7
+                        return '\n'
+
+escapedTabChar :: Parsec.Parsec String ParseState Char
+escapedTabChar = do c <- Parsec.string "tab"
+                    incColumn 3
+                    return '\t'
+
 aChar :: Parsec.Parsec String ParseState XObj
 aChar = do i <- createInfo
            _ <- Parsec.char '\\'
-           c <- Parsec.anyChar
+           c <- Parsec.try escapedQuoteChar <|>
+                Parsec.try escapedNewlineChar <|>
+                Parsec.try escapedTabChar <|>
+                Parsec.try escapedSpaceChar <|>
+                Parsec.anyChar
            incColumn 2
            return (XObj (Chr c) i Nothing)
 
