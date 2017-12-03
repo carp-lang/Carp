@@ -65,7 +65,10 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Num _ _ -> error "Can't emit invalid number type."
             Bol b -> return (if b then "true" else "false")
             Str _ -> visitString indent xobj
-            Chr c -> return ['\'', c, '\'']
+            Chr c -> return $ case c of
+                                '\t' -> "'\\t'"
+                                '\n' -> "'\\n'"
+                                x -> ['\'', x, '\'']
             Sym _ -> visitSymbol xobj
             Defn -> error (show (DontVisitObj Defn))
             Def -> error (show (DontVisitObj Def))
