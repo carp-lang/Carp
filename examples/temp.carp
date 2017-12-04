@@ -1,22 +1,22 @@
-(project-set! "printAST" "true")
-(macro-log "hej")
-
-(mac-only
- (macro-log "You're using macOS!"))
+;;(project-set! "printAST" "true")
 
 ;; (use System)
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
-
 (use IO)
 (use Int)
 (use Float)
 (use Double)
 (use Array)
 
+;; (mac-only
+;;  (defn xxx [] 123)
+;;  )
+
+;; (linux-only
+;;  (defn yyy [] 123)
+;;  )
+
 (defn main []
-  (do
-    (println (refstr (sum &[1 2 3])))
-    (println (refstr (sum &[1.1 2.1 3.1])))
-    (println (refstr (sum &[1.2f 2.2f 3.2f])))))
+  (IO.println "hej"))
