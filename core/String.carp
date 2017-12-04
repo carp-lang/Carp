@@ -11,6 +11,8 @@
   (register str        (Fn [&String] String))
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [(Array Char)] String))
+  (register head (λ [(Ref String)] Char))
+  (register tail (λ [(Ref String)] String))
 
   (defn repeat [n inpt]
     (let [str ""]

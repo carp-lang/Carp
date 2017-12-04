@@ -261,6 +261,18 @@ string String_from_MINUS_chars(Array a) {
     return s;
 }
 
+char String_head(string* s) {
+  return (*s)[0];
+}
+
+string String_tail(string* s) {
+  int len = strlen(*s);
+  char* news = CARP_MALLOC(len);
+  memcpy(news, (*s)+1, len-1);
+  news[len-1] = '\0';
+  return news;
+}
+
 bool Char__EQ_(char a, char b) {
   return a == b;
 }
