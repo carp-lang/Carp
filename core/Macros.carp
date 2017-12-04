@@ -72,7 +72,20 @@
 (defmacro swap! [x y]
   (list 'let (array 'tmp y) (list 'do (list 'set! &y x) (list 'set! &x 'tmp))))
 
-(defdynamic mac-only [:rest forms]
+(defmacro mac-only [form]
   (if (= "darwin" (os))
-    forms
+    form
     ()))
+
+(defmacro linux-only [form]
+  (if (= "linux" (os))
+    form
+    ()))
+
+(defmacro windows-only [form]
+  (if (= "windows" (os))
+    form
+    ()))
+
+(defmacro blah [x]
+  (list 1 2 3 4 5 x))
