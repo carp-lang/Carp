@@ -1,17 +1,16 @@
 #include <SDL.h>
-#include "core.h"
 
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
 } App;
 
-App app_MINUS_init(const string title, int width, int height) {
+App app_MINUS_init(const char *title, int width, int height) {
     SDL_Init(SDL_INIT_EVERYTHING);
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer);
-    SDL_SetWindowTitle(window, String_cstr(&title));
+    SDL_SetWindowTitle(window, title);
     App app;
     app.window = window;
     app.renderer = renderer;
