@@ -15,28 +15,6 @@
 (use Double)
 (use Array)
 
-(definterface zero (λ [] a))
-(definterface add-ref (λ [&a &a] a))
-
-(defmodule Int
-  (defn zero []
-    0))
-
-(defmodule Float
-  (defn zero []
-    0.0f))
-
-(defmodule Double
-  (defn zero []
-    0.0))
-
-(defmodule Array
-  (defn sum [xs]
-    (Array.reduce add-ref (zero) xs)))
-
-(defn add-ref [x y]
-  (+ @x @y))
-
 (defn main []
   (do
     (println (refstr (sum &[1 2 3])))

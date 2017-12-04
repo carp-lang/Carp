@@ -52,4 +52,10 @@
 
   (defn /= [x y]
     (not (Double.= x y)))
+
+  (defn zero []
+    0.0)
+
+  (defn add-ref [x y]
+    (+ @x @y))
 )

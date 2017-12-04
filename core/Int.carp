@@ -34,4 +34,11 @@
 
   (defn even? [a] (= (mod a 2) 0))
   (defn odd? [a] (not (even? a)))
+
+  (defn zero []
+    0)
+
+  (defn add-ref [x y]
+    (+ @x @y))
+
 )

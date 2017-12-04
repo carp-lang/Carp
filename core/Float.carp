@@ -52,4 +52,11 @@
   (register mod (Fn [Float Float] Float))
   (register copy (Fn [(Ref Float)] Float))
   (register abs (Fn [Float] Float))
+
+  (defn zero []
+    0.0f)
+
+  (defn add-ref [x y]
+    (+ @x @y))
+
 )

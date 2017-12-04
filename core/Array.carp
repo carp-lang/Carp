@@ -12,6 +12,31 @@
 
   (defn last [a]
     @(Array.nth a (Int.dec (Array.count a))))
+
+  (defn max [xs]
+    (let [result (first xs)
+          n (count xs)]
+      (do
+        (for [i 0 n]
+          (let [x @(nth xs i)]
+            (if (Int.< result x)
+              (set! &result x)
+              ())))
+        result)))
+
+  (defn min [xs]
+    (let [result (first xs)
+          n (count xs)]
+      (do
+        (for [i 0 n]
+          (let [x @(nth xs i)]
+            (if (Int.> result x)
+              (set! &result x)
+              ())))
+        result)))
+
+  (defn sum [xs]
+    (Array.reduce add-ref (zero) xs))
 )
 
 ;; BUGS! These function definitions will not create the required typedef for Array, for instance:
