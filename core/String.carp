@@ -18,9 +18,6 @@
           (set! &str &(append @str @inpt)))
         @str)))
 
-  (use Int)
-  (use Array)
-
   ;; A temporary version of this function, until we have some nicer way to write it
   (defn split-by [s separators]
     (let [len (count &s)
@@ -29,18 +26,18 @@
           word @""]
       (do
         (for [i 0 len]
-          (let [c (nth &cs i)]
+          (let [c (Array.nth &cs i)]
             (do
-              (if (< 0 (element-count &(the (Array Char) @&separators) @c))
-                (if (= 0 (count &word))
+              (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) @c))
+                (if (= 0 (String.count &word))
                   () ;; no word
-                  (do (set! &result (push-back @&result @&word))
+                  (do (set! &result (Array.push-back @&result @&word))
                       (set! &word @"")))
                 (set! &word (append @&word (from-chars [@c])))))))
         ;; Some sweet code duplication for the final word:
-        (if (= 0 (count &word))
+        (if (= 0 (String.count &word))
           ()
-          (do (set! &result (push-back @&result @&word))
+          (do (set! &result (Array.push-back @&result @&word))
               (set! &word @"")))
         result)))
 
