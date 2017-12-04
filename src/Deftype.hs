@@ -195,7 +195,7 @@ templateStr typeEnv env typeName members =
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
 memberStr typeEnv env (memberName, memberTy) =
   if isExternalType typeEnv memberTy
-  then unlines [ "  temp = malloc(64);"
+  then unlines [ "  temp = CARP_MALLOC(64);"
                , "  snprintf(temp, 64, \"%p\", p->" ++ memberName ++ ");"
                , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
                , "  bufferPtr += strlen(temp) + 1;"

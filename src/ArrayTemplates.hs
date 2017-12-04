@@ -353,7 +353,7 @@ templateRange = defineTypeParameterizedTemplate templateCreator path t
                                         , "    if(start < end) { assert(step > 0); }"
                                         , "    else { assert(step < 0); }"
                                         , "    int length = 1 + abs((int)((end - start) / step));"
-                                        , "    Array a = { .len = length, .data = malloc(sizeof($t) * length) };"
+                                        , "    Array a = { .len = length, .data = CARP_MALLOC(sizeof($t) * length) };"
                                         , "    for(int i = 0; i < length; i++) {"
                                         , "        (($t*)a.data)[i] = start + ($t)i * step;"
                                         , "    }"
