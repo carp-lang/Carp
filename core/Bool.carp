@@ -2,4 +2,5 @@
   (register = (Fn [Bool Bool] Bool))
   (register /= (Fn [Bool Bool] Bool))
   (register str (Fn [Bool] String))
+  (register copy (Fn [&Bool] Bool))
   )
