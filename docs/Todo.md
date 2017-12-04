@@ -12,6 +12,7 @@
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
 * [0.3] When loading game.carp from outside, the SDL modules fail because of invalid paths, the CARP_DIR + path isn't searched it seems
 * [0.3] Can run (type NONEXISTINGNAMESPACE.println)
+* [0.3] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 
 ## Big Language Features
 * [0.3] Platform defines and optional compilation (requires dynamic evaluation of code at the REPL)
