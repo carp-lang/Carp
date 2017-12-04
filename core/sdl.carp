@@ -80,6 +80,8 @@
 
 (defmodule Keycode
   (register = (Fn [SDL_Keycode SDL_Keycode] Bool))
+  (register copy (Fn [(Ref SDL_Keycode)] SDL_Keycode))
+  (register str (Fn [SDL_Keycode] String))
 
   (defn /= [x y]
     (not (= x y)))
