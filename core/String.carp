@@ -52,11 +52,11 @@
   )
 
   (defn pad-left [len pad s]
-    (let [x (Int.max 0 (- len (String.count s)))]
+    (let [x (Int.max 0 (Int.- len (String.count s)))]
       (append (from-chars (Array.repeat x pad)) s)))
 
   (defn pad-right [len pad s]
-    (let [x (Int.max 0 (- len (String.count s)))]
+    (let [x (Int.max 0 (Int.- len (String.count s)))]
       (append s (from-chars (Array.repeat x pad)))))
 
   (defn empty? [s]
