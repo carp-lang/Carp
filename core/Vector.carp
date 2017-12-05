@@ -4,9 +4,6 @@
   (defn init [x y]
     (V2.init x y))
 
-  (defn copy [v]
-    (V2.copy v))
-
   (defn get-x [o]
     (V2.x o))
 
@@ -93,9 +90,6 @@
 
   (defn init [x y z]
     (V3.init x y z))
-
-  (defn copy [v]
-    (V3.copy v))
 
   (defn to-string [o]
     (string-join @"Vector2(" (Double.str (V3.x o)) @", " (Double.str (V3.y o))

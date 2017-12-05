@@ -491,6 +491,10 @@ string Float_str(float x) {
 }
 
 // Bool
+bool Bool_copy(bool* b) {
+  return *b;
+}
+
 bool Bool__EQ_(bool a, bool b) {
   return a == b;
 }

@@ -1,3 +1,4 @@
+#include <core.h>
 #include <SDL.h>
 
 typedef struct {
@@ -45,6 +46,16 @@ SDL_Keycode event_MINUS_keycode(SDL_Event *e) {
 
 int Keycode__EQ_(SDL_Keycode a, SDL_Keycode b) {
     return a == b;
+}
+
+SDL_Keycode Keycode_copy(SDL_Keycode* a) {
+    return *a;
+}
+
+string Keycode_str(SDL_Keycode a) {
+    char *buffer = CARP_MALLOC(32);
+    snprintf(buffer, 32, "%d", a);
+    return buffer;
 }
 
 SDL_Rect make_MINUS_rect(int x, int y, int w, int h) {
