@@ -18,5 +18,19 @@
 ;;  (defn yyy [] 123)
 ;;  )
 
+(register f a)
+
+(defn g []
+  (do
+    (println "I'm g")
+    (f)))
+
+(defn f []
+  (do
+    (println "I'm f")
+    (g)))
+
 (defn main []
-  (IO.println "hej"))
+  (do
+    (f)
+    0))
