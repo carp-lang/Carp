@@ -74,6 +74,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Def -> error (show (DontVisitObj Def))
             Let -> error (show (DontVisitObj Let))
             If -> error (show (DontVisitObj If))
+            Break -> return "break"
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
             Typ -> error (show (DontVisitObj Typ))
@@ -301,13 +302,17 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             func : args ->
               do funcToCall <- visit indent func
                  argListAsC <- createArgList indent args
-                 let Just (FuncTy _ retTy) = ty func
-                 if retTy == UnitTy
-                   then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                           return ""
-                   else do let varName = freshVar i
-                           appendToSrc (addIndent indent ++ tyToC retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                           return varName
+                 case ty func of
+                  Just (FuncTy _ retTy) ->
+                   if retTy == UnitTy
+                     then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                             return ""
+                     else do let varName = freshVar i
+                             appendToSrc (addIndent indent ++ tyToC retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                             return varName
+                  Just BreakTy ->
+                    do appendToSrc (addIndent indent ++ "break;\n")
+                       return ""
 
             -- Empty list
             [] -> do appendToSrc (addIndent indent ++ "/* () */\n")
