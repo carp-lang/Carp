@@ -1,0 +1,18 @@
+(use IO)
+
+(register f a)
+
+(defn g []
+  (do
+    (println "I'm g")
+    (f)))
+
+(defn f []
+  (do
+    (println "I'm f")
+    (g)))
+
+(defn main []
+  (do
+    (f)
+    0))

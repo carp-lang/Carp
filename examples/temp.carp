@@ -18,19 +18,12 @@
 ;;  (defn yyy [] 123)
 ;;  )
 
-(register f a)
+;;(defn break [] ())
 
-(defn g []
-  (do
-    (println "I'm g")
-    (f)))
+(def break ())
 
-(defn f []
-  (do
-    (println "I'm f")
-    (g)))
-
-(defn main []
-  (do
-    (f)
-    0))
+(defn f [x]
+  (while (Int.even? x)
+    (if false
+      break
+      (set! &x 123))))
