@@ -16,6 +16,7 @@
 
 ## Big Language Features
 * [0.3] Platform defines and optional compilation (requires dynamic evaluation of code at the REPL)
+* [0.4] Distinguish immutable/mutable refs?
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings
 * [1.0] Tagged unions (also known as "sum types" or "enums")
@@ -23,11 +24,12 @@
 
 ## Smaller Language Features ("niceties")
 * [0.3] Reintroduce the p-string patch but with support for embedded string literals.
-* [0.3] Errors in macros should present the code both in the macro and in the use of it.
+* [0.3] Errors in macros should present the code location of both the macro and in the code that uses of it.
 * [0.3] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * [0.3] Some interfaces are missing info - Thing.str : (λ [(Ref Thing)] String) Defined at line 0, column 0 in 'dummy-file'
 * [0.3] Good string functions
 * [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
+* [0.3] <= and >= functions
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
