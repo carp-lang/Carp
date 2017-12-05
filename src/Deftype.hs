@@ -194,25 +194,25 @@ templateStr typeEnv env typeName members =
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
 memberStr typeEnv env (memberName, memberTy) =
-  if isExternalType typeEnv memberTy
-  then unlines [ "  temp = CARP_MALLOC(64);"
-               , "  snprintf(temp, 64, \"%p\", p->" ++ memberName ++ ");"
-               , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
-               , "  bufferPtr += strlen(temp) + 1;"
-               , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
-               ]
-  else let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
-           maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
-           strFuncType = FuncTy [refOrNotRefType] StringTy
-       in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
-            Just strFunctionPath ->
-              unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
-                      , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
-                      , "  bufferPtr += strlen(temp) + 1;"
-                      , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
-                      ]
-            Nothing ->
-              "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
+  let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
+      maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
+      strFuncType = FuncTy [refOrNotRefType] StringTy
+   in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
+        Just strFunctionPath ->
+          unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
+                  , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+                  , "  bufferPtr += strlen(temp) + 1;"
+                  , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                  ]
+        Nothing ->
+          if isExternalType typeEnv memberTy
+          then unlines [ "  temp = malloc(64);"
+                       , "  snprintf(temp, 64, \"%p\", p->" ++ memberName ++ ");"
+                       , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+                       , "  bufferPtr += strlen(temp) + 1;"
+                       , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                       ]
+          else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 -- | Creates the C code for an arg to the init function.
 -- | i.e. "(deftype A [x Int])" will generate "int x" which
