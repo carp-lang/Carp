@@ -197,6 +197,8 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                      appendToSrc (addIndent indent ++ tyToC exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
                      appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                      _ <- visit indent' body
+                     appendToSrc ("cont" ++ show (infoIdentifier i) ++
+                                 ":; // empty statement because of §6.8.1 of the C spec\n")
                      exprRetVar' <- visitWhileExpression indent'
                      delete indent' i
                      appendToSrc (addIndent indent' ++ conditionVar ++ " = " ++ exprRetVar' ++ ";\n")

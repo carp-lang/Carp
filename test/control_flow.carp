@@ -1,0 +1,68 @@
+(use Int)
+
+(load "Test.carp")
+(use Test)
+
+(defn break-test []
+  (let [x 0]
+    (do
+      (while (< x 10)
+        (if (> x 4)
+          (break)
+          (set! &x (inc x))))
+      x)))
+
+(defn continue-test []
+  (let [x 0 i 0]
+    (do
+      (while (< x 10)
+        (do
+          (set! &x (inc x))
+          (if (> x 5)
+            (continue)
+            (set! &i (inc i)))))
+      [i x])))
+
+(defn nested-continue-test []
+  (let [x 0 i 0]
+    (do
+      (while (< x 10)
+        (while (< x 10)
+          (do
+            (set! &x (inc x))
+            (if (> x 5)
+              (continue)
+              (set! &i (inc i))))))
+      [i x])))
+
+(defn all-eq [a b]
+  (if (/= (Array.count a) (Array.count b))
+    false
+    (let [eq true]
+      (do
+        (for [i 0 (Array.count a)]
+          (if (/= @(Array.nth a i) @(Array.nth b i))
+            (set! &eq false)
+            ()))
+        eq))))
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  5
+                  (break-test)
+                  "break works as expected"
+    )
+    (assert-op test
+                  &[5 10]
+                  &(continue-test)
+                  "continue works as expected"
+                  all-eq
+    )
+    (assert-op test
+                  &[5 10]
+                  &(nested-continue-test)
+                  "continue works as expected"
+                  all-eq
+    )
+    (print-test-results test)))

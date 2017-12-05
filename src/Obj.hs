@@ -25,6 +25,8 @@ data Obj = Sym SymPath
          | Do
          | Let
          | While
+         | Break
+         -- | Continue
          | If
          | Mod Env
          | Typ
@@ -178,6 +180,8 @@ pretty = visit 0
             Command _ -> "command"
             The -> "the"
             Ref -> "ref"
+            Break -> "break"
+            --Continue -> "continue"
             Interface _ _ -> "interface"
 
 newtype EvalError = EvalError String deriving (Eq)
