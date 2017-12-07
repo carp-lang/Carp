@@ -2,11 +2,10 @@
 
 ## Milestones
 * 0.3 - Hopefully done soon, fixing the most pressing issues.
-* 0.4 - A nice minimal version of the language. Should be possible to use for small projects.
+* 0.4 - A nice minimal version of the language. Should be possible to use for somewhat realistic projects.
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
-* [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Importing Int and Array into String module (when defining functions there) break things.
 * [0.3] Allocate enough memory in the Array.str and struct.str functions
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
@@ -20,16 +19,17 @@
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings
 * [1.0] Tagged unions (also known as "sum types" or "enums")
-* [1.0] Lambdas (anonymous functions)
+* [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 ## Smaller Language Features ("niceties")
+* [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Reintroduce the p-string patch but with support for embedded string literals.
-* [0.3] Errors in macros should present the code location of both the macro and in the code that uses of it.
+* [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * [0.3] Some interfaces are missing info - Thing.str : (λ [(Ref Thing)] String) Defined at line 0, column 0 in 'dummy-file'
 * [0.3] Good string functions
 * [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
-* [0.3] <= and >= functions
+* [0.3] <= and >= functions (and interfaces?!)
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
@@ -44,7 +44,6 @@
 * [0.3] Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
-* [0.4] Prevent interfaces from being redefined.
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
@@ -64,7 +63,5 @@
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
 * Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
 * Macros in modules must be qualified right now, is that a good long-term solution?
-* Should macros calling non-macros/non-dynamicfunctions just fail instead of returning an unvealuated list which is pretty confusing?
-* Should @ work for all types, not just the 'use':d ones?
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))?
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type?
