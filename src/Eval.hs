@@ -489,6 +489,7 @@ eval env xobj =
                               Left err -> return (Left err)
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          apply env body params args
+
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          do evaledArgs <- fmap sequence (mapM (eval env) args)
                             case evaledArgs of
@@ -503,12 +504,6 @@ eval env xobj =
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
     evalSymbol xobj@(XObj (Sym path) _ _) =
       case lookupInEnv path env of
-        Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder found) -> return (Right found) -- use the found value
         Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj)))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
@@ -536,8 +531,7 @@ apply env body params args =
                          (head restParams)
                          (XObj (Lst (drop n args)) Nothing Nothing)
       result = eval insideEnv'' body
-  in  --trace ("Result: " ++ show result)
-      result
+  in result
 
 trueXObj :: XObj
 trueXObj = XObj (Bol True) Nothing Nothing
@@ -707,8 +701,19 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                 -- Nil result won't print
                 do return newCtx
               Right evaled ->
-                do putStrLnWithColor Yellow ("=> " ++ (pretty evaled))
-                   return newCtx
+                do -- HACK?! The result after evalution might be a list that
+                   -- constitutes a 'def' or 'defn'. So let's evaluate again
+                   -- to make it stick in the environment.
+                   -- To log the intermediate result:
+                   --putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
+                   (result', newCtx') <- runStateT (eval env evaled) newCtx
+                   case result' of
+                     Left e ->
+                       do putStrLnWithColor Red (show e)
+                          return newCtx'
+                     Right okResult' ->
+                       do putStrLnWithColor Yellow ("=> " ++ (pretty okResult'))
+                          return newCtx'
 
        ReplParseError e ->
          do putStrLnWithColor Red ("[PARSE ERROR] " ++ e)
