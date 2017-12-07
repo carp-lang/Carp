@@ -11,13 +11,12 @@
 (use Array)
 
 (mac-only
- (defn xxx [] 123)
- (defn xxxx [] 1234)
- )
+ (defn steve-jobs [] @"Steve Jobs")
+ (defmodule Apple
+   (def revenue 347873248734892)))
 
 (linux-only
- (defn yyy [] 123)
- )
+ (defn linus-torvalds [] @"Linus Torvalds"))
 
 ;;(defn break [] ())
 
