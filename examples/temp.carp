@@ -12,6 +12,7 @@
 
 (mac-only
  (defn xxx [] 123)
+ (defn xxxx [] 1234)
  )
 
 (linux-only
