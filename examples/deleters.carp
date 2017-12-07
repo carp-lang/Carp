@@ -10,7 +10,7 @@
 
 (defn main []
   (do (f)
-      (println "OK.")))
+      (println "Delete OK.")))
 
 (build)
 (run)

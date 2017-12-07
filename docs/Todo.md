@@ -16,7 +16,6 @@
 * [0.3] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 
 ## Big Language Features
-* [0.3] Platform defines and optional compilation (requires dynamic evaluation of code at the REPL)
 * [0.4] Distinguish immutable/mutable refs?
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings

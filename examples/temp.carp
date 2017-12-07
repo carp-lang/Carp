@@ -10,20 +10,22 @@
 (use Double)
 (use Array)
 
-;; (mac-only
-;;  (defn xxx [] 123)
-;;  )
+(mac-only
+ (defn xxx [] 123)
+ )
 
-;; (linux-only
-;;  (defn yyy [] 123)
-;;  )
+(linux-only
+ (defn yyy [] 123)
+ )
 
 ;;(defn break [] ())
 
-(def break ())
+;; (def break ())
 
-(defn f [x]
-  (while (Int.even? x)
-    (if false
-      break
-      (set! &x 123))))
+;; (defn f [x]
+;;   (while (Int.even? x)
+;;     (if false
+;;       break
+;;       (set! &x 123))))
+
+;;(defmacro m [x] (list (quote def) (quote qqqqq) x))
