@@ -6,6 +6,7 @@
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
+* [0.3] When referring to nonexisting type in 'the' form, the compiler barfs.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Importing Int and Array into String module (when defining functions there) break things.
 * [0.3] Allocate enough memory in the Array.str and struct.str functions
