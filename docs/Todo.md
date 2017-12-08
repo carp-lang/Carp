@@ -24,6 +24,7 @@
 * [1.0] Lambdas (anonymous functions)
 
 ## Smaller Language Features ("niceties")
+* [0.3] Calling info on a typedef name will only show the type, not the module defined by it.
 * [0.3] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.3] Errors in macros should present the code location of both the macro and in the code that uses of it.
 * [0.3] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
