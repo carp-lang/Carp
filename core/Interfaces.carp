@@ -3,12 +3,25 @@
 
 (definterface zero (λ [] a))
 (definterface add-ref (λ [&a &a] a))
+;; sub-ref, mul-ref, div-ref
 
 ;; These interfaces would be desirable also? Produces errors in Vector module for now...
 ;; (definterface + (λ [a a] a))
 ;; (definterface - (λ [a a] a))
 ;; (definterface * (λ [a a] a))
 ;; (definterface / (λ [a a] a))
+
+;; <
+;; <=
+;; >
+;; >=
+;; inc
+;; dec
+;; random
+;; random-between
+;; max
+;; min
+;; from-string
 
 ;; These interfaces are defined internally, don't override them:
 ;;(definterface copy (λ [&a] a))
