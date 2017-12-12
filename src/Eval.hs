@@ -719,6 +719,8 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                      Left e ->
                        do putStrLnWithColor Red (show e)
                           return newCtx'
+                     Right (XObj (Lst []) _ _) ->
+                       return newCtx' -- Once again, don't print nil result
                      Right okResult' ->
                        do putStrLnWithColor Yellow ("=> " ++ (pretty okResult'))
                           return newCtx'
