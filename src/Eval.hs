@@ -813,7 +813,9 @@ commandBuild args =
          liftIO $ do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
                      return dynamicNil
        Right okSrc ->
-         liftIO $ do let incl = projectIncludesToC proj
+         liftIO $ do let compiler = projectCompiler proj
+                         echoCompilationCommand = projectEchoCompilationCommand proj
+                         incl = projectIncludesToC proj
                          includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                          switches = " -g "
                          flags = projectFlags proj ++ includeCorePath ++ switches
@@ -824,10 +826,14 @@ commandBuild args =
                      createDirectoryIfMissing False outDir
                      writeFile outMain (incl ++ okSrc)
                      case Map.lookup "main" (envBindings env) of
-                       Just _ -> do callCommand ("clang " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags)
+                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags
+                                    when echoCompilationCommand (putStrLn cmd)
+                                    callCommand cmd
                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "'"))
                                     return dynamicNil
-                       Nothing -> do callCommand ("clang " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags)
+                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags
+                                     when echoCompilationCommand (putStrLn cmd)
+                                     callCommand cmd
                                      when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "'"))
                                      return dynamicNil
 
@@ -1051,6 +1057,8 @@ commandProjectSet [XObj (Str key) _ _, value] =
                  "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
                  "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
                  "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
+                 "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
+                 "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
                  _ ->
                    liftIO $ do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
                                return ctx

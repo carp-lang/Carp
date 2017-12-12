@@ -568,19 +568,37 @@ data Project = Project { projectTitle :: String
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
+                       , projectCompiler :: String
+                       , projectEchoCompilationCommand :: Bool
                        }
 
 projectFlags :: Project -> String
 projectFlags proj = joinWithSpace (projectCFlags proj ++ projectLibFlags proj)
 
 instance Show Project where
-  show (Project title incl cFlags libFlags srcFiles echoC carpDir outDir prompt searchPaths printTypedAST) =
+  show (Project
+        title
+        incl
+        cFlags
+        libFlags
+        srcFiles
+        echoC
+        carpDir
+        outDir
+        prompt
+        searchPaths
+        printTypedAST
+        compiler
+        echoCompilationCommand
+       ) =
     unlines [ "Title: " ++ title
+            , "Compiler: " ++ compiler
             , "Includes:\n    " ++ joinWith "\n    " (map show incl)
             , "Cflags:\n    " ++ joinWith "\n    " cFlags
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
             , "Carp source files:\n    " ++ joinWith "\n    " srcFiles
             , "Echo C: " ++ if echoC then "true" else "false"
+            , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
             , "Output directory: " ++ outDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt

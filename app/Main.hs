@@ -29,8 +29,8 @@ import Eval
 defaultProject :: Project
 defaultProject = Project { projectTitle = "Untitled"
                          , projectIncludes = [SystemInclude "core.h"]
-                         , projectCFlags = ["-fPIC"]
-                         , projectLibFlags = ["-lm"]
+                         , projectCFlags = [""]
+                         , projectLibFlags = [""]
                          , projectFiles = []
                          , projectEchoC = False
                          , projectCarpDir = "./"
@@ -38,6 +38,8 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectPrompt = if os == "darwin" then "鲮 " else "> "
                          , projectCarpSearchPaths = []
                          , projectPrintTypedAST = False
+                         , projectCompiler = "clang -fPIC -lm"
+                         , projectEchoCompilationCommand = False
                          }
 
 completeKeywords :: Monad m => String -> String -> m [Completion]
