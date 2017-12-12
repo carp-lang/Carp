@@ -134,6 +134,7 @@ symbol = do i <- createInfo
               "while" -> return (XObj While i Nothing)
               -- "fn" -> return (XObj Fn i Nothing)
               "let" -> return (XObj Let i Nothing)
+              "break" -> return (XObj Break i Nothing)
               "if" -> return (XObj If i Nothing)
               "true" -> return (XObj (Bol True) i Nothing)
               "false" -> return (XObj (Bol False) i Nothing)

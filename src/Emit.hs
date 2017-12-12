@@ -74,6 +74,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Def -> error (show (DontVisitObj Def))
             Let -> error (show (DontVisitObj Let))
             If -> error (show (DontVisitObj If))
+            Break -> error (show (DontVisitObj Break))
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
             Typ -> error (show (DontVisitObj Typ))
@@ -293,6 +294,11 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
 
             -- Interface
             XObj (Interface _ _) _ _ : _ ->
+              return ""
+
+            -- Break
+            [XObj Break _ _] -> do
+              appendToSrc (addIndent indent ++ "break;\n")
               return ""
 
             -- Function application

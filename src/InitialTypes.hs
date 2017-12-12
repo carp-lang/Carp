@@ -65,6 +65,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
                        (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
+                       Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
                        (Sym symPath)      -> visitSymbol env xobj symPath

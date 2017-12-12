@@ -1,0 +1,33 @@
+(use Int)
+
+(load "Test.carp")
+(use Test)
+
+(defn break-test []
+  (let [x 0]
+    (do
+      (while (< x 10)
+        (if (> x 4)
+          (break)
+          (set! &x (inc x))))
+      x)))
+
+(defn all-eq [a b]
+  (if (/= (Array.count a) (Array.count b))
+    false
+    (let [eq true]
+      (do
+        (for [i 0 (Array.count a)]
+          (if (/= @(Array.nth a i) @(Array.nth b i))
+            (set! &eq false)
+            ()))
+        eq))))
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  5
+                  (break-test)
+                  "break works as expected"
+    )
+    (print-test-results test)))
