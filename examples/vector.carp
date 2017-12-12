@@ -1,9 +1,7 @@
 (load "Vector.carp")
 (load "Geometry.carp")
 
-(use IO)
-(use Vector2)
-(use Geometry)
+(use-all IO Vector2 Geometry)
 
 (defn main []
   (let [x (Vector2.init 1.0 2.0)

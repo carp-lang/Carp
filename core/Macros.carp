@@ -86,3 +86,13 @@
   (if (= "windows" (os))
     (cons (quote do) forms)
     ()))
+
+(defdynamic use-all-fn [names]
+  (if (= (count names) 0)
+    (macro-error "Trying to call use-all without arguments")
+    (if (= (count names) 1)
+      (list (list 'use (car names)))
+      (cons (list 'use (car names)) (use-all-fn (cdr names))))));(use-all (cdr names))))))
+
+(defmacro use-all [:rest names]
+  (cons 'do (use-all-fn names)))

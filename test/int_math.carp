@@ -1,7 +1,6 @@
 (load "Test.carp")
 
-(use Int)
-(use Test)
+(use-all Int Test)
 
 (defn main []
   (with-test test

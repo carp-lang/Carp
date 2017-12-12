@@ -2,10 +2,7 @@
 (load "Vector.carp")
 (load "Geometry.carp")
 
-(use Test)
-(use VectorN)
-(use Geometry)
-(use Double)
+(use-all Test VectorN Geometry Double)
 
 (defn main []
   (with-test test

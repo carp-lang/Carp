@@ -1,9 +1,7 @@
 (load "Test.carp")
 (load "Statistics.carp")
 
-(use Double)
-(use Test)
-(use Statistics)
+(use-all Double Test Statistics)
 
 (defn all-eq [a b]
   (if (Int./= (Array.count a) (Array.count b))
