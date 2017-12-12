@@ -369,32 +369,36 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
                                         Just b -> Just (localEnv, b)
                                         Nothing -> Nothing
 
-        imports :: Env -> [Env]
-        imports env = if allowLookupInAllModules
-                      then let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
-                           in  envs ++ concatMap imports envs
-                      -- Only lookup in imported modules:
-                      else let envs = mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
-                           in  envs ++ concatMap imports envs
+        importsAll :: Env -> [Env]
+        importsAll env =
+          let envs = mapMaybe (binderToEnv . snd) (Map.toList (envBindings env))
+          in  envs ++ concatMap importsAll envs
+
+        -- Only lookup in imported modules (nonrecursively!)
+        importsNormal :: Env -> [Env]
+        importsNormal env =
+          mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
 
         binderToEnv :: Binder -> Maybe Env
         binderToEnv (Binder (XObj (Mod e) _ _)) = Just e
         binderToEnv _ = Nothing
 
         importsLookup :: Env -> [(Env, Binder)]
-        importsLookup env = mapMaybe (lookupInLocalEnv name) (imports env)
+        importsLookup env =
+          let envs = (if allowLookupInAllModules then importsAll else importsNormal) env
+          in  mapMaybe (lookupInLocalEnv name) envs
 
         recursiveLookup :: Env -> [(Env, Binder)]
         recursiveLookup env =
           let spine = case Map.lookup name (envBindings env) of
                         Just found -> [(env, found)]
                         Nothing -> []
-              leafs = importsLookup env
+              leaves = importsLookup env
               above = case envParent env of
                         Just parent -> recursiveLookup parent
                         Nothing -> []
-          in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leafs: " ++ show (fmap snd leafs) ++ ", above: " ++ show (fmap snd above))
-            spine ++ leafs ++ above
+          in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leaves: " ++ show (fmap snd leaves) ++ ", above: " ++ show (fmap snd above))
+            spine ++ leaves ++ above
 
 getEnvFromBinder :: (a, Binder) -> Env
 getEnvFromBinder (_, Binder (XObj (Mod foundEnv) _ _)) = foundEnv

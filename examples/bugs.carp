@@ -16,6 +16,7 @@
 (defmodule C
   (use A)
   (use B)
+  (defn f [] 789)
   )
 
 (use C)
