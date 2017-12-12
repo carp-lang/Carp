@@ -45,29 +45,3 @@
           (set! &result (push-back @&result @(nth xs i))))
         result)))
 )
-
-;; BUGS! These function definitions will not create the required typedef for Array, for instance:
-;; typedef Array Array__int;
-;; INSTEAD they will create the following (wrong) typedef:
-;; typedef Array Array__int_MUL_;
-
-;; ;; Extending the Int module with Array functions
-;; (defmodule Int
-;;   (defn add-ref [x y]
-;;     (Int.+ (Int.copy x) (Int.copy y)))
-;;   (defn sum [xs]
-;;     (Array.reduce Int.add-ref 0 xs)))
-
-;; ;; Extending the Float module with Array functions
-;; (defmodule Float
-;;   (defn add-ref [x y]
-;;     (Float.+ (Float.copy x) (Float.copy y)))
-;;   (defn sum [xs]
-;;     (Array.reduce Float.add-ref 0.0f xs)))
-
-;; ;; Extending the Double module with Array functions
-;; (defmodule Double
-;;   (defn add-ref [x y]
-;;     (Double.+ (Double.copy x) (Double.copy y)))
-;;   (defn sum [xs]
-;;     (Array.reduce Double.add-ref 0.0 xs)))
