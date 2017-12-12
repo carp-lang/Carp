@@ -298,21 +298,22 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             XObj (Interface _ _) _ _ : _ ->
               return ""
 
+            -- Break
+            [XObj Break _ _] -> do
+              appendToSrc (addIndent indent ++ "break;\n")
+              return ""
+
             -- Function application
             func : args ->
               do funcToCall <- visit indent func
                  argListAsC <- createArgList indent args
-                 case ty func of
-                  Just (FuncTy _ retTy) ->
-                   if retTy == UnitTy
-                     then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                             return ""
-                     else do let varName = freshVar i
-                             appendToSrc (addIndent indent ++ tyToC retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                             return varName
-                  Just BreakTy ->
-                    do appendToSrc (addIndent indent ++ "break;\n")
-                       return ""
+                 let Just (FuncTy _ retTy) = ty func
+                 if retTy == UnitTy
+                   then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                           return ""
+                   else do let varName = freshVar i
+                           appendToSrc (addIndent indent ++ tyToC retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                           return varName
 
             -- Empty list
             [] -> do appendToSrc (addIndent indent ++ "/* () */\n")
