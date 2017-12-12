@@ -122,10 +122,6 @@ genConstraints root = fmap sort (gen root)
                            [XObj Break _ _] ->
                              return []
 
-                           ---- Continue
-                           --[XObj Continue _ _] ->
-                           --  return []
-
                            -- Function application
                            func : args ->
                              do insideArgsConstraints <- fmap join (mapM gen args)
