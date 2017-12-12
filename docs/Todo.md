@@ -11,7 +11,6 @@
 * [0.3] Allocate enough memory in the Array.str and struct.str functions
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead
-* [0.3] Can run (type NONEXISTINGNAMESPACE.println)
 * [0.3] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 
 ## Big Language Features

@@ -437,22 +437,32 @@ eval env xobj =
           do ctx <- get
              let env = contextGlobalEnv ctx
              case target of
-                   XObj (Sym path@(SymPath _ name)) _ _ ->
+                   XObj (Sym path@(SymPath [] name)) _ _ ->
                      case lookupInEnv path env of
                        Just (_, binder) ->
-                         liftIO $ do putStrLnWithColor White (show binder)
-                                     return dynamicNil
+                         found binder
                        Nothing ->
                          case multiLookupALL name env of
                            [] ->
-                             liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                                         return dynamicNil
+                             notFound path
                            binders ->
                              liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
                                          return dynamicNil
+                   XObj (Sym qualifiedPath) _ _ ->
+                     case lookupInEnv qualifiedPath env of
+                       Just (_, binder) ->
+                         found binder
+                       Nothing ->
+                         notFound qualifiedPath
                    _ ->
                      liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
                                  return dynamicNil
+               where found binder =
+                       liftIO $ do putStrLnWithColor White (show binder)
+                                   return dynamicNil
+                     notFound path =
+                       liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                                   return dynamicNil
         XObj (Sym (SymPath [] "type")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
