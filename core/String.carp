@@ -1,4 +1,5 @@
 (defmodule String
+
   (register =          (Fn [&String &String] Bool))
   (register /=         (Fn [&String &String] Bool))
   (register append     (Fn [String String] String)) ;; TODO: should take a &String as its second argument?

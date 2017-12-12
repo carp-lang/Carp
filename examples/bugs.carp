@@ -2,3 +2,25 @@
 
 ;;; Ranges of non-numbers (bug)
 ;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
+
+(project-set! "printAST" "true")
+
+(defmodule A
+  (defn f [] 123)
+  )
+
+(defmodule B
+  (defn f [] 456)
+  )
+
+(defmodule C
+  (use A)
+  (use B)
+  )
+
+(use C)
+
+;;(use A)
+
+(defn m []
+  (the Int (f)))

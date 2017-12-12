@@ -358,6 +358,7 @@ multiLookupALL = multiLookupInternal True
 
 {-# ANN multiLookupInternal "HLint: ignore Eta reduce" #-}
 -- | The advanced version of multiLookup that allows for looking into modules that are NOT imported.
+-- | Perhaps this function will become unnecessary when all functions can be found through Interfaces? (even 'delete', etc.)
 multiLookupInternal :: Bool -> String -> Env -> [(Env, Binder)]
 multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootEnv
 
