@@ -398,7 +398,7 @@ eval env xobj =
              let env = contextGlobalEnv ctx
                  typeEnv = contextTypeEnv ctx
                  proj = contextProj ctx
-                 printer binderPair =
+                 printer allowLookupInALL binderPair =
                    case binderPair of
                      Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
                        do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
@@ -409,27 +409,31 @@ eval env xobj =
                           when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
                           return ()
                      Nothing ->
-                       case multiLookupALL name env of
-                         [] ->
-                           do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                              return ()
-                         binders ->
-                           do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
-                                       case i of
-                                         Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
-                                         Nothing -> putStrLnWithColor White (show binder))
-                                binders
-                              return ()
-             case target of
-               XObj (Sym path@(SymPath _ name)) _ _ ->
+                       if allowLookupInALL
+                       then case multiLookupALL name env of
+                              [] ->
+                                do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                                   return ()
+                              binders ->
+                                do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                                            case i of
+                                              Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
+                                              Nothing -> putStrLnWithColor White (show binder))
+                                         binders
+                                   return ()
+                       else return ()
+             case path of
+               SymPath [] _ ->
                  -- First look in the type env, then in the global env:
                  do case lookupInEnv path (getTypeEnv typeEnv) of
-                      Nothing -> liftIO (printer (lookupInEnv path env))
-                      found -> liftIO (printer found)
+                      Nothing -> liftIO (printer True (lookupInEnv path env))
+                      found -> liftIO (printer True found)
                     return dynamicNil
-               _ ->
-                 liftIO $ do putStrLnWithColor Red ("Can't get info from non-symbol: " ++ pretty xobj)
-                             return dynamicNil
+               qualifiedPath ->
+                 do case lookupInEnv path env of
+                      Nothing -> notFound path
+                      found -> do liftIO (printer False found)
+                                  return dynamicNil
         XObj (Sym (SymPath [] "info")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'info' command: " ++ pretty xobj)))
 
@@ -457,12 +461,6 @@ eval env xobj =
                    _ ->
                      liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
                                  return dynamicNil
-               where found binder =
-                       liftIO $ do putStrLnWithColor White (show binder)
-                                   return dynamicNil
-                     notFound path =
-                       liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                                   return dynamicNil
         XObj (Sym (SymPath [] "type")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
@@ -556,6 +554,14 @@ trueXObj = XObj (Bol True) Nothing Nothing
 
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
+
+found binder =
+  liftIO $ do putStrLnWithColor White (show binder)
+              return dynamicNil
+
+notFound path =
+  liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+              return dynamicNil
 
 -- | Keep expanding the form until it doesn't change anymore.
 -- | Note: comparing environments is tricky! Make sure they *can* be equal, otherwise this won't work at all!
