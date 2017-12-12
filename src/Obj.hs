@@ -391,7 +391,8 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
               above = case envParent env of
                         Just parent -> recursiveLookup parent
                         Nothing -> []
-          in  spine ++ leafs ++ above
+          in --(trace $ "multiLookupInternal '" ++ name ++ "' " ++ show (envModuleName env) ++ ", spine: " ++ show (fmap snd spine) ++ ", leafs: " ++ show (fmap snd leafs) ++ ", above: " ++ show (fmap snd above))
+            spine ++ leafs ++ above
 
 getEnvFromBinder :: (a, Binder) -> Env
 getEnvFromBinder (_, Binder (XObj (Mod foundEnv) _ _)) = foundEnv
