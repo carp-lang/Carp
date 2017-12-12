@@ -96,3 +96,6 @@
 
 (defmacro use-all [:rest names]
   (cons 'do (use-all-fn names)))
+
+(defmacro when [condition form]
+  (list 'if condition form (list)))
