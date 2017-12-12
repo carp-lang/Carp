@@ -4,8 +4,8 @@
 (use Double)
 (use Array)
 
-(load "core/sdl.carp")
-(load "core/sdl_image.carp")
+(load "sdl.carp")
+(load "sdl_image.carp")
 (use Keycode)
 
 (def max 400)
