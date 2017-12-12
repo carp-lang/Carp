@@ -1,7 +1,6 @@
 (load "Test.carp")
 
-(use Float)
-(use Test)
+(use-all Float Test)
 
 (defn main []
   (with-test test

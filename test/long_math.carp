@@ -1,7 +1,6 @@
 (load "Test.carp")
 
-(use Long)
-(use Test)
+(use-all Long Test)
 
 (defn main []
   (with-test test

@@ -1,7 +1,6 @@
 (load "Test.carp")
 
-(use Array)
-(use Test)
+(use-all Array Test)
 
 (defn main []
   (with-test test

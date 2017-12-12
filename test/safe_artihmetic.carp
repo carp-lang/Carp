@@ -1,9 +1,6 @@
 (load "Test.carp")
 
-(use Bool)
-(use Int)
-(use Long)
-(use Test)
+(use-all Bool Int Long Test)
 
 (def i 1)
 (def l 1l)
