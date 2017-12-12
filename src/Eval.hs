@@ -88,6 +88,18 @@ eval env xobj =
           return (Right xobj)
         [XObj (Sym (SymPath [] "quote")) _ _, target] ->
           return (Right target)
+        XObj Do _ _ : rest ->
+          do evaledList <- fmap sequence (mapM (eval env) rest)
+             case evaledList of
+               Left e -> return (Left e)
+               Right ok ->
+                 case ok of
+                   [] -> return (Left (EvalError "No forms in 'do' statement."))
+                   _ -> return (Right (last ok))
+        -- doExpr@(XObj Do _ _) : expressions ->
+        --   do evaledExpressions <- fmap sequence (mapM (eval env) expressions)
+        --      return $ do okExpressions <- evaledExpressions
+        --                  Right (XObj (Lst (doExpr : okExpressions)) i t)
         XObj (Sym (SymPath [] "list")) _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              return $ do okList <- evaledList
@@ -476,10 +488,6 @@ eval env xobj =
                               okBody <- evaledBody
                               Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
           else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
-        doExpr@(XObj Do _ _) : expressions ->
-          do evaledExpressions <- fmap sequence (mapM (eval env) expressions)
-             return $ do okExpressions <- evaledExpressions
-                         Right (XObj (Lst (doExpr : okExpressions)) i t)
         f:args -> do evaledF <- eval env f
                      case evaledF of
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->

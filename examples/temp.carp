@@ -4,19 +4,11 @@
 ;; (use String)
 ;; (use Char)
 ;; (use Bool)
-(use IO)
-(use Int)
-(use Float)
-(use Double)
-(use Array)
-
-(mac-only
- (defn steve-jobs [] @"Steve Jobs")
- (defmodule Apple
-   (def revenue 347873248734892)))
-
-(linux-only
- (defn linus-torvalds [] @"Linus Torvalds"))
+;; (use IO)
+;; (use Int)
+;; (use Float)
+;; (use Double)
+;; (use Array)
 
 ;;(defn break [] ())
 
@@ -29,3 +21,15 @@
 ;;       (set! &x 123))))
 
 ;;(defmacro m [x] (list (quote def) (quote qqqqq) x))
+
+(defdynamic use-all-fn [names]
+  (if (= (count names) 0)
+    (macro-error "Trying to call use-all without arguments")
+    (if (= (count names) 1)
+      (list (list 'use (car names)))
+      (cons (list 'use (car names)) (use-all-fn (cdr names))))))
+
+(defmacro use-all [:rest names]
+  (cons 'do (use-all-fn names)))
+
+(use-all Int Double Float Array IO)
