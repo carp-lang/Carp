@@ -427,7 +427,8 @@ eval env xobj =
                  -- First look in the type env, then in the global env:
                  do case lookupInEnv path (getTypeEnv typeEnv) of
                       Nothing -> liftIO (printer True (lookupInEnv path env))
-                      found -> liftIO (printer True found)
+                      found -> do liftIO (printer True found) -- this will print the interface itself
+                                  liftIO (printer True (lookupInEnv path env)) -- this will print the locations of the implementers of the interface
                     return dynamicNil
                qualifiedPath ->
                  do case lookupInEnv path env of
