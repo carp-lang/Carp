@@ -32,7 +32,6 @@ data Ty = IntTy
         | ModuleTy
         | PointerTy Ty
         | RefTy Ty
-        -- | ContinueTy
         | StructTy String [Ty] -- the name of the struct, and it's type parameters
         | TypeTy -- the type of types
         | MacroTy

@@ -135,7 +135,6 @@ symbol = do i <- createInfo
               -- "fn" -> return (XObj Fn i Nothing)
               "let" -> return (XObj Let i Nothing)
               "break" -> return (XObj Break i Nothing)
-              --"continue" -> return (XObj Continue i Nothing)
               "if" -> return (XObj If i Nothing)
               "true" -> return (XObj (Bol True) i Nothing)
               "false" -> return (XObj (Bol False) i Nothing)
