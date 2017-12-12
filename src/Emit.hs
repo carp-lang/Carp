@@ -74,7 +74,7 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
             Def -> error (show (DontVisitObj Def))
             Let -> error (show (DontVisitObj Let))
             If -> error (show (DontVisitObj If))
-            Break -> return "break"
+            Break -> error (show (DontVisitObj Break))
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
             Typ -> error (show (DontVisitObj Typ))
