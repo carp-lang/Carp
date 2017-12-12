@@ -23,6 +23,8 @@
 ;; min
 ;; from-string
 
+(definterface π a)
+
 ;; These interfaces are defined internally, don't override them:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))
