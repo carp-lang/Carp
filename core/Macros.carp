@@ -99,3 +99,6 @@
 
 (defmacro when [condition form]
   (list 'if condition form (list)))
+
+(defmacro unless [condition form]
+  (list 'if condition (list) form))
