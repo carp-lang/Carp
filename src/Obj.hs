@@ -83,7 +83,13 @@ data Deleter = ProperDeleter { deleterPath :: SymPath
              deriving (Show, Eq, Ord)
 
 prettyInfo :: Info -> String
-prettyInfo i = "line " ++ show (infoLine i) ++ ", column " ++ show (infoColumn i) ++ " in '" ++ infoFile i ++ "'"
+prettyInfo i =
+  let line = infoLine i
+      column = infoColumn i
+      file = infoFile i
+  in  (if line > -1 then "line " ++ show line else "unkown line") ++ ", " ++
+      (if column > -1 then "column " ++ show column else "unknown column") ++
+      " in '" ++ file ++ "'"
 
 prettyInfoFromXObj :: XObj -> String
 prettyInfoFromXObj xobj = case info xobj of
@@ -727,7 +733,7 @@ instantiateTemplate :: SymPath -> Ty -> Template -> (XObj, [XObj])
 instantiateTemplate path actualType template =
     let defLst = [XObj (Instantiate template) Nothing Nothing, XObj (Sym path) Nothing Nothing]
         deps = templateDependencies template actualType
-    in  (XObj (Lst defLst) (Just dummyInfo) (Just actualType), deps)
+    in  (XObj (Lst defLst) (Just (Info (-1) (-1) (show path ++ " template") Set.empty (-1))) (Just actualType), deps)
 
 -- | Type aliases are used to create C-typedefs when those are needed.
 defineTypeAlias :: String -> Ty -> XObj

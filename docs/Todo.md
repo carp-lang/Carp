@@ -21,7 +21,6 @@
 
 ## Smaller Language Features ("niceties")
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
-* [0.3] Some interfaces are missing info - Thing.str : (λ [(Ref Thing)] String) Defined at line 0, column 0 in 'dummy-file'.
 * [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
 * [0.3] <= and >= functions (and interfaces?!)
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
@@ -58,6 +57,7 @@
 
 ## Ugliness
 * [0.3] The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type. Make a check for this in the template.
+* [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
 * [1.0] Remove unnecessary Array-functions and rewrite them in Carp?
 
 ## Language Design Considerations
