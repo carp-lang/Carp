@@ -12,6 +12,34 @@
           (set! &x (inc x))))
       x)))
 
+(defn when-test-true []
+  (let [x 0]
+    (do
+      (when true
+        (set! &x 5))
+      x)))
+
+(defn when-test-false []
+  (let [x 0]
+    (do
+      (when false
+        (set! &x 5))
+      x)))
+
+(defn unless-test-true []
+  (let [x 0]
+    (do
+      (unless true
+        (set! &x 5))
+      x)))
+
+(defn unless-test-false []
+  (let [x 0]
+    (do
+      (unless false
+        (set! &x 5))
+      x)))
+
 (defn all-eq [a b]
   (if (/= (Array.count a) (Array.count b))
     false
@@ -29,5 +57,25 @@
                   5
                   (break-test)
                   "break works as expected"
+    )
+    (assert-equal test
+                  5
+                  (when-test-true)
+                  "when works as expected when true"
+    )
+    (assert-equal test
+                  0
+                  (when-test-false)
+                  "when works as expected when false"
+    )
+    (assert-equal test
+                  0
+                  (unless-test-true)
+                  "unless works as expected when true"
+    )
+    (assert-equal test
+                  5
+                  (unless-test-false)
+                  "unless works as expected when false"
     )
     (print-test-results test)))
