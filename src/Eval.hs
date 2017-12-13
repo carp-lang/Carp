@@ -724,6 +724,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
             case result of
               Left e ->
                 do putStrLnWithColor Red (show e)
+                   throw CancelEvaluationException
                    return newCtx
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
@@ -1110,8 +1111,10 @@ commandAddInclude includerConstructor [XObj (Str file) _ _] =
 commandAddSystemInclude = commandAddInclude SystemInclude
 commandAddLocalInclude  = commandAddInclude LocalInclude
 
-data ShellOutException = ShellOutException { message :: String, returnCode :: Int } deriving (Eq, Show)
-
+data CarpException =
+    ShellOutException { shellOutMessage :: String, returnCode :: Int }
+  | CancelEvaluationException
+  deriving (Eq, Show)
 
 executeString :: Context -> String -> String -> IO Context
 executeString ctx input fileName = catch exec (catcher ctx)
@@ -1119,12 +1122,18 @@ executeString ctx input fileName = catch exec (catcher ctx)
                  Left parseError -> executeCommand ctx (ReplParseError (show parseError))
                  Right xobjs -> foldM folder ctx xobjs
 
-instance Exception ShellOutException
+instance Exception CarpException
 
-catcher :: Context -> ShellOutException -> IO Context
-catcher ctx (ShellOutException message returnCode) =
-  do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ message)
-     case contextExecMode ctx of
-       Repl -> return ctx
-       Build -> exitWith (ExitFailure returnCode)
-       BuildAndRun -> exitWith (ExitFailure returnCode)
+catcher :: Context -> CarpException -> IO Context
+catcher ctx exception =
+  case exception of
+    (ShellOutException message returnCode) ->
+      do putStrLnWithColor Red ("[RUNTIME ERROR] " ++ message)
+         stop returnCode
+    CancelEvaluationException ->
+      stop 1
+  where stop returnCode =
+          case contextExecMode ctx of
+            Repl -> return ctx
+            Build -> exitWith (ExitFailure returnCode)
+            BuildAndRun -> exitWith (ExitFailure returnCode)

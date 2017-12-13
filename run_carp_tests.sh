@@ -30,3 +30,5 @@ carp ./test/vectorn.carp -b; ./out/a.out;
 carp ./test/control_flow.carp -b; ./out/a.out;
 
 carp ./examples/game.carp -b;
+
+echo "ALL TESTS DONE."

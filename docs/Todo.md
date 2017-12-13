@@ -42,7 +42,6 @@
 * [1.0] Pattern matching on arguments in macros?
 
 ## Tooling
-* [0.3] Stop evalutaion of forms after errors to avoid "Trying to refer to undefined symbol" error
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
