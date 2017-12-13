@@ -10,6 +10,7 @@
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
 * [0.3] Allocate enough memory in the Array.str and struct.str functions.
+* [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 
 ## Big Language Features
 * [0.4] Distinguish immutable/mutable refs?
@@ -42,6 +43,7 @@
 * [1.0] Pattern matching on arguments in macros?
 
 ## Tooling
+* [0.3] Errors in the parser or emitter don't stop evaluation, only errors during evaluation?
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)

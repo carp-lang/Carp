@@ -5,23 +5,12 @@
 
 (project-set! "printAST" "true")
 
-(defmodule A
-  (defn f [] 123)
-  )
 
-(defmodule B
-  (defn f [] 456)
-  )
-
-(defmodule C
-  (use A)
-  (use B)
-  ;;(defn f [] 789)
-  )
-
-(use C)
-
-;;(use A)
-
-(defn m []
-  (the Int (f)))
+;; When enabling more interfaces like
+(definterface inc (Fn [a] a))
+;; the following code doesn't figure out all the type variables:
+(defn f [x] (=> x inc inc inc))
+;; This code works though:
+(defn f [x] (=> x inc inc))
+;; which means that it's the concretizer that has run too few times.
+;; Running it until nothing changes should be the fix.

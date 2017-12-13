@@ -13,20 +13,20 @@
 (definterface * (λ [a a] a))
 (definterface / (λ [a a] a))
 
-;; <
+(definterface < (λ [a a] Bool))
+(definterface > (λ [a a] Bool))
 ;; <=
-;; >
 ;; >=
-;; inc
-;; dec
+;; (definterface inc (λ [a] a))
+;; (definterface dec (λ [a] a))
 ;; random
 ;; random-between
-;; max
-;; min
-;; from-string
+;; (definterface max (λ [a a] a))
+;; (definterface min (λ [a a] a))
+;;(definterface from-string (λ [a] String))
 
 (definterface π a)
 
-;; These interfaces are defined internally, don't override them:
+;; These interfaces are defined internally:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))
