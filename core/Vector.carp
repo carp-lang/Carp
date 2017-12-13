@@ -19,19 +19,19 @@
   (defn to-string [o]
     (string-join @"Vector2(" (Double.str (V2.x o)) @", " (Double.str (V2.y o)) @")"))
 
-  (defn + [a b]
+  (defn add [a b]
     (V2.init (Double.+ (V2.x a) (V2.x b))
             (Double.+ (V2.y a) (V2.y b))))
 
-  (defn - [a b]
+  (defn sub [a b]
     (V2.init (Double.- (V2.x a) (V2.x b))
             (Double.- (V2.y a) (V2.y b))))
 
-  (defn * [a n]
+  (defn mul [a n]
     (V2.init (Double.* (V2.x a) n)
             (Double.* (V2.y a) n)))
 
-  (defn / [a n]
+  (defn div [a n]
     (V2.init (Double./ (V2.x a) n)
             (Double./ (V2.y a) n)))
 
@@ -58,10 +58,10 @@
     (let [m (mag o)]
       (if (Double.= m 0.0)
         (V2.copy o)
-        (/ o m))))
+        (div o m))))
 
   (defn dist [a b]
-    (let [s (- b a)]
+    (let [s (sub b a)]
       (mag &s)))
 
   (defn heading [a]
@@ -102,22 +102,22 @@
 
   (defn /= [a b]
     (not (= a b)))
-  (defn + [a b]
+  (defn add [a b]
     (V3.init (Double.+ (V3.x a) (V3.x b))
             (Double.+ (V3.y a) (V3.y b))
             (Double.+ (V3.z a) (V3.z b))))
 
-  (defn - [a b]
+  (defn sub [a b]
     (V3.init (Double.- (V3.x a) (V3.x b))
             (Double.- (V3.y a) (V3.y b))
             (Double.- (V3.z a) (V3.z b))))
 
-  (defn * [a n]
+  (defn mul [a n]
     (V3.init (Double.* (V3.x a) n)
             (Double.* (V3.y a) n)
             (Double.* (V3.z a) n)))
 
-  (defn / [a n]
+  (defn div [a n]
     (V3.init (Double./ (V3.x a) n)
             (Double./ (V3.y a) n)
             (Double./ (V3.z a) n)))
@@ -135,7 +135,7 @@
     (let [m (mag o)]
       (if (Double.= m 0.0)
         (V3.copy o)
-        (/ o m))))
+        (div o m))))
 
   (defn cross [x y]
     (V3.init
@@ -199,16 +199,16 @@
   (defn /= [a b]
     (not (= a b)))
 
-  (defn + [a b]
+  (defn add [a b]
     (zip Double.+ a b))
 
-  (defn - [a b]
+  (defn sub [a b]
     (zip Double.- a b))
 
-  (defn * [a n]
+  (defn mul [a n]
     (zip- Double.* (VN.v a) &(Array.replicate (VN.n a) &n)))
 
-  (defn / [a n]
+  (defn div [a n]
     (zip- Double./ (VN.v a) &(Array.replicate (VN.n a) &n)))
 
   (defn square- [n]
@@ -224,14 +224,14 @@
     (Double.sqrt (mag-sq o)))
 
   (defn dist [a b]
-    (let [s (- b a)]
+    (let [s (sub b a)]
       (mag &s)))
 
   (defn normalize [o]
     (let [m (mag o)]
       (if (Double.= m 0.0)
         (VN.copy o)
-        (/ o m))))
+        (div o m))))
 
   (defn dot [x y]
     (Array.reduce add- 0.0 (VN.v &(zip Double.* x y))))

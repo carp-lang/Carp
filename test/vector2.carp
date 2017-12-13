@@ -15,20 +15,20 @@
                Vector2./=)
     (assert-equal test
                   &(init 3.0 3.0)
-                  &(+ &(init 2.0 1.0) &(init 1.0 2.0))
-                  "+ operator works")
+                  &(add &(init 2.0 1.0) &(init 1.0 2.0))
+                  "add operator works")
     (assert-equal test
                   &(init 1.0 -1.0)
-                  &(- &(init 2.0 1.0) &(init 1.0 2.0))
-                  "- operator works")
+                  &(sub &(init 2.0 1.0) &(init 1.0 2.0))
+                  "sub operator works")
     (assert-equal test
                   &(init 4.0 2.0)
-                  &(* &(init 2.0 1.0) 2.0)
-                  "* operator works")
+                  &(mul &(init 2.0 1.0) 2.0)
+                  "mul operator works")
     (assert-equal test
                   &(init 1.0 0.5)
-                  &(/ &(init 2.0 1.0) 2.0)
-                  "/ operator works")
+                  &(div &(init 2.0 1.0) 2.0)
+                  "div operator works")
     (assert-equal test
                   5.0
                   (mag &(init 3.0 4.0))

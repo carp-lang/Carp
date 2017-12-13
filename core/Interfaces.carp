@@ -3,13 +3,15 @@
 
 (definterface zero (λ [] a))
 (definterface add-ref (λ [&a &a] a))
-;; sub-ref, mul-ref, div-ref
+(definterface sub-ref (λ [&a &a] a))
+(definterface mul-ref (λ [&a &a] a))
+(definterface div-ref (λ [&a &a] a))
 
 ;; These interfaces would be desirable also? Produces errors in Vector module for now...
-;; (definterface + (λ [a a] a))
-;; (definterface - (λ [a a] a))
-;; (definterface * (λ [a a] a))
-;; (definterface / (λ [a a] a))
+(definterface + (λ [a a] a))
+(definterface - (λ [a a] a))
+(definterface * (λ [a a] a))
+(definterface / (λ [a a] a))
 
 ;; <
 ;; <=
