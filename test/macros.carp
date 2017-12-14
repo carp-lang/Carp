@@ -6,6 +6,11 @@
     (set! &x (+ x 1))
     (= x 2)))
 
+(defn test-comment []
+  (do-let [x 1]
+    (comment (set! &x (+ x 1)))
+    (= x 1)))
+
 (defn test-case-dflt []
   (case 1
     2 false
@@ -29,5 +34,9 @@
     (assert-true test
                  (test-case-select)
                  "case correctly selects branch"
+    )
+    (assert-true test
+                 (test-comment)
+                 "comment ignores input"
     )
     (print-test-results test)))
