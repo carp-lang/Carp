@@ -25,7 +25,7 @@
 ;; (definterface min (λ [a a] a))
 ;;(definterface from-string (λ [a] String))
 
-(definterface π a)
+(definterface pi a)
 
 ;; These interfaces are defined internally:
 ;;(definterface copy (λ [&a] a))

@@ -58,7 +58,7 @@
 ---
 # Defining things
 ```
-(defn circle-area [r] (* π (* r r))
+(defn circle-area [r] (* pi (* r r))
 
 (defn id [x] x)
 
@@ -69,7 +69,7 @@
 # Type inference
 
 ```
-(defn circle-area [r] (* π (* r r)) : (λ [Float] Float)
+(defn circle-area [r] (* pi (* r r)) : (λ [Float] Float)
 
 (defn id [x] x) : (λ [a] a)
 
@@ -359,7 +359,7 @@ Double : Module = {
     sin : (λ [Double] Double)
     str : (λ [Double] String)
     to-int : (λ [Double] Int)
-    π : Double
+    pi : Double
 }
 ```
 

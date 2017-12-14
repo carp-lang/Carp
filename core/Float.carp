@@ -1,5 +1,5 @@
 (defmodule Float
-  (def π 3.1415926536f)
+  (def pi 3.1415926536f)
   (register neg (Fn [Float] Float))
   (register + (Fn [Float Float] Float))
   (register - (Fn [Float Float] Float))
