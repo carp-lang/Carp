@@ -1,0 +1,33 @@
+(load "Test.carp")
+(use Test)
+
+(defn test-do-let []
+  (do-let [x 1]
+    (set! &x (+ x 1))
+    (= x 2)))
+
+(defn test-case-dflt []
+  (case 1
+    2 false
+    true))
+
+(defn test-case-select []
+  (case 1
+    1 true
+    false))
+
+(defn main []
+  (with-test test
+    (assert-true test
+                 (test-do-let)
+                 "do-let works as expected"
+    )
+    (assert-true test
+                 (test-case-dflt)
+                 "case correctly selects default"
+    )
+    (assert-true test
+                 (test-case-select)
+                 "case correctly selects branch"
+    )
+    (print-test-results test)))

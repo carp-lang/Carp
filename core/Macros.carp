@@ -2,7 +2,7 @@
   (if (= (count xs) 0)
     (list)
     (if (= (count xs) 2)
-      (list)
+      (list 'if (car xs) (car (cdr xs)) ())
       (if (= (count xs) 1)
         (car xs)
         (list
@@ -102,3 +102,33 @@
 
 (defmacro unless [condition form]
   (list 'if condition (list) form))
+
+(defmacro do-let [bindings :rest forms]
+  (list 'let bindings
+    (cons 'do forms)))
+
+(defmacro defn+ [name arguments :rest body]
+  (list 'defn name arguments (cons 'do body)))
+
+(defmacro comment [:rest forms]
+  ())
+
+(defmacro forever [:rest forms]
+  (list 'while true (cons 'do forms)))
+
+(defdynamic case-internal [name xs]
+  (if (= (count xs) 0)
+    (list)
+    (if (= (count xs) 2)
+      (list 'if (list '= name (car xs)) (car (cdr xs)) (list))
+      (if (= (count xs) 1)
+        (car xs)
+        (list 'if
+         (list '= name (car xs))
+          (car (cdr xs))
+          (case-internal name (cdr (cdr xs))))))))
+
+(defmacro case [name :rest forms]
+  (case-internal name forms))
+
+>>>>>>> f73b12a... core: added useful macros to the standard library
