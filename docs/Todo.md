@@ -23,7 +23,6 @@
 ## Smaller Language Features ("niceties")
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
-* [0.3] <= and >= functions (and interfaces?!)
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
