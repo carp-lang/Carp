@@ -62,7 +62,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 [Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
 
 ### Core Contributor
-[Veit Heller](http://veitheller.de)
+[Veit Heller](http://veitheller.de) ([@hellerve](https://github.com/hellerve))
 
 ### Contributors
 * Markus Gustavsson
