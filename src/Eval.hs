@@ -99,10 +99,6 @@ eval env xobj =
                  case ok of
                    [] -> return (Left (EvalError "No forms in 'do' statement."))
                    _ -> return (Right (last ok))
-        -- doExpr@(XObj Do _ _) : expressions ->
-        --   do evaledExpressions <- fmap sequence (mapM (eval env) expressions)
-        --      return $ do okExpressions <- evaledExpressions
-        --                  Right (XObj (Lst (doExpr : okExpressions)) i t)
         XObj (Sym (SymPath [] "list")) _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              return $ do okList <- evaledList
@@ -486,7 +482,7 @@ eval env xobj =
           return (Left (EvalError ("Invalid args to 'use' command: " ++ pretty xobj)))
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
-          do evaledValue <- expand eval env value
+          do evaledValue <- expandAll eval env value
              return $ do okValue <- evaledValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->

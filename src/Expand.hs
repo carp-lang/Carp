@@ -1,10 +1,11 @@
-module Expand where
+module Expand (expandAll) where
 
 import Obj
 import Util
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 
+-- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Env -> XObj -> StateT Context IO (Either EvalError XObj)
 
 -- | Keep expanding the form until it doesn't change anymore.
@@ -20,41 +21,6 @@ expandAll eval env root =
                                  then return (Right expanded)
                                  else expandAll eval env expanded
                err -> return err
-
--- | Replace all the infoIdentifier:s on all nested XObj:s
-setNewIdentifiers :: XObj -> XObj
-setNewIdentifiers root = let final = evalState (visit root) 0
-                         in final
-                           --trace ("ROOT: " ++ prettyTyped root ++ "FINAL: " ++ prettyTyped final) final
-  where
-    visit :: XObj -> State Int XObj
-    visit xobj =
-      case obj xobj of
-        (Lst _) -> visitList xobj
-        (Arr _) -> visitArray xobj
-        _ -> bumpAndSet xobj
-
-    visitList :: XObj -> State Int XObj
-    visitList (XObj (Lst xobjs) i t) =
-      do visited <- mapM visit xobjs
-         let xobj' = XObj (Lst visited) i t
-         bumpAndSet xobj'
-    visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
-
-    visitArray :: XObj -> State Int XObj
-    visitArray (XObj (Arr xobjs) i t) =
-      do visited <- mapM visit xobjs
-         let xobj' = XObj (Arr visited) i t
-         bumpAndSet xobj'
-    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
-
-    bumpAndSet :: XObj -> State Int XObj
-    bumpAndSet xobj =
-      do counter <- get
-         put (counter + 1)
-         case info xobj of
-           Just i -> return (xobj { info = Just (i { infoIdentifier = counter })})
-           Nothing -> return xobj
 
 -- | Macro expansion of a single form
 expand :: DynamicEvaluator -> Env -> XObj -> StateT Context IO (Either EvalError XObj)
@@ -141,3 +107,38 @@ expand eval env xobj =
         Just (_, Binder found) -> return (Right found) -- use the found value
         Nothing -> return (Right xobj) -- symbols that are not found are left as-is
     expandSymbol _ = error "Can't expand non-symbol in expandSymbol."
+
+-- | Replace all the infoIdentifier:s on all nested XObj:s
+setNewIdentifiers :: XObj -> XObj
+setNewIdentifiers root = let final = evalState (visit root) 0
+                         in final
+                           --trace ("ROOT: " ++ prettyTyped root ++ "FINAL: " ++ prettyTyped final) final
+  where
+    visit :: XObj -> State Int XObj
+    visit xobj =
+      case obj xobj of
+        (Lst _) -> visitList xobj
+        (Arr _) -> visitArray xobj
+        _ -> bumpAndSet xobj
+
+    visitList :: XObj -> State Int XObj
+    visitList (XObj (Lst xobjs) i t) =
+      do visited <- mapM visit xobjs
+         let xobj' = XObj (Lst visited) i t
+         bumpAndSet xobj'
+    visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
+
+    visitArray :: XObj -> State Int XObj
+    visitArray (XObj (Arr xobjs) i t) =
+      do visited <- mapM visit xobjs
+         let xobj' = XObj (Arr visited) i t
+         bumpAndSet xobj'
+    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    bumpAndSet :: XObj -> State Int XObj
+    bumpAndSet xobj =
+      do counter <- get
+         put (counter + 1)
+         case info xobj of
+           Just i -> return (xobj { info = Just (i { infoIdentifier = counter })})
+           Nothing -> return xobj
