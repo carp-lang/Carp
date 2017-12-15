@@ -31,6 +31,14 @@ instance Exception CarpException
 dynamicNil :: Either a XObj
 dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy)) -- TODO: Remove/unwrap (Right ...) to a XObj
 
+-- | Dynamic 'true'.
+trueXObj :: XObj
+trueXObj = XObj (Bol True) Nothing Nothing
+
+-- | Dynamic 'false'.
+falseXObj :: XObj
+falseXObj = XObj (Bol False) Nothing Nothing
+
 -- | Use this function to register commands in the environment.
 addCommand :: String -> CommandFunctionType -> (String, Binder)
 addCommand name callback =
@@ -280,6 +288,15 @@ commandAddInclude includerConstructor [XObj (Str file) _ _] =
 
 commandAddSystemInclude = commandAddInclude SystemInclude
 commandAddLocalInclude  = commandAddInclude LocalInclude
+
+commandIsList :: CommandCallback
+commandIsList [x] =
+  case x of
+    XObj (Lst _) _ _ -> return (Right trueXObj)
+    _ -> return (Right falseXObj)
+commandIsList _ =
+  do liftIO $ putStrLnWithColor Red "Invalid args to 'list?'"
+     return dynamicNil
 
 -- -- | This function will show the resulting code of non-definitions.
 -- -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"

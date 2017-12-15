@@ -163,6 +163,7 @@ startingGlobalEnv noArray =
                                   , addCommand "os" (CommandFunction commandOS)
                                   , addCommand "system-include" (CommandFunction commandAddSystemInclude)
                                   , addCommand "local-include" (CommandFunction commandAddLocalInclude)
+                                  , addCommand "list?" (CommandFunction commandIsList)
                                   ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
 
 startingTypeEnv :: Env

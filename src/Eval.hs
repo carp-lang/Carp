@@ -103,12 +103,6 @@ eval env xobj =
           do evaledList <- fmap sequence (mapM (eval env) rest)
              return $ do okList <- evaledList
                          Right (XObj (Lst okList) i t)
-        [XObj (Sym (SymPath [] "list?")) _ _, x] ->
-          do evaled <- eval env x
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst _) _ _ -> Right trueXObj
-                           _ -> Right falseXObj
         XObj (Sym (SymPath [] "array")) _ _ : rest ->
           do evaledArray <- fmap sequence (mapM (eval env) rest)
              return $ do okEvaledArray <- evaledArray
@@ -549,14 +543,6 @@ apply env body params args =
                          (XObj (Lst (drop n args)) Nothing Nothing)
       result = eval insideEnv'' body
   in result
-
--- | Dynamic 'true'.
-trueXObj :: XObj
-trueXObj = XObj (Bol True) Nothing Nothing
-
--- | Dynamic 'false'.
-falseXObj :: XObj
-falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Print a found binder.
 found binder =
