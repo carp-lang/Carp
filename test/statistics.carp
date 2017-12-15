@@ -14,6 +14,17 @@
             ()))
         res))))
 
+(defn all-approx [a b]
+  (if (Int./= (Array.count a) (Array.count b))
+    false
+    (let [res true]
+      (do
+        (for [i 0 (Array.count a)]
+          (if (not (Double.approx @(Array.nth a i) @(Array.nth b i)))
+            (set! &res false)
+            ()))
+        res))))
+
 (defn main []
   (with-test test
     (assert-equal test
@@ -57,10 +68,10 @@
                   (pstdev &[1.0 9.0])
                   "pstdev works as expected")
     (assert-op test
-               &[0.0 0.0 0.0 0.0 0.0]
-               &(winsorize &[0.0 0.0 0.0 0.0 10.0] 90.0)
+               &[0.0 0.0 0.0 0.0 8.0]
+               &(winsorize &[0.0 0.0 0.0 0.0 10.0] 5.0)
                "winsorizing works as expected"
-               all-eq)
+               all-approx)
     (assert-op test
                &[2.5 5.0 7.5]
                &(quartiles &[0.0 2.5 5.0 7.5 10.0])

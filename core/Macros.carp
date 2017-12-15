@@ -2,7 +2,7 @@
   (if (= (count xs) 0)
     (list)
     (if (= (count xs) 2)
-      (list)
+      (macro-error "cond has even number of branches; add an else branch")
       (if (= (count xs) 1)
         (car xs)
         (list
@@ -102,3 +102,31 @@
 
 (defmacro unless [condition form]
   (list 'if condition (list) form))
+
+(defmacro let-do [bindings :rest forms]
+  (list 'let bindings
+    (cons 'do forms)))
+
+(defmacro defn-do [name arguments :rest body]
+  (list 'defn name arguments (cons 'do body)))
+
+(defmacro comment [:rest forms]
+  ())
+
+(defmacro forever-do [:rest forms]
+  (list 'while true (cons 'do forms)))
+
+(defdynamic case-internal [name xs]
+  (if (= (count xs) 0)
+    (list)
+    (if (= (count xs) 2)
+      (macro-error "case has even number of branches; add an else branch")
+      (if (= (count xs) 1)
+        (car xs)
+        (list 'if
+         (list '= name (car xs))
+          (car (cdr xs))
+          (case-internal name (cdr (cdr xs))))))))
+
+(defmacro case [name :rest forms]
+  (case-internal name forms))
