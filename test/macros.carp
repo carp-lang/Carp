@@ -2,12 +2,12 @@
 (use Test)
 
 (defn test-do-let []
-  (do-let [x 1]
+  (let-do [x 1]
     (set! &x (+ x 1))
     (= x 2)))
 
 (defn test-comment []
-  (do-let [x 1]
+  (let-do [x 1]
     (comment (set! &x (+ x 1)))
     (= x 1)))
 

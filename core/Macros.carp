@@ -2,7 +2,7 @@
   (if (= (count xs) 0)
     (list)
     (if (= (count xs) 2)
-      (list 'if (car xs) (car (cdr xs)) ())
+      (macro-error "case has even number of branches; add an else branch")
       (if (= (count xs) 1)
         (car xs)
         (list
@@ -107,20 +107,20 @@
   (list 'let bindings
     (cons 'do forms)))
 
-(defmacro defn+ [name arguments :rest body]
+(defmacro defn-do [name arguments :rest body]
   (list 'defn name arguments (cons 'do body)))
 
 (defmacro comment [:rest forms]
   ())
 
-(defmacro forever [:rest forms]
+(defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
 (defdynamic case-internal [name xs]
   (if (= (count xs) 0)
     (list)
     (if (= (count xs) 2)
-      (list 'if (list '= name (car xs)) (car (cdr xs)) (list))
+      (macro-error "case has even number of branches; add an else branch")
       (if (= (count xs) 1)
         (car xs)
         (list 'if
@@ -130,5 +130,3 @@
 
 (defmacro case [name :rest forms]
   (case-internal name forms))
-
->>>>>>> f73b12a... core: added useful macros to the standard library
