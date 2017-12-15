@@ -298,6 +298,9 @@ commandIsList _ =
   do liftIO $ putStrLnWithColor Red "Invalid args to 'list?'"
      return dynamicNil
 
+-- To implement:
+-- =, count, car, cdr, last, all-but-last, cons, cons-last, append, macro-error, list, array,
+
 -- -- | This function will show the resulting code of non-definitions.
 -- -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 -- consumeExpr :: Context -> XObj -> IO ReplCommand
