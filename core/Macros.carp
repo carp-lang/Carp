@@ -2,7 +2,7 @@
   (if (= (count xs) 0)
     (list)
     (if (= (count xs) 2)
-      (macro-error "case has even number of branches; add an else branch")
+      (macro-error "cond has even number of branches; add an else branch")
       (if (= (count xs) 1)
         (car xs)
         (list

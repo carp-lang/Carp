@@ -181,7 +181,8 @@
           (let [samp @(Array.nth tmp i)]
             (cond
               (> samp hi) (Array.aset! tmp i hi)
-              (< samp lo) (Array.aset! tmp i lo))))
+              (< samp lo) (Array.aset! tmp i lo)
+              ())))
         (Array.copy tmp))))
 
   (defn summary [samples]
