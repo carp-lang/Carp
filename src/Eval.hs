@@ -31,13 +31,13 @@ isRestArgSeparator :: String -> Bool
 isRestArgSeparator ":rest" = True
 isRestArgSeparator _ = False
 
+-- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
-  -- Sort different kinds of definitions into the globalEnv or the typeEnv:
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
       --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
@@ -45,6 +45,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
          let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
          return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
+-- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
 registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
 registerDefnInInterfaceIfNeeded ctx xobj =
   case xobj of
@@ -57,6 +58,8 @@ registerDefnInInterfaceIfNeeded ctx xobj =
     _ ->
       ctx
 
+-- | Registers a definition with an interface, if it isn't already registerd.
+-- | TODO: Make sure the type of the registered definition can unify with the existing interface.
 registerInInterfaceIfNeeded :: Context -> SymPath -> Context
 registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
   let typeEnv = (getTypeEnv (contextTypeEnv ctx))
@@ -69,6 +72,7 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
        Nothing ->
          ctx
 
+-- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj =
   case obj xobj of
@@ -530,6 +534,7 @@ eval env xobj =
                      Right (XObj (Arr okXObjs) i t)
     evalArray _ = error "Can't eval non-array in evalArray."
 
+-- | Apply a function to some arguments. The other half of 'eval'.
 apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
 apply env body params args =
   let insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv
@@ -548,16 +553,20 @@ apply env body params args =
       result = eval insideEnv'' body
   in result
 
+-- | Dynamic 'true'.
 trueXObj :: XObj
 trueXObj = XObj (Bol True) Nothing Nothing
 
+-- | Dynamic 'false'.
 falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
 
+-- | Print a found binder.
 found binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return dynamicNil
 
+-- | Print error message for bounder that wasn't found.
 notFound path =
   liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
               return dynamicNil
