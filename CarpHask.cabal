@@ -34,7 +34,8 @@ library
                        ManageMemory,
                        Polymorphism,
                        Concretize,
-                       ArrayTemplates
+                       ArrayTemplates,
+                       Expand
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
