@@ -23,4 +23,9 @@
 * [Macros](../core/Macros.carp)
 * [Test](../core/Test.carp)
 * [Statistics](../core/Statistics.carp)
-* [Dynamic (REPL / compile time)](../core/Dynamic.carp)
+* [Dynamic](../core/Dynamic.carp) (Functions used in the REPL / at compile time.)
+
+## External
+* [Stdint](https://github.com/hellerve/stdint) (A wrapper around the types defined in stdint.h)
+* [Socket](https://github.com/hellerve/socket) (A wrapper around C sockets)
+* [Physics](https://github.com/hellerve/physics) (A port of phys.js)
