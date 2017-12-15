@@ -103,7 +103,7 @@
 (defmacro unless [condition form]
   (list 'if condition (list) form))
 
-(defmacro do-let [bindings :rest forms]
+(defmacro let-do [bindings :rest forms]
   (list 'let bindings
     (cons 'do forms)))
 
