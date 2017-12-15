@@ -28,6 +28,7 @@ carp ./test/vector2.carp -b; ./out/a.out;
 carp ./test/vector3.carp -b; ./out/a.out;
 carp ./test/vectorn.carp -b; ./out/a.out;
 carp ./test/control_flow.carp -b; ./out/a.out;
+carp ./test/macros.carp -b; ./out/a.out;
 
 carp ./examples/game.carp -b;
 
