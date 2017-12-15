@@ -28,51 +28,6 @@ import Util
 import Commands
 import Expand
 
-isRestArgSeparator :: String -> Bool
-isRestArgSeparator ":rest" = True
-isRestArgSeparator _ = False
-
--- | Sort different kinds of definitions into the globalEnv or the typeEnv.
-define :: Context -> XObj -> IO Context
-define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
-  case annXObj of
-    XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-      --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
-    _ ->
-      do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
-         when (projectEchoC proj) $
-           putStrLn (toC annXObj)
-         let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
-         return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
-
--- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
-registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
-registerDefnInInterfaceIfNeeded ctx xobj =
-  case xobj of
-    XObj (Lst [XObj Defn _ _, XObj (Sym path) _ _, _, _]) _ _ ->
-      -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path
-    XObj (Lst [XObj Def _ _, XObj (Sym path) _ _, _]) _ _ ->
-      -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path
-    _ ->
-      ctx
-
--- | Registers a definition with an interface, if it isn't already registerd.
--- | TODO: Make sure the type of the registered definition can unify with the existing interface.
-registerInInterfaceIfNeeded :: Context -> SymPath -> Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
-  let typeEnv = (getTypeEnv (contextTypeEnv ctx))
-  in case lookupInEnv (SymPath [] name) typeEnv of
-       Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
-         let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-         in  ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
-       Just (_, Binder x) ->
-         error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
-       Nothing ->
-         ctx
-
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj =
@@ -745,3 +700,48 @@ catcher ctx exception =
             Repl -> return ctx
             Build -> exitWith (ExitFailure returnCode)
             BuildAndRun -> exitWith (ExitFailure returnCode)
+
+isRestArgSeparator :: String -> Bool
+isRestArgSeparator ":rest" = True
+isRestArgSeparator _ = False
+
+-- | Sort different kinds of definitions into the globalEnv or the typeEnv.
+define :: Context -> XObj -> IO Context
+define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
+  case annXObj of
+    XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
+      --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
+      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+    _ ->
+      do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
+         when (projectEchoC proj) $
+           putStrLn (toC annXObj)
+         let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
+         return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+
+-- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
+registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
+registerDefnInInterfaceIfNeeded ctx xobj =
+  case xobj of
+    XObj (Lst [XObj Defn _ _, XObj (Sym path) _ _, _, _]) _ _ ->
+      -- This is a function, does it belong to an interface?
+      registerInInterfaceIfNeeded ctx path
+    XObj (Lst [XObj Def _ _, XObj (Sym path) _ _, _]) _ _ ->
+      -- Global variables can also be part of an interface
+      registerInInterfaceIfNeeded ctx path
+    _ ->
+      ctx
+
+-- | Registers a definition with an interface, if it isn't already registerd.
+-- | TODO: Make sure the type of the registered definition can unify with the existing interface.
+registerInInterfaceIfNeeded :: Context -> SymPath -> Context
+registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
+  let typeEnv = (getTypeEnv (contextTypeEnv ctx))
+  in case lookupInEnv (SymPath [] name) typeEnv of
+       Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
+         let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
+         in  ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
+       Just (_, Binder x) ->
+         error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+       Nothing ->
+         ctx
