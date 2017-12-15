@@ -30,3 +30,11 @@
 ;; These interfaces are defined internally:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))
+
+(defn <= [a b]
+  (or (< a b)
+      (= a b)))
+
+(defn >= [a b]
+  (or (> a b)
+      (= a b)))
