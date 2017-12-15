@@ -5,14 +5,11 @@ import Data.List (foldl', null)
 import Data.List.Split (splitWhen)
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad.State
-import Control.Monad.State.Lazy (StateT(..), liftIO)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.Process (callCommand, spawnCommand, waitForProcess)
-import System.IO (hPutStr)
-import Control.Concurrent (forkIO)
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
-import System.Directory
-import System.Info (os)
+import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.IO (hPutStr)
+import System.Directory (doesPathExist)
+import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad
@@ -28,13 +25,11 @@ import Deftype
 import ColorText
 import Template
 import Util
+import Commands
 
 isRestArgSeparator :: String -> Bool
 isRestArgSeparator ":rest" = True
 isRestArgSeparator _ = False
-
-dynamicNil :: Either a XObj
-dynamicNil = Right (XObj (Lst []) (Just dummyInfo) (Just UnitTy)) -- TODO: Remove/unwrap (Right ...) to a XObj
 
 define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
@@ -701,11 +696,90 @@ expand env xobj =
         Nothing -> return (Right xobj) -- symbols that are not found are left as-is
     expandSymbol _ = error "Can't expand non-symbol in expandSymbol."
 
+commandProjectSet :: CommandCallback
+commandProjectSet [XObj (Str key) _ _, value] =
+  do ctx <- get
+     let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+     Right evaledValue <- eval env value -- TODO: fix!!!
+     let (XObj (Str valueStr) _ _) = evaledValue
+     newCtx <- case key of
+                 "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                 "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                 "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
+                 "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
+                 "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
+                 "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
+                 "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
+                 "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
+                 _ ->
+                   liftIO $ do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
+                               return ctx
+     put newCtx
+     return dynamicNil
+commandProjectSet args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
 
+commandLoad :: CommandCallback
+commandLoad [XObj (Str path) _ _] =
+  do ctx <- get
+     let proj = contextProj ctx
+         carpDir = projectCarpDir proj
+         fullSearchPaths =
+           path :
+           ("./" ++ path) :                                      -- the path from the current directory
+           map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+           [carpDir ++ "/core/" ++ path]
+            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
+     existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
+     case existingPaths of
+       [] ->
+         liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
+                     return dynamicNil
+       firstPathFound : _ ->
+         do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
+                                    readFile firstPathFound
+            let files = projectFiles proj
+                files' = if firstPathFound `elem` files
+                         then files
+                         else firstPathFound : files
+                proj' = proj { projectFiles = files' }
+            newCtx <- liftIO $ executeString (ctx { contextProj = proj' }) contents firstPathFound
+            put newCtx
+            return dynamicNil
 
-popModulePath :: Context -> Context
-popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
+loadFiles :: Context -> [FilePath] -> IO Context
+loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
+  where folder :: Context -> FilePath -> IO Context
+        folder ctx file =
+          callCallbackWithArgs ctx commandLoad [XObj (Str file) Nothing Nothing]
 
+commandReload :: CommandCallback
+commandReload args =
+  do ctx <- get
+     let paths = projectFiles (contextProj ctx)
+         f :: Context -> FilePath -> IO Context
+         f context filepath = do contents <- readFile filepath
+                                 executeString context contents filepath
+     newCtx <- liftIO (foldM f ctx paths)
+     put newCtx
+     return dynamicNil
+
+commandExpand :: CommandCallback
+commandExpand [xobj] =
+  do ctx <- get
+     result <-expandAll (contextGlobalEnv ctx) xobj
+     case result of
+       Left e ->
+         liftIO $ do putStrLnWithColor Red (show e)
+                     return dynamicNil
+       Right expanded ->
+         liftIO $ do putStrLnWithColor Yellow (pretty expanded)
+                     return dynamicNil
+commandExpand args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
 
 folder :: Context -> XObj -> IO Context
 folder context xobj =
@@ -777,8 +851,6 @@ data ReplCommand = ReplMacroError String
                  | ReplEval XObj
                  | ListOfCallbacks [CommandCallback]
 
-type CommandCallback = [XObj] -> StateT Context IO (Either EvalError XObj)
-
 objToCommand :: Context -> XObj -> IO ReplCommand
 objToCommand ctx (XObj (Sym (SymPath [] (':' : text))) _ _) =
   return (ListOfCallbacks (mapMaybe charToCommand text))
@@ -796,333 +868,11 @@ charToCommand 'p' = Just commandProject
 charToCommand 'q' = Just commandQuit
 charToCommand _   = Just (\_ -> return dynamicNil)
 
-commandQuit :: CommandCallback
-commandQuit args =
-  do liftIO exitSuccess
-     return dynamicNil
-
-commandCat :: CommandCallback
-commandCat args =
-  do ctx <- get
-     let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "main.c"
-     liftIO $ do callCommand ("cat -n " ++ outMain)
-                 return dynamicNil
-
-commandRunExe :: CommandCallback
-commandRunExe args =
-  do ctx <- get
-     let outDir = projectOutDir (contextProj ctx)
-         outExe = outDir ++ "a.out"
-     liftIO $ do handle <- spawnCommand outExe
-                 exitCode <- waitForProcess handle
-                 case exitCode of
-                   ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
-                   ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
-
-commandBuild :: CommandCallback
-commandBuild args =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         proj = contextProj ctx
-         execMode = contextExecMode ctx
-         src = do decl <- envToDeclarations typeEnv env
-                  typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-                  c <- envToC env
-                  return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
-     case src of
-       Left err ->
-         liftIO $ do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
-                     return dynamicNil
-       Right okSrc ->
-         liftIO $ do let compiler = projectCompiler proj
-                         echoCompilationCommand = projectEchoCompilationCommand proj
-                         incl = projectIncludesToC proj
-                         includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-                         switches = " -g "
-                         flags = projectFlags proj ++ includeCorePath ++ switches
-                         outDir = projectOutDir proj
-                         outMain = outDir ++ "main.c"
-                         outExe = outDir ++ "a.out"
-                         outLib = outDir ++ "lib.so"
-                     createDirectoryIfMissing False outDir
-                     writeFile outMain (incl ++ okSrc)
-                     case Map.lookup "main" (envBindings env) of
-                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags
-                                    when echoCompilationCommand (putStrLn cmd)
-                                    callCommand cmd
-                                    when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "'"))
-                                    return dynamicNil
-                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags
-                                     when echoCompilationCommand (putStrLn cmd)
-                                     callCommand cmd
-                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "'"))
-                                     return dynamicNil
-
-commandReload :: CommandCallback
-commandReload args =
-  do ctx <- get
-     let paths = projectFiles (contextProj ctx)
-         f :: Context -> FilePath -> IO Context
-         f context filepath = do contents <- readFile filepath
-                                 executeString context contents filepath
-     newCtx <- liftIO (foldM f ctx paths)
-     put newCtx
-     return dynamicNil
-
-commandListBindings :: CommandCallback
-commandListBindings args =
-  do ctx <- get
-     liftIO $ do putStrLn "Types:\n"
-                 putStrLn (prettyEnvironment (getTypeEnv (contextTypeEnv ctx)))
-                 putStrLn "\nGlobal environment:\n"
-                 putStrLn (prettyEnvironment (contextGlobalEnv ctx))
-                 putStrLn ""
-                 return dynamicNil
-
-commandHelp :: CommandCallback
-
-commandHelp [XObj (Sym (SymPath [] "about")) _ _] =
-  liftIO $ do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
-              putStrLn ""
-              putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
-                       \you may not use this file except in compliance with the License. \n\
-                       \You may obtain a copy of the License at \n\
-                       \http://www.apache.org/licenses/LICENSE-2.0"
-              putStrLn ""
-              putStrLn "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY \n\
-                       \EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE \n\
-                       \IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR \n\
-                       \PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE \n\
-                       \LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR \n\
-                       \CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF \n\
-                       \SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR \n\
-                       \BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, \n\
-                       \WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE \n\
-                       \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
-                       \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-              putStrLn ""
-              return dynamicNil
-
-commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
-  liftIO $ do putStrLn "Special forms:"
-              putStrLn "(if <condition> <then> <else>)"
-              putStrLn "(while <condition> <body>)"
-              putStrLn "(do <statement1> <statement2> ... <exprN>)"
-              putStrLn "(let [<sym1> <expr1> <name2> <expr2> ...] <body>)"
-              --putStrLn "(fn [<args>] <body>)"
-              putStrLn "(the <type> <expression>)"
-              putStrLn "(ref <expression>)"
-              putStrLn "(address <expr>)"
-              putStrLn "(set! <var> <value>)"
-              putStrLn ""
-              putStrLn "To use functions in modules without qualifying them:"
-              putStrLn "(use <module>)"
-              putStrLn ""
-              putStrLn ("Valid non-alphanumerics: " ++ validCharacters)
-              putStrLn ""
-              putStrLn "Number literals:"
-              putStrLn "1      Int"
-              putStrLn "1l     Int"
-              putStrLn "1.0    Double"
-              putStrLn "1.0f   Float"
-              putStrLn ""
-              putStrLn "Reader macros:"
-              putStrLn "&<expr>   (ref <expr>)"
-              putStrLn "@<expr>   (copy <expr>)"
-              putStrLn ""
-              return dynamicNil
-
-commandHelp [XObj (Sym (SymPath [] "macros")) _ _] =
-  liftIO $ do putStrLn "Some useful macros:"
-              putStrLn "(cond <condition1> <expr1> ... <else-condition>)"
-              putStrLn "(for [<var> <from> <to>] <body>)"
-              putStrLn ""
-              return dynamicNil
-
-commandHelp [XObj (Sym (SymPath [] "structs")) _ _] =
-  liftIO $ do putStrLn "A type definition will generate the following methods:"
-              putStrLn "Getters  (<method-name> (Ref <struct>))"
-              putStrLn "Setters  (set-<method-name> <struct> <new-value>)"
-              putStrLn "Updaters (update-<method-name> <struct> <new-value>)"
-              putStrLn "init (stack allocation)"
-              putStrLn "new (heap allocation)"
-              putStrLn "copy"
-              putStrLn "delete (used internally, no need to call this explicitly)"
-              putStrLn ""
-              return dynamicNil
-
-commandHelp [XObj (Sym (SymPath [] "shortcuts")) _ _] =
-  liftIO $ do putStrLn "GHC-style shortcuts at the repl:"
-              putStrLn "(reload)   :r"
-              putStrLn "(build)    :b"
-              putStrLn "(run)      :x"
-              putStrLn "(cat)      :c"
-              putStrLn "(env)      :e"
-              putStrLn "(help)     :h"
-              putStrLn "(project)  :p"
-              putStrLn "(quit)     :q"
-              putStrLn ""
-              putStrLn "The shortcuts can be combined like this: \":rbx\""
-              putStrLn ""
-              return dynamicNil
-
-commandHelp [] =
-  liftIO $ do putStrLn "Compiler commands:"
-              putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
-              putStrLn "(reload)           - Reload all the project files."
-              putStrLn "(build)            - Produce an executable or shared library."
-              putStrLn "(run)              - Run the executable produced by 'build' (if available)."
-              putStrLn "(cat)              - Look at the generated C code (make sure you build first)."
-              putStrLn "(env)              - List the bindings in the global environment."
-              putStrLn "(type <symbol>)    - Get the type of a binding."
-              putStrLn "(info <symbol>)    - Get information about a binding."
-              putStrLn "(project)          - Display information about your project."
-              putStrLn "(quit)             - Terminate this Carp REPL."
-              putStrLn "(help <chapter>)   - Available chapters: language, macros, structs, shortcuts, about."
-              putStrLn ""
-              putStrLn "To define things:"
-              putStrLn "(def <name> <constant>)           - Define a global variable."
-              putStrLn "(defn <name> [<args>] <body>)     - Define a function."
-              putStrLn "(module <name> <def1> <def2> ...) - Define a module and/or add definitions to an existing one."
-              putStrLn "(deftype <name> ...)              - Define a new type."
-              putStrLn "(register <name> <type>)          - Make an external variable or function available for usage."
-              putStrLn "(defalias <name> <type>)          - Create another name for a type."
-              putStrLn ""
-              putStrLn "C-compiler configuration:"
-              putStrLn "(system-include <file>)          - Include a system header file."
-              putStrLn "(local-include <file>)           - Include a local header file."
-              putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
-              putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
-              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
-              putStrLn ""
-              putStrLn "Compiler flags:"
-              putStrLn "-b                               - Build."
-              putStrLn "-x                               - Build and run."
-              return dynamicNil
-
-commandHelp args =
-  do liftIO $ putStrLn ("Can't find help for " ++ joinWithComma (map pretty args))
-     return dynamicNil
-
-commandProject :: CommandCallback
-commandProject args =
-  do ctx <- get
-     liftIO (print (contextProj ctx))
-     return dynamicNil
-
-commandLoad :: CommandCallback
-commandLoad [XObj (Str path) _ _] =
-  do ctx <- get
-     let proj = contextProj ctx
-         carpDir = projectCarpDir proj
-         fullSearchPaths =
-           path :
-           ("./" ++ path) :                                      -- the path from the current directory
-           map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
-           [carpDir ++ "/core/" ++ path]
-            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
-     existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
-     case existingPaths of
-       [] ->
-         liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
-                     return dynamicNil
-       firstPathFound : _ ->
-         do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
-                                    readFile firstPathFound
-            let files = projectFiles proj
-                files' = if firstPathFound `elem` files
-                         then files
-                         else firstPathFound : files
-                proj' = proj { projectFiles = files' }
-            newCtx <- liftIO $ executeString (ctx { contextProj = proj' }) contents firstPathFound
-            put newCtx
-            return dynamicNil
-
-loadFiles :: Context -> [FilePath] -> IO Context
-loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
-  where folder :: Context -> FilePath -> IO Context
-        folder ctx file =
-          callCallbackWithArgs ctx commandLoad [XObj (Str file) Nothing Nothing]
-
-commandPrint :: CommandCallback
-commandPrint args =
-  do liftIO $ mapM_ (putStrLn . pretty) args
-     return dynamicNil
-
-commandExpand :: CommandCallback
-commandExpand [xobj] =
-  do ctx <- get
-     result <-expandAll (contextGlobalEnv ctx) xobj
-     case result of
-       Left e ->
-         liftIO $ do putStrLnWithColor Red (show e)
-                     return dynamicNil
-       Right expanded ->
-         liftIO $ do putStrLnWithColor Yellow (pretty expanded)
-                     return dynamicNil
-commandExpand args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
-
-commandProjectSet :: CommandCallback
-commandProjectSet [XObj (Str key) _ _, value] =
-  do ctx <- get
-     let proj = contextProj ctx
-         env = contextGlobalEnv ctx
-     Right evaledValue <- eval env value -- TODO: fix!!!
-     let (XObj (Str valueStr) _ _) = evaledValue
-     newCtx <- case key of
-                 "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
-                 "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
-                 "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
-                 "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
-                 "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
-                 "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
-                 "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
-                 "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
-                 _ ->
-                   liftIO $ do putStrLnWithColor Red ("Unrecognized key: '" ++ key ++ "'")
-                               return ctx
-     put newCtx
-     return dynamicNil
-commandProjectSet args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
-
-commandOS :: CommandCallback
-commandOS _ =
-  return (Right (XObj (Str os) (Just dummyInfo) (Just StringTy)))
-
-commandAddInclude :: (String -> Includer) -> CommandCallback
-commandAddInclude includerConstructor [XObj (Str file) _ _] =
-  do ctx <- get
-     let proj = contextProj ctx
-         includer = includerConstructor file
-         includers = projectIncludes proj
-         includers' = if includer `elem` includers
-                      then includers
-                      else includer : includers
-         proj' = proj { projectIncludes = includers' }
-     put (ctx { contextProj = proj' })
-     return dynamicNil
-
-commandAddSystemInclude = commandAddInclude SystemInclude
-commandAddLocalInclude  = commandAddInclude LocalInclude
-
-data CarpException =
-    ShellOutException { shellOutMessage :: String, returnCode :: Int }
-  | CancelEvaluationException
-  deriving (Eq, Show)
-
 executeString :: Context -> String -> String -> IO Context
 executeString ctx input fileName = catch exec (catcher ctx)
   where exec = case parse input fileName of
                  Left parseError -> executeCommand ctx (ReplParseError (show parseError))
                  Right xobjs -> foldM folder ctx xobjs
-
-instance Exception CarpException
 
 catcher :: Context -> CarpException -> IO Context
 catcher ctx exception =

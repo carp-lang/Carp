@@ -795,3 +795,6 @@ data Context = Context { contextGlobalEnv :: Env
                        , contextLastInput :: String
                        , contextExecMode :: ExecutionMode
                        } deriving Show
+
+popModulePath :: Context -> Context
+popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
