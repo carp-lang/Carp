@@ -1,16 +1,20 @@
 ;; This file contains examples of unsolved bugs
 
+(project-set! "printAST" "true")
+
+;; UNSOLVED BUG A
 ;;; Ranges of non-numbers (bug)
 ;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
 
-(project-set! "printAST" "true")
+;; UNSOLVED BUG B
+;; ;; When enabling more interfaces like
+;; (definterface inc (Fn [a] a))
+;; ;; the following code doesn't figure out all the type variables:
+;; (defn f [x] (=> x inc inc inc))
+;; ;; This code works though:
+;; (defn f [x] (=> x inc inc))
+;; ;; which means that it's the concretizer that has run too few times.
+;; ;; Running it until nothing changes should be the fix.
 
-
-;; When enabling more interfaces like
-(definterface inc (Fn [a] a))
-;; the following code doesn't figure out all the type variables:
-(defn f [x] (=> x inc inc inc))
-;; This code works though:
-(defn f [x] (=> x inc inc))
-;; which means that it's the concretizer that has run too few times.
-;; Running it until nothing changes should be the fix.
+;; UNSOLVED BUG C
+(defn f [] (the Blurgh 123))
