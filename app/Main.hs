@@ -136,6 +136,10 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateElemCount
                                 ]
 
+dynamicModule :: Env
+dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList []
+
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
   Env { envBindings = bindings,
@@ -164,7 +168,10 @@ startingGlobalEnv noArray =
                                   , addCommand "system-include" (CommandFunction commandAddSystemInclude)
                                   , addCommand "local-include" (CommandFunction commandAddLocalInclude)
                                   , addCommand "list?" (CommandFunction commandIsList)
-                                  ] ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
+                                  ]
+                   ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
+                   ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
+
 
 startingTypeEnv :: Env
 startingTypeEnv = Env { envBindings = bindings
