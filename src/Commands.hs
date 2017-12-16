@@ -301,6 +301,36 @@ commandIsList _ =
 -- To implement:
 -- =, count, car, cdr, last, all-but-last, cons, cons-last, append, macro-error, list, array,
 
+-- commandCount [x] =
+--   case x of
+--     XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
+--     XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
+--     _ -> return (Left (EvalError ("Applying 'count' to non-list: " ++ pretty x ++ " at " ++ prettyInfoFromXObj x)))
+-- commandCount args =
+--   do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
+--      return dynamicNil
+
+-- commandCar [x] =
+--   case x of
+--     XObj (Lst (car : _)) _ _ -> return (Right car)
+--     XObj (Arr (car : _)) _ _ -> return (Right car)
+--     _ -> return (Left (EvalError ("Applying 'car' to non-list: " ++ pretty x)))
+-- commandCar args =
+--   do liftIO $ putStrLnWithColor Red ("Invalid args to 'car': " ++ joinWithComma (map pretty args))
+--      return dynamicNil
+
+-- commandCdr [x] =
+--   case x of
+--     XObj (Lst (_ : cdr)) _ _ -> return (Right (XObj (Lst cdr) Nothing Nothing))
+--     XObj (Arr (_ : cdr)) _ _ -> return (Right (XObj (Arr cdr) Nothing Nothing))
+--     _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list"))
+-- commandCdr args =
+--   do liftIO $ putStrLnWithColor Red ("Invalid args to 'cdr': " ++ joinWithComma (map pretty args))
+--      return dynamicNil
+
+
+
+
 -- -- | This function will show the resulting code of non-definitions.
 -- -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 -- consumeExpr :: Context -> XObj -> IO ReplCommand
