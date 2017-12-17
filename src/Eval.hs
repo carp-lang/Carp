@@ -224,6 +224,9 @@ eval env xobj =
         XObj (Sym (SymPath [] "use")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'use' command: " ++ pretty xobj)))
 
+        XObj (Sym (SymPath [] "with")) _ _ : xobj@(XObj (Sym path) _ _) : forms ->
+          specialCommandWith xobj path forms
+
         f:args -> do evaledF <- eval env f
                      case evaledF of
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
@@ -696,6 +699,21 @@ specialCommandUse xobj path =
             return dynamicNil
        Nothing ->
          return (Left (EvalError ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")))
+
+specialCommandWith :: XObj -> SymPath -> [XObj] -> StateT Context IO (Either EvalError XObj)
+specialCommandWith xobj path forms =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+         useThese = envUseModules env
+         env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
+         ctx' = ctx { contextGlobalEnv = env' }
+     ctxAfter <- liftIO $ foldM folder ctx' forms
+     let envAfter = contextGlobalEnv ctxAfter
+         ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
+     put ctxAfter'
+     return dynamicNil
 
 
 
