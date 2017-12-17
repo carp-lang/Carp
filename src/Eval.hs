@@ -240,7 +240,8 @@ eval env xobj =
                               Right okArgs -> getCommand callback okArgs
                               Left err -> return (Left err)
                        _ ->
-                         return (Left (EvalError ("Can't eval non-macro / non-dynamic function: " ++ pretty xobj)))
+                         return (Left (EvalError ("Can't eval non-macro / non-dynamic function '" ++ pretty f ++ "' in " ++
+                                                  pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)))
 
     evalList _ = error "Can't eval non-list in evalList."
 
