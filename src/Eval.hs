@@ -249,10 +249,13 @@ eval env xobj =
     evalList _ = error "Can't eval non-list in evalList."
 
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
-    evalSymbol xobj@(XObj (Sym path) _ _) =
+    evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name)) _ _) =
       case lookupInEnv path env of
         Just (_, Binder found) -> return (Right found) -- use the found value
-        Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj)))
+        Nothing ->
+          case lookupInEnv (SymPath ("Dynamic" : pathStrings) name) env of -- A slight hack!
+            Just (_, Binder found) -> return (Right found)
+            Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj)))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
 
     evalArray :: XObj -> StateT Context IO (Either EvalError XObj)

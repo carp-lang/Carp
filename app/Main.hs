@@ -138,7 +138,8 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
 
 dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
-  where bindings = Map.fromList []
+  where bindings = Map.fromList [ addCommand "list?" (CommandFunction commandIsList)
+                                ]
 
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -167,7 +168,6 @@ startingGlobalEnv noArray =
                                   , addCommand "os" (CommandFunction commandOS)
                                   , addCommand "system-include" (CommandFunction commandAddSystemInclude)
                                   , addCommand "local-include" (CommandFunction commandAddLocalInclude)
-                                  , addCommand "list?" (CommandFunction commandIsList)
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
