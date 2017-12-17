@@ -152,10 +152,29 @@ eval env xobj =
                             else eval env ifFalse
                    _ -> return (Left (EvalError ("Non-boolean expression in if-statement: " ++ pretty okCondition)))
                Left err -> return (Left err)
+
         [defnExpr@(XObj Defn _ _), name, args, body] ->
           specialCommandDefine xobj
+
         [defExpr@(XObj Def _ _), name, expr] ->
           specialCommandDefine xobj
+
+        [theExpr@(XObj The _ _), typeXObj, value] ->
+          do evaledValue <- expandAll eval env value
+             return $ do okValue <- evaledValue
+                         Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
+          if even (length bindings)
+          then do bind <- mapM (\(n, x) -> do x' <- eval env x
+                                              return $ do okX <- x'
+                                                          (Right [n, okX]))
+                               (pairwise bindings)
+                  evaledBody <- eval env body
+                  return $ do okBindings <- sequence bind
+                              okBody <- evaledBody
+                              Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
+          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
 
         XObj (Sym (SymPath [] "register-type")) _ _ : XObj (Sym (SymPath _ typeName)) _ _ : rest ->
           specialCommandRegisterType typeName rest
@@ -191,109 +210,20 @@ eval env xobj =
           return (Left (EvalError ("Invalid args to 'defmodule' command: " ++ pretty xobj)))
 
         [XObj (Sym (SymPath [] "info")) _ _, target@(XObj (Sym path@(SymPath _ name)) _ _)] ->
-          do ctx <- get
-             let env = contextGlobalEnv ctx
-                 typeEnv = contextTypeEnv ctx
-                 proj = contextProj ctx
-                 printer allowLookupInALL binderPair =
-                   case binderPair of
-                     Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
-                       do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
-                          when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-                          return ()
-                     Just (_, binder@(Binder x)) ->
-                       do putStrLnWithColor White (show binder)
-                          when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-                          return ()
-                     Nothing ->
-                       if allowLookupInALL
-                       then case multiLookupALL name env of
-                              [] ->
-                                do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-                                   return ()
-                              binders ->
-                                do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
-                                            case i of
-                                              Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
-                                              Nothing -> putStrLnWithColor White (show binder))
-                                         binders
-                                   return ()
-                       else return ()
-             case path of
-               SymPath [] _ ->
-                 -- First look in the type env, then in the global env:
-                 do case lookupInEnv path (getTypeEnv typeEnv) of
-                      Nothing -> liftIO (printer True (lookupInEnv path env))
-                      found -> do liftIO (printer True found) -- this will print the interface itself
-                                  liftIO (printer True (lookupInEnv path env)) -- this will print the locations of the implementers of the interface
-                    return dynamicNil
-               qualifiedPath ->
-                 do case lookupInEnv path env of
-                      Nothing -> notFound path
-                      found -> do liftIO (printer False found)
-                                  return dynamicNil
+          specialCommandInfo target
         XObj (Sym (SymPath [] "info")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'info' command: " ++ pretty xobj)))
 
         [XObj (Sym (SymPath [] "type")) _ _, target] ->
-          do ctx <- get
-             let env = contextGlobalEnv ctx
-             case target of
-                   XObj (Sym path@(SymPath [] name)) _ _ ->
-                     case lookupInEnv path env of
-                       Just (_, binder) ->
-                         found binder
-                       Nothing ->
-                         case multiLookupALL name env of
-                           [] ->
-                             notFound path
-                           binders ->
-                             liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
-                                         return dynamicNil
-                   XObj (Sym qualifiedPath) _ _ ->
-                     case lookupInEnv qualifiedPath env of
-                       Just (_, binder) ->
-                         found binder
-                       Nothing ->
-                         notFound qualifiedPath
-                   _ ->
-                     liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty xobj)
-                                 return dynamicNil
+          specialCommandType target
         XObj (Sym (SymPath [] "type")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
         [XObj (Sym (SymPath [] "use")) _ _, xobj@(XObj (Sym path) _ _)] ->
-          do ctx <- get
-             let pathStrings = contextPath ctx
-                 env = contextGlobalEnv ctx
-                 e = getEnv env pathStrings
-                 useThese = envUseModules e
-                 e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
-                 innerEnv = getEnv env pathStrings -- Duplication of e?
-             case lookupInEnv path innerEnv of
-               Just (_, Binder _) ->
-                 do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
-                    return dynamicNil
-               Nothing ->
-                 return (Left (EvalError ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")))
+          specialCommandUse xobj path
         XObj (Sym (SymPath [] "use")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'use' command: " ++ pretty xobj)))
 
-        [theExpr@(XObj The _ _), typeXObj, value] ->
-          do evaledValue <- expandAll eval env value
-             return $ do okValue <- evaledValue
-                         Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
-        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
-          if even (length bindings)
-          then do bind <- mapM (\(n, x) -> do x' <- eval env x
-                                              return $ do okX <- x'
-                                                          (Right [n, okX]))
-                               (pairwise bindings)
-                  evaledBody <- eval env body
-                  return $ do okBindings <- sequence bind
-                              okBody <- evaledBody
-                              Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
-          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
         f:args -> do evaledF <- eval env f
                      case evaledF of
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
@@ -680,6 +610,92 @@ specialCommandDefmodule xobj moduleName innerExpressions =
      case result of
        Left err -> return (Left err)
        Right _ -> return dynamicNil
+
+specialCommandInfo :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandInfo target@(XObj (Sym path@(SymPath _ name)) _ _) =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+         proj = contextProj ctx
+         printer allowLookupInALL binderPair =
+           case binderPair of
+             Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
+               do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
+                  when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
+                  return ()
+             Just (_, binder@(Binder x)) ->
+               do putStrLnWithColor White (show binder)
+                  when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
+                  return ()
+             Nothing ->
+               if allowLookupInALL
+               then case multiLookupALL name env of
+                      [] ->
+                        do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                           return ()
+                      binders ->
+                        do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                                    case i of
+                                      Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
+                                      Nothing -> putStrLnWithColor White (show binder))
+                                 binders
+                           return ()
+               else return ()
+     case path of
+       SymPath [] _ ->
+         -- First look in the type env, then in the global env:
+         do case lookupInEnv path (getTypeEnv typeEnv) of
+              Nothing -> liftIO (printer True (lookupInEnv path env))
+              found -> do liftIO (printer True found) -- this will print the interface itself
+                          liftIO (printer True (lookupInEnv path env)) -- this will print the locations of the implementers of the interface
+            return dynamicNil
+       qualifiedPath ->
+         do case lookupInEnv path env of
+              Nothing -> notFound path
+              found -> do liftIO (printer False found)
+                          return dynamicNil
+
+specialCommandType :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandType target =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+     case target of
+           XObj (Sym path@(SymPath [] name)) _ _ ->
+             case lookupInEnv path env of
+               Just (_, binder) ->
+                 found binder
+               Nothing ->
+                 case multiLookupALL name env of
+                   [] ->
+                     notFound path
+                   binders ->
+                     liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
+                                 return dynamicNil
+           XObj (Sym qualifiedPath) _ _ ->
+             case lookupInEnv qualifiedPath env of
+               Just (_, binder) ->
+                 found binder
+               Nothing ->
+                 notFound qualifiedPath
+           _ ->
+             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
+                         return dynamicNil
+
+specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
+specialCommandUse xobj path =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         e = getEnv env pathStrings
+         useThese = envUseModules e
+         e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
+         innerEnv = getEnv env pathStrings -- Duplication of e?
+     case lookupInEnv path innerEnv of
+       Just (_, Binder _) ->
+         do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
+            return dynamicNil
+       Nothing ->
+         return (Left (EvalError ("Can't find a module named '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")))
 
 
 
