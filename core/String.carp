@@ -52,7 +52,7 @@
 
 (defdynamic string-join- [strs]
   (if (= (count strs) 0)
-    (String.copy "")
+    '(String.copy "")
     (list 'String.append (car strs) (string-join- (cdr strs)))))
 
 (defmacro string-join [:rest strs]

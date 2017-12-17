@@ -110,14 +110,14 @@
 
 
 (defmacro with-test [name :rest forms]
-  (list 'let [name &(Test.State.init 0 0)]
+  (list 'let [name '&(Test.State.init 0 0)]
     (cons-last
       (list 'Test.State.failed name)
       (cons 'do (with-test-internal name forms)))))
 
 (defmacro deftest [name state-name :rest forms]
   (list 'defn name []
-    (list 'let [state-name &(Test.State.init 0 0)]
+    (list 'let [state-name '&(Test.State.init 0 0)]
       (cons-last
         (list Test.print-test-results state-name)
         (cons 'do (with-test-internal state-name forms))))))
