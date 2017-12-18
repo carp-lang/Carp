@@ -44,4 +44,15 @@
         (for [i start-index (count xs)]
           (set! &result (push-back @&result @(nth xs i))))
         result)))
+
+  (defn reverse [a]
+    (let-do [i 0
+             j (Int.dec (count &a))]
+      (while (Int.< i j)
+        (let-do [tmp @(nth &a i)]
+          (aset! &a i @(nth &a j))
+          (set! &i (Int.inc i))
+          (aset! &a j tmp)
+          (set! &j (Int.dec j))))
+      a))
 )

@@ -66,27 +66,6 @@ templateEMap =
          [defineFunctionTypeAlias t,
           defineArrayTypeAlias arrayType])
 
-templateReverse :: (String, Binder)
-templateReverse =
-  let aTy = StructTy "Array" [VarTy "a"]
-      bTy = StructTy "Array" [VarTy "a"]
-  in  defineTemplate
-      (SymPath ["Array"] "reverse")
-      (FuncTy [aTy] bTy)
-      (toTemplate "Array $NAME(Array a)")
-      (toTemplate $ unlines
-        ["$DECL { "
-        ,"    int i = 0, j = a.len-1;"
-        ,"    while(i < j) {"
-        ,"        $a tmp = (($a*)a.data)[i];"
-        ,"        (($a*)a.data)[i++] = (($a*)a.data)[j];"
-        ,"        (($a*)a.data)[j--] = tmp;"
-        ,"    }"
-        ,"    return a;"
-        ,"}"
-        ])
-      (\(FuncTy [arrayType] _) -> [defineArrayTypeAlias arrayType])
-
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
   where
