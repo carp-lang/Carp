@@ -90,6 +90,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        The                -> return (Left (InvalidObj The xobj))
                        Dynamic            -> return (Left (InvalidObj Dynamic xobj))
                        Ref                -> return (Left (InvalidObj Ref xobj))
+                       With               -> return (Left (InvalidObj With xobj))
 
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
     visitSymbol env xobj symPath =

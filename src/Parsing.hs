@@ -142,6 +142,7 @@ symbol = do i <- createInfo
               "set!" -> return (XObj SetBang i Nothing)
               "the" -> return (XObj The i Nothing)
               "ref" -> return (XObj Ref i Nothing)
+              "with" -> return (XObj With i Nothing)
               name   -> return (XObj (Sym (SymPath (init segments) name)) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj

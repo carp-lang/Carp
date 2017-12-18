@@ -68,6 +68,14 @@ expand eval env xobj =
           do expandedExpressions <- mapM (expand eval env) expressions
              return $ do okExpressions <- sequence expandedExpressions
                          Right (XObj (Lst (doExpr : okExpressions)) i t)
+        [withExpr@(XObj With _ _), pathExpr@(XObj (Sym path) _ _), expression] ->
+          do expandedExpression <- expand eval env expression
+             return $ do okExpression <- expandedExpression
+                         Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t) -- Replace the with-expression with just the expression!
+        [withExpr@(XObj With _ _), _, _] ->
+          return (Left (EvalError ("Non-symbol in 'with' expression: " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)))
+        (XObj With _ _) : _ ->
+          return (Left (EvalError ("Can't have multiple forms within a 'with' expression (except at top-level) at " ++ prettyInfoFromXObj xobj)))
         XObj Mod{} _ _ : _ ->
           return (Left (EvalError "Can't eval module"))
         f:args -> do expandedF <- expand eval env f

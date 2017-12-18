@@ -29,6 +29,7 @@ data Obj = Sym SymPath
          | If
          | Mod Env
          | Typ
+         | With
          | External
          | ExternalType
          | Deftemplate TemplateCreator
@@ -187,6 +188,7 @@ pretty = visit 0
             Ref -> "ref"
             Break -> "break"
             Interface _ _ -> "interface"
+            With -> "with"
 
 newtype EvalError = EvalError String deriving (Eq)
 
@@ -521,6 +523,10 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(X
            newBody = setFullyQualifiedSymbols typeEnv envWithBindings body
        in  XObj (Lst [letExpr, newBinders, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [XObj With _ _, XObj (Sym path) _ _, expression]) _ _) =
+  let useThese = envUseModules env
+      env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
+  in  setFullyQualifiedSymbols typeEnv env' expression
 setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
   in  XObj (Lst xobjs') i t

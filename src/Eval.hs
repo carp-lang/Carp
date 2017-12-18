@@ -162,9 +162,9 @@ eval env xobj =
         XObj (Sym (SymPath [] "use")) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'use' command: " ++ pretty xobj)))
 
-        XObj (Sym (SymPath [] "with")) _ _ : xobj@(XObj (Sym path) _ _) : forms ->
+        XObj With _ _ : xobj@(XObj (Sym path) _ _) : forms ->
           specialCommandWith xobj path forms
-        XObj (Sym (SymPath [] "with")) _ _ : _ ->
+        XObj With _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'with.' command: " ++ pretty xobj)))
 
         f:args -> do evaledF <- eval env f
