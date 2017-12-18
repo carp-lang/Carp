@@ -164,9 +164,11 @@ commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
               putStrLn "(ref <expression>)"
               putStrLn "(address <expr>)"
               putStrLn "(set! <var> <value>)"
+              putStrLn "(break)"
               putStrLn ""
               putStrLn "To use functions in modules without qualifying them:"
               putStrLn "(use <module>)"
+              putStrLn "(with <module> <form>)"
               putStrLn ""
               putStrLn ("Valid non-alphanumerics: " ++ validCharacters)
               putStrLn ""
@@ -183,9 +185,16 @@ commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
               return dynamicNil
 
 commandHelp [XObj (Sym (SymPath [] "macros")) _ _] =
-  liftIO $ do putStrLn "Some useful macros:"
+  liftIO $ do putStrLn "To inspect what macros expand to:"
+              putStrLn "(expand <quoted expression>)"
+              putStrLn ""
+              putStrLn "Some useful macros:"
               putStrLn "(cond <condition1> <expr1> ... <else-condition>)"
+              putStrLn "(case <expr> <compare-this-1> <expr1> ... <else-condition>)"
+              putStrLn "(when <condition> <body>)"
               putStrLn "(for [<var> <from> <to>] <body>)"
+              putStrLn "(=> <expr> <func1> <func2> ...)"
+              putStrLn "(==> <expr> <func1> <func2> ...)"
               putStrLn ""
               return dynamicNil
 
