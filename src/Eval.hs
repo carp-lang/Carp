@@ -46,6 +46,7 @@ eval env xobj =
           return (Right xobj)
         [XObj (Sym (SymPath [] "quote")) _ _, target] ->
           return (Right target)
+
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              case evaledList of
@@ -54,14 +55,17 @@ eval env xobj =
                  case ok of
                    [] -> return (Left (EvalError "No forms in 'do' statement."))
                    _ -> return (Right (last ok))
+
         XObj (Sym (SymPath [] "list")) _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              return $ do okList <- evaledList
                          Right (XObj (Lst okList) i t)
+
         XObj (Sym (SymPath [] "array")) _ _ : rest ->
           do evaledArray <- fmap sequence (mapM (eval env) rest)
              return $ do okEvaledArray <- evaledArray
                          Right (XObj (Arr okEvaledArray) i t)
+
         [XObj (Sym (SymPath [] "=")) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
@@ -75,73 +79,7 @@ eval env xobj =
                              if a == b then Right trueXObj else Right falseXObj
                            _ ->
                              Left (EvalError ("Can't compare " ++ pretty okA ++ " with " ++ pretty okB))
-        [XObj (Sym (SymPath [] "count")) _ _, target] ->
-          do evaled <- eval env target
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst lst) _ _ -> Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing)
-                           XObj (Arr arr) _ _ -> Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing)
-                           _ -> Left (EvalError ("Applying 'count' to non-list: " ++ pretty okEvaled))
-        [XObj (Sym (SymPath [] "car")) _ _, target] ->
-          do evaled <- eval env target
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst (car : _)) _ _ -> Right car
-                           XObj (Arr (car : _)) _ _ -> Right car
-                           _ -> Left (EvalError ("Applying 'car' to non-list: " ++ pretty okEvaled))
-        [XObj (Sym (SymPath [] "cdr")) _ _, target] ->
-          do evaled <- eval env target
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst (_ : cdr)) _ _ -> Right (XObj (Lst cdr) Nothing Nothing)
-                           XObj (Arr (_ : cdr)) _ _ -> Right (XObj (Arr cdr) Nothing Nothing)
-                           _ -> Left (EvalError "Applying 'cdr' to non-list or empty list")
-        [XObj (Sym (SymPath [] "last")) _ _, target] ->
-          do evaled <- eval env target
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst lst) _ _ -> Right (last lst)
-                           XObj (Arr arr) _ _ -> Right (last arr)
-                           _ -> Left (EvalError "Applying 'last' to non-list or empty list")
-        [XObj (Sym (SymPath [] "all-but-last")) _ _, target] ->
-          do evaled <- eval env target
-             return $ do okEvaled <- evaled
-                         case okEvaled of
-                           XObj (Lst lst) _ _ -> Right (XObj (Lst (init lst)) Nothing Nothing)
-                           XObj (Arr arr) _ _ -> Right (XObj (Arr (init arr)) Nothing Nothing)
-                           _ -> Left (EvalError "Applying 'init' to non-list or empty list")
-        [XObj (Sym (SymPath [] "cons")) _ _, x, xs] ->
-          do evaledX <- eval env x
-             evaledXS <- eval env xs
-             return $ do okEvaledX <- evaledX
-                         okEvaledXS <- evaledXS
-                         case okEvaledXS of
-                           XObj (Lst lst) _ _ -> Right (XObj (Lst (okEvaledX : lst)) i t) -- TODO: probably not correct to just copy 'i' and 't'?
-                           _ -> Left (EvalError "Applying 'cons' to non-list or empty list")
-        [XObj (Sym (SymPath [] "cons-last")) _ _, x, xs] ->
-          do evaledX <- eval env x
-             evaledXS <- eval env xs
-             return $ do okEvaledX <- evaledX
-                         okEvaledXS <- evaledXS
-                         case okEvaledXS of
-                           XObj (Lst lst) _ _ -> Right (XObj (Lst (lst ++ [okEvaledX])) i t) -- TODO: should they get their own i:s and t:s
-                           _ -> Left (EvalError "Applying 'cons-last' to non-list or empty list")
-        [XObj (Sym (SymPath [] "append")) _ _, xs, ys] ->
-          do evaledXS <- eval env xs
-             evaledYS <- eval env ys
-             return $ do okEvaledXS <- evaledXS
-                         okEvaledYS <- evaledYS
-                         case (okEvaledXS, okEvaledYS) of
-                           (XObj (Lst lst1) _ _, XObj (Lst lst2) _ _) ->
-                             return (XObj (Lst (lst1 ++ lst2)) i t) -- TODO: should they get their own i:s and t:s
-                           _ ->
-                             Left (EvalError "Applying 'append' to non-list or empty list")
-        [XObj (Sym (SymPath [] "macro-error")) _ _, arg] ->
-          do evaledArg <- eval env arg
-             return $ do okArg <- evaledArg
-                         case okArg of
-                           XObj (Str msg) _ _ -> Left (EvalError msg)
-                           _                  -> Left (EvalError "Calling 'macro-error' with non-string argument")
+
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
              case evaledCondition of
@@ -226,6 +164,8 @@ eval env xobj =
 
         XObj (Sym (SymPath [] "with")) _ _ : xobj@(XObj (Sym path) _ _) : forms ->
           specialCommandWith xobj path forms
+        XObj (Sym (SymPath [] "with")) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'with.' command: " ++ pretty xobj)))
 
         f:args -> do evaledF <- eval env f
                      case evaledF of

@@ -139,6 +139,15 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
 dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ addCommand "list?" (CommandFunction commandIsList)
+                                , addCommand "count" (CommandFunction commandCount)
+                                , addCommand "car" (CommandFunction commandCar)
+                                , addCommand "cdr" (CommandFunction commandCdr)
+                                , addCommand "last" (CommandFunction commandLast)
+                                , addCommand "all-but-last" (CommandFunction commandAllButLast)
+                                , addCommand "cons" (CommandFunction commandCons)
+                                , addCommand "cons-last" (CommandFunction commandConsLast)
+                                , addCommand "append" (CommandFunction commandAppend)
+                                , addCommand "macro-error" (CommandFunction commandMacroError)
                                 ]
 
 startingGlobalEnv :: Bool -> Env
