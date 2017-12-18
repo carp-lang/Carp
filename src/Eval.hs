@@ -443,6 +443,12 @@ specialCommandRegisterType typeName rest =
 
 specialCommandDeftype :: XObj -> [XObj] -> StateT Context IO (Either EvalError XObj)
 specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) rest =
+  deftypeInternal nameXObj typeName [] rest
+specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) : typeVariables)) _ _) rest =
+  deftypeInternal nameXObj typeName typeVariables rest
+
+deftypeInternal :: XObj -> String -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
+deftypeInternal nameXObj typeName typeVariables rest =
   do ctx <- get
      let pathStrings = contextPath ctx
          env = contextGlobalEnv ctx
@@ -453,7 +459,10 @@ specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) rest =
            Right (typeModuleName, typeModuleXObj, deps) ->
              let typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj Typ Nothing Nothing : XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing : rest)) i (Just TypeTy)
+                   XObj (Lst (XObj Typ Nothing Nothing :
+                              XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing :
+                              rest)
+                        ) i (Just TypeTy)
                  ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
