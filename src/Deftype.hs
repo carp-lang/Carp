@@ -34,9 +34,9 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
               okInit <- templateForInit insidePath structTy rest
               okNew <- templateForNew insidePath structTy rest
               (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
-              (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath typeName rest
-              (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath typeName rest
-              (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath typeName rest
+              (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath structTy rest
+              (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath structTy rest
+              (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
               let funcs = okInit : okNew : okStr : okDelete : okCopy : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
@@ -94,7 +94,7 @@ templateForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
 templateForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "init")
                         (FuncTy (initArgListTypes membersXObjs) structTy)
-                        (templateInit StackAlloc typeName (memberXObjsToPairs membersXObjs))
+                        (templateInit StackAlloc structTy (memberXObjsToPairs membersXObjs))
 templateForInit _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'new' template.
@@ -102,7 +102,7 @@ templateForNew :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
 templateForNew insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "new")
                         (FuncTy (initArgListTypes membersXObjs) (PointerTy structTy))
-                        (templateInit HeapAlloc typeName (memberXObjsToPairs membersXObjs))
+                        (templateInit HeapAlloc structTy (memberXObjsToPairs membersXObjs))
 templateForNew _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'str' template.
@@ -110,7 +110,7 @@ templateForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, 
 templateForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just (instanceBinderWithDeps (SymPath insidePath "str")
                                (FuncTy [RefTy structTy] StringTy)
-                               (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs)))
+                               (templateStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
 templateForStr _ _ _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
@@ -118,18 +118,18 @@ initArgListTypes :: [XObj] -> [Ty]
 initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 
 -- | Helper function to create the binder for the 'delete' template.
-templateForDelete :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForDelete typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
+templateForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+templateForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just (instanceBinderWithDeps (SymPath insidePath "delete")
-                               (FuncTy [StructTy typeName []] UnitTy)
+                               (FuncTy [structTy] UnitTy)
                                (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForDelete _ _ _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'copy' template.
-templateForCopy :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForCopy typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
+templateForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+templateForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just (instanceBinderWithDeps (SymPath insidePath "copy")
-                               (FuncTy [RefTy (StructTy typeName [])] (StructTy typeName []))
+                               (FuncTy [RefTy structTy] (StructTy typeName []))
                                (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 
@@ -138,15 +138,15 @@ memberXObjsToPairs :: [XObj] -> [(String, Ty)]
 memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
-templatesForMembers :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ([(String, Binder)], [XObj])
-templatesForMembers typeEnv env insidePath typeName [XObj (Arr membersXobjs) _ _] =
-  let bindersAndDeps = concatMap (templatesForSingleMember typeEnv env insidePath typeName) (pairwise membersXobjs)
+templatesForMembers :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ([(String, Binder)], [XObj])
+templatesForMembers typeEnv env insidePath structTy [XObj (Arr membersXobjs) _ _] =
+  let bindersAndDeps = concatMap (templatesForSingleMember typeEnv env insidePath structTy) (pairwise membersXobjs)
   in  Just (map fst bindersAndDeps, concatMap snd bindersAndDeps)
 templatesForMembers _ _ _ _ _ = error "Can't create member functions for type with more than one case (yet)."
 
 -- | Generate the templates for a single member in a deftype declaration.
-templatesForSingleMember :: TypeEnv -> Env -> [String] -> String -> (XObj, XObj) -> [((String, Binder), [XObj])]
-templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
+templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> [((String, Binder), [XObj])]
+templatesForSingleMember typeEnv env insidePath structTy@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       p = StructTy typeName []
       memberName = getName nameXObj
@@ -158,8 +158,8 @@ templatesForSingleMember typeEnv env insidePath typeName (nameXObj, typeXObj) =
                                                             (templateUpdater (mangle memberName))]
 
 -- | The template for the 'init' and 'new' functions for a deftype.
-templateInit :: AllocationMode -> String -> [(String, Ty)] -> Template
-templateInit allocationMode typeName members =
+templateInit :: AllocationMode -> Ty -> [(String, Ty)] -> Template
+templateInit allocationMode structTy@(StructTy typeName _) members =
   Template
     (FuncTy [] (VarTy "p"))
     (const (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg members) ++ ")"))
@@ -174,26 +174,26 @@ templateInit allocationMode typeName members =
 
 -- | The template for the 'str' function for a deftype.
 -- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.
-templateStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Template
-templateStr typeEnv env typeName members =
+templateStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
+templateStr typeEnv env structTy@(StructTy typeName _) members =
   Template
-    (FuncTy [RefTy (StructTy typeName [])] StringTy)
-    (const (toTemplate $ "string $NAME(" ++ typeName ++ " *p)"))
+    (FuncTy [RefTy structTy] StringTy)
+    (const (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (const (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
                                  , "  string buffer = CARP_MALLOC(1024); // TODO: dynamic length"
                                  , "  string bufferPtr = buffer;"
                                  , "  string temp = NULL;"
                                  , ""
-                                 , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ typeName ++ "\");"
-                                 , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
+                                 , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ tyToC structTy ++ "\");"
+                                 , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
                                  , joinWith "\n" (map (memberStr typeEnv env) members)
                                  , "  bufferPtr--;"
                                  , "  snprintf(bufferPtr, 1024, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
     (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                     (filter (not . isExternalType typeEnv) (map snd members)))
+                     (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (map snd members)))
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
@@ -336,7 +336,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
               okInit <- templateForInit insidePath structTy rest
               okNew <- templateForNew insidePath structTy rest
               (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
-              (binders, deps) <- templatesForMembers typeEnv env insidePath typeName rest
+              (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
               let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okNew : okStr : binders)
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
               return (typeModuleName, typeModuleXObj, deps ++ strDeps)

@@ -11,6 +11,7 @@ module Types ( TypeMappings
              , areUnifiable
              , typesDeleterFunctionType
              , typesCopyFunctionType
+             , isFullyGenericType
              ) where
 
 import qualified Data.Map as Map
@@ -197,3 +198,6 @@ typesCopyFunctionType memberType = FuncTy [RefTy memberType] memberType
 -- | The type of a type's deleter function.
 typesDeleterFunctionType :: Ty -> Ty
 typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy
+
+isFullyGenericType (VarTy _) = True
+isFullyGenericType _ = False
