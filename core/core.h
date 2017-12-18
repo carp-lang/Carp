@@ -265,10 +265,6 @@ string String_from_MINUS_chars(Array a) {
     return s;
 }
 
-char String_head(string* s) {
-  return (*s)[0];
-}
-
 string String_tail(string* s) {
   int len = strlen(*s);
   char* news = CARP_MALLOC(len);
