@@ -241,8 +241,10 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
         else let withNewPath = setPath definition newPath
                  withNewType = withNewPath { ty = Just concreteType }
              in  Right (withNewType, [])
+      XObj (Lst [XObj (Instantiate template) _ _, _]) _ _ ->
+        Right (instantiateTemplate newPath concreteType template)
       err ->
-        compilerError ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
+        error ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
 
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature env functionName functionType =

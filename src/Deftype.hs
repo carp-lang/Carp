@@ -30,9 +30,10 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
          Left err
        Right _ ->
          case
-           do okInit <- templateForInit insidePath typeName rest
-              okNew <- templateForNew insidePath typeName rest
-              (okStr, strDeps) <- templateForStr typeEnv env insidePath typeName rest
+           do let structTy = StructTy typeName typeVariables
+              okInit <- templateForInit insidePath structTy rest
+              okNew <- templateForNew insidePath structTy rest
+              (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
               (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath typeName rest
               (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath typeName rest
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath typeName rest
@@ -89,26 +90,26 @@ validateMembers typeEnv typeVariables rest = mapM_ validateOneCase rest
                        _ -> Left ("Invalid member type: " ++ show t)
 
 -- | Helper function to create the binder for the 'init' template.
-templateForInit :: [String] -> String -> [XObj] -> Maybe (String, Binder)
-templateForInit insidePath typeName [XObj (Arr membersXObjs) _ _] =
+templateForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
+templateForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "init")
-                        (FuncTy (initArgListTypes membersXObjs) (StructTy typeName []))
+                        (FuncTy (initArgListTypes membersXObjs) structTy)
                         (templateInit StackAlloc typeName (memberXObjsToPairs membersXObjs))
 templateForInit _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'new' template.
-templateForNew :: [String] -> String -> [XObj] -> Maybe (String, Binder)
-templateForNew insidePath typeName [XObj (Arr membersXObjs) _ _] =
+templateForNew :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
+templateForNew insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just $ instanceBinder (SymPath insidePath "new")
-                        (FuncTy (initArgListTypes membersXObjs) (PointerTy (StructTy typeName [])))
+                        (FuncTy (initArgListTypes membersXObjs) (PointerTy structTy))
                         (templateInit HeapAlloc typeName (memberXObjsToPairs membersXObjs))
 templateForNew _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'str' template.
-templateForStr :: TypeEnv -> Env -> [String] -> String -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForStr typeEnv env insidePath typeName [XObj (Arr membersXObjs) _ _] =
+templateForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+templateForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just (instanceBinderWithDeps (SymPath insidePath "str")
-                               (FuncTy [RefTy (StructTy typeName [])] StringTy)
+                               (FuncTy [RefTy structTy] StringTy)
                                (templateStr typeEnv env typeName (memberXObjsToPairs membersXObjs)))
 templateForStr _ _ _ _ _ = Nothing
 
@@ -331,9 +332,10 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
        Left err -> Left err
        Right _ ->
          case
-           do okInit <- templateForInit insidePath typeName rest
-              okNew <- templateForNew insidePath typeName rest
-              (okStr, strDeps) <- templateForStr typeEnv env insidePath typeName rest
+           do let structTy = StructTy typeName []
+              okInit <- templateForInit insidePath structTy rest
+              okNew <- templateForNew insidePath structTy rest
+              (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
               (binders, deps) <- templatesForMembers typeEnv env insidePath typeName rest
               let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okNew : okStr : binders)
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
