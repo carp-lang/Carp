@@ -131,7 +131,7 @@ commandListBindings args =
 -- | Command for printing help.
 commandHelp :: CommandCallback
 
-commandHelp [XObj (Sym (SymPath [] "about")) _ _] =
+commandHelp [XObj (Str "about") _ _] =
   liftIO $ do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
               putStrLn ""
               putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
@@ -153,7 +153,7 @@ commandHelp [XObj (Sym (SymPath [] "about")) _ _] =
               putStrLn ""
               return dynamicNil
 
-commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
+commandHelp [XObj (Str "language") _ _] =
   liftIO $ do putStrLn "Special forms:"
               putStrLn "(if <condition> <then> <else>)"
               putStrLn "(while <condition> <body>)"
@@ -174,7 +174,7 @@ commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
               putStrLn ""
               putStrLn "Number literals:"
               putStrLn "1      Int"
-              putStrLn "1l     Int"
+              putStrLn "1l     Long"
               putStrLn "1.0    Double"
               putStrLn "1.0f   Float"
               putStrLn ""
@@ -184,7 +184,7 @@ commandHelp [XObj (Sym (SymPath [] "language")) _ _] =
               putStrLn ""
               return dynamicNil
 
-commandHelp [XObj (Sym (SymPath [] "macros")) _ _] =
+commandHelp [XObj (Str "macros") _ _] =
   liftIO $ do putStrLn "To inspect what macros expand to:"
               putStrLn "(expand <quoted expression>)"
               putStrLn ""
@@ -198,7 +198,7 @@ commandHelp [XObj (Sym (SymPath [] "macros")) _ _] =
               putStrLn ""
               return dynamicNil
 
-commandHelp [XObj (Sym (SymPath [] "structs")) _ _] =
+commandHelp [XObj (Str "structs") _ _] =
   liftIO $ do putStrLn "A type definition will generate the following methods:"
               putStrLn "Getters  (<method-name> (Ref <struct>))"
               putStrLn "Setters  (set-<method-name> <struct> <new-value>)"
@@ -210,7 +210,7 @@ commandHelp [XObj (Sym (SymPath [] "structs")) _ _] =
               putStrLn ""
               return dynamicNil
 
-commandHelp [XObj (Sym (SymPath [] "shortcuts")) _ _] =
+commandHelp [XObj(Str "shortcuts") _ _] =
   liftIO $ do putStrLn "GHC-style shortcuts at the repl:"
               putStrLn "(reload)   :r"
               putStrLn "(build)    :b"
@@ -237,7 +237,7 @@ commandHelp [] =
               putStrLn "(info <symbol>)    - Get information about a binding."
               putStrLn "(project)          - Display information about your project."
               putStrLn "(quit)             - Terminate this Carp REPL."
-              putStrLn "(help <chapter>)   - Available chapters: language, macros, structs, shortcuts, about."
+              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"shortcuts\", \"about\"."
               putStrLn ""
               putStrLn "To define things:"
               putStrLn "(def <name> <constant>)           - Define a global variable."
