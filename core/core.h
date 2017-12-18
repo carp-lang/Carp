@@ -248,6 +248,10 @@ string String_str(string *s) {
     return buffer;
 }
 
+char String_char_MINUS_at(string s, int i) {
+  return s[i];
+}
+
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
