@@ -273,7 +273,10 @@ templateUpdater member =
                                 ,"    p." ++ member ++ " = updater(p." ++ member ++ ");"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\(FuncTy [_, t] _) -> [defineFunctionTypeAlias t])
+    (\(FuncTy [_, t@(FuncTy [_] fRetTy)] _) ->
+       if isFullyGenericType fRetTy
+       then []
+       else [defineFunctionTypeAlias t])
 
 -- | The template for the 'delete' function of a deftype.
 templateDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template

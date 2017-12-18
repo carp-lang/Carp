@@ -460,7 +460,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
            Right (typeModuleName, typeModuleXObj, deps) ->
              let typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj Typ Nothing Nothing :
+                   XObj (Lst (XObj (Typ (StructTy typeName okTypeVariables)) Nothing Nothing :
                               XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)
