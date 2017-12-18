@@ -119,7 +119,7 @@ eval env xobj =
         XObj (Sym (SymPath _ "register-type")) _ _ : _ ->
           return (Left (EvalError (show "Invalid ars to 'register-type': " ++ pretty xobj)))
 
-        XObj (Sym (SymPath [] "deftype")) _ _ : nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) : rest ->
+        XObj (Sym (SymPath [] "deftype")) _ _ : nameXObj : rest ->
           specialCommandDeftype nameXObj rest
 
         [XObj (Sym (SymPath [] "register")) _ _, XObj (Sym (SymPath _ name)) _ _, typeXObj] ->
@@ -448,14 +448,15 @@ specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName)) _ _)
   deftypeInternal nameXObj typeName typeVariables rest
 
 deftypeInternal :: XObj -> String -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
-deftypeInternal nameXObj typeName typeVariables rest =
+deftypeInternal nameXObj typeName typeVariableXObjs rest =
   do ctx <- get
      let pathStrings = contextPath ctx
          env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
-     case nameXObj of
-       XObj (Sym (SymPath _ typeName)) i _ ->
-         case moduleForDeftype typeEnv env pathStrings typeName rest i of
+         typeVariables = sequence (map xobjToTy typeVariableXObjs)
+     case (nameXObj, typeVariables) of
+       (XObj (Sym (SymPath _ typeName)) i _, Just okTypeVariables) ->
+         case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i of
            Right (typeModuleName, typeModuleXObj, deps) ->
              let typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
@@ -473,6 +474,8 @@ deftypeInternal nameXObj typeName typeVariables rest =
                    return dynamicNil
            Left errorMessage ->
              return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)))
+       (_, Nothing) ->
+         return (Left (EvalError ("Invalid type variables for type definition: " ++ pretty nameXObj)))
        _ ->
          return (Left (EvalError ("Invalid name for type definition: " ++ pretty nameXObj)))
 
