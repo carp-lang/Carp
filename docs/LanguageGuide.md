@@ -19,6 +19,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 ### Data Literals
 ```
 100     ;; Int
+1500l   ;; Long
 3.14f   ;; Float
 10.0    ;; Double
 true    ;; Bool
@@ -31,6 +32,7 @@ true    ;; Bool
 ```
 t ;; Type variables begin with a lowercase letter
 Int
+Long
 Float
 Double
 Bool
@@ -55,6 +57,7 @@ and other static analysis. Please note that they can not be executed at the REPL
 ```
 (def variable-name value) ;; Define a global variable
 (defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function
+(definterface interface-name (Fn [<t1> <t2>] <return>)) ;; defines a generic function; can have multiple implementations
 (let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Define local bindings
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
@@ -90,8 +93,11 @@ These can only be used at the REPL and during macro evaluation.
 (car <collection>) ;; Return the first element of a list or array
 (cdr <collection>) ;; Return all but the first element of a list or array
 (cons <expr> <list>) ;; Add the value of <expr> as the first element the <list>
+(cons-last <expr> <list>) ;; Add the value of <expr> as the last element the <list>
 (list <expr1> <expr2> ...) ;; Create a list from a series of evaluated expressions
 (array <expr1> <expr2> ...) ;; Create an array from a series of evaluated expressions
+(type <name>) ;; provides type information about a name
+(info <name>) ;; provides information about a name, such as where it is defined and its type
 ```
 
 ### Modules and Name Lookup
@@ -153,6 +159,9 @@ Specifying the type solves this error:
 
 ### C Interop
 ```
+(system-include "math.h") ;; compiles to #include <math.h>
+(local-include "math.h") ;; compiles to #include "math.h"
+
 (register blah (Fn [Int Int] String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
 ```
