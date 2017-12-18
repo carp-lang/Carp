@@ -80,10 +80,10 @@
 
 (defn move [vec dir]
   (cond
-    (= SDLK_RIGHT dir) (+ &vec &(Vector2.init 1.0 0.0))
-    (= SDLK_UP dir)    (+ &vec &(Vector2.init 0.0 -1.0))
-    (= SDLK_LEFT dir)  (+ &vec &(Vector2.init -1.0 0.0))
-    (= SDLK_DOWN dir)  (+ &vec &(Vector2.init 0.0 1.0))
+    (= SDLK_RIGHT dir) (add &vec &(Vector2.init 1.0 0.0))
+    (= SDLK_UP dir)    (add &vec &(Vector2.init 0.0 -1.0))
+    (= SDLK_LEFT dir)  (add &vec &(Vector2.init -1.0 0.0))
+    (= SDLK_DOWN dir)  (add &vec &(Vector2.init 0.0 1.0))
     vec))
 
 (defn shift-body [body]
