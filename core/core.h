@@ -248,6 +248,10 @@ string String_str(string *s) {
     return buffer;
 }
 
+char String_char_MINUS_at(string* s, int i) {
+  return (*s)[i];
+}
+
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
@@ -259,6 +263,14 @@ string String_from_MINUS_chars(Array a) {
     string s = CARP_MALLOC(a.len+1);
     snprintf(s, a.len+1, "%s", a.data);
     return s;
+}
+
+string String_tail(string* s) {
+  int len = strlen(*s);
+  char* news = CARP_MALLOC(len);
+  memcpy(news, (*s)+1, len-1);
+  news[len-1] = '\0';
+  return news;
 }
 
 bool Char__EQ_(char a, char b) {

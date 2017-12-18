@@ -1,0 +1,54 @@
+(use String)
+
+(load "Test.carp")
+(use Test)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  \s
+                  (char-at "lisp" 2)
+                  "char-at works as expected"
+    )
+    (assert-equal test
+                  \s
+                  (head "silk")
+                  "head works as expected"
+    )
+    (assert-equal test
+                  "ilk"
+                  &(tail "silk")
+                  "tail works as expected"
+    )
+    (assert-equal test
+                  "sshello"
+                  &(pad-left 7 \s "hello")
+                  "pad-left works as expected"
+    )
+    (assert-equal test
+                  "helloss"
+                  &(pad-right 7 \s "hello")
+                  "pad-right works as expected"
+    )
+    (assert-equal test
+                  5
+                  (count-char "lisssssp" \s)
+                  "count-char works as expected"
+    )
+    (assert-equal test
+                  "olleh"
+                  &(reverse "hello")
+                  "reverse works as expected"
+    )
+    (assert-equal test
+                  false
+                  (empty? "lisp")
+                  "empty? returns false on non-empty string"
+    )
+    (assert-equal test
+                  true
+                  (empty? "")
+                  "empty? returns true on empty string"
+    )
+    (print-test-results test)
+))

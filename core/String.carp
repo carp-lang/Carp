@@ -9,8 +9,13 @@
   (register duplicate  (Fn [&String] String))
   (register cstr       (Fn [&String] (Ptr Char)))
   (register str        (Fn [&String] String))
+  (register char-at    (Fn [&String Int] Char))
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [(Array Char)] String))
+  (register tail (λ [(Ref String)] String))
+
+  (defn head [s]
+    (char-at s 0))
 
   (defn repeat [n inpt]
     (let [str ""]
@@ -47,7 +52,28 @@
 
   (defn lines [s]
     (split-by s [\newline]))
-  )
+
+  (defn pad-left [len pad s]
+    (let [x (Int.max 0 (- len (count s)))]
+      (append (from-chars (Array.replicate x &pad)) @s)))
+
+  (defn pad-right [len pad s]
+    (let [x (Int.max 0 (- len (count s)))]
+      (append @s (from-chars (Array.replicate x &pad)))))
+
+  (defn count-char [s c]
+    (let-do [n 0]
+      (for [i 0 (count s)]
+        (when (= c (char-at s i))
+          (set! &n (Int.inc n))))
+      n))
+
+  (defn reverse [s]
+    (from-chars (Array.reverse (chars s))))
+
+  (defn empty? [s]
+    (Int.= (count s) 0))
+)
 
 
 (defdynamic string-join- [strs]
