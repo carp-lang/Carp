@@ -214,10 +214,6 @@ bool String__EQ_(string *a, string *b) {
     return strcmp(*a, *b) == 0;
 }
 
-bool String__DIV__EQ_(string *a, string *b) {
-    return strcmp(*a, *b) != 0;
-}
-
 string String_append(string a, string b) {
     int la = strlen(a);
     int lb = strlen(b);
