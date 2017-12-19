@@ -180,9 +180,13 @@ instantiateGenericType structTy mappings memberXObjs =
       replaceGenericTypeSymbols :: XObj -> XObj
       replaceGenericTypeSymbols xobj@(XObj (Sym (SymPath pathStrings name)) i t) =
         case Map.lookup name mappings of
-          Just found -> XObj (Sym (SymPath pathStrings (show found))) i t -- TODO: This is weird, converting type to string.
+          Just found -> tyToXObj found
           Nothing -> error ("Failed to concretize member '" ++ name ++ "' of " ++ show structTy)
       replaceGenericTypeSymbols xobj = xobj
+
+      tyToXObj :: Ty -> XObj
+      tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n)) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
+      tyToXObj x = XObj (Sym (SymPath [] (show x))) Nothing Nothing
 
   in  XObj (Lst (XObj (Typ structTy) Nothing Nothing :
                  XObj (Sym (SymPath [] (tyToC structTy))) Nothing Nothing :

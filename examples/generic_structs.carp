@@ -1,7 +1,7 @@
 (deftype (Pair a b) [x a y b])
 
 (defn f []
-  (Pair.init 1.0f 1000l))
+  (Pair.init 1.0f [1 2 3]))
 
 ;; (defn main []
 ;;   (do
