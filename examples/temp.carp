@@ -21,5 +21,3 @@
 ;;       (set! &x 123))))
 
 ;;(defmacro m [x] (list (quote def) (quote qqqqq) x))
-
-(deftype (G t) [x t])

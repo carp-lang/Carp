@@ -394,7 +394,7 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
                  appendToSrc ("} " ++ tyToC structTy ++ ";\n")
 
   in if typeIsGeneric structTy
-     then ("// " ++ show structTy ++ "\n")
+     then "" -- ("// " ++ show structTy ++ "\n")
      else emitterSrc (execState visit (EmitterState ""))
 
 defaliasToDeclaration :: Ty -> SymPath -> String
