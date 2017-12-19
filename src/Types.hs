@@ -90,9 +90,9 @@ tyToCManglePtr b (PointerTy p)         = tyToCManglePtr b p ++ (if b then mangle
 tyToCManglePtr b (RefTy r)             = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
 tyToCManglePtr _ (StructTy s [])       = mangle s
 tyToCManglePtr _ (StructTy s typeArgs) = mangle s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
-tyToCManglePtr _ TypeTy                = compilerError "Can't emit the type of types."
-tyToCManglePtr _ MacroTy               = compilerError "Can't emit the type of macros."
-tyToCManglePtr _ DynamicTy             = compilerError "Can't emit the type of dynamic functions."
+tyToCManglePtr _ TypeTy                = error "Can't emit the type of types."
+tyToCManglePtr _ MacroTy               = error "Can't emit the type of macros."
+tyToCManglePtr _ DynamicTy             = error "Can't emit the type of dynamic functions."
 
 typeIsGeneric :: Ty -> Bool
 typeIsGeneric (VarTy _) = True
@@ -134,25 +134,25 @@ mangle = replaceChars (Map.fromList [('+', "_PLUS_")
 unifySignatures :: Ty -> Ty -> TypeMappings
 unifySignatures v t = Map.fromList (unify v t)
   where unify :: Ty -> Ty -> [(String, Ty)]
-        unify a@(VarTy _) b@(VarTy _) = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@(VarTy _) b@(VarTy _) = error ("Can't unify " ++ show a ++ " with " ++ show b)
         unify (VarTy a) value = [(a, value)]
 
         unify (StructTy a aArgs) (StructTy b bArgs) | a == b    = concat (zipWith unify aArgs bArgs)
-                                                    | otherwise = compilerError ("Can't unify " ++ a ++ " with " ++ b)
-        unify a@(StructTy _ _) b = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+                                                    | otherwise = error ("Can't unify " ++ a ++ " with " ++ b)
+        unify a@(StructTy _ _) b = error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (PointerTy a) (PointerTy b) = unify a b
-        unify a@(PointerTy _) b = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@(PointerTy _) b = error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (RefTy a) (RefTy b) = unify a b
-        unify a@(RefTy _) b = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@(RefTy _) b = error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (FuncTy argTysA retTyA) (FuncTy argTysB retTyB) = let argToks = concat (zipWith unify argTysA argTysB)
                                                                     retToks = unify retTyA retTyB
                                                                 in  argToks ++ retToks
-        unify a@(FuncTy _ _) b = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@(FuncTy _ _) b = error ("Can't unify " ++ show a ++ " with " ++ show b)
         unify a b | a == b    = []
-                  | otherwise = compilerError ("Can't unify " ++ show a ++ " with " ++ show b)
+                  | otherwise = error ("Can't unify " ++ show a ++ " with " ++ show b)
 
 -- | Checks if two types will unify
 areUnifiable :: Ty -> Ty -> Bool

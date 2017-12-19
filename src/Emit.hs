@@ -391,11 +391,11 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       -- Note: the names of types are not namespaced
       visit = do appendToSrc "typedef struct {\n"
                  _ <- mapM typedefCaseToMemberDecl rest
-                 appendToSrc ("} " ++ typeName ++ ";\n")
+                 appendToSrc ("} " ++ tyToC structTy ++ ";\n")
 
-  in if typeVariables == []
-     then emitterSrc (execState visit (EmitterState ""))
-     else ("// " ++ show structTy ++ "\n") -- generic struct
+  in if typeIsGeneric structTy
+     then ("// " ++ show structTy ++ "\n")
+     else emitterSrc (execState visit (EmitterState ""))
 
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =

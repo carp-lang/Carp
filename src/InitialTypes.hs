@@ -129,7 +129,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
          return $ do okVisited <- sequence visited
                      Right (XObj (Arr okVisited) i (Just (StructTy "Array" [arrayVarTy])))
 
-    visitArray _ _ = compilerError "The function 'visitArray' only accepts XObj:s with arrays in them."
+    visitArray _ _ = error "The function 'visitArray' only accepts XObj:s with arrays in them."
 
     visitList :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitList env xobj@(XObj (Lst xobjs) i _) =
@@ -258,7 +258,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Empty list
         [] -> return (Right xobj { ty = Just UnitTy })
 
-    visitList _ _ = compilerError "Must match on list!"
+    visitList _ _ = error "Must match on list!"
 
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
     extendEnvWithLetBindings env xobjs =

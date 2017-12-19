@@ -145,7 +145,7 @@ setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _) si st : rest)) i t) newP
 setPath (XObj (Lst [extr@(XObj External _ _), XObj (Sym _) si st]) i t) newPath =
   XObj (Lst [extr, XObj (Sym newPath) si st]) i t
 setPath x _ =
-  compilerError ("Can't set path on " ++ show x)
+  error ("Can't set path on " ++ show x)
 
 -- | Convert an XObj to a pretty string representation.
 pretty :: XObj -> String
@@ -159,7 +159,7 @@ pretty = visit 0
             Num LongTy num -> show num ++ "l"
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
-            Num _ _ -> compilerError "Invalid number type."
+            Num _ _ -> error "Invalid number type."
             Str str -> show str
             Chr c -> '\\' : c : ""
             Sym path -> show path
@@ -229,22 +229,22 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj) -- ++ " " ++ getBinderDescription xobj
+  " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym (SymPath _ name)) _ _ : _)) _ _)) =
+scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
       in  (depthOfType typeEnv selfName (Just aliasedType), b)
-    Typ _ ->
-      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+    Typ (StructTy structName _) ->
+      case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
         Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef, b)
                                     in  --trace ("depth of " ++ name ++ ": " ++ show depth)
                                         depth
-        Nothing -> compilerError ("Can't find user defined type '" ++ name ++ "' in type env.")
+        Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
       (100, b)
 scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
@@ -259,9 +259,9 @@ dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName))
   where
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) = map (depthOfType typeEnv selfName . xobjToTy . snd) (pairwise arr)
-    expandCase _ = compilerError "Malformed case in typedef."
+    expandCase _ = error "Malformed case in typedef."
 dependencyDepthOfTypedef _ xobj =
-  compilerError ("Can't get dependency depth from " ++ show xobj)
+  error ("Can't get dependency depth from " ++ show xobj)
 
 depthOfType :: TypeEnv -> String -> Maybe Ty -> Int
 depthOfType typeEnv selfName = visitType

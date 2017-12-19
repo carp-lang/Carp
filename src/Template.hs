@@ -64,7 +64,7 @@ concretizeTypesInToken mappings cName decl token =
 toTemplate :: String -> [Token]
 toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
                     Right ok -> ok
-                    Left err -> compilerError (show err)
+                    Left err -> error (show err)
   where
     templateSyntax :: Parsec.Parsec String Int [Token]
     templateSyntax = Parsec.many parseTok
@@ -125,12 +125,12 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
 toTokTy :: String -> Token
 toTokTy s =
   case parse s "" of
-    Left err -> compilerError (show err)
-    Right [] -> compilerError ("toTokTy got [] when parsing: '" ++ s ++ "'")
+    Left err -> error (show err)
+    Right [] -> error ("toTokTy got [] when parsing: '" ++ s ++ "'")
     Right [xobj] -> case xobjToTy xobj of
                       Just ok -> TokTy ok
-                      Nothing -> compilerError ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
-    Right xobjs -> compilerError ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
+                      Nothing -> error ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
+    Right xobjs -> error ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
 
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES

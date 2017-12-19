@@ -21,14 +21,14 @@ assignTypes mappings root = visit root
       do visited <- mapM (assignTypes mappings) xobjs
          let xobj' = XObj (Lst visited) i t
          assignType xobj'
-    visitList _ = compilerError "The function 'visitList' only accepts XObjs with lists in them."
+    visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
 
     visitArray :: XObj -> Either TypeError XObj
     visitArray (XObj (Arr xobjs) i t) =
       do visited <- mapM (assignTypes mappings) xobjs
          let xobj' = XObj (Arr visited) i t
          assignType xobj'
-    visitArray _ = compilerError "The function 'visitArray' only accepts XObjs with arrays in them."
+    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
 
     assignType :: XObj -> Either TypeError XObj
     assignType xobj = case ty xobj of

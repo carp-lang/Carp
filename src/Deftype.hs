@@ -170,7 +170,14 @@ templateInit allocationMode structTy@(StructTy typeName typeVariables) members =
                                  , joinWith "\n" (map (memberAssignment allocationMode) members)
                                  , "    return instance;"
                                  , "}"]))
-    (const [])
+    (\(FuncTy _ t) -> [instantiateGenericType t])
+
+instantiateGenericType :: Ty -> XObj
+instantiateGenericType structTy =
+  XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+             XObj (Sym (SymPath [] (tyToC structTy))) Nothing Nothing :
+              [])
+       ) (Just dummyInfo) (Just TypeTy)
 
 -- | The template for the 'str' function for a deftype.
 -- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.

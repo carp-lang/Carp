@@ -265,7 +265,7 @@ folder context xobj =
 executeCommand :: Context -> ReplCommand -> IO Context
 executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd =
   do when (isJust (envModuleName env)) $
-       compilerError ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
+       error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
      case cmd of
        ReplEval xobj ->
          do (result, newCtx) <- runStateT (eval env xobj) ctx
@@ -354,6 +354,8 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   case annXObj of
     XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
       --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
+      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+    XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
       return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
