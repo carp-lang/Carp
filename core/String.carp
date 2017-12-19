@@ -75,6 +75,11 @@
     (Int.= (count s) 0))
 )
 
+(defn = [a b]
+  (String.= &a &b))
+
+(defn /= [a b]
+  (String./= &a &b))
 
 (defdynamic string-join- [strs]
   (if (= (count strs) 0)
