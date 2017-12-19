@@ -273,6 +273,12 @@ string String_tail(string* s) {
   return news;
 }
 
+string String_empty() {
+    string s = CARP_MALLOC(1);
+    s[0] = '\0';
+    return s;
+}
+
 bool Char__EQ_(char a, char b) {
   return a == b;
 }
@@ -554,19 +560,18 @@ string IO_read_MINUS_file(string *filename) {
         if (buffer)	{
             fread (buffer, 1, length, f);
             buffer[length] = '\0';
+        } else {
+            printf("Failed to open buffer from file: %s\n", *filename);
+            buffer = String_empty();    
         }
         fclose (f);
     } else {
         printf("Failed to open file: %s\n", *filename);
-        return "";
+        buffer = String_empty();
     }
 
-    if (buffer) {
-        return buffer;
-    } else {
-        printf("Failed to open buffer from file: %s\n", *filename);
-        return "";
-    }
+
+    return buffer;
 }
 
 #endif
