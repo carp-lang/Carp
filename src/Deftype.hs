@@ -159,9 +159,9 @@ templatesForSingleMember typeEnv env insidePath structTy@(StructTy typeName _) (
 
 -- | The template for the 'init' and 'new' functions for a deftype.
 templateInit :: AllocationMode -> Ty -> [(String, Ty)] -> Template
-templateInit allocationMode structTy@(StructTy typeName _) members =
+templateInit allocationMode structTy@(StructTy typeName typeVariables) members =
   Template
-    (FuncTy [] (VarTy "p"))
+    (FuncTy (map snd members) (VarTy "p"))
     (const (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg members) ++ ")"))
     (const (toTemplate $ unlines [ "$DECL {"
                                  , case allocationMode of
@@ -222,7 +222,8 @@ memberStr typeEnv env (memberName, memberTy) =
 -- | i.e. "(deftype A [x Int])" will generate "int x" which
 -- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
-memberArg (memberName, memberTy) = tyToC memberTy ++ " " ++ memberName
+memberArg (memberName, memberTy) =
+  (if isFullyGenericType memberTy then "$" else "") ++ tyToC memberTy ++ " " ++ memberName
 
 -- | Generate C code for assigning to a member variable.
 -- | Needs to know if the instance is a pointer or stack variable.
