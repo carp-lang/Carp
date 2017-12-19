@@ -50,5 +50,10 @@
                   (empty? "")
                   "empty? returns true on empty string"
     )
+    (assert-equal test
+                  &[\e \r \i \k]
+                  &(chars "erik")
+                  "chars works as expected"
+    )
     (print-test-results test)
 ))
