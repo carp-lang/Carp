@@ -53,6 +53,14 @@ expand eval env xobj =
           do expandedValue <- expand eval env value
              return $ do okValue <- expandedValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+        [ifExpr@(XObj If _ _), condition, trueBranch, falseBranch] ->
+          do expandedCondition <- expand eval env condition
+             expandedTrueBranch <- expand eval env trueBranch
+             expandedFalseBranch <- expand eval env falseBranch
+             return $ do okCondition <- expandedCondition
+                         okTrueBranch <- expandedTrueBranch
+                         okFalseBranch <- expandedFalseBranch
+                         Right (XObj (Lst [ifExpr, okCondition, okTrueBranch, okFalseBranch]) i t)
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           if even (length bindings)
           then do bind <- mapM (\(n, x) -> do x' <- expand eval env x
