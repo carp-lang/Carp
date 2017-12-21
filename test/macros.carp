@@ -21,6 +21,13 @@
     1 true
     false))
 
+(defmacro test-and [a b] (and a b))
+(defmacro test-or [a b] (or a b))
+(defmacro test-not [a] (not a))
+(defmacro test-< [a b] (< a b))
+(defmacro test-> [a b] (> a b))
+(defmacro test-= [a b] (= a b))
+
 (defn main []
   (with-test test
     (assert-true test
@@ -38,5 +45,142 @@
     (assert-true test
                  (test-comment)
                  "comment ignores input"
+    )
+    (assert-true test
+                 (test-not false)
+                 "not macro works as expected"
+    )
+    (assert-false test
+                  (test-and false true)
+                  "and macro works as expected I"
+    )
+    (assert-true test
+                 (test-and true true)
+                 "and macro works as expected II"
+    )
+    (assert-false test
+                 (test-or false false)
+                 "or macro works as expected I"
+    )
+    (assert-true test
+                 (test-or false true)
+                 "or macro works as expected II"
+    )
+    (assert-true test
+                 (test-or true true)
+                 "or macro works as expected III"
+    )
+    (assert-true test
+                 (test-< 1 2)
+                 "< macro works as expected on ints I"
+    )
+    (assert-false test
+                  (test-< 2 2)
+                  "< macro works as expected on ints II"
+    )
+    (assert-true test
+                 (test-< 1l 2l)
+                 "< macro works as expected on longs I"
+    )
+    (assert-false test
+                  (test-< 2l 2l)
+                  "< macro works as expected on longs II"
+    )
+    (assert-true test
+                 (test-< 1.0 2.0)
+                 "< macro works as expected on doubles I"
+    )
+    (assert-false test
+                  (test-< 2.0 2.0)
+                  "< macro works as expected on doubles II"
+    )
+    (assert-true test
+                 (test-< 1.0f 2.0f)
+                 "< macro works as expected on floats I"
+    )
+    (assert-false test
+                  (test-< 2.0f 2.0f)
+                  "< macro works as expected on floats II"
+    )
+    (assert-true test
+                 (test-> 2 1)
+                 "> macro works as expected on ints I"
+    )
+    (assert-false test
+                  (test-> 2 2)
+                  "> macro works as expected on ints II"
+    )
+    (assert-true test
+                 (test-> 2l 1l)
+                 "> macro works as expected on longs I"
+    )
+    (assert-false test
+                  (test-> 2l 2l)
+                  "> macro works as expected on longs II"
+    )
+    (assert-true test
+                 (test-> 2.0 1.0)
+                 "> macro works as expected on doubles I"
+    )
+    (assert-false test
+                  (test-> 2.0 2.0)
+                  "> macro works as expected on doubles II"
+    )
+    (assert-true test
+                 (test-> 2.0f 1.0f)
+                 "> macro works as expected on floats I"
+    )
+    (assert-false test
+                  (test-> 2.0f 2.0f)
+                  "> macro works as expected on floats II"
+    )
+
+    (assert-true test
+                 (test-= 2 2)
+                 "= macro works as expected on ints I"
+    )
+    (assert-false test
+                  (test-= 2 1)
+                  "= macro works as expected on ints II"
+    )
+    (assert-true test
+                 (test-= 2l 2l)
+                 "= macro works as expected on longs I"
+    )
+    (assert-false test
+                  (test-= 2l 1l)
+                  "= macro works as expected on longs II"
+    )
+    (assert-true test
+                 (test-= 2.0 2.0)
+                 "= macro works as expected on doubles I"
+    )
+    (assert-false test
+                  (test-= 2.0 1.0)
+                  "= macro works as expected on doubles II"
+    )
+    (assert-true test
+                 (test-= 2.0f 2.0f)
+                 "= macro works as expected on floats I"
+    )
+    (assert-false test
+                  (test-= 2.0f 1.0f)
+                  "= macro works as expected on floats II"
+    )
+    (assert-true test
+                 (test-= "erik" "erik")
+                 "= macro works as expected on strings I"
+    )
+    (assert-false test
+                  (test-= "erik" "svedäng")
+                  "= macro works as expected on strings II"
+    )
+    (assert-true test
+                 (test-= veit veit)
+                 "= macro works as expected on symbols I"
+    )
+    (assert-false test
+                  (test-= veit heller)
+                  "= macro works as expected on symbols II"
     )
     (print-test-results test)))
