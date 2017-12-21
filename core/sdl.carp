@@ -34,6 +34,7 @@
 (register make-point (Fn [Int Int] SDL_Point))
 
 ;; Rendering
+(register-type SDL_Renderer)
 (register SDL_RenderPresent (Fn [(Ptr SDL_Renderer)] ()))
 (register SDL_RenderClear (Fn [(Ptr SDL_Renderer)] ()))
 (register SDL_RenderCopy (Fn [(Ptr SDL_Renderer) (Ptr SDL_Texture) (Ptr SDL_Rect) (Ptr SDL_Rect)] ())) ;; src-rect & dest-rect
