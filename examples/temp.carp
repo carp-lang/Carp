@@ -1,0 +1,23 @@
+(project-set! "printAST" "true")
+
+;; (use System)
+;; (use String)
+;; (use Char)
+;; (use Bool)
+;; (use IO)
+;; (use Int)
+;; (use Float)
+;; (use Double)
+;; (use Array)
+
+;;(defn break [] ())
+
+;; (def break ())
+
+;; (defn f [x]
+;;   (while (Int.even? x)
+;;     (if false
+;;       break
+;;       (set! &x 123))))
+
+;;(defmacro m [x] (list (quote def) (quote qqqqq) x))

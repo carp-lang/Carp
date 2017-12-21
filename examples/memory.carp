@@ -1,0 +1,60 @@
+(use IO)
+(use Int)
+(use Float)
+(use Double)
+(use Array)
+(use System)
+(use Char)
+
+(deftype A [])
+
+(defn a []
+  (let [aha (A.init)
+        hah (A.init)]
+    hah))
+
+(defn e []
+  @"hej")
+
+(defn f []
+  (let [s @"hej"]
+    (noop (address s))))
+
+(defn g []
+  (let [s @"hej"]
+    s))
+
+(defn h []
+  (let [s @"hej"]
+    (println (ref s))))
+
+(defn i [s]
+  (do (println s)
+      @"hej"))
+
+(defn j [s]
+  (do (noop (address s))
+      @"hej"))
+
+(defn k []
+  (let [s @"hej"]
+    (do (println "?")
+        123)))
+
+(defn l []
+  (do (noop (address @"hej"))
+      (println (ref @"blub"))
+      @"ccccc"))
+
+(defn m []
+  (let [x "yes"]
+    (do (println x)
+        (println x))))
+
+;; (defn main []
+;;   (let [xs ["hej" "svej"]]
+;;     (println "yeah")))
+
+(build)
+(run)
+(quit)
