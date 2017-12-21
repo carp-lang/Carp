@@ -1,7 +1,6 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
-  (register /=         (Fn [&String &String] Bool))
   (register append     (Fn [String String] String)) ;; TODO: should take a &String as its second argument?
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
@@ -13,6 +12,9 @@
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [(Array Char)] String))
   (register tail (λ [(Ref String)] String))
+
+  (defn /= [a b]
+    (not (= (the (Ref String) a) b)))
 
   (defn head [s]
     (char-at s 0))
@@ -75,6 +77,11 @@
     (Int.= (count s) 0))
 )
 
+(defn = [a b]
+  (String.= &a &b))
+
+(defn /= [a b]
+  (String./= &a &b))
 
 (defdynamic string-join- [strs]
   (if (= (count strs) 0)

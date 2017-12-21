@@ -1,6 +1,9 @@
 (use Int)
 (use IO)
 
+(load "Test.carp")
+(use Test)
+
 ;; Ur is created first and will not know about any other modules
 (defmodule Ur
   (defn compare [a b]
@@ -25,7 +28,10 @@
   (Ur.compare &(Young.init 100) &(Young.init 200)))
 
 (defn main []
-  (println &(str (f))))
-
-(build)
-(run)
+  (with-test test
+    (assert-equal test
+                  false
+                  (f)
+                  "interfaces get resolved correctly"
+    )
+    (print-test-results test)))

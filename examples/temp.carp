@@ -1,4 +1,4 @@
-;;(project-set! "printAST" "true")
+;; (project-set! "printAST" "true")
 
 ;; (use System)
 ;; (use String)
