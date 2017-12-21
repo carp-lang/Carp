@@ -148,6 +148,12 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                                 , addCommand "cons-last" (CommandFunction commandConsLast)
                                 , addCommand "append" (CommandFunction commandAppend)
                                 , addCommand "macro-error" (CommandFunction commandMacroError)
+                                , addCommand "=" (CommandFunction commandEq)
+                                , addCommand "<" (CommandFunction commandLt)
+                                , addCommand ">" (CommandFunction commandGt)
+                                , addCommand "and" (CommandFunction commandAnd)
+                                , addCommand "or" (CommandFunction commandOr)
+                                , addCommand "not" (CommandFunction commandNot)
                                 ]
 
 startingGlobalEnv :: Bool -> Env

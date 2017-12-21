@@ -334,6 +334,7 @@ commandIsList _ =
   do liftIO $ putStrLnWithColor Red "Invalid args to 'list?'"
      return dynamicNil
 
+commandCount :: CommandCallback
 commandCount [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
@@ -343,6 +344,7 @@ commandCount args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandCar :: CommandCallback
 commandCar [x] =
   case x of
     XObj (Lst (car : _)) _ _ -> return (Right car)
@@ -352,6 +354,7 @@ commandCar args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'car': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandCdr :: CommandCallback
 commandCdr [x] =
   case x of
     XObj (Lst (_ : cdr)) _ _ -> return (Right (XObj (Lst cdr) Nothing Nothing))
@@ -361,6 +364,7 @@ commandCdr args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'cdr': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandLast :: CommandCallback
 commandLast [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (last lst))
@@ -370,6 +374,7 @@ commandLast args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'last': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandAllButLast :: CommandCallback
 commandAllButLast [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (init lst)) Nothing Nothing))
@@ -379,6 +384,7 @@ commandAllButLast args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'all-but-last': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandCons :: CommandCallback
 commandCons [x, xs] =
   case xs of
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
@@ -387,6 +393,7 @@ commandCons args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'cons': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandConsLast :: CommandCallback
 commandConsLast [x, xs] =
   case xs of
     XObj (Lst lst) i t -> return (Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
@@ -395,6 +402,7 @@ commandConsLast args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'cons-last': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandAppend :: CommandCallback
 commandAppend [xs, ys] =
   case (xs, ys) of
     (XObj (Lst lst1) i t, XObj (Lst lst2) _ _) ->
@@ -405,10 +413,118 @@ commandAppend args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'append': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandMacroError :: CommandCallback
 commandMacroError [msg] =
   case msg of
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
     _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
+commandMacroError args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'macro-error': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandEq :: CommandCallback
+commandEq [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      if (round aNum :: Int) == (round bNum :: Int)
+      then Right trueXObj else Right falseXObj
+    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
+      if (round aNum :: Int) == (round bNum :: Int)
+      then Right trueXObj else Right falseXObj
+    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
+      if aNum == bNum
+      then Right trueXObj else Right falseXObj
+    (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
+      if aNum == bNum
+      then Right trueXObj else Right falseXObj
+    (XObj (Str sa) _ _, XObj (Str sb) _ _) ->
+      if sa == sb then Right trueXObj else Right falseXObj
+    (XObj (Sym sa) _ _, XObj (Sym sb) _ _) ->
+      if sa == sb then Right trueXObj else Right falseXObj
+    _ ->
+      Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))
+commandEq args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '=': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandLt :: CommandCallback
+commandLt [a, b] =
+ return $ case (a, b) of
+   (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+     if (round aNum :: Int) < (round bNum :: Int)
+     then Right trueXObj else Right falseXObj
+   (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
+     if (round aNum :: Int) < (round bNum :: Int)
+     then Right trueXObj else Right falseXObj
+   (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
+     if aNum < bNum
+     then Right trueXObj else Right falseXObj
+   (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
+     if aNum < bNum
+     then Right trueXObj else Right falseXObj
+   _ ->
+     Left (EvalError ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b))
+commandLt args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '<': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandGt :: CommandCallback
+commandGt [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      if (round aNum :: Int) > (round bNum :: Int)
+      then Right trueXObj else Right falseXObj
+    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
+      if (round aNum :: Int) > (round bNum :: Int)
+      then Right trueXObj else Right falseXObj
+    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
+      if aNum > bNum
+      then Right trueXObj else Right falseXObj
+    (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
+      if aNum > bNum
+      then Right trueXObj else Right falseXObj
+    _ ->
+      Left (EvalError ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b))
+commandGt args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '>': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandAnd :: CommandCallback
+commandAnd [a, b] =
+  return $ case (a, b) of
+    (XObj (Bol ab) _ _, XObj (Bol bb) _ _) ->
+      if ab && bb
+      then Right trueXObj else Right falseXObj
+    _ ->
+      Left (EvalError ("Can't perform logical operation (and) on " ++ pretty a ++ " and " ++ pretty b))
+commandAnd args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'and': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandOr :: CommandCallback
+commandOr [a, b] =
+  return $ case (a, b) of
+    (XObj (Bol ab) _ _, XObj (Bol bb) _ _) ->
+      if ab || bb
+      then Right trueXObj else Right falseXObj
+    _ ->
+      Left (EvalError ("Can't perform logical operation (or) on " ++ pretty a ++ " and " ++ pretty b))
+commandOr args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'or': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandNot :: CommandCallback
+commandNot [a] =
+  return $ case a of
+    XObj (Bol ab) _ _ ->
+      if ab
+      then Right falseXObj else Right trueXObj
+    _ ->
+      Left (EvalError ("Can't perform logical operation (not) on " ++ pretty a))
+commandNot args =
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'not': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
 
 -- -- | This function will show the resulting code of non-definitions.
 -- -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
