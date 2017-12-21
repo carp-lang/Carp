@@ -190,7 +190,11 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              return $ do okExpr <- visitedExpr
                          okTrue <- visitedTrue
                          okFalse <- visitedFalse
-                         return (XObj (Lst [ifExpr, okExpr, okTrue, okFalse]) i (Just returnType))
+                         return (XObj (Lst [ifExpr
+                                           ,okExpr
+                                           ,okTrue
+                                           ,okFalse
+                                           ]) i (Just returnType))
 
         XObj If _ _ : _ -> return (Left (InvalidObj If xobj))
 

@@ -121,9 +121,9 @@
       (IO.println &(Matrix.to-string &m3))
       )))
 
-;; (defn corrupt [s]
-;;   (if false
-;;     (String.delete s)
-;;     (do
-;;       (let []
-;;         ()))))
+(defn corrupt [s]
+  (if false
+    (String.delete s)
+    (do
+      (let []
+        ()))))
