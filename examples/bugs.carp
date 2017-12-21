@@ -17,4 +17,6 @@
 ;; ;; Running it until nothing changes should be the fix.
 
 ;; UNSOLVED BUG C
-(defn f [] (the Blurgh 123))
+;; (defn f [] (the Blurgh 123))
+
+;; UNSOLVED BUG D

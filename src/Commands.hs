@@ -49,6 +49,33 @@ addCommand name callback =
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder cmd)
 
+-- | Command for changing various project settings.
+commandProjectSet :: CommandCallback
+commandProjectSet [XObj (Str key) _ _, value] =
+  do ctx <- get
+     let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+     case value of
+       XObj (Str valueStr) _ _ -> do
+          newCtx <- case key of
+                      "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                      "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                      "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
+                      "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
+                      "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
+                      "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
+                      "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
+                      "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
+                      _ -> err ("Unrecognized key: '" ++ key ++ "'") ctx
+          put newCtx
+          return dynamicNil
+       val -> err "Argument to project-set! must be a string" dynamicNil
+    where err msg ret = liftIO $ do putStrLnWithColor Red msg
+                                    return ret
+commandProjectSet args =
+  liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
+              return dynamicNil
+
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
 commandQuit args =
