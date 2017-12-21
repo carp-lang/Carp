@@ -5,18 +5,13 @@ set -e; # will make the script stop if there are any errors
 stack build;
 stack install;
 
-carp ./examples/basics.carp;
-carp ./examples/deleters.carp;
-carp ./examples/copying.carp;
-carp ./examples/polymorphic.carp;
-carp ./examples/selection.carp;
-carp ./examples/functor.carp;
-carp ./examples/vec2.carp;
-carp ./examples/array.carp;
-carp ./examples/updating.carp;
-carp ./examples/external_struct.carp;
-carp ./examples/strings.carp -x;
-carp ./examples/interfaces.carp -x;
+carp ./examples/basics.carp -x;
+carp ./examples/functor.carp -x;
+carp ./examples/external_struct.carp -x;
+carp ./examples/updating.carp -x;
+
+carp ./examples/mutual_recursion.carp -b;
+carp ./examples/guessing.carp -b;
 
 carp ./test/double_math.carp -b; ./out/a.out;
 carp ./test/float_math.carp -b; ./out/a.out;

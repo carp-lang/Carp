@@ -201,7 +201,3 @@
       (convert-struct-with-array-member-to-string)
       (threading)
       ))
-
-(build)
-(run)
-(quit)
