@@ -206,7 +206,8 @@ prettyTyped :: XObj -> String
 prettyTyped = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
-          let suffix = typeStr xobj ++ ", id = " ++ show (fmap infoIdentifier (info xobj)) ++ "\n"
+          let suffix = typeStr xobj ++ ", id = " ++ show (fmap infoIdentifier (info xobj)) ++ " " ++
+                show (fmap (joinWithComma . map show . (Set.toList) . infoDelete) (info xobj)) ++ "\n"
           in case obj xobj of
                Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")" ++ suffix
                Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]" ++ suffix
@@ -229,7 +230,7 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
+  " : " ++ showMaybeTy (ty xobj) -- ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
