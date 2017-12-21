@@ -1,6 +1,7 @@
 ;; This file contains examples of unsolved bugs
 
 (project-set! "printAST" "true")
+(add-cflag "-fsanitize=address")
 
 ;; UNSOLVED BUG A
 ;;; Ranges of non-numbers (bug)
@@ -20,3 +21,108 @@
 ;; (defn f [] (the Blurgh 123))
 
 ;; UNSOLVED BUG D
+
+;; (load "Array.carp")
+;; (load "Vector.carp")
+
+;; (defmodule Matrix
+;;   (deftype MatrixFlat [rows Int, cols Int, data VectorN.VN])
+
+;;   (defn init [r c data]
+;;      (if (Int.= (* r c) (Array.count &data))
+;;          (MatrixFlat.init r c (VectorN.VN.init (* r c) data))
+;;          (let [zz 0.0
+;;                data1 (Array.replicate (Int.* r c) &zz)]
+;;            (MatrixFlat.init r c (VectorN.VN.init (Int.* r c) data1)))))
+
+;;   (defn get [m r c]
+;;     (let [data (VectorN.VN.v (MatrixFlat.data m))
+;;           idx1 (+ (* (MatrixFlat.cols m) r) c)
+;;           idx (Int.min (Int.dec (* (MatrixFlat.rows m) (MatrixFlat.cols m)))
+;;                        idx1)]
+;;       @(Array.nth data idx)))
+
+;;   (defn set [m r c val]
+;;     (let [data (VectorN.VN.v (MatrixFlat.data m))
+;;           idx1 (+ (* (MatrixFlat.cols m) r) c)
+;;           idx (Int.min (Int.dec (* (MatrixFlat.rows m) (MatrixFlat.cols m)))
+;;                        idx1)]
+;;       (Array.aset! data idx val)))
+
+;;   (defn to-string [o]
+;;     (string-join @"Matrix(rows = " (Int.str (MatrixFlat.rows o)) @", cols = "
+;;                  (Int.str (MatrixFlat.cols o)) @", values = "
+;;                  (Array.str (VectorN.VN.v (MatrixFlat.data o))) @")      "))
+
+;;   (defn add [m1 m2]
+;;      (MatrixFlat.init (MatrixFlat.rows m1) (MatrixFlat.cols m1)
+;;                       (VectorN.add (MatrixFlat.data m1) (MatrixFlat.data m2))))
+
+;;   (defn sub [m1 m2]
+;;      (MatrixFlat.init (MatrixFlat.rows m1) (MatrixFlat.cols m1)
+;;                       (VectorN.sub (MatrixFlat.data m1) (MatrixFlat.data m2))))
+
+;;   (defn mul [m a]
+;;      (MatrixFlat.init (MatrixFlat.rows m) (MatrixFlat.cols m)
+;;                       (VectorN.mul (MatrixFlat.data m) a)))
+
+;;   (defn div [m a]
+;;      (MatrixFlat.init (MatrixFlat.rows m) (MatrixFlat.cols m)
+;;                       (VectorN.div (MatrixFlat.data m) a)))
+
+;;   (defn matmul [m1 m2]
+;;     (let [r1 (MatrixFlat.rows &m1)
+;;           c1 (MatrixFlat.cols &m1)
+;;           r2 (MatrixFlat.rows &m2)
+;;           c2 (MatrixFlat.cols &m2)
+;;           res (init r1 c2 [])]
+;;       (do
+;;         (for [i 0 r1]
+;;           (for [j 0 c2]
+;;             (let [s 0.0]
+;;               (do
+;;                 (for [k 0 r2]
+;;                   (set! &s (Double.+ s
+;;                                      (Double.* (get &m1 i k)
+;;                                                (get &m2 k j)))))
+;;                 (set &res i j s)))))
+;;          res)))
+
+;;   (defn chol [m res n]
+;;      (do
+;;        (for [i 0 n]
+;;          (for [j 0 (Int.+ i 1)]
+;;            (let [s 0.0]
+;;              (do
+;;                (for [k 0 j]
+;;                  (set! &s (Double.+ s (Double.* (get res i k) (get res j k)))))
+;;                (set res i j
+;;                     (if (Int.= i j)
+;;                         (Double.sqrt (Double.- (get m i i) s))
+;;                         (Double./ (Double.- (get m i j) s) (get res j j))))))))
+;;         @res))
+;;   (defn cholesky [m]
+;;     (let [n (MatrixFlat.rows &m)]
+;;       (chol &m &(init n n []) n)))
+;; )
+
+
+;; (defn main []
+;;   (let [m1 (Matrix.init 2 2 [4.0 -1.0 -1.0 4.0])
+;;         m2 (Matrix.init 3 3 [25.0 15.0 -5.0 15.0 18.0 0.0 -5.0 0.0 11.0])
+;;         m3 (Matrix.cholesky @&m2)
+;;         ]
+;;     (do
+;;       (Matrix.set &m1 0 0 5.0)
+;;       (IO.println &(Double.str (Matrix.get &m1 0 0)))
+;;       (IO.println &(Double.str (Matrix.get &m1 1 1)))
+;;       (IO.println &(Matrix.to-string &m1))
+;;       (IO.println &(Matrix.to-string &m2))
+;;       (IO.println &(Matrix.to-string &m3))
+;;       )))
+
+(defn corrupt [s]
+  (if false
+    (String.delete s)
+    (let []
+      ())))
