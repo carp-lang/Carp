@@ -77,6 +77,8 @@ eval env xobj =
                              then Right trueXObj else Right falseXObj
                            (XObj (Str a) _ _, XObj (Str b) _ _) ->
                              if a == b then Right trueXObj else Right falseXObj
+                           (XObj (Sym a) _ _, XObj (Sym b) _ _) ->
+                             if a == b then Right trueXObj else Right falseXObj
                            _ ->
                              Left (EvalError ("Can't compare " ++ pretty okA ++ " with " ++ pretty okB))
 
