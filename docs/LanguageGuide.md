@@ -50,15 +50,22 @@ Right now the following data types are only available for manipulation in non-co
 foo ; symbol
 ```
 
+### Defining things
+```
+(defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function (will be compiled, can't be called at the REPL)
+(definterface interface-name (Fn [<t1> <t2>] <return>)) ;; Define a generic function that can have multiple implementations
+(def variable-name value) ;; Define a global variable (only handles primitive constants for the moment)
+(defmacro <name> [<arg1> <arg2> ...] <macro-body>) ;; Define a macro, its argument will not be evaluated when called
+(defdynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL or during compilation
+(defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
+```
+
 ### Special Forms
 The following forms can be used in Carp source code and will be compiled to C after type checking
-and other static analysis. Please note that they can not be executed at the REPL.
+and other static analysis. The first three of them are also available in dynamic functions.
 
 ```
-(def variable-name value) ;; Define a global variable
-(defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function
-(definterface interface-name (Fn [<t1> <t2>] <return>)) ;; defines a generic function; can have multiple implementations
-(let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Define local bindings
+(let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Create local bindings
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
 (while <expression> <body>) ;; Loop until expression is false
@@ -83,12 +90,10 @@ add a hole in your source code and reload (":r") to let the Carp compiler figure
 (String.append ?w00t @"!") ;; Will generate a type error telling you that the type of '?w00t' is String
 ```
 
-### Dynamic-only Special Forms
+### Dynamic-only Special Forms / Functions
 These can only be used at the REPL and during macro evaluation.
 
 ```
-(defmacro <name> [<arg1> <arg2> ...] <macro-body>) ;; Its argument will not be evaluated when called
-(dynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL
 (quote <expression>) ;; Avoid further evaluation of the expression
 (car <collection>) ;; Return the first element of a list or array
 (cdr <collection>) ;; Return all but the first element of a list or array
@@ -99,6 +104,8 @@ These can only be used at the REPL and during macro evaluation.
 (type <name>) ;; provides type information about a name
 (info <name>) ;; provides information about a name, such as where it is defined and its type
 ```
+
+To see all functions available in the `Dynamic` module, enter `(info Dynamic)` at the REPL.
 
 ### Modules and Name Lookup
 Functions and variables can be stored in modules which are named and can be nested. To use a symbol inside a module
