@@ -66,97 +66,42 @@ eval env xobj =
              return $ do okEvaledArray <- evaledArray
                          Right (XObj (Arr okEvaledArray) i t)
 
-        [XObj (Sym (SymPath [] "=")) _ _, a, b] ->
-          do evaledA <- eval env a
-             evaledB <- eval env b
-             return $ do okA <- evaledA
-                         okB <- evaledB
-                         case (okA, okB) of
-                           (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-                             if (round aNum :: Int) == (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-                             if (round aNum :: Int) == (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
-                             if aNum == bNum
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
-                             if aNum == bNum
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Str a) _ _, XObj (Str b) _ _) ->
-                             if a == b then Right trueXObj else Right falseXObj
-                           (XObj (Sym a) _ _, XObj (Sym b) _ _) ->
-                             if a == b then Right trueXObj else Right falseXObj
-                           _ ->
-                             Left (EvalError ("Can't compare " ++ pretty okA ++ " with " ++ pretty okB))
-
-        [XObj (Sym (SymPath [] "<")) _ _, a, b] ->
-          do evaledA <- eval env a
-             evaledB <- eval env b
-             return $ do okA <- evaledA
-                         okB <- evaledB
-                         case (okA, okB) of
-                           (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-                             if (round aNum :: Int) < (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-                             if (round aNum :: Int) < (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
-                             if aNum < bNum
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
-                             if aNum < bNum
-                             then Right trueXObj else Right falseXObj
-                           _ ->
-                             Left (EvalError ("Can't compare (<) " ++ pretty okA ++ " with " ++ pretty okB))
-
-        [XObj (Sym (SymPath [] ">")) _ _, a, b] ->
-          do evaledA <- eval env a
-             evaledB <- eval env b
-             return $ do okA <- evaledA
-                         okB <- evaledB
-                         case (okA, okB) of
-                           (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-                             if (round aNum :: Int) > (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
-                             if (round aNum :: Int) > (round bNum :: Int)
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
-                             if aNum > bNum
-                             then Right trueXObj else Right falseXObj
-                           (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
-                             if aNum > bNum
-                             then Right trueXObj else Right falseXObj
-                           _ ->
-                             Left (EvalError ("Can't compare (>) " ++ pretty okA ++ " with " ++ pretty okB))
-
-
+        -- and, or, and not are defined here because they are expected to
+        -- shortcircuit and because they would otherwise clash with the regular
+        -- functions
         [XObj (Sym (SymPath [] "and")) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
-                         okB <- evaledB
-                         case (okA, okB) of
-                           (XObj (Bol ab) _ _, XObj (Bol bb) _ _) ->
-                             if ab && bb
-                             then Right trueXObj else Right falseXObj
+                         case okA of
+                           XObj (Bol ab) _ _ ->
+                             if ab
+                               then do okB <- evaledB
+                                       case okB of
+                                         XObj (Bol bb) _ _ ->
+                                           if bb then Right trueXObj else Right falseXObj
+                                         _ ->
+                                           Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okB))
+                               else Right falseXObj
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA ++ " and " ++ pretty okB))
+                             Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
         [XObj (Sym (SymPath [] "or")) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
-                         okB <- evaledB
-                         case (okA, okB) of
-                           (XObj (Bol ab) _ _, XObj (Bol bb) _ _) ->
-                             if ab || bb
-                             then Right trueXObj else Right falseXObj
+                         case okA of
+                           XObj (Bol ab) _ _ ->
+                             if ab
+                               then Right trueXObj
+                               else do okB <- evaledB
+                                       case okB of
+                                         XObj (Bol bb) _ _ ->
+                                           if bb then Right trueXObj else Right falseXObj
+                                         _ ->
+                                           Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okB))
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okA ++ " and " ++ pretty okB))
+                             Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
         [XObj (Sym (SymPath [] "not")) _ _, a] ->
           do evaledA <- eval env a
@@ -166,7 +111,7 @@ eval env xobj =
                              if ab
                              then Right falseXObj else Right trueXObj
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (not) on " ++ pretty okA))
+                            Left (EvalError ("Can't perform logical operation (not) on " ++ pretty okA))
 
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition

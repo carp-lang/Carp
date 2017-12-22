@@ -148,6 +148,9 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                                 , addCommand "cons-last" (CommandFunction commandConsLast)
                                 , addCommand "append" (CommandFunction commandAppend)
                                 , addCommand "macro-error" (CommandFunction commandMacroError)
+                                , addCommand "=" (CommandFunction commandEq)
+                                , addCommand "<" (CommandFunction commandLt)
+                                , addCommand ">" (CommandFunction commandGt)
                                 ]
 
 startingGlobalEnv :: Bool -> Env
@@ -155,7 +158,7 @@ startingGlobalEnv noArray =
   Env { envBindings = bindings,
         envParent = Nothing,
         envModuleName = Nothing,
-        envUseModules = [(SymPath [] "String")],
+        envUseModules = [SymPath [] "String"],
         envMode = ExternalEnv
       }
   where bindings = Map.fromList $ [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)

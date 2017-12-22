@@ -59,12 +59,20 @@
                  "and macro works as expected II"
     )
     (assert-false test
+                 (test-and false (macro-error "failed"))
+                 "and macro shortcircuits"
+    )
+    (assert-false test
                  (test-or false false)
                  "or macro works as expected I"
     )
     (assert-true test
                  (test-or false true)
                  "or macro works as expected II"
+    )
+    (assert-true test
+                 (test-or true (macro-error "failed"))
+                 "or macro shortcircuits"
     )
     (assert-true test
                  (test-or true true)
