@@ -158,7 +158,7 @@ startingGlobalEnv noArray =
   Env { envBindings = bindings,
         envParent = Nothing,
         envModuleName = Nothing,
-        envUseModules = [SymPath [] "Logic", SymPath [] "String"],
+        envUseModules = [SymPath [] "String"],
         envMode = ExternalEnv
       }
   where bindings = Map.fromList $ [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
