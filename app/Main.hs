@@ -151,16 +151,6 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                                 , addCommand "=" (CommandFunction commandEq)
                                 , addCommand "<" (CommandFunction commandLt)
                                 , addCommand ">" (CommandFunction commandGt)
-                                , addCommand "and" (CommandFunction commandAnd)
-                                , addCommand "or" (CommandFunction commandOr)
-                                , addCommand "not" (CommandFunction commandNot)
-                                ]
-
-logicModule :: Env
-logicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Logic", envUseModules = [], envMode = ExternalEnv }
-  where bindings = Map.fromList [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
-                                , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
-                                , register "not" (FuncTy [BoolTy] BoolTy)
                                 ]
 
 startingGlobalEnv :: Bool -> Env
@@ -171,7 +161,10 @@ startingGlobalEnv noArray =
         envUseModules = [SymPath [] "Logic", SymPath [] "String"],
         envMode = ExternalEnv
       }
-  where bindings = Map.fromList $ [ register "NULL" (VarTy "a")
+  where bindings = Map.fromList $ [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
+                                  , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
+                                  , register "not" (FuncTy [BoolTy] BoolTy)
+                                  , register "NULL" (VarTy "a")
                                   , addCommand "quit" (CommandFunction commandQuit)
                                   , addCommand "cat" (CommandFunction commandCat)
                                   , addCommand "run" (CommandFunction commandRunExe)
@@ -190,7 +183,6 @@ startingGlobalEnv noArray =
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
-                   ++ [("Logic", Binder (XObj (Mod logicModule) Nothing Nothing))]
 
 
 startingTypeEnv :: Env
