@@ -22,8 +22,8 @@
 
 ## Smaller Language Features ("niceties")
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
-* [0.3] Replace '/=' functions with a general version that's depending on '=', if possible.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
+* [0.3] Optimization: Implement '=' for refs to numeric types, that way Array.= can aviod copying each element before comparing them.
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
