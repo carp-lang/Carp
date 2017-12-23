@@ -17,21 +17,21 @@ long malloc_balance_counter = 0;
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
-    printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    //printf("MALLOC: %p (%ld bytes)\n", ptr, size);
     malloc_balance_counter++;
     return ptr;
 }
 
 void logged_free(void *ptr) {
-    printf("FREE: %p\n", ptr);
+    //printf("FREE: %p\n", ptr);
     free(ptr);
     malloc_balance_counter--;
-    if(malloc_balance_counter == 0) {
-        printf("malloc is balanced! (this should be the last thing you see)\n");
-    }
-    else if(malloc_balance_counter < 0) {
-        printf("malloc is %ld, that is bad!\n", malloc_balance_counter);
-    }
+    /* if(malloc_balance_counter == 0) { */
+    /*     printf("malloc is balanced! (this should be the last thing you see)\n"); */
+    /* } */
+    /* else if(malloc_balance_counter < 0) { */
+    /*     printf("malloc is %ld, that is bad!\n", malloc_balance_counter); */
+    /* } */
 }
 
 #define CARP_MALLOC(size) logged_malloc(size)
