@@ -104,6 +104,11 @@
     (do (set! &s s)
         ())))
 
+(defn setting-3 []
+  (let [s @""]
+    (do (set! &s @&s)
+        ())))
+
 (defn branching [b s]
   (if b
     (String.delete s)
@@ -133,7 +138,8 @@
       (assert-no-leak test struct-4 "struct-4 does not leak")
       (assert-no-leak test struct-5 "struct-5 does not leak")
       (assert-no-leak test setting-1 "setting-1 does not leak")
-      ;;(assert-no-leak test setting-2 "setting-2 does not leak")
+      (assert-no-leak test setting-2 "setting-2 does not leak")
+      (assert-no-leak test setting-3 "setting-3 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
       (assert-no-leak test if-2 "if-2 does not leak")
       (print-test-results test))))
