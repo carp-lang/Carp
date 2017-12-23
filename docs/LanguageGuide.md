@@ -90,19 +90,22 @@ add a hole in your source code and reload (":r") to let the Carp compiler figure
 (String.append ?w00t @"!") ;; Will generate a type error telling you that the type of '?w00t' is String
 ```
 
-### Dynamic-only Special Forms / Functions
-These can only be used at the REPL and during macro evaluation.
-
+### Special forms during evaluation of dynamic code
 ```
 (quote <expression>) ;; Avoid further evaluation of the expression
+(and) (or) (not) ;; Logical operators
+```
+
+### Dynamic functions
+These can only be used at the REPL and during macro evaluation. Here's a subset with some of the most commonly used ones:
+
+```
 (car <collection>) ;; Return the first element of a list or array
 (cdr <collection>) ;; Return all but the first element of a list or array
 (cons <expr> <list>) ;; Add the value of <expr> as the first element the <list>
 (cons-last <expr> <list>) ;; Add the value of <expr> as the last element the <list>
 (list <expr1> <expr2> ...) ;; Create a list from a series of evaluated expressions
 (array <expr1> <expr2> ...) ;; Create an array from a series of evaluated expressions
-(type <name>) ;; provides type information about a name
-(info <name>) ;; provides information about a name, such as where it is defined and its type
 ```
 
 To see all functions available in the `Dynamic` module, enter `(info Dynamic)` at the REPL.
