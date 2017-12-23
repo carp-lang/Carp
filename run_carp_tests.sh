@@ -12,7 +12,7 @@ carp ./examples/external_struct.carp -x;
 carp ./examples/updating.carp -x;
 
 # Actual tests (using the test suit)
-carp ./test/memory.carp -b; ./out/a.out;
+#carp ./test/memory.carp -x --log-memory;
 carp ./test/double_math.carp -b; ./out/a.out;
 carp ./test/float_math.carp -b; ./out/a.out;
 carp ./test/int_math.carp -b; ./out/a.out;

@@ -3,4 +3,6 @@
   (register free (Fn [t] ()))
   (register time (Fn [] Int))
   (register srand (Fn [Int] ()))
+  (register memory-balance (Fn [] Long))
+  (register reset-memory-balance (Fn [] ()))
   )

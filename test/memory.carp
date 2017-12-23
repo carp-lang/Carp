@@ -6,7 +6,27 @@
 (use System)
 (use Char)
 
-(register assert-memory-balance (Fn [] ()))
+(load "Test.carp")
+(use Test)
+
+(defn assert-no-leak [state f descr]
+    (do
+      (reset-memory-balance)
+      (f)
+      (assert-equal state 0l (memory-balance) descr)))
+
+(defn scope-1 []
+  (let [s @"hej"]
+    ()))
+
+(defn main []
+  (let []
+    (with-test test
+      (assert-no-leak test
+                      scope-1
+                      "scope-1 doesn't leak")
+      (print-test-results test))))
+
 
 ;; (deftype A [])
 
@@ -17,10 +37,6 @@
 
 ;; (defn e []
 ;;   @"hej")
-
-;; (defn f []
-;;   (let [s @"hej"]
-;;     (noop (address s))))
 
 ;; (defn g []
 ;;   (let [s @"hej"]

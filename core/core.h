@@ -13,7 +13,7 @@
 typedef char* string;
 
 #ifdef LOG_MEMORY
-int malloc_balance_counter = 0;
+long malloc_balance_counter = 0;
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
@@ -30,18 +30,19 @@ void logged_free(void *ptr) {
         printf("malloc is balanced! (this should be the last thing you see)\n");
     }
     else if(malloc_balance_counter < 0) {
-        printf("malloc is %d, that is bad!\n", malloc_balance_counter);
+        printf("malloc is %ld, that is bad!\n", malloc_balance_counter);
     }
 }
 
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
 
-void assert_MINUS_memory_MINUS_balance() {
-    if(malloc_balance_counter != 0) {
-        printf("CARP memory allocations are unbalanced: %d\n", malloc_balance_counter);
-        exit(1);
-    }
+long System_memory_MINUS_balance() {
+    return malloc_balance_counter;
+}
+
+void System_reset_MINUS_memory_MINUS_balance() {
+    malloc_balance_counter = 0;
 }
 
 #else
@@ -49,8 +50,15 @@ void assert_MINUS_memory_MINUS_balance() {
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
 
-void assert_MINUS_memory_MINUS_balance() {
-    printf("Warning - calling 'assert-memory-balance' without compiling with LOG_MEMORY enabled.\n");
+long System_memory_MINUS_balance() {
+    printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled.\n");
+    exit(1);
+    return 0;
+}
+
+void System_reset_MINUS_memory_MINUS_balance() {
+    printf("Error - calling 'reset-memory-balance' without compiling with LOG_MEMORY enabled.\n");
+    exit(1);
 }
 
 #endif
