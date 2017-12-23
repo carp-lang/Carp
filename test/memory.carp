@@ -1,3 +1,6 @@
+(load "Debug.carp")
+(load "Test.carp")
+
 (use IO)
 (use Int)
 (use Float)
@@ -5,12 +8,7 @@
 (use Array)
 (use System)
 (use Char)
-
-(load "Test.carp")
 (use Test)
-
-(load "Debug.carp")
-(use Debug)
 
 ;;(Debug.sanitize-addresses)
 
@@ -124,3 +122,10 @@
       (assert-no-leak test setting-1 "setting-1 does not leak")
       ;;(assert-no-leak test setting-2 "setting-2 does not leak")
       (print-test-results test))))
+
+;; (defn if-branches-bug [s]
+;;   (if false
+;;     (String.delete s)
+;;     (do
+;;       (let []
+;;         ()))))
