@@ -10,7 +10,7 @@
 (use Char)
 (use Test)
 
-;;(Debug.sanitize-addresses)
+(Debug.sanitize-addresses)
 
 (defn assert-no-leak [state f descr]
     (do
@@ -104,6 +104,19 @@
     (do (set! &s s)
         ())))
 
+(defn branching [b s]
+  (if b
+    (String.delete s)
+    (do
+      (let []
+        ()))))
+
+(defn if-1 []
+  (branching true @""))
+
+(defn if-2 []
+  (branching false @""))
+
 (defn main []
   (let []
     (with-test test
@@ -121,11 +134,6 @@
       (assert-no-leak test struct-5 "struct-5 does not leak")
       (assert-no-leak test setting-1 "setting-1 does not leak")
       ;;(assert-no-leak test setting-2 "setting-2 does not leak")
+      (assert-no-leak test if-1 "if-1 does not leak")
+      (assert-no-leak test if-2 "if-2 does not leak")
       (print-test-results test))))
-
-;; (defn if-branches-bug [s]
-;;   (if false
-;;     (String.delete s)
-;;     (do
-;;       (let []
-;;         ()))))

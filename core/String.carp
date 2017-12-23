@@ -20,11 +20,11 @@
     (char-at s 0))
 
   (defn repeat [n inpt]
-    (let [str ""]
+    (let [str @""]
       (do
         (for [i 0 n]
-          (set! &str &(append @str @inpt)))
-        @str)))
+          (set! &str (append @&str @inpt)))
+        str)))
 
   ;; A temporary version of this function, until we have some nicer way to write it
   (defn split-by [s separators]
