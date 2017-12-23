@@ -47,33 +47,40 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
       (println "~ The Number Guessing Game ~")
       (println "(Enter q to quit.)\n\n")
 
+      (set! &guessing true)
       (set! &answer (random-between 1 100))
+
       (print "Please enter a number between 1 - 99: ")))
 
 (defn exit! []
   (do (println "Good bye...")
       (set! &guessing false)))
 
+(defn play-again? [user-input]
+  (if (= user-input "y\n") true false))
+
 (defn correct! []
   (do (println "Correct!")
-      (exit!)))
+      (print "Play again? (y/n): ")
+      (let [user-input (get-line)]
+        (if (play-again? &user-input)
+          (init!)
+          (exit!)))))
 
 (defn guess-again [low-or-high]
   (do (println &(string-join @"->Too " @low-or-high @"."))
       (print "\nPlease guess again: ")))
 
 (defn main []
-  (do
-    (init!)
-
-    (while guessing
-      (let [user-input (get-line)
-            guessed-num (from-string &user-input)]
-        (if (= &user-input "q\n")
-          (exit!)
-          (cond (< guessed-num answer) (guess-again "low")
-                (> guessed-num answer) (guess-again "high")
-                (correct!)))))))
+  (do (init!)
+      (while guessing
+        (let [user-input (get-line)
+              guessed-num (from-string &user-input)]
+          (if (= &user-input "q\n")
+            (exit!)
+            (cond (< guessed-num answer) (guess-again "low")
+                  (> guessed-num answer) (guess-again "high")
+                  (correct!)))))))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
