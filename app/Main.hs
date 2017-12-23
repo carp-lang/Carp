@@ -120,7 +120,6 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateCopyingMap
                                 , templateEMap
                                 , templateFilter
-                                --, templateReduce
                                 , templateRange
                                 , templateRaw
                                 , templateAset
@@ -151,6 +150,22 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                                 , addCommand "=" (CommandFunction commandEq)
                                 , addCommand "<" (CommandFunction commandLt)
                                 , addCommand ">" (CommandFunction commandGt)
+                                , addCommand "c" (CommandFunction commandC)
+                                , addCommand "quit" (CommandFunction commandQuit)
+                                , addCommand "cat" (CommandFunction commandCat)
+                                , addCommand "run" (CommandFunction commandRunExe)
+                                , addCommand "build" (CommandFunction commandBuild)
+                                , addCommand "reload" (CommandFunction commandReload)
+                                , addCommand "env" (CommandFunction commandListBindings)
+                                , addCommand "help" (CommandFunction commandHelp)
+                                , addCommand "project" (CommandFunction commandProject)
+                                , addCommand "load" (CommandFunction commandLoad)
+                                , addCommand "macro-log" (CommandFunction commandPrint)
+                                , addCommand "expand" (CommandFunction commandExpand)
+                                , addCommand "project-set!" (CommandFunction commandProjectSet)
+                                , addCommand "os" (CommandFunction commandOS)
+                                , addCommand "system-include" (CommandFunction commandAddSystemInclude)
+                                , addCommand "local-include" (CommandFunction commandAddLocalInclude)
                                 ]
 
 startingGlobalEnv :: Bool -> Env
@@ -165,21 +180,6 @@ startingGlobalEnv noArray =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
-                                  , addCommand "quit" (CommandFunction commandQuit)
-                                  , addCommand "cat" (CommandFunction commandCat)
-                                  , addCommand "run" (CommandFunction commandRunExe)
-                                  , addCommand "build" (CommandFunction commandBuild)
-                                  , addCommand "reload" (CommandFunction commandReload)
-                                  , addCommand "env" (CommandFunction commandListBindings)
-                                  , addCommand "help" (CommandFunction commandHelp)
-                                  , addCommand "project" (CommandFunction commandProject)
-                                  , addCommand "load" (CommandFunction commandLoad)
-                                  , addCommand "macro-log" (CommandFunction commandPrint)
-                                  , addCommand "expand" (CommandFunction commandExpand) -- not autoquoting it's arg for now
-                                  , addCommand "project-set!" (CommandFunction commandProjectSet)
-                                  , addCommand "os" (CommandFunction commandOS)
-                                  , addCommand "system-include" (CommandFunction commandAddSystemInclude)
-                                  , addCommand "local-include" (CommandFunction commandAddLocalInclude)
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]

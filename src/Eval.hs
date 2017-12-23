@@ -772,3 +772,31 @@ commandExpand [xobj] =
 commandExpand args =
   liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
               return dynamicNil
+
+-- | This function will show the resulting C code from an expression.
+-- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
+commandC :: CommandCallback
+commandC [xobj] =
+  do ctx <- get
+     let globalEnv = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+     result <- expandAll eval globalEnv xobj
+     case result of
+       Left err -> return (Left (EvalError (show err)))
+       Right expanded ->
+         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
+           Left err -> return (Left (EvalError (show err)))
+           Right annXObjs ->
+             do liftIO (mapM printC annXObjs)
+                return dynamicNil
+commandC args =
+  return (Left (EvalError ("Invalid args to 'c': " ++ joinWithComma (map pretty args))))
+
+-- | Helper function for commandC
+printC :: XObj -> IO ()
+printC xobj =
+  case checkForUnresolvedSymbols xobj of
+    Left e ->
+      putStrLnWithColor Red (show e ++ ", can't print resulting code.\n")
+    Right _ ->
+      putStrLnWithColor Green (toC xobj)
