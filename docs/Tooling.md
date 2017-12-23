@@ -14,9 +14,9 @@ It will hopefully be rewritten and put into one of the package managers eventual
 (require 'inf-carp-mode)
 
 (add-to-list 'auto-mode-alist '("\\.carp\\'" . carp-mode))
-
-(setq inferior-lisp-program "carp")
 ```
+
+To start an interactive session, make sure `carp` is in your path (inside Emacs) and do `M-x inf-carp`.
 
 ## Other editors
 Clojure syntax highlighting works very well with Carp since it uses the same symbols for most things.

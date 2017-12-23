@@ -94,12 +94,12 @@ The following commands are available:
 \\{inf-carp-minor-mode-map}"
   :lighter "" :keymap inf-carp-minor-mode-map)
 
-(defcustom inf-carp-program "CarpHask-exe"
+(defcustom inf-carp-program "carp"
   "Program name for invoking an inferior Carp in Inferior Carp mode."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-load-command "(load-lisp \"%s\")\n"
+(defcustom inf-carp-load-command "(load \"%s\")\n"
   "Format-string for building a Carp expression to load a file.
 This format string should use `%s' to substitute a file name
 and should result in a Carp expression that will command the inferior Carp
