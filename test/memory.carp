@@ -42,31 +42,68 @@
   (let [s (g @"")]
     ()))
 
+(defn id [x]
+  x)
+
+(defn call-3 []
+  (let [s (id (f))]
+    ()))
+
+(defn deref [x]
+  @x)
+
+(defn call-4 []
+  (let [s (deref "")]
+    ()))
+
+(deftype A [s String])
+
+(defn struct-1 []
+  (let [a (A.init @"")]
+    ()))
+
+(deftype B [a A])
+
+(defn struct-2 []
+  (let [a (A.init @"")
+        b (B.init a)]
+    ()))
+
+(defn struct-3 []
+  (let [a (A.init @"")
+        b (B.init a)
+        c (B.set-a b (A.init @""))]
+    ()))
+
+(defn h [a]
+  (A.set-s a @""))
+
+(defn struct-4 []
+  (let [a (A.init @"")
+        b (B.init a)
+        c (B.update-a b h)]
+    ()))
+
+(defn struct-5 []
+  (let [a (A.init @"")
+        b (B.init a)
+        c (B.a &b)
+        d (A.s c)]
+    ()))
 
 (defn main []
   (let []
     (with-test test
-      (assert-no-leak test
-                      scope-1
-                      "scope-1 doesn't leak")
-      (assert-no-leak test
-                      scope-2
-                      "scope-2 doesn't leak")
-      (assert-no-leak test
-                      scope-3
-                      "scope-3 doesn't leak")
-      (assert-no-leak test
-                      call-1
-                      "call-1 doesn't leak")
-      (assert-no-leak test
-                      call-2
-                      "call-2 doesn't leak")
+      (assert-no-leak test scope-1 "scope-1 does not leak")
+      (assert-no-leak test scope-2 "scope-2 does not leak")
+      (assert-no-leak test scope-3 "scope-3 does not leak")
+      (assert-no-leak test call-1 "call-1 does not leak")
+      (assert-no-leak test call-2 "call-2 does not leak")
+      (assert-no-leak test call-3 "call-2 does not leak")
+      (assert-no-leak test call-4 "call-2 does not leak")
+      (assert-no-leak test struct-1 "struct-1 does not leak")
+      (assert-no-leak test struct-2 "struct-2 does not leak")
+      (assert-no-leak test struct-3 "struct-3 does not leak")
+      (assert-no-leak test struct-4 "struct-4 does not leak")
+      (assert-no-leak test struct-5 "struct-5 does not leak")
       (print-test-results test))))
-
-
-;; (deftype A [])
-
-;; (defn a []
-;;   (let [aha (A.init)
-;;         hah (A.init)]
-;;     hah))

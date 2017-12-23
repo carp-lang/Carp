@@ -49,6 +49,7 @@
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
+* [0.4] Show "call stack" when getting an error during concretization.
 
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
