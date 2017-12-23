@@ -37,11 +37,11 @@ void logged_free(void *ptr) {
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
 
-long System_memory_MINUS_balance() {
+long Debug_memory_MINUS_balance() {
     return malloc_balance_counter;
 }
 
-void System_reset_MINUS_memory_MINUS_balance() {
+void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
     malloc_balance_counter = 0;
 }
 
@@ -50,14 +50,14 @@ void System_reset_MINUS_memory_MINUS_balance() {
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
 
-long System_memory_MINUS_balance() {
+long Debug_memory_MINUS_balance() {
     printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled.\n");
     exit(1);
     return 0;
 }
 
-void System_reset_MINUS_memory_MINUS_balance() {
-    printf("Error - calling 'reset-memory-balance' without compiling with LOG_MEMORY enabled.\n");
+void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
+    printf("Error - calling 'reset-memory-balance!' without compiling with LOG_MEMORY enabled.\n");
     exit(1);
 }
 

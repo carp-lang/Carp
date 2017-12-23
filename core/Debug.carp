@@ -1,0 +1,9 @@
+(defmodule Debug
+
+  (defdynamic sanitize-addresses []
+    (add-cflag "-fsanitize=address"))
+
+  (register memory-balance (Fn [] Long))
+  (register reset-memory-balance! (Fn [] ()))
+
+  )

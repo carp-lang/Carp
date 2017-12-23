@@ -9,11 +9,16 @@
 (load "Test.carp")
 (use Test)
 
+(load "Debug.carp")
+(use Debug)
+
+;;(Debug.sanitize-addresses)
+
 (defn assert-no-leak [state f descr]
     (do
-      (reset-memory-balance)
+      (Debug.reset-memory-balance!)
       (f)
-      (assert-equal state 0l (memory-balance) descr)))
+      (assert-equal state 0l (Debug.memory-balance) descr)))
 
 (defn scope-1 []
   (let [s @""]
@@ -91,6 +96,16 @@
         d (A.s c)]
     ()))
 
+(defn setting-1 []
+  (let [s @""]
+    (do (set! &s @"")
+        ())))
+
+(defn setting-2 []
+  (let [s @""]
+    (do (set! &s s)
+        ())))
+
 (defn main []
   (let []
     (with-test test
@@ -106,4 +121,6 @@
       (assert-no-leak test struct-3 "struct-3 does not leak")
       (assert-no-leak test struct-4 "struct-4 does not leak")
       (assert-no-leak test struct-5 "struct-5 does not leak")
+      (assert-no-leak test setting-1 "setting-1 does not leak")
+      ;;(assert-no-leak test setting-2 "setting-2 does not leak")
       (print-test-results test))))

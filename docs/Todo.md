@@ -42,6 +42,7 @@
 * [1.0] Pattern matching on arguments in macros?
 
 ## Tooling
+* [0.3] Project setting for turning off bound checks and similar.
 * [0.3] Errors in the parser or emitter don't stop evaluation, only errors during evaluation?
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
