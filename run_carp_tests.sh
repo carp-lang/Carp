@@ -5,14 +5,14 @@ set -e; # will make the script stop if there are any errors
 stack build;
 stack install;
 
+# Build and run some examples
 carp ./examples/basics.carp -x;
 carp ./examples/functor.carp -x;
 carp ./examples/external_struct.carp -x;
 carp ./examples/updating.carp -x;
 
-carp ./examples/mutual_recursion.carp -b;
-carp ./examples/guessing.carp -b;
-
+# Actual tests (using the test suit)
+carp ./test/memory.carp -b; ./out/a.out;
 carp ./test/double_math.carp -b; ./out/a.out;
 carp ./test/float_math.carp -b; ./out/a.out;
 carp ./test/int_math.carp -b; ./out/a.out;
@@ -25,6 +25,9 @@ carp ./test/vectorn.carp -b; ./out/a.out;
 carp ./test/control_flow.carp -b; ./out/a.out;
 carp ./test/macros.carp -b; ./out/a.out;
 
+# Just make sure these compile
+carp ./examples/mutual_recursion.carp -b;
+carp ./examples/guessing.carp -b;
 carp ./examples/game.carp -b;
 
 echo "ALL TESTS DONE."

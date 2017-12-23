@@ -37,10 +37,21 @@ void logged_free(void *ptr) {
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
 
+void assert_MINUS_memory_MINUS_balance() {
+    if(malloc_balance_counter != 0) {
+        printf("CARP memory allocations are unbalanced: %d\n", malloc_balance_counter);
+        exit(1);
+    }
+}
+
 #else
 
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
+
+void assert_MINUS_memory_MINUS_balance() {
+    printf("Warning - calling 'assert-memory-balance' without compiling with LOG_MEMORY enabled.\n");
+}
 
 #endif
 
@@ -559,7 +570,7 @@ string IO_read_MINUS_file(string *filename) {
             buffer[length] = '\0';
         } else {
             printf("Failed to open buffer from file: %s\n", *filename);
-            buffer = String_empty();    
+            buffer = String_empty();
         }
         fclose (f);
     } else {

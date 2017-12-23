@@ -48,6 +48,7 @@
 
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
+* [0.4] Entering the name of a symbol at the REPL prints nothing.
 
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
@@ -57,16 +58,16 @@
 * [?] Emit #LINE macros in the generated C code
 
 ## Ugliness
-* [0.3] The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type. Make a check for this in the template.
+* [0.3] The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type. Make a check for this in the template. Or rewrite it as a normal function, that should solve it.
 * [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
 * [1.0] Remove unnecessary Array-functions and rewrite them in Carp?
+* [1.0] "Setting" of string literals? (let [x "a"] (set! x @"b"))
 
 ## Language Design Considerations
 * What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
-* Look over how many times the function 'annotateOne' in Infer.hs actually needs to be applied to a form
 * Macros in modules must be qualified right now, is that a good long-term solution?
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))?
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type?
