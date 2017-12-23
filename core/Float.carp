@@ -6,6 +6,7 @@
   (register * (Fn [Float Float] Float))
   (register / (Fn [Float Float] Float))
   (register to-int (Fn [Float] Int))
+  (register from-int (Fn [Int] Float))
   (register random-between (λ [Float Float] Float))
   (register str (Fn [Float] String))
   (register copy (Fn [(Ref Float)] Float))
