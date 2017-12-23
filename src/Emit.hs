@@ -237,10 +237,13 @@ toC root = emitterSrc (execState (visit 0 root) (EmitterState ""))
                  let properVariableName =
                        case variable of
                          (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym) _ _) : _)) _ _) -> pathToC sym
-                         _ -> error "How to handle setting of refs?"
+                         (XObj (Sym sym) _ _) -> pathToC sym
+                         v -> error ("Can't 'set!' this: " ++ show v)
                      Just varInfo = info variable
                  delete indent varInfo
-                 appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ ";\n")
+                 appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
+                              ++ " // " ++ (show (ty variable)) ++ " = " ++ (show (ty value))
+                              ++ "\n")
                  return ""
 
             -- The

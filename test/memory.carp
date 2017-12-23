@@ -109,6 +109,11 @@
     (do (set! &s @&s)
         ())))
 
+(defn setting-4 []
+  (let [s ""]
+    (do ;;(set! s @s)
+        ())))
+
 (defn branching [b s]
   (if b
     (String.delete s)
