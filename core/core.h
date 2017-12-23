@@ -405,8 +405,12 @@ string Double_str(double x) {
     return buffer;
 }
 
-int Float_to_MINUS_int(double x) {
+int Float_to_MINUS_int(float x) {
     return (int)x;
+}
+
+float Float_from_MINUS_int(int x) {
+    return (float)x;
 }
 
 float Float_random_MINUS_between(float lower, float upper) {
