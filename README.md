@@ -37,50 +37,23 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
 (use Int)
 (use String)
 
-(def guessing true)
-(def answer 0)
-
-(defn init! []
-  (do (println "Seeding random number generator...\n")
-      (seed (System.time))
-
-      (println "~ The Number Guessing Game ~")
-      (println "(Enter q to quit.)\n\n")
-
-      (set! &guessing true)
-      (set! &answer (random-between 1 100))
-
-      (print "Please enter a number between 1 - 99: ")))
-
-(defn exit! []
-  (do (println "Good bye...")
-      (set! &guessing false)))
-
-(defn play-again? [user-input]
-  (if (= user-input "y\n") true false))
-
-(defn correct! []
-  (do (println "Correct!")
-      (print "Play again? (y/n): ")
-      (let [user-input (get-line)]
-        (if (play-again? &user-input)
-          (init!)
-          (exit!)))))
-
-(defn guess-again [low-or-high]
-  (do (println &(string-join @"->Too " @low-or-high @"."))
-      (print "\nPlease guess again: ")))
-
 (defn main []
-  (do (init!)
-      (while guessing
-        (let [user-input (get-line)
-              guessed-num (from-string &user-input)]
-          (if (= &user-input "q\n")
-            (exit!)
-            (cond (< guessed-num answer) (guess-again "low")
-                  (> guessed-num answer) (guess-again "high")
-                  (correct!)))))))
+  (do (println "~ The number guessing game ~")
+      (print "Please enter a number between 1 - 99: ")
+      (let [play true
+            answer (random-between 1 100)]
+        (while play
+          (let [guess (get-line)
+                num (from-string &guess)]
+            (if (= &guess "q\n")
+              (do
+                (println "Good bye...")
+                (set! &play false))
+              (do
+                (cond (< num answer) (println "Too low.")
+                      (> num answer) (println "Too high.")
+                      (println "Correct!"))
+                (print "Please guess again: "))))))))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
