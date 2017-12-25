@@ -4,6 +4,9 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
+(load "Debug.carp")
+
+(Debug.sanitize-addresses)
 
 (deftype State
     [width Int
@@ -78,11 +81,6 @@
         (State.set-y new-y)
         (State.set-dir new-dir))))
 
-(defn trace [x]
-  (do
-    (IO.println &(str &x))
-    x))
-
 (defn tick [state-ref]
   (=> @state-ref
       (move-ant)
@@ -101,7 +99,9 @@
         state (create-state)]
       (while true
         (do
+          ;;(Debug.reset-memory-balance!)
           (handle-events &app rend)
           (draw rend &state)
           (set! &state (tick &state))
+          ;;(IO.println &(str (Debug.memory-balance)))
           (SDL_Delay 2)))))
