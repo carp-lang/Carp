@@ -3,4 +3,6 @@
   (register free (Fn [t] ()))
   (register time (Fn [] Int))
   (register srand (Fn [Int] ()))
+  (register sleep-seconds (Fn [Int] ()))
+  (register sleep-micros (Fn [Int] ()))
   )

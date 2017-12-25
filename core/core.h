@@ -9,6 +9,7 @@
 #include <time.h>
 #include <assert.h>
 #include <limits.h>
+#include <unistd.h>
 
 typedef char* string;
 
@@ -565,6 +566,14 @@ int System_time() {
 
 void System_srand(int x) {
     srand(x);
+}
+
+void System_sleep_MINUS_seconds(int t) {
+    sleep(t);
+}
+
+void System_sleep_MINUS_micros(int t) {
+    usleep(t);
 }
 
 string IO_read_MINUS_file(string *filename) {

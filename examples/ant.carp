@@ -99,9 +99,21 @@
         state (create-state)]
       (while true
         (do
-          ;;(Debug.reset-memory-balance!)
           (handle-events &app rend)
           (draw rend &state)
           (set! &state (tick &state))
-          ;;(IO.println &(str (Debug.memory-balance)))
           (SDL_Delay 2)))))
+
+;; Just the model
+(defn main []
+  (do
+    (Debug.reset-memory-balance!)
+    (let [state (create-state)]
+      (for [i 0 9999]
+        (do
+          (set! &state (tick &state))
+          (IO.println &(str (State.dir &state)))
+          (IO.println &(str (Debug.memory-balance)))
+          ;;(System.sleep-micros 1000)
+          )))
+    (IO.println &(str (Debug.memory-balance)))))
