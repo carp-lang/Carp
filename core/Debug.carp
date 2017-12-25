@@ -6,4 +6,9 @@
   (register memory-balance (Fn [] Long))
   (register reset-memory-balance! (Fn [] ()))
 
+  (defn trace [x]
+    (do
+      (IO.println &(str &x))
+      x))
+
   )
