@@ -98,16 +98,28 @@ manageMemory typeEnv globalEnv root =
                                         return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
               do visitedValue <- visit value
-                 unmanage value
+                 unmanage value -- The assigned value can't be used anymore
+
                  let varInfo = info variable
                      correctVariable = case variable of
                                          XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
                                          x -> x
-                     deleters = case createDeleter correctVariable of
+
+                 managed <- get
+
+                 -- Delete the value previously stored in the variable, if it's still alive
+                 let deleters = case createDeleter correctVariable of
                                   Just d  -> Set.fromList [d]
                                   Nothing -> Set.empty
                      newVarInfo = setDeletersOnInfo varInfo deleters
-                     newVariable = variable { info = newVarInfo }
+                     newVariable =
+                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still allive
+                       then variable { info = newVarInfo }
+                       else variable -- don't add the new info = no deleter
+
+                 when True $ -- Should be when the variable itself isn't a ref
+                   manage correctVariable -- The variable can be used again
+
                  return $ do okValue <- visitedValue
                              return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
             [addressExpr@(XObj Address _ _), value] ->

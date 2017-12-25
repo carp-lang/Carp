@@ -16,15 +16,21 @@ typedef char* string;
 #ifdef LOG_MEMORY
 long malloc_balance_counter = 0;
 
+//#define LOG_MEMORY_PRINT_EACH
+
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
-    //printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    #ifdef LOG_MEMORY_PRINT_EACH
+    printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    #endif
     malloc_balance_counter++;
     return ptr;
 }
 
 void logged_free(void *ptr) {
-    //printf("FREE: %p\n", ptr);
+    #ifdef LOG_MEMORY_PRINT_EACH
+    printf("FREE: %p\n", ptr);
+    #endif
     free(ptr);
     malloc_balance_counter--;
     /* if(malloc_balance_counter == 0) { */

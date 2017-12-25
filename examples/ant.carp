@@ -81,8 +81,8 @@
         (State.set-y new-y)
         (State.set-dir new-dir))))
 
-(defn tick [state-ref]
-  (=> @state-ref
+(defn tick [state]
+  (=> state
       (move-ant)
       (flip-at-ant)))
 
@@ -101,19 +101,19 @@
         (do
           (handle-events &app rend)
           (draw rend &state)
-          (set! &state (tick &state))
+          (set! &state (tick state))
           (SDL_Delay 2)))))
 
-;; ;; Just the model
+;; Just the model
 ;; (defn main []
 ;;   (do
 ;;     (Debug.reset-memory-balance!)
 ;;     (let [state (create-state)]
-;;       (for [i 0 9999]
+;;       (for [i 0 10000]
 ;;         (do
-;;           (set! &state (tick &state))
+;;           (set! &state (tick state))
 ;;           (IO.println &(str (State.dir &state)))
 ;;           (IO.println &(str (Debug.memory-balance)))
-;;           ;;(System.sleep-micros 1000)
+;;           (System.sleep-micros 1000)
 ;;           )))
 ;;     (IO.println &(str (Debug.memory-balance)))))

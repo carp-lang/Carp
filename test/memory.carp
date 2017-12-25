@@ -111,7 +111,7 @@
 
 (defn setting-4 []
   (let [s ""]
-    (do ;;(set! s @s)
+    (do ;;(set! s @s) ;; Here the variable itself is a ref!
         ())))
 
 (defn branching [b s]
