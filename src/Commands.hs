@@ -13,6 +13,8 @@ import System.Directory
 import System.Info (os)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
+import Data.Maybe (fromMaybe)
+import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
@@ -488,3 +490,53 @@ commandGt [a, b] =
 commandGt args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to '>': " ++ joinWithComma (map pretty args))
      return dynamicNil
+
+commandCharAt :: CommandCallback
+commandCharAt [a, b] =
+  return $ case (a, b) of
+    (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
+      Right (XObj (Chr (s !! (round n :: Int))) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b))
+commandCharAt args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'char-at': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandIndexOf :: CommandCallback
+commandIndexOf [a, b] =
+  return $ case (a, b) of
+    (XObj (Str s) _ _, XObj (Chr c) _ _) ->
+      Right (XObj (Num IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b))
+  where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
+commandIndexOf args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'index-of': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandSubstring :: CommandCallback
+commandSubstring [a, b, c] =
+  return $ case (a, b, c) of
+    (XObj (Str s) _ _, XObj (Num IntTy f) _ _, XObj (Num IntTy t) _ _) ->
+      Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c))
+commandSubstring args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'substring': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandStringCount :: CommandCallback
+commandStringCount [a] =
+  return $ case a of
+    XObj (Str s) _ _ ->
+      Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+commandStringCount args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+

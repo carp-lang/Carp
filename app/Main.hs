@@ -135,38 +135,48 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateElemCount
                                 ]
 
+dynamicStringModule :: Env
+dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "String", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList [ addCommand "char-at" (CommandFunction commandCharAt)
+                                , addCommand "index-of" (CommandFunction commandIndexOf)
+                                , addCommand "substring" (CommandFunction commandSubstring)
+                                , addCommand "count" (CommandFunction commandStringCount)
+                                ]
+
 dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
-  where bindings = Map.fromList [ addCommand "list?" (CommandFunction commandIsList)
-                                , addCommand "count" (CommandFunction commandCount)
-                                , addCommand "car" (CommandFunction commandCar)
-                                , addCommand "cdr" (CommandFunction commandCdr)
-                                , addCommand "last" (CommandFunction commandLast)
-                                , addCommand "all-but-last" (CommandFunction commandAllButLast)
-                                , addCommand "cons" (CommandFunction commandCons)
-                                , addCommand "cons-last" (CommandFunction commandConsLast)
-                                , addCommand "append" (CommandFunction commandAppend)
-                                , addCommand "macro-error" (CommandFunction commandMacroError)
-                                , addCommand "=" (CommandFunction commandEq)
-                                , addCommand "<" (CommandFunction commandLt)
-                                , addCommand ">" (CommandFunction commandGt)
-                                , addCommand "c" (CommandFunction commandC)
-                                , addCommand "quit" (CommandFunction commandQuit)
-                                , addCommand "cat" (CommandFunction commandCat)
-                                , addCommand "run" (CommandFunction commandRunExe)
-                                , addCommand "build" (CommandFunction commandBuild)
-                                , addCommand "reload" (CommandFunction commandReload)
-                                , addCommand "env" (CommandFunction commandListBindings)
-                                , addCommand "help" (CommandFunction commandHelp)
-                                , addCommand "project" (CommandFunction commandProject)
-                                , addCommand "load" (CommandFunction commandLoad)
-                                , addCommand "macro-log" (CommandFunction commandPrint)
-                                , addCommand "expand" (CommandFunction commandExpand)
-                                , addCommand "project-set!" (CommandFunction commandProjectSet)
-                                , addCommand "os" (CommandFunction commandOS)
-                                , addCommand "system-include" (CommandFunction commandAddSystemInclude)
-                                , addCommand "local-include" (CommandFunction commandAddLocalInclude)
-                                ]
+  where bindings = Map.fromList $
+                    [ addCommand "list?" (CommandFunction commandIsList)
+                    , addCommand "count" (CommandFunction commandCount)
+                    , addCommand "car" (CommandFunction commandCar)
+                    , addCommand "cdr" (CommandFunction commandCdr)
+                    , addCommand "last" (CommandFunction commandLast)
+                    , addCommand "all-but-last" (CommandFunction commandAllButLast)
+                    , addCommand "cons" (CommandFunction commandCons)
+                    , addCommand "cons-last" (CommandFunction commandConsLast)
+                    , addCommand "append" (CommandFunction commandAppend)
+                    , addCommand "macro-error" (CommandFunction commandMacroError)
+                    , addCommand "=" (CommandFunction commandEq)
+                    , addCommand "<" (CommandFunction commandLt)
+                    , addCommand ">" (CommandFunction commandGt)
+                    , addCommand "c" (CommandFunction commandC)
+                    , addCommand "quit" (CommandFunction commandQuit)
+                    , addCommand "cat" (CommandFunction commandCat)
+                    , addCommand "run" (CommandFunction commandRunExe)
+                    , addCommand "build" (CommandFunction commandBuild)
+                    , addCommand "reload" (CommandFunction commandReload)
+                    , addCommand "env" (CommandFunction commandListBindings)
+                    , addCommand "help" (CommandFunction commandHelp)
+                    , addCommand "project" (CommandFunction commandProject)
+                    , addCommand "load" (CommandFunction commandLoad)
+                    , addCommand "macro-log" (CommandFunction commandPrint)
+                    , addCommand "expand" (CommandFunction commandExpand)
+                    , addCommand "project-set!" (CommandFunction commandProjectSet)
+                    , addCommand "os" (CommandFunction commandOS)
+                    , addCommand "system-include" (CommandFunction commandAddSystemInclude)
+                    , addCommand "local-include" (CommandFunction commandAddLocalInclude)
+                    ]
+                    ++ [("String", Binder (XObj (Mod dynamicStringModule) Nothing Nothing))]
 
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
