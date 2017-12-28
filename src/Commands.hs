@@ -75,8 +75,7 @@ commandProjectSet [XObj (Str key) _ _, value] =
     where err msg ret = liftIO $ do putStrLnWithColor Red msg
                                     return ret
 commandProjectSet args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
+  return (Left (EvalError ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))))
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
@@ -119,8 +118,7 @@ commandBuild args =
                   return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
      case src of
        Left err ->
-         liftIO $ do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ show err)
-                     return dynamicNil
+         return (Left (EvalError ("[CODEGEN ERROR] " ++ show err)))
        Right okSrc ->
          liftIO $ do let compiler = projectCompiler proj
                          echoCompilationCommand = projectEchoCompilationCommand proj
@@ -332,9 +330,8 @@ commandIsList [x] =
   case x of
     XObj (Lst _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
-commandIsList _ =
-  do liftIO $ putStrLnWithColor Red "Invalid args to 'list?'"
-     return dynamicNil
+commandIsList args =
+  return (Left (EvalError ("Invalid args to 'list?': " ++ joinWithComma (map pretty args))))
 
 commandCount :: CommandCallback
 commandCount [x] =
@@ -343,8 +340,7 @@ commandCount [x] =
     XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
     _ -> return (Left (EvalError ("Applying 'count' to non-list: " ++ pretty x ++ " at " ++ prettyInfoFromXObj x)))
 commandCount args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'count': " ++ joinWithComma (map pretty args))))
 
 commandCar :: CommandCallback
 commandCar [x] =
@@ -353,8 +349,7 @@ commandCar [x] =
     XObj (Arr (car : _)) _ _ -> return (Right car)
     _ -> return (Left (EvalError ("Applying 'car' to non-list: " ++ pretty x)))
 commandCar args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'car': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'car': " ++ joinWithComma (map pretty args))))
 
 commandCdr :: CommandCallback
 commandCdr [x] =
@@ -363,8 +358,7 @@ commandCdr [x] =
     XObj (Arr (_ : cdr)) _ _ -> return (Right (XObj (Arr cdr) Nothing Nothing))
     _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list"))
 commandCdr args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'cdr': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'cdr': " ++ joinWithComma (map pretty args))))
 
 commandLast :: CommandCallback
 commandLast [x] =
@@ -373,8 +367,7 @@ commandLast [x] =
     XObj (Arr arr) _ _ -> return (Right (last arr))
     _ -> return (Left (EvalError "Applying 'last' to non-list or empty list."))
 commandLast args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'last': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'last': " ++ joinWithComma (map pretty args))))
 
 commandAllButLast :: CommandCallback
 commandAllButLast [x] =
@@ -383,8 +376,7 @@ commandAllButLast [x] =
     XObj (Arr arr) _ _ -> return (Right (XObj (Arr (init arr)) Nothing Nothing))
     _ -> return (Left (EvalError "Applying 'all-but-last' to non-list or empty list."))
 commandAllButLast args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'all-but-last': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'all-but-last': " ++ joinWithComma (map pretty args))))
 
 commandCons :: CommandCallback
 commandCons [x, xs] =
@@ -392,8 +384,7 @@ commandCons [x, xs] =
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
     _ -> return (Left (EvalError "Applying 'cons' to non-list or empty list."))
 commandCons args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'cons': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'cons': " ++ joinWithComma (map pretty args))))
 
 commandConsLast :: CommandCallback
 commandConsLast [x, xs] =
@@ -401,8 +392,7 @@ commandConsLast [x, xs] =
     XObj (Lst lst) i t -> return (Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
     _ -> return (Left (EvalError "Applying 'cons-last' to non-list or empty list."))
 commandConsLast args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'cons-last': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'cons-last': " ++ joinWithComma (map pretty args))))
 
 commandAppend :: CommandCallback
 commandAppend [xs, ys] =
@@ -412,8 +402,7 @@ commandAppend [xs, ys] =
     _ ->
       return (Left (EvalError "Applying 'append' to non-list or empty list."))
 commandAppend args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'append': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'append': " ++ joinWithComma (map pretty args))))
 
 commandMacroError :: CommandCallback
 commandMacroError [msg] =
@@ -421,8 +410,7 @@ commandMacroError [msg] =
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
     _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
 commandMacroError args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'macro-error': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'macro-error': " ++ joinWithComma (map pretty args))))
 
 commandEq :: CommandCallback
 commandEq [a, b] =
@@ -446,8 +434,7 @@ commandEq [a, b] =
     _ ->
       Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))
 commandEq args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '=': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '=': " ++ joinWithComma (map pretty args))))
 
 commandLt :: CommandCallback
 commandLt [a, b] =
@@ -467,8 +454,7 @@ commandLt [a, b] =
    _ ->
      Left (EvalError ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b))
 commandLt args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '<': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '<': " ++ joinWithComma (map pretty args))))
 
 commandGt :: CommandCallback
 commandGt [a, b] =
@@ -488,8 +474,7 @@ commandGt [a, b] =
     _ ->
       Left (EvalError ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b))
 commandGt args =
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '>': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '>': " ++ joinWithComma (map pretty args))))
 
 commandCharAt :: CommandCallback
 commandCharAt [a, b] =
@@ -499,9 +484,7 @@ commandCharAt [a, b] =
     _ ->
       Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b))
 commandCharAt args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'char-at': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'char-at': " ++ joinWithComma (map pretty args))))
 
 commandIndexOf :: CommandCallback
 commandIndexOf [a, b] =
@@ -512,9 +495,7 @@ commandIndexOf [a, b] =
       Left (EvalError ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b))
   where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
 commandIndexOf args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'index-of': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'index-of': " ++ joinWithComma (map pretty args))))
 
 commandSubstring :: CommandCallback
 commandSubstring [a, b, c] =
@@ -524,9 +505,7 @@ commandSubstring [a, b, c] =
     _ ->
       Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c))
 commandSubstring args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'substring': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'substring': " ++ joinWithComma (map pretty args))))
 
 commandStringCount :: CommandCallback
 commandStringCount [a] =
@@ -536,9 +515,7 @@ commandStringCount [a] =
     _ ->
       Left (EvalError ("Can't call count with " ++ pretty a))
 commandStringCount args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to 'count': " ++ joinWithComma (map pretty args))))
 
 commandPlus :: CommandCallback
 commandPlus [a, b] =
@@ -546,11 +523,9 @@ commandPlus [a, b] =
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       Right (XObj (Num IntTy (aNum + bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call + with " ++ pretty a))
+      Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b))
 commandPlus args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '+': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '+': " ++ joinWithComma (map pretty args))))
 
 commandMinus :: CommandCallback
 commandMinus [a, b] =
@@ -558,11 +533,9 @@ commandMinus [a, b] =
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       Right (XObj (Num IntTy (aNum - bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call - with " ++ pretty a))
+      Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b))
 commandMinus args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '-': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '-': " ++ joinWithComma (map pretty args))))
 
 commandDiv :: CommandCallback
 commandDiv [a, b] =
@@ -570,11 +543,9 @@ commandDiv [a, b] =
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       Right (XObj (Num IntTy (aNum / bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call / with " ++ pretty a))
+      Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b))
 commandDiv args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '/': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '/': " ++ joinWithComma (map pretty args))))
 
 commandMul :: CommandCallback
 commandMul [a, b] =
@@ -582,8 +553,6 @@ commandMul [a, b] =
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       Right (XObj (Num IntTy (aNum * bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call * with " ++ pretty a))
+      Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
 commandMul args =
-  -- TODO: this (and all functions above) should rather return Left here
-  do liftIO $ putStrLnWithColor Red ("Invalid args to '*': " ++ joinWithComma (map pretty args))
-     return dynamicNil
+  return (Left (EvalError ("Invalid args to '*': " ++ joinWithComma (map pretty args))))

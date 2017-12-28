@@ -160,7 +160,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "<" (CommandFunction commandLt)
                     , addCommand ">" (CommandFunction commandGt)
                     , addCommand "+" (CommandFunction commandPlus)
-                    , addCommand "+" (CommandFunction commandMinus)
+                    , addCommand "-" (CommandFunction commandMinus)
                     , addCommand "/" (CommandFunction commandDiv)
                     , addCommand "*" (CommandFunction commandMul)
                     , addCommand "c" (CommandFunction commandC)
