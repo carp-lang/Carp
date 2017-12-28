@@ -19,11 +19,12 @@
 ;; >=
 ;; (definterface inc (λ [a] a))
 ;; (definterface dec (λ [a] a))
-;; random
-;; random-between
 ;; (definterface max (λ [a a] a))
 ;; (definterface min (λ [a a] a))
 ;;(definterface from-string (λ [a] String))
+
+(definterface random (Fn [] a))
+(definterface random-between (Fn [a a] a))
 
 (definterface pi a)
 

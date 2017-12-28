@@ -22,6 +22,9 @@
   (defn zero []
     (V2.init 0.0 0.0))
 
+  (defn random []
+    (V2.init (random-between 0.0 1.0) (random-between 0.0 1.0)))
+
   (defn add [a b]
     (V2.init (+ (V2.x a) (V2.x b))
              (+ (V2.y a) (V2.y b))))
@@ -110,6 +113,9 @@
   (defn zero []
     (V3.init 0.0 0.0 0.0))
 
+  (defn random []
+    (V3.init (random-between 0.0 1.0) (random-between 0.0 1.0) (random-between 0.0 1.0)))
+
   (defn = [a b]
     (and (Double.= (V3.x a) (V3.x b))
          (and (Double.= (V3.y a) (V3.y b))
@@ -195,6 +201,13 @@
   (defn zero-sized [n]
     (let [z 0.0]
       (VN.init n (Array.replicate n &z))))
+
+  (defn unit-random []
+    (random-between 0.0 1.0))
+
+  (defn random-sized [n]
+    (VN.init n (Array.repeat n unit-random)))
+
 
   (defn to-string [o]
     (string-join @"VectorN(dim=" (str (VN.n o)) @", vals=" (str (VN.v o))
