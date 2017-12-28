@@ -159,6 +159,10 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "=" (CommandFunction commandEq)
                     , addCommand "<" (CommandFunction commandLt)
                     , addCommand ">" (CommandFunction commandGt)
+                    , addCommand "+" (CommandFunction commandPlus)
+                    , addCommand "+" (CommandFunction commandMinus)
+                    , addCommand "/" (CommandFunction commandDiv)
+                    , addCommand "*" (CommandFunction commandMul)
                     , addCommand "c" (CommandFunction commandC)
                     , addCommand "quit" (CommandFunction commandQuit)
                     , addCommand "cat" (CommandFunction commandCat)
@@ -216,6 +220,7 @@ coreModules :: String -> [String]
 coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
                                                                       , "Macros"
                                                                       , "Dynamic"
+                                                                      , "Format"
                                                                       , "Int"
                                                                       , "Long"
                                                                       , "Double"

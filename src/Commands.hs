@@ -540,3 +540,50 @@ commandStringCount args =
   do liftIO $ putStrLnWithColor Red ("Invalid args to 'count': " ++ joinWithComma (map pretty args))
      return dynamicNil
 
+commandPlus :: CommandCallback
+commandPlus [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (aNum + bNum)) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call + with " ++ pretty a))
+commandPlus args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '+': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandMinus :: CommandCallback
+commandMinus [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (aNum - bNum)) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call - with " ++ pretty a))
+commandMinus args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '-': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandDiv :: CommandCallback
+commandDiv [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (aNum / bNum)) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call / with " ++ pretty a))
+commandDiv args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '/': " ++ joinWithComma (map pretty args))
+     return dynamicNil
+
+commandMul :: CommandCallback
+commandMul [a, b] =
+  return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (aNum * bNum)) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call * with " ++ pretty a))
+commandMul args =
+  -- TODO: this (and all functions above) should rather return Left here
+  do liftIO $ putStrLnWithColor Red ("Invalid args to '*': " ++ joinWithComma (map pretty args))
+     return dynamicNil
