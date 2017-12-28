@@ -214,11 +214,11 @@ tyToXObj x = XObj (Sym (SymPath [] (show x))) Nothing Nothing
 -- | The template for the 'str' function for a deftype.
 -- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.
 templateStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
-templateStr typeEnv env structTy@(StructTy typeName _) members =
+templateStr typeEnv env t@(StructTy typeName _) members =
   Template
-    (FuncTy [RefTy structTy] StringTy)
-    (const (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
-    (const (toTemplate $ unlines [ "$DECL {"
+    (FuncTy [RefTy t] StringTy)
+    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
+    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
                                  , "  string buffer = CARP_MALLOC(1024); // TODO: dynamic length"
                                  , "  string bufferPtr = buffer;"
@@ -231,8 +231,12 @@ templateStr typeEnv env structTy@(StructTy typeName _) members =
                                  , "  snprintf(bufferPtr, 1024, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
-    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                     (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (map snd members)))
+    (\(ft@(FuncTy [RefTy structTy] StringTy)) ->
+       concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (map snd members))
+       ++
+       (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
+    )
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
@@ -262,7 +266,7 @@ memberStr typeEnv env (memberName, memberTy) =
 -- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
 memberArg (memberName, memberTy) =
-  (if isFullyGenericType memberTy then "$" else "") ++ tyToC memberTy ++ " " ++ memberName
+  templitizeTy memberTy ++ " " ++ memberName
 
 -- | Generate C code for assigning to a member variable.
 -- | Needs to know if the instance is a pointer or stack variable.
@@ -388,3 +392,8 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
              Right ok
            Nothing ->
              Left "Something's wrong with the templates..." -- TODO: Better messages here!
+
+-- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
+templitizeTy :: Ty -> String
+templitizeTy t =
+  (if isFullyGenericType t then "$" else "") ++ tyToC t

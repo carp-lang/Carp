@@ -2,6 +2,7 @@
 ;; (Debug.sanitize-addresses)
 ;; (project-set! "printAST" "true")
 (local-include "core.h")
+(project-set! "echoCompilationCommand" "true")
 
 ;; (defn better-repeat [n inpt]
 ;;   (let [str @""]
@@ -20,7 +21,7 @@
 
 (deftype (Pair a b) [ma a mb b])
 
-;; (defn main []
-;;   (IO.println
-;;    &(str
-;;      &(Pair.init [true false true false] [1 2 3]))))
+(defn main []
+  (IO.println
+   &(str
+     &(Pair.init 5.6 true))))
