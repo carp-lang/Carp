@@ -239,11 +239,13 @@ main = do args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               logMemory = LogMemory `elem` otherOptions
+              noCore = NoCore `elem` otherOptions
               projectWithFiles = defaultProject { projectFiles = argFilesToLoad
                                                 , projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (projectCFlags defaultProject)
+                                                ,projectIncludes = (if noCore then [] else projectIncludes defaultProject)
                                                 }
-              noCore = NoCore `elem` otherOptions
+              
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
