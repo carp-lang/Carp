@@ -61,6 +61,15 @@
                   90.0
                   (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
                   "angle-between works")
+    (assert-true test
+                 (anti-parallel? &(init 1.0 0.0) &(init -1.0 0.0))
+                 "anti-parallel? works")
+    (assert-true test
+                 (parallel? &(init 1.0 0.0) &(init 1.0 0.0))
+                 "parallel? works")
+    (assert-true test
+                 (perpendicular? &(init 1.0 0.0) &(init 0.0 1.0))
+                 "perpendicular? works")
     (assert-equal test
                   44.0
                   (dot &(init 10.0 2.0) &(init 2.0 12.0))
