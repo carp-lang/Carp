@@ -11,6 +11,7 @@ import Template
 import Infer
 import Concretize
 import Polymorphism
+import ArrayTemplates
 
 data AllocationMode = StackAlloc | HeapAlloc
 
@@ -172,26 +173,43 @@ templateInit allocationMode structTy@(StructTy typeName typeVariables) memberXOb
                                  , joinWith "\n" (map (memberAssignment allocationMode) members)
                                  , "    return instance;"
                                  , "}"]))
-    (\(FuncTy _ t) -> [instantiateGenericType t (unifySignatures structTy t) memberXObjs])
+    (\(FuncTy _ t) -> instantiateGenericStructType (unifySignatures structTy t) t memberXObjs)
 
-instantiateGenericType :: Ty -> Map.Map String Ty -> [XObj] -> XObj
-instantiateGenericType structTy mappings memberXObjs =
-  let concretelyTypedMembers = concatMap (\(v, t) -> [v, replaceGenericTypeSymbols t]) (pairwise memberXObjs)
-      replaceGenericTypeSymbols :: XObj -> XObj
-      replaceGenericTypeSymbols xobj@(XObj (Sym (SymPath pathStrings name)) i t) =
-        case Map.lookup name mappings of
-          Just found -> tyToXObj found
-          Nothing -> error ("Failed to concretize member '" ++ name ++ "' of " ++ show structTy)
-      replaceGenericTypeSymbols xobj = xobj
+instantiateGenericType :: Map.Map String Ty -> Ty -> [XObj]
+instantiateGenericType mappings arrayTy@(StructTy "Array" _) =
+  [defineArrayTypeAlias arrayTy]
+instantiateGenericType mappings structTy@(StructTy _ _) =
+  let memberXObjs = []
+  in instantiateGenericStructType mappings structTy memberXObjs
+instantiateGenericType _ _ =
+  [] -- ignore all other types
 
-      tyToXObj :: Ty -> XObj
-      tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n)) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
-      tyToXObj x = XObj (Sym (SymPath [] (show x))) Nothing Nothing
+instantiateGenericStructType :: Map.Map String Ty -> Ty -> [XObj] -> [XObj]
+instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
+  -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
+  let concretelyTypedMembers = concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
+  in  [ XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                  XObj (Sym (SymPath [] (tyToC structTy))) Nothing Nothing :
+                   [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
+            ) (Just dummyInfo) (Just TypeTy)
+      ]
+      ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
+                                      Just okTy -> instantiateGenericType mappings okTy
+                                      Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
+      (pairwise memberXObjs)
 
-  in  XObj (Lst (XObj (Typ structTy) Nothing Nothing :
-                 XObj (Sym (SymPath [] (tyToC structTy))) Nothing Nothing :
-                  [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
-           ) (Just dummyInfo) (Just TypeTy)
+replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
+replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name)) i t) =
+  case Map.lookup name mappings of
+    Just found -> tyToXObj found
+    Nothing -> error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj)
+replaceGenericTypeSymbols _ xobj = xobj
+
+tyToXObj :: Ty -> XObj
+tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n)) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
+tyToXObj x = XObj (Sym (SymPath [] (show x))) Nothing Nothing
+
+
 
 -- | The template for the 'str' function for a deftype.
 -- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.
