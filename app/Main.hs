@@ -243,9 +243,8 @@ main = do args <- SystemEnvironment.getArgs
               projectWithFiles = defaultProject { projectFiles = argFilesToLoad
                                                 , projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (projectCFlags defaultProject)
-                                                ,projectIncludes = (if noCore then [] else projectIncludes defaultProject)
+                                                , projectIncludes = if noCore then [] else projectIncludes defaultProject
                                                 }
-              
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
