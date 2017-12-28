@@ -437,7 +437,7 @@ double Double_random() {
 
 double Double_random_MINUS_between(double lower, double upper) {
     float diff = upper - lower;
-    float r = ((float)(rand() % INT_MAX)) / ((float)INT_MAX);
+    double r = ((double)(rand() % INT_MAX)) / ((double)INT_MAX);
     return lower + diff * r;
 }
 
