@@ -7,6 +7,9 @@
 (defn main []
   (with-test test
     (assert-equal test
+                  &(init 4 [0.0 0.0 0.0 0.0]) &(zero-sized 4)
+                  "zero-sized works")
+    (assert-equal test
                   &(init 4 [1.0 2.0 3.0 4.0]) &(init 4 [1.0 2.0 3.0 4.0])
                   "= operator works")
     (assert-op test

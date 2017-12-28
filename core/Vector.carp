@@ -19,6 +19,9 @@
   (defn to-string [o]
     (string-join @"Vector2(" (Double.str (V2.x o)) @", " (Double.str (V2.y o)) @")"))
 
+  (defn zero []
+    (V2.init 0.0 0.0))
+
   (defn add [a b]
     (V2.init (Double.+ (V2.x a) (V2.x b))
             (Double.+ (V2.y a) (V2.y b))))
@@ -95,6 +98,9 @@
     (string-join @"Vector2(" (Double.str (V3.x o)) @", " (Double.str (V3.y o))
                  @", " (Double.str (V3.z o)) @")"))
 
+  (defn zero []
+    (V3.init 0.0 0.0 0.0))
+
   (defn = [a b]
     (and (Double.= (V3.x a) (V3.x b))
          (and (Double.= (V3.y a) (V3.y b))
@@ -166,6 +172,10 @@
 
   (defn init [n v]
     (VN.init n v))
+
+  (defn zero-sized [n]
+    (let [z 0.0]
+      (VN.init n (Array.replicate n &z))))
 
   (defn to-string [o]
     (string-join @"VectorN(dim=" (Int.str (VN.n o)) @", vals=" (Array.str (VN.v o))
