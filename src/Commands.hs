@@ -42,14 +42,18 @@ falseXObj :: XObj
 falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Use this function to register commands in the environment.
-addCommand :: String -> CommandFunctionType -> (String, Binder)
-addCommand name callback =
+addCommand :: String -> Int -> CommandCallback -> (String, Binder)
+addCommand name arity callback =
   let path = SymPath [] name
-      cmd = XObj (Lst [XObj (Command callback) (Just dummyInfo) Nothing
+      cmd = XObj (Lst [XObj (Command (CommandFunction withArity)) (Just dummyInfo) Nothing
                       ,XObj (Sym path) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder cmd)
+  where withArity args =
+          if length args == arity
+            then callback args
+            else return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args))))
 
 -- | Command for changing various project settings.
 commandProjectSet :: CommandCallback
@@ -74,8 +78,6 @@ commandProjectSet [XObj (Str key) _ _, value] =
        val -> err "Argument to project-set! must be a string" dynamicNil
     where err msg ret = liftIO $ do putStrLnWithColor Red msg
                                     return ret
-commandProjectSet args =
-  return (Left (EvalError ("Invalid args to 'project-set!' command: " ++ joinWithComma (map pretty args))))
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
@@ -330,8 +332,6 @@ commandIsList [x] =
   case x of
     XObj (Lst _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
-commandIsList args =
-  return (Left (EvalError ("Invalid args to 'list?': " ++ joinWithComma (map pretty args))))
 
 commandCount :: CommandCallback
 commandCount [x] =
@@ -339,8 +339,6 @@ commandCount [x] =
     XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
     XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
     _ -> return (Left (EvalError ("Applying 'count' to non-list: " ++ pretty x ++ " at " ++ prettyInfoFromXObj x)))
-commandCount args =
-  return (Left (EvalError ("Invalid args to 'count': " ++ joinWithComma (map pretty args))))
 
 commandCar :: CommandCallback
 commandCar [x] =
@@ -348,8 +346,6 @@ commandCar [x] =
     XObj (Lst (car : _)) _ _ -> return (Right car)
     XObj (Arr (car : _)) _ _ -> return (Right car)
     _ -> return (Left (EvalError ("Applying 'car' to non-list: " ++ pretty x)))
-commandCar args =
-  return (Left (EvalError ("Invalid args to 'car': " ++ joinWithComma (map pretty args))))
 
 commandCdr :: CommandCallback
 commandCdr [x] =
@@ -357,8 +353,6 @@ commandCdr [x] =
     XObj (Lst (_ : cdr)) _ _ -> return (Right (XObj (Lst cdr) Nothing Nothing))
     XObj (Arr (_ : cdr)) _ _ -> return (Right (XObj (Arr cdr) Nothing Nothing))
     _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list"))
-commandCdr args =
-  return (Left (EvalError ("Invalid args to 'cdr': " ++ joinWithComma (map pretty args))))
 
 commandLast :: CommandCallback
 commandLast [x] =
@@ -366,8 +360,6 @@ commandLast [x] =
     XObj (Lst lst) _ _ -> return (Right (last lst))
     XObj (Arr arr) _ _ -> return (Right (last arr))
     _ -> return (Left (EvalError "Applying 'last' to non-list or empty list."))
-commandLast args =
-  return (Left (EvalError ("Invalid args to 'last': " ++ joinWithComma (map pretty args))))
 
 commandAllButLast :: CommandCallback
 commandAllButLast [x] =
@@ -375,24 +367,18 @@ commandAllButLast [x] =
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (init lst)) Nothing Nothing))
     XObj (Arr arr) _ _ -> return (Right (XObj (Arr (init arr)) Nothing Nothing))
     _ -> return (Left (EvalError "Applying 'all-but-last' to non-list or empty list."))
-commandAllButLast args =
-  return (Left (EvalError ("Invalid args to 'all-but-last': " ++ joinWithComma (map pretty args))))
 
 commandCons :: CommandCallback
 commandCons [x, xs] =
   case xs of
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
     _ -> return (Left (EvalError "Applying 'cons' to non-list or empty list."))
-commandCons args =
-  return (Left (EvalError ("Invalid args to 'cons': " ++ joinWithComma (map pretty args))))
 
 commandConsLast :: CommandCallback
 commandConsLast [x, xs] =
   case xs of
     XObj (Lst lst) i t -> return (Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
     _ -> return (Left (EvalError "Applying 'cons-last' to non-list or empty list."))
-commandConsLast args =
-  return (Left (EvalError ("Invalid args to 'cons-last': " ++ joinWithComma (map pretty args))))
 
 commandAppend :: CommandCallback
 commandAppend [xs, ys] =
@@ -401,16 +387,12 @@ commandAppend [xs, ys] =
       return (Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
     _ ->
       return (Left (EvalError "Applying 'append' to non-list or empty list."))
-commandAppend args =
-  return (Left (EvalError ("Invalid args to 'append': " ++ joinWithComma (map pretty args))))
 
 commandMacroError :: CommandCallback
 commandMacroError [msg] =
   case msg of
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
     _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
-commandMacroError args =
-  return (Left (EvalError ("Invalid args to 'macro-error': " ++ joinWithComma (map pretty args))))
 
 commandEq :: CommandCallback
 commandEq [a, b] =
@@ -433,8 +415,6 @@ commandEq [a, b] =
       if sa == sb then Right trueXObj else Right falseXObj
     _ ->
       Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))
-commandEq args =
-  return (Left (EvalError ("Invalid args to '=': " ++ joinWithComma (map pretty args))))
 
 commandLt :: CommandCallback
 commandLt [a, b] =
@@ -453,8 +433,6 @@ commandLt [a, b] =
      then Right trueXObj else Right falseXObj
    _ ->
      Left (EvalError ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b))
-commandLt args =
-  return (Left (EvalError ("Invalid args to '<': " ++ joinWithComma (map pretty args))))
 
 commandGt :: CommandCallback
 commandGt [a, b] =
@@ -473,8 +451,6 @@ commandGt [a, b] =
       then Right trueXObj else Right falseXObj
     _ ->
       Left (EvalError ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b))
-commandGt args =
-  return (Left (EvalError ("Invalid args to '>': " ++ joinWithComma (map pretty args))))
 
 commandCharAt :: CommandCallback
 commandCharAt [a, b] =
@@ -483,8 +459,6 @@ commandCharAt [a, b] =
       Right (XObj (Chr (s !! (round n :: Int))) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b))
-commandCharAt args =
-  return (Left (EvalError ("Invalid args to 'char-at': " ++ joinWithComma (map pretty args))))
 
 commandIndexOf :: CommandCallback
 commandIndexOf [a, b] =
@@ -494,8 +468,6 @@ commandIndexOf [a, b] =
     _ ->
       Left (EvalError ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b))
   where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
-commandIndexOf args =
-  return (Left (EvalError ("Invalid args to 'index-of': " ++ joinWithComma (map pretty args))))
 
 commandSubstring :: CommandCallback
 commandSubstring [a, b, c] =
@@ -504,8 +476,6 @@ commandSubstring [a, b, c] =
       Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy))
     _ ->
       Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c))
-commandSubstring args =
-  return (Left (EvalError ("Invalid args to 'substring': " ++ joinWithComma (map pretty args))))
 
 commandStringCount :: CommandCallback
 commandStringCount [a] =
@@ -514,8 +484,6 @@ commandStringCount [a] =
       Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call count with " ++ pretty a))
-commandStringCount args =
-  return (Left (EvalError ("Invalid args to 'count': " ++ joinWithComma (map pretty args))))
 
 commandPlus :: CommandCallback
 commandPlus [a, b] =
@@ -524,8 +492,6 @@ commandPlus [a, b] =
       Right (XObj (Num IntTy (aNum + bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b))
-commandPlus args =
-  return (Left (EvalError ("Invalid args to '+': " ++ joinWithComma (map pretty args))))
 
 commandMinus :: CommandCallback
 commandMinus [a, b] =
@@ -534,8 +500,6 @@ commandMinus [a, b] =
       Right (XObj (Num IntTy (aNum - bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b))
-commandMinus args =
-  return (Left (EvalError ("Invalid args to '-': " ++ joinWithComma (map pretty args))))
 
 commandDiv :: CommandCallback
 commandDiv [a, b] =
@@ -544,8 +508,6 @@ commandDiv [a, b] =
       Right (XObj (Num IntTy (aNum / bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b))
-commandDiv args =
-  return (Left (EvalError ("Invalid args to '/': " ++ joinWithComma (map pretty args))))
 
 commandMul :: CommandCallback
 commandMul [a, b] =
@@ -554,5 +516,3 @@ commandMul [a, b] =
       Right (XObj (Num IntTy (aNum * bNum)) (Just dummyInfo) (Just IntTy))
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
-commandMul args =
-  return (Left (EvalError ("Invalid args to '*': " ++ joinWithComma (map pretty args))))
