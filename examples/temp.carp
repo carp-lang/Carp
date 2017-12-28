@@ -20,5 +20,7 @@
 
 (deftype (Pair a b) [ma a mb b])
 
-(defn f []
-  (Pair.init 3 [1 2 3]))
+;; (defn main []
+;;   (IO.println
+;;    &(str
+;;      &(Pair.init [true false true false] [1 2 3]))))

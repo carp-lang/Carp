@@ -274,7 +274,7 @@ depthOfType typeEnv selfName = visitType
       maximum (visitType (Just retTy) : map (visitType . Just) argTys) + 1
     visitType (Just (PointerTy p)) = visitType (Just p)
     visitType (Just (RefTy r)) = visitType (Just r)
-    visitType (Just _) = 0
+    visitType (Just _) = 50
     visitType Nothing = -100 -- External / unknown type
 
     depthOfStructType :: String -> Int

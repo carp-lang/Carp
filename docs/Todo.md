@@ -6,6 +6,7 @@
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
+* [0.3] Need to refactor the sorting of bindings! Hacked it for now with Obj.hs:277 "visitType (Just _) = 50"
 * [0.3] When referring to nonexisting type in 'the' form, the compiler barfs.
 * [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
