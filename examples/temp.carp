@@ -1,3 +1,6 @@
+(load "Debug.carp")
+(project-set! "printAST" "true")
+(Debug.sanitize-addresses)
 ;; (project-set! "printAST" "true")
 
 ;; (use System)
@@ -21,3 +24,18 @@
 ;;       (set! &x 123))))
 
 ;;(defmacro m [x] (list (quote def) (quote qqqqq) x))
+
+(defn better-repeat [n inpt]
+  (let [str @""]
+    (do
+      (for [i 0 n]
+        (set! &str (append str @inpt)))
+      str)))
+
+(defn main []
+  (do
+    (Debug.reset-memory-balance!)
+    (let []
+      (IO.println &(better-repeat 5 "yeah")))
+    (IO.println (refstr (Debug.memory-balance)))
+    ))
