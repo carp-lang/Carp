@@ -431,12 +431,26 @@ string Double_str(double x) {
     return buffer;
 }
 
+double Double_random() {
+    return rand();
+}
+
+double Double_random_MINUS_between(double lower, double upper) {
+    float diff = upper - lower;
+    double r = ((double)(rand() % INT_MAX)) / ((double)INT_MAX);
+    return lower + diff * r;
+}
+
 int Float_to_MINUS_int(float x) {
     return (int)x;
 }
 
 float Float_from_MINUS_int(int x) {
     return (float)x;
+}
+
+float Float_random() {
+    return rand();
 }
 
 float Float_random_MINUS_between(float lower, float upper) {

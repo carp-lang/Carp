@@ -13,6 +13,8 @@
   (register from-int (Fn [Int] Double))
   (register to-float (Fn [Double] Float))
   (register from-float (Fn [Float] Double))
+  (register random (Fn [] Double))
+  (register random-between (Fn [Double Double] Double))
   (register sin (Fn [Double] Double))
   (register cos (Fn [Double] Double))
   (register tan (Fn [Double] Double))

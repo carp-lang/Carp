@@ -75,6 +75,9 @@
 
   (defn empty? [s]
     (Int.= (count s) 0))
+
+  (defn random-sized [n]
+    (from-chars (Array.repeat n Char.random)))
 )
 
 (defmodule StringCopy

@@ -7,11 +7,11 @@
 (definterface mul-ref (λ [&a &a] a))
 (definterface div-ref (λ [&a &a] a))
 
-;; These interfaces would be desirable also? Produces errors in Vector module for now...
 (definterface + (λ [a a] a))
 (definterface - (λ [a a] a))
 (definterface * (λ [a a] a))
 (definterface / (λ [a a] a))
+(definterface mod (λ [a a] a))
 
 (definterface < (λ [a a] Bool))
 (definterface > (λ [a a] Bool))
@@ -19,11 +19,12 @@
 ;; >=
 ;; (definterface inc (λ [a] a))
 ;; (definterface dec (λ [a] a))
-;; random
-;; random-between
 ;; (definterface max (λ [a a] a))
 ;; (definterface min (λ [a a] a))
 ;;(definterface from-string (λ [a] String))
+
+(definterface random (Fn [] a))
+(definterface random-between (Fn [a a] a))
 
 (definterface pi a)
 
