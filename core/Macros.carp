@@ -130,3 +130,29 @@
 
 (defmacro case [name :rest forms]
   (case-internal name forms))
+
+(defdynamic build-vararg [fn forms]
+  (if (= (count forms) 0)
+    (macro-error "vararg macro needs at least one argument")
+    (if (= (count forms) 1)
+      (car forms)
+      (list fn (car forms) (build-vararg fn (cdr forms))))))
+
+(defmacro and* [:rest forms]
+  (build-vararg 'and forms))
+
+(defmacro or* [:rest forms]
+  (build-vararg 'or forms))
+
+(defdynamic build-str* [forms]
+  (if (= (count forms) 0)
+    (list "")
+    (if (= (count forms) 1)
+      (list 'str (car forms))
+      (list 'String.append (list 'str (car forms)) (build-str* (cdr forms))))))
+
+(defmacro str* [:rest forms]
+  (build-str* forms))
+
+(defmacro println* [:rest forms]
+  (list 'IO.println (list 'ref (build-str* forms))))
