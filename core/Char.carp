@@ -6,10 +6,10 @@
   (register copy (Fn [&Char] Char))
 
   (defn random []
-    (from-int (Int.random) 255))
+    (from-int (Int.random)))
 
   (defn random-between [a b]
-    (from-int (Int.random-between (to-int a) (to-int b)) 255))
+    (from-int (Int.random-between (to-int a) (to-int b))))
 
   (defn meaning [char-ref]
     (cond
