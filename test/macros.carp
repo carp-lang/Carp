@@ -191,4 +191,25 @@
                   (test-= veit heller)
                   "= macro works as expected on symbols II"
     )
+    (assert-false test
+                  (and* true true false)
+                  "and* macro works as expected I"
+    )
+    (assert-true test
+                 (and* true true true)
+                 "and* macro works as expected II"
+    )
+    (assert-false test
+                  (or* false false false)
+                  "or* macro works as expected I"
+    )
+    (assert-true test
+                 (or* true false true)
+                 "or* macro works as expected II"
+    )
+    (assert-equal test
+                  "1@\" thing \"2@\" things\""
+                  &(str* 1 " thing " 2 " things")
+                  "str* macro works as expected"
+    )
     (print-test-results test)))
