@@ -12,7 +12,7 @@
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [(Array Char)] String))
   (register tail (λ [(Ref String)] String))
-  (register format (Fn [String String] String))
+  (register format (Fn [&String &String] String))
 
   (defn /= [a b]
     (not (= (the (Ref String) a) b)))

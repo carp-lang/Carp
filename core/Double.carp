@@ -39,7 +39,7 @@
   (register mod (Fn [Double Double] Double))
   (register copy (Fn [(Ref Double)] Double))
   (register abs (Fn [Double] Double))
-  (register format (Fn [String Double] String))
+  (register format (Fn [&String Double] String))
 
   (defn clamp [min, max, val]
     (if (> val max)

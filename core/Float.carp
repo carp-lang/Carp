@@ -11,7 +11,7 @@
   (register random-between (λ [Float Float] Float))
   (register str (Fn [Float] String))
   (register copy (Fn [(Ref Float)] Float))
-  (register format (Fn [String Float] String))
+  (register format (Fn [&String Float] String))
 
   (register = (Fn [Float Float] Bool))
   (defn /= [x y]
