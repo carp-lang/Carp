@@ -14,10 +14,10 @@
           ; okay, this is the meat:
           ; get the next % after our escaper
           (let [next (String.index-of (String.substring s (inc idx) len) \%)]
-            (if (= 0 next)
+            (if (= -1 next)
               (if (< 1 (count args))
                 (macro-error "error in format string: too many arguments to format string")
-                (list 'format (list 'copy slice) (car args)))
+                (list 'format (list 'copy s) (car args)))
               (let [slice (String.substring s 0 (+ (inc idx) next))]
                 (list 'String.append (list 'format (list 'copy slice) (car args))
                                      (fmt-internal (String.substring s (+ (inc idx) next) len)
