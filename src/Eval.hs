@@ -141,10 +141,17 @@ eval env xobj =
                                               return $ do okX <- x'
                                                           (Right [n, okX]))
                                (pairwise bindings)
-                  evaledBody <- eval env body
-                  return $ do okBindings <- sequence bind
-                              okBody <- evaledBody
-                              Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
+                  let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
+                  let okBindings = sequence bind
+                  case okBindings of
+                    (Left err) -> return (Left err)
+                    Right binds -> do
+                      let envWithBindings = foldl' (\e [(XObj (Sym (SymPath _ n)) _ _), x] -> extendEnv e n x)
+                                    innerEnv
+                                    binds
+                      evaledBody <- eval envWithBindings body
+                      return $ do okBody <- evaledBody
+                                  Right okBody
           else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
 
         XObj (Sym (SymPath [] "register-type")) _ _ : XObj (Sym (SymPath _ typeName)) _ _ : rest ->

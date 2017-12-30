@@ -411,6 +411,8 @@ commandEq [a, b] =
       then Right trueXObj else Right falseXObj
     (XObj (Str sa) _ _, XObj (Str sb) _ _) ->
       if sa == sb then Right trueXObj else Right falseXObj
+    (XObj (Chr ca) _ _, XObj (Chr cb) _ _) ->
+      if ca == cb then Right trueXObj else Right falseXObj
     (XObj (Sym sa) _ _, XObj (Sym sb) _ _) ->
       if sa == sb then Right trueXObj else Right falseXObj
     _ ->
