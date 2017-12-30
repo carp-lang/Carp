@@ -1,10 +1,10 @@
 (defdynamic fmt-internal [s args]
   (let [idx (String.index-of s \%)
         len (String.count s)]
-    (if (= idx -1) s ; no more splits found, just return string
+    (if (= idx -1) (list 'copy s) ; no more splits found, just return string
       (if (= \% (String.char-at s (inc idx))) ; this is an escaped %
         (list 'String.append
-              (String.substring s 0 (+ idx 2))
+              (list 'copy (String.substring s 0 (+ idx 2)))
               (fmt-internal (String.substring s (+ idx 2) len)))
         (if (= 0 (count args)) ; we need to insert something, but have nothing
           (macro-error "error in format string: not enough arguments for format string")
@@ -12,12 +12,11 @@
           ; get the next % after our escaper
           (let [next (String.index-of (String.substring s (inc idx) len) \%)]
             (if (= 0 next)
-              (list 'fmt slice (car args))
-              (let [offs (+ idx 2)
-                    slice (String.substring s 0 (+ idx 2))]
-                (list 'String.append (list 'fmt slice (car args))
-                                     (fmt-internal (String.substring s offs len)
+              (list 'format (list 'copy slice) (car args))
+              (let [slice (String.substring s 0 (+ (inc idx) next))]
+                (list 'String.append (list 'format (list 'copy slice) (car args))
+                                     (fmt-internal (String.substring s (+ (inc idx) next) len)
                                                    (cdr args)))))))))))
 
-(defmacro format [s :rest args]
+(defmacro fmt [s :rest args]
   (fmt-internal s args))

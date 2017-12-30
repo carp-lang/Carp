@@ -297,8 +297,8 @@ char String_char_MINUS_at(string* s, int i) {
 
 string String_format(string str, string s) {
     int n = strlen(s);
-    string buffer = CARP_MALLOC(n);
-    snprintf(buffer, n, str, *s);
+    string buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+2, str, s);
     return buffer;
 }
 
