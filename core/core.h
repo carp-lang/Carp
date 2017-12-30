@@ -187,8 +187,9 @@ string Int_str(int x) {
 }
 
 string Int_format(string str, int x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, str, x);
+    int n = strlen(str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, str, x);
     return buffer;
 }
 
@@ -224,8 +225,9 @@ string Long_str(long x) {
 }
 
 string Long_format(string str, long x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, str, x);
+    int n = strlen(str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, str, x);
     return buffer;
 }
 
@@ -296,9 +298,9 @@ char String_char_MINUS_at(string* s, int i) {
 }
 
 string String_format(string str, string s) {
-    int n = strlen(s);
+    int n = strlen(s) + strlen(str);
     string buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+2, str, s);
+    snprintf(buffer, n+1, str, s);
     return buffer;
 }
 
@@ -469,8 +471,9 @@ double Double_random_MINUS_between(double lower, double upper) {
 }
 
 string Double_format(string s, double x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, s, x);
+    int n = strlen(s) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, s, x);
     return buffer;
 }
 
@@ -583,8 +586,9 @@ string Float_str(float x) {
 }
 
 string Float_format(string str, float x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, str, x);
+    int n = strlen(str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, str, x);
     return buffer;
 }
 
