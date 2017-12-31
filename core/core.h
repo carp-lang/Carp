@@ -186,6 +186,17 @@ string Int_str(int x) {
     return buffer;
 }
 
+string Int_format(string* str, int x) {
+    int n = strlen(*str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, x);
+    return buffer;
+}
+
+bool Int_mask(int a, int b) {
+    return a & b;
+}
+
 long Long_from_MINUS_string(string *s) {
     return atol(*s);
 }
@@ -211,6 +222,17 @@ string Long_str(long x) {
     char *buffer = CARP_MALLOC(64);
     snprintf(buffer, 64, "%ldl", x);
     return buffer;
+}
+
+string Long_format(string* str, long x) {
+    int n = strlen(*str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, x);
+    return buffer;
+}
+
+bool Long_mask(long a, long b) {
+    return a & b;
 }
 
 int Long_to_MINUS_int(long a) {
@@ -275,6 +297,13 @@ char String_char_MINUS_at(string* s, int i) {
   return (*s)[i];
 }
 
+string String_format(string *str, string *s) {
+    int n = strlen(*s) + strlen(*str);
+    string buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, *s);
+    return buffer;
+}
+
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
@@ -323,6 +352,14 @@ char Char_from_MINUS_int(int i) {
 char Char_copy(char *c) {
   return *c;
 }
+
+string Char_format(string* str, char b) {
+    int n = strlen(*str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, b);
+    return buffer;
+}
+
 
 // Double.toInt : Double -> Int
 int Double_to_MINUS_int(double x) {
@@ -441,6 +478,13 @@ double Double_random_MINUS_between(double lower, double upper) {
     return lower + diff * r;
 }
 
+string Double_format(string* s, double x) {
+    int n = strlen(*s) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *s, x);
+    return buffer;
+}
+
 int Float_to_MINUS_int(float x) {
     return (int)x;
 }
@@ -549,6 +593,13 @@ string Float_str(float x) {
     return buffer;
 }
 
+string Float_format(string* str, float x) {
+    int n = strlen(*str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, x);
+    return buffer;
+}
+
 // Bool
 bool Bool_copy(bool* b) {
   return *b;
@@ -570,6 +621,13 @@ string Bool_str(bool b) {
     } else {
         return String_copy(&false_str);
     }
+}
+
+string Bool_format(string* str, bool b) {
+    int n = strlen(*str) + 32;
+    char *buffer = CARP_MALLOC(n+1);
+    snprintf(buffer, n+1, *str, b);
+    return buffer;
 }
 
 void System_exit(int code) {

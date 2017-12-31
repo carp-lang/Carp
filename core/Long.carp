@@ -23,6 +23,7 @@
   (register to-int (λ [Long] Int))
   (register from-int (λ [Int] Long))
   (register copy (λ [&Long] Long)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
+  (register format (Fn [&String Long] String))
 
   (defn /= [x y]
     (not (Long.= x y)))

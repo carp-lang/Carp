@@ -135,38 +135,52 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateElemCount
                                 ]
 
+dynamicStringModule :: Env
+dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "String", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
+                                , addCommand "index-of" 2 commandIndexOf
+                                , addCommand "substring" 3 commandSubstring
+                                , addCommand "count" 1 commandStringCount
+                                ]
+
 dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
-  where bindings = Map.fromList [ addCommand "list?" (CommandFunction commandIsList)
-                                , addCommand "count" (CommandFunction commandCount)
-                                , addCommand "car" (CommandFunction commandCar)
-                                , addCommand "cdr" (CommandFunction commandCdr)
-                                , addCommand "last" (CommandFunction commandLast)
-                                , addCommand "all-but-last" (CommandFunction commandAllButLast)
-                                , addCommand "cons" (CommandFunction commandCons)
-                                , addCommand "cons-last" (CommandFunction commandConsLast)
-                                , addCommand "append" (CommandFunction commandAppend)
-                                , addCommand "macro-error" (CommandFunction commandMacroError)
-                                , addCommand "=" (CommandFunction commandEq)
-                                , addCommand "<" (CommandFunction commandLt)
-                                , addCommand ">" (CommandFunction commandGt)
-                                , addCommand "c" (CommandFunction commandC)
-                                , addCommand "quit" (CommandFunction commandQuit)
-                                , addCommand "cat" (CommandFunction commandCat)
-                                , addCommand "run" (CommandFunction commandRunExe)
-                                , addCommand "build" (CommandFunction commandBuild)
-                                , addCommand "reload" (CommandFunction commandReload)
-                                , addCommand "env" (CommandFunction commandListBindings)
-                                , addCommand "help" (CommandFunction commandHelp)
-                                , addCommand "project" (CommandFunction commandProject)
-                                , addCommand "load" (CommandFunction commandLoad)
-                                , addCommand "macro-log" (CommandFunction commandPrint)
-                                , addCommand "expand" (CommandFunction commandExpand)
-                                , addCommand "project-set!" (CommandFunction commandProjectSet)
-                                , addCommand "os" (CommandFunction commandOS)
-                                , addCommand "system-include" (CommandFunction commandAddSystemInclude)
-                                , addCommand "local-include" (CommandFunction commandAddLocalInclude)
-                                ]
+  where bindings = Map.fromList $
+                    [ addCommand "list?" 1 commandIsList
+                    , addCommand "count" 1 commandCount
+                    , addCommand "car" 1 commandCar
+                    , addCommand "cdr" 1 commandCdr
+                    , addCommand "last" 1 commandLast
+                    , addCommand "all-but-last" 1 commandAllButLast
+                    , addCommand "cons" 2 commandCons
+                    , addCommand "cons-last" 2 commandConsLast
+                    , addCommand "append" 2 commandAppend
+                    , addCommand "macro-error" 1 commandMacroError
+                    , addCommand "=" 2 commandEq
+                    , addCommand "<" 2 commandLt
+                    , addCommand ">" 2 commandGt
+                    , addCommand "+" 2 commandPlus
+                    , addCommand "-" 2 commandMinus
+                    , addCommand "/" 2 commandDiv
+                    , addCommand "*" 2 commandMul
+                    , addCommand "c" 1 commandC
+                    , addCommand "quit" 0 commandQuit
+                    , addCommand "cat" 0 commandCat
+                    , addCommand "run" 0 commandRunExe
+                    , addCommand "build" 0 commandBuild
+                    , addCommand "reload" 0 commandReload
+                    , addCommand "env" 0 commandListBindings
+                    , addCommand "help" 1 commandHelp
+                    , addCommand "project" 0 commandProject
+                    , addCommand "load" 1 commandLoad
+                    , addCommand "macro-log" 1 commandPrint
+                    , addCommand "expand" 1 commandExpand
+                    , addCommand "project-set!" 2 commandProjectSet
+                    , addCommand "os" 0 commandOS
+                    , addCommand "system-include" 1 commandAddSystemInclude
+                    , addCommand "local-include" 1 commandAddLocalInclude
+                    ]
+                    ++ [("String", Binder (XObj (Mod dynamicStringModule) Nothing Nothing))]
 
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -206,6 +220,7 @@ coreModules :: String -> [String]
 coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
                                                                       , "Macros"
                                                                       , "Dynamic"
+                                                                      , "Format"
                                                                       , "Int"
                                                                       , "Long"
                                                                       , "Double"

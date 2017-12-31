@@ -4,6 +4,7 @@
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
+  (register format (Fn [&String Char] String))
 
   (defn random []
     (from-int (Int.random)))
