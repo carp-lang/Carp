@@ -82,7 +82,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
                                 x -> ['\'', x, '\'']
-            Sym _ -> visitSymbol xobj
+            Sym _ _ -> visitSymbol xobj
             Defn -> error (show (DontVisitObj Defn))
             Def -> error (show (DontVisitObj Def))
             Let -> error (show (DontVisitObj Let))
@@ -125,18 +125,19 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         escapeString (x:xs) = x : escapeString xs
 
         visitSymbol :: XObj -> State EmitterState String
-        visitSymbol xobj@(XObj (Sym path) _ t) = let Just t' = t
-                                                 in if typeIsGeneric t'
-                                                    then error ("Can't emit symbol of generic type: " ++
-                                                                show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
-                                                    else return (pathToC path)
+        visitSymbol xobj@(XObj (Sym path _) _ t) =
+          let Just t' = t
+          in if typeIsGeneric t'
+             then error ("Can't emit symbol of generic type: " ++
+                         show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
+             else return (pathToC path)
         visitSymbol _ = error "Not a symbol."
 
         visitList :: Int -> XObj -> State EmitterState String
         visitList indent (XObj (Lst xobjs) (Just i) t) =
           case xobjs of
             -- Defn
-            [XObj Defn _ _, XObj (Sym path@(SymPath _ name)) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj Defn _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
               case toCMode of
                 Globals ->
                   return ""
@@ -155,7 +156,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      return ""
 
             -- Def
-            [XObj Def _ _, XObj (Sym path) _ _, expr] ->
+            [XObj Def _ _, XObj (Sym path _) _ _, expr] ->
               case toCMode of
                 Functions ->
                   return ""
@@ -173,7 +174,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      when isNotVoid $ -- Must be declared outside the scope
                        appendToSrc (addIndent indent ++ tyToC bodyTy ++ " " ++ letBodyRet ++ ";\n")
                      appendToSrc (addIndent indent ++ "/* let */ {\n")
-                     let letBindingToC (XObj (Sym (SymPath _ symName)) _ _) expr =
+                     let letBindingToC (XObj (Sym (SymPath _ symName) _) _ _) expr =
                            do ret <- visit indent' expr
                               let Just bindingTy = ty expr
                               when (bindingTy /= UnitTy) $
@@ -258,8 +259,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do valueVar <- visit indent value
                  let properVariableName =
                        case variable of
-                         (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym) _ _) : _)) _ _) -> pathToC sym
-                         (XObj (Sym sym) _ _) -> pathToC sym
+                         (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> pathToC sym
+                         (XObj (Sym sym _) _ _) -> pathToC sym
                          v -> error ("Can't 'set!' this: " ++ show v)
                      Just varInfo = info variable
                  delete indent varInfo
@@ -285,14 +286,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                  return fresh
 
             -- Deftype
-            XObj (Typ _) _ _ : XObj (Sym _) _ _ : _ ->
+            XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->
               return ""
 
             -- Template
-            [XObj (Deftemplate _) _ _, XObj (Sym _) _ _] ->
+            [XObj (Deftemplate _) _ _, XObj (Sym _ _) _ _] ->
               return ""
 
-            [XObj (Instantiate template) _ _, XObj (Sym path) _ _] ->
+            [XObj (Instantiate template) _ _, XObj (Sym path _) _ _] ->
               case toCMode of
                 Globals ->
                   return ""
@@ -436,13 +437,13 @@ defaliasToDeclaration t path =
 toDeclaration :: XObj -> String
 toDeclaration xobj@(XObj (Lst xobjs) _ t) =
   case xobjs of
-    [XObj Defn _ _, XObj (Sym path) _ _, XObj (Arr argList) _ _, _] ->
+    [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
       let (Just (FuncTy _ retTy)) = t
       in  defnToDeclaration path argList retTy ++ ";\n"
-    [XObj Def _ _, XObj (Sym path) _ _, _] ->
+    [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
       in "" ++ tyToC t' ++ " " ++ pathToC path ++ ";\n"
-    XObj (Typ t) _ _ : XObj (Sym path) _ _ : rest ->
+    XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
       deftypeToDeclaration t path rest
     XObj (Deftemplate _) _ _ : _ ->
       ""
@@ -450,10 +451,10 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       ""
     XObj Dynamic _ _ : _ ->
       ""
-    [XObj (Instantiate template) _ _, XObj (Sym path) _ _] ->
+    [XObj (Instantiate template) _ _, XObj (Sym path _) _ _] ->
       let Just t' = t
       in templateToDeclaration template path t'
-    [XObj (Defalias aliasTy) _ _, XObj (Sym path) _ _] ->
+    [XObj (Defalias aliasTy) _ _, XObj (Sym path _) _ _] ->
       defaliasToDeclaration aliasTy path
     [XObj (Interface _ _) _ _, _] ->
       ""
@@ -469,7 +470,7 @@ toDeclaration _ = error "Missing case."
 paramListToC :: [XObj] -> String
 paramListToC xobjs = intercalate ", " (map getParam xobjs)
   where getParam :: XObj -> String
-        getParam (XObj (Sym (SymPath _ name)) _ (Just t)) = tyToC t ++ " " ++ mangle name
+        getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToC t ++ " " ++ mangle name
         getParam invalid = error (show (InvalidParameter invalid))
 
 projectIncludesToC :: Project -> String

@@ -25,7 +25,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     (Right xobj, deps) -> Right (xobj, deps)
   where
     visit :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visit allowAmbig env xobj@(XObj (Sym _) _ _) = visitSymbol allowAmbig env xobj
+    visit allowAmbig env xobj@(XObj (Sym _ _) _ _) = visitSymbol allowAmbig env xobj
     visit allowAmbig env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym allowAmbig env xobj
     visit allowAmbig env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym allowAmbig env xobj
     visit allowAmbig env xobj@(XObj (Lst _) i t) =
@@ -43,7 +43,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList :: Bool -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
     visitList _ _ (XObj (Lst []) _ _) = return (Right [])
 
-    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main")) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
+    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then return $ Left (MainCannotHaveArguments (length argsArr))
       else do visitedBody <- visit False env body -- allowAmbig == 'False'
@@ -56,7 +56,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do mapM_ checkForNeedOfTypedefs argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
-             envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) ->
+             envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
              Just funcTy = t
@@ -94,7 +94,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     checkForNeedOfTypedefs _ = error "Missing type."
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visitSymbol allowAmbig env xobj@(XObj (Sym path) i t) =
+    visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
       case lookupInEnv path env of
         Just (foundEnv, binder)
           | envIsExternal foundEnv ->
@@ -108,7 +108,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                          Right (concrete, deps) ->
                            do modify (concrete :)
                               modify (deps ++)
-                              return (Right (XObj (Sym (getPath concrete)) i t))
+                              return (Right (XObj (Sym (getPath concrete) lookupMode) i t))
                   else return (Right xobj)
           | otherwise -> return (Right xobj)
         Nothing -> return (Right xobj)
@@ -126,12 +126,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               --else
               return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
             [(theType, singlePath)] -> let Just t' = t
-                                           fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
-                                           fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
+                                           fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
+                                           fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
                                        in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
-                                                   normalSymbol = XObj (Sym singlePath) i (Just replaced)
+                                                   normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just replaced)
                                                in visitSymbol allowAmbig env --- $ (trace ("Disambiguated " ++ pretty xobj ++
                                                                   ---   " to " ++ show singlePath ++ " : " ++ show replaced))
                                                               normalSymbol
@@ -173,12 +173,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                       _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
                       let Just t' = t
-                          fake1 = XObj (Sym (SymPath [] "theType")) Nothing Nothing
-                          fake2 = XObj (Sym (SymPath [] "xobjType")) Nothing Nothing
+                          fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
+                          fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
                       in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
                             Right mappings ->
                               let replaced = replaceTyVars mappings t'
-                                  normalSymbol = XObj (Sym singlePath) i (Just replaced)
+                                  normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just replaced)
                               in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
                                              normalSymbol
                             Left failure@(UnificationFailure _ _) ->

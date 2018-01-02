@@ -103,7 +103,7 @@ instance Show TypeError where
     "Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
   show (GettingReferenceToUnownedValue xobj) =
     "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
-    prettyInfoFromXObj xobj
+    prettyInfoFromXObj xobj ++ "\n" ++ show xobj
   show (UsingUnownedValue xobj) =
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (ArraysCannotContainRefs xobj) =

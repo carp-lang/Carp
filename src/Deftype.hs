@@ -189,7 +189,7 @@ instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
   let concretelyTypedMembers = concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
   in  [ XObj (Lst (XObj (Typ structTy) Nothing Nothing :
-                  XObj (Sym (SymPath [] (tyToC structTy))) Nothing Nothing :
+                  XObj (Sym (SymPath [] (tyToC structTy)) Symbol) Nothing Nothing :
                    [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
             ) (Just dummyInfo) (Just TypeTy)
       ]
@@ -199,15 +199,15 @@ instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
       (pairwise memberXObjs)
 
 replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
-replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name)) i t) =
+replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _) i t) =
   case Map.lookup name mappings of
     Just found -> tyToXObj found
     Nothing -> error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj)
 replaceGenericTypeSymbols _ xobj = xobj
 
 tyToXObj :: Ty -> XObj
-tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n)) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
-tyToXObj x = XObj (Sym (SymPath [] (show x))) Nothing Nothing
+tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
+tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 
 

@@ -46,7 +46,7 @@ addCommand :: String -> Int -> CommandCallback -> (String, Binder)
 addCommand name arity callback =
   let path = SymPath [] name
       cmd = XObj (Lst [XObj (Command (CommandFunction withArity)) (Just dummyInfo) Nothing
-                      ,XObj (Sym path) Nothing Nothing
+                      ,XObj (Sym path Symbol) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder cmd)
@@ -418,7 +418,7 @@ commandEq [a, b] =
       if sa == sb then Right trueXObj else Right falseXObj
     (XObj (Chr ca) _ _, XObj (Chr cb) _ _) ->
       if ca == cb then Right trueXObj else Right falseXObj
-    (XObj (Sym sa) _ _, XObj (Sym sb) _ _) ->
+    (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) ->
       if sa == sb then Right trueXObj else Right falseXObj
     _ ->
       Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))

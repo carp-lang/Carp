@@ -58,7 +58,7 @@ manageMemory typeEnv globalEnv root =
         visitList :: XObj -> State MemState (Either TypeError XObj)
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
-            [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _) _ _), args@(XObj (Arr argList) _ _), body] ->
+            [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
                    RefTy _ ->
@@ -300,6 +300,6 @@ manageMemory typeEnv globalEnv root =
         varOfXObj :: XObj -> String
         varOfXObj xobj =
           case xobj of
-            XObj (Sym (SymPath [] name)) _ _ -> name
+            XObj (Sym (SymPath [] name) _) _ _ -> name
             _ -> let Just i = info xobj
                  in  freshVar i

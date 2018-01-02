@@ -33,7 +33,7 @@ double = do (i, num) <- maybeSigned
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
             if num == "-"
-              then return (XObj (Sym (SymPath [] "-")) i Nothing)
+              then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
               else return (XObj (Num DoubleTy (read (num ++ "." ++ decimals))) i Nothing)
 
 float :: Parsec.Parsec String ParseState XObj
@@ -45,13 +45,13 @@ float = do (i, num) <- maybeSigned
            _ <- Parsec.char 'f'
            incColumn 1
            if num == "-"
-             then return (XObj (Sym (SymPath [] "-")) i Nothing)
+             then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
              else return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
 
 integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- maybeSigned
              if num == "-"
-               then return (XObj (Sym (SymPath [] "-")) i Nothing)
+               then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
                else return (XObj (Num IntTy (read num)) i Nothing)
 
 long :: Parsec.Parsec String ParseState XObj
@@ -59,7 +59,7 @@ long = do (i, num) <- maybeSigned
           _ <- Parsec.char 'l'
           incColumn 1
           if num == "-"
-            then return (XObj (Sym (SymPath [] "-")) i Nothing)
+            then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
             else return (XObj (Num LongTy (read num)) i Nothing)
 
 number :: Parsec.Parsec String ParseState XObj
@@ -143,7 +143,7 @@ symbol = do i <- createInfo
               "the" -> return (XObj The i Nothing)
               "ref" -> return (XObj Ref i Nothing)
               "with" -> return (XObj With i Nothing)
-              name   -> return (XObj (Sym (SymPath (init segments) name)) i Nothing)
+              name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
 atom = Parsec.choice [number, string, aChar, symbol]
@@ -239,14 +239,14 @@ copy = do i1 <- createInfo
           i2 <- createInfo
           _ <- Parsec.char '@'
           expr <- sexpr
-          return (XObj (Lst [XObj (Sym (SymPath [] "copy")) i1 Nothing, expr]) i2 Nothing)
+          return (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 quote :: Parsec.Parsec String ParseState XObj
 quote = do i1 <- createInfo
            i2 <- createInfo
            _ <- Parsec.char '\''
            expr <- sexpr
-           return (XObj (Lst [XObj (Sym (SymPath [] "quote")) i1 Nothing, expr]) i2 Nothing)
+           return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
 sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]

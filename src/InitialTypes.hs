@@ -68,7 +68,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
-                       (Sym symPath)      -> visitSymbol env xobj symPath
+                       (Sym symPath _)    -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
                        Defn               -> return (Left (InvalidObj Defn xobj))
@@ -135,7 +135,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
         -- Defn
-        [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name)) _ _), XObj (Arr argList) argsi argst, body] ->
+        [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
           do argTypes <- genVarTys (length argList)
              returnType <- genVarTy
              funcScopeEnv <- extendEnvWithParamList env argList
@@ -149,7 +149,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          okArgs <- sequence visitedArgs
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
-        [XObj Defn _ _, XObj (Sym _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
+        [XObj Defn _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
         XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
 
         -- Def
@@ -282,9 +282,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             Left err -> return (Left err)
             Right env' ->
               case obj sym of
-                (Sym (SymPath _ name)) -> do visited <- visit env' expr
-                                             return $ do okVisited <- visited
-                                                         return (envAddBinding env' name (Binder okVisited))
+                (Sym (SymPath _ name) _) -> do visited <- visit env' expr
+                                               return $ do okVisited <- visited
+                                                           return (envAddBinding env' name (Binder okVisited))
                 _ -> error ("Can't create let-binder for non-symbol: " ++ show sym)
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
@@ -300,7 +300,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBinderForParam :: XObj -> State Integer (String, Binder)
         createBinderForParam xobj =
           case obj xobj of
-            (Sym (SymPath _ name)) -> do t <- genVarTy
-                                         let xobjWithTy = xobj { ty = Just t }
-                                         return (name, Binder xobjWithTy)
+            (Sym (SymPath _ name) _) ->
+              do t <- genVarTy
+                 let xobjWithTy = xobj { ty = Just t }
+                 return (name, Binder xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."

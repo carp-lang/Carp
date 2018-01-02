@@ -10,8 +10,10 @@ import Types
 import Util
 import Debug.Trace
 
+data SymbolMode = Symbol | LookupLocal | LookupGlobal deriving (Eq, Show)
+
 -- | The canonical Lisp object.
-data Obj = Sym SymPath
+data Obj = Sym SymPath SymbolMode
          | MultiSym String [SymPath] -- refering to multiple functions with the same name
          | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
          | Num Ty Double
@@ -108,16 +110,16 @@ data XObj = XObj { obj :: Obj
                  } deriving (Show, Eq)
 
 getBinderDescription :: XObj -> String
-getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _) _ _ : _)) _ _) = "defn"
-getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _) _ _ : _)) _ _) = "def"
-getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _) _ _ : _)) _ _) = "macro"
-getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "template"
-getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "instantiate"
-getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "alias"
-getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _) _ _ : _)) _ _) = "external"
-getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _) _ _ : _)) _ _) = "external-type"
-getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "deftype"
-getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
+getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
+getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
+getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "template"
+getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "instantiate"
+getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
+getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
+getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
+getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
+getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
 getBinderDescription _ = "?"
 
 getName :: XObj -> String
@@ -125,25 +127,25 @@ getName xobj = show (getPath xobj)
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
-getPath (XObj (Lst (XObj Defn _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj External _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path) _ _ : _)) _ _) = path
-getPath (XObj (Sym path) _ _) = path
+getPath (XObj (Lst (XObj Defn _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj External _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
 -- | Changes the second form (where the name of definitions are stored) in a list of XObj:s.
 setPath :: XObj -> SymPath -> XObj
-setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _) si st : rest)) i t) newPath =
-  XObj (Lst (defn : XObj (Sym newPath) si st : rest)) i t
-setPath (XObj (Lst [extr@(XObj External _ _), XObj (Sym _) si st]) i t) newPath =
-  XObj (Lst [extr, XObj (Sym newPath) si st]) i t
+setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
+  XObj (Lst (defn : XObj (Sym newPath Symbol) si st : rest)) i t
+setPath (XObj (Lst [extr@(XObj External _ _), XObj (Sym _ _) si st]) i t) newPath =
+  XObj (Lst [extr, XObj (Sym newPath Symbol) si st]) i t
 setPath x _ =
   error ("Can't set path on " ++ show x)
 
@@ -162,7 +164,7 @@ pretty = visit 0
             Num _ _ -> error "Invalid number type."
             Str str -> show str
             Chr c -> '\\' : c : ""
-            Sym path -> show path
+            Sym path mode -> show path ++ "(" ++ show mode ++ ")"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> "(InterfaceSym " ++ name ++ ")"
             Bol b -> if b then "true" else "false"
@@ -236,7 +238,7 @@ showBinderIndented indent (name, Binder xobj) =
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _) _ _ : _)) _ _)) =
+scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
@@ -254,7 +256,7 @@ scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
 scoreBinder _ x = error ("Can't score: " ++ show x)
 
 dependencyDepthOfTypedef :: TypeEnv -> XObj -> Int
-dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName)) _ _ : rest)) _ _) =
+dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) =
   case concatMap expandCase rest of
     [] -> 0
     xs -> maximum xs
@@ -292,7 +294,7 @@ depthOfType typeEnv selfName = visitType
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
 register name t = (name, Binder (XObj (Lst [XObj External Nothing Nothing,
-                                            XObj (Sym (SymPath [] name)) Nothing Nothing])
+                                            XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
                                  (Just dummyInfo) (Just t)))
 
 data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
@@ -487,9 +489,9 @@ getEnv env (p:ps) = case Map.lookup p (envBindings env) of
 -- | Example: (defn foo () 123) => (defn GreatModule.foo () 123)
 setFullyQualifiedDefn :: XObj -> SymPath -> XObj
 setFullyQualifiedDefn (XObj (Lst [defn, XObj _ symi symt, args, body]) i t) newPath =
-  XObj (Lst [defn, XObj (Sym newPath) symi symt, args, body]) i t
+  XObj (Lst [defn, XObj (Sym newPath Symbol) symi symt, args, body]) i t
 setFullyQualifiedDefn (XObj (Lst [def, XObj _ symi symt, expr]) i t) newPath =
-  XObj (Lst [def, XObj (Sym newPath) symi symt, expr]) i t
+  XObj (Lst [def, XObj (Sym newPath Symbol) symi symt, expr]) i t
 setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 
 -- | Changes all symbols EXCEPT bound vars (defn names, variable names, etc) to their fully qualified paths.
@@ -497,7 +499,7 @@ setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 -- | This function does NOT go into function-body scope environments and the like.
 setFullyQualifiedSymbols :: TypeEnv -> Env -> XObj -> XObj
 setFullyQualifiedSymbols typeEnv env (XObj (Lst [defn@(XObj Defn _ _),
-                                                 sym@(XObj (Sym (SymPath _ functionName)) _ _),
+                                                 sym@(XObj (Sym (SymPath _ functionName) _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])
                                       i t) =
@@ -505,7 +507,7 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [defn@(XObj Defn _ _),
   -- Note: This inner env is ephemeral since it is not stored in a module or global scope.
   let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
       envWithSelf = extendEnv functionEnv functionName sym
-      envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName)) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
+      envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
   let value' = setFullyQualifiedSymbols typeEnv env value
@@ -516,7 +518,7 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr])
 setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
   if even (length bindings)
   then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
-           envWithBindings = foldl' (\e (binderSym@(XObj (Sym (SymPath _ binderName)) _ _), _) ->
+           envWithBindings = foldl' (\e (binderSym@(XObj (Sym (SymPath _ binderName) _) _ _), _) ->
                                        extendEnv e binderName binderSym)
                                     innerEnv
                                     (pairwise bindings)
@@ -525,14 +527,14 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(X
            newBody = setFullyQualifiedSymbols typeEnv envWithBindings body
        in  XObj (Lst [letExpr, newBinders, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [XObj With _ _, XObj (Sym path) _ _, expression]) _ _) =
+setFullyQualifiedSymbols typeEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
   in  setFullyQualifiedSymbols typeEnv env' expression
 setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
   let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path) i t) =
+setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
   case path of
     -- Unqualified:
     SymPath [] name ->
@@ -558,12 +560,14 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path) i t) =
     doesNotBelongToAnInterface =
       case multiLookupQualified path env of
           [] -> xobj -- Nothing found, leave the symbol as is
-          [(_, Binder foundOne)] ->
-            XObj (Sym (getPath foundOne)) i t
+          [(e, Binder foundOne)] ->
+            if envIsExternal e
+            then XObj (Sym (getPath foundOne) LookupGlobal) i t
+            else XObj (Sym (getPath foundOne) LookupLocal) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:
-              (_, Binder local) : _ -> XObj (Sym (getPath local)) i t
+              (_, Binder local) : _ -> XObj (Sym (getPath local) LookupLocal) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
                 case path of
@@ -572,7 +576,7 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path) i t) =
                     XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
                   pathWithQualifiers ->
                     -- The symbol IS qualified but can't be found, should produce an error later during compilation.
-                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers) i t)
+                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers LookupGlobal) i t)
 setFullyQualifiedSymbols typeEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv env) array
   in  XObj (Arr array') i t
@@ -639,31 +643,31 @@ instance Show Includer where
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
-xobjToTy (XObj (Sym (SymPath _ "Int")) _ _) = Just IntTy
-xobjToTy (XObj (Sym (SymPath _ "Float")) _ _) = Just FloatTy
-xobjToTy (XObj (Sym (SymPath _ "Double")) _ _) = Just DoubleTy
-xobjToTy (XObj (Sym (SymPath _ "Long")) _ _) = Just LongTy
-xobjToTy (XObj (Sym (SymPath _ "String")) _ _) = Just StringTy
-xobjToTy (XObj (Sym (SymPath _ "Char")) _ _) = Just CharTy
-xobjToTy (XObj (Sym (SymPath _ "Bool")) _ _) = Just BoolTy
-xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_))) _ _) | isLower firstLetter = Just (VarTy s)
+xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
+xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
+xobjToTy (XObj (Sym (SymPath _ "Double") _) _ _) = Just DoubleTy
+xobjToTy (XObj (Sym (SymPath _ "Long") _) _ _) = Just LongTy
+xobjToTy (XObj (Sym (SymPath _ "String") _) _ _) = Just StringTy
+xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
+xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
+xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)
                                                         | otherwise = Just (StructTy s [])
-xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr")) _ _, innerTy]) _ _) =
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (PointerTy okInnerTy)
-xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr")) _ _ : _)) _ _) =
+xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
-xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref")) _ _, innerTy]) _ _) =
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
 xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '&'
   do okInnerTy <- xobjToTy innerTy
      return (RefTy okInnerTy)
-xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref")) _ _ : _)) _ _) =
+xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
-xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ")) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
-  xobjToTy (XObj (Lst [XObj (Sym (SymPath path "Fn")) fi ft, XObj (Arr argTys) ai at, retTy]) i t)
-xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn")) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
+xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
+  xobjToTy (XObj (Lst [XObj (Sym (SymPath path "Fn") Symbol) fi ft, XObj (Arr argTys) ai at, retTy]) i t)
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
      return (FuncTy okArgTys okRetTy)
@@ -739,14 +743,14 @@ instance Show Token where
 
 instantiateTemplate :: SymPath -> Ty -> Template -> (XObj, [XObj])
 instantiateTemplate path actualType template =
-    let defLst = [XObj (Instantiate template) Nothing Nothing, XObj (Sym path) Nothing Nothing]
+    let defLst = [XObj (Instantiate template) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
         deps = templateDependencies template actualType
     in  (XObj (Lst defLst) (Just (Info (-1) (-1) (show path ++ " template") Set.empty (-1))) (Just actualType), deps)
 
 -- | Type aliases are used to create C-typedefs when those are needed.
 defineTypeAlias :: String -> Ty -> XObj
 defineTypeAlias name t = XObj (Lst [XObj (Defalias t) Nothing Nothing
-                                   ,XObj (Sym (SymPath [] name)) Nothing Nothing
+                                   ,XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
                                    ]) (Just dummyInfo) (Just TypeTy)
 
 defineFunctionTypeAlias :: Ty -> XObj
@@ -759,7 +763,7 @@ defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
 defineInterface name t paths info =
   XObj (Lst [XObj (Interface t paths) Nothing Nothing
-            ,XObj (Sym (SymPath [] name)) Nothing Nothing
+            ,XObj (Sym (SymPath [] name) Symbol) Nothing Nothing
             ])
   info (Just InterfaceTy)
 

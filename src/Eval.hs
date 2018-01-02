@@ -33,10 +33,10 @@ eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj =
   case obj xobj of
   --case obj (trace ("\nEval " ++ pretty xobj ++ ", obj: " ++ show (obj xobj)) xobj) of
-    Lst _ -> evalList xobj
-    Arr _ -> evalArray xobj
-    Sym _ -> evalSymbol xobj
-    _     -> return (Right xobj)
+    Lst _   -> evalList xobj
+    Arr _   -> evalArray xobj
+    Sym _ _ -> evalSymbol xobj
+    _       -> return (Right xobj)
 
   where
     evalList :: XObj -> StateT Context IO (Either EvalError XObj)
@@ -44,7 +44,7 @@ eval env xobj =
       case xobjs of
         [] ->
           return (Right xobj)
-        [XObj (Sym (SymPath [] "quote")) _ _, target] ->
+        [XObj (Sym (SymPath [] "quote") _) _ _, target] ->
           return (Right target)
 
         XObj Do _ _ : rest ->
@@ -56,12 +56,12 @@ eval env xobj =
                    [] -> return (Left (EvalError "No forms in 'do' statement."))
                    _ -> return (Right (last ok))
 
-        XObj (Sym (SymPath [] "list")) _ _ : rest ->
+        XObj (Sym (SymPath [] "list") _) _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              return $ do okList <- evaledList
                          Right (XObj (Lst okList) i t)
 
-        XObj (Sym (SymPath [] "array")) _ _ : rest ->
+        XObj (Sym (SymPath [] "array") _) _ _ : rest ->
           do evaledArray <- fmap sequence (mapM (eval env) rest)
              return $ do okEvaledArray <- evaledArray
                          Right (XObj (Arr okEvaledArray) i t)
@@ -69,7 +69,7 @@ eval env xobj =
         -- and, or, and not are defined here because they are expected to
         -- shortcircuit and because they would otherwise clash with the regular
         -- functions
-        [XObj (Sym (SymPath [] "and")) _ _, a, b] ->
+        [XObj (Sym (SymPath [] "and") _) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
@@ -86,7 +86,7 @@ eval env xobj =
                            _ ->
                              Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
-        [XObj (Sym (SymPath [] "or")) _ _, a, b] ->
+        [XObj (Sym (SymPath [] "or") _) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
@@ -103,7 +103,7 @@ eval env xobj =
                            _ ->
                              Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
-        [XObj (Sym (SymPath [] "not")) _ _, a] ->
+        [XObj (Sym (SymPath [] "not") _) _ _, a] ->
           do evaledA <- eval env a
              return $ do okA <- evaledA
                          case okA of
@@ -146,7 +146,7 @@ eval env xobj =
                   case okBindings of
                     (Left err) -> return (Left err)
                     Right binds -> do
-                      let envWithBindings = foldl' (\e [(XObj (Sym (SymPath _ n)) _ _), x] -> extendEnv e n x)
+                      let envWithBindings = foldl' (\e [(XObj (Sym (SymPath _ n) _) _ _), x] -> extendEnv e n x)
                                     innerEnv
                                     binds
                       evaledBody <- eval envWithBindings body
@@ -154,55 +154,55 @@ eval env xobj =
                                   Right okBody
           else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
 
-        XObj (Sym (SymPath [] "register-type")) _ _ : XObj (Sym (SymPath _ typeName)) _ _ : rest ->
+        XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
-        XObj (Sym (SymPath _ "register-type")) _ _ : _ ->
+        XObj (Sym (SymPath _ "register-type") _) _ _ : _ ->
           return (Left (EvalError (show "Invalid ars to 'register-type': " ++ pretty xobj)))
 
-        XObj (Sym (SymPath [] "deftype")) _ _ : nameXObj : rest ->
+        XObj (Sym (SymPath [] "deftype") _) _ _ : nameXObj : rest ->
           specialCommandDeftype nameXObj rest
 
-        [XObj (Sym (SymPath [] "register")) _ _, XObj (Sym (SymPath _ name)) _ _, typeXObj] ->
+        [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj] ->
           specialCommandRegister name typeXObj
-        XObj (Sym (SymPath [] "register")) _ _ : _ ->
+        XObj (Sym (SymPath [] "register") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'register' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "definterface")) _ _, nameXObj@(XObj (Sym _) _ _), typeXObj] ->
+        [XObj (Sym (SymPath [] "definterface") _) _ _, nameXObj@(XObj (Sym _ _) _ _), typeXObj] ->
           specialCommandDefinterface nameXObj typeXObj
-        XObj (Sym (SymPath [] "definterface")) _ _ : _ ->
+        XObj (Sym (SymPath [] "definterface") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'definterface' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "defdynamic")) _ _, (XObj (Sym (SymPath [] name)) _ _), params, body] ->
+        [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefdynamic name params body
-        XObj (Sym (SymPath [] "defdynamic")) _ _ : _ ->
+        XObj (Sym (SymPath [] "defdynamic") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'defdynamic' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "defmacro")) _ _, (XObj (Sym (SymPath [] name)) _ _), params, body] ->
+        [XObj (Sym (SymPath [] "defmacro") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefmacro name params body
-        XObj (Sym (SymPath [] "defmacro")) _ _ : _ ->
+        XObj (Sym (SymPath [] "defmacro") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'defmacro' command: " ++ pretty xobj)))
 
-        XObj (Sym (SymPath [] "defmodule")) _ _ : (XObj (Sym (SymPath [] moduleName)) _ _) : innerExpressions ->
+        XObj (Sym (SymPath [] "defmodule") _) _ _ : (XObj (Sym (SymPath [] moduleName) _) _ _) : innerExpressions ->
           specialCommandDefmodule xobj moduleName innerExpressions
-        XObj (Sym (SymPath [] "defmodule")) _ _ : _ ->
+        XObj (Sym (SymPath [] "defmodule") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'defmodule' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "info")) _ _, target@(XObj (Sym path@(SymPath _ name)) _ _)] ->
+        [XObj (Sym (SymPath [] "info") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _)] ->
           specialCommandInfo target
-        XObj (Sym (SymPath [] "info")) _ _ : _ ->
+        XObj (Sym (SymPath [] "info") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'info' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "type")) _ _, target] ->
+        [XObj (Sym (SymPath [] "type") _) _ _, target] ->
           specialCommandType target
-        XObj (Sym (SymPath [] "type")) _ _ : _ ->
+        XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "use")) _ _, xobj@(XObj (Sym path) _ _)] ->
+        [XObj (Sym (SymPath [] "use") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
           specialCommandUse xobj path
-        XObj (Sym (SymPath [] "use")) _ _ : _ ->
+        XObj (Sym (SymPath [] "use") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'use' command: " ++ pretty xobj)))
 
-        XObj With _ _ : xobj@(XObj (Sym path) _ _) : forms ->
+        XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
           specialCommandWith xobj path forms
         XObj With _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'with.' command: " ++ pretty xobj)))
@@ -229,7 +229,7 @@ eval env xobj =
     evalList _ = error "Can't eval non-list in evalList."
 
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
-    evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name)) _ _) =
+    evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name) _) _ _) =
       case lookupInEnv (SymPath ("Dynamic" : pathStrings) name) env of -- A slight hack!
         Just (_, Binder found) -> return (Right found) -- use the found value
         Nothing ->
@@ -356,7 +356,7 @@ callCallbackWithArgs ctx callback args =
 -- | Convert an XObj to a ReplCommand so that it can be executed dynamically.
 -- | TODO: Does this function need the Context?
 objToCommand :: Context -> XObj -> IO ReplCommand
-objToCommand ctx (XObj (Sym (SymPath [] (':' : text))) _ _) =
+objToCommand ctx (XObj (Sym (SymPath [] (':' : text)) _) _ _) =
   return (ListOfCallbacks (mapMaybe charToCommand text))
 objToCommand ctx xobj =
   return (ReplEval xobj)
@@ -408,10 +408,10 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
 registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
 registerDefnInInterfaceIfNeeded ctx xobj =
   case xobj of
-    XObj (Lst [XObj Defn _ _, XObj (Sym path) _ _, _, _]) _ _ ->
+    XObj (Lst [XObj Defn _ _, XObj (Sym path _) _ _, _, _]) _ _ ->
       -- This is a function, does it belong to an interface?
       registerInInterfaceIfNeeded ctx path
-    XObj (Lst [XObj Def _ _, XObj (Sym path) _ _, _]) _ _ ->
+    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ _ ->
       -- Global variables can also be part of an interface
       registerInInterfaceIfNeeded ctx path
     _ ->
@@ -465,7 +465,7 @@ specialCommandRegisterType typeName rest =
          typeEnv = contextTypeEnv ctx
          innerEnv = getEnv env pathStrings
          path = SymPath pathStrings typeName
-         typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path) Nothing Nothing]) Nothing (Just TypeTy)
+         typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
          i = Nothing
      case rest of
        [] ->
@@ -484,9 +484,9 @@ specialCommandRegisterType typeName rest =
                    return dynamicNil
 
 specialCommandDeftype :: XObj -> [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) rest =
+specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) rest =
   deftypeInternal nameXObj typeName [] rest
-specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName)) _ _) : typeVariables)) _ _) rest =
+specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) : typeVariables)) _ _) rest =
   deftypeInternal nameXObj typeName typeVariables rest
 
 deftypeInternal :: XObj -> String -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
@@ -497,13 +497,13 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          typeEnv = contextTypeEnv ctx
          typeVariables = sequence (map xobjToTy typeVariableXObjs)
      case (nameXObj, typeVariables) of
-       (XObj (Sym (SymPath _ typeName)) i _, Just okTypeVariables) ->
+       (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
          case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i of
            Right (typeModuleName, typeModuleXObj, deps) ->
              let typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                    XObj (Lst (XObj (Typ (StructTy typeName okTypeVariables)) Nothing Nothing :
-                              XObj (Sym (SymPath pathStrings typeName)) Nothing Nothing :
+                              XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)
                  ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
@@ -529,7 +529,7 @@ specialCommandRegister name typeXObj =
      case xobjToTy typeXObj of
            Just t -> let path = SymPath pathStrings name
                          binding = XObj (Lst [XObj External Nothing Nothing,
-                                              XObj (Sym path) Nothing Nothing])
+                                              XObj (Sym path Symbol) Nothing Nothing])
                                    (info typeXObj) (Just t)
                          env' = envInsertAt env path binding
                          ctx' = registerInInterfaceIfNeeded ctx path
@@ -539,7 +539,7 @@ specialCommandRegister name typeXObj =
              return (Left (EvalError ("Can't understand type when registering '" ++ name ++ "'")))
 
 specialCommandDefinterface :: XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name)) _ _) typeXObj =
+specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) typeXObj =
   do ctx <- get
      let env = contextGlobalEnv ctx
          typeEnv = getTypeEnv (contextTypeEnv ctx)
@@ -567,7 +567,7 @@ specialCommandDefdynamic name params body =
      let pathStrings = contextPath ctx
          env = contextGlobalEnv ctx
          path = SymPath pathStrings name
-         dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
+         dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
      put (ctx { contextGlobalEnv = envInsertAt env path dynamic })
      return dynamicNil
 
@@ -577,7 +577,7 @@ specialCommandDefmacro name params body =
      let pathStrings = contextPath ctx
          env = contextGlobalEnv ctx
          path = SymPath pathStrings name
-         macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path) Nothing Nothing, params, body]) (info body) (Just MacroTy)
+         macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just MacroTy)
      put (ctx { contextGlobalEnv = envInsertAt env path macro })
      return dynamicNil
 
@@ -612,7 +612,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
        Right _ -> return dynamicNil
 
 specialCommandInfo :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandInfo target@(XObj (Sym path@(SymPath _ name)) _ _) =
+specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
   do ctx <- get
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
@@ -660,7 +660,7 @@ specialCommandType target =
   do ctx <- get
      let env = contextGlobalEnv ctx
      case target of
-           XObj (Sym path@(SymPath [] name)) _ _ ->
+           XObj (Sym path@(SymPath [] name) _) _ _ ->
              case lookupInEnv path env of
                Just (_, binder) ->
                  found binder
@@ -671,7 +671,7 @@ specialCommandType target =
                    binders ->
                      liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
                                  return dynamicNil
-           XObj (Sym qualifiedPath) _ _ ->
+           XObj (Sym qualifiedPath _) _ _ ->
              case lookupInEnv qualifiedPath env of
                Just (_, binder) ->
                  found binder

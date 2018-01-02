@@ -57,7 +57,7 @@ genConstraints root = fmap sort (gen root)
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "Condition in if-value")) (info xobj) (Just BoolTy)
+                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info xobj) (Just BoolTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
                                     sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
                                     Just t = ty xobj
@@ -72,8 +72,8 @@ genConstraints root = fmap sort (gen root)
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
-                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression")) (info xobj) (Just BoolTy)
-                                    expectedBody = XObj (Sym (SymPath [] "Body in while-expression")) (info xobj) (Just UnitTy)
+                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info xobj) (Just BoolTy)
+                                    expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (info xobj) (Just UnitTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
                                 return (conditionConstraint : wholeStatementConstraint :
@@ -88,7 +88,7 @@ genConstraints root = fmap sort (gen root)
                                           xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                           lastExprType <- toEither (ty lastExpr) (ExpressionMissingType xobj)
                                           let retConstraint = Constraint xobjType lastExprType xobj lastExpr OrdDoReturn
-                                              must = XObj (Sym (SymPath [] "Statement in do-expression")) (info xobj) (Just UnitTy)
+                                              must = XObj (Sym (SymPath [] "Statement in do-expression") Symbol) (info xobj) (Just UnitTy)
                                               mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must OrdDoStatement)
                                               mkConstr _ = Nothing
                                               expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
@@ -132,7 +132,7 @@ genConstraints root = fmap sort (gen root)
                                       Left (WrongArgCount func)
                                     else
                                       let expected t n =
-                                            XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")))
+                                            XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")) Symbol)
                                             (info func) (Just t)
                                           argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) OrdFuncAppArg)
                                                                     (map forceTy args)
@@ -144,7 +144,7 @@ genConstraints root = fmap sort (gen root)
                                       in  return (retConstraint : argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
-                                        expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'"))) (info func) Nothing
+                                        expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : insideArgsConstraints)
                                   _ -> Left (NotAFunction func)

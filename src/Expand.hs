@@ -29,7 +29,7 @@ expand eval env xobj =
   --case obj (trace ("Expand: " ++ pretty xobj) xobj) of
     Lst _ -> expandList xobj
     Arr _ -> expandArray xobj
-    Sym _ -> expandSymbol xobj
+    Sym _ _ -> expandSymbol xobj
     _     -> return (Right xobj)
 
   where
@@ -90,7 +90,7 @@ expand eval env xobj =
           do expandedExpressions <- mapM (expand eval env) expressions
              return $ do okExpressions <- sequence expandedExpressions
                          Right (XObj (Lst (doExpr : okExpressions)) i t)
-        [withExpr@(XObj With _ _), pathExpr@(XObj (Sym path) _ _), expression] ->
+        [withExpr@(XObj With _ _), pathExpr@(XObj (Sym path _) _ _), expression] ->
           do expandedExpression <- expand eval env expression
              return $ do okExpression <- expandedExpression
                          Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t) -- Replace the with-expression with just the expression!
@@ -126,7 +126,7 @@ expand eval env xobj =
     expandArray _ = error "Can't expand non-array in expandArray."
 
     expandSymbol :: XObj -> StateT Context IO (Either a XObj)
-    expandSymbol (XObj (Sym path) _ _) =
+    expandSymbol (XObj (Sym path _) _ _) =
       case lookupInEnv path env of
         Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
