@@ -4,21 +4,18 @@
 (local-include "core.h")
 (project-set! "echoCompilationCommand" "true")
 
-;; (defn better-repeat [n inpt]
-;;   (let [str @""]
-;;     (do
-;;       (for [i 0 n]
-;;         (set! &str (append str @inpt)))
-;;       str)))
+(defn better-repeat [n inpt]
+  (let [str @""]
+    (do
+      (for [i 0 n]
+        (set! &str (append str @inpt)))
+      str)))
 
-;; (defn main []
-;;   (do
-;;     (Debug.reset-memory-balance!)
-;;     ;;(set! &Debug.log-memory-balance true)
-;;     (let []
-;;       (IO.println &(better-repeat 5 "yeah")))
-;;     (IO.println (refstr (Debug.memory-balance)))
-;;     ))
+(defn main []
+  (do
+    (let []
+      (IO.println &(better-repeat 5 "yeah")))
+    (IO.println (refstr (Debug.memory-balance)))))
 
 ;;;; GENERIC TYPES
 ;; (deftype (Pair a b) [ma a mb b])

@@ -15,11 +15,11 @@ typedef char* string;
 
 #ifdef LOG_MEMORY
 long malloc_balance_counter = 0;
-bool Debug_log_MINUS_memory_MINUS_balance = false;
+bool log_memory_balance = false;
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
-    if(Debug_log_MINUS_memory_MINUS_balance) {
+    if(log_memory_balance) {
         printf("MALLOC: %p (%ld bytes)\n", ptr, size);
     }
     malloc_balance_counter++;
@@ -27,7 +27,7 @@ void *logged_malloc(size_t size) {
 }
 
 void logged_free(void *ptr) {
-    if(Debug_log_MINUS_memory_MINUS_balance) {
+    if(log_memory_balance) {
         printf("FREE: %p\n", ptr);
     }
     free(ptr);
@@ -38,6 +38,10 @@ void logged_free(void *ptr) {
     /* else if(malloc_balance_counter < 0) { */
     /*     printf("malloc is %ld, that is bad!\n", malloc_balance_counter); */
     /* } */
+}
+
+void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
+    log_memory_balance = value;
 }
 
 #define CARP_MALLOC(size) logged_malloc(size)
@@ -56,8 +60,6 @@ void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
 
-bool Debug_log_MINUS_memory_MINUS_balance;
-
 long Debug_memory_MINUS_balance() {
     printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled.\n");
     exit(1);
@@ -66,6 +68,11 @@ long Debug_memory_MINUS_balance() {
 
 void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
     printf("Error - calling 'reset-memory-balance!' without compiling with LOG_MEMORY enabled.\n");
+    exit(1);
+}
+
+void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
+    printf("Error - calling 'log-memory-balance!' without compiling with LOG_MEMORY enabled.\n");
     exit(1);
 }
 
