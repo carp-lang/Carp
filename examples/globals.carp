@@ -2,19 +2,23 @@
 (project-set! "printAST" "true")
 (Debug.sanitize-addresses)
 
-(def gs "I'm a global string...")
+(def s "I'm a global string...")
 
 (deftype A [x Int])
-(def ga (A.init 666))
+(def a (A.init 666))
 
 ;;(Debug.log-memory-balance! true)
 
 (defn main []
   (Debug.assert-balanced
    (do
-     (IO.println gs)
-     ;;(IO.println &(A.str &ga))
+     ;;(IO.println s)
+     (IO.println &(A.str &a))
+     ;;(set! &a (A.init 123))
+     ;;(IO.println &(A.str &a))
      )))
 
-(defn f []
-  @gs)
+;; (defn f [x]
+;;   (do
+;;     (IO.println &(Int.str x))
+;;     @gs))

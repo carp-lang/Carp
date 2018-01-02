@@ -164,7 +164,7 @@ pretty = visit 0
             Num _ _ -> error "Invalid number type."
             Str str -> show str
             Chr c -> '\\' : c : ""
-            Sym path mode -> show path ++ "(" ++ show mode ++ ")"
+            Sym path _ -> show path
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> "(InterfaceSym " ++ name ++ ")"
             Bol b -> if b then "true" else "false"

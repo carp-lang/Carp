@@ -113,7 +113,7 @@ manageMemory typeEnv globalEnv root =
                                   Nothing -> Set.empty
                      newVarInfo = setDeletersOnInfo varInfo deleters
                      newVariable =
-                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still allive
+                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
                        then variable { info = newVarInfo }
                        else variable -- don't add the new info = no deleter
 
@@ -280,7 +280,10 @@ manageMemory typeEnv globalEnv root =
         refCheck xobj =
           let Just i = info xobj
               Just t = ty xobj
-          in if isManaged typeEnv t && not (isExternalType typeEnv t)
+              isGlobalVariable = case xobj of
+                                   XObj (Sym _ LookupGlobal) _ _ -> True
+                                   _ -> False
+          in if not isGlobalVariable && isManaged typeEnv t && not (isExternalType typeEnv t)
              then do deleters <- get
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
