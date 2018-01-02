@@ -400,7 +400,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
     _ ->
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
-           putStrLn (toC annXObj)
+           putStrLn (toC All annXObj)
          let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
          return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
@@ -806,4 +806,4 @@ printC xobj =
     Left e ->
       putStrLnWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      putStrLnWithColor Green (toC xobj)
+      putStrLnWithColor Green (toC All xobj)

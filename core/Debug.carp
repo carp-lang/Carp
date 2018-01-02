@@ -13,6 +13,17 @@
           form
           '(Debug.log-memory-balance! false)))
 
+  (defmacro assert-balanced [form]
+    (list 'let '[balance (Debug.memory-balance)]
+          (list 'do
+                (list 'let []
+                      form)
+                '(if (= balance (Debug.memory-balance))
+                   ()
+                   (do (IO.println &(fmt "Invalid memory balance: %d" (Debug.memory-balance)))
+                       (System.exit 1)))
+                ())))
+
   (defn trace [x]
     (do
       (IO.println &(str &x))

@@ -1,0 +1,12 @@
+(load "Debug.carp")
+(Debug.sanitize-addresses)
+
+(def gs "I'm a global string...")
+
+(defn main []
+  (Debug.assert-balanced
+   (do
+     (Debug.log-memory-balance! true)
+     (IO.println gs)
+     (IO.println gs)
+     (IO.println gs))))

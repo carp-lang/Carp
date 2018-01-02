@@ -116,8 +116,13 @@ commandBuild args =
          execMode = contextExecMode ctx
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-                  c <- envToC env
-                  return ("//Types:\n" ++ typeDecl ++ "\n\n//Declarations:\n" ++ decl ++ "\n\n//Definitions:\n" ++ c)
+                  c <- envToC env Functions
+                  initGlobals <- fmap wrapInInitFunction (envToC env Globals)
+                  return ("//Types:\n" ++ typeDecl ++
+                          "\n\n//Declarations:\n" ++ decl ++
+                          "\n\n//Init globals:\n" ++ initGlobals ++
+                          "\n\n//Definitions:\n" ++ c
+                         )
      case src of
        Left err ->
          return (Left (EvalError ("[CODEGEN ERROR] " ++ show err)))
