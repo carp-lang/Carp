@@ -1,12 +1,20 @@
 (load "Debug.carp")
+(project-set! "printAST" "true")
 (Debug.sanitize-addresses)
 
 (def gs "I'm a global string...")
 
+(deftype A [x Int])
+(def ga (A.init 666))
+
+;;(Debug.log-memory-balance! true)
+
 (defn main []
   (Debug.assert-balanced
    (do
-     (Debug.log-memory-balance! true)
      (IO.println gs)
-     (IO.println gs)
-     (IO.println gs))))
+     ;;(IO.println &(A.str &ga))
+     )))
+
+(defn f []
+  @gs)
