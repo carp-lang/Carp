@@ -25,4 +25,7 @@
       (= @char-ref \8) 8
       (= @char-ref \9) 9
       -1))
+
+  (defn /= [a b]
+    (not (= a b)))
 )

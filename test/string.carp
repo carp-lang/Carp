@@ -55,5 +55,30 @@
                   &(chars "erik")
                   "chars works as expected"
     )
+    (assert-equal test
+                  "edan"
+                  &(substring "svedang" 2 6)
+                  "substring works as expected"
+    )
+    (assert-equal test
+                  "sved"
+                  &(prefix-string "svedang" 4)
+                  "prefix-string works as expected"
+    )
+    (assert-equal test
+                  "dang"
+                  &(suffix-string "svedang" 3)
+                  "suffix-string works as expected"
+    )
+    (assert-equal test
+                  true
+                  (ends-with? "heller" "ler")
+                  "ends-with? works as expected"
+    )
+    (assert-equal test
+                  true
+                  (starts-with? "heller" "hell")
+                  "starts-with? works as expected"
+    )
     (print-test-results test)
 ))
