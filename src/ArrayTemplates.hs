@@ -186,50 +186,6 @@ templateSort = defineTypeParameterizedTemplate templateCreator path t
                ,defineArrayTypeAlias arrayType] ++
                depsForDeleteFunc typeEnv env arrayType)
 
-templateIndexOf :: (String, Binder)
-templateIndexOf = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "index-of")
-        vt = VarTy "t"
-        t = (FuncTy [RefTy (StructTy "Array" [vt]), vt] IntTy)
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (const (toTemplate "int $NAME (Array *a, $t elem)"))
-            (const (toTemplate $ unlines ["$DECL {"
-                                         ,"    int i;"
-                                         ,"    for (i = 0; i < a->len; i++) {"
-                                         ,"      if ((($t*)a->data)[i] == elem) return i;"
-                                         ,"    }"
-                                         ,"    return -1;"
-                                         ,"}"]))
-            (\(FuncTy [(RefTy arrayType), _] _) ->
-               [defineArrayTypeAlias arrayType] ++
-               depsForDeleteFunc typeEnv env arrayType)
-
--- | TODO: Needs to call "depsForDeleteFunc typeEnv env arrayType"
-templateElemCount :: (String, Binder)
-templateElemCount = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "element-count")
-        vt = VarTy "t"
-        t = (FuncTy [RefTy (StructTy "Array" [vt]), vt] IntTy)
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (const (toTemplate "int $NAME (Array *a, $t elem)"))
-            (const (toTemplate $ unlines ["$DECL {"
-                        ,"    int i;"
-                        ,"    int count = 0;"
-                        ,"    for (i = 0; i < a->len; i++) {"
-                        ,"      if ((($t*)a->data)[i] == elem) count++;"
-                        ,"    }"
-                        ,"    return count;"
-                        ,"}"]))
-            (\(FuncTy [(RefTy arrayType), _] _) ->
-               [defineArrayTypeAlias arrayType] ++
-               depsForDeleteFunc typeEnv env arrayType)
-
 templateReplicate :: (String, Binder)
 templateReplicate = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "replicate"

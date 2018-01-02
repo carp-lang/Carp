@@ -131,8 +131,6 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateCopyArray
                                 , templateStrArray
                                 , templateSort
-                                , templateIndexOf
-                                , templateElemCount
                                 ]
 
 dynamicStringModule :: Env
