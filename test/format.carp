@@ -39,7 +39,7 @@
                   "format works on strings"
     )
     (assert-equal test
-                  "10 %% 12.0 yay"
+                  "10 % 12.0 yay"
                   &(fmt "%d %% %.1f %s" 10 12.0 "yay")
                   "fmt macro works"
     )
