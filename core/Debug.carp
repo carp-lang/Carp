@@ -5,6 +5,13 @@
 
   (register memory-balance (Fn [] Long))
   (register reset-memory-balance! (Fn [] ()))
+  (register log-memory-balance Bool)
+
+  (defmacro memory-logged [form]
+    (list 'do
+          '(set! &Debug.log-memory-balance true)
+          form
+          '(set! &Debug.log-memory-balance false)))
 
   (defn trace [x]
     (do

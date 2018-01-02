@@ -1,4 +1,4 @@
-;; (load "Debug.carp")
+(load "Debug.carp")
 ;; (Debug.sanitize-addresses)
 ;; (project-set! "printAST" "true")
 (local-include "core.h")
@@ -14,14 +14,16 @@
 ;; (defn main []
 ;;   (do
 ;;     (Debug.reset-memory-balance!)
+;;     ;;(set! &Debug.log-memory-balance true)
 ;;     (let []
 ;;       (IO.println &(better-repeat 5 "yeah")))
 ;;     (IO.println (refstr (Debug.memory-balance)))
 ;;     ))
 
-(deftype (Pair a b) [ma a mb b])
+;;;; GENERIC TYPES
+;; (deftype (Pair a b) [ma a mb b])
 
-(defn main []
-  (IO.println
-   &(str
-     &(Pair.init 5.6 true))))
+;; (defn main []
+;;   (IO.println
+;;    &(str
+;;      &(Pair.init 5.6 true))))

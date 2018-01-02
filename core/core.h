@@ -15,22 +15,21 @@ typedef char* string;
 
 #ifdef LOG_MEMORY
 long malloc_balance_counter = 0;
-
-//#define LOG_MEMORY_PRINT_EACH
+bool Debug_log_MINUS_memory_MINUS_balance = false;
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
-    #ifdef LOG_MEMORY_PRINT_EACH
-    printf("MALLOC: %p (%ld bytes)\n", ptr, size);
-    #endif
+    if(Debug_log_MINUS_memory_MINUS_balance) {
+        printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    }
     malloc_balance_counter++;
     return ptr;
 }
 
 void logged_free(void *ptr) {
-    #ifdef LOG_MEMORY_PRINT_EACH
-    printf("FREE: %p\n", ptr);
-    #endif
+    if(Debug_log_MINUS_memory_MINUS_balance) {
+        printf("FREE: %p\n", ptr);
+    }
     free(ptr);
     malloc_balance_counter--;
     /* if(malloc_balance_counter == 0) { */
@@ -56,6 +55,8 @@ void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
 
 #define CARP_MALLOC(size) malloc(size)
 #define CARP_FREE(ptr) free(ptr)
+
+bool Debug_log_MINUS_memory_MINUS_balance;
 
 long Debug_memory_MINUS_balance() {
     printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled.\n");
