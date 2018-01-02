@@ -1,3 +1,32 @@
+(defdynamic caar [pair] (car (car pair)))
+(defdynamic cadr [pair] (car (cdr pair)))
+(defdynamic cdar [pair] (cdr (car pair)))
+(defdynamic cddr [pair] (cdr (cdr pair)))
+(defdynamic caaar [pair] (car (car (car pair))))
+(defdynamic caadr [pair] (car (car (cdr pair))))
+(defdynamic cadar [pair] (car (cdr (car pair))))
+(defdynamic cdaar [pair] (cdr (car (car pair))))
+(defdynamic caddr [pair] (car (cdr (cdr pair))))
+(defdynamic cdadr [pair] (cdr (car (cdr pair))))
+(defdynamic cddar [pair] (cdr (cdr (car pair))))
+(defdynamic cdddr [pair] (cdr (cdr (cdr pair))))
+(defdynamic caaaar [pair] (car (car (car (car pair)))))
+(defdynamic caaadr [pair] (car (car (car (cdr pair)))))
+(defdynamic caadar [pair] (car (car (cdr (car pair)))))
+(defdynamic caaddr [pair] (car (car (cdr (cdr pair)))))
+(defdynamic cadaar [pair] (car (cdr (car (car pair)))))
+(defdynamic cadadr [pair] (car (cdr (car (cdr pair)))))
+(defdynamic caddar [pair] (car (cdr (cdr (car pair)))))
+(defdynamic cadddr [pair] (car (cdr (cdr (cdr pair)))))
+(defdynamic cdaaar [pair] (cdr (car (car (car pair)))))
+(defdynamic cdaadr [pair] (cdr (car (car (cdr pair)))))
+(defdynamic cdadar [pair] (cdr (car (cdr (car pair)))))
+(defdynamic cdaddr [pair] (cdr (car (cdr (cdr pair)))))
+(defdynamic cddaar [pair] (cdr (cdr (car (car pair)))))
+(defdynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
+(defdynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
+(defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+
 (defdynamic cond-internal [xs]
   (if (= (count xs) 0)
     (list)
@@ -8,8 +37,8 @@
         (list
          'if
          (car xs)
-         (car (cdr xs))
-         (cond-internal (cdr (cdr xs))))))))
+         (cadr xs)
+         (cond-internal (cddr xs)))))))
 
 (defmacro cond [:rest xs]
   (cond-internal xs))
@@ -17,10 +46,10 @@
 (defmacro for [settings body] ;; settings = variable, from, to, <step>
   (list
    'let
-   (array (car settings) (car (cdr settings)))
+   (array (car settings) (cadr settings))
    (list
     'while
-    (list 'Int.< (car settings) (car (cdr (cdr settings))))
+    (list 'Int.< (car settings) (caddr settings))
     (list 'do
           body
           (list
@@ -28,7 +57,7 @@
            (list 'Int.+
                  (car settings)
                  (if (= 4 (count settings)) ;; optional arg for step
-                   (car (cdr (cdr (cdr settings))))
+                   (cadddr settings)
                    1)))))))
 
 (defmacro refstr [x]
@@ -42,10 +71,10 @@
 (defdynamic thread-first-internal [xs]
   (if (= (count xs) 2)
     (if (list? (last xs))
-      (cons (car (car (cdr xs)))
+      (cons (caadr xs)
             (cons (car xs)
-                  (cdr (car (cdr xs)))))
-      (list (car (cdr xs)) (car xs)))
+                  (cdadr xs)))
+      (list (cadr xs) (car xs)))
     (if (list? (last xs))
       (append
        (list
@@ -58,7 +87,7 @@
   (if (= (count xs) 2)
     (if (list? (last xs))
       (cons-last (car xs) (last xs))
-      (list (car (cdr xs)) (car xs)))
+      (list (cadr xs) (car xs)))
     (if (list? (last xs))
       (cons-last (thread-last-internal (all-but-last xs)) (last xs))
       (list (last xs) (thread-last-internal (all-but-last xs))))))
@@ -71,6 +100,9 @@
 
 (defmacro swap! [x y]
   (list 'let (array 'tmp y) (list 'do (list 'set! &y x) (list 'set! &x 'tmp))))
+
+(defmacro update! [x f]
+  (list 'set! &x (list f x)))
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
@@ -125,8 +157,8 @@
         (car xs)
         (list 'if
          (list '= name (car xs))
-          (car (cdr xs))
-          (case-internal name (cdr (cdr xs))))))))
+          (cadr xs)
+          (case-internal name (cddr xs)))))))
 
 (defmacro case [name :rest forms]
   (case-internal name forms))

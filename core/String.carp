@@ -79,6 +79,21 @@
 
   (defn random-sized [n]
     (from-chars (Array.repeat n Char.random)))
+
+  (defn substring [s a b]
+    (from-chars (Array.subarray &(chars s) a b)))
+
+  (defn prefix-string [s a]
+    (from-chars (Array.prefix-array &(chars s) a)))
+
+  (defn suffix-string [s b]
+    (from-chars (Array.suffix-array &(chars s) b)))
+
+  (defn starts-with? [s sub]
+    (= sub &(prefix-string s (count sub))))
+
+  (defn ends-with? [s sub]
+    (= sub &(suffix-string s (count sub))))
 )
 
 (defmodule StringCopy
