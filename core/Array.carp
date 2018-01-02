@@ -72,4 +72,19 @@
           (aset! &a j tmp)
           (set! &j (Int.dec j))))
       a))
+
+  (defn index-of [a e]
+    (let-do [idx -1]
+      (for [i 0 (count a)]
+        (when (= @(nth a i) e)
+          (do
+            (set! &idx i)
+            (break))))
+      idx))
+
+  (defn element-count [a e]
+    (let-do [c 0]
+      (for [i 0 (count a)]
+        (when (= e @(nth a i)) (set! &c (Int.inc c))))
+      c))
 )
