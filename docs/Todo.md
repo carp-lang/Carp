@@ -13,7 +13,8 @@
 * [0.3] Allocate enough memory in the Array.str and struct.str functions.
 * [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
-* [0.3] When 'set!':ing a global variable, memory is leaked.
+* [0.3] When 'set!':ing a global variable, memory can leak.
+* [0.3] Sometimes the compiler emits nothing when building?
 
 ## Big Language Features
 * [0.4] Distinguish immutable/mutable refs?
@@ -27,6 +28,7 @@
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Implement '=' for refs to numeric types, that way Array.= can aviod copying each element before comparing them.
+* [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
