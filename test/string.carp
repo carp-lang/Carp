@@ -56,6 +56,11 @@
                   "chars works as expected"
     )
     (assert-equal test
+                  "erik"
+                  &(from-chars [\e \r \i \k])
+                  "from-chars works as expected"
+    )
+    (assert-equal test
                   "edan"
                   &(substring "svedang" 2 6)
                   "substring works as expected"
@@ -74,6 +79,11 @@
                   true
                   (ends-with? "heller" "ler")
                   "ends-with? works as expected"
+    )
+    (assert-equal test
+                  true
+                  (ends-with? "ller" "ler")
+                  "ends-with? works (regression test for #157)"
     )
     (assert-equal test
                   true

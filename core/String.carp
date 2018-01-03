@@ -93,7 +93,7 @@
     (= sub &(prefix-string s (count sub))))
 
   (defn ends-with? [s sub]
-    (= sub &(suffix-string s (count sub))))
+    (= sub &(suffix-string s (- (count s) (count sub)))))
 )
 
 (defmodule StringCopy
