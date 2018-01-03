@@ -25,6 +25,7 @@ type CommandCallback = [XObj] -> StateT Context IO (Either EvalError XObj)
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
   | CancelEvaluationException
+  | EvalException EvalError
   deriving (Eq, Show)
 
 instance Exception CarpException
