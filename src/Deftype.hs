@@ -154,6 +154,7 @@ templatesForSingleMember typeEnv env insidePath structTy@(StructTy typeName _) (
       fixedMemberTy = if isManaged typeEnv t then RefTy t else t
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
+     ,instanceBinderWithDeps (SymPath insidePath ("set!-" ++ memberName)) (FuncTy [RefTy (p), t] UnitTy) (templateSetterRef typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
                                                             (FuncTy [p, FuncTy [t] t] p)
                                                             (templateUpdater (mangle memberName))]
@@ -305,6 +306,20 @@ templateSetter typeEnv env memberName memberTy =
     (\_ -> if isManaged typeEnv memberTy
            then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
            else [])
+
+-- | The template for setters of a deftype.
+templateSetterRef :: TypeEnv -> Env -> String -> Ty -> Template
+templateSetterRef typeEnv env memberName memberTy =
+  Template
+    (FuncTy [RefTy (VarTy "p"), VarTy "t"] UnitTy)
+    (const (toTemplate "void $NAME($p* pRef, $t newValue)"))
+    (const (toTemplate (unlines ["$DECL {"
+                                ,"    pRef->" ++ memberName ++ " = newValue;"
+                                ,"}\n"])))
+    (\_ -> if isManaged typeEnv memberTy
+           then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+           else [])
+
 
 -- | The template for updater functions of a deftype
 -- | (allows changing a variable by passing an transformation function).

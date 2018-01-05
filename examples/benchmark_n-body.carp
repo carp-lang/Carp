@@ -52,15 +52,15 @@
 (defn reduce-pz [t b] (+ @t (* (Planet.vz b) (Planet.mass b))))
 
 (defn offset_momentum [bodies]
-  (let [b (first bodies)
+  (let [b (nth bodies 0)
         px (reduce reduce-px 0.0 bodies)
         py (reduce reduce-py 0.0 bodies)
         pz (reduce reduce-pz 0.0 bodies)]
-    (aset! bodies 0 
-      (=> b
-        (Planet.set-vx (/ (neg px) (solar_mass)))
-        (Planet.set-vy (/ (neg py) (solar_mass)))
-        (Planet.set-vz (/ (neg pz) (solar_mass)))))))
+    (do 
+      (Planet.set!-vx b (/ (neg px) (solar_mass)))
+      (Planet.set!-vy b (/ (neg py) (solar_mass)))
+      (Planet.set!-vz b (/ (neg pz) (solar_mass))))))
+
 
 
 (defn energy [bodies]
@@ -84,35 +84,30 @@
 
 (defn update-planet [i bodies dt]
   (let [b (nth bodies i)]
-    (aset! bodies i 
-      (=> @b
-        (Planet.set-x (+ (Planet.x b) (* dt (Planet.vx b))))
-        (Planet.set-y (+ (Planet.y b) (* dt (Planet.vy b))))
-        (Planet.set-z (+ (Planet.z b) (* dt (Planet.vz b))))))))
+    (do
+      (Planet.set!-x b (+ (Planet.x b) (* dt (Planet.vx b))))
+      (Planet.set!-y b (+ (Planet.y b) (* dt (Planet.vy b))))
+      (Planet.set!-z b (+ (Planet.z b) (* dt (Planet.vz b)))))))
 
 (defn advance [bodies dt]
   (do
     (for [i 0 (count bodies)]
       (let [b (nth bodies i)]
         (for [j (+ i 1) (count bodies)]
-          (let-do [b2 (nth bodies j)
+          (let [b2 (nth bodies j)
                 dx (- (Planet.x b) (Planet.x b2))
                 dy (- (Planet.y b) (Planet.y b2))
                 dz (- (Planet.z b) (Planet.z b2))
                 dist (sqrt (+ (ipow dx 2) (+ (ipow dy 2) (ipow dz 2))))
                 mag (/ dt (ipow dist 3))]
-
-
-            (aset! bodies i 
-              (=> @b
-                (Planet.set-vx (- (Planet.vx b) (* dx (* (Planet.mass b2) mag))))
-                (Planet.set-vy (- (Planet.vy b) (* dy (* (Planet.mass b2) mag))))
-                (Planet.set-vz (- (Planet.vz b) (* dz (* (Planet.mass b2) mag))))))
-            (aset! bodies j 
-              (=> @b2
-                (Planet.set-vx (+ (Planet.vx b2) (* dx (* (Planet.mass b) mag))))
-                (Planet.set-vy (+ (Planet.vy b2) (* dy (* (Planet.mass b) mag))))
-                (Planet.set-vz (+ (Planet.vz b2) (* dz (* (Planet.mass b) mag))))))))))
+            (do
+              (Planet.set!-vx b (- (Planet.vx b) (* dx (* (Planet.mass b2) mag))))
+              (Planet.set!-vy b (- (Planet.vy b) (* dy (* (Planet.mass b2) mag))))
+              (Planet.set!-vz b (- (Planet.vz b) (* dz (* (Planet.mass b2) mag))))
+                
+              (Planet.set!-vx b2 (+ (Planet.vx b2) (* dx (* (Planet.mass b) mag))))
+              (Planet.set!-vy b2 (+ (Planet.vy b2) (* dy (* (Planet.mass b) mag))))
+              (Planet.set!-vz b2 (+ (Planet.vz b2) (* dz (* (Planet.mass b) mag)))))))))
 
     (for [i 0 (count bodies)]
       (update-planet i bodies dt))))
