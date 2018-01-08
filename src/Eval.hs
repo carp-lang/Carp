@@ -264,7 +264,7 @@ apply env body params args =
       result = eval insideEnv'' body
   in result
 
--- | Is a string the ':rest' separator for arguments to dynamic functions / macros
+-- | Is a string the 'rest' separator for arguments to dynamic functions / macros
 isRestArgSeparator :: String -> Bool
 isRestArgSeparator ":rest" = True
 isRestArgSeparator _ = False
@@ -350,8 +350,10 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
 -- | Call a CommandCallback.
 callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
 callCallbackWithArgs ctx callback args =
-  do (_, newCtx) <- runStateT (callback args) ctx
-     return newCtx
+  do (ret, newCtx) <- runStateT (callback args) ctx
+     case ret of
+       Left err -> throw (EvalException err)
+       Right _ -> return newCtx
 
 -- | Convert an XObj to a ReplCommand so that it can be executed dynamically.
 -- | TODO: Does this function need the Context?
@@ -382,6 +384,9 @@ catcher ctx exception =
          stop returnCode
     CancelEvaluationException ->
       stop 1
+    EvalException evalError ->
+      do putStrLnWithColor Red (show evalError)
+         stop 1
   where stop returnCode =
           case contextExecMode ctx of
             Repl -> return ctx
