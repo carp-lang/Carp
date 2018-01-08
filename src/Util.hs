@@ -41,7 +41,7 @@ addIfNotPresent :: Eq a => a -> [a] -> [a]
 addIfNotPresent x xs =
   if x `elem` xs
   then xs
-  else x : xs
+  else xs ++ [x]
 
 remove :: (a -> Bool) -> [a] -> [a]
 remove f = filter (not . f)
