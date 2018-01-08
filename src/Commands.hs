@@ -496,31 +496,39 @@ commandStringCount [a] =
 commandPlus :: CommandCallback
 commandPlus [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      Right (XObj (Num IntTy (aNum + bNum)) (Just dummyInfo) (Just IntTy))
+    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+      if aty == bty
+      then Right (XObj (Num aty (aNum + bNum)) (Just dummyInfo) (Just aty))
+      else Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b))
 
 commandMinus :: CommandCallback
 commandMinus [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      Right (XObj (Num IntTy (aNum - bNum)) (Just dummyInfo) (Just IntTy))
+    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+      if aty == bty
+      then Right (XObj (Num aty (aNum - bNum)) (Just dummyInfo) (Just aty))
+      else Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b))
 
 commandDiv :: CommandCallback
 commandDiv [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      Right (XObj (Num IntTy (aNum / bNum)) (Just dummyInfo) (Just IntTy))
+    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+      if aty == bty
+      then Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty))
+      else Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b))
 
 commandMul :: CommandCallback
 commandMul [a, b] =
   return $ case (a, b) of
-    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      Right (XObj (Num IntTy (aNum * bNum)) (Just dummyInfo) (Just IntTy))
+    (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
+      if aty == bty
+      then Right (XObj (Num aty (aNum * bNum)) (Just dummyInfo) (Just aty))
+      else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))

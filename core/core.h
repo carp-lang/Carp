@@ -321,7 +321,8 @@ Array String_chars(string *s) {
 
 string String_from_MINUS_chars(Array a) {
     string s = CARP_MALLOC(a.len+1);
-    snprintf(s, a.len+1, "%s", a.data);
+    memmove(s, a.data, a.len);
+    s[a.len] = '\0';
     return s;
 }
 
