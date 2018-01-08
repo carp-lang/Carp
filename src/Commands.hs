@@ -66,7 +66,7 @@ commandProjectSet [XObj (Str key) _ _, value] =
        XObj (Str valueStr) _ _ -> do
           newCtx <- case key of
                       "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
-                      "libflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
+                      "libflag" -> return ctx { contextProj = proj { projectLibFlags = addIfNotPresent valueStr (projectLibFlags proj) } }
                       "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
                       "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
                       "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
