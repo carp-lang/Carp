@@ -66,7 +66,6 @@
 * [?] Emit #LINE macros in the generated C code
 
 ## Ugliness
-* [0.3] The 'range' function is fully generic (for all 'a') but only compiles when 'a' is numeric type. Make a check for this in the template. Or rewrite it as a normal function, that should solve it.
 * [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
 * [1.0] Remove unnecessary Array-functions and rewrite them in Carp?
 * [1.0] "Setting" of string literals? (let [x "a"] (set! x @"b"))
