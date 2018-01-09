@@ -105,6 +105,16 @@
       (aset! a i y)
       (aset! a j x)))
 
+  ; cannot use for, because we want also be able to go downwards
+  (defn range [start end step]
+    (let-do [x []
+             e start]
+      (while (/= e (+ end step))
+        (do
+          (set! &x (push-back x e))
+          (set! &e (+ e step))))
+      x))
+
   ;(defmacro push-back! [a e]
   ;  (list 'set! a (list 'Array.push-back (list 'copy a) e)))
 )
