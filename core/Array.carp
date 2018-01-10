@@ -108,8 +108,9 @@
   ; cannot use for, because we want also be able to go downwards
   (defn range [start end step]
     (let-do [x []
-             e start]
-      (while (/= e (+ end step))
+             e start
+             op (if (< start end) < >)]
+      (while (op e (+ end step))
         (do
           (set! &x (push-back x e))
           (set! &e (+ e step))))
