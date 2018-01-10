@@ -109,8 +109,8 @@
   (defn range [start end step]
     (let-do [x []
              e start
-             op (if (< start end) < >)]
-      (while (op e (+ end step))
+             op (if (< start end) <= >=)]
+      (while (op e end)
         (do
           (set! &x (push-back x e))
           (set! &e (+ e step))))
