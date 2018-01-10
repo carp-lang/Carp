@@ -120,7 +120,6 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateCopyingMap
                                 , templateEMap
                                 , templateFilter
-                                , templateRange
                                 , templateRaw
                                 , templateAset
                                 , templateAsetBang

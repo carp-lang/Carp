@@ -296,31 +296,6 @@ templateCount = defineTypeParameterizedTemplate templateCreator path t
                [defineArrayTypeAlias arrayType] ++
               depsForDeleteFunc typeEnv env arrayType)
 
-templateRange :: (String, Binder)
-templateRange = defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath ["Array"] "range"
-        t = FuncTy [VarTy "t", VarTy "t", VarTy "t"] (StructTy "Array" [VarTy "t"])
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (const (toTemplate "Array $NAME ($t start, $t end, $t step)"))
-            (const (toTemplate (unlines [  "$DECL { "
-                                        , "    if(start < end) { assert(step > 0); }"
-                                        , "    else { assert(step < 0); }"
-                                        , "    int length = 1 + abs((int)((end - start) / step));"
-                                        , "    Array a = { .len = length, .data = CARP_MALLOC(sizeof($t) * length) };"
-                                        , "    for(int i = 0; i < length; i++) {"
-                                        , "        (($t*)a.data)[i] = start + ($t)i * step;"
-                                        , "    }"
-                                        , "    return a;"
-                                        , "}"
-                                        ])))
-            (\(FuncTy [insideType, _, _] arrayType) ->
-               defineArrayTypeAlias arrayType :
-               depsForDeleteFunc typeEnv env arrayType ++
-               depsForCopyFunc typeEnv env insideType)
-
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
   where templateCreator = TemplateCreator $
