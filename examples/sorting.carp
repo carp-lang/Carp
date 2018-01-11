@@ -1,0 +1,25 @@
+(use Array)
+
+(deftype Age [x Int])
+
+(defmodule Age
+  (defn = [a b]
+    (Int.= (Age.x a) (Age.x b)))
+  (defn > [a b]
+    (Int.> (Age.x a) (Age.x b))))
+
+(defn cmp [a b]
+  (if (= @a @b)
+    0
+    (if (> @a @b) 1 -1)))
+
+(defn cmp2 [a b]
+  (if (= a b)
+    0
+    (if (> a b) 1 -1)))
+
+(defn main []
+  (let-do [ints (sort &[10 3 75 40] cmp)
+           ages (sort &[(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)] cmp2)]
+    (IO.println &(Array.str ints))
+    (IO.println &(Array.str ages))))
