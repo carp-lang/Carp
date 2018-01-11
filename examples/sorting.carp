@@ -8,18 +8,24 @@
   (defn > [a b]
     (Int.> (Age.x a) (Age.x b))))
 
-(defn cmp [a b]
-  (if (= @a @b)
-    0
-    (if (> @a @b) 1 -1)))
+;; (defn cmp [a b]
+;;   (if (= @a @b)
+;;     0
+;;     (if (> @a @b) 1 -1)))
 
-(defn cmp2 [a b]
+(defmodule IntRef
+  (defn = [a b]
+    (Int.= @a @b))
+  (defn > [a b]
+    (Int.> @a @b)))
+
+(defn cmp [a b]
   (if (= a b)
     0
     (if (> a b) 1 -1)))
 
 (defn main []
   (let-do [ints (sort &[10 3 75 40] cmp)
-           ages (sort &[(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)] cmp2)]
+           ages (sort &[(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)] cmp)]
     (IO.println &(Array.str ints))
     (IO.println &(Array.str ages))))
