@@ -32,3 +32,16 @@
 (defn main []
   (let [strings (faulty-.repeat 20 "x")]
     (IO.println &strings)))
+
+;; BUG E
+;; Fails to find the correct Array.str when calling (println* &ints)
+;; (use Array)
+
+;; (deftype Age [x Int])
+
+;; (defn main []
+;;   (let-do [ints [10 3 75 40]
+;;            ages [(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)]]
+;;     (println* &ints) ;; if this line is removed it works
+;;     (println* &ages)
+;;     ))

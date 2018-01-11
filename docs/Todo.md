@@ -8,13 +8,12 @@
 ## Critical Bugs
 * [0.3] Need to refactor the sorting of bindings! Hacked it for now with Obj.hs:277 "visitType (Just _) = 50"
 * [0.3] When referring to nonexisting type in 'the' form, the compiler barfs.
-* [0.3] Can't define globals with heap allocated types (String, structs, etc.)
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
 * [0.3] Allocate enough memory in the Array.str and struct.str functions.
 * [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
-* [0.3] Sometimes the compiler emits nothing when building?
+* [0.3] Fails to find the correct Array.str when calling println* in a do-form. See bug E in bugs.carp
 
 ## Big Language Features
 * [0.4] Distinguish immutable/mutable refs?
