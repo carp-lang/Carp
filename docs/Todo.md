@@ -29,6 +29,7 @@
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Implement '=' for refs to numeric types, that way Array.= can aviod copying each element before comparing them.
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
+* [0.3] Should be possible to write a ref to a number literal, i.e. &100.
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)

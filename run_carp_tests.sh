@@ -10,6 +10,7 @@ carp ./examples/basics.carp -x;
 carp ./examples/functor.carp -x;
 carp ./examples/external_struct.carp -x;
 carp ./examples/updating.carp -x;
+carp ./examples/sorting.carp -x;
 carp ./examples/globals.carp -x --log-memory;
 
 # Actual tests (using the test suit)
