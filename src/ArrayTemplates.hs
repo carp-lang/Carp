@@ -169,19 +169,19 @@ templateNth =
 
 templateSort :: (String, Binder)
 templateSort = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "sort")
+  where path = (SymPath ["Array"] "sort-with")
         vt = VarTy "t"
-        t = (FuncTy [RefTy (StructTy "Array" [vt]), FuncTy [RefTy vt, RefTy vt] IntTy] (RefTy (StructTy "Array" [vt])))
+        t = (FuncTy [StructTy "Array" [vt], FuncTy [RefTy vt, RefTy vt] IntTy] (StructTy "Array" [vt]))
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
-            (const (toTemplate "Array* $NAME (Array *a, $(Fn [(Ref t), (Ref t)] Int) f)"))
+            (const (toTemplate "Array $NAME (Array a, $(Fn [(Ref t), (Ref t)] Int) f)"))
             (const (toTemplate $ unlines ["$DECL {"
-                                         ,"    qsort(a->data, a->len, sizeof($t), (int(*)(const void*, const void*))f);"
+                                         ,"    qsort(a.data, a.len, sizeof($t), (int(*)(const void*, const void*))f);"
                                          ,"    return a;"
                                          ,"}"]))
-            (\(FuncTy [(RefTy arrayType), sortType] _) ->
+            (\(FuncTy [arrayType, sortType] _) ->
                [defineFunctionTypeAlias sortType
                ,defineArrayTypeAlias arrayType] ++
                depsForDeleteFunc typeEnv env arrayType)

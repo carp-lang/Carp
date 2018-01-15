@@ -61,5 +61,15 @@
 
   (defn add-ref [x y]
     (+ @x @y))
+)
 
+(defmodule FloatRef
+  (defn = [a b]
+    (Float.= @a @b))
+
+  (defn < [a b]
+    (Float.< @a @b))
+
+  (defn > [a b]
+    (Float.> @a @b))
 )

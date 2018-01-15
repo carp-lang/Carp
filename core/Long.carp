@@ -40,3 +40,14 @@
   (defn even? [a] (= (mod a 2l) 0l))
   (defn odd? [a] (not (even? a)))
 )
+
+(defmodule LongRef
+  (defn = [a b]
+    (Long.= @a @b))
+
+  (defn < [a b]
+    (Long.< @a @b))
+
+  (defn > [a b]
+    (Long.> @a @b))
+)

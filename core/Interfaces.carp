@@ -40,3 +40,8 @@
 (defn >= [a b]
   (or (> a b)
       (= a b)))
+
+(defn cmp [a b]
+  (if (= a b)
+    0
+    (if (< a b) -1 1)))

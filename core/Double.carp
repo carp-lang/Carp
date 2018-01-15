@@ -62,3 +62,14 @@
   (defn add-ref [x y]
     (+ @x @y))
 )
+
+(defmodule DoubleRef
+  (defn = [a b]
+    (Double.= @a @b))
+
+  (defn < [a b]
+    (Double.< @a @b))
+
+  (defn > [a b]
+    (Double.> @a @b))
+)

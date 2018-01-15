@@ -17,9 +17,6 @@
     iqr Double
   ])
 
-  (defn sorter [a b]
-    (to-int (- @a @b)))
-
   (defn sum [data]
     (if (= 0 (Array.count data))
       0.0
@@ -76,7 +73,7 @@
 
   (defn median [data]
     (let [n (Array.count data)
-          sorted (Array.copy (Array.sort data sorter))]
+          sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             (let [mid (/ n 2)] ; else
@@ -86,21 +83,21 @@
 
   (defn low-median [data]
     (let [n (Array.count data)
-          sorted (Array.copy (Array.sort data sorter))]
+          sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             @(Array.nth data (dec (/ n 2)))))) ; else
 
   (defn high-median [data]
     (let [n (Array.count data)
-          sorted (Array.copy (Array.sort data sorter))]
+          sorted (Array.sort @data)]
       (if (= n 0)
         0.0
         @(Array.nth data (/ n 2)))))
 
   (defn grouped-median [data interval]
     (let [n (Array.count data)
-          sorted (Array.copy (Array.sort data sorter))]
+          sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= n 1) @(Array.nth data 0)
             (let [x @(Array.nth data (/ n 2)) ; else
@@ -159,13 +156,13 @@
         (Double.+ lo (Double.* d (Double.- hi lo))))))
 
   (defn quartiles [data]
-    (let [tmp (Array.sort data sorter)
+    (let [tmp (Array.sort @data)
           first 25.0
           second 50.0
           third 75.0
-          a (percentile-of-sorted tmp first)
-          b (percentile-of-sorted tmp second)
-          c (percentile-of-sorted tmp third)]
+          a (percentile-of-sorted &tmp first)
+          b (percentile-of-sorted &tmp second)
+          c (percentile-of-sorted &tmp third)]
       [a b c]))
 
   (defn iqr [data]
@@ -173,7 +170,7 @@
       (the Double (- @(Array.nth s 2) @(Array.nth s 0)))))
 
   (defn winsorize [samples pct]
-    (let [tmp (the (Ref (Array Double)) (Array.sort samples sorter))
+    (let [tmp &(Array.sort @samples)
           lo (Statistics.percentile-of-sorted tmp pct)
           hi (Statistics.percentile-of-sorted tmp (Double.- 100.0 pct))]
       (do

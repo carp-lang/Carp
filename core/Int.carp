@@ -41,5 +41,15 @@
 
   (defn add-ref [x y]
     (+ @x @y))
+)
 
+(defmodule IntRef
+  (defn = [a b]
+    (Int.= @a @b))
+
+  (defn < [a b]
+    (Int.< @a @b))
+
+  (defn > [a b]
+    (Int.> @a @b))
 )
