@@ -13,19 +13,13 @@ carp ./examples/updating.carp -x;
 carp ./examples/sorting.carp -x;
 carp ./examples/globals.carp -x --log-memory;
 
-# Actual tests (using the test suit)
+# Actual tests (using the test suite)
 carp ./test/memory.carp -x --log-memory;
-carp ./test/double_math.carp -b; ./out/a.out;
-carp ./test/float_math.carp -b; ./out/a.out;
-carp ./test/int_math.carp -b; ./out/a.out;
-carp ./test/long_math.carp -b; ./out/a.out;
-carp ./test/safe_artihmetic.carp -b; ./out/a.out;
-carp ./test/statistics.carp -b; ./out/a.out;
-carp ./test/vector2.carp -b; ./out/a.out;
-carp ./test/vector3.carp -b; ./out/a.out;
-carp ./test/vectorn.carp -b; ./out/a.out;
-carp ./test/control_flow.carp -b; ./out/a.out;
-carp ./test/macros.carp -b; ./out/a.out;
+for f in ./test/*.carp; do
+  if [ $f != "./test/memory.carp" ]; then
+    carp -x $f
+  fi
+done
 
 # Just make sure these compile
 carp ./examples/mutual_recursion.carp -b;
