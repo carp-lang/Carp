@@ -2,13 +2,11 @@
   (let [idx (String.index-of s \%)
         len (String.count s)]
     (if (= idx -1)
-      (if (< 0 (count args))
-        (macro-error "error in format string: too many arguments to format string")
-        (list 'copy s)) ; no more splits found, just return string
+      (list 'copy s) ; no more splits found, just return string
       (if (= \% (String.char-at s (inc idx))) ; this is an escaped %
         (list 'String.append
-              @"%"
-              (fmt-internal (String.substring s (+ idx 2) len)))
+              (list 'copy "%")
+              (fmt-internal (String.substring s (+ idx 2) len) args))
         (if (= 0 (count args)) ; we need to insert something, but have nothing
           (macro-error "error in format string: not enough arguments to format string")
           ; okay, this is the meat:
