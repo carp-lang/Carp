@@ -39,4 +39,7 @@
 
   (defn even? [a] (= (mod a 2l) 0l))
   (defn odd? [a] (not (even? a)))
+
+  (defn cmp [x y]
+    (if (= (the Long @x) @y) 0 (if (< @x @y) -1 1)))
 )

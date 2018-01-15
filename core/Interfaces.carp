@@ -26,6 +26,7 @@
 
 (definterface random (Fn [] a))
 (definterface random-between (Fn [a a] a))
+(definterface cmp (Fn [&a &a] Int))
 
 (definterface pi a)
 
