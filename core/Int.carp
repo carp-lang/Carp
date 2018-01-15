@@ -41,7 +41,15 @@
 
   (defn add-ref [x y]
     (+ @x @y))
+)
 
-  (defn cmp [x y]
-    (if (= (the Int @x) @y) 0 (if (< @x @y) -1 1)))
+(defmodule IntRef
+  (defn = [a b]
+    (Int.= @a @b))
+
+  (defn < [a b]
+    (Int.< @a @b))
+
+  (defn > [a b]
+    (Int.> @a @b))
 )

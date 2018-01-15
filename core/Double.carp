@@ -61,7 +61,15 @@
 
   (defn add-ref [x y]
     (+ @x @y))
+)
 
-  (defn cmp [x y]
-    (if (= (the Double @x) @y) 0 (if (< @x @y) -1 1)))
+(defmodule DoubleRef
+  (defn = [a b]
+    (Double.= @a @b))
+
+  (defn < [a b]
+    (Double.< @a @b))
+
+  (defn > [a b]
+    (Double.> @a @b))
 )
