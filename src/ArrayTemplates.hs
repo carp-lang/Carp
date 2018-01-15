@@ -169,7 +169,7 @@ templateNth =
 
 templateSort :: (String, Binder)
 templateSort = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "sort")
+  where path = (SymPath ["Array"] "sort-with")
         vt = VarTy "t"
         t = (FuncTy [StructTy "Array" [vt], FuncTy [RefTy vt, RefTy vt] IntTy] (StructTy "Array" [vt]))
         templateCreator = TemplateCreator $

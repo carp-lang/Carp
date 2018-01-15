@@ -118,4 +118,7 @@
 
   ;(defmacro push-back! [a e]
   ;  (list 'set! a (list 'Array.push-back (list 'copy a) e)))
+
+  (defn sort [a]
+    (sort-with a cmp))
 )
