@@ -285,7 +285,12 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
-                 appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
+                 if isNumberLiteral value
+                   then do let literal = freshVar i ++ "_lit";
+                               Just literalTy = ty value
+                           appendToSrc (addIndent indent ++ "static " ++ tyToC literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
+                           appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                   else appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
 
             -- Deftype
@@ -567,3 +572,7 @@ wrapInInitFunction src =
   "void carp_init_globals() {\n" ++
   src ++
   "}"
+
+isNumberLiteral :: XObj -> Bool
+isNumberLiteral (XObj (Num _ _) _ _) = True
+isNumberLiteral _ = False
