@@ -24,7 +24,7 @@
     (let [str @""]
       (do
         (for [i 0 n]
-          (set! &str (append @&str @inpt))) ;; More inefficient now, hopefully we can go back to efficient with a better 'set!' form.
+          (set! &str (append str @inpt)))
         str)))
 
   ;; A temporary version of this function, until we have some nicer way to write it
