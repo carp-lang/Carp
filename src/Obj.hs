@@ -245,7 +245,7 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) 
       in  (depthOfType typeEnv selfName (Just aliasedType), b)
     Typ (StructTy structName _) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef, b)
+        Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef + 1, b)
                                     in  --trace ("depth of " ++ name ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
