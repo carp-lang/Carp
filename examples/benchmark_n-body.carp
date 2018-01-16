@@ -34,7 +34,7 @@
 (defn solar_mass [] (* (* 4.0 pi) pi)) ;; I cannot #DEFINE, so solar_mass cannot be a `def`
 (def days_per_year 365.24)
 
-(deftype Planet 
+(deftype Planet
   [ x Double y Double z Double
     vx Double vy Double vz Double
     mass Double ])
@@ -42,7 +42,7 @@
 ; for eg. 1.03e-03
 (defn e [d exp]
   (* d (pow 10.0 (from-int exp))))
-        
+
 
 
 ; currying would make this a single line
@@ -56,10 +56,10 @@
         px (reduce reduce-px 0.0 bodies)
         py (reduce reduce-py 0.0 bodies)
         pz (reduce reduce-pz 0.0 bodies)]
-    (do 
-      (Planet.set!-vx b (/ (neg px) (solar_mass)))
-      (Planet.set!-vy b (/ (neg py) (solar_mass)))
-      (Planet.set!-vz b (/ (neg pz) (solar_mass))))))
+    (do
+      (Planet.set-vx! b (/ (neg px) (solar_mass)))
+      (Planet.set-vy! b (/ (neg py) (solar_mass)))
+      (Planet.set-vz! b (/ (neg pz) (solar_mass))))))
 
 
 
@@ -67,9 +67,9 @@
   (let-do [e 0.0]
     (for [i 0 (count bodies)]
       (let-do [b (nth bodies i)]
-          (set! &e (+ e (* 0.5 (* (Planet.mass b) 
-                                  (+ (ipow (Planet.vx b) 2) 
-                                     (+ (ipow (Planet.vy b) 2) 
+          (set! &e (+ e (* 0.5 (* (Planet.mass b)
+                                  (+ (ipow (Planet.vx b) 2)
+                                     (+ (ipow (Planet.vy b) 2)
                                         (ipow (Planet.vz b) 2)))))))
 
           (for [j (+ i 1) (count bodies)]
@@ -85,9 +85,9 @@
 (defn update-planet [i bodies dt]
   (let [b (nth bodies i)]
     (do
-      (Planet.set!-x b (+ (Planet.x b) (* dt (Planet.vx b))))
-      (Planet.set!-y b (+ (Planet.y b) (* dt (Planet.vy b))))
-      (Planet.set!-z b (+ (Planet.z b) (* dt (Planet.vz b)))))))
+      (Planet.set-x! b (+ (Planet.x b) (* dt (Planet.vx b))))
+      (Planet.set-y! b (+ (Planet.y b) (* dt (Planet.vy b))))
+      (Planet.set-z! b (+ (Planet.z b) (* dt (Planet.vz b)))))))
 
 (defn advance [bodies dt]
   (do
@@ -101,13 +101,13 @@
                 dist (sqrt (+ (ipow dx 2) (+ (ipow dy 2) (ipow dz 2))))
                 mag (/ dt (ipow dist 3))]
             (do
-              (Planet.set!-vx b (- (Planet.vx b) (* dx (* (Planet.mass b2) mag))))
-              (Planet.set!-vy b (- (Planet.vy b) (* dy (* (Planet.mass b2) mag))))
-              (Planet.set!-vz b (- (Planet.vz b) (* dz (* (Planet.mass b2) mag))))
-                
-              (Planet.set!-vx b2 (+ (Planet.vx b2) (* dx (* (Planet.mass b) mag))))
-              (Planet.set!-vy b2 (+ (Planet.vy b2) (* dy (* (Planet.mass b) mag))))
-              (Planet.set!-vz b2 (+ (Planet.vz b2) (* dz (* (Planet.mass b) mag)))))))))
+              (Planet.set-vx! b (- (Planet.vx b) (* dx (* (Planet.mass b2) mag))))
+              (Planet.set-vy! b (- (Planet.vy b) (* dy (* (Planet.mass b2) mag))))
+              (Planet.set-vz! b (- (Planet.vz b) (* dz (* (Planet.mass b2) mag))))
+
+              (Planet.set-vx! b2 (+ (Planet.vx b2) (* dx (* (Planet.mass b) mag))))
+              (Planet.set-vy! b2 (+ (Planet.vy b2) (* dy (* (Planet.mass b) mag))))
+              (Planet.set-vz! b2 (+ (Planet.vz b2) (* dz (* (Planet.mass b) mag)))))))))
 
     (for [i 0 (count bodies)]
       (update-planet i bodies dt))))
@@ -154,6 +154,6 @@
       (offset_momentum &bodies)
       (println &(str (energy &bodies))) ; printf %.9f
       (for [i 0 n]
-        (do 
+        (do
           (advance &bodies 0.01)))
       (println &(str (energy &bodies))))) ;
