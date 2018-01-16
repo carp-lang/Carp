@@ -27,15 +27,12 @@
 * [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
-* [0.3] Optimization: Implement '=' for refs to numeric types, that way Array.= can aviod copying each element before comparing them.
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
-* [0.3] Should be possible to write a ref to a number literal, i.e. &100.
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * [0.4] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
-* [0.4] Good string functions
 
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
