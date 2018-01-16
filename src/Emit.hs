@@ -285,7 +285,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
-                 if isNumberLiteral value
+                 if isNumericLiteral value
                    then do let literal = freshVar i ++ "_lit";
                                Just literalTy = ty value
                            appendToSrc (addIndent indent ++ "static " ++ tyToC literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
@@ -573,6 +573,8 @@ wrapInInitFunction src =
   src ++
   "}"
 
-isNumberLiteral :: XObj -> Bool
-isNumberLiteral (XObj (Num _ _) _ _) = True
-isNumberLiteral _ = False
+isNumericLiteral :: XObj -> Bool
+isNumericLiteral (XObj (Num _ _) _ _) = True
+isNumericLiteral (XObj (Bol _) _ _) = True
+isNumericLiteral (XObj (Chr _) _ _) = True
+isNumericLiteral _ = False
