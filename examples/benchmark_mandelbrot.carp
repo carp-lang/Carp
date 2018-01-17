@@ -16,19 +16,9 @@
 (register stdout FILE)
 (register putc (Fn [Int FILE] ()))
 
-(defdynamic string-append-impl [xs]
-  (if (= (count xs) 1)
-    (car xs)
-    (if (= (count xs) 2)
-      (list 'append (car xs) (car (cdr xs)))
-      (list 'append (car xs) (string-append-impl (cdr xs))))))
-
-(defmacro string-append [:rest xs]
-  (string-append-impl xs))
-
 (defn main []
   (do 
-    (print &(string-append @"P4\n" (str w) @" " (str h) @"\n"))
+    (print &(string-join @"P4\n" (str w) @" " (str h) @"\n"))
     (let [iter 50
           limit 2.0
           byte_acc 0
