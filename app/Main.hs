@@ -167,7 +167,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "build" 0 commandBuild
                     , addCommand "reload" 0 commandReload
                     , addCommand "env" 0 commandListBindings
-                    , addCommand "help" 1 commandHelp
+                    , addCommandConfigurable "help" Nothing commandHelp
                     , addCommand "project" 0 commandProject
                     , addCommand "load" 1 commandLoad
                     , addCommand "macro-log" 1 commandPrint

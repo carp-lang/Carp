@@ -45,16 +45,26 @@ falseXObj = XObj (Bol False) Nothing Nothing
 -- | Use this function to register commands in the environment.
 addCommand :: String -> Int -> CommandCallback -> (String, Binder)
 addCommand name arity callback =
+  addCommandConfigurable name (Just arity) callback
+
+addCommandConfigurable :: String -> Maybe Int -> CommandCallback -> (String, Binder)
+addCommandConfigurable name maybeArity callback =
   let path = SymPath [] name
-      cmd = XObj (Lst [XObj (Command (CommandFunction withArity)) (Just dummyInfo) Nothing
+      cmd = XObj (Lst [XObj (Command (CommandFunction f)) (Just dummyInfo) Nothing
                       ,XObj (Sym path Symbol) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder cmd)
-  where withArity args =
+  where f = case maybeArity of
+              Just arity -> withArity arity
+              Nothing -> withoutArity
+        withArity arity args =
           if length args == arity
             then callback args
             else return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args))))
+        withoutArity args =
+          callback args
+
 
 -- | Command for changing various project settings.
 commandProjectSet :: CommandCallback
