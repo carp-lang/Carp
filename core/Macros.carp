@@ -43,22 +43,28 @@
 (defmacro cond [:rest xs]
   (cond-internal xs))
 
-(defmacro for [settings body] ;; settings = variable, from, to, <step>
-  (list
-   'let
-   (array (car settings) (cadr settings))
-   (list
-    'while
-    (list 'Int.< (car settings) (caddr settings))
-    (list 'do
-          body
-          (list
-           'set! (list 'ref (car settings))
-           (list 'Int.+
-                 (car settings)
-                 (if (= 4 (count settings)) ;; optional arg for step
-                   (cadddr settings)
-                   1)))))))
+(defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
+  (if (> (count body) 1) 
+    (macro-error "Warning: the body of the 'for' loop can only contain one expression")
+    (list
+     'let
+     (array (car settings) (cadr settings))
+     (list
+      'while
+      (list 'Int.< (car settings) (caddr settings))
+      (list 'do
+            (if (= (count body) 0)
+              ()
+              (if (list? body)
+                (car body)
+                body))
+            (list
+             'set! (list 'ref (car settings))
+             (list 'Int.+
+                   (car settings)
+                   (if (= 4 (count settings)) ;; optional arg for step
+                     (cadddr settings)
+                     1))))))))
 
 (defmacro refstr [x]
   (list 'ref
