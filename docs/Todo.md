@@ -1,7 +1,7 @@
 # Todo
 
 ## Milestones
-* 0.3 - Hopefully done soon, fixing the most pressing issues.
+* 0.3 - Hopefully done "soon", fixing the most pressing issues.
 * 0.4 - A nice minimal version of the language. Should be possible to use for somewhat realistic projects.
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
@@ -25,6 +25,7 @@
 
 ## Smaller Language Features ("niceties")
 * [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
+* [0.3] Make the type of 'set!' be (set! a a) instead of (set! &a a).
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
@@ -72,6 +73,6 @@
 * How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
-* Macros in modules must be qualified right now, is that a good long-term solution?
+* Macros in modules must be qualified right now, is that a good long-term solution or should there be a 'use' for dynamic code?
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))?
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type?
