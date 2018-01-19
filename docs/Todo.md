@@ -24,6 +24,7 @@
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 ## Smaller Language Features ("niceties")
+* [0.3] Update the research document.
 * [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
 * [0.3] Make the type of 'set!' be (set! a a) instead of (set! &a a).
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
