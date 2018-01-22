@@ -213,7 +213,6 @@ tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 
 -- | The template for the 'str' function for a deftype.
--- | TODO: Handle all lengths of members, now the string can be at most 1024 characters long.
 templateStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
 templateStr typeEnv env t@(StructTy typeName _) members =
   Template
@@ -221,15 +220,17 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ unlines [ "$DECL {"
                                  , "  // convert members to string here:"
-                                 , "  string buffer = CARP_MALLOC(1024); // TODO: dynamic length"
-                                 , "  string bufferPtr = buffer;"
                                  , "  string temp = NULL;"
+                                 , "  int tempsize = 0;"
+                                 , calculateStructStrSize typeEnv env members structTy
+                                 , "  string buffer = CARP_MALLOC(size);"
+                                 , "  string bufferPtr = buffer;"
                                  , ""
-                                 , "  snprintf(bufferPtr, 1024, \"(%s \", \"" ++ tyToC structTy ++ "\");"
+                                 , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
                                  , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
                                  , joinWith "\n" (map (memberStr typeEnv env) members)
                                  , "  bufferPtr--;"
-                                 , "  snprintf(bufferPtr, 1024, \")\");"
+                                 , "  snprintf(bufferPtr, 0, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
     (\(ft@(FuncTy [RefTy structTy] StringTy)) ->
@@ -238,6 +239,28 @@ templateStr typeEnv env t@(StructTy typeName _) members =
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
     )
+
+calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
+calculateStructStrSize typeEnv env members structTy =
+  "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ tyToC structTy ++ "\");\n" ++
+    unlines (map memberStrSize members)
+  where memberStrSize (memberName, memberTy) =
+          let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
+              maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
+              strFuncType = FuncTy [refOrNotRefType] StringTy
+           in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
+                Just strFunctionPath ->
+                  unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
+                          , "  size += snprintf(NULL, 0, \"%s \", temp);"
+                          , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                          ]
+                Nothing ->
+                  if isExternalType typeEnv memberTy
+                  then unlines [ "  size +=  snprintf(NULL, 0, \"%p \", p->" ++ memberName ++ ");"
+                               , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
+                               ]
+                  else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
+
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberStr :: TypeEnv -> Env -> (String, Ty) -> String
@@ -248,15 +271,16 @@ memberStr typeEnv env (memberName, memberTy) =
    in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
         Just strFunctionPath ->
           unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
-                  , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+                  , "  snprintf(bufferPtr, size, \"%s \", temp);"
                   , "  bufferPtr += strlen(temp) + 1;"
                   , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                   ]
         Nothing ->
           if isExternalType typeEnv memberTy
-          then unlines [ "  temp = malloc(64);"
-                       , "  snprintf(temp, 64, \"%p\", p->" ++ memberName ++ ");"
-                       , "  snprintf(bufferPtr, 1024, \"%s \", temp);"
+          then unlines [ "  tempsize = snprintf(NULL, 0, \"%p\", p->" ++ memberName ++ ");"
+                       , "  temp = malloc(tempsize);"
+                       , "  snprintf(temp, tempsize, \"%p\", p->" ++ memberName ++ ");"
+                       , "  snprintf(bufferPtr, size, \"%s \", temp);"
                        , "  bufferPtr += strlen(temp) + 1;"
                        , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                        ]

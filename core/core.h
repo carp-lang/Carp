@@ -162,7 +162,7 @@ void IO_print(string *s) { printf("%s", *s); }
 
 string IO_get_MINUS_line() {
     size_t size = 1024;
-    char *buffer = CARP_MALLOC(size);
+    string buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
@@ -189,15 +189,16 @@ int Int_random_MINUS_between(int lower, int upper) {
 }
 
 string Int_str(int x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, "%d", x);
+    int size = snprintf(NULL, 0, "%d", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%d", x);
     return buffer;
 }
 
 string Int_format(string* str, int x) {
-    int n = strlen(*str) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, x);
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -227,15 +228,16 @@ long Long_random_MINUS_between(long lower, long upper) {
 }
 
 string Long_str(long x) {
-    char *buffer = CARP_MALLOC(64);
-    snprintf(buffer, 64, "%ldl", x);
+    int size = snprintf(NULL, 0, "%ldl", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%ldl", x);
     return buffer;
 }
 
 string Long_format(string* str, long x) {
-    int n = strlen(*str) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, x);
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -257,13 +259,13 @@ void String_delete(string s) {
 
 string String_copy(string *s) {
     size_t len = strlen(*s) + 1;
-    char *ptr = CARP_MALLOC(len);
+    string ptr = CARP_MALLOC(len);
 
     if (ptr == NULL) {
       return NULL;
     }
 
-    return (char *) memcpy(ptr, *s, len);
+    return (string) memcpy(ptr, *s, len);
 }
 
 bool String__EQ_(string *a, string *b) {
@@ -306,9 +308,9 @@ char String_char_MINUS_at(string* s, int i) {
 }
 
 string String_format(string *str, string *s) {
-    int n = strlen(*s) + strlen(*str);
-    string buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, *s);
+    int size = snprintf(NULL, 0, *str, *s)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, *s);
     return buffer;
 }
 
@@ -328,7 +330,7 @@ string String_from_MINUS_chars(Array a) {
 
 string String_tail(string* s) {
   int len = strlen(*s);
-  char* news = CARP_MALLOC(len);
+  string news = CARP_MALLOC(len);
   memcpy(news, (*s)+1, len-1);
   news[len-1] = '\0';
   return news;
@@ -345,7 +347,7 @@ bool Char__EQ_(char a, char b) {
 }
 
 string Char_str(char c) {
-    char *buffer = CARP_MALLOC(3);
+    string buffer = CARP_MALLOC(3);
     snprintf(buffer, 3, "\\%c", c);
     return buffer;
 }
@@ -363,9 +365,9 @@ char Char_copy(char *c) {
 }
 
 string Char_format(string* str, char b) {
-    int n = strlen(*str) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, b);
+    int size = snprintf(NULL, 0, *str, b)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, b);
     return buffer;
 }
 
@@ -472,8 +474,9 @@ double Double_mod(double x, double y) {
 }
 
 string Double_str(double x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%g", x);
+    int size = snprintf(NULL, 0, "%g", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%g", x);
     return buffer;
 }
 
@@ -488,9 +491,9 @@ double Double_random_MINUS_between(double lower, double upper) {
 }
 
 string Double_format(string* s, double x) {
-    int n = strlen(*s) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *s, x);
+    int size = snprintf(NULL, 0, *s, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *s, x);
     return buffer;
 }
 
@@ -597,15 +600,16 @@ float Float_mod(float x, float y) {
 }
 
 string Float_str(float x) {
-    char *buffer = CARP_MALLOC(32);
-    snprintf(buffer, 32, "%gf", x);
+    int size = snprintf(NULL, 0, "%gf", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%gf", x);
     return buffer;
 }
 
 string Float_format(string* str, float x) {
-    int n = strlen(*str) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, x);
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
     return buffer;
 }
 
@@ -623,8 +627,8 @@ bool Bool__DIV__EQ_(bool a, bool b) {
 }
 
 string Bool_str(bool b) {
-    char *true_str = "true";
-    char *false_str = "false";
+    string true_str = "true";
+    string false_str = "false";
     if(b) {
         return String_copy(&true_str);
     } else {
@@ -633,9 +637,9 @@ string Bool_str(bool b) {
 }
 
 string Bool_format(string* str, bool b) {
-    int n = strlen(*str) + 32;
-    char *buffer = CARP_MALLOC(n+1);
-    snprintf(buffer, n+1, *str, b);
+    int size = snprintf(NULL, 0, *str, b)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, b);
     return buffer;
 }
 

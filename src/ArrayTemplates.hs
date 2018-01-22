@@ -393,11 +393,12 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
 strTy :: TypeEnv -> Env -> Ty -> [Token]
 strTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   ""
-  , TokC   "  string buffer = CARP_MALLOC(32768); // very arbitrary! TODO: CALCULATE!\n"
-  , TokC   "  string bufferPtr = buffer;\n"
   , TokC   "  string temp = NULL;\n"
+  , TokC $ calculateStrSize typeEnv env innerType
+  , TokC   "  string buffer = CARP_MALLOC(size);\n"
+  , TokC   "  string bufferPtr = buffer;\n"
   , TokC   "\n"
-  , TokC   "  snprintf(buffer, 32768, \"[\");\n"
+  , TokC   "  snprintf(buffer, size, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"
   , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
@@ -405,10 +406,32 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  }\n"
   , TokC   "\n"
   , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
-  , TokC   "  snprintf(bufferPtr, 32768, \"]\");\n"
+  , TokC   "  snprintf(bufferPtr, size, \"]\");\n"
   , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
+
+calculateStrSize :: TypeEnv -> Env -> Ty -> String
+calculateStrSize typeEnv env t =
+  unlines [ "  int size = 3; // opening and closing brackets and terminator"
+          , "  for(int i = 0; i < a->len; i++) {"
+          , arrayMemberSizeCalc
+          , "  }"
+  ]
+  where arrayMemberSizeCalc =
+          case findFunctionForMemberIncludePrimitives typeEnv env "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+              FunctionFound functionFullName ->
+                let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
+                in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
+                            , "  size += snprintf(NULL, 0, \"%s \", temp);"
+                            , "  if(temp) {"
+                            , "    CARP_FREE(temp);"
+                            , "    temp = NULL;"
+                            , "  }"
+                            ]
+              FunctionNotFound msg -> error msg
+              FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
+
 
 insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
@@ -416,7 +439,7 @@ insideArrayStr typeEnv env t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "    snprintf(bufferPtr, 32768, \"%s \", temp);"
+                  , "    snprintf(bufferPtr, size, \"%s \", temp);"
                   , "    bufferPtr += strlen(temp) + 1;"
                   , "    assert((bufferPtr - buffer) < 16000); // out of bounds"
                   , "    if(temp) {"
