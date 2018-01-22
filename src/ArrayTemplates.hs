@@ -415,19 +415,19 @@ calculateStrSize :: TypeEnv -> Env -> Ty -> String
 calculateStrSize typeEnv env t =
   unlines [ "  int size = 3; // opening and closing brackets and terminator"
           , "  for(int i = 0; i < a->len; i++) {"
-          , arrayMemberSizeCalc
-          , "  }"
-  ]
+          , arrayMemberSizeCalc ++ "  }"
+          , ""
+          ]
   where arrayMemberSizeCalc =
           case findFunctionForMemberIncludePrimitives typeEnv env "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
               FunctionFound functionFullName ->
                 let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
-                in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                            , "  size += snprintf(NULL, 0, \"%s \", temp);"
-                            , "  if(temp) {"
-                            , "    CARP_FREE(temp);"
-                            , "    temp = NULL;"
-                            , "  }"
+                in  unlines [ "    temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
+                            , "    size += snprintf(NULL, 0, \"%s \", temp);"
+                            , "    if(temp) {"
+                            , "      CARP_FREE(temp);"
+                            , "      temp = NULL;"
+                            , "    }"
                             ]
               FunctionNotFound msg -> error msg
               FunctionIgnored -> "    /* Ignore type inside Array: '" ++ show t ++ "' ??? */\n"
@@ -441,7 +441,6 @@ insideArrayStr typeEnv env t =
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
                   , "    snprintf(bufferPtr, size, \"%s \", temp);"
                   , "    bufferPtr += strlen(temp) + 1;"
-                  , "    assert((bufferPtr - buffer) < 16000); // out of bounds"
                   , "    if(temp) {"
                   , "      CARP_FREE(temp);"
                   , "      temp = NULL;"
