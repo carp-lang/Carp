@@ -219,29 +219,35 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     (FuncTy [RefTy t] StringTy)
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-       let concreteMembers = zipWith replaceGenericMemberTy members concreteMemberTys
+       let correctedMembers = correctMemberTys members concreteMemberTys
        in (toTemplate $ unlines [ "$DECL {"
                                 , "  // convert members to string here:"
                                 , "  string temp = NULL;"
                                 , "  int tempsize = 0;"
-                                , calculateStructStrSize typeEnv env concreteMembers structTy
+                                , calculateStructStrSize typeEnv env correctedMembers structTy
                                 , "  string buffer = CARP_MALLOC(size);"
                                 , "  string bufferPtr = buffer;"
                                 , ""
                                 , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
                                 , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
                                 , "  // Concrete member tys: " ++ show concreteMemberTys
-                                , joinWith "\n" (map (memberStr typeEnv env) concreteMembers)
+                                , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
                                 , "  bufferPtr--;"
                                 , "  snprintf(bufferPtr, size, \")\");"
                                 , "  return buffer;"
                                 , "}"]))
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) concreteMemberTys) -- (map snd members))
+                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
+                  (map snd (correctMemberTys members concreteMemberTys)))
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
     )
+
+correctMemberTys members concreteMemberTys =
+  case concreteMemberTys of
+    [] -> members -- Not a generic type, leave members as-is.
+    _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
 
 replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
 replaceGenericMemberTy (memberName, memberTy) concreteTy =
