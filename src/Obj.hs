@@ -232,8 +232,8 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
-  replicate indent ' ' ++ name ++ -- " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj) -- ++ " " ++ getBinderDescription xobj
+  replicate indent ' ' ++ name ++ " (" ++ show (getPath xobj) ++ ")" ++
+  " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
@@ -680,7 +680,7 @@ xobjToTy (XObj (Sym (SymPath _ "String") _) _ _) = Just StringTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)
-                                                        | otherwise = Just (StructTy s [])
+                                                          | otherwise = Just (StructTy s [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (PointerTy okInnerTy)

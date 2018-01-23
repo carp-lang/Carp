@@ -10,5 +10,5 @@
 ;; (defn main []
 ;;   (IO.println (ref (str &(Pair.init (Pair.init 10 20) true)))))
 
-(defn f []
-  (Pair.init (Pair.init 10 20) (Pair.init true false)))
+(defn main []
+  (IO.println &(Pair.prn &(Pair.init (Pair.init 10 20) (Pair.init true false)))))

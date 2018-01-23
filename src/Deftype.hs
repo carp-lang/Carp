@@ -38,7 +38,8 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
               (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath structTy rest
               (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath structTy rest
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-              let funcs = okInit : okNew : okStr : okDelete : okCopy : okMembers
+              let okPrn = templatePrn insidePath structTy rest
+              let funcs = okInit : okNew : okStr : okDelete : okCopy : okPrn : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
                   deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
@@ -205,6 +206,39 @@ replaceGenericTypeSymbols _ xobj = xobj
 tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
+
+
+templatePrn :: [String] -> Ty -> [XObj] -> (String, Binder)
+templatePrn pathStrings structTy@(StructTy name varTys) [XObj (Arr membersXObjs) _ _] =
+  defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath pathStrings "prn"
+        t = FuncTy [(RefTy structTy)] StringTy
+        members = memberXObjsToPairs membersXObjs
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (\(FuncTy [RefTy concreteStructTy] StringTy) ->
+               (toTemplate $ "string $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
+            (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
+               let correctedMembers = correctMemberTys members concreteMemberTys
+               in (toTemplate $ unlines [ "$DECL {"
+                                        , "  // convert members to string here:"
+                                        , "  string temp = NULL;"
+                                        , "  int tempsize = 0;"
+                                        , calculateStructStrSize typeEnv env correctedMembers structTy
+                                        , "  string buffer = CARP_MALLOC(size);"
+                                        , "  string bufferPtr = buffer;"
+                                        , ""
+                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
+                                        , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
+                                        , "  // Concrete member tys: " ++ show concreteMemberTys
+                                        , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
+                                        , "  bufferPtr--;"
+                                        , "  snprintf(bufferPtr, size, \")\");"
+                                        , "  return buffer;"
+                                        , "}"]))
+            (\_ -> [])
 
 
 

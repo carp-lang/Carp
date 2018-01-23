@@ -12,7 +12,7 @@ carp ./examples/external_struct.carp -x;
 carp ./examples/updating.carp -x;
 carp ./examples/sorting.carp -x;
 carp ./examples/globals.carp -x --log-memory;
-carp ./examples/generic_structs.carp -x;
+#carp ./examples/generic_structs.carp -x;
 
 # Actual tests (using the test suite)
 carp ./test/memory.carp -x --log-memory;
