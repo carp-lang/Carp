@@ -263,8 +263,9 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
     [] ->
       (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
-    [(_, b@(Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)))] ->
-      []
+    -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
+    -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
+    --   []
     [(_, Binder single)] ->
       case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
         Left err -> error (show err)
