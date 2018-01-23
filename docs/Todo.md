@@ -74,3 +74,6 @@
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))?
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type?
 * Distinguish immutable/mutable refs?
+
+## Notes
+* Should depsForCopyFunc and depsForDeleteFunc really be needed, they should instantiate when used?
