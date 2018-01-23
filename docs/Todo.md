@@ -7,16 +7,13 @@
 
 ## Critical Bugs
 * [0.3] Need to refactor the sorting of bindings! Hacked it for now with Obj.hs:277 "visitType (Just _) = 50"
-* [0.3] When referring to nonexisting type in 'the' form, the compiler barfs.
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
-* [0.3] Allocate enough memory in the Array.str and struct.str functions.
 * [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
 * [0.3] Fails to find the correct Array.str when calling println* in a do-form. See bug E in bugs.carp
 
 ## Big Language Features
-* [0.4] Distinguish immutable/mutable refs?
 * [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings.
 
@@ -24,7 +21,6 @@
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 ## Smaller Language Features ("niceties")
-* [0.3] Update the research document.
 * [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
 * [0.3] Make the type of 'set!' be (set! a a) instead of (set! &a a).
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
@@ -77,3 +73,4 @@
 * Macros in modules must be qualified right now, is that a good long-term solution or should there be a 'use' for dynamic code?
 * Allow use of 'the' as a wrapper when defining a variable or function, i.e. (the (Fn [Int] Int) (defn [x] x))?
 * Being able to use 'the' in function parameter declarations, i.e. (defn f [(the Int x)] x) to enforce a type?
+* Distinguish immutable/mutable refs?
