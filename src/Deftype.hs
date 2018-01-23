@@ -238,7 +238,13 @@ templatePrn pathStrings structTy@(StructTy name varTys) [XObj (Arr membersXObjs)
                                         , "  snprintf(bufferPtr, size, \")\");"
                                         , "  return buffer;"
                                         , "}"]))
-            (\_ -> [])
+            (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
+               concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
+                  (map snd (correctMemberTys members concreteMemberTys)))
+              ++
+              (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
+            )
 
 
 
