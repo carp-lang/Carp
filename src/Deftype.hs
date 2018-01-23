@@ -230,7 +230,7 @@ templateStr typeEnv env t@(StructTy typeName _) members =
                                  , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
                                  , joinWith "\n" (map (memberStr typeEnv env) members)
                                  , "  bufferPtr--;"
-                                 , "  snprintf(bufferPtr, 0, \")\");"
+                                 , "  snprintf(bufferPtr, size, \")\");"
                                  , "  return buffer;"
                                  , "}"]))
     (\(ft@(FuncTy [RefTy structTy] StringTy)) ->
