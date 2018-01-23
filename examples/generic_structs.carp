@@ -1,9 +1,9 @@
 (deftype (Pair a b) [x a y b])
 
-(defn f []
-  (Pair.init 1.0f [1 2 3]))
+;; (defn f []
+;;   (Pair.init 1.0f [1 2 3]))
 
-;; (defn main []
-;;   (do
-;;     (IO.println &(Pair.str &(Pair.init 10 @"hello")))
-;;     (IO.println &(Pair.str &(Pair.init true 3.2)))))
+(defn main []
+  (do
+    ;;(IO.println &(Pair.str &(Pair.init 10 @"hello")))
+    (IO.println &(Pair.str &(Pair.init true 3.2)))))
