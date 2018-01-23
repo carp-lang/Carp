@@ -354,6 +354,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             -- Empty list
             [] -> do appendToSrc (addIndent indent ++ "/* () */\n")
                      return ""
+
+        visitList _ xobj@(XObj (Lst _) Nothing Nothing) = error ("List is missing info and type! " ++ show xobj)
+        visitList _ xobj@(XObj (Lst _) Nothing (Just _)) = error ("List is missing info! " ++ show xobj)
         visitList _ xobj = error ("Must visit list! " ++ show xobj)
 
         createArgList :: Int -> [XObj] -> State EmitterState String

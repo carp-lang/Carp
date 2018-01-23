@@ -35,8 +35,9 @@ defineTemplate path t declaration definition depsFunc =
 defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> (String, Binder)
 defineTypeParameterizedTemplate templateCreator path t =
   let (SymPath _ name) = path
+      i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-  in  (name, Binder (XObj (Lst defLst) Nothing (Just t)))
+  in  (name, Binder (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
 instanceBinder :: SymPath -> Ty -> Template -> (String, Binder)
