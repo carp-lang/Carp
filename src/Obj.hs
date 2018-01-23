@@ -245,21 +245,21 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) 
       in  (depthOfType typeEnv selfName aliasedType, b)
     Typ (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys) + 1, b)
+        Just (_, Binder typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys), b)
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
-      (100, b)
+      (500, b)
 scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
-  (200, b)
+  (1000, b)
 scoreBinder _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
   case concatMap expandCase rest of
-    [] -> 0
-    xs -> maximum xs
+    [] -> 100
+    xs -> (maximum xs) + 1
   where
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
@@ -275,24 +275,27 @@ depthOfType :: TypeEnv -> String -> Ty -> Int
 depthOfType typeEnv selfName = visitType
   where
     visitType :: Ty -> Int
-    visitType (StructTy name varTys) = depthOfStructType name varTys
+    visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
     visitType (FuncTy argTys retTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       maximum (visitType retTy : map visitType argTys) + 1
     visitType (PointerTy p) = visitType p
     visitType (RefTy r) = visitType r
-    visitType _ = 50
+    visitType _ = 100
 
     depthOfStructType :: String -> [Ty] -> Int
     depthOfStructType name varTys =
       case name of
         "Array" -> 20
-        _ | name == selfName -> 0
+        _ | name == selfName -> 30
           | otherwise ->
               case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                 Just (_, Binder typedef) -> (depthOfDeftype typeEnv typedef varTys) + 1
-                Nothing -> --trace ("Unknown type: " ++ name)
-                           0 -- Refering to unknown type
+                -- The problem here is that generic types don't generate their definition in time so we get nothing for those:
+                Nothing -> trace ("Unknown type: " ++ name) $
+                           case map (depthOfType typeEnv name) varTys of -- Can't find the type, let's try the type vars
+                             [] -> 50
+                             xs -> (maximum xs) + 1
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
