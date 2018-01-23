@@ -219,25 +219,26 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     (FuncTy [RefTy t] StringTy)
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-       (toTemplate $ unlines [ "$DECL {"
-                             , "  // convert members to string here:"
-                             , "  string temp = NULL;"
-                             , "  int tempsize = 0;"
-                             , calculateStructStrSize typeEnv env members structTy
-                             , "  string buffer = CARP_MALLOC(size);"
-                             , "  string bufferPtr = buffer;"
-                             , ""
-                             , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
-                             , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
-                             , "  // Concrete member tys: " ++ show concreteMemberTys
-                             , joinWith "\n" (map (memberStr typeEnv env) (zipWith replaceGenericMemberTy members concreteMemberTys))
-                             , "  bufferPtr--;"
-                             , "  snprintf(bufferPtr, size, \")\");"
-                             , "  return buffer;"
-                             , "}"]))
-    (\(ft@(FuncTy [RefTy structTy] StringTy)) ->
+       let concreteMembers = zipWith replaceGenericMemberTy members concreteMemberTys
+       in (toTemplate $ unlines [ "$DECL {"
+                                , "  // convert members to string here:"
+                                , "  string temp = NULL;"
+                                , "  int tempsize = 0;"
+                                , calculateStructStrSize typeEnv env concreteMembers structTy
+                                , "  string buffer = CARP_MALLOC(size);"
+                                , "  string bufferPtr = buffer;"
+                                , ""
+                                , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
+                                , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
+                                , "  // Concrete member tys: " ++ show concreteMemberTys
+                                , joinWith "\n" (map (memberStr typeEnv env) concreteMembers)
+                                , "  bufferPtr--;"
+                                , "  snprintf(bufferPtr, size, \")\");"
+                                , "  return buffer;"
+                                , "}"]))
+    (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (map snd members))
+                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) concreteMemberTys) -- (map snd members))
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
     )
