@@ -1,14 +1,9 @@
 (deftype (Pair a b) [x a y b])
 
-;; (defn main []
-;;   (do
-;;     (IO.println &(Pair.str &(Pair.init 10 @"hello")))
-;;     (IO.println &(Pair.str &(Pair.init true 3.2)))
-;;     (IO.println &(Pair.str &(Pair.init [1 2 3] [true false true false])))
-;;     ))
-
-;; (defn main []
-;;   (IO.println (ref (str &(Pair.init (Pair.init 10 20) true)))))
-
 (defn main []
-  (IO.println &(Pair.prn &(Pair.init (Pair.init 10 20) (Pair.init true false)))))
+  (do
+    (IO.println (ref (prn &(Pair.init (Pair.init 10 20) (Pair.init true false)))))
+    (IO.println &(Pair.prn &(Pair.init 10 @"hello")))
+    (IO.println &(Pair.prn &(Pair.init true 3.2)))
+    (IO.println &(Pair.prn &(Pair.init [1 2 3] [true false true false])))
+    ))
