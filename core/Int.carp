@@ -41,6 +41,23 @@
 
   (defn add-ref [x y]
     (+ @x @y))
+
+  (defn clamp [min, max, val]
+    (if (> val max)
+      max
+      (if (< val min)
+        min
+        val)))
+
+  (defn pow [x y]
+    (let-do [r 1]
+      (while (/= y 0)
+        (do
+          (when (/= (bit-and y 1) 0)
+            (set! &r (* r x)))
+          (set! &y (/ y 2))
+          (set! &x (* x x))))
+      r))
 )
 
 (defmodule IntRef

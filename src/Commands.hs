@@ -349,6 +349,12 @@ commandIsList [x] =
     XObj (Lst _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
 
+commandIsSymbol :: CommandCallback
+commandIsSymbol [x] =
+  case x of
+    XObj (Sym _ _) _ _ -> return (Right trueXObj)
+    _ -> return (Right falseXObj)
+
 commandCount :: CommandCallback
 commandCount [x] =
   case x of
