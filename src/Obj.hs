@@ -3,7 +3,7 @@ module Obj where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (intercalate, foldl')
-import Data.Maybe (mapMaybe, fromMaybe)
+import Data.Maybe (mapMaybe, fromMaybe, fromJust)
 import Control.Monad.State
 import Data.Char
 import Types
@@ -242,11 +242,11 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) 
   case x of
     Defalias aliasedType ->
       let selfName = ""
-      in  (depthOfType typeEnv selfName (Just aliasedType), b)
-    Typ (StructTy structName _) ->
+      in  (depthOfType typeEnv selfName aliasedType, b)
+    Typ (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder typedef) -> let depth = (dependencyDepthOfTypedef typeEnv typedef + 1, b)
-                                    in  --trace ("depth of " ++ name ++ ": " ++ show depth)
+        Just (_, Binder typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys) + 1, b)
+                                    in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
@@ -255,41 +255,64 @@ scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (200, b)
 scoreBinder _ x = error ("Can't score: " ++ show x)
 
-dependencyDepthOfTypedef :: TypeEnv -> XObj -> Int
-dependencyDepthOfTypedef typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) =
+depthOfDeftype :: TypeEnv -> XObj -> [Ty] -> Int
+depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
   case concatMap expandCase rest of
     [] -> 0
     xs -> maximum xs
   where
     expandCase :: XObj -> [Int]
-    expandCase (XObj (Arr arr) _ _) = map (depthOfType typeEnv selfName . xobjToTy . snd) (pairwise arr)
+    expandCase (XObj (Arr arr) _ _) =
+      let members = memberXObjsToPairs arr
+          correctedMembers = correctMemberTys members varTys
+          depths = map (depthOfType typeEnv selfName . snd) correctedMembers
+      in depths
     expandCase _ = error "Malformed case in typedef."
-dependencyDepthOfTypedef _ xobj =
+depthOfDeftype _ xobj _ =
   error ("Can't get dependency depth from " ++ show xobj)
 
-depthOfType :: TypeEnv -> String -> Maybe Ty -> Int
+depthOfType :: TypeEnv -> String -> Ty -> Int
 depthOfType typeEnv selfName = visitType
   where
-    visitType :: Maybe Ty -> Int
-    visitType (Just (StructTy name _)) = depthOfStructType name
-    visitType (Just (FuncTy argTys retTy)) =
+    visitType :: Ty -> Int
+    visitType (StructTy name varTys) = depthOfStructType name varTys
+    visitType (FuncTy argTys retTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      maximum (visitType (Just retTy) : map (visitType . Just) argTys) + 1
-    visitType (Just (PointerTy p)) = visitType (Just p)
-    visitType (Just (RefTy r)) = visitType (Just r)
-    visitType (Just _) = 50
-    visitType Nothing = -100 -- External / unknown type
+      maximum (visitType retTy : map visitType argTys) + 1
+    visitType (PointerTy p) = visitType p
+    visitType (RefTy r) = visitType r
+    visitType _ = 50
 
-    depthOfStructType :: String -> Int
-    depthOfStructType name =
+    depthOfStructType :: String -> [Ty] -> Int
+    depthOfStructType name varTys =
       case name of
         "Array" -> 20
         _ | name == selfName -> 0
           | otherwise ->
               case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                Just (_, Binder typedef) -> dependencyDepthOfTypedef typeEnv typedef + 1
-                Nothing -> -- trace ("Unknown type: " ++ name)
+                Just (_, Binder typedef) -> (depthOfDeftype typeEnv typedef varTys) + 1
+                Nothing -> --trace ("Unknown type: " ++ name)
                            0 -- Refering to unknown type
+
+-- | Get a list of pairs from a deftype declaration.
+memberXObjsToPairs :: [XObj] -> [(String, Ty)]
+memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
+
+-- | Change the member types on member pairs.
+correctMemberTys :: [(String, Ty)] -> [Ty] -> [(String, Ty)]
+correctMemberTys members concreteMemberTys =
+  case concreteMemberTys of
+    [] -> members -- Not a generic type, leave members as-is.
+    _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
+
+-- | Change the type on one member pair if it unifies with the one currently there.
+replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
+replaceGenericMemberTy (memberName, memberTy) concreteTy =
+  if areUnifiable memberTy concreteTy
+  then (memberName, concreteTy)
+  else (memberName, memberTy)
+
+
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)

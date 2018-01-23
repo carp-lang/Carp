@@ -134,10 +134,6 @@ templateForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr
                                (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 
--- | Get a list of pairs from a deftype declaration.
-memberXObjsToPairs :: [XObj] -> [(String, Ty)]
-memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
-
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
 templatesForMembers :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ([(String, Binder)], [XObj])
 templatesForMembers typeEnv env insidePath structTy [XObj (Arr membersXobjs) _ _] =
@@ -243,17 +239,6 @@ templateStr typeEnv env t@(StructTy typeName _) members =
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
     )
-
-correctMemberTys members concreteMemberTys =
-  case concreteMemberTys of
-    [] -> members -- Not a generic type, leave members as-is.
-    _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
-
-replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
-replaceGenericMemberTy (memberName, memberTy) concreteTy =
-  if areUnifiable memberTy concreteTy
-  then (memberName, concreteTy)
-  else (memberName, memberTy)
 
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
 calculateStructStrSize typeEnv env members structTy =
