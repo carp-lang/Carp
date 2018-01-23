@@ -11,6 +11,7 @@ https://news.ycombinator.com/item?id=12039268
 - http://www.gameaipro.com/GameAIPro/GameAIPro_Chapter15_Runtime_Compiled_C++_for_Rapid_AI_Development.pdf
 - https://fsharpforfunandprofit.com/posts/fsharp-decompiled/
 - http://kristerw.blogspot.se/2016/05/type-based-aliasing-in-c.html
+- https://github.com/hellerve/sc/tree/real_closures
 
 # OWNERSHIP & BORROWING
 
@@ -45,6 +46,10 @@ https://news.ycombinator.com/item?id=12039268
 
 - http://prl.ccs.neu.edu/blog/2016/05/24/measuring-gc-latencies-in-haskell-ocaml-racket/
 
+# MACROS
+- https://luxlang.gitbooks.io/the-lux-programming-language/content/chapter10.html
+- http://www.ccs.neu.edu/home/stchang/popl2017/
+
 # OTHER LANGUAGES
 
 - https://wingolog.org/archives/2016/02/08/a-lambda-is-not-necessarily-a-closure
@@ -58,6 +63,7 @@ https://news.ycombinator.com/item?id=12039268
 - https://github.com/akkartik/mu
 - https://github.com/haskell-lisp/liskell
 - https://github.com/PistonDevelopers/dyon/pull/318
+- https://github.com/namin/inc
 
 # LANGUAGE DESIGN
 
@@ -76,8 +82,10 @@ https://news.ycombinator.com/item?id=12039268
 - https://medium.com/@evanwallace/easy-scalable-text-rendering-on-the-gpu-c3f4d782c5ac#.ajyuy8weu
 - https://pomax.github.io/bezierinfo/
 
+# WEB ASSEMBLY
+- https://github.com/mbasso/awesome-wasm
+
 # TO TRY
 
 - let fun ident(x) => x
 - in ident(ident)(2) end
-
