@@ -20,14 +20,18 @@ del :: XObj -> Set.Set Deleter -> XObj
 del xobj deleters = xobj { info = setDeletersOnInfo (info xobj) deleters }
 
 -- | To keep track of the deleters when recursively walking the form.
-type MemState = Set.Set Deleter
+data MemState = MemState
+                { memStateDeleters :: Set.Set Deleter
+                , memStateDeps :: Set.Set SymPath
+                } deriving Show
 
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError XObj
 manageMemory typeEnv globalEnv root =
-  let (finalObj, deleteThese) = runState (visit root) (Set.fromList [])
+  let (finalObj, finalState) = runState (visit root) (MemState (Set.fromList []) (Set.fromList []))
+      deleteThese = memStateDeleters finalState
   in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
       case finalObj of
         Left err -> Left err
@@ -79,18 +83,18 @@ manageMemory typeEnv globalEnv root =
                 RefTy _ ->
                   return (Left (LetCantReturnRefTy xobj letReturnType))
                 _ ->
-                  do preDeleters <- get
+                  do MemState preDeleters _ <- get
                      visitedBindings <- mapM visitLetBinding (pairwise bindings)
                      visitedBody <- visit body
                      result <- unmanage body
                      case result of
                        Left e -> return (Left e)
                        Right _ ->
-                         do postDeleters <- get
+                         do MemState postDeleters deps <- get
                             let diff = postDeleters Set.\\ preDeleters
                                 newInfo = setDeletersOnInfo i diff
                                 survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
-                            put survivors
+                            put (MemState survivors deps)
                             --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
                             manage xobj
                             return $ do okBody <- visitedBody
@@ -105,7 +109,7 @@ manageMemory typeEnv globalEnv root =
                                          XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
                                          x -> x
 
-                 managed <- get
+                 MemState managed deps  <- get
 
                  -- Delete the value previously stored in the variable, if it's still alive
                  let deleters = case createDeleter correctVariable of
@@ -150,16 +154,16 @@ manageMemory typeEnv globalEnv root =
                             Right _ -> do okExpressions <- sequence visitedExpressions
                                           return (XObj (Lst (doExpr : okExpressions)) i t)
             [whileExpr@(XObj While _ _), expr, body] ->
-              do preDeleters <- get
+              do MemState preDeleters _ <- get
                  visitedExpr <- visit expr
                  visitedBody <- visit body
                  manage body
-                 postDeleters <- get
+                 MemState postDeleters deps <- get
                  -- Visit an extra time to simulate repeated use
                  visitedExpr2 <- visit expr
                  visitedBody2 <- visit body
                  let diff = postDeleters Set.\\ preDeleters
-                 put (postDeleters Set.\\ diff) -- Same as just pre deleters, right?!
+                 put (MemState (postDeleters Set.\\ diff) deps) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
                              okBody <- visitedBody
                              okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
@@ -169,7 +173,7 @@ manageMemory typeEnv globalEnv root =
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr
-                 deleters <- get
+                 MemState deleters deps <- get
 
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
                                                                       result <- transferOwnership ifTrue xobj;
@@ -177,7 +181,7 @@ manageMemory typeEnv globalEnv root =
                                                                                  Left e -> Left e
                                                                                  Right _ -> v
                                                                     })
-                                                       deleters
+                                                       (MemState deleters deps)
 
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
                                                                       result <- transferOwnership ifFalse xobj;
@@ -185,10 +189,11 @@ manageMemory typeEnv globalEnv root =
                                                                                  Left e -> Left e
                                                                                  Right _ -> v
                                                                     })
-                                                       deleters
+                                                       (MemState deleters deps)
 
-                 let removeTrue  = stillAliveTrue
-                     removeFalse = stillAliveFalse
+                 let removeTrue  = memStateDeleters stillAliveTrue
+                     removeFalse = memStateDeleters stillAliveFalse
+                     -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
                      deletedInTrue  = deleters Set.\\ removeTrue
                      deletedInFalse = deleters Set.\\ removeFalse
                      common = Set.intersection deletedInTrue deletedInFalse
@@ -196,7 +201,7 @@ manageMemory typeEnv globalEnv root =
                      delsFalse = deletedInTrue  Set.\\ common
                      stillAlive = deleters Set.\\ Set.union deletedInTrue deletedInFalse
 
-                 put stillAlive
+                 put (MemState stillAlive deps)
                  manage xobj
 
                  return $ do okExpr  <- visitedExpr
@@ -250,7 +255,9 @@ manageMemory typeEnv globalEnv root =
         manage :: XObj -> State MemState ()
         manage xobj =
           case createDeleter xobj of
-            Just deleter -> modify (Set.insert deleter)
+            Just deleter -> do MemState deleters deps <- get
+                               let newDeleters = Set.insert deleter deleters
+                               put (MemState newDeleters deps)
             Nothing -> return ()
 
         deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
@@ -266,11 +273,11 @@ manageMemory typeEnv globalEnv root =
           let Just t = ty xobj
               Just i = info xobj
           in if isManaged typeEnv t && not (isExternalType typeEnv t)
-             then do deleters <- get
+             then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> return (Left (UsingUnownedValue xobj))
                        [one] -> let newDeleters = Set.delete one deleters
-                                in  do put newDeleters
+                                in  do put (MemState newDeleters deps)
                                        return (Right ())
                        _ -> error "Too many variables with the same name in set."
              else return (Right ())
@@ -284,7 +291,7 @@ manageMemory typeEnv globalEnv root =
                                    XObj (Sym _ LookupGlobal) _ _ -> True
                                    _ -> False
           in if not isGlobalVariable && isManaged typeEnv t && not (isExternalType typeEnv t)
-             then do deleters <- get
+             then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
                        [_] -> return (return ())
