@@ -38,8 +38,8 @@ annotate typeEnv globalEnv xobj =
                                               return (x', deps ++ deps'))
                                   (initiated, [])
                                   [True, True]
-     final <- manageMemory typeEnv globalEnv annotated
-     return (final : dependencies)
+     (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
+     return (final : dependencies ++ deleteDeps)
 
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
 annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])

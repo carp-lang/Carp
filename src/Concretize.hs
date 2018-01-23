@@ -3,6 +3,7 @@ module Concretize where
 import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
 import Data.List (foldl')
 import Debug.Trace
 
@@ -13,6 +14,7 @@ import Util
 import TypeError
 import AssignTypes
 import ManageMemory
+import Polymorphism
 
 -- | This function performs two things:
 -- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
@@ -230,8 +232,8 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
             if newPath `elem` visitedDefinitions
             then return (trace ("Already visited " ++ show newPath) (withNewPath, []))
             else do (concrete, deps) <- concretizeXObj allowAmbiguity typeEnv globalEnv (newPath : visitedDefinitions) typed
-                    managed <- manageMemory typeEnv globalEnv concrete
-                    return (managed, deps)
+                    (managed, memDeps) <- manageMemory typeEnv globalEnv concrete
+                    return (managed, deps ++ memDeps)
           Left e -> Left e
       XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
@@ -251,7 +253,8 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
 allFunctionsWithNameAndSignature env functionName functionType =
   filter (predicate . ty . binderXObj . snd) (multiLookupALL functionName env)
   where
-    predicate (Just t) = areUnifiable functionType t
+    predicate (Just t) = --trace ("areUnifiable? " ++ show functionType ++ " == " ++ show t ++ " " ++ show (areUnifiable functionType t)) $
+                         areUnifiable functionType t
 
 -- | Find all the dependencies of a polymorphic function with a name and a desired concrete type.
 depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XObj]
@@ -260,7 +263,7 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
     [] ->
       (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
-    [(_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _))] ->
+    [(_, b@(Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)))] ->
       []
     [(_, Binder single)] ->
       case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
@@ -336,3 +339,315 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
       in  FunctionFound (pathToC concretizedPath)
     _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
                            memberName ++ "' of type " ++ show functionType)
+
+
+
+-- | Manage memory needs access to the concretizer
+-- | (and the concretizer needs to manage memory)
+-- | so they are put into the same module.
+
+-- | Assign a set of Deleters to the 'infoDelete' field on Info.
+setDeletersOnInfo :: Maybe Info -> Set.Set Deleter -> Maybe Info
+setDeletersOnInfo i deleters = fmap (\i' -> i' { infoDelete = deleters }) i
+
+-- | Helper function for setting the deleters for an XObj.
+del :: XObj -> Set.Set Deleter -> XObj
+del xobj deleters = xobj { info = setDeletersOnInfo (info xobj) deleters }
+
+-- | To keep track of the deleters when recursively walking the form.
+data MemState = MemState
+                { memStateDeleters :: Set.Set Deleter
+                , memStateDeps :: [XObj]
+                } deriving Show
+
+-- | Find out what deleters are needed and where in an XObj.
+-- | Deleters will be added to the info field on XObj so that
+-- | the code emitter can access them and insert calls to destructors.
+manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
+manageMemory typeEnv globalEnv root =
+  let (finalObj, finalState) = runState (visit root) (MemState (Set.fromList []) [])
+      deleteThese = memStateDeleters finalState
+      deps = memStateDeps finalState
+  in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
+      case finalObj of
+        Left err -> Left err
+        Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
+                    in  Right $ (ok { info = newInfo }, deps)
+
+  where visit :: XObj -> State MemState (Either TypeError XObj)
+        visit xobj =
+          case obj xobj of
+            Lst _ -> visitList xobj
+            Arr _ -> visitArray xobj
+            Str _ -> do manage xobj
+                        return (Right xobj)
+            _ -> return (Right xobj)
+
+        visitArray :: XObj -> State MemState (Either TypeError XObj)
+        visitArray xobj@(XObj (Arr arr) _ _) =
+          do mapM_ visit arr
+             results <- mapM unmanage arr
+             case sequence results of
+               Left e -> return (Left e)
+               Right _ ->
+                 do _ <- manage xobj -- TODO: result is discarded here, is that OK?
+                    return (Right xobj)
+
+        visitArray _ = error "Must visit array."
+
+        visitList :: XObj -> State MemState (Either TypeError XObj)
+        visitList xobj@(XObj (Lst lst) i t) =
+          case lst of
+            [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
+              let Just funcTy@(FuncTy _ defnReturnType) = t
+              in case defnReturnType of
+                   RefTy _ ->
+                     return (Left (FunctionsCantReturnRefTy xobj funcTy))
+                   _ ->
+                     do mapM_ manage argList
+                        visitedBody <- visit body
+                        result <- unmanage body
+                        return $
+                          case result of
+                            Left e -> Left e
+                            Right _ ->
+                              do okBody <- visitedBody
+                                 return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+            [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
+              let Just letReturnType = t
+              in case letReturnType of
+                RefTy _ ->
+                  return (Left (LetCantReturnRefTy xobj letReturnType))
+                _ ->
+                  do MemState preDeleters _ <- get
+                     visitedBindings <- mapM visitLetBinding (pairwise bindings)
+                     visitedBody <- visit body
+                     result <- unmanage body
+                     case result of
+                       Left e -> return (Left e)
+                       Right _ ->
+                         do MemState postDeleters deps <- get
+                            let diff = postDeleters Set.\\ preDeleters
+                                newInfo = setDeletersOnInfo i diff
+                                survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
+                            put (MemState survivors deps)
+                            --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
+                            manage xobj
+                            return $ do okBody <- visitedBody
+                                        okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
+                                        return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+            [setbangExpr@(XObj SetBang _ _), variable, value] ->
+              do visitedValue <- visit value
+                 unmanage value -- The assigned value can't be used anymore
+
+                 let varInfo = info variable
+                     correctVariable = case variable of
+                                         XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
+                                         x -> x
+
+                 MemState managed deps  <- get
+
+                 -- Delete the value previously stored in the variable, if it's still alive
+                 let deleters = case createDeleter correctVariable of
+                                  Just d  -> Set.fromList [d]
+                                  Nothing -> Set.empty
+                     newVarInfo = setDeletersOnInfo varInfo deleters
+                     newVariable =
+                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
+                       then variable { info = newVarInfo }
+                       else variable -- don't add the new info = no deleter
+
+                 when True $ -- Should be when the variable itself isn't a ref
+                   manage correctVariable -- The variable can be used again
+
+                 return $ do okValue <- visitedValue
+                             return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
+            [addressExpr@(XObj Address _ _), value] ->
+              do visitedValue <- visit value
+                 return $ do okValue <- visitedValue
+                             return (XObj (Lst [addressExpr, okValue]) i t)
+            [theExpr@(XObj The _ _), typeXObj, value] ->
+              do visitedValue <- visit value
+                 result <- transferOwnership value xobj
+                 return $ case result of
+                            Left e -> Left e
+                            Right _ -> do okValue <- visitedValue
+                                          return (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+            [refExpr@(XObj Ref _ _), value] ->
+              do visitedValue <- visit value
+                 case visitedValue of
+                   Left e -> return (Left e)
+                   Right visitedValue ->
+                     do checkResult <- refCheck visitedValue
+                        case checkResult of
+                          Left e -> return (Left e)
+                          Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
+            doExpr@(XObj Do _ _) : expressions ->
+              do visitedExpressions <- mapM visit expressions
+                 result <- transferOwnership (last expressions) xobj
+                 return $ case result of
+                            Left e -> Left e
+                            Right _ -> do okExpressions <- sequence visitedExpressions
+                                          return (XObj (Lst (doExpr : okExpressions)) i t)
+            [whileExpr@(XObj While _ _), expr, body] ->
+              do MemState preDeleters _ <- get
+                 visitedExpr <- visit expr
+                 visitedBody <- visit body
+                 manage body
+                 MemState postDeleters deps <- get
+                 -- Visit an extra time to simulate repeated use
+                 visitedExpr2 <- visit expr
+                 visitedBody2 <- visit body
+                 let diff = postDeleters Set.\\ preDeleters
+                 put (MemState (postDeleters Set.\\ diff) deps) -- Same as just pre deleters, right?!
+                 return $ do okExpr <- visitedExpr
+                             okBody <- visitedBody
+                             okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
+                             okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
+                             let newInfo = setDeletersOnInfo i diff
+                             return (XObj (Lst [whileExpr, okExpr, okBody]) newInfo t)
+
+            [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
+              do visitedExpr <- visit expr
+                 MemState deleters deps <- get
+
+                 let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
+                                                                      result <- transferOwnership ifTrue xobj;
+                                                                      return $ case result of
+                                                                                 Left e -> Left e
+                                                                                 Right _ -> v
+                                                                    })
+                                                       (MemState deleters deps)
+
+                     (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
+                                                                      result <- transferOwnership ifFalse xobj;
+                                                                      return $ case result of
+                                                                                 Left e -> Left e
+                                                                                 Right _ -> v
+                                                                    })
+                                                       (MemState deleters deps)
+
+                 let removeTrue  = memStateDeleters stillAliveTrue
+                     removeFalse = memStateDeleters stillAliveFalse
+                     -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
+                     deletedInTrue  = deleters Set.\\ removeTrue
+                     deletedInFalse = deleters Set.\\ removeFalse
+                     common = Set.intersection deletedInTrue deletedInFalse
+                     delsTrue  = deletedInFalse Set.\\ common
+                     delsFalse = deletedInTrue  Set.\\ common
+                     stillAlive = deleters Set.\\ Set.union deletedInTrue deletedInFalse
+
+                 put (MemState stillAlive deps)
+                 manage xobj
+
+                 return $ do okExpr  <- visitedExpr
+                             okTrue  <- visitedTrue
+                             okFalse <- visitedFalse
+                             return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
+            f : args ->
+              do visitedF <- visit f
+                 visitedArgs <- sequence <$> mapM visitArg args
+                 manage xobj
+                 return $ do okF <- visitedF
+                             okArgs <- visitedArgs
+                             Right (XObj (Lst (okF : okArgs)) i t)
+
+            [] -> return (Right xobj)
+        visitList _ = error "Must visit list."
+
+        visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
+        visitLetBinding (name, expr) =
+          do visitedExpr <- visit expr
+             result <- transferOwnership expr name
+             return $ case result of
+                        Left e -> Left e
+                        Right _ -> do okExpr <- visitedExpr
+                                      return (name, okExpr)
+
+        visitArg :: XObj -> State MemState (Either TypeError XObj)
+        visitArg xobj@(XObj _ _ (Just t)) =
+          if isManaged typeEnv t
+          then do visitedXObj <- visit xobj
+                  result <- unmanage xobj
+                  case result of
+                    Left e  -> return (Left e)
+                    Right _ -> return visitedXObj
+          else visit xobj
+        visitArg xobj@XObj{} =
+          visit xobj
+
+        createDeleter :: XObj -> Maybe Deleter
+        createDeleter xobj =
+          case ty xobj of
+            Just t -> let var = varOfXObj xobj
+                      in  if isManaged typeEnv t && not (isExternalType typeEnv t)
+                          then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy) "delete" of
+                                 Just pathOfDeleteFunc -> Just (ProperDeleter pathOfDeleteFunc var)
+                                 Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
+                                            Just (FakeDeleter var)
+                          else Nothing
+            Nothing -> error ("No type, can't manage " ++ show xobj)
+
+        manage :: XObj -> State MemState ()
+        manage xobj =
+          case createDeleter xobj of
+            Just deleter -> do MemState deleters deps <- get
+                               let newDeleters = Set.insert deleter deleters
+                                   Just t = ty xobj
+                                   newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+                               put (MemState newDeleters newDeps)
+            Nothing -> return ()
+
+        deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
+        deletersMatchingXObj xobj deleters =
+          let var = varOfXObj xobj
+          in  Set.toList $ Set.filter (\d -> case d of
+                                               ProperDeleter { deleterVariable = dv } -> dv == var
+                                               FakeDeleter   { deleterVariable = dv } -> dv == var)
+                                      deleters
+
+        unmanage :: XObj -> State MemState (Either TypeError ())
+        unmanage xobj =
+          let Just t = ty xobj
+              Just i = info xobj
+          in if isManaged typeEnv t && not (isExternalType typeEnv t)
+             then do MemState deleters deps <- get
+                     case deletersMatchingXObj xobj deleters of
+                       [] -> return (Left (UsingUnownedValue xobj))
+                       [one] -> let newDeleters = Set.delete one deleters
+                                in  do put (MemState newDeleters deps)
+                                       return (Right ())
+                       _ -> error "Too many variables with the same name in set."
+             else return (Right ())
+
+        -- | Check that the value being referenced hasn't already been given away
+        refCheck :: XObj -> State MemState (Either TypeError ())
+        refCheck xobj =
+          let Just i = info xobj
+              Just t = ty xobj
+              isGlobalVariable = case xobj of
+                                   XObj (Sym _ LookupGlobal) _ _ -> True
+                                   _ -> False
+          in if not isGlobalVariable && isManaged typeEnv t && not (isExternalType typeEnv t)
+             then do MemState deleters deps <- get
+                     case deletersMatchingXObj xobj deleters of
+                       [] ->  return (Left (GettingReferenceToUnownedValue xobj))
+                       [_] -> return (return ())
+                       _ -> error "Too many variables with the same name in set."
+             else return (return ())
+
+        transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())
+        transferOwnership from to =
+          do result <- unmanage from
+             case result of
+               Left e -> return (Left e)
+               Right _ -> do manage to
+                             return (Right ())
+             --trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") $ return ()
+
+        varOfXObj :: XObj -> String
+        varOfXObj xobj =
+          case xobj of
+            XObj (Sym (SymPath [] name) _) _ _ -> name
+            _ -> let Just i = info xobj
+                 in  freshVar i
