@@ -2,7 +2,7 @@
 
 (defn main []
   (do
-    (IO.println (ref (prn &(Pair.init (Pair.init 10 20) (Pair.init true false)))))
+    (IO.println (ref (Pair.prn &(Pair.init (Pair.init 10 20) (Pair.init true false)))))
     (IO.println &(Pair.prn &(Pair.init 10 @"hello")))
     (IO.println &(Pair.prn &(Pair.init true 3.2)))
     (IO.println &(Pair.prn &(Pair.init [1 2 3] [true false true false])))
