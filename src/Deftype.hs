@@ -38,8 +38,7 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
               (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath structTy rest
               (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath structTy rest
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-              let okPrn = templatePrn insidePath structTy rest
-              let funcs = okInit : okNew : okStr : okDelete : okCopy : okPrn : okMembers
+              let funcs = okInit : okNew : okStr : okDelete : okCopy : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
                   deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
@@ -110,9 +109,11 @@ templateForNew _ _ _ = Nothing
 -- | Helper function to create the binder for the 'str' template.
 templateForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  Just (instanceBinderWithDeps (SymPath insidePath "str")
-                               (FuncTy [RefTy structTy] StringTy)
-                               (templateStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
+  if typeIsGeneric structTy
+  then Just (templateGenericStr insidePath structTy membersXObjs, [])
+  else Just (instanceBinderWithDeps (SymPath insidePath "str")
+              (FuncTy [RefTy structTy] StringTy)
+              (templateStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
 templateForStr _ _ _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
@@ -207,48 +208,6 @@ tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
-
-templatePrn :: [String] -> Ty -> [XObj] -> (String, Binder)
-templatePrn pathStrings structTy@(StructTy name varTys) [XObj (Arr membersXObjs) _ _] =
-  defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath pathStrings "prn"
-        t = FuncTy [(RefTy structTy)] StringTy
-        members = memberXObjsToPairs membersXObjs
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (\(FuncTy [RefTy concreteStructTy] StringTy) ->
-               (toTemplate $ "string $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
-            (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-               let correctedMembers = correctMemberTys members concreteMemberTys
-               in (toTemplate $ unlines [ "$DECL {"
-                                        , "  // convert members to string here:"
-                                        , "  string temp = NULL;"
-                                        , "  int tempsize = 0;"
-                                        , "  (void)tempsize; // that way we remove the occasional unused warning "
-                                        , calculateStructStrSize typeEnv env correctedMembers structTy
-                                        , "  string buffer = CARP_MALLOC(size);"
-                                        , "  string bufferPtr = buffer;"
-                                        , ""
-                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
-                                        , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
-                                        , "  // Concrete member tys: " ++ show concreteMemberTys
-                                        , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
-                                        , "  bufferPtr--;"
-                                        , "  snprintf(bufferPtr, size, \")\");"
-                                        , "  return buffer;"
-                                        , "}"]))
-            (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
-               concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                  (map snd (correctMemberTys members concreteMemberTys)))
-              ++
-              (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
-            )
-
-
-
 -- | The template for the 'str' function for a deftype.
 templateStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
 templateStr typeEnv env t@(StructTy typeName _) members =
@@ -302,6 +261,46 @@ calculateStructStrSize typeEnv env members structTy =
                                , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                                ]
                   else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
+
+templateGenericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
+templateGenericStr pathStrings structTy@(StructTy name varTys) membersXObjs =
+  defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath pathStrings "str"
+        t = FuncTy [(RefTy structTy)] StringTy
+        members = memberXObjsToPairs membersXObjs
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (\(FuncTy [RefTy concreteStructTy] StringTy) ->
+               (toTemplate $ "string $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
+            (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
+               let correctedMembers = correctMemberTys members concreteMemberTys
+               in (toTemplate $ unlines [ "$DECL {"
+                                        , "  // convert members to string here:"
+                                        , "  string temp = NULL;"
+                                        , "  int tempsize = 0;"
+                                        , "  (void)tempsize; // that way we remove the occasional unused warning "
+                                        , calculateStructStrSize typeEnv env correctedMembers structTy
+                                        , "  string buffer = CARP_MALLOC(size);"
+                                        , "  string bufferPtr = buffer;"
+                                        , ""
+                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
+                                        , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
+                                        , "  // Concrete member tys: " ++ show concreteMemberTys
+                                        , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
+                                        , "  bufferPtr--;"
+                                        , "  snprintf(bufferPtr, size, \")\");"
+                                        , "  return buffer;"
+                                        , "}"]))
+            (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
+               concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
+                  (map snd (correctMemberTys members concreteMemberTys)))
+              ++
+              (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
+            )
+
 
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.

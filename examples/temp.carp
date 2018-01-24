@@ -33,7 +33,7 @@
 
 (deftype (Gen t) [x t])
 (defn g []
-  (IO.println (ref (Gen.prn &(Gen.init (Gen.init [true false]))))))
+  (IO.println (ref (Gen.str &(Gen.init (Gen.init [true false]))))))
 
 (defn main []
   (do (f) (g)))
