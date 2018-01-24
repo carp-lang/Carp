@@ -226,6 +226,7 @@ templatePrn pathStrings structTy@(StructTy name varTys) [XObj (Arr membersXObjs)
                                         , "  // convert members to string here:"
                                         , "  string temp = NULL;"
                                         , "  int tempsize = 0;"
+                                        , "  (void)tempsize; // that way we remove the occasional unused warning "
                                         , calculateStructStrSize typeEnv env correctedMembers structTy
                                         , "  string buffer = CARP_MALLOC(size);"
                                         , "  string bufferPtr = buffer;"
@@ -260,6 +261,7 @@ templateStr typeEnv env t@(StructTy typeName _) members =
                                 , "  // convert members to string here:"
                                 , "  string temp = NULL;"
                                 , "  int tempsize = 0;"
+                                , "  (void)tempsize; // that way we remove the occasional unused warning "
                                 , calculateStructStrSize typeEnv env correctedMembers structTy
                                 , "  string buffer = CARP_MALLOC(size);"
                                 , "  string bufferPtr = buffer;"

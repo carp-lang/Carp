@@ -27,7 +27,7 @@
           total))))
 
   (defn mean [data]
-    (/ (sum data) (from-int (Array.count data))))
+    (/ (Statistics.sum data) (from-int (Array.count data))))
 
   (defn min [a]
     (let [m (Double.copy (Array.nth a 0))]
@@ -184,7 +184,7 @@
 
   (defn summary [samples]
     (Summary.init
-      (sum samples)
+      (Statistics.sum samples)
       (min samples)
       (max samples)
       (mean samples)

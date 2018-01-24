@@ -1,7 +1,16 @@
+(load "Statistics.carp")
+
 (system-include "bench.h")
 (register get-time-elapsed (Fn [] Double))
 
 (defmodule Bench
+  (def min-runs 50)
+
+  (defn set-min-runs! [n]
+    ; / 2 because we run it twice per benchmarking run,
+    ; but this is an implementation detail
+    (set! &min-runs (/ n 2)))
+
   (defn get-unit [n]
     (cond
       (< n 1000.0) (String.append (Double.str n) @"ns")
@@ -32,9 +41,9 @@
 
   (defn get-samples [f n]
     (let [zero 0.0
-          samples (Array.replicate 50 &zero)]
+          samples (Array.replicate min-runs &zero)]
       (do
-        (for [i 0 50]
+        (for [i 0 min-runs]
           (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
         (Statistics.summary &(Statistics.winsorize &samples 5.0)))))
 
