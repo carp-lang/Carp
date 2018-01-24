@@ -14,6 +14,7 @@
 (defn inc-ref [x] (+ @x 1))
 
 (defn make-zero [] 0)
+(defn make-idx [i] i)
 
 (defn main []
   (let [a (range 0 9 1)
@@ -36,6 +37,10 @@
                     &[0 0 0 0]
                     &(repeat 4 make-zero)
                     "repeat works as expected")
+      (assert-equal test
+                    &[0 1 2 3]
+                    &(repeat-indexed 4 make-idx)
+                    "repeat-indexed works as expected")
       (assert-equal test
                     1
                     (first &[1 2 3])
