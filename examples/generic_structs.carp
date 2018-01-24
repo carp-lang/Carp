@@ -2,11 +2,11 @@
 
 (defn main []
   (do
-    (IO.println (ref (Pair.str &(Pair.init (Pair.init [(Pair.init 1.0f \q)] 20) (Pair.init true false)))))
-    (IO.println &(Pair.str &(Pair.init 10 @"hello")))
-    (IO.println &(Pair.str &(Pair.init true 3.2)))
-    (IO.println &(Pair.str &(Pair.init [1 2 3] [true false true false])))
-    (IO.println &(Pair.str &(Pair.update-x (Pair.init 100 100) Int.inc)))
-    (IO.println &(Pair.str &(Pair.set-y (Pair.init 100 100) 200)))
+    (IO.println (ref (str &(Pair.init (Pair.init [(Pair.init 1.0f \q)] 20) (Pair.init true false)))))
+    (IO.println &(str &(Pair.init 10 @"hello")))
+    (IO.println &(str &(Pair.init true 3.2)))
+    (IO.println &(str &(Pair.init [1 2 3] [true false true false])))
+    (IO.println &(str &(Pair.update-x (Pair.init 100 100) Int.inc)))
+    (IO.println &(str &(Pair.set-y (Pair.init 100 100) 200)))
     (IO.println &(str (Pair.x &(Pair.init 100 100))))
     ))

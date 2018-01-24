@@ -197,7 +197,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
 matchingSignature :: Ty -> (Ty, SymPath) -> Bool
 matchingSignature tA (tB, _) =
-  areUnifiable tA tB
+  let result = areUnifiable tA tB
+  in --(trace ("Are " ++ show tA ++ " unifyable with " ++ show tB ++ "? " ++ show result))
+     result
 
 -- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
 -- matchingNonGenericSignature actualType (t, s) =
