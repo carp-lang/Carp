@@ -27,6 +27,13 @@
 
 (deftype Inner [])
 (deftype Outer [stuff Inner])
-(defn main []
+(defn f []
   (let [b (Outer.init (Inner.init))]
     (IO.println (ref (Outer.str &b)))))
+
+(deftype (Gen t) [x t])
+(defn g []
+  (IO.println (ref (Gen.prn &(Gen.init (Gen.init [true false]))))))
+
+(defn main []
+  (do (f) (g)))
