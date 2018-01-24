@@ -117,6 +117,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
   where bindings = Map.fromList [ templateNth
                                 , templateReplicate
                                 , templateRepeat
+                                , templateRepeatIndexed
                                 , templateCopyingMap
                                 , templateEMap
                                 , templateFilter
@@ -144,6 +145,7 @@ dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList $
                     [ addCommand "list?" 1 commandIsList
+                    , addCommand "symbol?" 1 commandIsSymbol
                     , addCommand "count" 1 commandCount
                     , addCommand "car" 1 commandCar
                     , addCommand "cdr" 1 commandCdr

@@ -242,6 +242,31 @@ templateRepeat = defineTypeParameterizedTemplate templateCreator path t
                 in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
                     depsForDeleteFunc typeEnv env arrayType)
 
+
+templateRepeatIndexed :: (String, Binder)
+templateRepeatIndexed = defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath ["Array"] "repeat-indexed"
+        t = FuncTy [IntTy, FuncTy [IntTy] (VarTy "t")] (StructTy "Array" [VarTy "t"])
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+             Template
+             t
+             (const (toTemplate "Array $NAME(int n, $(Fn [int] t) f)"))
+             (const
+                (toTemplate $ unlines
+                  [ "$DECL {"
+                  , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
+                  , "    for(int i = 0; i < n; ++i) {"
+                  , "      (($t*)a.data)[i] = f(i);"
+                  , "    }"
+                  , "    return a;"
+                  , "}"]))
+             (\(FuncTy [_, ft] arrayType) ->
+                let StructTy _ [insideType] = arrayType
+                in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
+                    depsForDeleteFunc typeEnv env arrayType)
+
+
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate
   (SymPath ["Array"] "raw")
