@@ -232,7 +232,7 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
-  replicate indent ' ' ++ name ++ " (" ++ show (getPath xobj) ++ ")" ++
+  replicate indent ' ' ++ name ++ --" (" ++ show (getPath xobj) ++ ")" ++
   " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.
