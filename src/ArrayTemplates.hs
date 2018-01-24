@@ -186,87 +186,6 @@ templateSort = defineTypeParameterizedTemplate templateCreator path t
                ,defineArrayTypeAlias arrayType] ++
                depsForDeleteFunc typeEnv env arrayType)
 
-templateReplicate :: (String, Binder)
-templateReplicate = defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath ["Array"] "replicate"
-        t = FuncTy [IntTy, RefTy (VarTy "t")] (StructTy "Array" [VarTy "t"])
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-             Template
-             t
-             (const (toTemplate "Array $NAME(int n, $t *elem)"))
-             (\(FuncTy [_, _] arrayType) ->
-                let StructTy _ [insideType] = arrayType
-                    copierType = FuncTy [RefTy insideType] insideType
-                    copierPath = if isManaged typeEnv insideType -- TODO: also check if it's an external function
-                                 then case nameOfPolymorphicFunction typeEnv env copierType "copy" of
-                                        Just p -> Just p
-                                        Nothing -> error ("Can't find copy function for array type: " ++ show insideType)
-                                 else Nothing
-                in
-                toTemplate $ unlines [ "$DECL {"
-                        , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
-                        , "    for(int i = 0; i < n; ++i) {"
-                        , "      (($t*)a.data)[i] = " ++ case copierPath of
-                                                           Just p -> pathToC p ++ "(elem);"
-                                                           Nothing -> "*elem;"
-                        , "    }"
-                        , "    return a;"
-                        , "}"])
-             (\(FuncTy [_, _] arrayType) ->
-                let StructTy _ [insideType] = arrayType
-                in defineArrayTypeAlias arrayType :
-                   depsForDeleteFunc typeEnv env arrayType ++
-                   depsForCopyFunc typeEnv env insideType)
-
-templateRepeat :: (String, Binder)
-templateRepeat = defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath ["Array"] "repeat"
-        t = FuncTy [IntTy, FuncTy [] (VarTy "t")] (StructTy "Array" [VarTy "t"])
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-             Template
-             t
-             (const (toTemplate "Array $NAME(int n, $(Fn [] t) f)"))
-             (const
-                (toTemplate $ unlines
-                  [ "$DECL {"
-                  , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
-                  , "    for(int i = 0; i < n; ++i) {"
-                  , "      (($t*)a.data)[i] = f();"
-                  , "    }"
-                  , "    return a;"
-                  , "}"]))
-             (\(FuncTy [_, ft] arrayType) ->
-                let StructTy _ [insideType] = arrayType
-                in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
-                    depsForDeleteFunc typeEnv env arrayType)
-
-
-templateRepeatIndexed :: (String, Binder)
-templateRepeatIndexed = defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath ["Array"] "repeat-indexed"
-        t = FuncTy [IntTy, FuncTy [IntTy] (VarTy "t")] (StructTy "Array" [VarTy "t"])
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-             Template
-             t
-             (const (toTemplate "Array $NAME(int n, $(Fn [int] t) f)"))
-             (const
-                (toTemplate $ unlines
-                  [ "$DECL {"
-                  , "    Array a; a.len = n; a.data = CARP_MALLOC(sizeof($t) * n);"
-                  , "    for(int i = 0; i < n; ++i) {"
-                  , "      (($t*)a.data)[i] = f(i);"
-                  , "    }"
-                  , "    return a;"
-                  , "}"]))
-             (\(FuncTy [_, ft] arrayType) ->
-                let StructTy _ [insideType] = arrayType
-                in  defineArrayTypeAlias arrayType : defineFunctionTypeAlias ft :
-                    depsForDeleteFunc typeEnv env arrayType)
-
-
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate
   (SymPath ["Array"] "raw")
@@ -320,6 +239,25 @@ templateCount = defineTypeParameterizedTemplate templateCreator path t
             (\(FuncTy [(RefTy arrayType)] _) ->
                [defineArrayTypeAlias arrayType] ++
               depsForDeleteFunc typeEnv env arrayType)
+
+templateAllocate :: (String, Binder)
+templateAllocate = defineTypeParameterizedTemplate templateCreator path t
+  where path = (SymPath ["Array"] "allocate")
+        t = (FuncTy [IntTy] (StructTy "Array" [VarTy "t"]))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "Array $NAME (int n)"))
+            (const (toTemplate $ unlines ["$DECL {"
+                                         ,"    Array a;"
+                                         ,"    a.len = n;"
+                                         ,"    a.data = CARP_MALLOC(n*sizeof($t));"
+                                         ,"    return a;"
+                                         ,"}"]))
+            (\(FuncTy [_] arrayType) ->
+               [defineArrayTypeAlias arrayType] ++
+               depsForDeleteFunc typeEnv env arrayType)
 
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t

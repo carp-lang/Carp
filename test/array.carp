@@ -12,6 +12,8 @@
 
 (defn inc-ref [x] (+ @x 1))
 
+(defn make-zero [] 0)
+
 (defn main []
   (let [a (range 0 9 1)
         b (Array.replicate 5 "Hi")]
@@ -25,6 +27,14 @@
       (assert-false test
                     (= &[1 2 3] &[1 2 34])
                     "= works as expected")
+      (assert-equal test
+                    &[0 0 0 0]
+                    &(replicate 4 &0)
+                    "replicate works as expected")
+      (assert-equal test
+                    &[0 0 0 0]
+                    &(repeat 4 make-zero)
+                    "repeat works as expected")
       (assert-equal test
                     1
                     (first &[1 2 3])
