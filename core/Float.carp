@@ -1,4 +1,4 @@
-(system-include "float.h")
+(system-include "carp_float.h")
 
 (defmodule Float
   (def pi 3.1415926536f)

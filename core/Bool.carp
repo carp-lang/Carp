@@ -1,4 +1,4 @@
-(system-include "bool.h")
+(system-include "carp_bool.h")
 
 (defmodule Bool
   (register = (Fn [Bool Bool] Bool))

@@ -1,4 +1,4 @@
-(system-include "char.h")
+(system-include "carp_char.h")
 
 (defmodule Char
   (register = (Fn [Char Char] Bool))

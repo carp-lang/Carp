@@ -1,4 +1,4 @@
-(system-include "io.h")
+(system-include "carp_io.h")
 
 (defmodule IO
   (register println (Fn [(Ref String)] ()))

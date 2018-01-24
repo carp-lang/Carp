@@ -1,4 +1,4 @@
-(system-include "int.h")
+(system-include "carp_int.h")
 
 (defmodule Int
   (register + (λ [Int Int] Int))

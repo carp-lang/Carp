@@ -1,4 +1,4 @@
-(system-include "system.h")
+(system-include "carp_system.h")
 
 (defmodule System
   (register free (Fn [t] ()))

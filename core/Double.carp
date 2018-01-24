@@ -1,4 +1,4 @@
-(system-include "double.h")
+(system-include "carp_double.h")
 
 (defmodule Double
   (def pi 3.141592653589793)

@@ -1,6 +1,6 @@
 (load "Statistics.carp")
 
-(system-include "bench.h")
+(system-include "carp_bench.h")
 (register get-time-elapsed (Fn [] Double))
 
 (defmodule Bench
