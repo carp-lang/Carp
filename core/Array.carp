@@ -118,9 +118,6 @@
           (set! &e (+ e step))))
       x))
 
-  ;(defmacro push-back! [a e]
-  ;  (list 'set! a (list 'Array.push-back (list 'copy a) e)))
-
   (defn sort [a]
     (sort-with a cmp))
 
@@ -137,12 +134,6 @@
   (defn replicate [n e]
     (let-do [a (allocate n)]
       (for [i 0 n] (aset! &a i @e))
-      a))
-
-  (defn endo-map [f a]
-    (do
-      (for [i 0 (count &a)]
-        (aset! &a i (f @(nth &a i))))
       a))
 
   (defn copy-map [f a]
