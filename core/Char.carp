@@ -1,3 +1,5 @@
+(system-include "char.h")
+
 (defmodule Char
   (register = (Fn [Char Char] Bool))
   (register str (Fn [Char] String))

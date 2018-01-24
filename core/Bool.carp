@@ -1,3 +1,5 @@
+(system-include "bool.h")
+
 (defmodule Bool
   (register = (Fn [Bool Bool] Bool))
   (register /= (Fn [Bool Bool] Bool))

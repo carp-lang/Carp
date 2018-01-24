@@ -1,3 +1,5 @@
+(system-include "io.h")
+
 (defmodule IO
   (register println (Fn [(Ref String)] ()))
   (register print (Fn [(Ref String)] ()))

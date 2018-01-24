@@ -1,3 +1,5 @@
+(system-include "system.h")
+
 (defmodule System
   (register free (Fn [t] ()))
   (register time (Fn [] Int))

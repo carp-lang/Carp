@@ -1,3 +1,5 @@
+(system-include "long.h")
+
 (defmodule Long
   (register + (λ [Long Long] Long))
   (register - (λ [Long Long] Long))
