@@ -11,61 +11,6 @@ import Polymorphism
 import Concretize
 import Debug.Trace
 
-templateCopyingMap :: (String, Binder)
-templateCopyingMap = defineTypeParameterizedTemplate templateCreator path t
-  where fTy = FuncTy [RefTy (VarTy "a")] (VarTy "b")
-        aTy = RefTy (StructTy "Array" [VarTy "a"])
-        bTy = StructTy "Array" [VarTy "b"]
-        path = SymPath ["Array"] "copy-map"
-        t = FuncTy [fTy, aTy] bTy
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (const (toTemplate "Array $NAME($(Fn [(Ref a)] b) f, Array* a)"))
-            (\(FuncTy [FuncTy [_] outputTy, _] _) ->
-               (toTemplate $ unlines
-                  [ "$DECL { "
-                  , "    Array b;"
-                  , "    b.len = a->len;"
-                  , "    b.data = CARP_MALLOC(sizeof($b) * a->len);"
-                  , "    for(int i = 0; i < a->len; ++i) {"
-                  , if outputTy == UnitTy
-                    then "        f(&(($a*)a->data)[i]); "
-                    else "        (($b*)b.data)[i] = f(&(($a*)a->data)[i]);"
-                  , "    }"
-                  , "    return b;"
-                  , "}"
-                  ]))
-            (\(FuncTy [ft@(FuncTy [_] _), RefTy arrayTypeA] arrayTypeB) ->
-               [defineFunctionTypeAlias ft,
-                defineArrayTypeAlias arrayTypeA,
-                defineArrayTypeAlias arrayTypeB] ++
-                depsForDeleteFunc typeEnv env arrayTypeA ++
-                depsForDeleteFunc typeEnv env arrayTypeB)
-
--- | "Endofunctor Map"
-templateEMap :: (String, Binder)
-templateEMap =
-  let fTy = FuncTy [VarTy "a"] (VarTy "a")
-      aTy = StructTy "Array" [VarTy "a"]
-      bTy = StructTy "Array" [VarTy "a"]
-  in  defineTemplate
-      (SymPath ["Array"] "endo-map")
-      (FuncTy [fTy, aTy] bTy)
-      (toTemplate "Array $NAME($(Fn [a] a) f, Array a)")
-      (toTemplate $ unlines
-        ["$DECL { "
-        ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($a*)a.data)[i] = f((($a*)a.data)[i]); "
-        ,"    }"
-        ,"    return a;"
-        ,"}"
-        ])
-      (\(FuncTy [t, arrayType] _) ->
-         [defineFunctionTypeAlias t,
-          defineArrayTypeAlias arrayType])
-
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
   where

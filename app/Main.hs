@@ -116,8 +116,6 @@ arrayModule :: Env
 arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ templateNth
                                 , templateAllocate
-                                , templateCopyingMap
-                                , templateEMap
                                 , templateFilter
                                 , templateRaw
                                 , templateAset

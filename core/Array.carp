@@ -138,4 +138,16 @@
     (let-do [a (allocate n)]
       (for [i 0 n] (aset! &a i @e))
       a))
+
+  (defn endo-map [f a]
+    (do
+      (for [i 0 (count &a)]
+        (aset! &a i (f @(nth &a i))))
+      a))
+
+  (defn copy-map [f a]
+    (let-do [na (allocate (count a))]
+      (for [i 0 (count a)]
+        (aset! &na i (f (nth a i))))
+      na))
 )
