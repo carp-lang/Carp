@@ -394,6 +394,7 @@ commandCons :: CommandCallback
 commandCons [x, xs] =
   case xs of
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
+    XObj (Arr arr) _ _ -> return (Right (XObj (Arr (x : arr)) (info x) (ty x)))
     _ -> return (Left (EvalError "Applying 'cons' to non-list or empty list."))
 
 commandConsLast :: CommandCallback

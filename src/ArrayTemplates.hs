@@ -243,9 +243,9 @@ templateRepeat = defineTypeParameterizedTemplate templateCreator path t
                     depsForDeleteFunc typeEnv env arrayType)
 
 
-templateInitialize :: (String, Binder)
-templateInitialize = defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath ["Array"] "initialize"
+templateRepeatIndexed :: (String, Binder)
+templateRepeatIndexed = defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath ["Array"] "repeat-indexed"
         t = FuncTy [IntTy, FuncTy [IntTy] (VarTy "t")] (StructTy "Array" [VarTy "t"])
         templateCreator = TemplateCreator $
           \typeEnv env ->
