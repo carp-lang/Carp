@@ -145,9 +145,8 @@ templatesForMembers _ _ _ _ _ = error "Can't create member functions for type wi
 
 -- | Generate the templates for a single member in a deftype declaration.
 templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> [((String, Binder), [XObj])]
-templatesForSingleMember typeEnv env insidePath structTy@(StructTy typeName _) (nameXObj, typeXObj) =
+templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
-      p = StructTy typeName []
       memberName = getName nameXObj
       fixedMemberTy = if isManaged typeEnv t then RefTy t else t
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
