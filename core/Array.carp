@@ -107,18 +107,38 @@
 
   ; cannot use for, because we want also be able to go downwards
   (defn range [start end step]
-    (let-do [x []
+    (let-do [x (allocate (Int.inc (Int.abs (/ (- end start) step))))
              e start
+             i 0
              op (if (< start end) <= >=)]
       (while (op e end)
         (do
-          (set! &x (push-back x e))
+          (aset! &x i e)
+          (set! &i (Int.inc i))
           (set! &e (+ e step))))
       x))
 
-  ;(defmacro push-back! [a e]
-  ;  (list 'set! a (list 'Array.push-back (list 'copy a) e)))
-
   (defn sort [a]
     (sort-with a cmp))
+
+  (defn repeat [n f]
+    (let-do [a (allocate n)]
+      (for [i 0 n] (aset! &a i (f)))
+      a))
+
+  (defn repeat-indexed [n f]
+    (let-do [a (allocate n)]
+      (for [i 0 n] (aset! &a i (f i)))
+      a))
+
+  (defn replicate [n e]
+    (let-do [a (allocate n)]
+      (for [i 0 n] (aset! &a i @e))
+      a))
+
+  (defn copy-map [f a]
+    (let-do [na (allocate (count a))]
+      (for [i 0 (count a)]
+        (aset! &na i (f (nth a i))))
+      na))
 )

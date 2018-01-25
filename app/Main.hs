@@ -115,10 +115,7 @@ repl context readSoFar =
 arrayModule :: Env
 arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ templateNth
-                                , templateReplicate
-                                , templateRepeat
-                                , templateRepeatIndexed
-                                , templateCopyingMap
+                                , templateAllocate
                                 , templateEMap
                                 , templateFilter
                                 , templateRaw
