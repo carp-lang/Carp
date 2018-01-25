@@ -185,7 +185,7 @@ instantiateGenericType _ _ =
 instantiateGenericStructType :: Map.Map String Ty -> Ty -> [XObj] -> [XObj]
 instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
-  let concretelyTypedMembers = concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
+  let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
   in  [ XObj (Lst (XObj (Typ structTy) Nothing Nothing :
                   XObj (Sym (SymPath [] (tyToC structTy)) Symbol) Nothing Nothing :
                    [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
@@ -196,13 +196,17 @@ instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
                                       Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
       (pairwise memberXObjs)
 
+replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
+replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
+  concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
+
 replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _) i t) =
   let Just perhapsTyVar = xobjToTy xobj
   in if isFullyGenericType perhapsTyVar
      then case Map.lookup name mappings of
             Just found -> tyToXObj found
-            Nothing -> error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj)
+            Nothing -> xobj -- error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj ++ ", mappings: " ++ show mappings)
      else xobj
 replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
   (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
