@@ -134,7 +134,7 @@ mangle = replaceChars (Map.fromList [('+', "_PLUS_")
 unifySignatures :: Ty -> Ty -> TypeMappings
 unifySignatures v t = Map.fromList (unify v t)
   where unify :: Ty -> Ty -> [(String, Ty)]
-        --unify a@(VarTy _) b@(VarTy _) = error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@(VarTy _) b@(VarTy _) = error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (VarTy a) value = [(a, value)]
 
