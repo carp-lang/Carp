@@ -38,4 +38,4 @@
 ;; TRIXY
 (deftype (Entry a b) [key a value b])
 (deftype (Bucket a b) [length Int, entries (Array (Entry a b))])
-(defn f [] (Bucket.init 10 [(Entry.init @"hello" 12345)]))
+(defn f [] (let [b (Bucket.init 10 [(Entry.init @"hello" 12345)])] ()))
