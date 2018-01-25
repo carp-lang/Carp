@@ -264,9 +264,9 @@ depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : r
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
       let members = memberXObjsToPairs arr
-          correctedMembers = correctMemberTys members varTys
-          depths = map (depthOfType typeEnv selfName . snd) correctedMembers
-      in depths
+          depthsFromMembers = map (depthOfType typeEnv selfName . snd) members
+          depthsFromVarTys = map (depthOfType typeEnv selfName) varTys
+      in depthsFromMembers ++ depthsFromVarTys
     expandCase _ = error "Malformed case in typedef."
 depthOfDeftype _ xobj _ =
   error ("Can't get dependency depth from " ++ show xobj)
@@ -304,19 +304,39 @@ depthOfType typeEnv selfName = visitType
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
 memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
 
--- | Change the member types on member pairs.
-correctMemberTys :: [(String, Ty)] -> [Ty] -> [(String, Ty)]
-correctMemberTys members concreteMemberTys =
-  case concreteMemberTys of
-    [] -> members -- Not a generic type, leave members as-is.
-    _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
+replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
+replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
+  concatMap (\(v, t) -> [v, replaceGenericTypeSymbols mappings t]) (pairwise memberXObjs)
 
--- | Change the type on one member pair if it unifies with the one currently there.
-replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
-replaceGenericMemberTy (memberName, memberTy) concreteTy =
-  if areUnifiable memberTy concreteTy
-  then (memberName, concreteTy)
-  else (memberName, memberTy)
+replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
+replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _) i t) =
+  let Just perhapsTyVar = xobjToTy xobj
+  in if isFullyGenericType perhapsTyVar
+     then case Map.lookup name mappings of
+            Just found -> tyToXObj found
+            Nothing -> xobj -- error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj ++ ", mappings: " ++ show mappings)
+     else xobj
+replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
+  (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
+replaceGenericTypeSymbols _ xobj = xobj
+
+tyToXObj :: Ty -> XObj
+tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
+tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
+
+-- -- | Change the member types on member pairs.
+-- correctMemberTys :: [(String, Ty)] -> [Ty] -> [(String, Ty)]
+-- correctMemberTys members concreteMemberTys =
+--   case concreteMemberTys of
+--     [] -> members -- Not a generic type, leave members as-is.
+--     _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
+
+-- -- | Change the type on one member pair if it unifies with the one currently there.
+-- replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
+-- replaceGenericMemberTy (memberName, memberTy) concreteTy =
+--   if areUnifiable memberTy concreteTy
+--   then (memberName, concreteTy)
+--   else (memberName, memberTy)
 
 
 
