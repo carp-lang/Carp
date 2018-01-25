@@ -224,8 +224,8 @@ templateStr typeEnv env t@(StructTy typeName _) members =
                                 , "  string buffer = CARP_MALLOC(size);"
                                 , "  string bufferPtr = buffer;"
                                 , ""
-                                , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
-                                , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
+                                , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
+                                , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
                                 , "  // Concrete member tys: " ++ show concreteMemberTys
                                 , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
                                 , "  bufferPtr--;"
@@ -241,8 +241,8 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     )
 
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
-calculateStructStrSize typeEnv env members structTy =
-  "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ tyToC structTy ++ "\");\n" ++
+calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
+  "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n" ++
     unlines (map memberStrSize members)
   where memberStrSize (memberName, memberTy) =
           let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
@@ -262,7 +262,7 @@ calculateStructStrSize typeEnv env members structTy =
                   else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 templateGenericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericStr pathStrings structTy@(StructTy name varTys) membersXObjs =
+templateGenericStr pathStrings structTy@(StructTy typeName varTys) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings "str"
         t = FuncTy [(RefTy structTy)] StringTy
@@ -284,8 +284,8 @@ templateGenericStr pathStrings structTy@(StructTy name varTys) membersXObjs =
                                         , "  string buffer = CARP_MALLOC(size);"
                                         , "  string bufferPtr = buffer;"
                                         , ""
-                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ tyToC structTy ++ "\");"
-                                        , "  bufferPtr += strlen(\"" ++ tyToC structTy ++ "\") + 2;\n"
+                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
+                                        , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
                                         , "  // Concrete member tys: " ++ show concreteMemberTys
                                         , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
                                         , "  bufferPtr--;"
