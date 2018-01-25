@@ -132,7 +132,7 @@ templateForDelete _ _ _ _ _ = Nothing
 templateForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   Just (instanceBinderWithDeps (SymPath insidePath "copy")
-                               (FuncTy [RefTy structTy] (StructTy typeName []))
+                               (FuncTy [RefTy structTy] structTy)
                                (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 

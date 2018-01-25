@@ -25,15 +25,11 @@
 ;;    &(str
 ;;      &(Pair.init 5.6 true))))
 
-(deftype Inner [])
-(deftype Outer [stuff Inner])
-(defn f []
-  (let [b (Outer.init (Inner.init))]
-    (IO.println (ref (Outer.str &b)))))
+(deftype (Trivial t) [x t])
 
-(deftype (Gen t) [x t])
-(defn g []
-  (IO.println (ref (Gen.str &(Gen.init (Gen.init [true false]))))))
+(defn construct-from-ref [r]
+  (Trivial.init @r))
 
-(defn main []
-  (do (f) (g)))
+(defn-do main []
+  (println* &(Array.repeat-indexed 5 Trivial.init))
+  (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init))))
