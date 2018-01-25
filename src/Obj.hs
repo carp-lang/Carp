@@ -324,22 +324,6 @@ tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
--- -- | Change the member types on member pairs.
--- correctMemberTys :: [(String, Ty)] -> [Ty] -> [(String, Ty)]
--- correctMemberTys members concreteMemberTys =
---   case concreteMemberTys of
---     [] -> members -- Not a generic type, leave members as-is.
---     _ -> zipWith replaceGenericMemberTy members concreteMemberTys -- Concretization of generic type, use concrete types.
-
--- -- | Change the type on one member pair if it unifies with the one currently there.
--- replaceGenericMemberTy :: (String, Ty) -> Ty -> (String, Ty)
--- replaceGenericMemberTy (memberName, memberTy) concreteTy =
---   if areUnifiable memberTy concreteTy
---   then (memberName, concreteTy)
---   else (memberName, memberTy)
-
-
-
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
 register name t = (name, Binder (XObj (Lst [XObj External Nothing Nothing,
