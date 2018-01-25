@@ -198,9 +198,14 @@ instantiateGenericStructType mappings structTy@(StructTy _ _) memberXObjs =
 
 replaceGenericTypeSymbols :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _) i t) =
-  case Map.lookup name mappings of
-    Just found -> tyToXObj found
-    Nothing -> error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj)
+  let Just perhapsTyVar = xobjToTy xobj
+  in if isFullyGenericType perhapsTyVar
+     then case Map.lookup name mappings of
+            Just found -> tyToXObj found
+            Nothing -> error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj)
+     else xobj
+replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
+  (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
 replaceGenericTypeSymbols _ xobj = xobj
 
 tyToXObj :: Ty -> XObj

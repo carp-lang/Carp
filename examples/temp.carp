@@ -25,11 +25,17 @@
 ;;    &(str
 ;;      &(Pair.init 5.6 true))))
 
-(deftype (Trivial t) [x t])
+;;;; TRIVIAL GENERIC TYPE
+;; (deftype (Trivial t) [x t])
 
-(defn construct-from-ref [r]
-  (Trivial.init @r))
+;; (defn construct-from-ref [r]
+;;   (Trivial.init @r))
 
-(defn-do main []
-  (println* &(Array.repeat-indexed 5 Trivial.init))
-  (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init))))
+;; (defn-do main []
+;;   (println* &(Array.repeat-indexed 5 Trivial.init))
+;;   (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init))))
+
+;; TRIXY
+(deftype (Entry a b) [key a value b])
+(deftype (Bucket a b) [length Int, entries (Array (Entry a b))])
+(defn f [] (Bucket.init 10 [(Entry.init @"hello" 12345)]))
