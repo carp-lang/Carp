@@ -223,20 +223,19 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     (FuncTy [RefTy t] StringTy)
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-       let correctedMembers = correctMemberTys members concreteMemberTys
-       in (toTemplate $ unlines [ "$DECL {"
+        (toTemplate $ unlines [ "$DECL {"
                                 , "  // convert members to string here:"
                                 , "  string temp = NULL;"
                                 , "  int tempsize = 0;"
                                 , "  (void)tempsize; // that way we remove the occasional unused warning "
-                                , calculateStructStrSize typeEnv env correctedMembers structTy
+                                , calculateStructStrSize typeEnv env members structTy
                                 , "  string buffer = CARP_MALLOC(size);"
                                 , "  string bufferPtr = buffer;"
                                 , ""
                                 , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
                                 , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
                                 , "  // Concrete member tys: " ++ show concreteMemberTys
-                                , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
+                                , joinWith "\n" (map (memberStr typeEnv env) members)
                                 , "  bufferPtr--;"
                                 , "  snprintf(bufferPtr, size, \")\");"
                                 , "  return buffer;"
@@ -244,7 +243,7 @@ templateStr typeEnv env t@(StructTy typeName _) members =
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
                  (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                  (map snd (correctMemberTys members concreteMemberTys)))
+                  (map snd members))
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
     )
@@ -271,10 +270,10 @@ calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
                   else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 templateGenericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericStr pathStrings structTy@(StructTy typeName varTys) membersXObjs =
+templateGenericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings "str"
-        t = FuncTy [(RefTy structTy)] StringTy
+        t = FuncTy [(RefTy originalStructTy)] StringTy
         members = memberXObjsToPairs membersXObjs
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -282,31 +281,36 @@ templateGenericStr pathStrings structTy@(StructTy typeName varTys) membersXObjs 
             t
             (\(FuncTy [RefTy concreteStructTy] StringTy) ->
                (toTemplate $ "string $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
-            (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-               let correctedMembers = correctMemberTys members concreteMemberTys
+            (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                   memberPairs = memberXObjsToPairs correctedMembers
                in (toTemplate $ unlines [ "$DECL {"
                                         , "  // convert members to string here:"
                                         , "  string temp = NULL;"
                                         , "  int tempsize = 0;"
                                         , "  (void)tempsize; // that way we remove the occasional unused warning "
-                                        , calculateStructStrSize typeEnv env correctedMembers structTy
+                                        , calculateStructStrSize typeEnv env memberPairs concreteStructTy
                                         , "  string buffer = CARP_MALLOC(size);"
                                         , "  string bufferPtr = buffer;"
                                         , ""
                                         , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
                                         , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
                                         , "  // Concrete member tys: " ++ show concreteMemberTys
-                                        , joinWith "\n" (map (memberStr typeEnv env) correctedMembers)
+                                        , joinWith "\n" (map (memberStr typeEnv env) memberPairs)
                                         , "  bufferPtr--;"
                                         , "  snprintf(bufferPtr, size, \")\");"
                                         , "  return buffer;"
                                         , "}"]))
-            (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
-               concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
-                 (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                  (map snd (correctMemberTys members concreteMemberTys)))
-              ++
-              (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft])
+            (\(ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy)) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                   memberPairs = memberXObjsToPairs correctedMembers
+               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+                   (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
+                    (map snd (correctMemberTys members concreteMemberTys)))
+                   ++
+                   (if typeIsGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft])
             )
 
 
