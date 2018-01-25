@@ -123,9 +123,12 @@ initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 -- | Helper function to create the binder for the 'delete' template.
 templateForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+  -- if typeIsGeneric structTy
+  -- then Just (templateGenericDelete typeEnv env insidePath structTy membersXObjs, [])
+  -- else
   Just (instanceBinderWithDeps (SymPath insidePath "delete")
-                               (FuncTy [structTy] UnitTy)
-                               (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
+        (FuncTy [structTy] UnitTy)
+        (templateDelete typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForDelete _ _ _ _ _ = Nothing
 
 -- | Helper function to create the binder for the 'copy' template.
@@ -425,6 +428,30 @@ templateDelete typeEnv env members =
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
+
+-- templateGenericDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> (String, Binder)
+-- templateGenericDelete typeEnv env pathStrings originalStructTy membersXObjs =
+--   defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy)
+--   where path = SymPath pathStrings "delete"
+--         t = (FuncTy [VarTy "p"] UnitTy)
+--         templateCreator = TemplateCreator $
+--           \typeEnv env ->
+--             Template
+--             t
+--             (const (toTemplate "void $NAME($p p)"))
+--             (\(FuncTy [concreteStructTy] UnitTy) ->
+--                let mappings = unifySignatures originalStructTy concreteStructTy
+--                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+--                    memberPairs = memberXObjsToPairs correctedMembers
+--                in  (toTemplate $ unlines [ "$DECL {"
+--                                          , joinWith "\n" (map (memberDeletion typeEnv env) memberPairs)
+--                                          , "}"]))
+--             (\(FuncTy [concreteStructTy] UnitTy) ->
+--                let mappings = unifySignatures originalStructTy concreteStructTy
+--                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+--                    memberPairs = memberXObjsToPairs correctedMembers
+--                in  concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
+--                              (filter (isManaged typeEnv) (map snd memberPairs)))
 
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
