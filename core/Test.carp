@@ -78,8 +78,8 @@
     (State.set-failed (State.set-passed state 0) 0))
 
   (defn print-test-results [state]
-    (let [passed (State.passed state)
-          failed (State.failed state)]
+    (let [passed @(State.passed state)
+          failed @(State.failed state)]
       (do
         (IO.println "Results:")
         (if (Int.> (Int.+ passed failed) 0)
@@ -112,7 +112,7 @@
 (defmacro with-test [name :rest forms]
   (list 'let [name '&(Test.State.init 0 0)]
     (cons-last
-      (list 'Test.State.failed name)
+      (list 'Int.copy (list 'Test.State.failed name))
       (cons 'do (with-test-internal name forms)))))
 
 (defmacro deftest [name state-name :rest forms]

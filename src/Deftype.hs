@@ -142,9 +142,8 @@ templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> 
 templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
-      fixedMemberTy = if isManaged typeEnv t then RefTy t else t
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
-     , if typeIsGeneric fixedMemberTy
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) (RefTy t))
+     , if typeIsGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
        else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy (p), t] UnitTy) (templateSetterRef typeEnv env (mangle memberName) t)
@@ -336,14 +335,10 @@ memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ membe
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
 templateGetter member fixedMemberTy =
-  let maybeAmpersand = case fixedMemberTy of
-                         RefTy _ -> "&"
-                         _ -> ""
-  in
   Template
     (FuncTy [RefTy (VarTy "p")] (VarTy "t"))
     (const (toTemplate "$t $NAME($(Ref p) p)"))
-    (const (toTemplate ("$DECL { return " ++ maybeAmpersand ++ "(p->" ++ member ++ "); }\n")))
+    (const (toTemplate ("$DECL { return &(p->" ++ member ++ "); }\n")))
     (const [])
 
 -- | The template for setters of a deftype.

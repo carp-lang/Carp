@@ -130,6 +130,20 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateSort
                                 ]
 
+pointerModule :: Env
+pointerModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Pointer", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList [ templatePointerCopy ]
+
+templatePointerCopy :: (String, Binder)
+templatePointerCopy = defineTemplate
+  (SymPath ["Pointer"] "copy")
+  (FuncTy [RefTy (PointerTy (VarTy "p"))] (PointerTy (VarTy "p")))
+  (toTemplate "$p* $NAME ($p** ptrRef)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *ptrRef;"
+                        ,"}"])
+  (const [])
+
 dynamicStringModule :: Env
 dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "String", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
@@ -192,6 +206,7 @@ startingGlobalEnv noArray =
                                   , register "NULL" (VarTy "a")
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
+                   ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
 
 
@@ -203,7 +218,7 @@ startingTypeEnv = Env { envBindings = bindings
                       , envMode = ExternalEnv
                       }
   where bindings = Map.fromList
-          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy"] builtInSymbolInfo
+          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] builtInSymbolInfo
             , interfaceBinder "str" (FuncTy [(VarTy "a")] StringTy) [SymPath ["Array"] "str"] builtInSymbolInfo
               -- TODO: Implement! ("=", Binder (defineInterface "=" (FuncTy [(VarTy "a"), (VarTy "a")] BoolTy)))
             ]

@@ -2,13 +2,14 @@
 
 (deftype Age [x Int])
 
+;; TODO! Should be possible to use the IntRef implementation of = and < here but it resolves to the = in the Age module...
 (defmodule Age
   (defn = [a b]
-    (Int.= (Age.x a) (Age.x b)))
+    (Int.= @(Age.x a) @(Age.x b)))
   (defn > [a b]
-    (Int.> (Age.x a) (Age.x b)))
+    (Int.> @(Age.x a) @(Age.x b)))
   (defn < [a b]
-    (Int.< (Age.x a) (Age.x b))))
+    (Int.< @(Age.x a) @(Age.x b))))
 
 (defn main []
   (let-do [ints (sort [10 3 75 40])

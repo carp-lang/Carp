@@ -1,5 +1,5 @@
 (load "Debug.carp")
-;; (Debug.sanitize-addresses)
+(Debug.sanitize-addresses)
 ;; (project-set! "printAST" "true")
 (local-include "core.h")
 (project-set! "echoCompilationCommand" "true")
@@ -42,18 +42,37 @@
 ;; (defn main [] (println* &(f)))
 
 ;; Generic Hashmap Stuff
-;; (use Array)
+(use Array)
 
 (deftype (Entry a b) [key a value b])
-(deftype (Bucket a b) [length Int, entries (Array (Entry a b))])
-(info Bucket)
+(deftype (Bucket a b) [entries (Array (Entry a b))])
 
-;; ;;(defn main [] (println* &(Bucket.init 10000 [(Entry.init @"hello" 12345) (Entry.init @"goodbye" 666)])))
+(defmodule String
+  (defn zero [] @""))
 
-;; (defn f [x] (Int.+ (Bucket.length &x)))
+(defn get-object [bucket lookup-key]
+  (let-do [pairs (Bucket.entries bucket)
+           result (zero)]
+    (for [i 0 (count pairs)]
+      (let [pair (nth pairs i)]
+        (when (= (Entry.key pair) &lookup-key)
+          (set! &result @(Entry.value pair)))))
+    result))
+
+(defn main []
+  (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
+                               (Entry.init @"goodbye" 666)])]
+    (IO.println &(str &start))
+    (IO.println &(Int.str (get-object &start @"hello")))
+    ))
+
+
+
+
+
+
 
 ;; ;; (defn empty []
 ;; ;;   (Bucket.init 0 []))
-
 ;; ;; (defn f []
 ;; ;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this

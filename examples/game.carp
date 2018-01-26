@@ -54,7 +54,7 @@
       (let [lines (random-lines)
             n (count &lines)]
         (SDL_RenderDrawLines rend (raw lines) n))
-      (let [img (Images.img1 (the (Ref Images) images))]
+      (let [img @(Images.img1 (the (Ref Images) images))]
         (SDL_RenderCopyEx rend
                           img
                           (address (dimensions img))
