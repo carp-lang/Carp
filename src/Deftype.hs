@@ -123,9 +123,11 @@ initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 -- | Helper function to create the binder for the 'copy' template.
 templateForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 templateForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  Just (instanceBinderWithDeps (SymPath insidePath "copy")
-                               (FuncTy [RefTy structTy] structTy)
-                               (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
+  if typeIsGeneric structTy
+  then Just (templateGenericCopy insidePath structTy membersXObjs, [])
+  else Just (instanceBinderWithDeps (SymPath insidePath "copy")
+              (FuncTy [RefTy structTy] structTy)
+              (templateCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 templateForCopy _ _ _ _ _ = Nothing
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
@@ -459,6 +461,34 @@ templateCopy typeEnv env members =
                                 , "}"]))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
+
+templateGenericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
+templateGenericCopy pathStrings originalStructTy membersXObjs =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy] originalStructTy)
+  where path = SymPath pathStrings "copy"
+        t = (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "$p $NAME($p* pRef)"))
+            (\(FuncTy [RefTy concreteStructTy] _) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                   memberPairs = memberXObjsToPairs correctedMembers
+               in  (toTemplate $ unlines [ "$DECL {"
+                                         , "    $p copy = *pRef;"
+                                         , joinWith "\n" (map (memberCopy typeEnv env) memberPairs)
+                                         , "    return copy;"
+                                         , "}"]))
+            (\(FuncTy [RefTy concreteStructTy] _) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                   memberPairs = memberXObjsToPairs correctedMembers
+               in  if typeIsGeneric concreteStructTy
+                   then []
+                   else concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
+                                  (filter (isManaged typeEnv) (map snd memberPairs)))
 
 -- | Generate the C code for copying the member of a deftype.
 -- | TODO: Should return an Either since this can fail!
