@@ -249,7 +249,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
       XObj (Lst [XObj (Instantiate template) _ _, _]) _ _ ->
         Right (instantiateTemplate newPath concreteType template)
       err ->
-        error ("Can't concretize " ++ show err ++ ": " ++ pretty definition)
+        Left $ CannotConcretize definition
 
 -- | Find ALL functions with a certain name, matching a type signature.
 allFunctionsWithNameAndSignature env functionName functionType =

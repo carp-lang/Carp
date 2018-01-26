@@ -34,6 +34,7 @@ data TypeError = SymbolMissingType XObj Env
                | ArraysCannotContainRefs XObj
                | MainCanOnlyReturnUnitOrInt Ty
                | MainCannotHaveArguments Int
+               | CannotConcretize XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -112,6 +113,8 @@ instance Show TypeError where
     "Main function can only return Int or (), got " ++ show t
   show (MainCannotHaveArguments c) =
     "Main function can not have arguments, got " ++ show c
+  show (CannotConcretize obj) =
+    "Unable to concretize '" ++ pretty obj ++ "' at " ++ prettyInfoFromXObj obj
 
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
