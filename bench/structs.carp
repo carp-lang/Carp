@@ -1,0 +1,22 @@
+(load "Bench.carp")
+(use Bench)
+
+(deftype Point [x Int, y Int])
+
+(def p (Point.init 0 0))
+
+(defn creation [] (Point.init 0 0))
+(defn access [] (Point.x &p))
+(defn set [] (Point.set-x @&p 5))
+(defn update [] (Point.update-x @&p Int.inc))
+
+(defn main []
+  (do
+    (IO.println "Struct creation:")
+    (bench creation)
+    (IO.println "\nStruct access:")
+    (bench access)
+    (IO.println "\nUpdate lens:")
+    (bench update)
+    (IO.println "\nSetter lens:")
+    (bench set)))

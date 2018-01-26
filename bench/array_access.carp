@@ -1,0 +1,19 @@
+(load "Bench.carp")
+(use Bench)
+
+(def int-arr [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20])
+(def arr-arr [[1 2 3 4 5] [1 2 3 4 5] [6 7 8 9 10] [6 7 8 9 10]])
+(def str-arr [@"str1" @"str2" @"str3" @"str4" @"str5"])
+
+(defn int-access [] (ignore (Array.nth &int-arr 3)))
+(defn arr-access [] (ignore (Array.nth &arr-arr 3)))
+(defn str-access [] (ignore (Array.nth &str-arr 3)))
+
+(defn main []
+  (do
+    (IO.println "Array of Ints access times:")
+    (bench int-access)
+    (IO.println "\nArray of Arrays access times:")
+    (bench arr-access)
+    (IO.println "\nArray of Strings access times:")
+    (bench str-access)))

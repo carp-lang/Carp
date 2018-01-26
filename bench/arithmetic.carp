@@ -1,0 +1,100 @@
+(load "Bench.carp")
+(use Bench)
+
+(defn add-int [] (+ 100 100))
+(defn sub-int [] (- 100 100))
+(defn mul-int [] (* 100 100))
+(defn div-int [] (/ 100 100))
+(defn mod-int [] (mod 100 100))
+(defn random-int [] (Int.random))
+
+(defn add-long [] (+ 100l 100l))
+(defn sub-long [] (- 100l 100l))
+(defn mul-long [] (* 100l 100l))
+(defn div-long [] (/ 100l 100l))
+(defn mod-long [] (mod 100l 100l))
+(defn random-long [] (Long.random))
+
+(defn add-double [] (+ 100.0 100.0))
+(defn sub-double [] (- 100.0 100.0))
+(defn mul-double [] (* 100.0 100.0))
+(defn div-double [] (/ 100.0 100.0))
+(defn mod-double [] (mod 100.0 100.0))
+(defn random-double [] (Double.random))
+
+(defn add-float [] (+ 100.0f 100.0f))
+(defn sub-float [] (- 100.0f 100.0f))
+(defn mul-float [] (* 100.0f 100.0f))
+(defn div-float [] (/ 100.0f 100.0f))
+(defn mod-float [] (mod 100.0f 100.0f))
+(defn random-float [] (Float.random))
+
+(defn int-tests []
+  (do
+    (IO.println "Adding ints:")
+    (bench add-int)
+    (IO.println "\nSubtracting ints:")
+    (bench sub-int)
+    (IO.println "\nMultiplying ints:")
+    (bench mul-int)
+    (IO.println "\nDividing ints:")
+    (bench div-int)
+    (IO.println "\nModulo of ints:")
+    (bench mod-int)
+    (IO.println "\nGenerating a random int:")
+    (bench random-int)))
+
+(defn long-tests []
+  (do
+    (IO.println "Adding longs:")
+    (bench add-long)
+    (IO.println "\nSubtracting longs:")
+    (bench sub-long)
+    (IO.println "\nMultiplying longs:")
+    (bench mul-long)
+    (IO.println "\nDividing longs:")
+    (bench div-long)
+    (IO.println "\nModulo of longs:")
+    (bench mod-long)
+    (IO.println "\nGenerating a random long:")
+    (bench random-long)))
+
+(defn double-tests []
+  (do
+    (IO.println "Adding doubles:")
+    (bench add-double)
+    (IO.println "\nSubtracting doubles:")
+    (bench sub-double)
+    (IO.println "\nMultiplying doubles:")
+    (bench mul-double)
+    (IO.println "\nDividing doubles:")
+    (bench div-double)
+    (IO.println "\nModulo of doubles:")
+    (bench mod-double)
+    (IO.println "\nGenerating a random double:")
+    (bench random-double)))
+
+(defn float-tests []
+  (do
+    (IO.println "Adding floats:")
+    (bench add-float)
+    (IO.println "\nSubtracting floats:")
+    (bench sub-float)
+    (IO.println "\nMultiplying floats:")
+    (bench mul-float)
+    (IO.println "\nDividing floats:")
+    (bench div-float)
+    (IO.println "\nModulo of floats:")
+    (bench mod-float)
+    (IO.println "\nGenerating a random float:")
+    (bench random-float)))
+
+(defn main []
+  (do
+    (int-tests)
+    (IO.println "")
+    (long-tests)
+    (IO.println "")
+    (double-tests)
+    (IO.println "")
+    (float-tests)))
