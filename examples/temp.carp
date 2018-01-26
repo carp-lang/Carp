@@ -36,7 +36,22 @@
 ;;   (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init))))
 
 ;; TRIXY
+;; (deftype (Entry a b) [key a value b])
+;; (deftype (Bucket a b) [e (Entry a b)])
+;; (defn f [] (Bucket.init (Entry.init @"hello" 12345)))
+;; (defn main [] (println* &(f)))
+
+(use Array)
+
 (deftype (Entry a b) [key a value b])
-(deftype (Bucket a b) [e (Entry a b)])
-(defn f [] (Bucket.init (Entry.init @"hello" 12345)))
-(defn main [] (println* &(f)))
+(deftype (Bucket a b) [length Int, entries (Array (Entry a b))])
+
+;;(defn main [] (println* &(Bucket.init 10000 [(Entry.init @"hello" 12345) (Entry.init @"goodbye" 666)])))
+
+(defn f [x] (Int.+ (Bucket.length &x)))
+
+;; (defn empty []
+;;   (Bucket.init 0 []))
+
+;; (defn f []
+;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this

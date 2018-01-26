@@ -8,6 +8,7 @@ module Constraints (solve,
                    ) where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Control.Monad
 import Debug.Trace
 
@@ -194,19 +195,23 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
   where fullResolve :: Ty -> Ty
         fullResolve x@(VarTy var) =
           case recursiveLookup mappings var of
-            Just (StructTy name varTys) -> StructTy name (map fullLookup varTys)
-            Just (FuncTy argTys retTy) -> FuncTy (map fullLookup argTys) (fullLookup retTy)
+            Just (StructTy name varTys) -> StructTy name (map (fullLookup Set.empty) varTys)
+            Just (FuncTy argTys retTy) -> FuncTy (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy)
             Just found -> found
             Nothing -> x -- still not found, must be a generic variable
         fullResolve x = x
 
-        fullLookup :: Ty -> Ty
-        fullLookup vv@(VarTy v) = case recursiveLookup mappings v of
-                                    --Just found -> fullLookup found
-                                    Just found -> if found == vv
-                                                  then found
-                                                  else fullLookup found
-                                    Nothing -> vv-- compilerError ("In full lookup: Can't find " ++ v ++ " in mappings: " ++ show mappings)
-        fullLookup (StructTy name vs) = StructTy name (map fullLookup vs)
-        fullLookup (FuncTy argTys retTy) = FuncTy (map fullLookup argTys) (fullLookup retTy)
-        fullLookup x = x
+        fullLookup :: Set.Set Ty -> Ty -> Ty
+        fullLookup visited vv@(VarTy v) =
+          case recursiveLookup mappings v of
+            Just found -> if found == vv || Set.member found visited
+                          then found
+                          else fullLookup (Set.insert found visited) found
+            Nothing -> vv-- compilerError ("In full lookup: Can't find " ++ v ++ " in mappings: " ++ show mappings)
+        fullLookup visited structTy@(StructTy name vs) =
+          let newVisited = Set.insert structTy visited
+          in  StructTy name (map (fullLookup newVisited) vs)
+        fullLookup visited funcTy@(FuncTy argTys retTy) =
+          let newVisited = Set.insert funcTy visited
+          in  FuncTy (map (fullLookup newVisited) argTys) ((fullLookup newVisited) retTy)
+        fullLookup visited x = x
