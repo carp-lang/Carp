@@ -144,7 +144,9 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
       memberName = getName nameXObj
       fixedMemberTy = if isManaged typeEnv t then RefTy t else t
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] fixedMemberTy) (templateGetter (mangle memberName) fixedMemberTy)
-     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
+     , if typeIsGeneric fixedMemberTy
+       then (templateGenericSetter insidePath p t memberName, [])
+       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy (p), t] UnitTy) (templateSetterRef typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
                                                             (FuncTy [p, FuncTy [t] t] p)
@@ -360,6 +362,29 @@ templateSetter typeEnv env memberName memberTy =
     (\_ -> if isManaged typeEnv memberTy
            then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
            else [])
+
+templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
+templateGenericSetter pathStrings originalStructTy memberTy memberName =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy)
+  where path = SymPath pathStrings ("set-" ++ memberName)
+        t = (FuncTy [VarTy "p", VarTy "t"] (VarTy "p"))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "$p $NAME($p p, $t newValue)"))
+            (\(FuncTy [_, memberTy] _) ->
+               (let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
+                in  (toTemplate (unlines ["$DECL {"
+                                         ,callToDelete
+                                         ,"    p." ++ memberName ++ " = newValue;"
+                                         ,"    return p;"
+                                         ,"}\n"]))))
+            (\(FuncTy [_, memberTy] _) ->
+               if isManaged typeEnv memberTy
+               then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+               else [])
+
 
 -- | The template for setters of a deftype.
 templateSetterRef :: TypeEnv -> Env -> String -> Ty -> Template
