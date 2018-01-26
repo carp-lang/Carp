@@ -47,6 +47,7 @@
 * [0.3] Errors in the parser or emitter don't stop evaluation, only errors during evaluation?
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
+* [0.3] When running :rb, shouldn't carp stop when :r returns an error, instead of building the wrong main.c?
 
 * [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
