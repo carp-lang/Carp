@@ -6,15 +6,13 @@
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
-* [0.3] Need to refactor the sorting of bindings! Hacked it for now with Obj.hs:277 "visitType (Just _) = 50"
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
-* [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
-* [0.3] Fails to find the correct Array.str when calling println* in a do-form. See bug E in bugs.carp
+* [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
+* [0.3] Fails to find the correct Array.str when calling println* in a do-form. See bug E in bugs.carp. Possibly related to needing to run concretizer multiple times, see above.
 
 ## Big Language Features
-* [0.4] Generic data types (apart from Array, which already is)
 * [0.4] Doc strings.
 
 * [1.0] Tagged unions (also known as "sum types" or "enums")
@@ -43,7 +41,7 @@
 * [1.0] Pattern matching on arguments in macros?
 
 ## Tooling
-* [0.3] Project setting for turning off bound checks and similar.
+* [0.3] Project setting for turning off bound checks and similar ("--optimize"). Should also run the C compiler at at least -O2.
 * [0.3] Errors in the parser or emitter don't stop evaluation, only errors during evaluation?
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
@@ -77,4 +75,4 @@
 * Distinguish immutable/mutable refs?
 
 ## Notes
-* Should depsForCopyFunc and depsForDeleteFunc really be needed, they should instantiate when used?
+* Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
