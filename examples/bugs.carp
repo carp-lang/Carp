@@ -39,6 +39,11 @@
 (defmodule String
   (defn zero [] @""))
 
+(defmodule RefBool
+  (defn = [a b]
+    (Bool.= @a @b)))
+
+;; Type of this function becomes too generic in its return type now:
 (defn get-object [bucket lookup-key]
   (let-do [pairs (Bucket.entries bucket)
            result (zero)]
@@ -50,7 +55,21 @@
 
 (defn main []
   (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
-                               (Entry.init @"goodbye" 666)])]
+                               (Entry.init @"goodbye" 666)])
+           other (Bucket.init [(Entry.init true @"yo")
+                               (Entry.init false @"no")])]
     (IO.println &(str &start))
-    (IO.println &(str @(get-object &start @"hello")))
+    (IO.println &(str (get-object &start @"hello")))
+    (IO.println &(str &(get-object &other true)))
     ))
+
+
+;; ANOTHER BUG
+;; (use Array)
+
+;; (defn main []
+;;   (let [a [[1]]
+;;         b [1]
+;;         c1 (count &a)
+;;         c2 (count &b)]
+;;         ()))
