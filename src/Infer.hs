@@ -37,7 +37,7 @@ annotate typeEnv globalEnv xobj =
                                            do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
                                               return (x', deps ++ deps'))
                                   (initiated, [])
-                                  [True, True]
+                                  [True, True, True] -- Needs to run X nr of times, depending on number of nested interfaces...
      (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
      return (final : dependencies ++ deleteDeps)
 
