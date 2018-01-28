@@ -208,7 +208,7 @@ prettyTyped :: XObj -> String
 prettyTyped = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
-          let suffix = typeStr xobj ++ ", id = " ++ show (fmap infoIdentifier (info xobj)) ++ " " ++
+          let suffix = typeStr xobj ++ -- ", id = " ++ show (fmap infoIdentifier (info xobj)) ++ " " ++
                 --show (fmap (joinWithComma . map show . (Set.toList) . infoDelete) (info xobj)) ++
                 "\n"
           in case obj xobj of
