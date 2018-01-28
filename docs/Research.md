@@ -64,6 +64,7 @@ https://news.ycombinator.com/item?id=12039268
 - https://github.com/haskell-lisp/liskell
 - https://github.com/PistonDevelopers/dyon/pull/318
 - https://github.com/namin/inc
+- http://nightmare.com/rushing/irken.html
 
 # LANGUAGE DESIGN
 

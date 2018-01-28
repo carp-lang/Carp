@@ -10,7 +10,6 @@
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
 * [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
-* [0.3] Fails to find the correct Array.str when calling println* in a do-form. See bug E in bugs.carp. Possibly related to needing to run concretizer multiple times, see above.
 
 ## Big Language Features
 * [0.4] Doc strings.
@@ -29,6 +28,7 @@
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * [0.4] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
+* [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.

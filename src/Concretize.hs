@@ -15,6 +15,7 @@ import TypeError
 import AssignTypes
 import ManageMemory
 import Polymorphism
+import InitialTypes
 
 -- | This function performs two things:
 -- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
@@ -168,7 +169,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 [(theType, singlePath)] ->
                   replace theType singlePath
                 severalPaths ->
-                  --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths))))
+                    --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths)))) $
                     --(Left (CantDisambiguateInterfaceLookup xobj name interfaceType severalPaths)) -- TODO unnecessary error?
                     case filter (\(tt, _) -> actualType == tt) severalPaths of
                       []      -> return (Right xobj) -- No exact match of types
@@ -176,21 +177,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                       _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
                       let Just t' = t
-                          fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
-                          fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
-                      in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
-                            Right mappings ->
-                              let replaced = replaceTyVars mappings t'
-                                  normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just replaced)
-                              in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                          normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just t')
+                      in visitSymbol allowAmbig env $ -- (trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", was " ++ show t' ++ ", mappings = " ++ show mappings))-- ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
                                              normalSymbol
-                            Left failure@(UnificationFailure _ _) ->
-                              return $ Left (UnificationFailed
-                                             (unificationFailure failure)
-                                             (unificationMappings failure)
-                                             [])
-                            Left (Holes holes) ->
-                              return $ Left (HolesFound holes)
 
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")

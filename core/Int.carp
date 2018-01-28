@@ -40,7 +40,7 @@
     0)
 
   (defn add-ref [x y]
-    (+ @x @y))
+    (Int.+ @x @y))
 
   (defn clamp [min, max, val]
     (if (> val max)

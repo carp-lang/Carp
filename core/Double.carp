@@ -60,7 +60,7 @@
     0.0)
 
   (defn add-ref [x y]
-    (+ @x @y))
+    (Double.+ @x @y))
 )
 
 (defmodule DoubleRef

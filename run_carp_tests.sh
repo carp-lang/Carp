@@ -17,9 +17,11 @@ carp ./examples/generic_structs.carp -x;
 # Actual tests (using the test suite)
 carp ./test/memory.carp -x --log-memory;
 for f in ./test/*.carp; do
+  echo $f
   if [ $f != "./test/memory.carp" ]; then
     carp -x $f
   fi
+  echo
 done
 
 # Just make sure these compile

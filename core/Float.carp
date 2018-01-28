@@ -60,7 +60,7 @@
     0.0f)
 
   (defn add-ref [x y]
-    (+ @x @y))
+    (Float.+ @x @y))
 )
 
 (defmodule FloatRef
