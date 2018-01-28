@@ -244,7 +244,13 @@ commandHelp [XObj (Str "macros") _ _] =
               return dynamicNil
 
 commandHelp [XObj (Str "structs") _ _] =
-  liftIO $ do putStrLn "A type definition will generate the following methods:"
+  liftIO $ do putStrLn "To define a struct without any generic member variables:"
+              putStrLn "(deftype <name> [<member> <type>, ...])"
+              putStrLn ""
+              putStrLn "If you need generic members:"
+              putStrLn "(deftype (<name> <type variable 1> ...) [<member> <type>, ...])"
+              putStrLn ""
+              putStrLn "A type definition will generate the following methods:"
               putStrLn "Getters  (<method-name> (Ref <struct>))"
               putStrLn "Setters  (set-<method-name> <struct> <new-value>)"
               putStrLn "Updaters (update-<method-name> <struct> <new-value>)"
@@ -270,6 +276,17 @@ commandHelp [XObj(Str "shortcuts") _ _] =
               putStrLn ""
               return dynamicNil
 
+commandHelp [XObj(Str "interop") _ _] =
+  liftIO $ do putStrLn "(register <name> <type>)                      - Make an external variable or function available for usage."
+              putStrLn "(register-type <name> [<member> <type>, ...]) - Make an external struct available for usage."
+              putStrLn ""
+              putStrLn "C-compiler configuration:"
+              putStrLn "(system-include <file>)          - Include a system header file."
+              putStrLn "(local-include <file>)           - Include a local header file."
+              putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
+              putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
+              return dynamicNil
+
 commandHelp [] =
   liftIO $ do putStrLn "Compiler commands:"
               putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
@@ -282,26 +299,22 @@ commandHelp [] =
               putStrLn "(info <symbol>)    - Get information about a binding."
               putStrLn "(project)          - Display information about your project."
               putStrLn "(quit)             - Terminate this Carp REPL."
-              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"shortcuts\", \"about\"."
+              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"interop\", \"shortcuts\", \"about\"."
+              putStrLn ""
+              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
               putStrLn ""
               putStrLn "To define things:"
-              putStrLn "(def <name> <constant>)           - Define a global variable."
-              putStrLn "(defn <name> [<args>] <body>)     - Define a function."
-              putStrLn "(module <name> <def1> <def2> ...) - Define a module and/or add definitions to an existing one."
-              putStrLn "(deftype <name> ...)              - Define a new type."
-              putStrLn "(register <name> <type>)          - Make an external variable or function available for usage."
-              putStrLn "(defalias <name> <type>)          - Create another name for a type."
-              putStrLn ""
-              putStrLn "C-compiler configuration:"
-              putStrLn "(system-include <file>)          - Include a system header file."
-              putStrLn "(local-include <file>)           - Include a local header file."
-              putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
-              putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
-              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
+              putStrLn "(def <name> <constant>)                       - Define a global variable."
+              putStrLn "(defn <name> [<args>] <body>)                 - Define a function."
+              putStrLn "(definterface <name> <type>)                  - Create an interface for a group of functions sharing the same name."
+              putStrLn "(defmodule <name> <def1> <def2> ...)          - Define a module and/or add definitions to an existing one."
+              putStrLn "(deftype <name> [<member> <type>, ...])       - Define a new struct type."
               putStrLn ""
               putStrLn "Compiler flags:"
               putStrLn "-b                               - Build."
               putStrLn "-x                               - Build and run."
+              putStrLn "--no-core                        - Don't load the core library."
+              putStrLn "--log-memory                     - Enables use of memory logging functions in the Debug module."
               return dynamicNil
 
 commandHelp args =
