@@ -1,78 +1,10 @@
 (load "Debug.carp")
 (Debug.sanitize-addresses)
-;; (project-set! "printAST" "true")
+(project-set! "printAST" "true")
 (local-include "core.h")
 (project-set! "echoCompilationCommand" "true")
 
-;; (defn better-repeat [n inpt]
-;;   (let [str @""]
-;;     (do
-;;       (for [i 0 n]
-;;         (set! &str (append str @inpt)))
-;;       str)))
-
-;; (defn main []
-;;   (do
-;;     (let []
-;;       (IO.println &(better-repeat 5 "yeah")))
-;;     (IO.println (refstr (Debug.memory-balance)))))
-
-;;;; GENERIC TYPES
-;; (deftype (Pair a b) [ma a mb b])
-
-;; (defn main []
-;;   (IO.println
-;;    &(str
-;;      &(Pair.init 5.6 true))))
-
-;;;; TRIVIAL GENERIC TYPE
-;; (deftype (Trivial t) [x t])
-
-;; (defn construct-from-ref [r]
-;;   (Trivial.init @r))
-
-;; (defn-do main []
-;;   (println* &(Array.repeat-indexed 5 Trivial.init))
-;;   (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init))))
-
-;; TRIXY
-;; (deftype (Entry a b) [key a value b])
-;; (deftype (Bucket a b) [e (Entry a b)])
-;; (defn f [] (Bucket.init (Entry.init @"hello" 12345)))
-;; (defn main [] (println* &(f)))
-
-;; Generic Hashmap Stuff
-(use Array)
-
-(deftype (Entry a b) [key a value b])
-(deftype (Bucket a b) [entries (Array (Entry a b))])
-
-(defmodule String
-  (defn zero [] @""))
-
-(defn get-object [bucket lookup-key]
-  (let-do [pairs (Bucket.entries bucket)
-           result (zero)]
-    (for [i 0 (count pairs)]
-      (let [pair (nth pairs i)]
-        (when (= (Entry.key pair) &lookup-key)
-          (set! &result @(Entry.value pair)))))
-    result))
-
-(defn main []
-  (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
-                               (Entry.init @"goodbye" 666)])]
-    (IO.println &(str &start))
-    (IO.println &(Int.str (get-object &start @"hello")))
-    ))
-
-
-
-
-
-
-
-;; ;; (defn empty []
-;; ;;   (Bucket.init 0 []))
-;; ;; (defn f []
-;; ;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this
+;; (defn empty []
+;;   (Bucket.init 0 []))
+;; (defn f []
+;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this

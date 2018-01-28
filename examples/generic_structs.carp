@@ -1,7 +1,14 @@
+(deftype (Trivial t) [x t])
+
+(defn construct-from-ref [r]
+  (Trivial.init @r))
+
 (deftype (Pair a b) [x a y b])
 
 (defn main []
   (do
+    (println* &(Array.repeat-indexed 5 Trivial.init))
+    (println* &(Array.copy-map construct-from-ref &(Array.repeat-indexed 5 Trivial.init)))
     (IO.println (ref (str &(Pair.init (Pair.init [(Pair.init 1.0f \q)] 20) (Pair.init true false)))))
     (IO.println &(str &(Pair.init 10 @"hello")))
     (IO.println &(str &(Pair.init true 3.2)))

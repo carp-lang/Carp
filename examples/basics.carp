@@ -157,6 +157,15 @@
       (let [rands (Array.repeat 10 random-float)]
         (println (ref (Array.str &rands))))))
 
+(deftype Age [x Int])
+
+(defn multiple-stringification-of-arrays []
+  (let-do [ints [10 3 75 40]
+           ages [(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)]]
+    (IO.println &(str &ints))
+    (IO.println &(str &ages)) ;; this used to be a problem
+    ))
+
 (defn threading []
   (do
     (print "(==> 8 inc inc (Int./ 100) dec) = ")
@@ -200,4 +209,5 @@
       ;;(turn-any-array-into-string) <- BUGGY FOR NOW!
       (convert-struct-with-array-member-to-string)
       (threading)
+      (multiple-stringification-of-arrays)
       ))

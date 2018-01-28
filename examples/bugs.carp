@@ -4,44 +4,53 @@
 (project-set! "printAST" "true")
 (Debug.sanitize-addresses)
 
-;; UNSOLVED BUG A
-;;; Ranges of non-numbers (bug)
-;;(defn main [] (IO.println &(Array.str &(Array.range @"hej" @"svej" @"a"))))
-
 ;; UNSOLVED BUG B
-;; ;; When enabling more interfaces like
+;; When enabling more interfaces like:
 ;; (definterface inc (Fn [a] a))
+;; (defmodule Int (defn inc [x] (Int.+ x 1)))
+;; (defmodule Float (defn inc [x] (Float.+ x 1.0f)))
 ;; ;; the following code doesn't figure out all the type variables:
 ;; (defn f [x] (=> x inc inc inc))
 ;; ;; This code works though:
-;; (defn f [x] (=> x inc inc))
+;; ;; (defn f [x] (=> x foo foo))
 ;; ;; which means that it's the concretizer that has run too few times.
 ;; ;; Running it until nothing changes should be the fix.
-
-;; UNSOLVED BUG C
-;; (defn f [] (the Blurgh 123))
+;; (defn main [] (IO.println &(str (f 10.0f))))
 
 ;; BUG D
+;; This shouldn't compile:
 ;; (defn faulty-repeat [n inpt]
 ;;     (let [str ""]
 ;;       (do
 ;;         (for [i 0 n]
 ;;           (set! &str &(append @str @inpt)))
 ;;         @str)))
-
 ;; (defn main []
-;;   (let [strings (faulty-.repeat 20 "x")]
+;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
 
-;; BUG E
-;; Fails to find the correct Array.str when calling (println* &ints)
-(use Array)
+;; BUG F
+;; Generic Hashmap Stuff
+;; (use Array)
 
-(deftype Age [x Int])
+;; (deftype (Entry a b) [key a value b])
+;; (deftype (Bucket a b) [entries (Array (Entry a b))])
 
-(defn main []
-  (let-do [ints [10 3 75 40]
-           ages [(Age.init 10) (Age.init 3) (Age.init 75) (Age.init 40)]]
-    (IO.println &(str &ints)) ;; if this line is removed it works
-    (IO.println &(str &ages))
-    ))
+;; (defmodule String
+;;   (defn zero [] @""))
+
+;; (defn get-object [bucket lookup-key]
+;;   (let-do [pairs (Bucket.entries bucket)
+;;            result (zero)]
+;;     (for [i 0 (count pairs)]
+;;       (let [pair (nth pairs i)]
+;;         (when (= (Entry.key pair) &lookup-key)
+;;           (set! &result @(Entry.value pair)))))
+;;     result))
+
+;; (defn main []
+;;   (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
+;;                                (Entry.init @"goodbye" 666)])]
+;;     (IO.println &(str &start))
+;;     (IO.println &(str @(get-object &start @"hello")))
+;;     ))
