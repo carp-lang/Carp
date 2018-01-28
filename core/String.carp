@@ -94,6 +94,8 @@
 
   (defn ends-with? [s sub]
     (= sub &(suffix-string s (- (count s) (count sub)))))
+
+  (defn zero [] @"")
 )
 
 (defmodule StringCopy

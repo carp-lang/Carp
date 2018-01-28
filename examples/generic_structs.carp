@@ -1,9 +1,34 @@
+(use Array)
+
 (deftype (Trivial t) [x t])
 
 (defn construct-from-ref [r]
   (Trivial.init @r))
 
 (deftype (Pair a b) [x a y b])
+
+;; Simplified dictionary:
+(deftype (Entry a b) [key a value b])
+(deftype (Bucket a b) [entries (Array (Entry a b))])
+
+(defn lookup [bucket lookup-key]
+  (let-do [pairs (Bucket.entries bucket)
+           result (zero)]
+    (for [i 0 (count pairs)]
+      (let [pair (nth pairs i)]
+        (when (= (Entry.key pair) &lookup-key)
+          (set! &result @(Entry.value pair)))))
+    result))
+
+(defn try-dictionary []
+  (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
+                               (Entry.init @"goodbye" 666)])
+           other (Bucket.init [(Entry.init true @"yo")
+                               (Entry.init false @"no")])]
+    (IO.println &(str &start))
+    (IO.println &(str (lookup &start @"hello")))
+    (IO.println &(str &(lookup &other true)))
+    ))
 
 (defn main []
   (do
@@ -16,4 +41,5 @@
     (IO.println &(str &(Pair.update-x (Pair.init 100 100) Int.inc)))
     (IO.println &(str &(Pair.set-y (Pair.init 100 100) 200)))
     (IO.println &(str @(Pair.x &(Pair.init 100 100))))
+    (try-dictionary)
     ))

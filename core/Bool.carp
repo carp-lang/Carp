@@ -5,3 +5,7 @@
   (register copy (Fn [&Bool] Bool))
   (register format (Fn [&String Bool] String))
   )
+
+(defmodule RefBool
+  (defn = [a b]
+    (Bool.= @a @b)))

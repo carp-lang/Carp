@@ -29,41 +29,6 @@
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
 
-;; BUG F
-;; Generic Hashmap Stuff
-(use Array)
-
-(deftype (Entry a b) [key a value b])
-(deftype (Bucket a b) [entries (Array (Entry a b))])
-
-(defmodule String
-  (defn zero [] @""))
-
-(defmodule RefBool
-  (defn = [a b]
-    (Bool.= @a @b)))
-
-;; Type of this function becomes too generic in its return type now:
-(defn get-object [bucket lookup-key]
-  (let-do [pairs (Bucket.entries bucket)
-           result (zero)]
-    (for [i 0 (count pairs)]
-      (let [pair (nth pairs i)]
-        (when (= (Entry.key pair) &lookup-key)
-          (set! &result @(Entry.value pair)))))
-    result))
-
-(defn main []
-  (let-do [start (Bucket.init [(Entry.init @"hello" 12345)
-                               (Entry.init @"goodbye" 666)])
-           other (Bucket.init [(Entry.init true @"yo")
-                               (Entry.init false @"no")])]
-    (IO.println &(str &start))
-    (IO.println &(str (get-object &start @"hello")))
-    (IO.println &(str &(get-object &other true)))
-    ))
-
-
 ;; ANOTHER BUG
 ;; (use Array)
 
