@@ -10,7 +10,6 @@ import Eval
 
 main :: IO ()
 main = do _ <- runTestTT (groupTests "Constraints" testConstraints)
-          _ <- runTestTT (groupTests "Memory Management" testMemoryManagement)
           return ()
 
 groupTests :: String -> [Test] -> Test
@@ -45,150 +44,142 @@ testConstraints = [testConstr1, testConstr2, testConstr3, testConstr4, testConst
                   ,testConstr11, testConstr12, testConstr13
                   ,testConstr20, testConstr21, testConstr22, testConstr23, testConstr24
                   ,testConstr30, testConstr31, testConstr32, testConstr33
+                  ,testConstr34, testConstr35
                   ]
 
 testConstr1 = assertUnificationFailure
-  [Constraint FloatTy IntTy x x]
+  [Constraint FloatTy IntTy x x OrdNo]
 
 testConstr2 = assertSolution
-  [Constraint IntTy t0 x x]
+  [Constraint IntTy t0 x x OrdNo]
   [("t0", IntTy)]
 
 testConstr3 = assertSolution
-  [Constraint t0 IntTy x x]
+  [Constraint t0 IntTy x x OrdNo]
   [("t0", IntTy)]
 
 testConstr4 = assertSolution
-  [Constraint t0 t1 x x, Constraint t0 IntTy x x]
+  [Constraint t0 t1 x x OrdNo, Constraint t0 IntTy x x OrdNo]
   [("t0", IntTy), ("t1", IntTy)]
 
 testConstr5 = assertSolution
-  [Constraint t0 t1 x x, Constraint t1 IntTy x x]
+  [Constraint t0 t1 x x OrdNo, Constraint t1 IntTy x x OrdNo]
   [("t0", IntTy), ("t1", IntTy)]
 
 testConstr6 = assertSolution
-  [Constraint t0 t1 x x, Constraint t1 t3 x x, Constraint t2 IntTy x x, Constraint t3 IntTy x x]
+  [Constraint t0 t1 x x OrdNo, Constraint t1 t3 x x OrdNo, Constraint t2 IntTy x x OrdNo, Constraint t3 IntTy x x OrdNo]
   [("t0", IntTy), ("t1", IntTy), ("t2", IntTy), ("t3", IntTy)]
 
 testConstr7 = assertUnificationFailure
-  [Constraint t0 IntTy x x, Constraint t0 FloatTy x x]
+  [Constraint t0 IntTy x x OrdNo, Constraint t0 FloatTy x x OrdNo]
 
 testConstr8 = assertSolution
-   [Constraint t0 IntTy x x, Constraint t0 t0 x x]
+   [Constraint t0 IntTy x x OrdNo, Constraint t0 t0 x x OrdNo]
    [("t0", IntTy)]
 
 testConstr9 = assertSolution
-  [Constraint t0 IntTy x x, Constraint t0 t1 x x]
+  [Constraint t0 IntTy x x OrdNo, Constraint t0 t1 x x OrdNo]
   [("t0", IntTy), ("t1", IntTy)]
 
 testConstr10 = assertSolution
-  [Constraint (PointerTy (VarTy "a")) (PointerTy (VarTy "b")) x x]
+  [Constraint (PointerTy (VarTy "a")) (PointerTy (VarTy "b")) x x OrdNo]
   [("a", (VarTy "a")), ("b", (VarTy "a"))]
 
 testConstr11 = assertSolution
-  [Constraint (PointerTy (VarTy "a")) (PointerTy (StructTy "Monkey" [])) x x]
+  [Constraint (PointerTy (VarTy "a")) (PointerTy (StructTy "Monkey" [])) x x OrdNo]
   [("a", (StructTy "Monkey" []))]
 
 testConstr12 = assertSolution
-  [Constraint t1 (PointerTy (StructTy "Array" [IntTy])) x x
-  ,Constraint t1 (PointerTy t2) x x]
+  [Constraint t1 (PointerTy (StructTy "Array" [IntTy])) x x OrdNo
+  ,Constraint t1 (PointerTy t2) x x OrdNo]
   [("t1", (PointerTy (StructTy "Array" [IntTy])))
   ,("t2", (StructTy "Array" [IntTy]))]
 
 testConstr13 = assertSolution
-  [Constraint t1 CharTy x x
-  ,Constraint t1 CharTy x x]
+  [Constraint t1 CharTy x x OrdNo
+  ,Constraint t1 CharTy x x OrdNo]
   [("t1", CharTy)]
-  
+
 -- -- Should collapse type variables into minimal set:
 -- testConstr10 = assertSolution
---   [Constraint t0 t1 x x, Constraint t1 t2 x x, Constraint t2 t3 x x]
+--   [Constraint t0 t1 x x, Constraint t1 t2 x x, Constraint t2 t3 x x OrdNo]
 --   [("t0", VarTy "t0"), ("t1", VarTy "t0"), ("t2", VarTy "t0")]
--- m7 = solve ([Constraint t1 t2 x x, Constraint t0 t1 x x])
+-- m7 = solve ([Constraint t1 t2 x x, Constraint t0 t1 x x OrdNo])
 
 -- Struct types
 testConstr20 = assertSolution
-  [Constraint t0 (StructTy "Vector" [t1]) x x
-  ,Constraint t0 (StructTy "Vector" [IntTy]) x x]
+  [Constraint t0 (StructTy "Vector" [t1]) x x OrdNo
+  ,Constraint t0 (StructTy "Vector" [IntTy]) x x OrdNo]
   [("t0", (StructTy "Vector" [IntTy])), ("t1", IntTy)]
 
 testConstr21 = assertSolution
-  [Constraint t1 (StructTy "Array" [t2]) x x
-  ,Constraint t1 (StructTy "Array" [t3]) x x
-  ,Constraint t3 BoolTy x x]
+  [Constraint t1 (StructTy "Array" [t2]) x x OrdNo
+  ,Constraint t1 (StructTy "Array" [t3]) x x OrdNo
+  ,Constraint t3 BoolTy x x OrdNo]
   [("t1", (StructTy "Array" [BoolTy]))
   ,("t2", BoolTy)
   ,("t3", BoolTy)]
 
 testConstr22 = assertSolution
-  [Constraint t1 (StructTy "Array" [t2]) x x
-  ,Constraint t2 (StructTy "Array" [t3]) x x
-  ,Constraint t3 FloatTy x x]
+  [Constraint t1 (StructTy "Array" [t2]) x x OrdNo
+  ,Constraint t2 (StructTy "Array" [t3]) x x OrdNo
+  ,Constraint t3 FloatTy x x OrdNo]
   [("t1", (StructTy "Array" [(StructTy "Array" [FloatTy])]))
   ,("t2", (StructTy "Array" [FloatTy]))
   ,("t3", FloatTy)]
 
 testConstr23 = assertUnificationFailure
-  [Constraint (StructTy "Array" [t1]) (StructTy "Array" [t2]) x x
-  ,Constraint t1 IntTy  x x
-  ,Constraint t2 FloatTy x x]
+  [Constraint (StructTy "Array" [t1]) (StructTy "Array" [t2]) x x OrdNo
+  ,Constraint t1 IntTy  x x OrdNo
+  ,Constraint t2 FloatTy x x OrdNo]
 
 testConstr24 = assertUnificationFailure
-  [Constraint t2 FloatTy x x
-  ,Constraint t1 IntTy  x x
-  ,Constraint (StructTy "Array" [t1]) (StructTy "Array" [t2]) x x]
+  [Constraint t2 FloatTy x x OrdNo
+  ,Constraint t1 IntTy  x x OrdNo
+  ,Constraint (StructTy "Array" [t1]) (StructTy "Array" [t2]) x x OrdNo]
 
--- m9 = solve [Constraint (StructTy "Vector" [IntTy]) (StructTy "Vector" [t1]) x x]
--- m10 = solve [Constraint (StructTy "Vector" [t1]) (StructTy "Vector" [t2]) x x]
+-- m9 = solve [Constraint (StructTy "Vector" [IntTy]) (StructTy "Vector" [t1]) x x OrdNo]
+-- m10 = solve [Constraint (StructTy "Vector" [t1]) (StructTy "Vector" [t2]) x x OrdNo]
 
 -- Func types
 testConstr30 = assertSolution
-  [Constraint t2 (FuncTy [t0] t1) x x
-  ,Constraint t2 (FuncTy [IntTy] BoolTy) x x]
+  [Constraint t2 (FuncTy [t0] t1) x x OrdNo
+  ,Constraint t2 (FuncTy [IntTy] BoolTy) x x OrdNo]
   [("t0", IntTy), ("t1", BoolTy), ("t2", (FuncTy [IntTy] BoolTy))]
 
 testConstr31 = assertSolution
-  [Constraint (FuncTy [t0] t1) (FuncTy [IntTy] BoolTy) x x]
+  [Constraint (FuncTy [t0] t1) (FuncTy [IntTy] BoolTy) x x OrdNo]
   [("t0", IntTy), ("t1", BoolTy)]
 
 testConstr32 = assertSolution
-  [Constraint t0 (FuncTy [IntTy] BoolTy) x x]
+  [Constraint t0 (FuncTy [IntTy] BoolTy) x x OrdNo]
   [("t0", (FuncTy [IntTy] BoolTy))]
 
 testConstr33 = assertSolution
-  [Constraint t1 (FuncTy [t2] IntTy) x x
-  ,Constraint t1 (FuncTy [t3] IntTy) x x
-  ,Constraint t3 BoolTy x x]
+  [Constraint t1 (FuncTy [t2] IntTy) x x OrdNo
+  ,Constraint t1 (FuncTy [t3] IntTy) x x OrdNo
+  ,Constraint t3 BoolTy x x OrdNo]
   [("t1", (FuncTy [BoolTy] IntTy))
   ,("t2", BoolTy)
   ,("t3", BoolTy)]
 
+testConstr34 = assertSolution
+  [Constraint (VarTy "a") (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]) x x OrdNo
+  ,Constraint (StructTy "Array" [(VarTy "a")]) (StructTy "Array" [(StructTy "Pair" [(VarTy "x1"), (VarTy "y1")])]) x x OrdNo]
+  [("a", (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]))
+  ,("x0", (VarTy "x0"))
+  ,("y0", (VarTy "y0"))
+  ,("x1", (VarTy "x0"))
+  ,("y1", (VarTy "y0"))
+  ]
 
-
--- | Test memory management
-
-testMemoryManagement = [testMem1]
-
-testEnv :: Env
-testEnv = Env { envBindings = bs, envParent = Nothing, envModuleName = Nothing, envImports = [], envMode = ExternalEnv }
-  where bs = Map.fromList []
-
-assertMem :: String -> [Deleter] -> Test
-assertMem code deleters =
-  let Right [parsed] = parse code
-      Right expanded = expandAll testEnv parsed
-      xobjFullSymbols = setFullyQualifiedSymbols testEnv expanded
-      Right (ann : _) = annotate testEnv xobjFullSymbols
-      Just i = info ann
-  in  TestCase $ assertEqual "Memory" (infoDelete i) (Set.fromList deleters)
-
-testMem1 = assertMem "(defn f [] (let [s \"HELLO\"] 12345))" []
-
-
--- case expandAll env xobj of
---                Left err -> executeCommand ctx (ReplMacroError (show err))
---                Right expanded ->
---                  let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
---                      xobjFullSymbols = setFullyQualifiedSymbols innerEnv xobjFullPath
---                  in case annotate env xobjFullSymbols of
-             
+-- Same as testConstr34, except everything is wrapped in refs
+testConstr35 = assertSolution
+  [Constraint (RefTy (VarTy "a")) (RefTy (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")])) x x OrdNo
+  ,Constraint (RefTy (StructTy "Array" [(VarTy "a")])) (RefTy (StructTy "Array" [(StructTy "Pair" [(VarTy "x1"), (VarTy "y1")])])) x x OrdNo]
+  [("a", (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]))
+  ,("x0", (VarTy "x0"))
+  ,("y0", (VarTy "y0"))
+  ,("x1", (VarTy "x0"))
+  ,("y1", (VarTy "y0"))
+  ]
