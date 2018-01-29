@@ -28,6 +28,8 @@
 (defmacro test-> [a b] (> a b))
 (defmacro test-= [a b] (= a b))
 
+(defcompose test-compose Int.inc Array.first)
+
 (defn main []
   (with-test test
     (assert-true test
@@ -211,5 +213,10 @@
                   "1@\" thing \"2@\" things\""
                   &(str* 1 " thing " 2 " things")
                   "str* macro works as expected"
+    )
+    (assert-equal test
+                  10
+                  (test-compose &[9])
+                  "defcompose macro expands as expected"
     )
     (print-test-results test)))
