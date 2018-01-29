@@ -28,7 +28,7 @@
     (let [result (first xs)
           n (count xs)]
       (do
-        (for [i 0 n]
+        (for [i 1 n]
           (let [x @(nth xs i)]
             (if (< result x)
               (set! &result x)
@@ -39,7 +39,7 @@
     (let [result (first xs)
           n (count xs)]
       (do
-        (for [i 0 n]
+        (for [i 1 n]
           (let [x @(nth xs i)]
             (if (> result x)
               (set! &result x)
