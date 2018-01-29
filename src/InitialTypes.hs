@@ -240,7 +240,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              return $ do okValue <- visitedValue
                          case xobjToTy typeXObj of
                            Just okType -> return (XObj (Lst [theExpr, typeXObj, okValue]) i (Just okType))
-                           Nothing -> error ("Not a type: " ++ show typeXObj)
+                           Nothing -> Left (NotAType typeXObj)
         XObj The _ _ : _ -> return (Left (InvalidObj The xobj))
 
         -- Ref

@@ -13,6 +13,7 @@ data TypeError = SymbolMissingType XObj Env
                | ExpressionMissingType XObj
                | SymbolNotDefined SymPath XObj
                | InvalidObj Obj XObj
+               | NotAType XObj
                | WrongArgCount XObj
                | NotAFunction XObj
                | NoStatementsInDo XObj
@@ -118,6 +119,8 @@ instance Show TypeError where
     "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (TooManyAnnotateCalls xobj) =
     "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (NotAType xobj) =
+    "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
