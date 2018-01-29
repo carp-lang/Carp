@@ -55,12 +55,12 @@
                     "reverse works as expected")
       (assert-equal test
                     10
-                    (max &(range 1 10 1))
-                    "max works as expected")
+                    (maximum &(range 1 10 1))
+                    "maximum works as expected")
       (assert-equal test
                     1
-                    (min &(range 1 10 1))
-                    "min works as expected")
+                    (minimum &(range 1 10 1))
+                    "minimum works as expected")
       (assert-equal test
                     55
                     (sum &(range 1 10 1))

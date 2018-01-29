@@ -29,26 +29,6 @@
   (defn mean [data]
     (/ (Statistics.sum data) (from-int (Array.count data))))
 
-  (defn min [a]
-    (let [m (Double.copy (Array.nth a 0))]
-      (do
-        (for [i 1 (Array.count a)]
-          (let [el (Double.copy (Array.nth a i))]
-            (if (Double.< el m)
-              (set! &m el)
-              ())))
-        m)))
-
-  (defn max [a]
-    (let [m (Double.copy (Array.nth a 0))]
-      (do
-        (for [i 1 (Array.count a)]
-          (let [el (Double.copy (Array.nth a i))]
-            (if (Double.> el m)
-              (set! &m el)
-              ())))
-        m)))
-
   (defn _pp [a mean]
     (let [sum 0.0]
       (do
@@ -185,8 +165,8 @@
   (defn summary [samples]
     (Summary.init
       (Statistics.sum samples)
-      (min samples)
-      (max samples)
+      (Array.minimum samples)
+      (Array.maximum samples)
       (mean samples)
       (median samples)
       (variance samples)

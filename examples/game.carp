@@ -8,10 +8,10 @@
 (load "sdl_image.carp")
 (use Keycode)
 
-(def max 400)
+(def rand-max 400)
 
 (defn r []
-  (the Int (random-between 0 max)))
+  (the Int (random-between 0 rand-max)))
 
 (defn random-lines []
   (let [p1 (make-point (r) (r))

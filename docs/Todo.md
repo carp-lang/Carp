@@ -12,6 +12,7 @@
 
 ## Big Language Features
 * [0.4] Doc strings.
+* [0.4] Kind-checking for types (make sure the type variables match, etc).
 
 * [1.0] Tagged unions (also known as "sum types" or "enums")
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
@@ -22,6 +23,7 @@
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
+* [0.3] When registering with an interface, make sure the registered function actually *can* unify with it's signature.
 
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)

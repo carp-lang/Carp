@@ -104,7 +104,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
           | envIsExternal foundEnv ->
             let theXObj = binderXObj binder
                 Just theType = ty theXObj
-                Just typeOfVisited = t
+                typeOfVisited = case t of
+                                  Just something -> something
+                                  Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
@@ -161,7 +163,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
           in  case filter (matchingSignature actualType) tysToPathsDict of
-                [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                [] -> return $ -- (trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict))) $
                                --(Right xobj)
                                  if allowAmbig
                                  then (Right xobj) -- No exact match of types
@@ -178,7 +180,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               where replace theType singlePath =
                       let Just t' = t
                           normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just t')
-                      in visitSymbol allowAmbig env $ -- (trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show replaced ++ ", was " ++ show t' ++ ", mappings = " ++ show mappings))-- ++ ", options were:\n" ++ joinWith "\n" (map show tysToPathsDict)))
+                      in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show t'))
                                              normalSymbol
 
         Nothing ->

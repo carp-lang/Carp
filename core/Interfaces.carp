@@ -1,8 +1,10 @@
+;; The 'copy' and 'str' interfaces are defined internally:
+;;(definterface copy (λ [&a] a))
+;;(definterface str (λ [a] String))
+
 (definterface = (λ [a a] Bool))
 (definterface /= (λ [a a] Bool))
-(definterface format (λ [&String a] String))
 
-(definterface zero (λ [] a))
 (definterface add-ref (λ [&a &a] a))
 (definterface sub-ref (λ [&a &a] a))
 (definterface mul-ref (λ [&a &a] a))
@@ -16,22 +18,22 @@
 
 (definterface < (λ [a a] Bool))
 (definterface > (λ [a a] Bool))
-;; <=
-;; >=
-;; (definterface inc (λ [a] a))
-;; (definterface dec (λ [a] a))
-;; (definterface max (λ [a a] a))
-;; (definterface min (λ [a a] a))
-;;(definterface from-string (λ [a] String))
 
+(definterface inc (λ [a] a))
+(definterface dec (λ [a] a))
+
+(definterface format (λ [&String a] String))
+(definterface from-string (λ [&String] a))
+
+(definterface zero (λ [] a))
 (definterface random (Fn [] a))
 (definterface random-between (Fn [a a] a))
 
 (definterface pi a)
 
-;; These interfaces are defined internally:
-;;(definterface copy (λ [&a] a))
-;;(definterface str (λ [a] String))
+
+
+;; The following functions make use of the interfaces
 
 (defn <= [a b]
   (or (< a b)
@@ -45,3 +47,9 @@
   (if (= a b)
     0
     (if (< a b) -1 1)))
+
+(defn max [a b]
+  (if (> a b) a b))
+
+(defn min [a b]
+  (if (< a b) a b))

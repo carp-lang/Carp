@@ -17,16 +17,16 @@
 (use Box)
 (use ArrayExtension)
 
-(defn higherOrder [x] (fmap inc x))
+(defn higherOrder [x] (fmap Int.inc x))
 
 (defn main []
   (do
-    (println &(str @(Box.x &(fmap inc (Box.init 100)))))
+    (println &(str @(Box.x &(fmap Int.inc (Box.init 100)))))
     (println &(str @(Box.x &(Box.fmap inc (Box.init 100)))))
     (println &(str &(ArrayExtension.fmap inc [10 20 30 40 50])))
-    (println &(str &(fmap inc [10 20 30 40 50])))
-    (println &(Array.str &(fmap inc [10 20 30 40 50])))
-    (println &(Array.str &(ArrayExtension.fmap inc [10 20 30 40 50])))
+    (println &(str &(fmap Int.inc [10 20 30 40 50])))
+    (println &(Array.str &(fmap Int.inc [10 20 30 40 50])))
+    (println &(Array.str &(ArrayExtension.fmap Int.inc [10 20 30 40 50])))
     (println &(str &(higherOrder (Box.init 999))))
     (println &(str &(higherOrder [9 99 999 9999])))
     ))

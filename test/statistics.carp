@@ -86,14 +86,6 @@
                   (sum &[2.5 5.0 2.0 0.5])
                   "sum works as expected")
     (assert-equal test
-                  0.5
-                  (min &[2.5 5.0 2.0 0.5])
-                  "min works as expected")
-    (assert-equal test
-                  5.0
-                  (max &[2.5 5.0 2.0 0.5])
-                  "max works as expected")
-    (assert-equal test
                   40.0
                   (stdev-pct &[1.0 1.0 9.0 9.0])
                   "stdev-pct works as expected")
