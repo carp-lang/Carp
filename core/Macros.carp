@@ -197,3 +197,11 @@
 
 (defmacro ignore [form]
   (let [_ form] ()))
+
+(defdynamic defcompose-internal [forms]
+  (if (= (count forms) 0)
+    'arg
+    (list (car forms) (defcompose-internal (cdr forms)))))
+
+(defmacro defcompose [name :rest forms]
+  (list 'defn name (array 'arg) (defcompose-internal forms)))
