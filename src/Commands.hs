@@ -83,6 +83,7 @@ commandProjectSet [XObj (Str key) _ _, value] =
                       "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
                       "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
                       "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
+                      "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
                       _ -> err ("Unrecognized key: '" ++ key ++ "'") ctx
           put newCtx
           return dynamicNil
@@ -110,7 +111,7 @@ commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outExe = outDir ++ "a.out"
+         outExe = outDir ++ projectTitle (contextProj ctx)
      liftIO $ do handle <- spawnCommand outExe
                  exitCode <- waitForProcess handle
                  case exitCode of
@@ -146,8 +147,8 @@ commandBuild args =
                          flags = projectFlags proj ++ includeCorePath ++ switches
                          outDir = projectOutDir proj
                          outMain = outDir ++ "main.c"
-                         outExe = outDir ++ "a.out"
-                         outLib = outDir ++ "lib.so"
+                         outExe = outDir ++ projectTitle proj
+                         outLib = outDir ++ projectTitle proj
                      createDirectoryIfMissing False outDir
                      writeFile outMain (incl ++ okSrc)
                      case Map.lookup "main" (envBindings env) of

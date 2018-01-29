@@ -5,10 +5,7 @@
 
 /CarpHask-exe.prof
 
-/out/*.so
-/out/.DS_Store
-/out/a.out
-/out/main.c
+/out/
 /.DS_Store
 /Carp.prof
 dist/
