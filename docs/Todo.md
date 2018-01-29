@@ -9,7 +9,6 @@
 * [0.3] The compiler can crash when defining invalid struct types, it should present nice errors instead.
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
-* [0.3] When composing interfaces the concretizer needs to run more times to make sure that all types are figured out.
 
 ## Big Language Features
 * [0.4] Doc strings.

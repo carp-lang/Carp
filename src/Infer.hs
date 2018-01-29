@@ -33,15 +33,23 @@ import Concretize
 annotate :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
 annotate typeEnv globalEnv xobj =
   do initiated <- initialTypes typeEnv globalEnv xobj
-     (annotated, dependencies) <- foldM (\(x, deps) allowAmbiguity ->
-                                           do (x', deps') <- annotateOne typeEnv globalEnv x allowAmbiguity
-                                              return (x', deps ++ deps'))
-                                  (initiated, [])
-                                  [True, True, True] -- Needs to run X nr of times, depending on number of nested interfaces...
+     (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated [] 100
      (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
      return (final : dependencies ++ deleteDeps)
 
+-- | Call the 'annotateOne' function until nothing changes
+annotateUntilDone :: TypeEnv -> Env -> XObj -> [XObj] -> Int -> Either TypeError (XObj, [XObj])
+annotateUntilDone typeEnv globalEnv xobj deps limiter =
+  if limiter <= 0
+  then Left (TooManyAnnotateCalls xobj)
+  else do (xobj', deps') <- annotateOne typeEnv globalEnv xobj True
+          let newDeps = deps ++ deps'
+          if xobj == xobj' -- Is it the same?
+            then return (xobj', newDeps)
+            else annotateUntilDone typeEnv globalEnv xobj' newDeps (limiter - 1)
+
 -- | Performs ONE step of annotation. The 'annotate' function will call this function several times.
+-- | TODO: Remove the allowAmbiguity flag?
 annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
