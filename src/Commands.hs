@@ -155,12 +155,12 @@ commandBuild args =
                        Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags
                                     when echoCompilationCommand (putStrLn cmd)
                                     callCommand cmd
-                                    when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "'"))
+                                    when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                                     return dynamicNil
                        Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags
                                      when echoCompilationCommand (putStrLn cmd)
                                      callCommand cmd
-                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "'"))
+                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
                                      return dynamicNil
 
 -- | Command for printing all the bindings in the current environment.
