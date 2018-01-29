@@ -134,12 +134,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
             [(theType, singlePath)] -> let Just t' = t
                                            fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
                                            fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
+                                           Just i' = i
                                        in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
-                                                   normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just replaced)
-                                               in visitSymbol allowAmbig env --- $ (trace ("Disambiguated " ++ pretty xobj ++
-                                                                  ---   " to " ++ show singlePath ++ " : " ++ show replaced))
+                                                   suffixed = suffixTyVars ("_x" ++ show (infoIdentifier i')) replaced -- Make sure it gets unique type variables. TODO: Is there a better way?
+                                                   normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just suffixed)
+                                               in visitSymbol allowAmbig env $ --(trace ("Disambiguated " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show suffixed ++ ", used to be " ++ show t' ++ ", theType = " ++ show theType ++ ", mappings = " ++ show mappings))
                                                               normalSymbol
                                              Left failure@(UnificationFailure _ _) ->
                                                return $ Left (UnificationFailed
@@ -178,9 +179,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                       [(theType, singlePath)] -> replace theType singlePath -- Found an exact match, will ignore any "half matched" functions that might have slipped in.
                       _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
-                      let Just t' = t
-                          normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just t')
-                      in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show t'))
+                      let normalSymbol = XObj (Sym singlePath LookupGlobal) i t
+                      in visitSymbol allowAmbig env $ --(trace ("Disambiguated interface symbol " ++ pretty xobj ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show t))
                                              normalSymbol
 
         Nothing ->
@@ -645,3 +645,13 @@ manageMemory typeEnv globalEnv root =
             XObj (Sym (SymPath [] name) _) _ _ -> name
             _ -> let Just i = info xobj
                  in  freshVar i
+
+suffixTyVars :: String -> Ty -> Ty
+suffixTyVars suffix t =
+  case t of
+    (VarTy key) -> (VarTy (key ++ suffix))
+    (FuncTy argTys retTy) -> FuncTy (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy)
+    (StructTy name tyArgs) -> StructTy name (fmap (suffixTyVars suffix) tyArgs)
+    (PointerTy x) -> PointerTy (suffixTyVars suffix x)
+    (RefTy x) -> RefTy (suffixTyVars suffix x)
+    _ -> t

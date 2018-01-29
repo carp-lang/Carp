@@ -14,13 +14,3 @@
 ;; (defn main []
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
-
-;; ANOTHER BUG
-;; (use Array)
-
-;; (defn main []
-;;   (let [a [[1]]
-;;         b [1]
-;;         c1 (count &a)
-;;         c2 (count &b)]
-;;         ()))

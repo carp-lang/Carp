@@ -178,6 +178,14 @@
     (println (refstr (=> 5 (Int.- 2))))
     ))
 
+;; This used to be a bug becuase of multisym:s getting the same type variables:
+(defn two-counts-in-same-func []
+  (let [a [[1]]
+        b [1 2 3]
+        c1 (count &a)
+        c2 (count &b)]
+    (println* &(str (+ c1 c2)))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -210,4 +218,5 @@
       (convert-struct-with-array-member-to-string)
       (threading)
       (multiple-stringification-of-arrays)
+      (two-counts-in-same-func)
       ))
