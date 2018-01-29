@@ -12,6 +12,7 @@ https://news.ycombinator.com/item?id=12039268
 - https://fsharpforfunandprofit.com/posts/fsharp-decompiled/
 - http://kristerw.blogspot.se/2016/05/type-based-aliasing-in-c.html
 - https://github.com/hellerve/sc/tree/real_closures
+- https://yosefk.com/blog/c-as-an-intermediate-language.html
 
 # OWNERSHIP & BORROWING
 
