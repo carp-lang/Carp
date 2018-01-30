@@ -1,8 +1,8 @@
 ;; This file contains examples of unsolved bugs
 
-(load "Debug.carp")
+;; (load "Debug.carp")
+;; (Debug.sanitize-addresses)
 (project-set! "printAST" "true")
-(Debug.sanitize-addresses)
 
 ;; This shouldn't compile:
 ;; (defn faulty-repeat [n inpt]
@@ -14,3 +14,8 @@
 ;; (defn main []
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
+
+(deftype (Trivial t) [thing t, num Int])
+
+(defn f [x]
+  (IO.println &(str @(Trivial.num (Trivial.thing &(the (Trivial (Trivial String)) x))))))

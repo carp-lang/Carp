@@ -28,9 +28,9 @@
   (let [me (Person.init (String.copy "Erik") 30)]
     (println (Person.name (ref me)))))
 
-(defn heap-allocations []
-  (let [friend (Person.new (String.copy "Oscar") 30)]
-    ()))
+;; (defn heap-allocations []
+;;   (let [friend (Person.new (String.copy "Oscar") 30)]
+;;     ()))
 
 (defn refer-up []
   (let [a 10
@@ -191,7 +191,7 @@
       (use-doubles)
       (println (ref (str (fib 10))))
       (use-person)
-      (heap-allocations)
+      ;;(heap-allocations)
       (println (ref (str (refer-up))))
       (println (ref (str (ref [10 20 30 40 50]))))
       ;;(println (ref (str (ref (endo-map Thing.val [(Thing.init 100) (Thing.init 200)])))))

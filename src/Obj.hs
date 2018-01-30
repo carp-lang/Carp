@@ -135,6 +135,7 @@ getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) 
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj External _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
@@ -232,7 +233,7 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
-  replicate indent ' ' ++ name ++ --" (" ++ show (getPath xobj) ++ ")" ++
+  replicate indent ' ' ++ name ++ " (" ++ show (getPath xobj) ++ ")" ++
   " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
 
 -- | The score is used for sorting the bindings before emitting them.

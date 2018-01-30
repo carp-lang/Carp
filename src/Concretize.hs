@@ -57,7 +57,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                           else return [defn, nameSymbol, args, okBody]
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
-      do mapM_ checkForNeedOfTypedefs argsArr
+      do mapM_ (checkForNeedOfTypedefs typeEnv) argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
@@ -71,7 +71,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
       do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
          visitedBody <- visit allowAmbig env body
-         mapM_ checkForNeedOfTypedefs (map fst (pairwise bindings))
+         mapM_ (checkForNeedOfTypedefs typeEnv) (map fst (pairwise bindings))
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
@@ -88,14 +88,19 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      okA <- a
                      return (okF : okA)
 
-    checkForNeedOfTypedefs :: XObj -> State [XObj] (Either TypeError ())
-    checkForNeedOfTypedefs (XObj _ _ (Just t)) =
+    checkForNeedOfTypedefs :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
+    checkForNeedOfTypedefs typeEnv (XObj _ _ (Just t)) =
       case t of
         (FuncTy _ _) | typeIsGeneric t -> return (Right ())
                      | otherwise -> do modify (defineFunctionTypeAlias t :)
                                        return (Right ())
+        (StructTy "Array" _) ->
+          return (Right ()) -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
+        structTy@(StructTy _ _) ->
+          do modify ((instantiateGenericType typeEnv structTy) ++)
+             return (Right ())
         _ -> return (Right ())
-    checkForNeedOfTypedefs _ = error "Missing type."
+    checkForNeedOfTypedefs _ xobj = error ("Missing type: " ++ show xobj)
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -195,6 +200,41 @@ matchingSignature tA (tB, _) =
 -- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
 -- matchingNonGenericSignature actualType (t, s) =
 --   matchingSignature actualType (t, s) && not (typeIsGeneric t)
+
+instantiateGenericType :: TypeEnv -> Ty -> [XObj]
+instantiateGenericType _ arrayTy@(StructTy "Array" _) =
+  [defineArrayTypeAlias arrayTy]
+instantiateGenericType typeEnv structTy@(StructTy name _) =
+  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+    Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
+      if typeIsGeneric originalStructTy
+      then let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+               fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
+               XObj (Arr memberXObjs) _ _ = head rest
+           in  case solve [Constraint originalStructTy structTy fake1 fake2 OrdMultiSym] of
+                 Right mappings -> instantiateGenericStructType typeEnv mappings structTy memberXObjs
+                 Left e -> error (show e)
+      else []
+    Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
+      []
+    Just (_, Binder x) -> error ("Non-typedef found in type env: " ++ show x)
+    Nothing -> error ("Can't find type " ++ name ++ " in type env.")
+instantiateGenericType _ t =
+    [] -- ignore all other types
+
+instantiateGenericStructType :: TypeEnv -> Map.Map String Ty -> Ty -> [XObj] -> [XObj]
+instantiateGenericStructType typeEnv mappings structTy@(StructTy _ _) memberXObjs =
+  -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
+  let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
+  in  [ XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                   XObj (Sym (SymPath [] (tyToC structTy)) Symbol) Nothing Nothing :
+                   [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
+            ) (Just dummyInfo) (Just TypeTy)
+      ]
+      ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
+                                      Just okTy -> instantiateGenericType typeEnv okTy
+                                      Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
+      (pairwise concretelyTypedMembers)
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
