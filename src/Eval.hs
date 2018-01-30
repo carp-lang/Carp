@@ -197,6 +197,11 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
+        [XObj (Sym (SymPath [] "type-as-data") _) _ _, target] ->
+          specialCommandTypeAsData target
+        XObj (Sym (SymPath [] "type-as-data") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'type-as-data' command: " ++ pretty xobj)))
+
         [XObj (Sym (SymPath [] "use") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
           specialCommandUse xobj path
         XObj (Sym (SymPath [] "use") _) _ _ : _ ->
@@ -685,6 +690,35 @@ specialCommandType target =
            _ ->
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
+
+specialCommandTypeAsData :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandTypeAsData target =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+     case target of
+           XObj (Sym path@(SymPath [] name) _) _ _ ->
+             case lookupInEnv path env of
+               Just (_, Binder (XObj _ _ (Just foundType))) ->
+                 return (Right (quoted (XObj (Lst [(tyToXObj foundType)]) Nothing Nothing)))
+               Nothing ->
+                 case multiLookupALL name env of
+                   [] ->
+                     notFound path
+                   binders ->
+                     return (Right (quoted (XObj (Lst (map (tyToXObj . fromJust . ty . binderXObj . snd) binders)) Nothing Nothing)))
+           XObj (Sym qualifiedPath _) _ _ ->
+             case lookupInEnv qualifiedPath env of
+               Just (_, Binder (XObj _ _ (Just foundType))) ->
+                 return (Right (quoted (XObj (Lst [(tyToXObj foundType)]) Nothing Nothing)))
+               Nothing ->
+                 notFound qualifiedPath
+           _ ->
+             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
+                         return dynamicNil
+
+quoted :: XObj -> XObj
+quoted xobj =
+  (XObj (Lst [(XObj (Sym (SymPath [] "quote") Symbol) Nothing Nothing), xobj]) Nothing Nothing)
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =
