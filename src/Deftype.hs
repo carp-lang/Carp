@@ -26,26 +26,19 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeModuleName]
-  in case validateMembers typeEnv typeVariables rest of
-       Left err ->
-         Left err
-       Right _ ->
-         case
-           do let structTy = StructTy typeName typeVariables
-              (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-              okInit <- binderForInit insidePath structTy rest
-              --okNew <- templateForNew insidePath structTy rest
-              (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
-              (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
-              (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
-              let funcs = okInit  : okStr : okDelete : okCopy : okMembers
-                  moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
-                  typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-                  deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
-              return (typeModuleName, typeModuleXObj, deps)
-         of
-           Just x -> Right x
-           Nothing -> Left "Something's wrong with the templates..." -- TODO: Better messages here, should come from the template functions!
+  in do validateMembers typeEnv typeVariables rest
+        let structTy = StructTy typeName typeVariables
+        (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
+        okInit <- binderForInit insidePath structTy rest
+        --okNew <- templateForNew insidePath structTy rest
+        (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
+        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
+        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
+        let funcs = okInit  : okStr : okDelete : okCopy : okMembers
+            moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
+            typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
+            deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
+        return (typeModuleName, typeModuleXObj, deps)
 
 -- | Will generate getters/setters/updaters when registering EXTERNAL types.
 -- | i.e. (register-type VRUnicornData [hp Int, magic Float])
@@ -55,23 +48,15 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
   let typeModuleName = typeName
       emptyTypeModuleEnv = Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv
       insidePath = pathStrings ++ [typeModuleName]
-  in case validateMembers typeEnv [] rest of
-       Left err -> Left err
-       Right _ ->
-         case
-           do let structTy = StructTy typeName []
-              (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
-              okInit <- binderForInit insidePath structTy rest
-              --okNew <- templateForNew insidePath structTy rest
-              (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
-              let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : binders)
-                  typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-              return (typeModuleName, typeModuleXObj, deps ++ strDeps)
-         of
-           Just ok ->
-             Right ok
-           Nothing ->
-             Left "Something's wrong with the templates..." -- TODO: Better messages here!
+  in do validateMembers typeEnv [] rest
+        let structTy = StructTy typeName []
+        (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
+        okInit <- binderForInit insidePath structTy rest
+        --okNew <- templateForNew insidePath structTy rest
+        (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
+        let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : binders)
+            typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
+        return (typeModuleName, typeModuleXObj, deps ++ strDeps)
 
 {-# ANN validateMembers "HLint: ignore Eta reduce" #-}
 -- | Make sure that the member declarations in a type definition
@@ -119,10 +104,10 @@ validateMembers typeEnv typeVariables rest = mapM_ validateOneCase rest
 
 
 -- | Generate all the templates for ALL the member variables in a deftype declaration.
-templatesForMembers :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ([(String, Binder)], [XObj])
+templatesForMembers :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either String ([(String, Binder)], [XObj])
 templatesForMembers typeEnv env insidePath structTy [XObj (Arr membersXobjs) _ _] =
   let bindersAndDeps = concatMap (templatesForSingleMember typeEnv env insidePath structTy) (pairwise membersXobjs)
-  in  Just (map fst bindersAndDeps, concatMap snd bindersAndDeps)
+  in  Right (map fst bindersAndDeps, concatMap snd bindersAndDeps)
 templatesForMembers _ _ _ _ _ = error "Can't create member functions for type with more than one case (yet)."
 
 -- | Generate the templates for a single member in a deftype declaration.
@@ -218,14 +203,13 @@ templateUpdater member =
 
 
 -- | Helper function to create the binder for the 'init' template.
-binderForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
+binderForInit :: [String] -> Ty -> [XObj] -> Either String (String, Binder)
 binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
-  then Just (genericInit StackAlloc insidePath structTy membersXObjs)
-  else Just $ instanceBinder (SymPath insidePath "init")
+  then Right (genericInit StackAlloc insidePath structTy membersXObjs)
+  else Right $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)
                 (concreteInit StackAlloc structTy membersXObjs)
-binderForInit _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
@@ -288,14 +272,13 @@ templitizeTy t =
 
 
 -- | Helper function to create the binder for the 'str' template.
-binderForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either String ((String, Binder), [XObj])
 binderForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
-  then Just (genericStr insidePath structTy membersXObjs, [])
-  else Just (instanceBinderWithDeps (SymPath insidePath "str")
+  then Right (genericStr insidePath structTy membersXObjs, [])
+  else Right (instanceBinderWithDeps (SymPath insidePath "str")
               (FuncTy [RefTy structTy] StringTy)
               (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
-binderForStr _ _ _ _ _ = Nothing
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
@@ -414,14 +397,13 @@ memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ membe
 
 
 -- | Helper function to create the binder for the 'delete' template.
-binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either String ((String, Binder), [XObj])
 binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
-  then Just (genericDelete insidePath structTy membersXObjs, [])
-  else Just (instanceBinderWithDeps (SymPath insidePath "delete")
+  then Right (genericDelete insidePath structTy membersXObjs, [])
+  else Right (instanceBinderWithDeps (SymPath insidePath "delete")
              (FuncTy [structTy] UnitTy)
              (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs)))
-binderForDelete _ _ _ _ _ = Nothing
 
 -- | The template for the 'delete' function of a concrete deftype.
 concreteDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
@@ -474,14 +456,13 @@ memberDeletion typeEnv env (memberName, memberType) =
 
 
 -- | Helper function to create the binder for the 'copy' template.
-binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either String ((String, Binder), [XObj])
 binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
-  then Just (genericCopy insidePath structTy membersXObjs, [])
-  else Just (instanceBinderWithDeps (SymPath insidePath "copy")
+  then Right (genericCopy insidePath structTy membersXObjs, [])
+  else Right (instanceBinderWithDeps (SymPath insidePath "copy")
               (FuncTy [RefTy structTy] structTy)
               (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs)))
-binderForCopy _ _ _ _ _ = Nothing
 
 -- | The template for the 'copy' function of a concrete deftype.
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
