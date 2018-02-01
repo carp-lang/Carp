@@ -256,8 +256,13 @@ replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
   (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
 replaceGenericTypeSymbols _ xobj = xobj
 
+-- | Convert a Ty to the s-expression that represents that type.
+-- | TODO: Add more cases and write tests for this.
 tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
+tyToXObj (RefTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing
+tyToXObj (PointerTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
