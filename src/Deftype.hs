@@ -108,7 +108,7 @@ templatesForMembers :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either Stri
 templatesForMembers typeEnv env insidePath structTy [XObj (Arr membersXobjs) _ _] =
   let bindersAndDeps = concatMap (templatesForSingleMember typeEnv env insidePath structTy) (pairwise membersXobjs)
   in  Right (map fst bindersAndDeps, concatMap snd bindersAndDeps)
-templatesForMembers _ _ _ _ _ = error "Can't create member functions for type with more than one case (yet)."
+templatesForMembers _ _ _ _ _ = Left "Can't create member functions for type with more than one case (yet)."
 
 -- | Generate the templates for a single member in a deftype declaration.
 templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> [((String, Binder), [XObj])]
