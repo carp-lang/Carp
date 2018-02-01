@@ -27,7 +27,7 @@
   (defn ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
-        (for [i 0 n] (ignore f))
+        (for [i 0 n] (ignore (f)))
         (Double.- (get-time-elapsed) start))))
 
   (defn print-bench-results [res total]
