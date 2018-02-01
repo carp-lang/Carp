@@ -138,7 +138,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
 -- | Helper function to create the binder for the 'copy' template.
 templateForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
 templateForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if typeIsGeneric structTy
+  if False -- typeIsGeneric structTy
   then Just (templateGenericInit StackAlloc insidePath structTy membersXObjs)
   else Just $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)

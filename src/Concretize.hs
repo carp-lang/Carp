@@ -96,9 +96,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                        return (Right ())
         (StructTy "Array" _) ->
           return (Right ()) -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
-        structTy@(StructTy _ _) ->
-          do modify ((instantiateGenericType typeEnv structTy) ++)
-             return (Right ())
+        -- structTy@(StructTy _ _) ->
+        --   do modify ((instantiateGenericType typeEnv structTy) ++)
+        --      return (Right ())
         _ -> return (Right ())
     checkForNeedOfTypedefs _ xobj = error ("Missing type: " ++ show xobj)
 
