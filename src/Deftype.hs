@@ -138,7 +138,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
 -- | Helper function to create the binder for the 'copy' template.
 templateForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
 templateForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if False -- typeIsGeneric structTy
+  if typeIsGeneric structTy
   then Just (templateGenericInit StackAlloc insidePath structTy membersXObjs)
   else Just $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)
@@ -163,16 +163,18 @@ templateInit allocationMode originalStructTy@(StructTy typeName typeVariables) m
                                  , "    return instance;"
                                  , "}"]))
     (\(FuncTy _ _) -> [])
+    -- (\(FuncTy _ concreteStructTy) ->
+    --    instantiateGenericStructType (unifySignatures originalStructTy concreteStructTy) concreteStructTy memberXObjs)
 
 templateGenericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
 templateGenericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings "init"
-        t = (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p"))
+        t = (FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy)
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
-            t
+            (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p"))
             (\(FuncTy _ concreteStructTy) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
@@ -186,7 +188,7 @@ templateGenericInit allocationMode pathStrings originalStructTy@(StructTy typeNa
                                      , joinWith "\n" (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
                                      , "    return instance;"
                                      , "}"]))
-            (\(FuncTy [RefTy concreteStructTy] _) ->
+            (\(FuncTy _ concreteStructTy) ->
                instantiateGenericType typeEnv concreteStructTy)
 
 
