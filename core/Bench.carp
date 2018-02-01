@@ -33,9 +33,9 @@
   (defn print-bench-results [res total]
     (do
       (print "Total time elapsed: " total)
-      (print "Best case: " (Statistics.Summary.min res))
-      (print "Worst case: " (Statistics.Summary.max res))
-      (print "Standard deviation: " (Statistics.Summary.stdev res))))
+      (print "Best case: " @(Statistics.Summary.min res))
+      (print "Worst case: " @(Statistics.Summary.max res))
+      (print "Standard deviation: " @(Statistics.Summary.stdev res))))
 
   (defn get-samples [f n]
     (let [zero 0.0
@@ -67,10 +67,10 @@
             (if (and
                   (Double.> loop-run 100000.0)
                   (and
-                    (Double.< (Statistics.Summary.median-abs-dev-pct &summ) 1.0)
-                    (Double.< (Double.- (Statistics.Summary.median &summ)
-                                        (Statistics.Summary.median &summ5))
-                              (Statistics.Summary.median-abs-dev &summ5))))
+                    (Double.< @(Statistics.Summary.median-abs-dev-pct &summ) 1.0)
+                    (Double.< (Double.- @(Statistics.Summary.median &summ)
+                                        @(Statistics.Summary.median &summ5))
+                              @(Statistics.Summary.median-abs-dev &summ5))))
               (do
                 (set! &total (Double.+ total loop-run))
                 (set! &done true)
