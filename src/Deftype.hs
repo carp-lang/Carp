@@ -33,11 +33,11 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
          case
            do let structTy = StructTy typeName typeVariables
               (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
-              okInit <- templateForInit insidePath structTy rest
+              okInit <- binderForInit insidePath structTy rest
               --okNew <- templateForNew insidePath structTy rest
-              (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
-              (okDelete, deleteDeps) <- templateForDelete typeEnv env insidePath structTy rest
-              (okCopy, copyDeps) <- templateForCopy typeEnv env insidePath structTy rest
+              (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
+              (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
+              (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
               let funcs = okInit  : okStr : okDelete : okCopy : okMembers
                   moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
@@ -61,9 +61,9 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
          case
            do let structTy = StructTy typeName []
               (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
-              okInit <- templateForInit insidePath structTy rest
+              okInit <- binderForInit insidePath structTy rest
               --okNew <- templateForNew insidePath structTy rest
-              (okStr, strDeps) <- templateForStr typeEnv env insidePath structTy rest
+              (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
               let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : binders)
                   typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
               return (typeModuleName, typeModuleXObj, deps ++ strDeps)
@@ -218,41 +218,35 @@ templateUpdater member =
 
 
 -- | Helper function to create the binder for the 'init' template.
-templateForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
-templateForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
+binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if typeIsGeneric structTy
-  then Just (templateGenericInit StackAlloc insidePath structTy membersXObjs)
+  then Just (genericInit StackAlloc insidePath structTy membersXObjs)
   else Just $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)
-                (templateConcreteInit StackAlloc structTy membersXObjs)
-templateForInit _ _ _ = Nothing
+                (concreteInit StackAlloc structTy membersXObjs)
+binderForInit _ _ _ = Nothing
 
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
 initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 
 -- | The template for the 'init' and 'new' functions for a concrete deftype.
-templateConcreteInit :: AllocationMode -> Ty -> [XObj] -> Template
-templateConcreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) memberXObjs =
+concreteInit :: AllocationMode -> Ty -> [XObj] -> Template
+concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) membersXObjs =
   Template
-    (FuncTy (map snd (memberXObjsToPairs memberXObjs)) (VarTy "p"))
+    (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p"))
     (\(FuncTy _ concreteStructTy) ->
      let mappings = unifySignatures originalStructTy concreteStructTy
-         correctedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
+         correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
          memberPairs = memberXObjsToPairs correctedMembers
      in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
-    (const (toTemplate $ unlines [ "$DECL {"
-                                 , case allocationMode of
-                                     StackAlloc -> "    $p instance;"
-                                     HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                                 , joinWith "\n" (map (memberAssignment allocationMode) (memberXObjsToPairs memberXObjs))
-                                 , "    return instance;"
-                                 , "}"]))
+    (const (tokensForInit allocationMode typeName membersXObjs))
     (\(FuncTy _ _) -> [])
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
-templateGenericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
+genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings "init"
         t = (FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy)
@@ -265,16 +259,19 @@ templateGenericInit allocationMode pathStrings originalStructTy@(StructTy typeNa
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
-            (\(FuncTy _ _) ->
-               (toTemplate $ unlines [ "$DECL {"
-                                     , case allocationMode of
-                                         StackAlloc -> "    $p instance;"
-                                         HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                                     , joinWith "\n" (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
-                                     , "    return instance;"
-                                     , "}"]))
+            (const (tokensForInit allocationMode typeName membersXObjs))
             (\(FuncTy _ concreteStructTy) ->
                instantiateGenericType typeEnv concreteStructTy)
+
+tokensForInit :: AllocationMode -> String -> [XObj] -> [Token]
+tokensForInit allocationMode typeName membersXObjs =
+  toTemplate $ unlines [ "$DECL {"
+                       , case allocationMode of
+                           StackAlloc -> "    $p instance;"
+                           HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
+                       , joinWith "\n" (map (memberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
+                       , "    return instance;"
+                       , "}"]
 
 -- | Creates the C code for an arg to the init function.
 -- | i.e. "(deftype A [x Int])" will generate "int x" which
@@ -291,49 +288,33 @@ templitizeTy t =
 
 
 -- | Helper function to create the binder for the 'str' template.
-templateForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if typeIsGeneric structTy
-  then Just (templateGenericStr insidePath structTy membersXObjs, [])
+  then Just (genericStr insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "str")
               (FuncTy [RefTy structTy] StringTy)
-              (templateConcreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
-templateForStr _ _ _ _ _ = Nothing
+              (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
+binderForStr _ _ _ _ _ = Nothing
 
 -- | The template for the 'str' function for a concrete deftype.
-templateConcreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
-templateConcreteStr typeEnv env t@(StructTy typeName _) members =
+concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
+concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs =
   Template
-    (FuncTy [RefTy t] StringTy)
+    (FuncTy [RefTy concreteStructTy] StringTy)
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
-        (toTemplate $ unlines [ "$DECL {"
-                                , "  // convert members to string here:"
-                                , "  string temp = NULL;"
-                                , "  int tempsize = 0;"
-                                , "  (void)tempsize; // that way we remove the occasional unused warning "
-                                , calculateStructStrSize typeEnv env members structTy
-                                , "  string buffer = CARP_MALLOC(size);"
-                                , "  string bufferPtr = buffer;"
-                                , ""
-                                , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
-                                , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
-                                , "  // Concrete member tys: " ++ show concreteMemberTys
-                                , joinWith "\n" (map (memberStr typeEnv env) members)
-                                , "  bufferPtr--;"
-                                , "  snprintf(bufferPtr, size, \")\");"
-                                , "  return buffer;"
-                                , "}"]))
+        (tokensForStr typeEnv env typeName memberPairs concreteStructTy))
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
                  (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                  (map snd members))
+                  (map snd memberPairs))
        ++
        (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft]))
 
 -- | The template for the 'str' function for a generic deftype.
-templateGenericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs =
+genericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
+genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings "str"
         t = FuncTy [(RefTy originalStructTy)] StringTy
@@ -348,23 +329,7 @@ templateGenericStr pathStrings originalStructTy@(StructTy typeName varTys) membe
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in (toTemplate $ unlines [ "$DECL {"
-                                        , "  // convert members to string here:"
-                                        , "  string temp = NULL;"
-                                        , "  int tempsize = 0;"
-                                        , "  (void)tempsize; // that way we remove the occasional unused warning "
-                                        , calculateStructStrSize typeEnv env memberPairs concreteStructTy
-                                        , "  string buffer = CARP_MALLOC(size);"
-                                        , "  string bufferPtr = buffer;"
-                                        , ""
-                                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
-                                        , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
-                                        , "  // Concrete member tys: " ++ show concreteMemberTys
-                                        , joinWith "\n" (map (memberStr typeEnv env) memberPairs)
-                                        , "  bufferPtr--;"
-                                        , "  snprintf(bufferPtr, size, \")\");"
-                                        , "  return buffer;"
-                                        , "}"]))
+               in (tokensForStr typeEnv env typeName memberPairs concreteStructTy))
             (\(ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy)) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
@@ -374,6 +339,25 @@ templateGenericStr pathStrings originalStructTy@(StructTy typeName varTys) membe
                     (map snd memberPairs))
                    ++
                    (if typeIsGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
+
+tokensForStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Ty -> [Token]
+tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
+  (toTemplate $ unlines [ "$DECL {"
+                        , "  // convert members to string here:"
+                        , "  string temp = NULL;"
+                        , "  int tempsize = 0;"
+                        , "  (void)tempsize; // that way we remove the occasional unused warning "
+                        , calculateStructStrSize typeEnv env memberPairs concreteStructTy
+                        , "  string buffer = CARP_MALLOC(size);"
+                        , "  string bufferPtr = buffer;"
+                        , ""
+                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
+                        , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
+                        , joinWith "\n" (map (memberStr typeEnv env) memberPairs)
+                        , "  bufferPtr--;"
+                        , "  snprintf(bufferPtr, size, \")\");"
+                        , "  return buffer;"
+                        , "}"])
 
 -- | Figure out how big the string needed for the string representation of the struct has to be.
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
@@ -432,14 +416,14 @@ memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ membe
 
 
 -- | Helper function to create the binder for the 'delete' template.
-templateForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if typeIsGeneric structTy
   then Just (templateGenericDelete insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "delete")
              (FuncTy [structTy] UnitTy)
              (templateConcreteDelete typeEnv env (memberXObjsToPairs membersXObjs)))
-templateForDelete _ _ _ _ _ = Nothing
+binderForDelete _ _ _ _ _ = Nothing
 
 -- | The template for the 'delete' function of a concrete deftype.
 templateConcreteDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
@@ -492,14 +476,14 @@ memberDeletion typeEnv env (memberName, memberType) =
 
 
 -- | Helper function to create the binder for the 'copy' template.
-templateForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
-templateForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
+binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
   if typeIsGeneric structTy
   then Just (templateGenericCopy insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "copy")
               (FuncTy [RefTy structTy] structTy)
               (templateConcreteCopy typeEnv env (memberXObjsToPairs membersXObjs)))
-templateForCopy _ _ _ _ _ = Nothing
+binderForCopy _ _ _ _ _ = Nothing
 
 -- | The template for the 'copy' function of a concrete deftype.
 templateConcreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
