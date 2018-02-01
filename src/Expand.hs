@@ -1,9 +1,11 @@
 module Expand (expandAll) where
 
+import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
+import Control.Monad.State
+
 import Obj
 import Util
-import Control.Monad.State
-import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
+import Lookup
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Env -> XObj -> StateT Context IO (Either EvalError XObj)

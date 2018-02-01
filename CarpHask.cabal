@@ -35,7 +35,9 @@ library
                        Concretize,
                        ArrayTemplates,
                        Expand,
-                       Scoring
+                       Scoring,
+                       Lookup,
+                       Qualify
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*

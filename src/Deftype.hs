@@ -12,6 +12,7 @@ import Infer
 import Concretize
 import Polymorphism
 import ArrayTemplates
+import Lookup
 
 data AllocationMode = StackAlloc | HeapAlloc
 

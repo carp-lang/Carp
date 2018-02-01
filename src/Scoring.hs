@@ -2,6 +2,7 @@ module Scoring (scoreBinder) where
 
 import Types
 import Obj
+import Lookup
 
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.

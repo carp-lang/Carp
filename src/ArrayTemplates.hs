@@ -2,6 +2,8 @@
 
 module ArrayTemplates where
 
+import Debug.Trace
+
 import Util
 import Types
 import Obj
@@ -9,7 +11,7 @@ import Parsing
 import Template
 import Polymorphism
 import Concretize
-import Debug.Trace
+import Lookup
 
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)

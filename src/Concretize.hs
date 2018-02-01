@@ -15,6 +15,7 @@ import TypeError
 import AssignTypes
 import Polymorphism
 import InitialTypes
+import Lookup
 
 -- | This function performs two things:
 -- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.

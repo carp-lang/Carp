@@ -7,6 +7,7 @@ import Types
 import Obj
 import Util
 import TypeError
+import Lookup
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
 genVarTyWithPrefix :: String -> State Integer Ty
