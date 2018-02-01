@@ -57,7 +57,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                           else return [defn, nameSymbol, args, okBody]
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
-      do mapM_ (checkForNeedOfTypedefs typeEnv) argsArr
+      do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
@@ -71,7 +71,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
       do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
          visitedBody <- visit allowAmbig env body
-         mapM_ (checkForNeedOfTypedefs typeEnv) (map fst (pairwise bindings))
+         mapM_ (concretizeTypeOfXObj typeEnv) (map fst (pairwise bindings))
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
@@ -82,30 +82,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [theExpr, typeXObj, okVisitedValue]
 
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
-      do checkForNeedOfTypedefs typeEnv func
-         mapM_ (checkForNeedOfTypedefs typeEnv) args
+      do concretizeTypeOfXObj typeEnv func
+         mapM_ (concretizeTypeOfXObj typeEnv) args
          f <- visit allowAmbig env func
          a <- fmap sequence (mapM (visit allowAmbig env) args)
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
-
-    checkForNeedOfTypedefs :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
-    checkForNeedOfTypedefs typeEnv (XObj _ _ (Just t)) =
-      case t of
-        (FuncTy _ _) | isTypeGeneric t -> return (Right ())
-                     | otherwise -> do modify (defineFunctionTypeAlias t :)
-                                       return (Right ())
-        -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
-        (StructTy "Array" varTys) ->
-          do let deps = concatMap (instantiateGenericType typeEnv) varTys
-             modify (deps ++)
-             return (Right ())
-        structTy@(StructTy _ _) ->
-          do modify ((instantiateGenericType typeEnv structTy) ++)
-             return (Right ())
-        _ -> return (Right ())
-    checkForNeedOfTypedefs _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -196,20 +179,28 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
 
+-- | Do the signatures match?
 matchingSignature :: Ty -> (Ty, SymPath) -> Bool
-matchingSignature tA (tB, _) =
-  let result = areUnifiable tA tB
-  in --(trace ("Are " ++ show tA ++ " unifyable with " ++ show tB ++ "? " ++ show result))
-     result
+matchingSignature tA (tB, _) = areUnifiable tA tB
 
--- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
--- matchingNonGenericSignature actualType (t, s) =
---   matchingSignature actualType (t, s) && not (isTypeGeneric t)
+-- | Does the type of an XObj require additional concretization of generic types or some typedefs for function types, etc?
+-- | If so, perform the concretization and append the results to the list of dependencies.
+concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
+concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
+  do modify ((concretizeType typeEnv t) ++)
+     return (Right ())
+concretizeTypeOfXObj _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
 
-instantiateGenericType :: TypeEnv -> Ty -> [XObj]
-instantiateGenericType _ arrayTy@(StructTy "Array" _) =
-  [defineArrayTypeAlias arrayTy]
-instantiateGenericType typeEnv structTy@(StructTy name _) =
+-- | Find all the concrete deps of a type.
+concretizeType :: TypeEnv -> Ty -> [XObj]
+concretizeType _ ft@(FuncTy _ _) =
+  if isTypeGeneric ft
+  then []
+  else [defineFunctionTypeAlias ft]
+concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
+  [defineArrayTypeAlias arrayTy] ++
+  concatMap (concretizeType typeEnv) varTys
+concretizeType typeEnv structTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
@@ -223,8 +214,8 @@ instantiateGenericType typeEnv structTy@(StructTy name _) =
     Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
       []
     Just (_, Binder x) -> error ("Non-typedef found in type env: " ++ show x)
-    Nothing -> error ("Can't find type " ++ name ++ " in type env.")
-instantiateGenericType _ t =
+    Nothing -> error ("Can't find type " ++ show structTy ++ " with name '" ++ name ++ "' in type env.")
+concretizeType _ t =
     [] -- ignore all other types
 
 instantiateGenericStructType :: TypeEnv -> Map.Map String Ty -> Ty -> [XObj] -> [XObj]
@@ -237,7 +228,7 @@ instantiateGenericStructType typeEnv mappings structTy@(StructTy _ _) memberXObj
             ) (Just dummyInfo) (Just TypeTy)
       ]
       ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
-                                      Just okTy -> instantiateGenericType typeEnv okTy
+                                      Just okTy -> concretizeType typeEnv okTy
                                       Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
       (pairwise concretelyTypedMembers)
 

@@ -245,7 +245,7 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) me
                in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
             (const (tokensForInit allocationMode typeName membersXObjs))
             (\(FuncTy _ concreteStructTy) ->
-               instantiateGenericType typeEnv concreteStructTy)
+               concretizeType typeEnv concreteStructTy)
 
 tokensForInit :: AllocationMode -> String -> [XObj] -> [Token]
 tokensForInit allocationMode typeName membersXObjs =
