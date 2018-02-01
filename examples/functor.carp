@@ -30,7 +30,3 @@
     (println &(str &(higherOrder (Box.init 999))))
     (println &(str &(higherOrder [9 99 999 9999])))
     ))
-
-(build)
-(run)
-(quit)

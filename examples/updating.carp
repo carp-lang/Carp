@@ -42,7 +42,3 @@
     0 ;; <- Return value, should not be needed?!
 
     ))
-
-(build)
-(run)
-(quit)
