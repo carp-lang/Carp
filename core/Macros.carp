@@ -196,4 +196,4 @@
   (list 'IO.println (list 'ref (build-str* forms))))
 
 (defmacro ignore [form]
-  (let [_ form] ()))
+  (list 'let (array '_ form) (list)))
