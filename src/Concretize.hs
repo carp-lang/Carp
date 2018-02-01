@@ -63,7 +63,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
              Just funcTy = t
-             allowAmbig = typeIsGeneric funcTy
+             allowAmbig = isTypeGeneric funcTy
          visitedBody <- visit allowAmbig envWithArgs body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
@@ -93,7 +93,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     checkForNeedOfTypedefs :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
     checkForNeedOfTypedefs typeEnv (XObj _ _ (Just t)) =
       case t of
-        (FuncTy _ _) | typeIsGeneric t -> return (Right ())
+        (FuncTy _ _) | isTypeGeneric t -> return (Right ())
                      | otherwise -> do modify (defineFunctionTypeAlias t :)
                                        return (Right ())
         -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
@@ -118,7 +118,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   Just something -> something
                                   Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
-                  typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
+                  isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
                          Left err -> return (Left err)
                          Right (concrete, deps) ->
@@ -204,7 +204,7 @@ matchingSignature tA (tB, _) =
 
 -- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
 -- matchingNonGenericSignature actualType (t, s) =
---   matchingSignature actualType (t, s) && not (typeIsGeneric t)
+--   matchingSignature actualType (t, s) && not (isTypeGeneric t)
 
 instantiateGenericType :: TypeEnv -> Ty -> [XObj]
 instantiateGenericType _ arrayTy@(StructTy "Array" _) =
@@ -212,7 +212,7 @@ instantiateGenericType _ arrayTy@(StructTy "Array" _) =
 instantiateGenericType typeEnv structTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
-      if typeIsGeneric originalStructTy
+      if isTypeGeneric originalStructTy
       then let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
                fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
                XObj (Arr memberXObjs) _ _ = head rest

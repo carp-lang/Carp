@@ -2,7 +2,7 @@ module Types ( TypeMappings
              , Ty(..)
              , showMaybeTy
              , tyToC
-             , typeIsGeneric
+             , isTypeGeneric
              , SymPath(..)
              , unifySignatures
              , replaceTyVars
@@ -94,13 +94,13 @@ tyToCManglePtr _ TypeTy                = error "Can't emit the type of types."
 tyToCManglePtr _ MacroTy               = error "Can't emit the type of macros."
 tyToCManglePtr _ DynamicTy             = error "Can't emit the type of dynamic functions."
 
-typeIsGeneric :: Ty -> Bool
-typeIsGeneric (VarTy _) = True
-typeIsGeneric (FuncTy argTys retTy) = any typeIsGeneric argTys || typeIsGeneric retTy
-typeIsGeneric (StructTy _ tyArgs) = any typeIsGeneric tyArgs
-typeIsGeneric (PointerTy p) = typeIsGeneric p
-typeIsGeneric (RefTy r) = typeIsGeneric r
-typeIsGeneric _ = False
+isTypeGeneric :: Ty -> Bool
+isTypeGeneric (VarTy _) = True
+isTypeGeneric (FuncTy argTys retTy) = any isTypeGeneric argTys || isTypeGeneric retTy
+isTypeGeneric (StructTy _ tyArgs) = any isTypeGeneric tyArgs
+isTypeGeneric (PointerTy p) = isTypeGeneric p
+isTypeGeneric (RefTy r) = isTypeGeneric r
+isTypeGeneric _ = False
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
 type TypeMappings = Map.Map String Ty

@@ -127,7 +127,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         visitSymbol :: XObj -> State EmitterState String
         visitSymbol xobj@(XObj (Sym path _) _ t) =
           let Just t' = t
-          in if typeIsGeneric t'
+          in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
              else return (pathToC path)
@@ -434,7 +434,7 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
                  _ <- mapM typedefCaseToMemberDecl rest
                  appendToSrc ("} " ++ tyToC structTy ++ ";\n")
 
-  in if typeIsGeneric structTy
+  in if isTypeGeneric structTy
      then "" -- ("// " ++ show structTy ++ "\n")
      else emitterSrc (execState visit (EmitterState ""))
 
@@ -498,7 +498,7 @@ binderToC toCMode binder =
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode
         _ -> case ty xobj of
-               Just t -> if typeIsGeneric t
+               Just t -> if isTypeGeneric t
                          then Right ""
                          else do checkForUnresolvedSymbols xobj
                                  return (toC toCMode xobj)
@@ -510,7 +510,7 @@ binderToDeclaration typeEnv binder =
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
         _ -> case ty xobj of
-               Just t -> if typeIsGeneric t then Right "" else Right (toDeclaration xobj ++ "")
+               Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration xobj ++ "")
                Nothing -> Left (BinderIsMissingType binder)
 
 envToC :: Env -> ToCMode -> Either ToCError String
@@ -544,7 +544,7 @@ checkForUnresolvedSymbols = visit
     visit xobj =
       case ty xobj of
         Nothing -> visitXObj
-        Just t -> if typeIsGeneric t
+        Just t -> if isTypeGeneric t
                   then Left (UnresolvedGenericType xobj)
                   else visitXObj
       where

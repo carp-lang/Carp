@@ -131,7 +131,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) (RefTy t))
-     , if typeIsGeneric t
+     , if isTypeGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
        else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy (p), t] UnitTy) (templateMutatingSetter typeEnv env (mangle memberName) t)
@@ -211,7 +211,7 @@ templateUpdater member =
                                 ,"    return p;"
                                 ,"}\n"])))
     (\(FuncTy [_, t@(FuncTy [_] fRetTy)] _) ->
-       if typeIsGeneric fRetTy
+       if isTypeGeneric fRetTy
        then []
        else [defineFunctionTypeAlias t])
 
@@ -220,7 +220,7 @@ templateUpdater member =
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Maybe (String, Binder)
 binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if typeIsGeneric structTy
+  if isTypeGeneric structTy
   then Just (genericInit StackAlloc insidePath structTy membersXObjs)
   else Just $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)
@@ -290,7 +290,7 @@ templitizeTy t =
 -- | Helper function to create the binder for the 'str' template.
 binderForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 binderForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if typeIsGeneric structTy
+  if isTypeGeneric structTy
   then Just (genericStr insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "str")
               (FuncTy [RefTy structTy] StringTy)
@@ -308,9 +308,7 @@ concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs =
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
                  (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                  (map snd memberPairs))
-       ++
-       (if typeIsGeneric structTy then [] else [defineFunctionTypeAlias ft]))
+                  (map snd memberPairs)))
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
@@ -338,7 +336,7 @@ genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs 
                    (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
                     (map snd memberPairs))
                    ++
-                   (if typeIsGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
+                   (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
 
 tokensForStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Ty -> [Token]
 tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
@@ -418,16 +416,16 @@ memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ membe
 -- | Helper function to create the binder for the 'delete' template.
 binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if typeIsGeneric structTy
-  then Just (templateGenericDelete insidePath structTy membersXObjs, [])
+  if isTypeGeneric structTy
+  then Just (genericDelete insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "delete")
              (FuncTy [structTy] UnitTy)
-             (templateConcreteDelete typeEnv env (memberXObjsToPairs membersXObjs)))
+             (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs)))
 binderForDelete _ _ _ _ _ = Nothing
 
 -- | The template for the 'delete' function of a concrete deftype.
-templateConcreteDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
-templateConcreteDelete typeEnv env members =
+concreteDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
+concreteDelete typeEnv env members =
   Template
    (FuncTy [VarTy "p"] UnitTy)
    (const (toTemplate "void $NAME($p p)"))
@@ -438,8 +436,8 @@ templateConcreteDelete typeEnv env members =
                     (filter (isManaged typeEnv) (map snd members)))
 
 -- | The template for the 'delete' function of a generic deftype.
-templateGenericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericDelete pathStrings originalStructTy membersXObjs =
+genericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
+genericDelete pathStrings originalStructTy membersXObjs =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy)
   where path = SymPath pathStrings "delete"
         t = (FuncTy [VarTy "p"] UnitTy)
@@ -459,7 +457,7 @@ templateGenericDelete pathStrings originalStructTy membersXObjs =
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in  if typeIsGeneric concreteStructTy
+               in  if isTypeGeneric concreteStructTy
                    then []
                    else concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                                   (filter (isManaged typeEnv) (map snd memberPairs)))
@@ -478,30 +476,26 @@ memberDeletion typeEnv env (memberName, memberType) =
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Maybe ((String, Binder), [XObj])
 binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
-  if typeIsGeneric structTy
-  then Just (templateGenericCopy insidePath structTy membersXObjs, [])
+  if isTypeGeneric structTy
+  then Just (genericCopy insidePath structTy membersXObjs, [])
   else Just (instanceBinderWithDeps (SymPath insidePath "copy")
               (FuncTy [RefTy structTy] structTy)
-              (templateConcreteCopy typeEnv env (memberXObjsToPairs membersXObjs)))
+              (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs)))
 binderForCopy _ _ _ _ _ = Nothing
 
 -- | The template for the 'copy' function of a concrete deftype.
-templateConcreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
-templateConcreteCopy typeEnv env members =
+concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
+concreteCopy typeEnv env memberPairs =
   Template
    (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
    (const (toTemplate "$p $NAME($p* pRef)"))
-   (const (toTemplate $ unlines [ "$DECL {"
-                                , "    $p copy = *pRef;"
-                                , joinWith "\n" (map (memberCopy typeEnv env) members)
-                                , "    return copy;"
-                                , "}"]))
+   (const (tokensForCopy typeEnv env memberPairs))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
-                    (filter (isManaged typeEnv) (map snd members)))
+                    (filter (isManaged typeEnv) (map snd memberPairs)))
 
 -- | The template for the 'copy' function of a generic deftype.
-templateGenericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
-templateGenericCopy pathStrings originalStructTy membersXObjs =
+genericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
+genericCopy pathStrings originalStructTy membersXObjs =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy] originalStructTy)
   where path = SymPath pathStrings "copy"
         t = (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
@@ -514,19 +508,23 @@ templateGenericCopy pathStrings originalStructTy membersXObjs =
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in  (toTemplate $ unlines [ "$DECL {"
-                                         , "    $p copy = *pRef;"
-                                         , joinWith "\n" (map (memberCopy typeEnv env) memberPairs)
-                                         , "    return copy;"
-                                         , "}"]))
+               in (tokensForCopy typeEnv env memberPairs))
             (\(FuncTy [RefTy concreteStructTy] _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in  if typeIsGeneric concreteStructTy
+               in  if isTypeGeneric concreteStructTy
                    then []
                    else concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
                                   (filter (isManaged typeEnv) (map snd memberPairs)))
+
+tokensForCopy :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
+tokensForCopy typeEnv env memberPairs=
+  (toTemplate $ unlines [ "$DECL {"
+                        , "    $p copy = *pRef;"
+                        , joinWith "\n" (map (memberCopy typeEnv env) memberPairs)
+                        , "    return copy;"
+                        , "}"])
 
 -- | Generate the C code for copying the member of a deftype.
 -- | TODO: Should return an Either since this can fail!
