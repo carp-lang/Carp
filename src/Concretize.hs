@@ -82,7 +82,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [theExpr, typeXObj, okVisitedValue]
 
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
-      do f <- visit allowAmbig env func
+      do checkForNeedOfTypedefs typeEnv func
+         mapM_ (checkForNeedOfTypedefs typeEnv) args
+         f <- visit allowAmbig env func
          a <- fmap sequence (mapM (visit allowAmbig env) args)
          return $ do okF <- f
                      okA <- a
@@ -94,13 +96,16 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         (FuncTy _ _) | typeIsGeneric t -> return (Right ())
                      | otherwise -> do modify (defineFunctionTypeAlias t :)
                                        return (Right ())
-        (StructTy "Array" _) ->
-          return (Right ()) -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
+        -- | TODO: Maybe handle all array cases here too? Would be a nice cleanup if it works.
+        (StructTy "Array" varTys) ->
+          do let deps = concatMap (instantiateGenericType typeEnv) varTys
+             modify (deps ++)
+             return (Right ())
         structTy@(StructTy _ _) ->
           do modify ((instantiateGenericType typeEnv structTy) ++)
              return (Right ())
         _ -> return (Right ())
-    checkForNeedOfTypedefs _ xobj = error ("Missing type: " ++ show xobj)
+    checkForNeedOfTypedefs _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
