@@ -15,14 +15,6 @@
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
 
-;;(deftype (Trivial t) [thing t, num Int])
-
-;;(defn f [x] (IO.println &(str @(Trivial.num (Trivial.thing &(the (Trivial (Trivial String)) x))))))
-
-;; (Map.count &(the (Map.Map Int Int) (Map.create 1024)))
-
-(deftype (Pair a b) [x a, y b])
-(deftype (Tricky a b) [stuff (Array (Pair a b))])
-
-(defn create []
-  (Tricky.init []))
+;; Instantiating generic struct with ref-type fails:
+(deftype (Triv a) [x a])
+(defn g [] (Triv.init "hej"))
