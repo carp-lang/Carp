@@ -23,7 +23,6 @@ import TypeError
 import InitialTypes
 import AssignTypes
 import GenerateConstraints
-import ManageMemory
 import Concretize
 
 -- | Performs all the steps of creating initial types, solving constraints and assigning the types.

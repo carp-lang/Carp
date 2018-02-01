@@ -31,7 +31,6 @@ library
                        InitialTypes,
                        AssignTypes,
                        GenerateConstraints,
-                       ManageMemory,
                        Polymorphism,
                        Concretize,
                        ArrayTemplates,

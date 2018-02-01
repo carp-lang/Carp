@@ -13,7 +13,6 @@ import Types
 import Util
 import TypeError
 import AssignTypes
-import ManageMemory
 import Polymorphism
 import InitialTypes
 
