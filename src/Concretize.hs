@@ -215,7 +215,7 @@ concretizeType _ t =
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
 instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> [XObj]
-instantiateGenericStructType typeEnv originalStructTy genericStructTy membersXObjs =
+instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
@@ -224,15 +224,18 @@ instantiateGenericStructType typeEnv originalStructTy genericStructTy membersXOb
         Left e -> error (show e)
         Right mappings ->
           let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
-          in  [ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
+          in  case validateMembers typeEnv originalTyVars concretelyTypedMembers of
+                Left err -> error err
+                Right () ->
+                  [ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
                            XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
                            [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
                      ) (Just dummyInfo) (Just TypeTy)
-              ]
-          ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
-                                      Just okTy -> concretizeType typeEnv okTy
-                                      Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
-                       (pairwise concretelyTypedMembers)
+                  ]
+                  ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
+                                                  Just okTy -> concretizeType typeEnv okTy
+                                                  Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
+                               (pairwise concretelyTypedMembers)
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty

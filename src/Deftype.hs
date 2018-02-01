@@ -27,7 +27,7 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeModuleName]
-  in do validateMembers typeEnv typeVariables rest
+  in do validateMemberCases typeEnv typeVariables rest
         let structTy = StructTy typeName typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -49,7 +49,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
   let typeModuleName = typeName
       emptyTypeModuleEnv = Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv
       insidePath = pathStrings ++ [typeModuleName]
-  in do validateMembers typeEnv [] rest
+  in do validateMemberCases typeEnv [] rest
         let structTy = StructTy typeName []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
@@ -58,49 +58,6 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
         let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : binders)
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
         return (typeModuleName, typeModuleXObj, deps ++ strDeps)
-
-{-# ANN validateMembers "HLint: ignore Eta reduce" #-}
--- | Make sure that the member declarations in a type definition
--- | Follow the pattern [<name> <type>, <name> <type>, ...]
--- | TODO: What a mess this function is, clean it up!
-validateMembers :: TypeEnv -> [Ty] -> [XObj] -> Either String ()
-validateMembers typeEnv typeVariables rest = mapM_ validateOneCase rest
-  where
-    validateOneCase :: XObj -> Either String ()
-    validateOneCase (XObj (Arr arr) _ _) =
-      if length arr `mod` 2 == 0
-      then mapM_ (okXObjForType . snd) (pairwise arr)
-      else Left "Uneven nr of members / types."
-    validateOneCase XObj {} =
-      Left "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]"
-
-    okXObjForType :: XObj -> Either String ()
-    okXObjForType xobj =
-      case xobjToTy xobj of
-        Just t -> okMemberType t
-        Nothing -> Left ("Can't interpret this as a type: " ++ pretty xobj)
-
-    okMemberType :: Ty -> Either String ()
-    okMemberType t = case t of
-                       IntTy    -> return ()
-                       FloatTy  -> return ()
-                       DoubleTy -> return ()
-                       LongTy   -> return ()
-                       BoolTy   -> return ()
-                       StringTy -> return ()
-                       CharTy   -> return ()
-                       PointerTy inner -> do _ <- okMemberType inner
-                                             return ()
-                       StructTy "Array" [inner] -> do _ <- okMemberType inner
-                                                      return ()
-                       StructTy name tyVars ->
-                         case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                           Just _ -> return ()
-                           Nothing -> Left ("Can't find '" ++ name ++ "' among registered types.")
-                       VarTy _ -> if t `elem` typeVariables
-                                  then return ()
-                                  else Left ("Invalid type variable as member type: " ++ show t)
-                       _ -> Left ("Invalid member type: " ++ show t)
 
 
 

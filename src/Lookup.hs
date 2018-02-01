@@ -6,6 +6,7 @@ import Data.Maybe (mapMaybe, fromMaybe, fromJust)
 
 import Types
 import Obj
+import Util
 
 -- | Find the Binder at a specified path.
 lookupInEnv :: SymPath -> Env -> Maybe (Env, Binder)
@@ -180,3 +181,51 @@ isManaged typeEnv (StructTy name _) =
     )
 isManaged _ StringTy = True
 isManaged _ _ = False
+
+{-# ANN validateMembers "HLint: ignore Eta reduce" #-}
+-- | Make sure that the member declarations in a type definition
+-- | Follow the pattern [<name> <type>, <name> <type>, ...]
+validateMemberCases :: TypeEnv -> [Ty] -> [XObj] -> Either String ()
+validateMemberCases typeEnv typeVariables rest = mapM_ visit rest
+  where visit (XObj (Arr membersXObjs) _ _) =
+          validateMembers typeEnv typeVariables membersXObjs
+        visit xobj =
+          Left ("Invalid case in deftype: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
+
+validateMembers :: TypeEnv -> [Ty] -> [XObj] -> Either String ()
+validateMembers typeEnv typeVariables membersXObjs =
+  if length membersXObjs `mod` 2 == 0
+  then mapM_ (okXObjForType typeEnv typeVariables . snd) (pairwise membersXObjs)
+  else Left ("Uneven nr of members / types: " ++ joinWithComma (map pretty membersXObjs))
+validateOneCase _ XObj {} =
+  Left "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]"
+
+okXObjForType :: TypeEnv -> [Ty] -> XObj -> Either String ()
+okXObjForType typeEnv typeVariables xobj =
+  case xobjToTy xobj of
+    Just t -> canBeUsedAsMemberType typeEnv typeVariables t
+    Nothing -> Left ("Can't interpret this as a type: " ++ pretty xobj)
+
+-- | Can this type be used as a member for a deftype?
+canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> Either String ()
+canBeUsedAsMemberType typeEnv typeVariables t =
+  case t of
+    IntTy    -> return ()
+    FloatTy  -> return ()
+    DoubleTy -> return ()
+    LongTy   -> return ()
+    BoolTy   -> return ()
+    StringTy -> return ()
+    CharTy   -> return ()
+    PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
+                          return ()
+    StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
+                                   return ()
+    StructTy name tyVars ->
+      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+        Just _ -> return ()
+        Nothing -> Left ("Can't find '" ++ name ++ "' among registered types.")
+    VarTy _ -> if t `elem` typeVariables
+               then return ()
+               else Left ("Invalid type variable as member type: " ++ show t)
+    _ -> Left ("Invalid member type: " ++ show t)

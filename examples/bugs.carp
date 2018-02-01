@@ -17,4 +17,7 @@
 
 ;; Instantiating generic struct with ref-type fails:
 (deftype (Triv a) [x a])
-(defn g [] (Triv.init "hej"))
+(defn g [] (Triv.init &123))
+
+(defn main []
+  (println* &(g)))
