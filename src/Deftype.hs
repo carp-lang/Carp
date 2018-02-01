@@ -203,7 +203,10 @@ genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) me
                in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
             (const (tokensForInit allocationMode typeName membersXObjs))
             (\(FuncTy _ concreteStructTy) ->
-               concretizeType typeEnv concreteStructTy)
+               case concretizeType typeEnv concreteStructTy of
+                 Left err -> error (err ++ ". This error should not crash the compiler - change return type to Either here.")
+                 Right ok -> ok
+            )
 
 tokensForInit :: AllocationMode -> String -> [XObj] -> [Token]
 tokensForInit allocationMode typeName membersXObjs =

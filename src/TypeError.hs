@@ -37,6 +37,7 @@ data TypeError = SymbolMissingType XObj Env
                | MainCannotHaveArguments Int
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
+               | InvalidMemberType String
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -121,6 +122,8 @@ instance Show TypeError where
     "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (NotAType xobj) =
     "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (InvalidMemberType msg) =
+    msg
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of

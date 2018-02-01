@@ -187,34 +187,38 @@ matchingSignature tA (tB, _) = areUnifiable tA tB
 -- | If so, perform the concretization and append the results to the list of dependencies.
 concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
 concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
-  do modify ((concretizeType typeEnv t) ++)
-     return (Right ())
+  case concretizeType typeEnv t of
+    Right t -> do modify (t ++)
+                  return (Right ())
+    Left err -> return (Left (InvalidMemberType err))
 concretizeTypeOfXObj _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
 
 -- | Find all the concrete deps of a type.
-concretizeType :: TypeEnv -> Ty -> [XObj]
+concretizeType :: TypeEnv -> Ty -> Either String [XObj]
 concretizeType _ ft@(FuncTy _ _) =
   if isTypeGeneric ft
-  then []
-  else [defineFunctionTypeAlias ft]
+  then Right []
+  else Right [defineFunctionTypeAlias ft]
 concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
-  [defineArrayTypeAlias arrayTy] ++
-  concatMap (concretizeType typeEnv) varTys
+  do deps <- mapM (concretizeType typeEnv) varTys
+     Right ([defineArrayTypeAlias arrayTy] ++ concat deps)
 concretizeType typeEnv genericStructTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
       then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
-      else []
+      else Right []
     Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
-      []
-    Just (_, Binder x) -> error ("Non-deftype found in type env: " ++ show x)
-    Nothing -> error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
+      Right []
+    Just (_, Binder x) ->
+      error ("Non-deftype found in type env: " ++ show x)
+    Nothing ->
+      error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
 concretizeType _ t =
-    [] -- ignore all other types
+    Right [] -- ignore all other types
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
-instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> [XObj]
+instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either String [XObj]
 instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
@@ -225,17 +229,23 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
         Right mappings ->
           let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
           in  case validateMembers typeEnv originalTyVars concretelyTypedMembers of
-                Left err -> error err
+                Left err -> Left err
                 Right () ->
-                  [ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
-                           XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                           [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
-                     ) (Just dummyInfo) (Just TypeTy)
-                  ]
-                  ++ concatMap (\(v, tyXObj) -> case (xobjToTy tyXObj) of
-                                                  Just okTy -> concretizeType typeEnv okTy
-                                                  Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type."))
-                               (pairwise concretelyTypedMembers)
+                  let deps = sequence (map (f typeEnv) (pairwise concretelyTypedMembers))
+                  in case deps of
+                       Left err -> Left err
+                       Right okDeps ->
+                         Right $ [ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
+                                              XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                              [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
+                                        ) (Just dummyInfo) (Just TypeTy)
+                                 ] ++ concat okDeps
+
+f :: TypeEnv -> (XObj, XObj) -> Either String [XObj]
+f typeEnv (_, tyXObj) =
+  case (xobjToTy tyXObj) of
+    Just okTy -> concretizeType typeEnv okTy
+    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type.")
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
