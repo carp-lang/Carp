@@ -44,7 +44,6 @@
 
 ## Tooling
 * [0.3] Project setting for turning off bound checks and similar ("--optimize"). Should also run the C compiler at at least -O2.
-* [0.3] Errors in the parser or emitter don't stop evaluation, only errors during evaluation?
 * [0.3] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
 * [0.3] When running :rb, shouldn't carp stop when :r returns an error, instead of building the wrong main.c?
