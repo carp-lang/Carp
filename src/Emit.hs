@@ -17,6 +17,7 @@ import Obj
 import Types
 import Util
 import Template
+import Scoring
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '

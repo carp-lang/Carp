@@ -34,7 +34,8 @@ library
                        Polymorphism,
                        Concretize,
                        ArrayTemplates,
-                       Expand
+                       Expand,
+                       Scoring
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
