@@ -103,7 +103,7 @@ genConstraints root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType (RefTy valueType) variable value OrdSetBang
+                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
                                 return (sameTypeConstraint : insideValueConstraints)
 
                            -- The

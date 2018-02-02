@@ -24,7 +24,7 @@
     (let [str @""]
       (do
         (for [i 0 n]
-          (set! &str (append str @inpt)))
+          (set! str (append str @inpt)))
         str)))
 
   ;; A temporary version of this function, until we have some nicer way to write it
@@ -40,14 +40,14 @@
               (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) @c))
                 (if (= 0 (String.count &word))
                   () ;; no word
-                  (do (set! &result (Array.push-back @&result @&word))
-                      (set! &word @"")))
-                (set! &word (append @&word (from-chars [@c])))))))
+                  (do (set! result (Array.push-back @&result @&word))
+                      (set! word @"")))
+                (set! word (append @&word (from-chars [@c])))))))
         ;; Some sweet code duplication for the final word:
         (if (= 0 (String.count &word))
           ()
-          (do (set! &result (Array.push-back @&result @&word))
-              (set! &word @"")))
+          (do (set! result (Array.push-back @&result @&word))
+              (set! word @"")))
         result)))
 
   (defn words [s]
@@ -68,7 +68,7 @@
     (let-do [n 0]
       (for [i 0 (count s)]
         (when (= c (char-at s i))
-          (set! &n (Int.inc n))))
+          (set! n (Int.inc n))))
       n))
 
   (defn reverse [s]

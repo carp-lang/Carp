@@ -9,7 +9,7 @@
 ;;     (let [str ""]
 ;;       (do
 ;;         (for [i 0 n]
-;;           (set! &str &(append @str @inpt)))
+;;           (set! str &(append @str @inpt)))
 ;;         @str)))
 ;; (defn main []
 ;;   (let [strings (faulty-repeat 20 "x")]

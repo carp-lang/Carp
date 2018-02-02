@@ -1,4 +1,4 @@
-;;; Taken from 
+;;; Taken from
 ;;; http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=gcc&id=2
 
 (add-cflag "-Wall -pipe -O3 -fomit-frame-pointer -march=native")
@@ -17,7 +17,7 @@
 (register putc (Fn [Int FILE] ()))
 
 (defn main []
-  (do 
+  (do
     (print &(string-join @"P4\n" (str w) @" " (str h) @"\n"))
     (let [iter 50
           limit 2.0
@@ -25,42 +25,42 @@
           bit_num 0]
       (for [y 0 (to-int h)]
         (for [x 0 (to-int w)]
-          (let [Zr 0.0  
+          (let [Zr 0.0
                 Zi 0.0
                 Tr 0.0
                 Ti 0.0
-                Cr (- (/ (* 2.0 (from-int x)) w) 1.5) 
+                Cr (- (/ (* 2.0 (from-int x)) w) 1.5)
                 Ci (- (/ (* 2.0 (from-int y)) w) 1.0)]
             (do
               (let [i 0]
                 (while (and (< i iter)
                       (<= (+ Tr Ti) (* limit limit)))
                   (do
-                    (set! &Zi (+ (* 2.0 (* Zr Zi)) Ci))
-                    (set! &Zr (+ (- Tr Ti) Cr))
-                    (set! &Tr (* Zr Zr))
-                    (set! &Ti (* Zi Zi))
-                    (set! &i (inc i)))))
+                    (set! Zi (+ (* 2.0 (* Zr Zi)) Ci))
+                    (set! Zr (+ (- Tr Ti) Cr))
+                    (set! Tr (* Zr Zr))
+                    (set! Ti (* Zi Zi))
+                    (set! i (inc i)))))
 
-              (set! &byte_acc (* 2 byte_acc))
-  
+              (set! byte_acc (* 2 byte_acc))
+
               (when (<= (+ Tr Ti) (* limit limit))
-                (set! &byte_acc (bit-or byte_acc 1)))
-  
-              (set! &bit_num (inc bit_num))
-  
+                (set! byte_acc (bit-or byte_acc 1)))
+
+              (set! bit_num (inc bit_num))
+
               (if (= bit_num 8)
-                (do 
+                (do
                   (putc byte_acc stdout)
-                  (set! &byte_acc 0)
-                  (set! &bit_num 0))
+                  (set! byte_acc 0)
+                  (set! bit_num 0))
                 (if (= x (- (to-int w) 1))
                   (do
-                    (set! &byte_acc 
+                    (set! byte_acc
                       (bit-shift-left byte_acc (- 8 (mod (to-int w) 8))))
                     (putc byte_acc stdout)
-                    (set! &byte_acc 0)
-                    (set! &bit_num 0))
+                    (set! byte_acc 0)
+                    (set! bit_num 0))
                   ())))))))))
 
 

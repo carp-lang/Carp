@@ -48,7 +48,7 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
             (if (= &guess "q\n")
               (do
                 (println "Good bye...")
-                (set! &play false))
+                (set! play false))
               (do
                 (cond (< num answer) (println "Too low.")
                       (> num answer) (println "Too high.")

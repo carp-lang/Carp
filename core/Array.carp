@@ -4,7 +4,7 @@
     (let [total x]
       (do
         (for [i 0 (count xs)]
-          (set! &total (f &total (nth xs i))))
+          (set! total (f &total (nth xs i))))
         total)))
 
   (defn first [a]
@@ -20,7 +20,7 @@
         (for [i 0 (count a)]
           (when (/= @(nth a i) @(nth b i))
             (do
-              (set! &eq false)
+              (set! eq false)
               (break))))
         eq)))
 
@@ -31,7 +31,7 @@
         (for [i 1 n]
           (let [x @(nth xs i)]
             (if (< result x)
-              (set! &result x)
+              (set! result x)
               ())))
         result)))
 
@@ -42,7 +42,7 @@
         (for [i 1 n]
           (let [x @(nth xs i)]
             (if (> result x)
-              (set! &result x)
+              (set! result x)
               ())))
         result)))
 
@@ -53,7 +53,7 @@
     (let [result []]
       (do
         (for [i start-index end-index]
-          (set! &result (push-back @&result @(nth xs i))))
+          (set! result (push-back @&result @(nth xs i))))
         result)))
 
   (defn prefix-array [xs end-index]
@@ -68,9 +68,9 @@
       (while (Int.< i j)
         (let-do [tmp @(nth &a i)]
           (aset! &a i @(nth &a j))
-          (set! &i (Int.inc i))
+          (set! i (Int.inc i))
           (aset! &a j tmp)
-          (set! &j (Int.dec j))))
+          (set! j (Int.dec j))))
       a))
 
   (defn index-of [a e]
@@ -78,14 +78,14 @@
       (for [i 0 (count a)]
         (when (= @(nth a i) e)
           (do
-            (set! &idx i)
+            (set! idx i)
             (break))))
       idx))
 
   (defn element-count [a e]
     (let-do [c 0]
       (for [i 0 (count a)]
-        (when (= e @(nth a i)) (set! &c (Int.inc c))))
+        (when (= e @(nth a i)) (set! c (Int.inc c))))
       c))
 
   (defn aupdate [a i f]
@@ -114,8 +114,8 @@
       (while (op e end)
         (do
           (aset! &x i e)
-          (set! &i (Int.inc i))
-          (set! &e (+ e step))))
+          (set! i (Int.inc i))
+          (set! e (+ e step))))
       x))
 
   (defn sort [a]

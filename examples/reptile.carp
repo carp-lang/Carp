@@ -71,8 +71,8 @@
                                      (or (= key SDLK_RIGHT)
                                      (or (= key SDLK_UP)
                                      (or (= key SDLK_LEFT) (= key SDLK_DOWN))))
-                                       (set! &input-dir key)
-                                     (= key SDLK_RETURN) (set! &reset true)
+                                       (set! input-dir key)
+                                     (= key SDLK_RETURN) (set! reset true)
                                      (= key SDLK_ESCAPE) (quit app)
                                      ()))
               ()
@@ -92,7 +92,7 @@
        (while (> i -1)
          (do
            (aset! body (inc i) @(nth body i))
-           (set! &i (dec i)))))
+           (set! i (dec i)))))
     @body))
 
 (defn create-human []
@@ -172,12 +172,12 @@
       (while (not (World.dead &world))
         (if reset
           (do
-            (set! &input-dir SDLK_RIGHT)
-            (set! &world (create-world))
-            (set! &reset false))
+            (set! input-dir SDLK_RIGHT)
+            (set! world (create-world))
+            (set! reset false))
           (do
             (let [new-world (tick &world)]
-              (set! &world new-world))
+              (set! world new-world))
             (handle-events &app rend &world)
             (draw rend &world)
             (SDL_Delay 50))))

@@ -8,3 +8,16 @@
 ;;   (Bucket.init 0 []))
 ;; (defn f []
 ;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this
+
+
+(defn changing-target-of-ref []
+  (let [s1 @"hello"
+        s2 @"goodbye"
+        r &s1]
+    (do (set! r &s2)
+        (IO.println r))))
+
+(defn )
+
+(defn main []
+  )

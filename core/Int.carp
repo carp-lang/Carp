@@ -51,9 +51,9 @@
       (while (/= y 0)
         (do
           (when (/= (bit-and y 1) 0)
-            (set! &r (* r x)))
-          (set! &y (/ y 2))
-          (set! &x (* x x))))
+            (set! r (* r x)))
+          (set! y (/ y 2))
+          (set! x (* x x))))
       r))
 )
 

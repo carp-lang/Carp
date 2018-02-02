@@ -10,7 +10,7 @@
       (do
         (for [i 0 (Array.count a)]
           (if (not (Double.= @(Array.nth a i) @(Array.nth b i)))
-            (set! &res false)
+            (set! res false)
             ()))
         res))))
 
@@ -21,7 +21,7 @@
       (do
         (for [i 0 (Array.count a)]
           (if (not (Double.approx @(Array.nth a i) @(Array.nth b i)))
-            (set! &res false)
+            (set! res false)
             ()))
         res))))
 

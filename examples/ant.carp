@@ -102,7 +102,7 @@
         (do
           (handle-events &app rend)
           (draw rend &state)
-          (set! &state (tick state))
+          (set! state (tick state))
           (SDL_Delay 2)))))
 
 ;; Just the model
@@ -112,7 +112,7 @@
 ;;     (let [state (create-state)]
 ;;       (for [i 0 10000]
 ;;         (do
-;;           (set! &state (tick state))
+;;           (set! state (tick state))
 ;;           (IO.println &(str (State.dir &state)))
 ;;           (IO.println &(str (Debug.memory-balance)))
 ;;           (System.sleep-micros 1000)
