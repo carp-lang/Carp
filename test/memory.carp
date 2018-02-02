@@ -112,7 +112,7 @@
 (defn setting-4 []
   (let [s ""]
     (do ;;(set! s @s) ;; Here the variable itself is a ref!
-        ())))
+      ())))
 
 (defn branching [b s]
   (if b
@@ -155,6 +155,7 @@
       (assert-no-leak test setting-1 "setting-1 does not leak")
       (assert-no-leak test setting-2 "setting-2 does not leak")
       (assert-no-leak test setting-3 "setting-3 does not leak")
+      (assert-no-leak test setting-4 "setting-4 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
       (assert-no-leak test if-2 "if-2 does not leak")
       ;; (assert-no-leak test if-3 "if-3 does not leak")
