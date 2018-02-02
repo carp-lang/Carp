@@ -127,6 +127,16 @@
 (defn if-2 []
   (branching false @""))
 
+(defn if-3 []
+  (if false
+    ()
+    (IO.println &@"TEST")))
+
+(defn if-4 []
+  (if false
+    ()
+    (IO.println &@"TEST")))
+
 (defn main []
   (let []
     (with-test test
@@ -147,4 +157,6 @@
       (assert-no-leak test setting-3 "setting-3 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
       (assert-no-leak test if-2 "if-2 does not leak")
+      ;; (assert-no-leak test if-3 "if-3 does not leak")
+      ;; (assert-no-leak test if-4 "if-4 does not leak")
       (print-test-results test))))

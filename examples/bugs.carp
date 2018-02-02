@@ -16,8 +16,16 @@
 ;;     (IO.println &strings)))
 
 ;; Instantiating generic struct with ref-type fails:
-(deftype (Triv a) [x a])
-(defn g [] (Triv.init &123))
+;; (deftype (Triv a) [x a])
+;; (defn g [] (Triv.init &123))
+
+;; (defn main []
+;;   (println* &(g)))
 
 (defn main []
-  (println* &(g)))
+  (let-do [t [1 2 3]
+           t-field (Array.nth &t 1)]
+    (do
+      (IO.println &(str @t-field))
+      (set! &t [4 5 6])
+      (IO.println &(str @t-field)))))
