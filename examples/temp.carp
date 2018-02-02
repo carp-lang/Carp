@@ -17,7 +17,11 @@
     (do (set! r &s2)
         (IO.println r))))
 
-(defn )
+(defn set-derefed []
+  (let [s @"hello"
+        r &s]
+    (do (set! @r @"new")
+        (IO.println &s))))
 
 (defn main []
-  )
+  (set-derefed))
