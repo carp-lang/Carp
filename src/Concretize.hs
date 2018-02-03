@@ -487,27 +487,31 @@ manageMemory typeEnv globalEnv root =
 
                  let varInfo = info variable
                      correctVariable = case variable of
-                                         --XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
-                                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> symObj
-                                         x -> x
+                                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
+                                         symObj@(XObj (Sym _ _) _ _) -> Right symObj
+                                         anythingElse -> Left (CannotSet anythingElse)
 
-                 MemState managed deps  <- get
+                 case correctVariable of
+                   Left err ->
+                     return (Left err)
+                   Right okCorrectVariable ->
+                     do MemState managed deps  <- get
+                        -- Delete the value previously stored in the variable, if it's still alive
+                        let deleters = case createDeleter okCorrectVariable of
+                                         Just d  -> Set.fromList [d]
+                                         Nothing -> Set.empty
+                            newVarInfo = setDeletersOnInfo varInfo deleters
+                            newVariable =
+                              if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
+                              then variable { info = newVarInfo }
+                              else variable -- don't add the new info = no deleter
 
-                 -- Delete the value previously stored in the variable, if it's still alive
-                 let deleters = case createDeleter correctVariable of
-                                  Just d  -> Set.fromList [d]
-                                  Nothing -> Set.empty
-                     newVarInfo = setDeletersOnInfo varInfo deleters
-                     newVariable =
-                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                       then variable { info = newVarInfo }
-                       else variable -- don't add the new info = no deleter
+                        when True $ -- Should be when the variable itself isn't a ref
+                          manage okCorrectVariable -- The variable can be used again
 
-                 when True $ -- Should be when the variable itself isn't a ref
-                   manage correctVariable -- The variable can be used again
+                        return $ do okValue <- visitedValue
+                                    return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
 
-                 return $ do okValue <- visitedValue
-                             return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
             [addressExpr@(XObj Address _ _), value] ->
               do visitedValue <- visit value
                  return $ do okValue <- visitedValue

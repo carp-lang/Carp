@@ -38,6 +38,7 @@ data TypeError = SymbolMissingType XObj Env
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
                | InvalidMemberType String
+               | CannotSet XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -124,6 +125,8 @@ instance Show TypeError where
     "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (InvalidMemberType msg) =
     msg
+  show (CannotSet xobj) =
+    "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
