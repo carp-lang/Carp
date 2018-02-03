@@ -1,0 +1,25 @@
+(defn changing-target-of-ref []
+  (let [s1 @"hello"
+        s2 @"goodbye"
+        r &s1]
+    (do (set! r &s2)
+        (IO.println r))))
+
+(defn set-derefed []
+  (let [s @"hello"
+        r &s]
+    (do (set! @r @"new")
+        (IO.println &s))))
+
+(defn f [r]
+  (set! @r 100))
+
+(defn set-in-parameter []
+  (let [x 1]
+    (do (f &x)
+        (IO.println &(str x)))))
+
+(defn-do main []
+  (changing-target-of-ref)
+  (set-derefed)
+  (set-in-parameter))

@@ -487,7 +487,8 @@ manageMemory typeEnv globalEnv root =
 
                  let varInfo = info variable
                      correctVariable = case variable of
-                                         XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
+                                         --XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
+                                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> symObj
                                          x -> x
 
                  MemState managed deps  <- get
