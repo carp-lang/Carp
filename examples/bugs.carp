@@ -18,7 +18,6 @@
 ;; Instantiating generic struct with ref-type fails:
 ;; (deftype (Triv a) [x a])
 ;; (defn g [] (Triv.init &123))
-
 ;; (defn main []
 ;;   (println* &(g)))
 
@@ -31,7 +30,7 @@
         _ (S.set-f s @"bye")]
     (IO.println r)))
 
-;; Danglinge reference to variable.
+;; Dangling reference to variable.
 (defn main []
   (let [s @"hello"
         r &s]
