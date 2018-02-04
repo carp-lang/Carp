@@ -1,7 +1,7 @@
 ;; This file contains examples of unsolved bugs
 
-;; (load "Debug.carp")
-;; (Debug.sanitize-addresses)
+(load "Debug.carp")
+(Debug.sanitize-addresses)
 (project-set! "printAST" "true")
 
 ;; This shouldn't compile:
@@ -16,8 +16,17 @@
 ;;     (IO.println &strings)))
 
 ;; Instantiating generic struct with ref-type fails:
-(deftype (Triv a) [x a])
-(defn g [] (Triv.init &123))
+;; (deftype (Triv a) [x a])
+;; (defn g [] (Triv.init &123))
+
+;; (defn main []
+;;   (println* &(g)))
+
+;; Dangling reference to member variable
+(deftype S [f String])
 
 (defn main []
-  (println* &(g)))
+  (let [s (S.init @"hello")
+        r (S.f &s)
+        _ (S.set-f s @"bye")]
+    (IO.println r)))
