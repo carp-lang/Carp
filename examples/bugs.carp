@@ -22,7 +22,7 @@
 ;; (defn main []
 ;;   (println* &(g)))
 
-;; Dangling reference to member variable
+;; Dangling reference to member variable.
 (deftype S [f String])
 
 (defn main []
@@ -30,3 +30,10 @@
         r (S.f &s)
         _ (S.set-f s @"bye")]
     (IO.println r)))
+
+;; Danglinge reference to variable.
+(defn main []
+  (let [s @"hello"
+        r &s]
+    (do (String.delete s)
+        (IO.println r))))

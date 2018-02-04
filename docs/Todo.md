@@ -8,6 +8,7 @@
 ## Critical Bugs
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] When 'set!':ing a global variable, memory can leak.
+* [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 
 ## Big Language Features
 * [0.3] Deps function for templates should return an Either to enable errors when instantiating deps.
@@ -26,6 +27,7 @@
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 * [0.3] When registering with an interface, make sure the registered function actually *can* unify with it's signature.
 
+* [0.4] Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 * [0.4] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
