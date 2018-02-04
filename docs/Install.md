@@ -1,5 +1,7 @@
 # Installation
 
+Carp is mainly developed on macOS, but it also works fine on Linux. Windows is currently not supported - but please get in touch in case you want to help out with that!
+
 1. Make sure you have [Stack](https://docs.haskellstack.org/en/stable/README/) installed
 2. Clone this repo
 3. Run ```stack build``` in the root
