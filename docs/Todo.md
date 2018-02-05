@@ -27,6 +27,7 @@
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 * [0.3] When registering with an interface, make sure the registered function actually *can* unify with it's signature.
+* [0.3] Invoking a macro with the wrong nr of arguments should be an error.
 
 * [0.4] Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
