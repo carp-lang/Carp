@@ -31,7 +31,10 @@
 ;;         (IO.println r))))
 
 ;; Problem with string deallocation in branches.
+(deftype Foo [])
+(defn f [x] (let [_ (the &Foo x)] ()))
+
 (defn ifmem []
-  (if true
-    (IO.println &@"TEST")
+  (if false
+    (f &(Foo.init))
     ()))

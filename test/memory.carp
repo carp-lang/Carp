@@ -116,28 +116,48 @@
     (do (set! r &t) ;; Here the set variable is a ref.
         ())))
 
-(defn branching [b s]
+;; Free the argument 's' in the branch where it's not deleted manually.
+(defn branch-with-arg [b s]
   (if b
     (String.delete s)
-    (do
-      (let []
-        ()))))
+    ()))
 
 (defn if-1 []
-  (branching true @""))
+  (branch-with-arg true @""))
 
 (defn if-2 []
-  (branching false @""))
+  (branch-with-arg false @""))
+
+
+;; The branch that creates a new value must also delete it.
+(defn do-nothing-with-ref [r]
+  (let [_ (the (Ref a) r)]
+    ()))
+
+(defn create-in-branch [b]
+  (if b
+    ()
+    (do-nothing-with-ref &@"")))
 
 (defn if-3 []
-  (if true
-    ()
-    (IO.println &@"TEST")))
+  (create-in-branch true))
 
 (defn if-4 []
-  (if false
-    ()
-    (IO.println &@"TEST")))
+  (create-in-branch false))
+
+
+;; Free the variable 's' in the branch where it's not deleted manually.
+(defn branch-in-let [b]
+  (let [pre-existing @""]
+    (if b
+      ()
+      (String.delete pre-existing))))
+
+(defn if-5 []
+  (branch-in-let true))
+
+(defn if-6 []
+  (branch-in-let false))
 
 (defn main []
   (let []
@@ -160,6 +180,8 @@
       (assert-no-leak test setting-4 "setting-4 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
       (assert-no-leak test if-2 "if-2 does not leak")
-      ;; (assert-no-leak test if-3 "if-3 does not leak")
-      ;; (assert-no-leak test if-4 "if-4 does not leak")
+      (assert-no-leak test if-3 "if-3 does not leak")
+      (assert-no-leak test if-4 "if-4 does not leak")
+      (assert-no-leak test if-5 "if-5 does not leak")
+      (assert-no-leak test if-6 "if-6 does not leak")
       (print-test-results test))))
