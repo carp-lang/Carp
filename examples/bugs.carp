@@ -38,3 +38,8 @@
   (if false
     (Foo.init)
     (Foo.init)))
+
+(defn ifmem2 [x]
+  (if false
+    (Foo.init)
+    x))
