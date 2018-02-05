@@ -5,21 +5,24 @@
     (do (set! r &s2)
         (IO.println r))))
 
-(defn set-derefed []
-  (let [s @"hello"
-        r &s]
-    (do (set! @r @"new")
-        (IO.println &s))))
+;; DISABLED FOR NOW
+;; (defn set-derefed []
+;;   (let [s @"hello"
+;;         r &s]
+;;     (do (set! @r @"new")
+;;         (IO.println &s))))
 
-(defn f [r]
-  (set! @r 100))
+;; (defn f [r]
+;;   (set! @r 100))
 
-(defn set-in-parameter []
-  (let [x 1]
-    (do (f &x)
-        (IO.println &(str x)))))
+;; DISABLED FOR NOW
+;; (defn set-in-parameter []
+;;   (let [x 1]
+;;     (do (f &x)
+;;         (IO.println &(str x)))))
 
 (defn-do main []
   (changing-target-of-ref)
-  (set-derefed)
-  (set-in-parameter))
+  ;;(set-derefed)
+  ;;(set-in-parameter)
+  )

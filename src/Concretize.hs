@@ -487,7 +487,7 @@ manageMemory typeEnv globalEnv root =
 
                  let varInfo = info variable
                      correctVariable = case variable of
-                                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
+                                         -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
                                          symObj@(XObj (Sym _ _) _ _) -> Right symObj
                                          anythingElse -> Left (CannotSet anythingElse)
 
