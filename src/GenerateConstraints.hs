@@ -72,7 +72,7 @@ genConstraints root = fmap sort (gen root)
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
-                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info xobj) (Just BoolTy)
+                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info expr) (Just BoolTy)
                                     expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (info xobj) (Just UnitTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
