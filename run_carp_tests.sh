@@ -28,6 +28,8 @@ done
 # Just make sure these compile
 carp ./examples/mutual_recursion.carp -b;
 carp ./examples/guessing.carp -b;
+carp ./examples/ant.carp -b
+carp ./examples/reptile.carp -b
 carp ./examples/game.carp -b;
 
 echo "ALL TESTS DONE."
