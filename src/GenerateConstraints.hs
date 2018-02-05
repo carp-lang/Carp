@@ -57,7 +57,7 @@ genConstraints root = fmap sort (gen root)
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info xobj) (Just BoolTy)
+                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info expr) (Just BoolTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
                                     sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
                                     Just t = ty xobj

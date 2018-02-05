@@ -1,10 +1,8 @@
+;;(project-set! "echoCompilationCommand" "true")
 (load "Debug.carp")
 (Debug.sanitize-addresses)
 (project-set! "printAST" "true")
-(local-include "core.h")
-(project-set! "echoCompilationCommand" "true")
 
-;; (defn empty []
-;;   (Bucket.init 0 []))
 ;; (defn f []
-;;   (the (Bucket Float Bool) (empty))) ;; run checks in the concretizer to fix this
+;;   (for [n 1.4f 123.2f] ;; Should report error here, not in Macros.carp
+;;     ()))
