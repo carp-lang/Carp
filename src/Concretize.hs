@@ -4,6 +4,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
+import Data.Set ((\\))
 import Data.List (foldl')
 import Debug.Trace
 
@@ -564,33 +565,42 @@ manageMemory typeEnv globalEnv root =
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
                                                                       result <- transferOwnership ifTrue xobj;
                                                                       return $ case result of
-                                                                                 Left e -> Left e
-                                                                                 Right _ -> v
+                                                                                 Left e -> error (show e) -- Left e
+                                                                                 Right () -> v
                                                                     })
                                                        (MemState preDeleters deps)
 
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
                                                                       result <- transferOwnership ifFalse xobj;
                                                                       return $ case result of
-                                                                                 Left e -> Left e
-                                                                                 Right _ -> v
+                                                                                 Left e -> error (show e) -- Left e
+                                                                                 Right () -> v
                                                                     })
                                                        (MemState preDeleters deps)
 
                  let -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
-                     deletedInTrue  = preDeleters Set.\\ (memStateDeleters stillAliveTrue)
-                     deletedInFalse = preDeleters Set.\\ (memStateDeleters stillAliveFalse)
-                     deletedInBoth = Set.intersection deletedInTrue deletedInFalse
-                     delsTrue  = deletedInFalse Set.\\ deletedInBoth
-                     delsFalse = deletedInTrue  Set.\\ deletedInBoth
-                     stillAliveAfter = preDeleters Set.\\ Set.union deletedInTrue deletedInFalse
+                     deletedInTrue  = preDeleters \\ (memStateDeleters stillAliveTrue)
+                     deletedInFalse = preDeleters \\ (memStateDeleters stillAliveFalse)
+                     deletedInBoth  = Set.intersection deletedInTrue deletedInFalse
+                     createdInTrue  = (memStateDeleters stillAliveTrue)  \\ preDeleters
+                     createdInFalse = (memStateDeleters stillAliveFalse) \\ preDeleters
+                     selfDeleter = case createDeleter xobj of
+                                     Just ok -> Set.fromList [ok]
+                                     Nothing -> Set.empty
+                     createdAndDeletedInTrue  = createdInTrue  \\ selfDeleter
+                     createdAndDeletedInFalse = createdInFalse \\ selfDeleter
+                     delsTrue  = Set.union (deletedInFalse \\ deletedInBoth) createdAndDeletedInTrue
+                     delsFalse = Set.union (deletedInTrue  \\ deletedInBoth) createdAndDeletedInFalse
+                     stillAliveAfter = preDeleters \\ (Set.union deletedInTrue deletedInFalse)
 
                      traceDeps = trace ("DEPS " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
                                         "preDeleters: " ++ show (preDeleters) ++ "\n" ++
                                         "stillAliveTrue: " ++ show (memStateDeleters stillAliveTrue) ++ "\n" ++
                                         "stillAliveFalse: " ++ show (memStateDeleters stillAliveFalse) ++ "\n" ++
-                                        -- "createdInTrue: " ++ show (createdInTrue) ++ "\n" ++
-                                        -- "createdInFalse: " ++ show (createdInFalse) ++ "\n" ++
+                                        "createdInTrue: " ++ show (createdInTrue) ++ "\n" ++
+                                        "createdInFalse: " ++ show (createdInFalse) ++ "\n" ++
+                                        "createdAndDeletedInTrue: " ++ show (createdAndDeletedInTrue) ++ "\n" ++
+                                        "createdAndDeletedInFalse: " ++ show (createdAndDeletedInFalse) ++ "\n" ++
                                         "deletedInTrue: " ++ show (deletedInTrue) ++ "\n" ++
                                         "deletedInFalse: " ++ show (deletedInFalse) ++ "\n" ++
                                         "deletedInBoth: " ++ show (deletedInBoth) ++ "\n" ++
@@ -599,7 +609,7 @@ manageMemory typeEnv globalEnv root =
                                         "stillAlive: " ++ show (stillAliveAfter) ++ "\n"
                                        )
 
-                 put (MemState stillAliveAfter  deps)
+                 put (MemState stillAliveAfter deps)
                  manage xobj
 
                  return $ do okExpr  <- visitedExpr
@@ -703,9 +713,8 @@ manageMemory typeEnv globalEnv root =
           do result <- unmanage from
              case result of
                Left e -> return (Left e)
-               Right _ -> do manage to
+               Right _ -> do manage to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
                              return (Right ())
-             --trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") $ return ()
 
         varOfXObj :: XObj -> String
         varOfXObj xobj =
