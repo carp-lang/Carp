@@ -83,7 +83,11 @@ data Deleter = ProperDeleter { deleterPath :: SymPath
                              }
              | FakeDeleter { deleterVariable :: String -- used for external types with no delete function
                            }
-             deriving (Show, Eq, Ord)
+             deriving (Eq, Ord)
+
+instance Show Deleter where
+  show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
+  show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
 
 prettyInfo :: Info -> String
 prettyInfo i =

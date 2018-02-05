@@ -1,3 +1,5 @@
+(load "Debug.carp")
+(Debug.sanitize-addresses)
 (use Array)
 
 (deftype (Trivial t) [x t])

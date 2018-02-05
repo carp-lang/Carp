@@ -36,5 +36,5 @@
 
 (defn ifmem []
   (if false
-    (f &(Foo.init))
-    ()))
+    (Foo.init)
+    (Foo.init)))
