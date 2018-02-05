@@ -15,24 +15,23 @@
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
 
-;; Instantiating generic struct with ref-type fails:
-;; (deftype (Triv a) [x a])
-;; (defn g [] (Triv.init &123))
+;; ;; Dangling reference to member variable.
+;; (deftype S [f String])
 ;; (defn main []
-;;   (println* &(g)))
+;;   (let [s (S.init @"hello")
+;;         r (S.f &s)
+;;         _ (S.set-f s @"bye")]
+;;     (IO.println r)))
 
-;; Dangling reference to member variable.
-(deftype S [f String])
+;; ;; Dangling reference to variable.
+;; (defn main []
+;;   (let [s @"hello"
+;;         r &s]
+;;     (do (String.delete s)
+;;         (IO.println r))))
 
-(defn main []
-  (let [s (S.init @"hello")
-        r (S.f &s)
-        _ (S.set-f s @"bye")]
-    (IO.println r)))
-
-;; Dangling reference to variable.
-(defn main []
-  (let [s @"hello"
-        r &s]
-    (do (String.delete s)
-        (IO.println r))))
+;; Problem with string deallocation in branches.
+(defn ifmem []
+  (if true
+    (IO.println &@"TEST")
+    ()))
