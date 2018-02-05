@@ -459,6 +459,7 @@ manageMemory typeEnv globalEnv root =
                             Right _ ->
                               do okBody <- visitedBody
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+
             [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
               let Just letReturnType = t
               in case letReturnType of
@@ -482,6 +483,8 @@ manageMemory typeEnv globalEnv root =
                             return $ do okBody <- visitedBody
                                         okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
                                         return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+
+            -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
               do visitedValue <- visit value
                  unmanage value -- The assigned value can't be used anymore
@@ -501,10 +504,9 @@ manageMemory typeEnv globalEnv root =
                         let deleters = case createDeleter okCorrectVariable of
                                          Just d  -> Set.fromList [d]
                                          Nothing -> Set.empty
-                            newVarInfo = setDeletersOnInfo varInfo deleters
                             newVariable =
                               if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                              then variable { info = newVarInfo }
+                              then variable { info = setDeletersOnInfo varInfo deleters }
                               else variable -- don't add the new info = no deleter
 
                         when True $ -- Should be when the variable itself isn't a ref
@@ -517,6 +519,7 @@ manageMemory typeEnv globalEnv root =
               do visitedValue <- visit value
                  return $ do okValue <- visitedValue
                              return (XObj (Lst [addressExpr, okValue]) i t)
+
             [theExpr@(XObj The _ _), typeXObj, value] ->
               do visitedValue <- visit value
                  result <- transferOwnership value xobj
@@ -524,6 +527,7 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ -> do okValue <- visitedValue
                                           return (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+
             [refExpr@(XObj Ref _ _), value] ->
               do visitedValue <- visit value
                  case visitedValue of
@@ -533,6 +537,7 @@ manageMemory typeEnv globalEnv root =
                         case checkResult of
                           Left e -> return (Left e)
                           Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
+
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM visit expressions
                  result <- transferOwnership (last expressions) xobj
@@ -540,6 +545,7 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ -> do okExpressions <- sequence visitedExpressions
                                           return (XObj (Lst (doExpr : okExpressions)) i t)
+
             [whileExpr@(XObj While _ _), expr, body] ->
               do MemState preDeleters _ <- get
                  visitedExpr <- visit expr

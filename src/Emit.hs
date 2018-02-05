@@ -11,6 +11,7 @@ import Data.List (intercalate, sortOn)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe)
 import Debug.Trace
 
 import Obj
@@ -267,11 +268,12 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        case variable of
                          (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
-                         v -> error (show (CannotSet variable)) -- TODO: Should return either here.
+                         v -> error (show (CannotSet variable))
                      Just varInfo = info variable
+                 --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
-                              ++ " // " ++ (show (ty variable)) ++ " = " ++ (show (ty value))
+                              ++ " // " ++ (show (fromMaybe (VarTy "?") (ty variable))) ++ " = " ++ (show (fromMaybe (VarTy "?") (ty value)))
                               ++ "\n")
                  return ""
 
