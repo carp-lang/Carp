@@ -12,6 +12,7 @@
 
 ## Big Language Features
 * [0.3] Deps function for templates should return an Either to enable errors when instantiating deps.
+* [0.3] The array should use a more efficient re-allocation scheme, a la http://en.cppreference.com/w/cpp/container/vector
 
 * [0.4] Doc strings.
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
