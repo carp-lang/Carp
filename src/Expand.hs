@@ -2,6 +2,7 @@ module Expand (expandAll) where
 
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import Control.Monad.State
+import Debug.Trace
 
 import Obj
 import Util
