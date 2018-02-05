@@ -559,7 +559,7 @@ manageMemory typeEnv globalEnv root =
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr
-                 MemState deleters deps <- get
+                 MemState preDeleters deps <- get
 
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
                                                                       result <- transferOwnership ifTrue xobj;
@@ -567,7 +567,7 @@ manageMemory typeEnv globalEnv root =
                                                                                  Left e -> Left e
                                                                                  Right _ -> v
                                                                     })
-                                                       (MemState deleters deps)
+                                                       (MemState preDeleters deps)
 
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
                                                                       result <- transferOwnership ifFalse xobj;
@@ -575,19 +575,31 @@ manageMemory typeEnv globalEnv root =
                                                                                  Left e -> Left e
                                                                                  Right _ -> v
                                                                     })
-                                                       (MemState deleters deps)
+                                                       (MemState preDeleters deps)
 
-                 let removeTrue  = memStateDeleters stillAliveTrue
-                     removeFalse = memStateDeleters stillAliveFalse
-                     -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
-                     deletedInTrue  = deleters Set.\\ removeTrue
-                     deletedInFalse = deleters Set.\\ removeFalse
-                     common = Set.intersection deletedInTrue deletedInFalse
-                     delsTrue  = deletedInFalse Set.\\ common
-                     delsFalse = deletedInTrue  Set.\\ common
-                     stillAlive = deleters Set.\\ Set.union deletedInTrue deletedInFalse
+                 let -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
+                     deletedInTrue  = preDeleters Set.\\ (memStateDeleters stillAliveTrue)
+                     deletedInFalse = preDeleters Set.\\ (memStateDeleters stillAliveFalse)
+                     deletedInBoth = Set.intersection deletedInTrue deletedInFalse
+                     delsTrue  = deletedInFalse Set.\\ deletedInBoth
+                     delsFalse = deletedInTrue  Set.\\ deletedInBoth
+                     stillAliveAfter = preDeleters Set.\\ Set.union deletedInTrue deletedInFalse
 
-                 put (MemState stillAlive deps)
+                     traceDeps = trace ("DEPS " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
+                                        "preDeleters: " ++ show (preDeleters) ++ "\n" ++
+                                        "stillAliveTrue: " ++ show (memStateDeleters stillAliveTrue) ++ "\n" ++
+                                        "stillAliveFalse: " ++ show (memStateDeleters stillAliveFalse) ++ "\n" ++
+                                        -- "createdInTrue: " ++ show (createdInTrue) ++ "\n" ++
+                                        -- "createdInFalse: " ++ show (createdInFalse) ++ "\n" ++
+                                        "deletedInTrue: " ++ show (deletedInTrue) ++ "\n" ++
+                                        "deletedInFalse: " ++ show (deletedInFalse) ++ "\n" ++
+                                        "deletedInBoth: " ++ show (deletedInBoth) ++ "\n" ++
+                                        "delsTrue: " ++ show (delsTrue) ++ "\n" ++
+                                        "delsFalse: " ++ show (delsFalse) ++ "\n" ++
+                                        "stillAlive: " ++ show (stillAliveAfter) ++ "\n"
+                                       )
+
+                 put (MemState stillAliveAfter  deps)
                  manage xobj
 
                  return $ do okExpr  <- visitedExpr

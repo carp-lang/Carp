@@ -43,3 +43,11 @@
   (if false
     (Foo.init)
     x))
+
+(defn ignore-ref [r]
+  (let [_ r] ()))
+
+(defn ifmem3 []
+  (if false
+    (ignore-ref &(Foo.init))
+    ()))
