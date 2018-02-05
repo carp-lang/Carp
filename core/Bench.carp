@@ -9,7 +9,7 @@
   (defn set-min-runs! [n]
     ; / 2 because we run it twice per benchmarking run,
     ; but this is an implementation detail
-    (set! &min-runs (/ n 2)))
+    (set! min-runs (/ n 2)))
 
   (defn get-unit [n]
     (cond
@@ -72,15 +72,15 @@
                                         @(Statistics.Summary.median &summ5))
                               @(Statistics.Summary.median-abs-dev &summ5))))
               (do
-                (set! &total (Double.+ total loop-run))
-                (set! &done true)
-                (set! &res &summ5))
+                (set! total (Double.+ total loop-run))
+                (set! done true)
+                (set! res &summ5))
               (do
-                (set! &total (Double.+ total loop-run))
+                (set! total (Double.+ total loop-run))
                 (if (< (Double.* n 10.0) n)
                   ; abort on overflow
-                  (set! &total (Double.+ total 3000000000.0))
-                  (set! &n (Double.* n 2.0)))))))
+                  (set! total (Double.+ total 3000000000.0))
+                  (set! n (Double.* n 2.0)))))))
           (if done
             (print-bench-results res total)
             (IO.println "Could not stabilize benchmark after more than 3 seconds!")))))

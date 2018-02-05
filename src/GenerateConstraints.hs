@@ -101,10 +101,11 @@ genConstraints root = fmap sort (gen root)
                            -- Set!
                            [XObj SetBang _ _, variable, value] ->
                              do insideValueConstraints <- gen value
+                                insideVariableConstraints <- gen variable
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType (RefTy valueType) variable value OrdSetBang
-                                return (sameTypeConstraint : insideValueConstraints)
+                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
+                                return (sameTypeConstraint : insideValueConstraints ++ insideVariableConstraints)
 
                            -- The
                            [XObj The _ _, _, value] ->

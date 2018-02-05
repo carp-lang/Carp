@@ -44,7 +44,7 @@
   (cond-internal xs))
 
 (defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
-  (if (> (count body) 1) 
+  (if (> (count body) 1)
     (macro-error "Warning: the body of the 'for' loop can only contain one expression")
     (list
      'let
@@ -59,7 +59,7 @@
                 (car body)
                 body))
             (list
-             'set! (list 'ref (car settings))
+             'set! (car settings)
              (list 'Int.+
                    (car settings)
                    (if (= 4 (count settings)) ;; optional arg for step
@@ -105,10 +105,10 @@
   (thread-last-internal forms))
 
 (defmacro swap! [x y]
-  (list 'let (array 'tmp y) (list 'do (list 'set! &y x) (list 'set! &x 'tmp))))
+  (list 'let (array 'tmp y) (list 'do (list 'set! y x) (list 'set! x 'tmp))))
 
 (defmacro update! [x f]
-  (list 'set! &x (list f x)))
+  (list 'set! x (list f x)))
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))

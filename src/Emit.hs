@@ -35,6 +35,7 @@ data ToCError = InvalidParameter XObj
               | UnresolvedMultiSymbol XObj
               | UnresolvedInterfaceSymbol XObj
               | UnresolvedGenericType XObj
+              | CannotSet XObj
 
 instance Show ToCError where
   show (InvalidParameter xobj) = "Invalid parameter: " ++ show (obj xobj)
@@ -53,6 +54,7 @@ instance Show ToCError where
     " at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
+  show (CannotSet xobj) = "Can't emit code for setting " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
 
 data ToCMode = Functions | Globals | All deriving Show
 
@@ -263,9 +265,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do valueVar <- visit indent value
                  let properVariableName =
                        case variable of
-                         (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> pathToC sym
+                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
-                         v -> error ("Can't 'set!' this: " ++ show v)
+                         v -> error (show (CannotSet variable)) -- TODO: Should return either here.
                      Just varInfo = info variable
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "

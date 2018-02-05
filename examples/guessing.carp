@@ -11,14 +11,14 @@
   (do (println "~ The Number Guessing Game ~")
       (println "(Enter q to quit.)\n")
 
-      (set! &guessing true)
-      (set! &answer (random-between 1 100))
+      (set! guessing true)
+      (set! answer (random-between 1 100))
 
       (print "Please enter a number between 1 - 99: ")))
 
 (defn exit! []
   (do (println "Good bye...")
-      (set! &guessing false)))
+      (set! guessing false)))
 
 (defn play-again? [user-input]
   (if (= user-input "y\n") true false))

@@ -3,12 +3,12 @@
 
 (defn test-do-let []
   (let-do [x 1]
-    (set! &x (+ x 1))
+    (set! x (+ x 1))
     (= x 2)))
 
 (defn test-comment []
   (let-do [x 1]
-    (comment (set! &x (+ x 1)))
+    (comment (set! x (+ x 1)))
     (= x 1)))
 
 (defn test-case-dflt []

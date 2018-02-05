@@ -186,6 +186,13 @@
         c2 (count &b)]
     (println* &(str (+ c1 c2)))))
 
+(defn changing-target-of-ref []
+  (let [s1 @"hello"
+        s2 @"goodbye"
+        r &s1]
+    (do (set! r &s2)
+        (IO.println r))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
@@ -219,4 +226,5 @@
       (threading)
       (multiple-stringification-of-arrays)
       (two-counts-in-same-func)
+      (changing-target-of-ref)
       ))

@@ -31,7 +31,7 @@
       (do
         (for [i 0 len-color-table]
           (if (String.= cname (Array.nth (Array.nth &(color-table) i) 0))
-             (set! &res @(Array.nth (Array.nth &(color-table) i) 1))
+             (set! res @(Array.nth (Array.nth &(color-table) i) 1))
              ()))
         (String.append @"\x1b[" (String.append res @"m")))))
 
@@ -104,8 +104,8 @@
 
 (defdynamic with-test-internal [name forms]
   (if (= (count forms) 1)
-    (list (list 'set! (list 'ref name) (list 'ref (car forms))))
-    (cons (list 'set! (list 'ref name) (list 'ref (car forms)))
+    (list (list 'set! name (list 'ref (car forms))))
+    (cons (list 'set! name (list 'ref (car forms)))
           (with-test-internal name (cdr forms)))))
 
 

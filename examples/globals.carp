@@ -17,7 +17,7 @@
    (do
      ;;(IO.println s)
      (IO.println &(A.str &a))
-     ;;(set! &a (A.init 123))
+     ;;(set! a (A.init 123))
      ;;(IO.println &(A.str &a))
      (IO.println &(str &q))
      (IO.println &(str &stuff))

@@ -96,23 +96,25 @@
 
 (defn setting-1 []
   (let [s @""]
-    (do (set! &s @"")
+    (do (set! s @"")
         ())))
 
 (defn setting-2 []
   (let [s @""]
-    (do (set! &s s)
+    (do (set! s s)
         ())))
 
 (defn setting-3 []
   (let [s @""]
-    (do (set! &s @&s)
+    (do (set! s @&s)
         ())))
 
 (defn setting-4 []
-  (let [s ""]
-    (do ;;(set! s @s) ;; Here the variable itself is a ref!
-      ())))
+  (let [s @""
+        t @""
+        r &s]
+    (do (set! r &t) ;; Here the set variable is a ref.
+        ())))
 
 (defn branching [b s]
   (if b
@@ -128,7 +130,7 @@
   (branching false @""))
 
 (defn if-3 []
-  (if false
+  (if true
     ()
     (IO.println &@"TEST")))
 

@@ -204,14 +204,27 @@ typeStr xobj = case ty xobj of
                  Nothing -> " : _"
                  Just t -> " : " ++ show t
 
+-- | Get the identifier of an XObj as a string.
+identifierStr :: XObj -> String
+identifierStr xobj = case info xobj of
+                       Just i -> "#" ++ show (infoIdentifier i)
+                       Nothing -> "#?"
+
+-- | Get the deleters of an XObj as a string.
+deletersStr :: XObj -> String
+deletersStr xobj = case info xobj of
+                     Just i -> joinWithComma (map show (Set.toList (infoDelete i)))
+                     Nothing -> ""
+
 -- | Convert XObj to pretty string representation with type annotations.
 prettyTyped :: XObj -> String
 prettyTyped = visit 0
   where visit :: Int -> XObj -> String
         visit indent xobj =
-          let suffix = typeStr xobj ++ -- ", id = " ++ show (fmap infoIdentifier (info xobj)) ++ " " ++
-                --show (fmap (joinWithComma . map show . (Set.toList) . infoDelete) (info xobj)) ++
-                "\n"
+          let suffix = typeStr xobj ++ " " ++
+                       identifierStr xobj ++ " " ++
+                       deletersStr xobj ++ " " ++
+                       "\n"
           in case obj xobj of
                Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")" ++ suffix
                Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]" ++ suffix

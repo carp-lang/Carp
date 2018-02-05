@@ -9,35 +9,35 @@
       (while (< x 10)
         (if (> x 4)
           (break)
-          (set! &x (inc x))))
+          (set! x (inc x))))
       x)))
 
 (defn when-test-true []
   (let [x 0]
     (do
       (when true
-        (set! &x 5))
+        (set! x 5))
       x)))
 
 (defn when-test-false []
   (let [x 0]
     (do
       (when false
-        (set! &x 5))
+        (set! x 5))
       x)))
 
 (defn unless-test-true []
   (let [x 0]
     (do
       (unless true
-        (set! &x 5))
+        (set! x 5))
       x)))
 
 (defn unless-test-false []
   (let [x 0]
     (do
       (unless false
-        (set! &x 5))
+        (set! x 5))
       x)))
 
 (defn all-eq [a b]
@@ -47,7 +47,7 @@
       (do
         (for [i 0 (Array.count a)]
           (if (/= @(Array.nth a i) @(Array.nth b i))
-            (set! &eq false)
+            (set! eq false)
             ()))
         eq))))
 

@@ -9,14 +9,14 @@
   (let [c 0
         _ false]
     (do
-      (set! &_ (f a b &c))
+      (set! _ (f a b &c))
       c)))
 
 (defn return-res-long [f a b]
   (let [c 0l
         _ false]
     (do
-      (set! &_ (f a b &c))
+      (set! _ (f a b &c))
       c)))
 
 (defn main []
