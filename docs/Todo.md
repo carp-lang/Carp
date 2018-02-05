@@ -15,6 +15,7 @@
 * [0.3] The array should use a more efficient re-allocation scheme, a la http://en.cppreference.com/w/cpp/container/vector
 
 * [0.4] Doc strings.
+* [0.4] Stack allocated Array with an explicit size.
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
 
 * [1.0] Tagged unions (also known as "sum types" or "enums")
@@ -22,7 +23,6 @@
 
 ## Smaller Language Features ("niceties")
 * [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
-* [0.3] Make the type of 'set!' be (set! a a) instead of (set! &a a).
 * [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
