@@ -490,27 +490,40 @@ manageMemory typeEnv globalEnv root =
                  unmanage value -- The assigned value can't be used anymore
 
                  let varInfo = info variable
-                     correctVariable = case variable of
-                                         -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
-                                         symObj@(XObj (Sym _ _) _ _) -> Right symObj
-                                         anythingElse -> Left (CannotSet anythingElse)
+                     correctVariableAndMode =
+                       case variable of
+                         -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
+                         symObj@(XObj (Sym _ mode) _ _) -> Right (symObj, mode)
+                         anythingElse -> Left (CannotSet anythingElse)
 
-                 case correctVariable of
+                 case correctVariableAndMode of
                    Left err ->
                      return (Left err)
-                   Right okCorrectVariable ->
+                   Right (okCorrectVariable, okMode) ->
                      do MemState managed deps  <- get
                         -- Delete the value previously stored in the variable, if it's still alive
                         let deleters = case createDeleter okCorrectVariable of
                                          Just d  -> Set.fromList [d]
                                          Nothing -> Set.empty
                             newVariable =
-                              if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                              then variable { info = setDeletersOnInfo varInfo deleters }
-                              else variable -- don't add the new info = no deleter
+                              case okMode of
+                                Symbol -> error "How to handle this?"
+                                LookupLocal ->
+                                  if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
+                                  then variable { info = setDeletersOnInfo varInfo deleters }
+                                  else variable -- don't add the new info = no deleter
+                                LookupGlobal ->
+                                  variable { info = setDeletersOnInfo varInfo deleters }
 
-                        when True $ -- Should be when the variable itself isn't a ref
-                          manage okCorrectVariable -- The variable can be used again
+                            traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
+                                               "unmanaged " ++ pretty value ++ "\n" ++
+                                               "managed: " ++ show managed ++ "\n" ++
+                                               "deleters: " ++ show deleters ++ "\n")
+
+                        case okMode of
+                          Symbol -> error "Should only be be a global/local lookup symbol."
+                          LookupLocal -> manage okCorrectVariable
+                          LookupGlobal -> return ()
 
                         return $ do okValue <- visitedValue
                                     return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
@@ -599,7 +612,7 @@ manageMemory typeEnv globalEnv root =
                      delsFalse = Set.union (deletedInTrue  \\ deletedInBoth) createdAndDeletedInFalse
                      stillAliveAfter = preDeleters \\ (Set.union deletedInTrue deletedInFalse)
 
-                     traceDeps = trace ("DEPS " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
+                     traceDeps = trace ("IF-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
                                         "preDeleters: " ++ show (preDeleters) ++ "\n" ++
                                         "stillAliveTrue: " ++ show (memStateDeleters stillAliveTrue) ++ "\n" ++
                                         "stillAliveFalse: " ++ show (memStateDeleters stillAliveFalse) ++ "\n" ++

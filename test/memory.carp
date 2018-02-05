@@ -116,6 +116,20 @@
     (do (set! r &t) ;; Here the set variable is a ref.
         ())))
 
+
+(def g1 @"Hello")
+
+(defn global-1 []
+  (set! g1 @"Bye"))
+
+
+(def g2 @"Hello")
+
+(defn-do global-2 []
+  (set! g2 @"How are you?")
+  (set! g2 @"Bye"))
+
+
 ;; Free the argument 's' in the branch where it's not deleted manually.
 (defn branch-with-arg [b s]
   (if b
@@ -179,6 +193,8 @@
       (assert-no-leak test setting-2 "setting-2 does not leak")
       (assert-no-leak test setting-3 "setting-3 does not leak")
       (assert-no-leak test setting-4 "setting-4 does not leak")
+      (assert-no-leak test global-1 "global-1 does not leak")
+      (assert-no-leak test global-2 "global-2 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
       (assert-no-leak test if-2 "if-2 does not leak")
       (assert-no-leak test if-3 "if-3 does not leak")

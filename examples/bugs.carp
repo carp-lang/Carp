@@ -29,12 +29,3 @@
 ;;         r &s]
 ;;     (do (String.delete s)
 ;;         (IO.println r))))
-
-;; When 'set!':ing a global variable, memory can leak.
-(def g @"Hello")
-
-(defn main []
-  (Debug.assert-balanced
-   (do
-     (set! g @"Bye")
-     )))

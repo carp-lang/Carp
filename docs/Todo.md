@@ -7,7 +7,6 @@
 
 ## Critical Bugs
 * [0.3] Must handle deletion of temporary values used during initialization of global variables.
-* [0.3] When 'set!':ing a global variable, memory can leak.
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 
 ## Big Language Features
