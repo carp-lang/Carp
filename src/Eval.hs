@@ -416,11 +416,13 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
          do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
             when (projectEchoC proj) $
               putStrLn (toC All annXObj)
-            when (previousType /= Nothing && ty annXObj /= previousType) $
-              let Just previousTypeUnwrapped = previousType
-              in  do putStrWithColor Blue ("[Warning] Changing type of " ++ show (getPath annXObj) ++
-                                           " from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
+            case previousType of
+              Just previousTypeUnwrapped ->
+                when (not (areUnifiable (forceTy annXObj) previousTypeUnwrapped)) $
+                  do putStrWithColor Blue ("[WARNING] Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj) ++
+                                           "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
                      putStrLnWithColor White "" -- To restore color for sure.
+              Nothing -> return ()
             case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
               Left err ->
                 do putStrLnWithColor Red err
