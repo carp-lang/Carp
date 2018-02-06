@@ -32,10 +32,11 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i =
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
         --okNew <- templateForNew insidePath structTy rest
-        (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
+        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy rest
         (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy rest
-        let funcs = okInit  : okStr : okDelete : okCopy : okMembers
+        let funcs = okInit  : okStr : okPrn : okDelete : okCopy : okMembers
             moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv funcs
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
             deps = deleteDeps ++ membersDeps ++ copyDeps ++ strDeps
@@ -54,8 +55,9 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i =
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
         --okNew <- templateForNew insidePath structTy rest
-        (okStr, strDeps) <- binderForStr typeEnv env insidePath structTy rest
-        let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : binders)
+        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy rest "prn"
+        let moduleEnvWithBindings = addListOfBindings emptyTypeModuleEnv (okInit : okStr : okPrn : binders)
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
         return (typeModuleName, typeModuleXObj, deps ++ strDeps)
 
@@ -233,32 +235,32 @@ templitizeTy t =
 
 
 -- | Helper function to create the binder for the 'str' template.
-binderForStr :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either String ((String, Binder), [XObj])
-binderForStr typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> String -> Either String ((String, Binder), [XObj])
+binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] strOrPrn =
   if isTypeGeneric structTy
-  then Right (genericStr insidePath structTy membersXObjs, [])
-  else Right (instanceBinderWithDeps (SymPath insidePath "str")
+  then Right (genericStr insidePath structTy membersXObjs strOrPrn, [])
+  else Right (instanceBinderWithDeps (SymPath insidePath strOrPrn)
               (FuncTy [RefTy structTy] StringTy)
-              (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs)))
+              (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs) strOrPrn))
 
 -- | The template for the 'str' function for a concrete deftype.
-concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> Template
-concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs =
+concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
+concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOrPrn =
   Template
     (FuncTy [RefTy concreteStructTy] StringTy)
     (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
         (tokensForStr typeEnv env typeName memberPairs concreteStructTy))
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
-       concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+       concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
                  (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
                   (map snd memberPairs)))
 
 -- | The template for the 'str' function for a generic deftype.
-genericStr :: [String] -> Ty -> [XObj] -> (String, Binder)
-genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs =
+genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
+genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs strOrPrn =
   defineTypeParameterizedTemplate templateCreator path t
-  where path = SymPath pathStrings "str"
+  where path = SymPath pathStrings strOrPrn
         t = FuncTy [(RefTy originalStructTy)] StringTy
         members = memberXObjsToPairs membersXObjs
         templateCreator = TemplateCreator $
@@ -276,7 +278,7 @@ genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs 
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
-               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "str" . typesStrFunctionType typeEnv)
+               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
                    (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
                     (map snd memberPairs))
                    ++
@@ -295,7 +297,7 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
                         , ""
                         , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
                         , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
-                        , joinWith "\n" (map (memberStr typeEnv env) memberPairs)
+                        , joinWith "\n" (map (memberPrn typeEnv env) memberPairs)
                         , "  bufferPtr--;"
                         , "  snprintf(bufferPtr, size, \")\");"
                         , "  return buffer;"
@@ -305,12 +307,12 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
 calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
   "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n" ++
-    unlines (map memberStrSize members)
-  where memberStrSize (memberName, memberTy) =
+    unlines (map memberPrnSize members)
+  where memberPrnSize (memberName, memberTy) =
           let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
               maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
               strFuncType = FuncTy [refOrNotRefType] StringTy
-           in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
+           in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
                 Just strFunctionPath ->
                   unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
                           , "  size += snprintf(NULL, 0, \"%s \", temp);"
@@ -324,12 +326,12 @@ calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
                   else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
-memberStr :: TypeEnv -> Env -> (String, Ty) -> String
-memberStr typeEnv env (memberName, memberTy) =
+memberPrn :: TypeEnv -> Env -> (String, Ty) -> String
+memberPrn typeEnv env (memberName, memberTy) =
   let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
       maybeTakeAddress = if isManaged typeEnv memberTy then "&" else ""
       strFuncType = FuncTy [refOrNotRefType] StringTy
-   in case nameOfPolymorphicFunction typeEnv env strFuncType "str" of
+   in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
         Just strFunctionPath ->
           unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
                   , "  snprintf(bufferPtr, size, \"%s \", temp);"

@@ -315,7 +315,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
                 strTy typeEnv env arrayType ++
                 [TokC "}\n"])
              (\(FuncTy [RefTy arrayType@(StructTy "Array" [insideType])] StringTy) ->
-                depsForStrFunc typeEnv env insideType)
+                depsForPrnFunc typeEnv env insideType)
         path = SymPath ["Array"] "str"
         t = FuncTy [RefTy (StructTy "Array" [VarTy "a"])] StringTy
 
@@ -349,7 +349,7 @@ calculateStrSize typeEnv env t =
           , ""
           ]
   where arrayMemberSizeCalc =
-          case findFunctionForMemberIncludePrimitives typeEnv env "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+          case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
               FunctionFound functionFullName ->
                 let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
                 in  unlines [ "    temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
@@ -365,7 +365,7 @@ calculateStrSize typeEnv env t =
 
 insideArrayStr :: TypeEnv -> Env -> Ty -> String
 insideArrayStr typeEnv env t =
-  case findFunctionForMemberIncludePrimitives typeEnv env "str" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
+  case findFunctionForMemberIncludePrimitives typeEnv env "prn" (typesStrFunctionType typeEnv t) ("Inside array.", t) of
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"

@@ -335,11 +335,11 @@ depsForCopyFunc typeEnv env t =
   else []
 
 -- | Helper for finding the 'str' function for a type.
-depsForStrFunc :: TypeEnv -> Env -> Ty -> [XObj]
-depsForStrFunc typeEnv env t =
+depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
+depsForPrnFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [RefTy t] StringTy)
-  else depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [t] StringTy)
+  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t] StringTy)
+  else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
