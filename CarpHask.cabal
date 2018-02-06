@@ -37,7 +37,9 @@ library
                        Expand,
                        Scoring,
                        Lookup,
-                       Qualify
+                       Qualify,
+                       Repl,
+                       StartingEnv
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
@@ -46,6 +48,7 @@ library
                      , process
                      , directory
                      , split
+                     , haskeline
 
   default-language:    Haskell2010
 
