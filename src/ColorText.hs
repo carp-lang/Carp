@@ -1,10 +1,16 @@
 module ColorText where
 
+import System.Info (os)
+
 data TextColor = Blue | Red | Yellow | Green | White
 
 strWithColor :: TextColor -> String -> String
-strWithColor color str = "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[37m"
-  where col = case color of
+strWithColor color str = 
+    if useColors 
+    then "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[37m"
+    else str
+  where useColors = os /= "mingw32"
+        col = case color of
                 Red -> "31"
                 Green -> "32"
                 Yellow -> "33"
