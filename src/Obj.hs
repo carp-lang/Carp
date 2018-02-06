@@ -117,6 +117,8 @@ getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
 getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
+getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
+getBinderDescription (XObj (Lst (XObj (Command _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "command"
 getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "template"
 getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "instantiate"
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
@@ -124,7 +126,7 @@ getBinderDescription (XObj (Lst (XObj External _ _ : XObj (Sym _ _) _ _ : _)) _ 
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
-getBinderDescription _ = "?"
+getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
 getName xobj = show (getPath xobj)
@@ -251,7 +253,8 @@ showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder xobj) =
   replicate indent ' ' ++ name ++ " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj) ++ " " ++ getBinderDescription xobj
+  " : " ++ showMaybeTy (ty xobj)
+  -- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
@@ -443,7 +446,7 @@ polymorphicSuffix signature actualType =
             (VarTy _, VarTy _) -> -- error $ "Unsolved variable in actual type: " ++ show sig ++ " => " ++ show actual ++
                                   --        " when calculating polymorphic suffix for " ++
                                   --        show signature ++ " => " ++ show actualType
-                                  return ["UNSOLVED_VARIABLE"]
+                                  return ["?"]
             (a@(VarTy _), b) -> do visitedTypeVariables <- get
                                    if a `elem` visitedTypeVariables
                                      then return []

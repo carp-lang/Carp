@@ -50,7 +50,6 @@
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
 * [0.3] When running :rb, shouldn't carp stop when :r returns an error, instead of building the wrong main.c?
 
-* [0.4] Print a warning when changing the type of a function (can create bugs by overriding earlier declarations with the same name)
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
 * [0.4] Show "call stack" when getting an error during concretization.
