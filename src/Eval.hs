@@ -402,22 +402,31 @@ catcher ctx exception =
 -- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
-  case annXObj of
-    XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-      --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
-    XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
-      return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
-    _ ->
-      do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
-         when (projectEchoC proj) $
-           putStrLn (toC All annXObj)
-         case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
-           Left err ->
-             do putStrLnWithColor Red err
-                return ctx
-           Right ctx' ->
-             return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+  let previousType =
+        case lookupInEnv (getPath annXObj) globalEnv of
+          Just (_, Binder found) -> ty found
+          Nothing -> Nothing
+  in case annXObj of
+       XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
+         --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+       XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+       _ ->
+         do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
+            when (projectEchoC proj) $
+              putStrLn (toC All annXObj)
+            when (previousType /= Nothing && ty annXObj /= previousType) $
+              let Just previousTypeUnwrapped = previousType
+              in  do putStrWithColor Blue ("[Warning] Changing type of " ++ show (getPath annXObj) ++
+                                           " from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
+                     putStrLnWithColor White "" -- To restore color for sure.
+            case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
+              Left err ->
+                do putStrLnWithColor Red err
+                   return ctx
+              Right ctx' ->
+                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
 -- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
 registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
