@@ -208,7 +208,7 @@
                  "or* macro works as expected II"
     )
     (assert-equal test
-                  "1@\" thing \"2@\" things\""
+                  "1 thing 2 things"
                   &(str* 1 " thing " 2 " things")
                   "str* macro works as expected"
     )

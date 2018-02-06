@@ -299,6 +299,13 @@ char* String_cstr(string *s) {
 string String_str(string *s) {
     int n = strlen(*s) + 4;
     string buffer = CARP_MALLOC(n);
+    snprintf(buffer, n, "%s", *s);
+    return buffer;
+}
+
+string String_prn(string *s) {
+    int n = strlen(*s) + 1;
+    string buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "@\"%s\"", *s);
     return buffer;
 }
