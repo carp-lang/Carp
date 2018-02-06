@@ -460,6 +460,16 @@ manageMemory typeEnv globalEnv root =
                               do okBody <- visitedBody
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
+            [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
+              do visitedExpr <- visit expr
+                 result <- unmanage expr
+                 return $
+                   case result of
+                     Left e -> Left e
+                     Right () ->
+                       do okExpr <- visitedExpr
+                          return (XObj (Lst [def, nameSymbol, okExpr]) i t)
+
             [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
               let Just letReturnType = t
               in case letReturnType of

@@ -16,14 +16,9 @@ carp ./examples/generic_structs.carp -x;
 carp ./examples/setting_variables.carp -x;
 
 # Actual tests (using the test suite)
-carp ./test/memory.carp -x --log-memory;
-echo
-
 for f in ./test/*.carp; do
-    if [ $f != "./test/memory.carp" ]; then
-        echo $f
-        carp -x $f
-    fi
+    echo $f
+    carp -x --log-memory $f
     echo
 done
 

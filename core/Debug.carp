@@ -29,4 +29,11 @@
       (IO.println &(str &x))
       x))
 
+  ;; TODO: Should be a macro and provide the location of the assertion.
+  ;; Also its output looks weird because of lack of 'prn'.
+  (defn assert-eq [expected got]
+    (if (= expected got)
+      ()
+      (println* "ASSERTION FAILED! Expected " expected " but got " got)))
+
   )

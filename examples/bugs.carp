@@ -29,3 +29,10 @@
 ;;         r &s]
 ;;     (do (String.delete s)
 ;;         (IO.println r))))
+
+(use Array)
+
+(def g (copy (nth &[@"A" @"B" @"C"] 1)))
+
+(defn main []
+  (IO.println &g))

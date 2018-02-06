@@ -6,7 +6,6 @@
 * 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 ## Critical Bugs
-* [0.3] Must handle deletion of temporary values used during initialization of global variables.
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 
 ## Big Language Features

@@ -169,6 +169,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      let innerIndent = indent + indentAmount
                      ret <- visit innerIndent expr
                      appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                     delete innerIndent i
                      appendToSrc (addIndent indent ++ "}\n")
                      return ""
 
