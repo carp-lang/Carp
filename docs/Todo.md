@@ -10,25 +10,25 @@
 * [0.3] Initilization of globals must happen in correct order.
 
 ## Big Language Features
-* [0.3] Deps function for templates should return an Either to enable errors when instantiating deps.
 * [0.3] The array should use a more efficient re-allocation scheme, a la http://en.cppreference.com/w/cpp/container/vector
 
 * [0.4] Doc strings.
 * [0.4] Stack allocated Array with an explicit size.
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
 * [0.4] Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
+* [0.4] Deps function for templates should return an Either to enable errors when instantiating deps.
 
 * [1.0] Tagged unions (also known as "sum types" or "enums")
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 ## Smaller Language Features ("niceties")
-* [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
-* [0.3] Errors in macros should present the code location of both the macro and of the code that uses of it.
-* [0.3] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
-* [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 * [0.3] When registering with an interface, make sure the registered function actually *can* unify with it's signature.
 * [0.3] Invoking a macro with the wrong nr of arguments should be an error.
+* [0.3] Implement 'prn' that prints in a readable format, make 'str' print humanly.
+* [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 
+* [0.4] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
+* [0.4] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.4] Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
 * [0.4] Reintroduce the p-string patch but with support for embedded string literals.
 * [0.4] Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
@@ -61,16 +61,12 @@
 
 ## Code generation
 * [1.X] LLVM backend
-* [?] Emit #LINE macros in the generated C code
+* [?] Emit #LINE macros in the generated C code?
 
 ## Ugliness
 * [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
-* [1.0] Remove unnecessary Array-functions and rewrite them in Carp?
-* [1.0] "Setting" of string literals? (let [x "a"] (set! x @"b"))
 
 ## Language Design Considerations
-* What's the correct type of the variable in a set!-form, i.e. (set! &x value) or (set! x value)
-* How should passing primitive types (that do not care about being referenced) as ref:ed parameters be handled?
 * How to handle heap allocated values? Box type with reference count?
 * Fixed-size stack allocated arrays would be useful (also as members of structs)
 * Macros in modules must be qualified right now, is that a good long-term solution or should there be a 'use' for dynamic code?
