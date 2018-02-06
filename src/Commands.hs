@@ -65,7 +65,6 @@ addCommandConfigurable name maybeArity callback =
         withoutArity args =
           callback args
 
-
 -- | Command for changing various project settings.
 commandProjectSet :: CommandCallback
 commandProjectSet [XObj (Str key) _ _, value] =

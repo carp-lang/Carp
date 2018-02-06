@@ -42,12 +42,16 @@ eval env xobj =
 
   where
     evalList :: XObj -> StateT Context IO (Either EvalError XObj)
-    evalList (XObj (Lst xobjs) i t) =
+    evalList listXObj@(XObj (Lst xobjs) i t) =
       case xobjs of
         [] ->
           return (Right xobj)
+
         [XObj (Sym (SymPath [] "quote") _) _ _, target] ->
           return (Right target)
+
+        [XObj (Sym (SymPath [] "source-location") _) _ _] ->
+          return (Right (XObj (Str (prettyInfoFromXObj listXObj)) i t))
 
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
