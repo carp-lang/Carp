@@ -129,8 +129,10 @@ templateNth =
   (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    Array a = *aRef;"
+                        ,"    #ifndef OPTIMIZE"
                         ,"    assert(n >= 0);"
                         ,"    assert(n < a.len);"
+                        ,"    #endif"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
   (\(FuncTy [(RefTy arrayType), _] _) ->
@@ -169,8 +171,10 @@ templateAset = defineTemplate
   (FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
   (toTemplate "Array $NAME (Array a, int n, $t newValue)")
   (toTemplate $ unlines ["$DECL {"
+                        ,"    #ifndef OPTIMIZE"
                         ,"    assert(n >= 0);"
                         ,"    assert(n < a.len);"
+                        ,"    #endif"
                         ,"    (($t*)a.data)[n] = newValue;"
                         ,"    return a;"
                         ,"}"])
@@ -187,8 +191,10 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
             (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
             (const (toTemplate $ unlines ["$DECL {"
                                          ,"    Array a = *aRef;"
+                                         ,"    #ifndef OPTIMIZE"
                                          ,"    assert(n >= 0);"
                                          ,"    assert(n < a.len);"
+                                         ,"    #endif"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
             (\(FuncTy [(RefTy arrayType), _, _] _) ->

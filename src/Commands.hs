@@ -316,6 +316,7 @@ commandHelp [] =
               putStrLn "-x                               - Build and run."
               putStrLn "--no-core                        - Don't load the core library."
               putStrLn "--log-memory                     - Enables use of memory logging functions in the Debug module."
+              putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
               return dynamicNil
 
 commandHelp args =

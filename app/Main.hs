@@ -19,8 +19,10 @@ main = do args <- SystemEnvironment.getArgs
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               logMemory = LogMemory `elem` otherOptions
               noCore = NoCore `elem` otherOptions
+              optimize = Optimize `elem` otherOptions
               projectWithFiles = defaultProject { projectFiles = argFilesToLoad
                                                 , projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
+                                                                  (if optimize then ["-O3 -D OPTIMIZE"] else []) ++
                                                                   (projectCFlags defaultProject)
                                                 , projectIncludes = if noCore then [] else projectIncludes defaultProject
                                                 }
@@ -51,7 +53,7 @@ main = do args <- SystemEnvironment.getArgs
                               return ()
 
 -- | Options for how to run the compiler.
-data OtherOptions = NoCore | LogMemory deriving (Show, Eq)
+data OtherOptions = NoCore | LogMemory | Optimize deriving (Show, Eq)
 
 -- | Parse the arguments sent to the compiler from the terminal.
 parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
@@ -64,4 +66,5 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
+            "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
