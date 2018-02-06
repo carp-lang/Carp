@@ -7,6 +7,7 @@
 
 ## Critical Bugs
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
+* [0.3] Initilization of globals must happen in correct order.
 
 ## Big Language Features
 * [0.3] Deps function for templates should return an Either to enable errors when instantiating deps.
