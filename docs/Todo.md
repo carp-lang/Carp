@@ -15,6 +15,7 @@
 * [0.4] Doc strings.
 * [0.4] Stack allocated Array with an explicit size.
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
+* [0.4] Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
 
 * [1.0] Tagged unions (also known as "sum types" or "enums")
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
