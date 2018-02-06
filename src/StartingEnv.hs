@@ -24,8 +24,8 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       , "Float"
                                                                       , "Array"
                                                                       , "Char"
-                                                                      , "String"
                                                                       , "Bool"
+                                                                      , "String"
                                                                       , "IO"
                                                                       , "System"
                                                                       ]
