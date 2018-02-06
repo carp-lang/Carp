@@ -676,7 +676,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          proj = contextProj ctx
-         printer allowLookupInALL binderPair =
+         printer allowLookupInALL binderPair itIsAnErrorNotToFindIt =
            case binderPair of
              Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
                do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
@@ -690,7 +690,8 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                if allowLookupInALL
                then case multiLookupALL name env of
                       [] ->
-                        do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                        do when itIsAnErrorNotToFindIt $
+                             putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
                            return ()
                       binders ->
                         do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
@@ -704,14 +705,14 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
        SymPath [] _ ->
          -- First look in the type env, then in the global env:
          do case lookupInEnv path (getTypeEnv typeEnv) of
-              Nothing -> liftIO (printer True (lookupInEnv path env))
-              found -> do liftIO (printer True found) -- this will print the interface itself
-                          liftIO (printer True (lookupInEnv path env)) -- this will print the locations of the implementers of the interface
+              Nothing -> liftIO (printer True (lookupInEnv path env) True)
+              found -> do liftIO (printer True found True) -- this will print the interface itself
+                          liftIO (printer True (lookupInEnv path env) False) -- this will print the locations of the implementers of the interface
             return dynamicNil
        qualifiedPath ->
          do case lookupInEnv path env of
               Nothing -> notFound path
-              found -> do liftIO (printer False found)
+              found -> do liftIO (printer False found True)
                           return dynamicNil
 
 specialCommandType :: XObj -> StateT Context IO (Either EvalError XObj)
