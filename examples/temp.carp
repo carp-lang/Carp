@@ -3,7 +3,8 @@
 (Debug.sanitize-addresses)
 (project-set! "printAST" "true")
 
-(definterface foo (Fn [Int] Int))
-
 (defn foo []
   true)
+
+(defn foo []
+  123)
