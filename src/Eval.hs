@@ -412,35 +412,41 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
       do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
          when (projectEchoC proj) $
            putStrLn (toC All annXObj)
-         let ctx' = registerDefnInInterfaceIfNeeded ctx annXObj
-         return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+         case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
+           Left err ->
+             do putStrLnWithColor Red err
+                return ctx
+           Right ctx' ->
+             return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
 -- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
-registerDefnInInterfaceIfNeeded :: Context -> XObj -> Context
-registerDefnInInterfaceIfNeeded ctx xobj =
+registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
+registerDefnOrDefInInterfaceIfNeeded ctx xobj =
   case xobj of
-    XObj (Lst [XObj Defn _ _, XObj (Sym path _) _ _, _, _]) _ _ ->
+    XObj (Lst [XObj Defn _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path
-    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ _ ->
+      registerInInterfaceIfNeeded ctx path t
+    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
       -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path
+      registerInInterfaceIfNeeded ctx path t
     _ ->
-      ctx
+      return ctx
 
 -- | Registers a definition with an interface, if it isn't already registerd.
--- | TODO: Make sure the type of the registered definition can unify with the existing interface.
-registerInInterfaceIfNeeded :: Context -> SymPath -> Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ name) =
+registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
+registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
   let typeEnv = (getTypeEnv (contextTypeEnv ctx))
   in case lookupInEnv (SymPath [] name) typeEnv of
        Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
-         let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-         in  ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
+         if areUnifiable interfaceSignature definitionSignature
+         then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
+              in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
+         else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
+                    " doesn't match the interface signature " ++ show interfaceSignature)
        Just (_, Binder x) ->
          error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
        Nothing ->
-         ctx
+         return ctx
 
 
 
@@ -511,9 +517,10 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
          case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i of
            Right (typeModuleName, typeModuleXObj, deps) ->
-             let typeDefinition =
+             let structTy = (StructTy typeName okTypeVariables)
+                 typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj (Typ (StructTy typeName okTypeVariables)) Nothing Nothing :
+                   XObj (Lst (XObj (Typ structTy) Nothing Nothing :
                               XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)
@@ -521,9 +528,13 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
              in do ctxWithDeps <- liftIO (foldM define ctx' deps)
-                   put $ foldl (\context path -> registerInInterfaceIfNeeded context path) ctxWithDeps
-                               [(SymPath (pathStrings ++ [typeModuleName]) "str")
-                               ,(SymPath (pathStrings ++ [typeModuleName]) "copy")]
+                   let ctxWithInterfaceRegistrations =
+                         foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
+                               [((SymPath (pathStrings ++ [typeModuleName]) "str"), FuncTy [(RefTy structTy)] StringTy)
+                               ,((SymPath (pathStrings ++ [typeModuleName]) "copy"), FuncTy [RefTy structTy] structTy)]
+                   case ctxWithInterfaceRegistrations of
+                     Left err -> liftIO (putStrLnWithColor Red err)
+                     Right ok -> put ok
                    return dynamicNil
            Left errorMessage ->
              return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)))
@@ -543,9 +554,13 @@ specialCommandRegister name typeXObj =
                                               XObj (Sym path Symbol) Nothing Nothing])
                                    (info typeXObj) (Just t)
                          env' = envInsertAt env path binding
-                         ctx' = registerInInterfaceIfNeeded ctx path
-                     in  do put (ctx' { contextGlobalEnv = env' })
-                            return dynamicNil
+                     in  case registerInInterfaceIfNeeded ctx path t of
+                           Left err ->
+                             do liftIO (putStrLnWithColor Red err)
+                                return dynamicNil
+                           Right ctx' ->
+                             do put (ctx' { contextGlobalEnv = env' })
+                                return dynamicNil
            Nothing ->
              return (Left (EvalError ("Can't understand type when registering '" ++ name ++ "'")))
 

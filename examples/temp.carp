@@ -3,12 +3,7 @@
 (Debug.sanitize-addresses)
 (project-set! "printAST" "true")
 
-;; (defn f []
-;;   (for [n 1.4f 123.2f] ;; Should report error here, not in Macros.carp
-;;     ()))
+(definterface foo (Fn [Int] Int))
 
-(defn f [x]
-  (assert x))
-
-(defn main []
-  (f false))
+(defn foo []
+  true)
