@@ -32,8 +32,7 @@ templateEMap =
         ,"}"
         ])
       (\(FuncTy [t, arrayType] _) ->
-         [defineFunctionTypeAlias t,
-          defineArrayTypeAlias arrayType])
+         [defineFunctionTypeAlias t])
 
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
@@ -65,7 +64,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "}"
                ]))
         (\(FuncTy [ft@(FuncTy [RefTy insideType] BoolTy), arrayType] _) ->
-           [defineFunctionTypeAlias ft, defineArrayTypeAlias arrayType] ++
+           [defineFunctionTypeAlias ft] ++
             depsForDeleteFunc typeEnv env insideType)
 
 templatePushBack :: (String, Binder)
@@ -87,7 +86,7 @@ templatePushBack =
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy [arrayType, _] _) -> [defineArrayTypeAlias arrayType])
+      (\(FuncTy [arrayType, _] _) -> [])
 
 templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t
@@ -115,7 +114,6 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                                ,"}"
                                ]))
             (\(FuncTy [arrayType@(StructTy _ [insideTy])] _) ->
-               defineArrayTypeAlias arrayType :
                depsForDeleteFunc typeEnv env arrayType ++
                depsForCopyFunc typeEnv env insideTy
             )
@@ -136,7 +134,7 @@ templateNth =
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
   (\(FuncTy [(RefTy arrayType), _] _) ->
-     [defineArrayTypeAlias arrayType])
+     [])
 
 templateSort :: (String, Binder)
 templateSort = defineTypeParameterizedTemplate templateCreator path t
@@ -153,8 +151,7 @@ templateSort = defineTypeParameterizedTemplate templateCreator path t
                                          ,"    return a;"
                                          ,"}"]))
             (\(FuncTy [arrayType, sortType] _) ->
-               [defineFunctionTypeAlias sortType
-               ,defineArrayTypeAlias arrayType] ++
+               defineFunctionTypeAlias sortType :
                depsForDeleteFunc typeEnv env arrayType)
 
 templateRaw :: (String, Binder)
@@ -163,7 +160,7 @@ templateRaw = defineTemplate
   (FuncTy [StructTy "Array" [VarTy "t"]] (PointerTy (VarTy "t")))
   (toTemplate "$t* $NAME (Array a)")
   (toTemplate "$DECL { return a.data; }")
-  (\(FuncTy [arrayType] _) -> [defineArrayTypeAlias arrayType])
+  (\(FuncTy [arrayType] _) -> [])
 
 templateAset :: (String, Binder)
 templateAset = defineTemplate
@@ -178,7 +175,7 @@ templateAset = defineTemplate
                         ,"    (($t*)a.data)[n] = newValue;"
                         ,"    return a;"
                         ,"}"])
-  (\(FuncTy [arrayType, _, _] _) -> [defineArrayTypeAlias arrayType])
+  (\(FuncTy [arrayType, _, _] _) -> [])
 
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
@@ -198,7 +195,6 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
             (\(FuncTy [(RefTy arrayType), _, _] _) ->
-               [defineArrayTypeAlias arrayType] ++
                depsForDeleteFunc typeEnv env arrayType)
 
 templateCount :: (String, Binder)
@@ -212,7 +208,6 @@ templateCount = defineTypeParameterizedTemplate templateCreator path t
             (const (toTemplate "int $NAME (Array *a)"))
             (const (toTemplate "$DECL { return (*a).len; }"))
             (\(FuncTy [(RefTy arrayType)] _) ->
-               [defineArrayTypeAlias arrayType] ++
               depsForDeleteFunc typeEnv env arrayType)
 
 templateAllocate :: (String, Binder)
@@ -231,12 +226,13 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t
                                          ,"    return a;"
                                          ,"}"]))
             (\(FuncTy [_] arrayType) ->
-               [defineArrayTypeAlias arrayType] ++
                depsForDeleteFunc typeEnv env arrayType)
 
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
-  where templateCreator = TemplateCreator $
+  where path = SymPath ["Array"] "delete"
+        t = FuncTy [StructTy "Array" [VarTy "a"]] UnitTy
+        templateCreator = TemplateCreator $
           \typeEnv env ->
              Template
              t
@@ -246,9 +242,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t
                 deleteTy typeEnv env arrayType ++
                 [TokC "}\n"])
              (\(FuncTy [arrayType@(StructTy "Array" [insideType])] UnitTy) ->
-                defineArrayTypeAlias arrayType : depsForDeleteFunc typeEnv env insideType)
-        path = SymPath ["Array"] "delete"
-        t = FuncTy [StructTy "Array" [VarTy "a"]] UnitTy
+                depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
 deleteTy typeEnv env (StructTy "Array" [innerType]) =
@@ -286,7 +280,6 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokC "}\n"])
              (\case
                  (FuncTy [RefTy arrayType@(StructTy "Array" [insideType])] _) ->
-                   defineArrayTypeAlias arrayType :
                    depsForCopyFunc typeEnv env insideType ++
                    depsForDeleteFunc typeEnv env arrayType
                  err ->
@@ -322,8 +315,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
                 strTy typeEnv env arrayType ++
                 [TokC "}\n"])
              (\(FuncTy [RefTy arrayType@(StructTy "Array" [insideType])] StringTy) ->
-                let deps = depsForStrFunc typeEnv env insideType
-                in  defineArrayTypeAlias arrayType : deps)
+                depsForStrFunc typeEnv env insideType)
         path = SymPath ["Array"] "str"
         t = FuncTy [RefTy (StructTy "Array" [VarTy "a"])] StringTy
 
