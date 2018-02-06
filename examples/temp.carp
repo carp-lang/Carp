@@ -6,3 +6,9 @@
 ;; (defn f []
 ;;   (for [n 1.4f 123.2f] ;; Should report error here, not in Macros.carp
 ;;     ()))
+
+(defn f [x]
+  (assert x))
+
+(defn main []
+  (f false))
