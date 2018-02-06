@@ -36,10 +36,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do visited <- visitList allowAmbig env xobj
          return $ do okVisited <- visited
                      Right (XObj (Lst okVisited) i t)
-    visit allowAmbig env (XObj (Arr arr) i (Just t)) =
+    visit allowAmbig env xobj@(XObj (Arr arr) i (Just t)) =
       do visited <- fmap sequence (mapM (visit allowAmbig env) arr)
-         modify (depsForDeleteFunc typeEnv env t ++)
-         modify (defineArrayTypeAlias t : )
+         concretizeTypeOfXObj typeEnv xobj
          return $ do okVisited <- visited
                      Right (XObj (Arr okVisited) i (Just t))
     visit _ _ x = return (Right x)
@@ -201,8 +200,10 @@ concretizeType _ ft@(FuncTy _ _) =
   then Right []
   else Right [defineFunctionTypeAlias ft]
 concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
-  do deps <- mapM (concretizeType typeEnv) varTys
-     Right ([defineArrayTypeAlias arrayTy] ++ concat deps)
+  if isTypeGeneric arrayTy
+  then Right []
+  else do deps <- mapM (concretizeType typeEnv) varTys
+          Right ([defineArrayTypeAlias arrayTy] ++ concat deps)
 concretizeType typeEnv genericStructTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
