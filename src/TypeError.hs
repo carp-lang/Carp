@@ -69,7 +69,7 @@ instance Show TypeError where
     "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
-    show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
+    --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
     "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
     "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
