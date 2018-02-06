@@ -216,12 +216,18 @@ eval env xobj =
         f:args -> do evaledF <- eval env f
                      case evaledF of
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                         do evaledArgs <- fmap sequence (mapM (eval env) args)
-                            case evaledArgs of
-                              Right okArgs -> apply env body params okArgs
-                              Left err -> return (Left err)
+                         case checkMatchingNrOfArgs f params args of
+                           Left err -> return (Left err)
+                           Right () ->
+                             do evaledArgs <- fmap sequence (mapM (eval env) args)
+                                case evaledArgs of
+                                  Right okArgs -> apply env body params okArgs
+                                  Left err -> return (Left err)
+
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                         apply env body params args
+                         case checkMatchingNrOfArgs f params args of
+                           Left err -> return (Left err)
+                           Right () -> apply env body params args
 
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          do evaledArgs <- fmap sequence (mapM (eval env) args)
@@ -250,6 +256,22 @@ eval env xobj =
          return $ do okXObjs <- evaledXObjs
                      Right (XObj (Arr okXObjs) i t)
     evalArray _ = error "Can't eval non-array in evalArray."
+
+-- | Make sure the arg list is the same length as the parameter list
+checkMatchingNrOfArgs :: XObj -> [XObj] -> [XObj] -> Either EvalError ()
+checkMatchingNrOfArgs xobj params args =
+  let usesRestArgs = not (null (filter isRestArgSeparator (map getName params)))
+      paramLen = if usesRestArgs then length params - 2 else length params
+      argsLen = length args
+      expected =
+        if usesRestArgs
+        then "at least " ++ show paramLen
+        else show paramLen
+  in  if (usesRestArgs && argsLen > paramLen) || (paramLen == argsLen)
+      then Right ()
+      else Left (EvalError ("Wrong nr of arguments in call to '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++
+                            ", expected " ++ expected ++ " but got " ++ show argsLen ++ "."
+                           ))
 
 -- | Apply a function to some arguments. The other half of 'eval'.
 apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
