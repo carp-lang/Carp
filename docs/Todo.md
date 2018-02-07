@@ -33,6 +33,7 @@
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
 * [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * [0.4] Refactor the SDL module.
+* [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
 
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
@@ -59,6 +60,12 @@
 ## Code generation
 * [1.X] LLVM backend
 * [?] Emit #LINE macros in the generated C code?
+
+## Libraries
+* Make Vector generic
+* Threading
+* Glfw
+* OpenGL
 
 ## Ugliness
 * [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
