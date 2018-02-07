@@ -23,6 +23,7 @@ fi
 
 mkdir "$fullPath"
 
+echo
 echo "Building Haskell project..."
 stack build
 
@@ -46,4 +47,9 @@ cp -r "./img/" "$fullPath/img/"
 echo "Copying examples..."
 cp -r "./examples/" "$fullPath/examples/"
 
+echo
+echo "Zipping..."
+zip -r $fullPath $fullPath
+
+echo
 echo "Done. New release created successfully!"
