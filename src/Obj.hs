@@ -144,6 +144,7 @@ getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = p
 getPath (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
