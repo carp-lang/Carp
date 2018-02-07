@@ -36,12 +36,15 @@ fi
 
 echo "Path of Carp executable = '$carpExePath'"
 
+mkdir "$fullPath/bin"
 echo "Copying executable..."
-cp $carpExePath "$fullPath/carp"
+cp $carpExePath "$fullPath/bin/carp"
 echo "Copying core..."
 cp -r "./core/" "$fullPath/core/"
 echo "Copying docs..."
 cp -r "./docs/" "$fullPath/docs/"
+echo "Copying README.md..."
+cp -r "./README.md" "$fullPath/README.md"
 echo "Copying img..."
 cp -r "./img/" "$fullPath/img/"
 echo "Copying examples..."
@@ -49,7 +52,8 @@ cp -r "./examples/" "$fullPath/examples/"
 
 echo
 echo "Zipping..."
-zip -r $fullPath $fullPath
+cd releases
+zip -r "${name}.zip" "${name}"
 
 echo
 echo "Done. New release created successfully!"
