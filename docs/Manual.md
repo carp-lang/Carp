@@ -33,8 +33,8 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 ### Configuring a project
 The current session in the repl is called a "project" and can be configured using the `(Project.config <setting> <value>)` command. The following settings can be configured with this command:
 
-* ```"cflag"```              - Add a flag (String) to the compiler.
-* ```"libflag"```            - Add a library flag (String) to the compiler.
+* ```"cflag"```              - Add a flag to the compiler.
+* ```"libflag"```            - Add a library flag to the compiler.
 * ```"compiler"```           - Set what compiler should be run with the 'build' command.
 * ```"title"```              - Set the title of the current project, will affect the name of the binary produced.
 * ```"prompt"```             - Set the prompt in the repl.

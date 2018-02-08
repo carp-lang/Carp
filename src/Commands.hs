@@ -326,8 +326,8 @@ commandHelp [XObj(Str "interop") _ _] =
 commandHelp [XObj(Str "project") _ _] =
   liftIO $ do putStrLn "(Project.config <setting> <value>) handles the following settings:"
               putStrLn ""
-              putStrLn "'cflag'              - Add a flag (String) to the compiler."
-              putStrLn "'libflag'            - Add a library flag (String) to the compiler."
+              putStrLn "'cflag'              - Add a flag to the compiler."
+              putStrLn "'libflag'            - Add a library flag to the compiler."
               putStrLn "'compiler'           - Set what compiler should be run with the 'build' command."
               putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
               putStrLn "'prompt'             - Set the prompt in the repl."
