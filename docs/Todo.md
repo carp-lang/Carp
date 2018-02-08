@@ -37,6 +37,7 @@
 
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
+* [1.0] Register could take an optional argument which would be the name you want the function to have in the Carp module, i.e. (register glfwCreateWindow (Fn [] ()) create-window)
 
 ## Macro System
 * [1.0] Quasiquote
@@ -48,6 +49,7 @@
 * [0.3] The (project-set! ...) command should accept args of various types, not just String.
 * [0.3] When running :rb, shouldn't carp stop when :r returns an error, instead of building the wrong main.c?
 * [0.3] Create a "release.sh" script that creates a directory with a binary and the core library.
+* [0.3] Enable memory balance checks for all tests.
 
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
@@ -66,6 +68,11 @@
 * Threading
 * Glfw
 * OpenGL
+
+## Documentation
+* [0.4] Document all core functions
+* [0.4] Write a guide to how the compiler internals work
+* [0.4] Improve the Memory.md docs
 
 ## Ugliness
 * [1.0] Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
