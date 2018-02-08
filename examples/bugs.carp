@@ -2,7 +2,7 @@
 
 (load "Debug.carp")
 (Debug.sanitize-addresses)
-(Project.config "print-ast" "true")
+(Project.config "print-ast" true)
 
 ;; This shouldn't compile:
 ;; (defn faulty-repeat [n inpt]
