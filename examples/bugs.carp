@@ -30,9 +30,28 @@
 ;;     (do (String.delete s)
 ;;         (IO.println r))))
 
-(use Array)
+;; Using the (Fn (String String) Bool) version of '=' can lead to memory error?
+;; It takes ownership over the strings but while fails to detect the double use.
+;; (let [s @"hej"]
+;;      (while (/= s @"svej")
+;;        (set! s @"svej")))
+;;    )
 
-(def g (copy (nth &[@"A" @"B" @"C"] 1)))
+;; Memory allocated in the condition of a while-loop isn't managed:
+(defn-do main []
+  ;;(Debug.log-memory-balance! true)
+  (Debug.assert-balanced
+   (foreach IO.println [@"Yo"]))
+   ;; (let [i 0]
+   ;;   (while
+   ;;       (Int.< i (Array.count (ref [(copy "yo")])))
+   ;;     (do
+   ;;       (IO.println (Array.nth (ref [(copy "yo")]) i))
+   ;;       (set! i (Int.+ i 1)))))
 
-(defn main []
-  (IO.println &g))
+  0)
+
+;; (defn main []
+;;   (Debug.assert-balanced
+;;    (while (= &@"a" &@"b")
+;;      ())))

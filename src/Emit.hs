@@ -225,8 +225,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               let indent' = indent + indentAmount
                   Just exprTy = ty expr
                   conditionVar = freshVar i
+                  Just exprInfo = info expr
               in  do exprRetVar <- visitWhileExpression indent
                      appendToSrc (addIndent indent ++ tyToC exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
+                     delete indent exprInfo
                      appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                      _ <- visit indent' body
                      exprRetVar' <- visitWhileExpression indent'

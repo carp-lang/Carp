@@ -72,8 +72,8 @@
         (list 'str x)))
 
 (defmacro foreach [f xs]
-  (list 'for ['i 0 (list 'count (list 'ref xs))]
-        (list f (list 'nth (list 'ref xs) 'i))))
+  (list 'for ['i 0 (list 'Array.count (list 'ref xs))]
+        (list f (list 'Array.nth (list 'ref xs) 'i))))
 
 (defdynamic thread-first-internal [xs]
   (if (= (count xs) 2)

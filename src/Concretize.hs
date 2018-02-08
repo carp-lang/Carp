@@ -573,20 +573,25 @@ manageMemory typeEnv globalEnv root =
             [whileExpr@(XObj While _ _), expr, body] ->
               do MemState preDeleters _ <- get
                  visitedExpr <- visit expr
+                 MemState afterExprDeleters _ <- get
                  visitedBody <- visit body
                  manage body
                  MemState postDeleters deps <- get
                  -- Visit an extra time to simulate repeated use
                  visitedExpr2 <- visit expr
                  visitedBody2 <- visit body
-                 let diff = postDeleters Set.\\ preDeleters
-                 put (MemState (postDeleters Set.\\ diff) deps) -- Same as just pre deleters, right?!
+                 let diff = postDeleters \\ preDeleters
+                 put (MemState (postDeleters \\ diff) deps) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
                              okBody <- visitedBody
                              okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
                              okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
-                             return (XObj (Lst [whileExpr, okExpr, okBody]) newInfo t)
+                                 -- Also need to set deleters ON the expression (for first run through the loop)
+                                 XObj objExpr objInfo objTy = okExpr
+                                 newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
+                                 newExpr = XObj objExpr newExprInfo objTy
+                             return (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr
