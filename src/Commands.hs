@@ -124,7 +124,7 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
        Right ok -> do put (ctx { contextProj = ok })
                       return dynamicNil
 commandProjectConfig [faultyKey, _] =
-  do presentError ("First argument to project-set! must be a string: " ++ pretty faultyKey) dynamicNil
+  do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
