@@ -7,12 +7,14 @@
   (register reset-memory-balance! (Fn [] ()))
   (register log-memory-balance! (Fn [Bool] ()))
 
+  ;; The calls inside the form will be logged to stdout. Requires compiling with --log-memory.
   (defmacro memory-logged [form]
     (list 'do
           '(Debug.log-memory-balance! true)
           form
           '(Debug.log-memory-balance! false)))
 
+  ;; Raises an error if the memory balance (nr of alloc:s minus nr of free:s) isn't 0. Requires compiling with --log-memory.
   (defmacro assert-balanced [form]
     (list 'let '[balance (Debug.memory-balance)]
           (list 'do
@@ -24,6 +26,7 @@
                        (System.exit 1)))
                 ())))
 
+  ;; Print the value of an expression to stdout, then return its value.
   (defn trace [x]
     (do
       (IO.println &(str &x))
@@ -31,6 +34,7 @@
 
   )
 
+;; Crash the program with an error message unless the expression evaluates to 'true'.
 (defmacro assert [expr]
   (list 'if (list '= true expr)
         ()
