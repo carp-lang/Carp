@@ -497,21 +497,27 @@ manageMemory typeEnv globalEnv root =
 
             -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
-              do visitedValue <- visit value
-                 unmanage value -- The assigned value can't be used anymore
-
                  let varInfo = info variable
                      correctVariableAndMode =
                        case variable of
                          -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
                          symObj@(XObj (Sym _ mode) _ _) -> Right (symObj, mode)
                          anythingElse -> Left (CannotSet anythingElse)
-
+                 in
                  case correctVariableAndMode of
                    Left err ->
                      return (Left err)
                    Right (okCorrectVariable, okMode) ->
-                     do MemState managed deps  <- get
+                     do MemState preDeleters _ <- get
+                        ownsTheVarBefore <- case createDeleter okCorrectVariable of
+                                              Nothing -> return (Right ())
+                                              Just d -> if Set.member d preDeleters || okMode == LookupGlobal
+                                                        then return (Right ())
+                                                        else return (Left (UsingUnownedValue variable))
+
+                        visitedValue <- visit value
+                        unmanage value -- The assigned value can't be used anymore
+                        MemState managed deps <- get
                         -- Delete the value previously stored in the variable, if it's still alive
                         let deleters = case createDeleter okCorrectVariable of
                                          Just d  -> Set.fromList [d]
@@ -537,6 +543,7 @@ manageMemory typeEnv globalEnv root =
                           LookupGlobal -> return ()
 
                         return $ do okValue <- visitedValue
+                                    okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
                                     return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
 
             [addressExpr@(XObj Address _ _), value] ->
