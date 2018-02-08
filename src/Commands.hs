@@ -110,7 +110,7 @@ commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outExe = outDir ++ projectTitle (contextProj ctx)
+         outExe = "\"" ++ outDir ++ projectTitle (contextProj ctx) ++ "\""
      liftIO $ do handle <- spawnCommand outExe
                  exitCode <- waitForProcess handle
                  case exitCode of
@@ -151,12 +151,12 @@ commandBuild args =
                      createDirectoryIfMissing False outDir
                      writeFile outMain (incl ++ okSrc)
                      case Map.lookup "main" (envBindings env) of
-                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags
+                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
                                     when echoCompilationCommand (putStrLn cmd)
                                     callCommand cmd
                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                                     return dynamicNil
-                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags
+                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
                                      when echoCompilationCommand (putStrLn cmd)
                                      callCommand cmd
                                      when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
