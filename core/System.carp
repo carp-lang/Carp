@@ -1,5 +1,4 @@
 (defmodule System
-  (register exit (Fn [Int] ()))
   (register free (Fn [t] ()))
   (register time (Fn [] Int))
   (register srand (Fn [Int] ()))

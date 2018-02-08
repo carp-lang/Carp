@@ -49,7 +49,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateSort
                                 ]
 
--- | The pointer module contains functions for dealing with pointers.
+-- | The Pointer module contains functions for dealing with pointers.
 pointerModule :: Env
 pointerModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Pointer", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList [ templatePointerCopy ]
@@ -62,6 +62,22 @@ templatePointerCopy = defineTemplate
   (toTemplate "$p* $NAME ($p** ptrRef)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return *ptrRef;"
+                        ,"}"])
+  (const [])
+
+-- | The System module contains functions for various OS related things like timing and process control.
+systemModule :: Env
+systemModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "System", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList [ templateExit ]
+
+-- | A template function for exiting.
+templateExit :: (String, Binder)
+templateExit = defineTemplate
+  (SymPath ["System"] "exit")
+  (FuncTy [IntTy] (VarTy "a"))
+  (toTemplate "$a $NAME (int code)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    exit(code);"
                         ,"}"])
   (const [])
 
@@ -139,6 +155,7 @@ startingGlobalEnv noArray =
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]
+                   ++ [("System", Binder (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
