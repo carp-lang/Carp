@@ -1,10 +1,6 @@
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
 
-  (defmodule String
-    (defdynamic append [s1 s2]
-      (macro-log "Can't append strings in dynamic runtime yet.")))
-
   (defdynamic inc [x]
     (+ x 1))
 
@@ -17,7 +13,7 @@
 ;; The following functions are not put into a module for now:
 
 (defdynamic add-cflag [flag]
-  (project-set! "cflag" flag))
+  (Project.config "cflag" flag))
 
 (defdynamic add-lib [lib]
-  (project-set! "libflag" lib))
+  (Project.config "libflag" lib))

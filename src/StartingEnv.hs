@@ -104,7 +104,9 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "system-include" 1 commandAddSystemInclude
                     , addCommand "local-include" 1 commandAddLocalInclude
                     ]
-                    ++ [("String", Binder (XObj (Mod dynamicStringModule) Nothing Nothing))]
+                    ++ [("String", Binder (XObj (Mod dynamicStringModule) Nothing Nothing))
+                       ,("Project", Binder (XObj (Mod dynamicProjectModule) Nothing Nothing))
+                       ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
 dynamicStringModule :: Env
@@ -113,6 +115,12 @@ dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModu
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "substring" 3 commandSubstring
                                 , addCommand "count" 1 commandStringCount
+                                ]
+
+-- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
+dynamicProjectModule :: Env
+dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Project", envUseModules = [], envMode = ExternalEnv }
+  where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
 -- | The global environment before any code is run.

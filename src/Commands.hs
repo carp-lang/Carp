@@ -65,7 +65,7 @@ addCommandConfigurable name maybeArity callback =
         withoutArity args =
           callback args
 
--- | Command for changing various project settings.
+-- | DEPRECATED Command for changing various project settings.
 commandProjectSet :: CommandCallback
 commandProjectSet [XObj (Str key) _ _, value] =
   do ctx <- get
@@ -83,12 +83,48 @@ commandProjectSet [XObj (Str key) _ _, value] =
                       "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
                       "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
                       "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
-                      _ -> err ("Unrecognized key: '" ++ key ++ "'") ctx
+                      _ -> presentError ("Unrecognized key: '" ++ key ++ "'") ctx
           put newCtx
           return dynamicNil
-       val -> err "Argument to project-set! must be a string" dynamicNil
-    where err msg ret = liftIO $ do putStrLnWithColor Red msg
-                                    return ret
+       val -> presentError "Argument to project-set! must be a string" dynamicNil
+
+presentError :: MonadIO m => String -> a -> m a
+presentError msg ret =
+  liftIO $ do putStrLnWithColor Red msg
+              return ret
+
+-- | Command for changing various project settings.
+commandProjectConfig :: CommandCallback
+commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
+  do ctx <- get
+     let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+         newProj = case key of
+                     "cflag" -> do cflag <- unwrapStringXObj value
+                                   return (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
+                     "libflag" -> do libflag <- unwrapStringXObj value
+                                     return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
+                     "prompt" -> do prompt <- unwrapStringXObj value
+                                    return (proj { projectPrompt = prompt })
+                     "search-path" -> do searchPath <- unwrapStringXObj value
+                                         return (proj { projectCarpSearchPaths = addIfNotPresent searchPath (projectCarpSearchPaths proj) })
+                     "print-ast" -> do printAST <- unwrapBoolXObj value
+                                       return (proj { projectPrintTypedAST = printAST })
+                     "echo-c" -> do echoC <- unwrapBoolXObj value
+                                    return (proj { projectEchoC = echoC })
+                     "echo-compiler-cmd" -> do echoCompilerCmd <- unwrapBoolXObj value
+                                               return (proj { projectEchoCompilationCommand = echoCompilerCmd })
+                     "compiler" -> do compiler <- unwrapStringXObj value
+                                      return (proj { projectCompiler = compiler })
+                     "title" -> do title <- unwrapStringXObj value
+                                   return (proj { projectTitle = title })
+                     _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
+     case newProj of
+       Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
+       Right ok -> do put (ctx { contextProj = ok })
+                      return dynamicNil
+commandProjectConfig [faultyKey, _] =
+  do presentError ("First argument to project-set! must be a string: " ++ pretty faultyKey) dynamicNil
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
