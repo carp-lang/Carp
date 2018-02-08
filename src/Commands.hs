@@ -323,6 +323,22 @@ commandHelp [XObj(Str "interop") _ _] =
               putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
               return dynamicNil
 
+commandHelp [XObj(Str "project") _ _] =
+  liftIO $ do putStrLn "(Project.config <setting> <value>) handles the following settings:"
+              putStrLn ""
+              putStrLn "'cflag'              - Add a flag (String) to the compiler."
+              putStrLn "'libflag'            - Add a library flag (String) to the compiler."
+              putStrLn "'compiler'           - Set what compiler should be run with the 'build' command."
+              putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
+              putStrLn "'prompt'             - Set the prompt in the repl."
+              putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."
+              putStrLn ""
+              putStrLn "'echo-c'             - When a form is defined using 'def' or 'defn' its C code will be printed."
+              putStrLn "'echo-compiler-cmd'  - When building the project the command for running the C compiler will be printed."
+              putStrLn "'print-ast'          - The 'info' command will print the AST for a binding."
+              putStrLn ""
+              return dynamicNil
+
 commandHelp [] =
   liftIO $ do putStrLn "Compiler commands:"
               putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
@@ -335,9 +351,9 @@ commandHelp [] =
               putStrLn "(info <symbol>)    - Get information about a binding."
               putStrLn "(project)          - Display information about your project."
               putStrLn "(quit)             - Terminate this Carp REPL."
-              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"interop\", \"shortcuts\", \"about\"."
+              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"interop\", \"shortcuts\", \"project\", \"about\"."
               putStrLn ""
-              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
+              putStrLn "(Project.config! <setting> <value>) - Change a project setting."
               putStrLn ""
               putStrLn "To define things:"
               putStrLn "(def <name> <constant>)                       - Define a global variable."

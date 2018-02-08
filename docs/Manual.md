@@ -30,6 +30,26 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 (info <module name>)
 ```
 
+### Configuring a project
+The current session in the repl is called a "project" and can be configured using the `(Project.config <setting> <value>)` command. The following settings can be configured with this command:
+
+'cflag'              - Add a flag (String) to the compiler.
+'libflag'            - Add a library flag (String) to the compiler.
+'compiler'           - Set what compiler should be run with the 'build' command.
+'title'              - Set the title of the current project, will affect the name of the binary produced.
+'prompt'             - Set the prompt in the repl.
+'search-path'        - Add a path where the Carp compiler will look for '*.carp' files.
+
+'echo-c'             - When a form is defined using 'def' or 'defn' its C code will be printed.
+'echo-compiler-cmd'  - When building the project the command for running the C compiler will be printed.
+'print-ast'          - The 'info' command will print the AST for a binding.
+
+For example, to set the title of your project:
+
+```
+(Project.config "title" "Fishy")
+```
+
 <!-- ### Special Files -->
 <!-- If a file called ```user.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started. This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations. -->
 
