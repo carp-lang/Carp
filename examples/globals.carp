@@ -1,5 +1,5 @@
 (load "Debug.carp")
-(project-set! "printAST" "true")
+(Project.config "print-ast" true)
 (Debug.sanitize-addresses)
 
 (def s "I'm a global string...")

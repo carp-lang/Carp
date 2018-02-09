@@ -650,10 +650,6 @@ string Bool_format(string* str, bool b) {
     return buffer;
 }
 
-void System_exit(int code) {
-    exit(code);
-}
-
 void System_free(void *p) {
     CARP_FREE(p);
 }

@@ -537,3 +537,15 @@ data Context = Context { contextGlobalEnv :: Env
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
+
+-- | Unwrapping of XObj:s
+
+-- | String
+unwrapStringXObj :: XObj -> Either String String
+unwrapStringXObj (XObj (Str s) _ _) = Right s
+unwrapStringXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a String.")
+
+-- | Bool
+unwrapBoolXObj :: XObj -> Either String Bool
+unwrapBoolXObj (XObj (Bol b) _ _) = Right b
+unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Bool.")

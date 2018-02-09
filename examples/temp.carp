@@ -1,7 +1,7 @@
-;;(project-set! "echoCompilationCommand" "true")
+;;(Project.config "echo-compiler-cmd" true)
 ;; (load "Debug.carp")
 ;; (Debug.sanitize-addresses)
-;; (project-set! "printAST" "true")
+;; (Project.config "print-ast" true)
 
 (defmacro m [x y z]
   y)

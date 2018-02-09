@@ -497,21 +497,27 @@ manageMemory typeEnv globalEnv root =
 
             -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
-              do visitedValue <- visit value
-                 unmanage value -- The assigned value can't be used anymore
-
                  let varInfo = info variable
                      correctVariableAndMode =
                        case variable of
                          -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
                          symObj@(XObj (Sym _ mode) _ _) -> Right (symObj, mode)
                          anythingElse -> Left (CannotSet anythingElse)
-
+                 in
                  case correctVariableAndMode of
                    Left err ->
                      return (Left err)
                    Right (okCorrectVariable, okMode) ->
-                     do MemState managed deps  <- get
+                     do MemState preDeleters _ <- get
+                        ownsTheVarBefore <- case createDeleter okCorrectVariable of
+                                              Nothing -> return (Right ())
+                                              Just d -> if Set.member d preDeleters || okMode == LookupGlobal
+                                                        then return (Right ())
+                                                        else return (Left (UsingUnownedValue variable))
+
+                        visitedValue <- visit value
+                        unmanage value -- The assigned value can't be used anymore
+                        MemState managed deps <- get
                         -- Delete the value previously stored in the variable, if it's still alive
                         let deleters = case createDeleter okCorrectVariable of
                                          Just d  -> Set.fromList [d]
@@ -537,6 +543,7 @@ manageMemory typeEnv globalEnv root =
                           LookupGlobal -> return ()
 
                         return $ do okValue <- visitedValue
+                                    okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
                                     return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
 
             [addressExpr@(XObj Address _ _), value] ->
@@ -573,20 +580,25 @@ manageMemory typeEnv globalEnv root =
             [whileExpr@(XObj While _ _), expr, body] ->
               do MemState preDeleters _ <- get
                  visitedExpr <- visit expr
+                 MemState afterExprDeleters _ <- get
                  visitedBody <- visit body
                  manage body
                  MemState postDeleters deps <- get
                  -- Visit an extra time to simulate repeated use
                  visitedExpr2 <- visit expr
                  visitedBody2 <- visit body
-                 let diff = postDeleters Set.\\ preDeleters
-                 put (MemState (postDeleters Set.\\ diff) deps) -- Same as just pre deleters, right?!
+                 let diff = postDeleters \\ preDeleters
+                 put (MemState (postDeleters \\ diff) deps) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
                              okBody <- visitedBody
                              okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
                              okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
-                             return (XObj (Lst [whileExpr, okExpr, okBody]) newInfo t)
+                                 -- Also need to set deleters ON the expression (for first run through the loop)
+                                 XObj objExpr objInfo objTy = okExpr
+                                 newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
+                                 newExpr = XObj objExpr newExprInfo objTy
+                             return (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr

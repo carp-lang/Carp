@@ -2,7 +2,7 @@
 
 (load "Debug.carp")
 (Debug.sanitize-addresses)
-(project-set! "printAST" "true")
+(Project.config "print-ast" true)
 
 ;; This shouldn't compile:
 ;; (defn faulty-repeat [n inpt]
@@ -30,9 +30,11 @@
 ;;     (do (String.delete s)
 ;;         (IO.println r))))
 
-(use Array)
-
-(def g (copy (nth &[@"A" @"B" @"C"] 1)))
-
+;; Using the (Fn (String String) Bool) version of '=' can lead to memory error?
+;; It takes ownership over the strings but while fails to detect the double use.
 (defn main []
-  (IO.println &g))
+  (let [s @"hej"]
+    (while (/= s @"svej")
+      (do
+        ;;(String.delete s)
+        (set! s @"svej")))))
