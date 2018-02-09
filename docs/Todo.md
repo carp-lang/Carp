@@ -18,6 +18,7 @@
 * [0.4] Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
 * [0.4] Deps function for templates should return an Either to enable errors when instantiating deps.
 
+* [1.0] Good hashmap implementation with support for "{}" syntax.
 * [1.0] Tagged unions (also known as "sum types" or "enums")
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
@@ -34,6 +35,7 @@
 * [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * [0.4] Refactor the SDL module.
 * [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
+* [0.4] Split up core into smaller modules.
 
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
@@ -53,6 +55,7 @@
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
 * [0.4] Show "call stack" when getting an error during concretization.
 
+* [1.0] Project templates.
 * [1.0] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
