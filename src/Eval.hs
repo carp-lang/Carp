@@ -317,8 +317,8 @@ data ReplCommand = ReplMacroError String
                  | ListOfCallbacks [CommandCallback]
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
-executeString :: Context -> String -> String -> IO Context
-executeString ctx input fileName = catch exec (catcher ctx)
+executeString :: Bool -> Context -> String -> String -> IO Context
+executeString doCatch ctx input fileName = if doCatch then catch exec (catcher ctx) else exec
   where exec = case parse input fileName of
                  Left parseError -> executeCommand ctx (ReplParseError (show parseError))
                  Right xobjs -> foldM folder ctx xobjs
@@ -341,7 +341,6 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Left e ->
                 do putStrLnWithColor Red (show e)
                    throw CancelEvaluationException
-                   return newCtx
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
@@ -413,7 +412,7 @@ catcher ctx exception =
     CancelEvaluationException ->
       stop 1
     EvalException evalError ->
-      do putStrLnWithColor Red (show evalError)
+      do putStrLnWithColor Red ("[EVAL ERROR] " ++ show evalError)
          stop 1
   where stop returnCode =
           case contextExecMode ctx of
@@ -801,7 +800,7 @@ commandLoad [XObj (Str path) _ _] =
                          then files
                          else files ++ [firstPathFound]
                 proj' = proj { projectFiles = files' }
-            newCtx <- liftIO $ executeString (ctx { contextProj = proj' }) contents firstPathFound
+            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents firstPathFound
             put newCtx
             return dynamicNil
 
@@ -819,7 +818,7 @@ commandReload args =
      let paths = projectFiles (contextProj ctx)
          f :: Context -> FilePath -> IO Context
          f context filepath = do contents <- readFile filepath
-                                 executeString context contents filepath
+                                 executeString False context contents filepath
      newCtx <- liftIO (foldM f ctx paths)
      put newCtx
      return dynamicNil

@@ -67,9 +67,9 @@ main = do args <- SystemEnvironment.getArgs
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
                        runInputT settings (repl context' "")
-            Build -> do _ <- executeString context' ":b" "Compiler (Build)"
+            Build -> do _ <- executeString True context' ":b" "Compiler (Build)"
                         return ()
-            BuildAndRun -> do _ <- executeString context' ":bx" "Compiler (Build & Run)"
+            BuildAndRun -> do _ <- executeString True context' ":bx" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
 

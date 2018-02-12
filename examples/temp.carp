@@ -3,8 +3,8 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
-(defmacro m [x y z]
-  y)
+;; (defmacro m [x y z]
+;;   y)
 
-(defn f []
-  (m 1 2 3 4))
+;; (defn f []
+;;   (m 1 2 3 4))
