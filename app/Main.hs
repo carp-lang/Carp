@@ -11,6 +11,28 @@ import Types
 import Repl
 import StartingEnv
 import Eval
+import Util
+
+defaultProject :: Project
+defaultProject =
+  Project { projectTitle = "Untitled"
+          , projectIncludes = [SystemInclude "core.h"]
+          , projectCFlags = [""]
+          , projectLibFlags = [""]
+          , projectFiles = []
+          , projectEchoC = False
+          , projectCarpDir = "./"
+          , projectOutDir = "./out/"
+          , projectPrompt = case platform of
+                              MacOS -> "鲮 "
+                              _     -> "> "
+          , projectCarpSearchPaths = []
+          , projectPrintTypedAST = False
+          , projectCompiler = case platform of
+                                Windows -> "cl.exe -lm"
+                                _ ->       "clang -fPIC -lm"
+          , projectEchoCompilationCommand = False
+          }
 
 -- | Starting point of the application.
 main :: IO ()
