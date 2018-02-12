@@ -1,6 +1,6 @@
 module ColorText where
 
-import System.Info (os)
+import Util
 
 data TextColor = Blue | Red | Yellow | Green | White
 
@@ -9,7 +9,7 @@ strWithColor color str =
     if useColors 
     then "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[37m"
     else str
-  where useColors = os /= "mingw32"
+  where useColors = platform /= Windows
         col = case color of
                 Red -> "31"
                 Green -> "32"

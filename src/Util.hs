@@ -3,6 +3,7 @@ module Util where
 import Data.List
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import System.Info (os)
 
 joinWith :: String -> [String] -> String
 joinWith = intercalate
@@ -55,3 +56,12 @@ enumerate 4 = "fifth"
 enumerate 5 = "sixth"
 enumerate 6 = "seventh"
 enumerate n = show n ++ ":th"
+
+data Platform = Linux | MacOS | Windows deriving (Show, Eq)
+
+platform :: Platform
+platform =
+    case os of
+      "linux" -> Linux
+      "darwin" -> MacOS
+      "mingw32" -> Windows

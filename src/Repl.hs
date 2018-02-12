@@ -29,10 +29,12 @@ defaultProject = Project { projectTitle = "Untitled"
                          , projectEchoC = False
                          , projectCarpDir = "./"
                          , projectOutDir = "./out/"
-                         , projectPrompt = if os == "darwin" then "鲮 " else "> "
+                         , projectPrompt = if platform == MacOS then "鲮 " else "> "
                          , projectCarpSearchPaths = []
                          , projectPrintTypedAST = False
-                         , projectCompiler = "clang -fPIC -lm"
+                         , projectCompiler = case platform of
+                                               Windows -> "cl.exe -lm"
+                                               _ ->       "clang -fPIC -lm"
                          , projectEchoCompilationCommand = False
                          }
 

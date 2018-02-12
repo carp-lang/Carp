@@ -16,7 +16,6 @@ module Types ( TypeMappings
 
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
-import System.Info (os)
 import Util
 --import Debug.Trace
 
@@ -41,9 +40,10 @@ data Ty = IntTy
         | InterfaceTy
         deriving (Eq, Ord)
 
-fnOrLambda = case os of
-  "mingw32" -> "Fn"
-  _ -> "λ"
+fnOrLambda = 
+  case platform of
+    Windows -> "Fn"
+    _ -> "λ"
 
 instance Show Ty where
   show IntTy                 = "Int"
