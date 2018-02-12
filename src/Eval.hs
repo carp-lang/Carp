@@ -799,7 +799,7 @@ commandLoad [XObj (Str path) _ _] =
             let files = projectFiles proj
                 files' = if firstPathFound `elem` files
                          then files
-                         else firstPathFound : files
+                         else files ++ [firstPathFound]
                 proj' = proj { projectFiles = files' }
             newCtx <- liftIO $ executeString (ctx { contextProj = proj' }) contents firstPathFound
             put newCtx

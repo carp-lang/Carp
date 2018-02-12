@@ -42,8 +42,7 @@ main = do args <- SystemEnvironment.getArgs
               logMemory = LogMemory `elem` otherOptions
               noCore = NoCore `elem` otherOptions
               optimize = Optimize `elem` otherOptions
-              projectWithFiles = defaultProject { projectFiles = argFilesToLoad
-                                                , projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
+              projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (if optimize then ["-O3 -D OPTIMIZE"] else []) ++
                                                                   (projectCFlags defaultProject)
                                                 , projectIncludes = if noCore then [] else projectIncludes defaultProject
