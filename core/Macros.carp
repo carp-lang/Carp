@@ -126,6 +126,11 @@
     (cons (quote do) forms)
     ()))
 
+(defmacro not-on-windows [:rest forms]
+  (if (not (= "windows" (os)))
+    (cons (quote do) forms)
+    ()))
+
 (defdynamic use-all-fn [names]
   (if (= (count names) 0)
     (macro-error "Trying to call use-all without arguments")

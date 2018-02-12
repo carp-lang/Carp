@@ -9,7 +9,10 @@
 #include <time.h>
 #include <assert.h>
 #include <limits.h>
+
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 typedef char* string;
 
@@ -92,9 +95,13 @@ int Int__PLUS_(int x, int y)   { return x + y; }
 int Int__MINUS_(int x, int y)  { return x - y; }
 int Int__MUL_(int x, int y)    { return x * y; }
 int Int__DIV_(int x, int y)    { return x / y; }
+
+#ifndef _WIN32
 bool Int_safe_MINUS_add(int x, int y, int* res) { return __builtin_sadd_overflow(x, y, res); }
 bool Int_safe_MINUS_sub(int x, int y, int* res) { return __builtin_ssub_overflow(x, y, res); }
 bool Int_safe_MINUS_mul(int x, int y, int* res) { return __builtin_smul_overflow(x, y, res); }
+#endif
+
 bool Int__EQ_(int x, int y)     { return x == y; }
 bool Int__DIV__EQ_(int x, int y) { return x != y; }
 bool Int__LT_(int x, int y)    { return x < y; }
@@ -114,9 +121,13 @@ long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
 long Long__MUL_(long x, long y)    { return x * y; }
 long Long__DIV_(long x, long y)    { return x / y; }
+
+#ifndef _WIN32
 bool Long_safe_MINUS_add(long x, long y, long* res) { return __builtin_saddl_overflow(x, y, res); }
 bool Long_safe_MINUS_sub(long x, long y, long* res) { return __builtin_ssubl_overflow(x, y, res); }
 bool Long_safe_MINUS_mul(long x, long y, long* res) { return __builtin_smull_overflow(x, y, res); }
+#endif
+
 bool Long__EQ_(long x, long y)     { return x == y; }
 bool Long__LT_(long x, long y)    { return x < y; }
 bool Long__GT_(long x, long y)    { return x > y; }
@@ -160,12 +171,14 @@ bool or(bool x, bool y) { return x || y; }
 void IO_println(string *s) { puts(*s); }
 void IO_print(string *s) { printf("%s", *s); }
 
+#ifndef _WIN32
 string IO_get_MINUS_line() {
     size_t size = 1024;
     string buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
+#endif
 
 int Int_from_MINUS_string(string *s) {
     return atoi(*s);
@@ -662,6 +675,7 @@ void System_srand(int x) {
     srand(x);
 }
 
+#ifndef _WIN32
 void System_sleep_MINUS_seconds(int t) {
     sleep(t);
 }
@@ -669,6 +683,7 @@ void System_sleep_MINUS_seconds(int t) {
 void System_sleep_MINUS_micros(int t) {
     usleep(t);
 }
+#endif
 
 string IO_read_MINUS_file(string *filename) {
     string buffer = 0;
