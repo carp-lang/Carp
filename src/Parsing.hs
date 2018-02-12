@@ -115,7 +115,7 @@ aChar = do i <- createInfo
 
 {-# ANN validCharacters "HLint: ignore Use String" #-}
 validCharacters :: [Char]
-validCharacters = "+-*/?!><=_:"
+validCharacters = "+-*/?!><=_:\9580\9559"
 
 symbolSegment :: Parsec.Parsec String ParseState String
 symbolSegment = do sym <- Parsec.many1 validInSymbol
