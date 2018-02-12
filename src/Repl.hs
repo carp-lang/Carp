@@ -21,22 +21,25 @@ import Eval
 import Parsing (balance)
 
 defaultProject :: Project
-defaultProject = Project { projectTitle = "Untitled"
-                         , projectIncludes = [SystemInclude "core.h"]
-                         , projectCFlags = [""]
-                         , projectLibFlags = [""]
-                         , projectFiles = []
-                         , projectEchoC = False
-                         , projectCarpDir = "./"
-                         , projectOutDir = "./out/"
-                         , projectPrompt = if platform == MacOS then "鲮 " else "> "
-                         , projectCarpSearchPaths = []
-                         , projectPrintTypedAST = False
-                         , projectCompiler = case platform of
-                                               Windows -> "cl.exe -lm"
-                                               _ ->       "clang -fPIC -lm"
-                         , projectEchoCompilationCommand = False
-                         }
+defaultProject =
+  Project { projectTitle = "Untitled"
+          , projectIncludes = [SystemInclude "core.h"]
+          , projectCFlags = [""]
+          , projectLibFlags = [""]
+          , projectFiles = []
+          , projectEchoC = False
+          , projectCarpDir = "./"
+          , projectOutDir = "./out/"
+          , projectPrompt = case platform of
+                              MacOS -> "鲮 "
+                              _     -> "> "
+          , projectCarpSearchPaths = []
+          , projectPrintTypedAST = False
+          , projectCompiler = case platform of
+                                Windows -> "cl.exe -lm"
+                                _ ->       "clang -fPIC -lm"
+          , projectEchoCompilationCommand = False
+          }
 
 completeKeywords :: Monad m => String -> String -> m [Completion]
 completeKeywords _ word = return $ findKeywords word keywords []
