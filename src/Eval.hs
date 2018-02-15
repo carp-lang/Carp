@@ -105,9 +105,9 @@ eval env xobj =
                                          XObj (Bol bb) _ _ ->
                                            if bb then Right trueXObj else Right falseXObj
                                          _ ->
-                                           Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okB))
+                                           Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okB))
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
+                             Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okA))
 
         [XObj (Sym (SymPath [] "not") _) _ _, a] ->
           do evaledA <- eval env a
