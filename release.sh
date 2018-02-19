@@ -21,7 +21,7 @@ if [ "$answer" != "y" ]; then
     exit 1;
 fi
 
-mkdir "$fullPath"
+mkdir -p "$fullPath"
 
 echo
 echo "Building Haskell project..."
