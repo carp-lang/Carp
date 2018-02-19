@@ -8,6 +8,7 @@ import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.IO (hPutStr)
+import qualified System.IO as SysIO
 import System.Directory (doesPathExist)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
@@ -794,7 +795,10 @@ commandLoad [XObj (Str path) _ _] =
                      return dynamicNil
        firstPathFound : _ ->
          do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
-                                    readFile firstPathFound
+                                    -- readFile firstPathFound
+                                    h <- SysIO.openFile firstPathFound SysIO.ReadMode
+                                    SysIO.hSetEncoding h SysIO.utf8
+                                    SysIO.hGetContents h
             let files = projectFiles proj
                 files' = if firstPathFound `elem` files
                          then files
