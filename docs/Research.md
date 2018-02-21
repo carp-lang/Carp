@@ -14,6 +14,9 @@ https://news.ycombinator.com/item?id=12039268
 - https://github.com/hellerve/sc/tree/real_closures
 - https://yosefk.com/blog/c-as-an-intermediate-language.html
 
+# LAMBDAS
+- http://walfield.org/blog/2010/08/25/lambdas-in-c.html
+
 # OWNERSHIP & BORROWING
 
 - http://blog.piston.rs/2016/01/23/dynamo/
