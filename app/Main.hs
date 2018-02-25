@@ -72,6 +72,7 @@ main = do args <- SystemEnvironment.getArgs
             BuildAndRun -> do _ <- executeString True context' ":bx" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
+            Check -> do return ()
 
 -- | Options for how to run the compiler.
 data OtherOptions = NoCore | LogMemory | Optimize deriving (Show, Eq)
@@ -85,6 +86,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
           case arg of
             "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
             "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
+            "--check" -> parseArgsInternal filesToLoad Check otherOptions restArgs
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
