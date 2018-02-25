@@ -419,6 +419,7 @@ catcher ctx exception =
             Repl -> return ctx
             Build -> exitWith (ExitFailure returnCode)
             BuildAndRun -> exitWith (ExitFailure returnCode)
+            Check -> exitWith ExitSuccess
 
 -- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Context -> XObj -> IO Context

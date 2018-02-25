@@ -50,7 +50,8 @@
 ## Tooling
 * [0.3] Enable memory balance checks for all tests.
 
-* [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting)
+* [0.4] Make the --check compiler flag report all errors (don't stop on first) in a machine friendly way (one message / line).
+* [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting).
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
 * [0.4] Show "call stack" when getting an error during concretization.
 
