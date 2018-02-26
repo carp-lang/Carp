@@ -159,6 +159,7 @@ machineReadableErrorStrings err =
       [machineReadableInfoFromXObj xobj ++ " Too many expressions in body position."]
     (NoFormsInBody xobj) ->
       [machineReadableInfoFromXObj xobj ++ " No expressions in body position."]
+
   -- show (CantDisambiguate xobj originalName theType options) =
   --   "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
   --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -173,14 +174,22 @@ machineReadableErrorStrings err =
   --   "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
   --   "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
   --   "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
-  -- show (LeadingColon xobj) =
-  --   "Symbol '" ++ pretty xobj ++ "' starting with colon at " ++ prettyInfoFromXObj xobj ++ "."
+
+    (LeadingColon xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Symbol '" ++ pretty xobj ++ "' starting with a colon (reserved for REPL shortcuts)."]
+
     -- (HolesFound holes) ->
     --   (map (\(name, t) -> machineReadableInfoFromXObj xobj ++ " " ++ name ++ " : " ++ show t) holes)
-  -- show (FailedToExpand xobj (EvalError errorMessage)) =
-  --   "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
+
+    (FailedToExpand xobj (EvalError errorMessage)) ->
+      [machineReadableInfoFromXObj xobj ++ "Failed to expand: " ++ errorMessage]
+
+    -- TODO: Remove overlapping errors:
     (NotAValidType xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
+    (NotAType xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Can't understand the type '" ++ pretty xobj ++ "'."]
+
     (FunctionsCantReturnRefTy xobj t) ->
       [machineReadableInfoFromXObj xobj ++ " Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ "."]
     (LetCantReturnRefTy xobj t) ->
@@ -195,16 +204,17 @@ machineReadableErrorStrings err =
     --   [machineReadableInfoFromXObj xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
     -- (MainCannotHaveArguments c) ->
     --   [machineReadableInfoFromXObj xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
-  -- show (CannotConcretize xobj) =
-  --   "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  -- show (TooManyAnnotateCalls xobj) =
-  --   "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  -- show (NotAType xobj) =
-  --   "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  -- show (InvalidMemberType msg) =
-  --   msg
+
+    (TooManyAnnotateCalls xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "'."]
+
+  --    (InvalidMemberType msg) ->
+ -- --   msg
+
     (CannotSet xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
+    (CannotConcretize xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Unable to concretize '" ++ pretty xobj ++ "'."]
     _ ->
       [show err]
 
