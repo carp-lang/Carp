@@ -153,8 +153,8 @@ machineReadableErrorStrings err =
       [machineReadableInfoFromXObj xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
   -- show (NotAFunction xobj) =
   --   "Trying to call non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
-  -- show (NoStatementsInDo xobj) =
-  --   "The do-statement has no expressions inside of it at " ++ prettyInfoFromXObj xobj ++ "."
+    (NoStatementsInDo xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " The do-statement has no expressions inside of it."]
   -- show (TooManyFormsInBody xobj) =
   --   "Too many expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
   -- show (NoFormsInBody xobj) =
@@ -175,8 +175,8 @@ machineReadableErrorStrings err =
   --   "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   -- show (LeadingColon xobj) =
   --   "Symbol '" ++ pretty xobj ++ "' starting with colon at " ++ prettyInfoFromXObj xobj ++ "."
-  -- show (HolesFound holes) =
-  --   "Holes found:\n\n    " ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++ "\n"
+    -- (HolesFound holes) ->
+    --   (map (\(name, t) -> machineReadableInfoFromXObj xobj ++ " " ++ name ++ " : " ++ show t) holes)
   -- show (FailedToExpand xobj (EvalError errorMessage)) =
   --   "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
   -- show (NotAValidType xobj) =
