@@ -29,6 +29,7 @@ import Commands
 import Expand
 import Lookup
 import Qualify
+import TypeError
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
@@ -339,8 +340,13 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do (result, newCtx) <- runStateT (eval env xobj) ctx
             case result of
               Left e ->
-                do putStrLnWithColor Red (show e)
-                   throw CancelEvaluationException
+                case contextExecMode ctx of
+                  Check ->
+                    do putStrLn (show e)
+                       return ctx
+                  _ ->
+                    do putStrLnWithColor Red (show e)
+                       throw CancelEvaluationException
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
@@ -501,7 +507,11 @@ specialCommandDefine xobj =
              xobjFullSymbols = setFullyQualifiedSymbols typeEnv innerEnv xobjFullPath
          in case annotate typeEnv env xobjFullSymbols of
               Left err ->
-                return (Left (EvalError (show err)))
+                case contextExecMode ctx of
+                  Check ->
+                    return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings err))))
+                  _ ->
+                    return (Left (EvalError (show err)))
               Right annXObjs ->
                 do ctxWithDefs <- liftIO $ foldM define ctxAfterExpansion annXObjs
                    put ctxWithDefs

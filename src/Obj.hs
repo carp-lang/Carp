@@ -103,6 +103,18 @@ prettyInfoFromXObj xobj = case info xobj of
                             Just i -> prettyInfo i
                             Nothing -> "no info"
 
+machineReadableInfo :: Info -> String
+machineReadableInfo i =
+  let line = infoLine i
+      column = infoColumn i + 1
+      file = infoFile i
+  in  file ++ ":" ++ show line ++ ":" ++ show column
+
+machineReadableInfoFromXObj :: XObj -> String
+machineReadableInfoFromXObj xobj = case info xobj of
+                                     Just i -> machineReadableInfo i
+                                     Nothing -> ""
+
 -- TODO: change name of this function
 freshVar :: Info -> String
 freshVar i = "_" ++ show (infoIdentifier i)
@@ -174,7 +186,7 @@ pretty = visit 0
             Chr c -> '\\' : c : ""
             Sym path _ -> show path
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
-            InterfaceSym name -> "(InterfaceSym " ++ name ++ ")"
+            InterfaceSym name -> name
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"

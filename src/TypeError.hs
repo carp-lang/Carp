@@ -70,16 +70,12 @@ instance Show TypeError where
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
     "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
     --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
-    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
+    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj bObj ++ "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
+    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj mappings bObj ++ "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
     -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
-    where showTypeFromXObj :: XObj -> String
-          showTypeFromXObj xobj = case ty xobj of
-                                    Just t -> show (recursiveLookupTy mappings t)
-                                    Nothing -> "Type missing"
   show (CantDisambiguate xobj originalName theType options) =
     "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -128,6 +124,91 @@ instance Show TypeError where
   show (CannotSet xobj) =
     "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
 
+machineReadableErrorStrings :: TypeError -> [String]
+machineReadableErrorStrings err =
+  case err of
+    (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) ->
+      [machineReadableInfoFromXObj aObj ++ " " ++ pretty aObj ++ " : " ++
+       showTypeFromXObj mappings aObj ++ " can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
+      ,machineReadableInfoFromXObj bObj ++ " " ++ pretty bObj ++ " : " ++
+       showTypeFromXObj mappings bObj ++ " can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
+
+  -- show (DefnMissingType xobj) =
+  --   "Function definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
+  -- show (DefMissingType xobj) =
+  --   "Variable definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
+  -- show (ExpressionMissingType xobj)=
+  --   "Expression '" ++ pretty xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ "."
+    (SymbolNotDefined symPath xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
+  -- show (SymbolMissingType xobj env) =
+  -- "Symbol '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ " in env:\n" ++ prettyEnvironment env
+  -- show (InvalidObj Defn xobj) =
+  --   "Invalid function definition at " ++ prettyInfoFromXObj xobj ++ "."
+  -- show (InvalidObj If xobj) =
+  --   "Invalid if-statement at " ++ prettyInfoFromXObj xobj ++ "."
+  -- show (InvalidObj o xobj) =
+  --   "Invalid obj '" ++ show o ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    (WrongArgCount xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
+  -- show (NotAFunction xobj) =
+  --   "Trying to call non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    (NoStatementsInDo xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " The do-statement has no expressions inside of it."]
+  -- show (TooManyFormsInBody xobj) =
+  --   "Too many expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+  -- show (NoFormsInBody xobj) =
+  --   "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+  -- show (CantDisambiguate xobj originalName theType options) =
+  --   "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  -- show (CantDisambiguateInterfaceLookup xobj name theType options) =
+  --   "Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  -- show (SeveralExactMatches xobj name theType options) =
+  --   "Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  -- show (NoMatchingSignature xobj originalName theType options) =
+  --   "Can't find matching lookup for symbol '" ++ originalName ++
+  --   "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+  --   "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
+  --   "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+  -- show (LeadingColon xobj) =
+  --   "Symbol '" ++ pretty xobj ++ "' starting with colon at " ++ prettyInfoFromXObj xobj ++ "."
+    -- (HolesFound holes) ->
+    --   (map (\(name, t) -> machineReadableInfoFromXObj xobj ++ " " ++ name ++ " : " ++ show t) holes)
+  -- show (FailedToExpand xobj (EvalError errorMessage)) =
+  --   "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
+  -- show (NotAValidType xobj) =
+  --   "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+  -- show (FunctionsCantReturnRefTy xobj t) =
+  --   "Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+  -- show (LetCantReturnRefTy xobj t) =
+  --   "Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+  -- show (GettingReferenceToUnownedValue xobj) =
+  --   "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
+  --   prettyInfoFromXObj xobj ++ "\n" ++ show xobj
+  -- show (UsingUnownedValue xobj) =
+  --   "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  -- show (ArraysCannotContainRefs xobj) =
+  --   "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  -- show (MainCanOnlyReturnUnitOrInt t) =
+  --   "Main function can only return Int or (), got " ++ show t
+  -- show (MainCannotHaveArguments c) =
+  --   "Main function can not have arguments, got " ++ show c
+  -- show (CannotConcretize xobj) =
+  --   "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  -- show (TooManyAnnotateCalls xobj) =
+  --   "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  -- show (NotAType xobj) =
+  --   "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  -- show (InvalidMemberType msg) =
+  --   msg
+  -- show (CannotSet xobj) =
+  --   "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+    _ ->
+      [show err]
+
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> fromMaybe t (recursiveLookup mappings v)
@@ -137,3 +218,9 @@ recursiveLookupTy mappings t = case t of
                                  (FuncTy argTys retTy) -> FuncTy (map (recursiveLookupTy mappings) argTys)
                                                                  (recursiveLookupTy mappings retTy)
                                  _ -> t
+
+showTypeFromXObj :: TypeMappings -> XObj -> String
+showTypeFromXObj mappings xobj =
+  case ty xobj of
+    Just t -> show (recursiveLookupTy mappings t)
+    Nothing -> "Type missing"
