@@ -30,6 +30,7 @@ maybeSigned = do i <- createInfo
 double :: Parsec.Parsec String ParseState XObj
 double = do (i, num) <- maybeSigned
             _ <- Parsec.char '.'
+            incColumn 1
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
             if num == "-"
