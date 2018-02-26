@@ -96,7 +96,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Do -> error (show (DontVisitObj Do))
             e@(Typ _) -> error (show (DontVisitObj e))
             Mod _ -> error (show CannotEmitModKeyword)
-            External -> error (show CannotEmitExternal)
+            External _ -> error (show CannotEmitExternal)
             ExternalType -> error (show (DontVisitObj ExternalType))
             e@(Command _) -> error (show (DontVisitObj e))
             e@(Deftemplate _) ->  error (show (DontVisitObj e))
@@ -129,6 +129,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         escapeString (x:xs) = x : escapeString xs
 
         visitSymbol :: XObj -> State EmitterState String
+        visitSymbol xobj@(XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ t) =
+          return overrideWithName
         visitSymbol xobj@(XObj (Sym path _) _ t) =
           let Just t' = t
           in if isTypeGeneric t'
@@ -323,7 +325,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               return ""
 
             -- External
-            XObj External _ _ : _ ->
+            XObj (External _) _ _ : _ ->
               return ""
 
             -- Macro
@@ -477,7 +479,7 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       defaliasToDeclaration aliasTy path
     [XObj (Interface _ _) _ _, _] ->
       ""
-    XObj External _ _ : _ ->
+    XObj (External _) _ _ : _ ->
       ""
     XObj ExternalType _ _ : _ ->
       ""
@@ -501,7 +503,7 @@ binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =
   let xobj = binderXObj binder
   in  case xobj of
-        XObj External _ _ -> Right ""
+        XObj (External _) _ _ -> Right ""
         XObj ExternalType _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode

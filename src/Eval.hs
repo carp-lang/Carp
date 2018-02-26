@@ -170,7 +170,9 @@ eval env xobj =
           specialCommandDeftype nameXObj rest
 
         [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj] ->
-          specialCommandRegister name typeXObj
+          specialCommandRegister name typeXObj Nothing
+        [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj, XObj (Str overrideName) _ _] ->
+          specialCommandRegister name typeXObj (Just overrideName)
         XObj (Sym (SymPath [] "register") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'register' command: " ++ pretty xobj)))
 
@@ -586,14 +588,14 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
        _ ->
          return (Left (EvalError ("Invalid name for type definition: " ++ pretty nameXObj)))
 
-specialCommandRegister :: String -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandRegister name typeXObj =
+specialCommandRegister :: String -> XObj -> Maybe String -> StateT Context IO (Either EvalError XObj)
+specialCommandRegister name typeXObj overrideName =
   do ctx <- get
      let pathStrings = contextPath ctx
          env = contextGlobalEnv ctx
      case xobjToTy typeXObj of
            Just t -> let path = SymPath pathStrings name
-                         binding = XObj (Lst [XObj External Nothing Nothing,
+                         binding = XObj (Lst [XObj (External overrideName) Nothing Nothing,
                                               XObj (Sym path Symbol) Nothing Nothing])
                                    (info typeXObj) (Just t)
                          env' = envInsertAt env path binding
