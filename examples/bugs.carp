@@ -41,3 +41,9 @@
 
 ;; ;; This crashes the compiler:
 ;; (defn x [a] (the Inthdfdf a))
+
+;; ;; The error message for this is really bad:
+;; (defn f []
+;;   (let [s @"hej"]
+;;     (do (delete s)
+;;         s)))

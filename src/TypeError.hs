@@ -133,32 +133,32 @@ machineReadableErrorStrings err =
       ,machineReadableInfoFromXObj bObj ++ " " ++ pretty bObj ++ " : " ++
        showTypeFromXObj mappings bObj ++ " can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
-  -- show (DefnMissingType xobj) =
-  --   "Function definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
-  -- show (DefMissingType xobj) =
-  --   "Variable definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
-  -- show (ExpressionMissingType xobj)=
-  --   "Expression '" ++ pretty xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ "."
+    (DefnMissingType xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Function definition '" ++ getName xobj ++ "' missing type."]
+    (DefMissingType xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Variable definition '" ++ getName xobj ++ "' missing type."]
+    (ExpressionMissingType xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Expression '" ++ pretty xobj ++ "' missing type."]
     (SymbolNotDefined symPath xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
-  -- show (SymbolMissingType xobj env) =
-  -- "Symbol '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ " in env:\n" ++ prettyEnvironment env
-  -- show (InvalidObj Defn xobj) =
-  --   "Invalid function definition at " ++ prettyInfoFromXObj xobj ++ "."
-  -- show (InvalidObj If xobj) =
-  --   "Invalid if-statement at " ++ prettyInfoFromXObj xobj ++ "."
-  -- show (InvalidObj o xobj) =
-  --   "Invalid obj '" ++ show o ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    (SymbolMissingType xobj env) ->
+      [machineReadableInfoFromXObj xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
+    (InvalidObj Defn xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Invalid function definition."]
+    (InvalidObj If xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Invalid if-statement."]
+    (InvalidObj o xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Invalid obj '" ++ show o ++ "'."]
     (WrongArgCount xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
-  -- show (NotAFunction xobj) =
-  --   "Trying to call non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    (NotAFunction xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Trying to call non-function '" ++ getName xobj ++ "'."]
     (NoStatementsInDo xobj) ->
       [machineReadableInfoFromXObj xobj ++ " The do-statement has no expressions inside of it."]
-  -- show (TooManyFormsInBody xobj) =
-  --   "Too many expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
-  -- show (NoFormsInBody xobj) =
-  --   "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+    (TooManyFormsInBody xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Too many expressions in body position."]
+    (NoFormsInBody xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " No expressions in body position."]
   -- show (CantDisambiguate xobj originalName theType options) =
   --   "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
   --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -179,23 +179,22 @@ machineReadableErrorStrings err =
     --   (map (\(name, t) -> machineReadableInfoFromXObj xobj ++ " " ++ name ++ " : " ++ show t) holes)
   -- show (FailedToExpand xobj (EvalError errorMessage)) =
   --   "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
-  -- show (NotAValidType xobj) =
-  --   "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
-  -- show (FunctionsCantReturnRefTy xobj t) =
-  --   "Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
-  -- show (LetCantReturnRefTy xobj t) =
-  --   "Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
-  -- show (GettingReferenceToUnownedValue xobj) =
-  --   "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
-  --   prettyInfoFromXObj xobj ++ "\n" ++ show xobj
-  -- show (UsingUnownedValue xobj) =
-  --   "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  -- show (ArraysCannotContainRefs xobj) =
-  --   "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  -- show (MainCanOnlyReturnUnitOrInt t) =
-  --   "Main function can only return Int or (), got " ++ show t
-  -- show (MainCannotHaveArguments c) =
-  --   "Main function can not have arguments, got " ++ show c
+    (NotAValidType xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
+    (FunctionsCantReturnRefTy xobj t) ->
+      [machineReadableInfoFromXObj xobj ++ " Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ "."]
+    (LetCantReturnRefTy xobj t) ->
+      [machineReadableInfoFromXObj xobj ++ " Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ "."]
+    (GettingReferenceToUnownedValue xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Referencing a given-away value '" ++ pretty xobj ++ "'."]
+    (UsingUnownedValue xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
+    (ArraysCannotContainRefs xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
+    -- (MainCanOnlyReturnUnitOrInt t) ->
+    --   [machineReadableInfoFromXObj xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
+    -- (MainCannotHaveArguments c) ->
+    --   [machineReadableInfoFromXObj xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
   -- show (CannotConcretize xobj) =
   --   "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   -- show (TooManyAnnotateCalls xobj) =
@@ -204,8 +203,8 @@ machineReadableErrorStrings err =
   --   "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   -- show (InvalidMemberType msg) =
   --   msg
-  -- show (CannotSet xobj) =
-  --   "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+    (CannotSet xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
     _ ->
       [show err]
 
