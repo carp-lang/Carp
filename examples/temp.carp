@@ -9,5 +9,15 @@
 ;; (defn f []
 ;;   (m 1 2 3 4))
 
-(defn main []
-  "hej")
+;;(defmacro m [] (car 1 2 3))
+
+(defmodule A
+  (defn g [] 123))
+
+(defmodule B
+  (defn g [] 456))
+
+(use A)
+(use B)
+
+(defn main [] (the Float (g)))

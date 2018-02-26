@@ -160,20 +160,18 @@ machineReadableErrorStrings err =
     (NoFormsInBody xobj) ->
       [machineReadableInfoFromXObj xobj ++ " No expressions in body position."]
 
-  -- show (CantDisambiguate xobj originalName theType options) =
-  --   "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
-  -- show (CantDisambiguateInterfaceLookup xobj name theType options) =
-  --   "Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
-  -- show (SeveralExactMatches xobj name theType options) =
-  --   "Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-  --   "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
-  -- show (NoMatchingSignature xobj originalName theType options) =
-  --   "Can't find matching lookup for symbol '" ++ originalName ++
-  --   "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-  --   "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
-  --   "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+    (CantDisambiguate xobj originalName theType options) ->
+      [machineReadableInfoFromXObj xobj ++ " Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++
+       "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
+    (CantDisambiguateInterfaceLookup xobj name theType options) ->
+      [machineReadableInfoFromXObj xobj ++ " Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++
+       "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
+    (SeveralExactMatches xobj name theType options) ->
+      [machineReadableInfoFromXObj xobj ++ " Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
+    (NoMatchingSignature xobj originalName theType options) ->
+      [machineReadableInfoFromXObj xobj ++ " Can't find matching lookup for symbol '" ++ originalName ++ "' of type " ++ show theType ++
+       "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
+       "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
 
     (LeadingColon xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Symbol '" ++ pretty xobj ++ "' starting with a colon (reserved for REPL shortcuts)."]
