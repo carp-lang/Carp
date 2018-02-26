@@ -171,7 +171,7 @@ linebreak = do s <- Parsec.getState
                    line = infoLine i
                    identifier = infoIdentifier i
                    file = infoFile i
-                   newInfo = Info (line + 1) 0 file (Set.fromList [])  identifier
+                   newInfo = Info (line + 1) 1 file (Set.fromList [])  identifier
                Parsec.putState (s { parseInfo = newInfo })
                _ <- Parsec.char '\n'
                return ()
@@ -260,7 +260,7 @@ lispSyntax = do padding <- Parsec.many whitespace
                 Parsec.sepBy sexpr whitespaceOrNothing
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
-parse text fileName = let initState = ParseState (Info 1 0 fileName (Set.fromList []) 0)
+parse text fileName = let initState = ParseState (Info 1 1 fileName (Set.fromList []) 0)
                       in  Parsec.runParser lispSyntax initState fileName text
 
 

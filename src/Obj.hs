@@ -106,7 +106,7 @@ prettyInfoFromXObj xobj = case info xobj of
 machineReadableInfo :: Info -> String
 machineReadableInfo i =
   let line = infoLine i
-      column = infoColumn i + 1
+      column = infoColumn i
       file = infoFile i
   in  file ++ ":" ++ show line ++ ":" ++ show column
 

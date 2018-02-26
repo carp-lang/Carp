@@ -10,10 +10,10 @@
 ;;   (m 1 2 3 4))
 
 (defn foo []
-  (+ 30 3.4f))
+  (+ 30.0f 3.4f))
 
 (defn goo []
   (foo))
 
 (defn adsasd []
-  (do 123 1))
+  (do (goo) 1))
