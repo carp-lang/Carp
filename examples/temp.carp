@@ -3,21 +3,14 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
-;; (defmacro m [x y z]
-;;   y)
+(defmacro m [x y z]
+  y)
 
-;; (defn f []
-;;   (m 1 2 3 4))
+(defn f []
+  (m 1 2 3))
 
-;;(defmacro m [] (car 1 2 3))
+(defn g []
+  123)
 
-(defmodule A
-  (defn g [] 123))
-
-(defmodule B
-  (defn g [] 456))
-
-(use A)
-(use B)
-
-(defn main [] (the Float (g)))
+(defn main []
+  (IO.println "hej!"))
