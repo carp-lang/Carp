@@ -5,7 +5,8 @@
 
 See URL `http://github.com/carp-lang/Carp/'."
   :command ("carp" "--check" source)
-  :error-patterns ((error line-start space (message) "\n  At line " line ", column " column " in '" (file-name) "'" line-end))
+  :error-patterns ((error line-start space (message) "\n  At line " line ", column " column " in '" (file-name) "'" line-end)
+                   (error line-start (file-name) ":" line ":" column " " (message) line-end))
   :modes (carp-mode))
 
 (eval-after-load 'flycheck
