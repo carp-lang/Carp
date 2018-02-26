@@ -33,8 +33,8 @@ data TypeError = SymbolMissingType XObj Env
                | GettingReferenceToUnownedValue XObj
                | UsingUnownedValue XObj
                | ArraysCannotContainRefs XObj
-               | MainCanOnlyReturnUnitOrInt Ty
-               | MainCannotHaveArguments Int
+               | MainCanOnlyReturnUnitOrInt XObj Ty
+               | MainCannotHaveArguments XObj Int
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
                | InvalidMemberType String
@@ -109,9 +109,9 @@ instance Show TypeError where
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (ArraysCannotContainRefs xobj) =
     "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  show (MainCanOnlyReturnUnitOrInt t) =
+  show (MainCanOnlyReturnUnitOrInt xobj t) =
     "Main function can only return Int or (), got " ++ show t
-  show (MainCannotHaveArguments c) =
+  show (MainCannotHaveArguments xobj c) =
     "Main function can not have arguments, got " ++ show c
   show (CannotConcretize xobj) =
     "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
@@ -200,10 +200,11 @@ machineReadableErrorStrings err =
       [machineReadableInfoFromXObj xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
     (ArraysCannotContainRefs xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
-    -- (MainCanOnlyReturnUnitOrInt t) ->
-    --   [machineReadableInfoFromXObj xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
-    -- (MainCannotHaveArguments c) ->
-    --   [machineReadableInfoFromXObj xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
+
+    (MainCanOnlyReturnUnitOrInt xobj t) ->
+      [machineReadableInfoFromXObj xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
+    (MainCannotHaveArguments xobj c) ->
+      [machineReadableInfoFromXObj xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
 
     (TooManyAnnotateCalls xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "'."]

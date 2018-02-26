@@ -9,6 +9,5 @@
 ;; (defn f []
 ;;   (m 1 2 3 4))
 
-(defn f []
-  (let [:x 123]
-    :x))
+(defn main []
+  "hej")

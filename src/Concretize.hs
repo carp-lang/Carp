@@ -48,12 +48,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
-      then return $ Left (MainCannotHaveArguments (length argsArr))
+      then return $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
       else do visitedBody <- visit False env body -- allowAmbig == 'False'
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if t /= UnitTy && t /= IntTy
-                          then Left (MainCanOnlyReturnUnitOrInt t)
+                          then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                           else return [defn, nameSymbol, args, okBody]
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
