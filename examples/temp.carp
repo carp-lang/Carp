@@ -13,4 +13,6 @@
   123)
 
 (defn main []
-  (IO.println "hej!"))
+  (do
+    (IO.println "hej!")
+    1.0))
