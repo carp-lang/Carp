@@ -56,9 +56,8 @@ parseHeaderFile path src prefix kebab =
                                stars2 <- stars
                                name <- Parsec.many1 identifierChar
                                Parsec.many spaceOrTab
-                               Parsec.char '('
-                               argTypeStrings <- Parsec.sepBy arg (Parsec.char ',')
-                               Parsec.char ')'
+                               argTypeStrings <- Parsec.try voidArg <|>
+                                                 argList
                                Parsec.many spaceOrTab
                                Parsec.char ';'
                                Parsec.many spaceOrTab
@@ -74,6 +73,16 @@ parseHeaderFile path src prefix kebab =
                                                   then []
                                                   else [(XObj (Str emitName) Nothing Nothing)]
                                                  )) Nothing Nothing]
+
+        voidArg :: Parsec.Parsec String () [(String, Int)]
+        voidArg = do _ <- Parsec.string "(void)"
+                     return []
+
+        argList :: Parsec.Parsec String () [(String, Int)]
+        argList = do Parsec.char '('
+                     args <- Parsec.sepBy arg (Parsec.char ',')
+                     Parsec.char ')'
+                     return args
 
         arg :: Parsec.Parsec String () (String, Int)
         arg = do Parsec.many spaceOrTab

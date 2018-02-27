@@ -19,3 +19,7 @@ char *blah(int *x, float* y);
 vector2 *more(vector3* in);
 
 GLFWAPI GLFWwindow* glfwCreateWindow(int width, int height, const char* title, GLFWmonitor* monitor, GLFWwindow* share);
+
+
+// TODO:
+GLFWAPI void glfwPollEvents(void);

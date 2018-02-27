@@ -1,0 +1,12 @@
+(load "GLFW.carp")
+(use GLFW)
+
+(defn-do main []
+  (let-do [_ (init)
+           window (create-window 400 300 (String.cstr "GLFW <3 CARP") NULL NULL)]
+    (make-context-current window)
+    (while (= 0 (window-should-close window))
+      (do
+        (swap-buffers window)
+        (poll-events))))
+  0)
