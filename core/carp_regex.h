@@ -22,13 +22,6 @@
 #define MAXSIZE (sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
 
 
-/*
-** {======================================================
-** PATTERN MATCHING
-** =======================================================
-*/
-
-
 #define CAP_UNFINISHED (-1)
 #define CAP_NONE (-2)
 
@@ -45,7 +38,7 @@ typedef struct MatchState {
 } MatchState;
 
 /* recursive function */
-static string match (MatchState *ms, string s, string p);
+string match(MatchState *ms, string s, string p);
 
 /* maximum recursion depth for 'match' */
 #if !defined(MAXCCALLS)
@@ -63,7 +56,7 @@ int carp_regerror(const char* fmt, ...) {
   return -1;
 }
 
-static int check_capture(MatchState *ms, int l) {
+int check_capture(MatchState *ms, int l) {
   l -= '1';
   if (l < 0 || l >= ms->level || ms->capture[l].len == CAP_UNFINISHED) {
     return carp_regerror("invalid capture index %c%d", C_ESC, l + 1);
@@ -71,7 +64,7 @@ static int check_capture(MatchState *ms, int l) {
   return l;
 }
 
-static int capture_to_close(MatchState *ms) {
+int capture_to_close(MatchState *ms) {
   int level = ms->level;
   for (level--; level>=0; level--) {
     if (ms->capture[level].len == CAP_UNFINISHED) return level;
@@ -79,7 +72,7 @@ static int capture_to_close(MatchState *ms) {
   return carp_regerror("invalid pattern capture");
 }
 
-static string classend(MatchState *ms, string p) {
+string classend(MatchState *ms, string p) {
   switch (*p++) {
     case C_ESC: {
       if (p == ms->p_end) carp_regerror("malformed pattern (ends with '%c')", C_ESC);
@@ -99,7 +92,7 @@ static string classend(MatchState *ms, string p) {
   }
 }
 
-static int match_class(int c, int cl) {
+int match_class(int c, int cl) {
   int res;
   switch (tolower(cl)) {
     case 'a' : res = isalpha(c); break;
@@ -117,7 +110,7 @@ static int match_class(int c, int cl) {
   return (islower(cl) ? res : !res);
 }
 
-static int matchbracketclass(int c, string p, string ec) {
+int matchbracketclass(int c, string p, string ec) {
   int sig = 1;
   if (*(p+1) == '^') {
     sig = 0;
@@ -137,7 +130,7 @@ static int matchbracketclass(int c, string p, string ec) {
   return !sig;
 }
 
-static int singlematch(MatchState *ms, string s, string p,
+int singlematch(MatchState *ms, string s, string p,
                        string ep) {
   if (s >= ms->src_end) {
     return 0;
@@ -152,7 +145,7 @@ static int singlematch(MatchState *ms, string s, string p,
   }
 }
 
-static string matchbalance(MatchState *ms, string s, string p) {
+string matchbalance(MatchState *ms, string s, string p) {
   if (p >= ms->p_end - 1) carp_regerror("malformed pattern (missing arguments to '%cb')", C_ESC);
   if (*s != *p) {
     return NULL;
@@ -172,7 +165,7 @@ static string matchbalance(MatchState *ms, string s, string p) {
   return NULL;  /* string ends out of balance */
 }
 
-static string max_expand(MatchState *ms, string s, string p,
+string max_expand(MatchState *ms, string s, string p,
                               string ep) {
   ptrdiff_t i = 0;  /* counts maximum expand for item */
   while (singlematch(ms, s + i, p, ep)) i++;
@@ -185,7 +178,7 @@ static string max_expand(MatchState *ms, string s, string p,
   return NULL;
 }
 
-static string min_expand(MatchState *ms, string s, string p,
+string min_expand(MatchState *ms, string s, string p,
                               string ep) {
   for (;;) {
     string res = match(ms, s, ep+1);
@@ -195,8 +188,7 @@ static string min_expand(MatchState *ms, string s, string p,
   }
 }
 
-
-static string start_capture(MatchState *ms, string s, string p,
+string start_capture(MatchState *ms, string s, string p,
                                  int what) {
   string res;
   int level = ms->level;
@@ -208,8 +200,7 @@ static string start_capture(MatchState *ms, string s, string p,
   return res;
 }
 
-
-static string end_capture(MatchState *ms, string s, string p) {
+string end_capture(MatchState *ms, string s, string p) {
   int l = capture_to_close(ms);
   string res;
   ms->capture[l].len = s - ms->capture[l].init;  /* close capture */
@@ -217,8 +208,7 @@ static string end_capture(MatchState *ms, string s, string p) {
   return res;
 }
 
-
-static string match_capture (MatchState *ms, string s, int l) {
+string match_capture (MatchState *ms, string s, int l) {
   size_t len;
   l = check_capture(ms, l);
   len = ms->capture[l].len;
@@ -228,8 +218,7 @@ static string match_capture (MatchState *ms, string s, int l) {
   return NULL;
 }
 
-
-static string match(MatchState *ms, string s, string p) {
+string match(MatchState *ms, string s, string p) {
   if (ms->matchdepth-- == 0) carp_regerror("pattern too complex");
   init: /* using goto's to optimize tail recursion */
   if (p != ms->p_end) {  /* end of pattern? */
@@ -326,7 +315,7 @@ static string match(MatchState *ms, string s, string p) {
   return s;
 }
 
-static string lmemfind(string s1, size_t l1, string s2,
+string lmemfind(string s1, size_t l1, string s2,
                             size_t l2) {
   if (l2 == 0) return s1;  /* empty strings are everywhere */
   if (l2 > l1) return NULL;  /* avoids a negative 'l1' */
@@ -346,13 +335,13 @@ static string lmemfind(string s1, size_t l1, string s2,
 }
 
 string String_copy_len(string s, int len) {
-    string ptr = CARP_MALLOC(len);
+    string ptr = CARP_MALLOC(len+1);
 
-    if (ptr == NULL) {
-      return NULL;
-    }
+    if (!ptr) return NULL;
 
-    return (string) memcpy(ptr, s, len);
+    memcpy(ptr, s, len);
+    ptr[len] = '\0';
+    return ptr;
 }
 
 Array push_string(Array a, string s, int i, int len) {
@@ -385,7 +374,7 @@ Array push_captures(MatchState *ms, string s, string e) {
 }
 
 /* check whether pattern has no special characters */
-static int nospecials(string p, size_t l) {
+int nospecials(string p, size_t l) {
   size_t upto = 0;
   do {
     if (strpbrk(p + upto, SPECIALS)) return 0; /* pattern has a special character */
@@ -394,7 +383,7 @@ static int nospecials(string p, size_t l) {
   return 1; /* no special chars found */
 }
 
-static void prepstate(MatchState *ms, string s, size_t ls, string p,
+void prepstate(MatchState *ms, string s, size_t ls, string p,
                       size_t lp) {
   ms->matchdepth = MAXCCALLS;
   ms->src_init = s;
@@ -402,12 +391,14 @@ static void prepstate(MatchState *ms, string s, size_t ls, string p,
   ms->p_end = p + lp;
 }
 
-static void reprepstate(MatchState *ms) {
+void reprepstate(MatchState *ms) {
   ms->level = 0;
   assert(ms->matchdepth == MAXCCALLS);
 }
 
-static int String_find(string str, string pat) {
+int String_find(string* s, string* p) {
+  string str = *s;
+  string pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   /* explicit request or no special characters? */
@@ -431,8 +422,9 @@ static int String_find(string str, string pat) {
   return -1;
 }
 
-
-Array String_match(string str, string pat) {
+Array String_match(string* s, string* p) {
+  string str = *s;
+  string pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   MatchState ms;
@@ -451,4 +443,128 @@ Array String_match(string str, string pat) {
   a.len = 0;
   a.data = NULL;
   return a;
+}
+
+/* state for 'gmatch' */
+typedef struct GMatchState {
+  string src;  /* current position */
+  string pat;  /* pattern */
+  string lastmatch;  /* end of last match */
+  MatchState ms;  /* match state */
+} GMatchState;
+
+typedef struct GMatchRes {
+  bool valid;
+  Array data;
+} GMatchRes;
+
+
+GMatchRes gmatch_aux(GMatchState* gm) {
+  string src;
+  Array a;
+  for (src = gm->src; src <= gm->ms.src_end; src++) {
+    string e;
+    reprepstate(&gm->ms);
+    if ((e = match(&gm->ms, src, gm->pat)) && e != gm->lastmatch) {
+      gm->src = gm->lastmatch = e;
+      a = push_captures(&gm->ms, src, e);
+      return (GMatchRes){.valid=true, .data=a};
+    }
+  }
+  return (GMatchRes){.valid=false, .data=a};  /* not found */
+}
+
+Array push_back(Array res, Array tmp) {
+  res.len++;
+  res.data = realloc(res.data, res.len*sizeof(Array));
+  ((Array*)res.data)[res.len-1] = tmp;
+  return res;
+}
+
+Array String_global_MINUS_match(string* s, string* p) {
+  string str = *s;
+  string pat = *p;
+  int lstr = strlen(str);
+  int lpat = strlen(pat);
+  GMatchState gm;
+  prepstate(&gm.ms, str, lstr, pat, lpat);
+  gm.src = str; gm.pat = pat; gm.lastmatch = NULL;
+  Array res;
+  res.len = 0;
+  res.data = NULL;
+  GMatchRes tmp = gmatch_aux(&gm);
+  while (tmp.valid) {
+    res = push_back(res, tmp.data);
+    tmp = gmatch_aux(&gm);
+  }
+  return res;
+}
+
+string add_char(string a, char b) {
+    if (!a) {
+      string buffer = CARP_MALLOC(2);
+      snprintf(buffer, 2, "%c", b);
+      return buffer;
+    }
+
+    int len = strlen(a) + 2;
+    string buffer = CARP_MALLOC(len);
+    snprintf(buffer, len, "%s%c", a, b);
+    CARP_FREE(a);
+    return buffer;
+}
+
+string add_value(MatchState *ms, string res, string src, string e, string tr) {
+  size_t l, i;
+  l = strlen(tr);
+  for (i = 0; i < l; i++) {
+    if (tr[i] != C_ESC) res = add_char(res, tr[i]);
+    else {
+      i++;  /* skip ESC */
+      if (!isdigit(uchar(tr[i]))) {
+        if (tr[i] != C_ESC) carp_regerror( "invalid use of '%c' in replacement string", C_ESC);
+        res = add_char(res, tr[i]);
+      }
+      else if (tr[i] == '0') res = String_append(res, src);
+      else {
+        Array a = {.len = 0, .data = NULL};
+        push_onecapture(ms, tr[i] - '1', src, e, a);
+        res = String_append(res, ((string*)a.data)[0]);  /* add capture to accumulated result */
+      }
+    }
+  }
+  return res;
+}
+
+string String_substitute(string* s, string *p, string *t, int ns) {
+  string str = *s;
+  string pat = *p;
+  string tr = *t;
+  int lstr = strlen(str);
+  int lpat = strlen(pat);
+  string lastmatch = NULL;  /* end of last match */
+  int anchor = (*pat == '^');
+  string res = NULL;
+  MatchState ms;
+  int n = 0;
+  if (anchor) {
+    pat++; lpat--;  /* skip anchor character */
+  }
+  prepstate(&ms, str, lstr, pat, lpat);
+  while (n < ns || ns == -1) {
+    string e;
+    reprepstate(&ms);  /* (re)prepare state for new match */
+    if ((e = match(&ms, str, pat)) && e != lastmatch) {  /* match? */
+      n++;
+      res = add_value(&ms, res, str, e, tr);  /* add replacement to buffer */
+      str = lastmatch = e;
+    }
+    else if (str < ms.src_end) res = add_char(res, *str++);
+    else break;  /* end of subject */
+    if (anchor) break;
+  }
+  int l = strlen(res)+strlen(str)+1;
+  res = realloc(res, l);
+  snprintf(res, l, "%s%s", res, str);
+  return res;
 }

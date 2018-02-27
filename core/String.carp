@@ -1,4 +1,5 @@
 (system-include "carp_string.h")
+(system-include "carp_regex.h")
 
 (defmodule String
 
@@ -96,6 +97,11 @@
     (= sub &(suffix-string s (- (count s) (count sub)))))
 
   (defn zero [] @"")
+
+  (register find (Fn [&String &String] Int))
+  (register match (Fn [&String &String] (Array String)))
+  (register global-match (Fn [&String &String] (Array (Array String))))
+  (register substitute (Fn [&String &String &String Int] String))
 )
 
 (defmodule StringCopy
