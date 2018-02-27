@@ -298,6 +298,7 @@ replaceGenericTypeSymbols _ xobj = xobj
 -- | Convert a Ty to the s-expression that represents that type.
 -- | TODO: Add more cases and write tests for this.
 tyToXObj :: Ty -> XObj
+tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
 tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
 tyToXObj (RefTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing

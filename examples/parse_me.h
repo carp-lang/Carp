@@ -15,3 +15,5 @@ vector2 middle(vector2 p1, vector2 p2);
 void gah(int *x);
 void dah(int *x, float* y);
 char *blah(int *x, float* y);
+
+vector2 *more(vector3* in);
