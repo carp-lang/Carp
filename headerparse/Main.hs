@@ -32,7 +32,14 @@ parseHeaderFile path src =
         cSyntax = Parsec.sepBy line (Parsec.char '\n')
 
         line :: Parsec.Parsec String () [XObj]
-        line = Parsec.try functionPrototype <|> discarded
+        line = Parsec.try prefixedFunctionPrototype <|>
+               Parsec.try functionPrototype <|>
+               discarded
+
+        prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
+        prefixedFunctionPrototype = do Parsec.many spaceOrTab
+                                       _ <- Parsec.many1 identifierChar
+                                       functionPrototype
 
         functionPrototype :: Parsec.Parsec String () [XObj]
         functionPrototype = do Parsec.many spaceOrTab
