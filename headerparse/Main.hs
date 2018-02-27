@@ -40,25 +40,35 @@ parseHeaderFile path src =
           --Parsec.choice [functionPrototype, discarded]
 
         functionPrototype :: Parsec.Parsec String () [XObj]
-        functionPrototype = do returnTypeString <- Parsec.many1 Parsec.letter
-                               Parsec.char ' '
-                               name <- Parsec.many1 Parsec.letter
+        functionPrototype = do Parsec.many spaceOrTab
+                               returnTypeString <- Parsec.many1 identifierChar
+                               Parsec.many spaceOrTab
+                               name <- Parsec.many1 identifierChar
+                               Parsec.many spaceOrTab
                                Parsec.char '('
                                argTypeStrings <- Parsec.sepBy arg (Parsec.char ',')
                                Parsec.char ')'
+                               Parsec.many spaceOrTab
                                Parsec.char ';'
+                               Parsec.many spaceOrTab
                                return [XObj (Lst [ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
                                                  , (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
                                                  , toTypeXObj argTypeStrings returnTypeString
                                                  ]) Nothing Nothing]
 
         arg :: Parsec.Parsec String () String
-        arg = do Parsec.many (Parsec.char ' ')
-                 argTypeAsString <- Parsec.many1 Parsec.letter
-                 Parsec.many1 (Parsec.char ' ')
-                 _ <- Parsec.many1 Parsec.letter
-                 Parsec.many (Parsec.char ' ')
+        arg = do Parsec.many spaceOrTab
+                 argTypeAsString <- Parsec.many1 identifierChar
+                 Parsec.many1 spaceOrTab
+                 _ <- Parsec.many1 identifierChar
+                 Parsec.many spaceOrTab
                  return argTypeAsString
+
+        identifierChar :: Parsec.Parsec String () Char
+        identifierChar = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.char '_']
+
+        spaceOrTab :: Parsec.Parsec String () Char
+        spaceOrTab = Parsec.choice [Parsec.char ' ', Parsec.char '\t']
 
         discarded :: Parsec.Parsec String () [XObj]
         discarded = do discardedLine <- Parsec.many (Parsec.noneOf "\n")
