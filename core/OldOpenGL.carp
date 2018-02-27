@@ -1,0 +1,12 @@
+(defmodule OpenGL
+  (register clear (λ [Int] ()) "glClear")
+  (register clear-color (λ [Float Float Float Float] ()) "glClearColor")
+  (register color3f (λ [Float Float Float] ()) "glColor3f")
+  (register vertex3f (λ [Float Float Float] ()) "glVertex3f")
+  (register begin (λ [Int] ()) "glBegin")
+  (register end (λ [] ()) "glEnd")
+  (register line-width (λ [Float] ()) "glLineWidth")
+  )
+
+(register GL_COLOR_BUFFER_BIT Int)
+(register GL_LINES Int)
