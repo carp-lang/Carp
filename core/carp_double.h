@@ -1,5 +1,6 @@
-#include <math.h>
 #include <limits.h>
+#include <math.h>
+#include <stdbool.h>
 
 double Double__PLUS_(double x, double y) { return x + y; }
 double Double__MINUS_(double x, double y) { return x - y; }
@@ -113,13 +114,6 @@ double Double_mod(double x, double y) {
     return fmod(x, y);
 }
 
-string Double_str(double x) {
-    int size = snprintf(NULL, 0, "%g", x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%g", x);
-    return buffer;
-}
-
 double Double_random() {
     return rand();
 }
@@ -129,11 +123,3 @@ double Double_random_MINUS_between(double lower, double upper) {
     double r = ((double)(rand() % INT_MAX)) / ((double)INT_MAX);
     return lower + diff * r;
 }
-
-string Double_format(string* s, double x) {
-    int size = snprintf(NULL, 0, *s, x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *s, x);
-    return buffer;
-}
-

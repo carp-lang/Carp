@@ -1,5 +1,6 @@
-#include <math.h>
 #include <limits.h>
+#include <math.h>
+#include <stdbool.h>
 
 float Float__PLUS_(float x, float y) { return x + y; }
 float Float__MINUS_(float x, float y) { return x - y; }
@@ -113,18 +114,3 @@ float Float_floor(float x) {
 float Float_mod(float x, float y) {
     return fmod(x, y);
 }
-
-string Float_str(float x) {
-    int size = snprintf(NULL, 0, "%gf", x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%gf", x);
-    return buffer;
-}
-
-string Float_format(string* str, float x) {
-    int size = snprintf(NULL, 0, *str, x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
-    return buffer;
-}
-

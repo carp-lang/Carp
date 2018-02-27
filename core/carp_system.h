@@ -27,3 +27,11 @@ void System_sleep_MINUS_micros(int t) {
     usleep(t);
 }
 
+int Int_random() {
+    return rand();
+}
+
+int Int_random_MINUS_between(int lower, int upper) {
+    int diff = upper - lower;
+    return lower + (rand() % diff);
+}

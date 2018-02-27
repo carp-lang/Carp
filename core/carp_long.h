@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdbool.h>
 
 long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
@@ -23,10 +24,6 @@ long Long_bit_MINUS_not(long x) { return ~x; }
 
 int Long_copy(long *x) { return *x; }
 
-long Long_from_MINUS_string(string *s) {
-    return atol(*s);
-}
-
 long Long_mod(long x, long divider) {
     return x % divider;
 }
@@ -42,20 +39,6 @@ long Long_random() {
 long Long_random_MINUS_between(long lower, long upper) {
     long diff = upper - lower;
     return lower + (rand() % diff);
-}
-
-string Long_str(long x) {
-    int size = snprintf(NULL, 0, "%ldl", x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%ldl", x);
-    return buffer;
-}
-
-string Long_format(string* str, long x) {
-    int size = snprintf(NULL, 0, *str, x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
-    return buffer;
 }
 
 bool Long_mask(long a, long b) {

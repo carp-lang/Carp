@@ -28,5 +28,6 @@ carp ./examples/guessing.carp -b;
 carp ./examples/ant.carp -b
 carp ./examples/reptile.carp -b
 carp ./examples/game.carp -b;
+carp ./examples/no_core.carp --no-core -b;
 
 echo "ALL TESTS DONE."

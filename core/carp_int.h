@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdbool.h>
 
 int Int__PLUS_(int x, int y)   { return x + y; }
 int Int__MINUS_(int x, int y)  { return x - y; }
@@ -24,39 +25,8 @@ int Int_bit_MINUS_not(int x) { return ~x; }
 
 int Int_copy(int *x) { return *x; }
 
-int Int_from_MINUS_string(string *s) {
-    return atoi(*s);
-}
-
 int Int_mod(int x, int divider) {
     return x % divider;
-}
-
-void Int_seed(int seed) {
-    srand(seed);
-}
-
-int Int_random() {
-    return rand();
-}
-
-int Int_random_MINUS_between(int lower, int upper) {
-    int diff = upper - lower;
-    return lower + (rand() % diff);
-}
-
-string Int_str(int x) {
-    int size = snprintf(NULL, 0, "%d", x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%d", x);
-    return buffer;
-}
-
-string Int_format(string* str, int x) {
-    int size = snprintf(NULL, 0, *str, x)+1;
-    string buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
-    return buffer;
 }
 
 bool Int_mask(int a, int b) {

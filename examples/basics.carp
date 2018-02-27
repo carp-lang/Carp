@@ -207,7 +207,7 @@
       (more-array)
       (macrooo)
       (macrooo2)
-      (seed (System.time))
+      (System.srand (System.time))
       (println (ref (str (ref (repeat 10 flip)))))
       (calling-delete)
       (updating)

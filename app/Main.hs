@@ -45,7 +45,6 @@ main = do args <- SystemEnvironment.getArgs
               projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (if optimize then ["-O3 -D OPTIMIZE"] else []) ++
                                                                   (projectCFlags defaultProject)
-                                                , projectIncludes = if noCore then [] else projectIncludes defaultProject
                                                 }
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))

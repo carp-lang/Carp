@@ -92,3 +92,97 @@ string String_empty() {
     s[0] = '\0';
     return s;
 }
+
+string Bool_str(bool b) {
+    string true_str = "true";
+    string false_str = "false";
+    if(b) {
+        return String_copy(&true_str);
+    } else {
+        return String_copy(&false_str);
+    }
+}
+
+string Bool_format(string* str, bool b) {
+    int size = snprintf(NULL, 0, *str, b)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, b);
+    return buffer;
+}
+
+string Char_str(char c) {
+    string buffer = CARP_MALLOC(3);
+    snprintf(buffer, 3, "\\%c", c);
+    return buffer;
+}
+
+string Char_format(string* str, char b) {
+    int size = snprintf(NULL, 0, *str, b)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, b);
+    return buffer;
+}
+
+string Double_str(double x) {
+    int size = snprintf(NULL, 0, "%g", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%g", x);
+    return buffer;
+}
+
+string Double_format(string* s, double x) {
+    int size = snprintf(NULL, 0, *s, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *s, x);
+    return buffer;
+}
+
+string Float_str(float x) {
+    int size = snprintf(NULL, 0, "%gf", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%gf", x);
+    return buffer;
+}
+
+string Float_format(string* str, float x) {
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
+    return buffer;
+}
+
+string Int_str(int x) {
+    int size = snprintf(NULL, 0, "%d", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%d", x);
+    return buffer;
+}
+
+string Int_format(string* str, int x) {
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
+    return buffer;
+}
+
+int Int_from_MINUS_string(string *s) {
+    return atoi(*s);
+}
+
+string Long_str(long x) {
+    int size = snprintf(NULL, 0, "%ldl", x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%ldl", x);
+    return buffer;
+}
+
+string Long_format(string* str, long x) {
+    int size = snprintf(NULL, 0, *str, x)+1;
+    string buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
+    return buffer;
+}
+
+long Long_from_MINUS_string(string *s) {
+    return atol(*s);
+}

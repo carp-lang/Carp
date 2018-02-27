@@ -1,0 +1,6 @@
+; this compiles without needing the core libraries (--no-core flag)
+
+(load "Int.carp")
+
+(defn main []
+  (Int.+ 1 2))

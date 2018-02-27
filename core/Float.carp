@@ -9,11 +9,7 @@
   (register / (Fn [Float Float] Float))
   (register to-int (Fn [Float] Int))
   (register from-int (Fn [Int] Float))
-  (register random (λ [] Float))
-  (register random-between (λ [Float Float] Float))
-  (register str (Fn [Float] String))
   (register copy (Fn [(Ref Float)] Float))
-  (register format (Fn [&String Float] String))
 
   (register = (Fn [Float Float] Bool))
   (defn /= [x y]
@@ -51,7 +47,6 @@
   (register modf (Fn [Float (Ref Float)] Float))
   (register pow (Fn [Float Float] Float))
   (register sqrt (Fn [Float] Float))
-  (register str (Fn [Float] String))
   (register floor (Fn [Float] Float))
   (register ceil (Fn [Float] Float))
   (register mod (Fn [Float Float] Float))
