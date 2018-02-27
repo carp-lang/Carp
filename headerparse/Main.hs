@@ -4,9 +4,6 @@
 module Main where
 
 import System.Console.CmdArgs
-import System.IO (readFile, hGetContents)
-import System.IO.Unsafe (unsafePerformIO)
-import System.Process
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Data.Char (toLower, isUpper)
