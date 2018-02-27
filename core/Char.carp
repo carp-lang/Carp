@@ -1,16 +1,10 @@
+(system-include "carp_char.h")
+
 (defmodule Char
   (register = (Fn [Char Char] Bool))
-  (register str (Fn [Char] String))
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
-  (register format (Fn [&String Char] String))
-
-  (defn random []
-    (from-int (Int.random)))
-
-  (defn random-between [a b]
-    (from-int (Int.random-between (to-int a) (to-int b))))
 
   (defn meaning [char-ref]
     (cond

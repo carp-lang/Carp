@@ -1,3 +1,5 @@
+(system-include "carp_string.h")
+
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
@@ -78,9 +80,6 @@
   (defn empty? [s]
     (Int.= (count s) 0))
 
-  (defn random-sized [n]
-    (from-chars (Array.repeat n Char.random)))
-
   (defn substring [s a b]
     (from-chars (Array.subarray &(chars s) a b)))
 
@@ -115,7 +114,38 @@
 (defmacro string-join [:rest strs]
   (string-join- strs))
 
-;; These functions require String.delete to be registered.
+(defmodule Bool
+  (register str (Fn [Bool] String))
+  (register format (Fn [&String Bool] String))
+)
+
+(defmodule Int
+  (register str (Fn [Int] String))
+  (register format (Fn [&String Int] String))
+  (register from-string (λ [&String] Int))
+)
+
+(defmodule Float
+  (register str (Fn [Float] String))
+  (register format (Fn [&String Float] String))
+)
+
+(defmodule Long
+  (register str (Fn [Long] String))
+  (register format (Fn [&String Long] String))
+  (register from-string (λ [&String] Long))
+)
+
+(defmodule Double
+  (register str (Fn [Double] String))
+  (register format (Fn [&String Double] String))
+)
+
+(defmodule Char
+  (register str (Fn [Char] String))
+  (register format (Fn [&String Char] String))
+)
+
 (defmodule Int (defn prn [x] (Int.str x)))
 (defmodule Long (defn prn [x] (Long.str x)))
 (defmodule Float (defn prn [x] (Float.str x)))
