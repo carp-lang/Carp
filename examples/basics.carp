@@ -153,7 +153,7 @@
   (Float.random-between 10.0f 20.0f))
 
 (defn print-random-floats []
-  (do (System.srand (System.time))
+  (do (System.seed-random (System.time))
       (let [rands (Array.repeat 10 random-float)]
         (println (ref (Array.str &rands))))))
 
@@ -207,7 +207,7 @@
       (more-array)
       (macrooo)
       (macrooo2)
-      (System.srand (System.time))
+      (System.seed-random (System.time))
       (println (ref (str (ref (repeat 10 flip)))))
       (calling-delete)
       (updating)

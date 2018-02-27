@@ -15,7 +15,7 @@ int System_time() {
     return time(0);
 }
 
-void System_srand(int x) {
+void System_seed_MINUS_random(int x) {
     srand(x);
 }
 
