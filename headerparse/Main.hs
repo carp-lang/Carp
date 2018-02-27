@@ -68,6 +68,8 @@ parseHeaderFile path src sedCommand =
 
         arg :: Parsec.Parsec String () (String, Int)
         arg = do Parsec.many spaceOrTab
+                 _ <- Parsec.option "" $ do Parsec.string "const"
+                                            Parsec.many spaceOrTab
                  argTypeAsString <- Parsec.many1 identifierChar
                  stars1 <- stars
                  Parsec.many1 spaceOrTab
