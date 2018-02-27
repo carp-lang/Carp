@@ -4,7 +4,9 @@
 module Main where
 
 import System.Console.CmdArgs
-import System.IO (readFile)
+import System.IO (readFile, hGetContents)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Process
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Util
@@ -12,18 +14,21 @@ import Types
 import Obj
 
 data Args = Args { sourcePath :: String
+                 , sedCommand :: String
                  } deriving (Show, Data, Typeable)
 
-main = do parsedArgs <- cmdArgs (Args { sourcePath = def &= argPos 0 }
+main = do parsedArgs <- cmdArgs (Args { sourcePath = def &= argPos 0
+                                      , sedCommand = def
+                                      }
                                  &= summary "Carp Header Parse 0.0.1")
           let path = sourcePath parsedArgs
           if path /= ""
             then do source <- readFile path
-                    putStrLn (joinWith "\n" (map pretty (parseHeaderFile path source)))
+                    putStrLn (joinWith "\n" (map pretty (parseHeaderFile path source (sedCommand parsedArgs))))
             else print parsedArgs
 
-parseHeaderFile :: FilePath -> String -> [XObj]
-parseHeaderFile path src =
+parseHeaderFile :: FilePath -> String -> String -> [XObj]
+parseHeaderFile path src sedCommand =
   case Parsec.runParser cSyntax () path src of
     Left err -> error (show err)
     Right ok -> concat ok
@@ -55,10 +60,11 @@ parseHeaderFile path src =
                                Parsec.many spaceOrTab
                                Parsec.char ';'
                                Parsec.many spaceOrTab
-                               return [XObj (Lst [ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
-                                                 , (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
-                                                 , toTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
-                                                 ]) Nothing Nothing]
+                               return [XObj (Lst ([ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
+                                                  , (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
+                                                  , toTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
+                                                  ] ++ (optionalSedCommand sedCommand name)
+                                                 )) Nothing Nothing]
 
         arg :: Parsec.Parsec String () (String, Int)
         arg = do Parsec.many spaceOrTab
@@ -101,3 +107,13 @@ cTypeToCarpType ("float", 0) = FloatTy
 cTypeToCarpType ("void", 0) = UnitTy
 cTypeToCarpType (s, 0) = (StructTy s [])
 cTypeToCarpType (x, stars) = (PointerTy (cTypeToCarpType (x, stars - 1)))
+
+optionalSedCommand :: String -> String -> [XObj]
+optionalSedCommand "" _ = []
+optionalSedCommand sedCommand name =
+  let newName = unsafePerformIO $ do (_, Just ho1, _, hp1) <- createProcess (shell ("echo " ++ name ++ " | sed " ++ show sedCommand))
+                                                              {std_out = CreatePipe}
+                                     sOut <- hGetContents ho1
+                                     _ <- waitForProcess hp1
+                                     return sOut
+  in  [(XObj (Str (init newName)) Nothing Nothing)]

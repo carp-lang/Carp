@@ -74,6 +74,7 @@ executable carp-header-parse
                      , directory
                      , cmdargs
                      , parsec
+                     , process
   default-language:    Haskell2010
 
 test-suite CarpHask-test
