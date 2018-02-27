@@ -368,6 +368,7 @@ commandHelp [] =
               putStrLn "--no-core                        - Don't load the core library."
               putStrLn "--log-memory                     - Enables use of memory logging functions in the Debug module."
               putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
+              putStrLn "--check                          - Report all errors found in a machine readable way."
               return dynamicNil
 
 commandHelp args =

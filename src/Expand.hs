@@ -40,7 +40,7 @@ expand eval env xobj =
     expandList (XObj (Lst xobjs) i t) =
       case xobjs of
         [] -> return (Right xobj)
-        XObj External _ _ : _ -> return (Right xobj)
+        XObj (External _) _ _ : _ -> return (Right xobj)
         XObj (Instantiate _) _ _ : _ -> return (Right xobj)
         XObj (Deftemplate _) _ _ : _ -> return (Right xobj)
         XObj (Defalias _) _ _ : _ -> return (Right xobj)
@@ -131,7 +131,7 @@ expand eval env xobj =
     expandSymbol :: XObj -> StateT Context IO (Either a XObj)
     expandSymbol (XObj (Sym path _) _ _) =
       case lookupInEnv path env of
-        Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
