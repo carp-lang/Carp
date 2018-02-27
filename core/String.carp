@@ -114,15 +114,6 @@
 (defmacro string-join [:rest strs]
   (string-join- strs))
 
-;; These functions require String.delete to be registered.
-(defmodule Int (defn prn [x] (Int.str x)))
-(defmodule Long (defn prn [x] (Long.str x)))
-(defmodule Float (defn prn [x] (Float.str x)))
-(defmodule Double (defn prn [x] (Double.str x)))
-(defmodule Bool (defn prn [x] (Bool.str x)))
-(defmodule Char (defn prn [x] (Char.str x)))
-(defmodule Array (defn prn [x] (Array.str x)))
-
 (defmodule Bool
   (register str (Fn [Bool] String))
   (register format (Fn [&String Bool] String))
@@ -154,3 +145,11 @@
   (register str (Fn [Char] String))
   (register format (Fn [&String Char] String))
 )
+
+(defmodule Int (defn prn [x] (Int.str x)))
+(defmodule Long (defn prn [x] (Long.str x)))
+(defmodule Float (defn prn [x] (Float.str x)))
+(defmodule Double (defn prn [x] (Double.str x)))
+(defmodule Bool (defn prn [x] (Bool.str x)))
+(defmodule Char (defn prn [x] (Char.str x)))
+(defmodule Array (defn prn [x] (Array.str x)))

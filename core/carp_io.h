@@ -6,12 +6,14 @@
 void IO_println(string *s) { puts(*s); }
 void IO_print(string *s) { printf("%s", *s); }
 
+#ifndef _WIN32
 string IO_get_MINUS_line() {
     size_t size = 1024;
     string buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
+#endif
 
 string IO_read_MINUS_file(string *filename) {
     string buffer = 0;

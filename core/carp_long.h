@@ -5,9 +5,11 @@ long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
 long Long__MUL_(long x, long y)    { return x * y; }
 long Long__DIV_(long x, long y)    { return x / y; }
+#ifndef _WIN32
 bool Long_safe_MINUS_add(long x, long y, long* res) { return __builtin_saddl_overflow(x, y, res); }
 bool Long_safe_MINUS_sub(long x, long y, long* res) { return __builtin_ssubl_overflow(x, y, res); }
 bool Long_safe_MINUS_mul(long x, long y, long* res) { return __builtin_smull_overflow(x, y, res); }
+#endif
 bool Long__EQ_(long x, long y)     { return x == y; }
 bool Long__LT_(long x, long y)    { return x < y; }
 bool Long__GT_(long x, long y)    { return x > y; }

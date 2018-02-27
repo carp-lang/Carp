@@ -1,11 +1,10 @@
 #include <time.h>
+
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #include <carp_memory.h>
-
-void System_exit(int code) {
-    exit(code);
-}
 
 void System_free(void *p) {
     CARP_FREE(p);
@@ -19,6 +18,7 @@ void System_seed_MINUS_random(int x) {
     srand(x);
 }
 
+#ifndef _WIN32
 void System_sleep_MINUS_seconds(int t) {
     sleep(t);
 }
@@ -26,6 +26,7 @@ void System_sleep_MINUS_seconds(int t) {
 void System_sleep_MINUS_micros(int t) {
     usleep(t);
 }
+#endif
 
 int Int_random() {
     return rand();
