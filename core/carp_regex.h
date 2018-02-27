@@ -445,6 +445,34 @@ Array String_match(string* s, string* p) {
   return a;
 }
 
+string String_match_MINUS_str(string* s, string* p) {
+  string str = *s;
+  string pat = *p;
+  int lstr = strlen(str);
+  int lpat = strlen(pat);
+  MatchState ms;
+  string s1 = str;
+  int anchor = (*pat == '^');
+  if (anchor) {
+    pat++; lpat--;  /* skip anchor character */
+  }
+  prepstate(&ms, str, lstr, pat, lpat);
+  do {
+    string res;
+    reprepstate(&ms);
+    if ((res=match(&ms, s1, pat))) {
+      int start = (s1 - str) + 1;
+      int end = res - str + 1;
+      int len = end - start;
+      res = malloc(len + 1);
+      memcpy(res, str, len);
+      res[len] = '\0';
+      return res;
+    }
+  } while (s1++ < ms.src_end && !anchor);
+  return String_empty();
+}
+
 /* state for 'gmatch' */
 typedef struct GMatchState {
   string src;  /* current position */

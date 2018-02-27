@@ -100,8 +100,10 @@
 
   (register find (Fn [&String &String] Int))
   (register match (Fn [&String &String] (Array String)))
+  (register match-str (Fn [&String &String] String))
   (register global-match (Fn [&String &String] (Array (Array String))))
   (register substitute (Fn [&String &String &String Int] String))
+  (defn matches? [s pat] (/= (find s pat) -1))
 )
 
 (defmodule StringCopy

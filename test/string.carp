@@ -111,9 +111,29 @@
                   "match works as expected if not found"
     )
     (assert-equal test
+                  true
+                  (matches? "banana" "ana")
+                  "matches? works as exptected"
+    )
+    (assert-equal test
+                  true
+                  (matches? "banana" "ano")
+                  "matches? works as exptected II"
+    )
+    (assert-equal test
                   &[@"3" @"4"]
                   (Array.nth &(global-match "1-2 2-3 3-4 4-5" "(\\d)-(\\d)") 2)
                   "global-match works as expected"
+    )
+    (assert-equal test
+                  "1-2"
+                  &(match-str "1-2 2-3 3-4 4-5" "(\\d)-(\\d)")
+                  "match-str works as expected"
+    )
+    (assert-equal test
+                  ""
+                  &(match-str "1-2 2-3 3-4 4-5" "erik")
+                  "match-str works as expected II"
     )
     (assert-equal test
                   "sub 2-3 3-4"
