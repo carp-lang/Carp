@@ -42,7 +42,9 @@ parseHeaderFile path src =
         functionPrototype :: Parsec.Parsec String () [XObj]
         functionPrototype = do Parsec.many spaceOrTab
                                returnTypeString <- Parsec.many1 identifierChar
-                               Parsec.many spaceOrTab
+                               stars1 <- stars
+                               Parsec.many1 spaceOrTab
+                               stars2 <- stars
                                name <- Parsec.many1 identifierChar
                                Parsec.many spaceOrTab
                                Parsec.char '('
@@ -53,16 +55,21 @@ parseHeaderFile path src =
                                Parsec.many spaceOrTab
                                return [XObj (Lst [ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
                                                  , (XObj (Sym (SymPath [] name) Symbol) Nothing Nothing)
-                                                 , toTypeXObj argTypeStrings returnTypeString
+                                                 , toTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
                                                  ]) Nothing Nothing]
 
-        arg :: Parsec.Parsec String () String
+        arg :: Parsec.Parsec String () (String, Int)
         arg = do Parsec.many spaceOrTab
                  argTypeAsString <- Parsec.many1 identifierChar
+                 stars1 <- stars
                  Parsec.many1 spaceOrTab
+                 stars2 <- stars
                  _ <- Parsec.many1 identifierChar
                  Parsec.many spaceOrTab
-                 return argTypeAsString
+                 return (argTypeAsString, length stars1 + length stars2)
+
+        stars :: Parsec.Parsec String () String
+        stars = Parsec.many (Parsec.char '*')
 
         identifierChar :: Parsec.Parsec String () Char
         identifierChar = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.char '_']
@@ -75,19 +82,20 @@ parseHeaderFile path src =
                        return []
                        --return [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
 
-toTypeXObj :: [String] -> String -> XObj
+toTypeXObj :: [(String, Int)] -> (String, Int) -> XObj
 toTypeXObj argTypeStrings returnTypeString =
   (XObj (Lst [ (XObj (Sym (SymPath [] "λ") Symbol) Nothing Nothing)
              , (XObj (Arr (map (tyToXObj . cTypeToCarpType) argTypeStrings)) Nothing Nothing)
              , (XObj (Sym (SymPath [] (show (cTypeToCarpType returnTypeString))) Symbol) Nothing Nothing)
              ]) Nothing Nothing)
 
-cTypeToCarpType :: String -> Ty
-cTypeToCarpType "char" = CharTy
-cTypeToCarpType "int" = IntTy
-cTypeToCarpType "bool" = BoolTy
-cTypeToCarpType "long" = LongTy
-cTypeToCarpType "double" = DoubleTy
-cTypeToCarpType "float" = FloatTy
-cTypeToCarpType "void" = UnitTy
-cTypeToCarpType s = (StructTy s [])
+cTypeToCarpType :: (String, Int) -> Ty
+cTypeToCarpType ("char", 0) = CharTy
+cTypeToCarpType ("int", 0) = IntTy
+cTypeToCarpType ("bool", 0) = BoolTy
+cTypeToCarpType ("long", 0) = LongTy
+cTypeToCarpType ("double", 0) = DoubleTy
+cTypeToCarpType ("float", 0) = FloatTy
+cTypeToCarpType ("void", 0) = UnitTy
+cTypeToCarpType (s, 0) = (StructTy s [])
+cTypeToCarpType (x, stars) = (PointerTy (cTypeToCarpType (x, stars - 1)))

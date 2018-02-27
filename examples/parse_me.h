@@ -13,4 +13,5 @@ vector2 middle(vector2 p1, vector2 p2);
 
 // Pointers are also useful to parse
 void gah(int *x);
-char *blah(int *x, float *y);
+void dah(int *x, float* y);
+char *blah(int *x, float* y);
