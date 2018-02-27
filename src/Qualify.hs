@@ -81,10 +81,13 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
     _ ->
       doesNotBelongToAnInterface
   where
-    createInterfaceSym name = XObj (InterfaceSym name) i t
+    createInterfaceSym name =
+      XObj (InterfaceSym name) i t
     doesNotBelongToAnInterface =
       case multiLookupQualified path env of
           [] -> xobj -- Nothing found, leave the symbol as is
+          [(_, Binder foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
+            XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder foundOne)] ->
             if envIsExternal e
             then XObj (Sym (getPath foundOne) LookupGlobal) i t

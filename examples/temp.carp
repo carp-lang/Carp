@@ -1,16 +1,12 @@
 ;;(Project.config "echo-compiler-cmd" true)
 ;; (load "Debug.carp")
 ;; (Debug.sanitize-addresses)
-;; (Project.config "print-ast" true)
+(Project.config "print-ast" true)
 
-(defmacro m [x y z]
-  y)
-
-(defn f []
-  (m 1 2 3))
-
-(defn g []
-  123)
+(defmodule Foo
+  (register quit (Fn [Int] ()) "exit"))
 
 (defn main []
-  (IO.println "hej!"))
+  (do (IO.println "aaa")
+      (Foo.quit 123)
+      (IO.println "bbb")))
