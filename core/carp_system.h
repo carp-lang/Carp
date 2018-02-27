@@ -1,4 +1,7 @@
-#include <core.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <carp_memory.h>
 
 void System_exit(int code) {
     exit(code);

@@ -1,4 +1,7 @@
-#include <core.h>
+#pragma once
+#include <stdio.h>
+
+#include <carp_string.h>
 
 void IO_println(string *s) { puts(*s); }
 void IO_print(string *s) { printf("%s", *s); }

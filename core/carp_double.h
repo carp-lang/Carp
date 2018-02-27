@@ -1,3 +1,6 @@
+#include <math.h>
+#include <limits.h>
+
 double Double__PLUS_(double x, double y) { return x + y; }
 double Double__MINUS_(double x, double y) { return x - y; }
 double Double__MUL_(double x, double y) { return x * y; }
@@ -27,7 +30,7 @@ double Double_from_MINUS_float(float x) {
 }
 
 double Double_abs(double x) {
-    return fabs(x);
+    return x > 0.0 ? x : -x;
 }
 
 double Double_acos(double x) {

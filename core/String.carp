@@ -1,3 +1,5 @@
+(system-include "carp_string.h")
+
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))

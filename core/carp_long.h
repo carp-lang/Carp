@@ -1,3 +1,5 @@
+#include <math.h>
+
 long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
 long Long__MUL_(long x, long y)    { return x * y; }
@@ -11,7 +13,7 @@ bool Long__GT_(long x, long y)    { return x > y; }
 
 long Long_inc(long x) { return x + 1; }
 long Long_dec(long x) { return x - 1; }
-long Long_abs(long x) { return labs(x); }
+long Long_abs(long x) { return x > 0 ? x : -x; }
 long Long_bit_MINUS_shift_MINUS_left(long x, long y) { return x << y; }
 long Long_bit_MINUS_shift_MINUS_right(long x, long y) { return x >> y; }
 long Long_bit_MINUS_and(long x, long y) { return x & y; }

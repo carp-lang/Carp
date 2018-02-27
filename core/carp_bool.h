@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 // Bool
 bool Bool_copy(bool* b) {
   return *b;
@@ -27,4 +29,3 @@ string Bool_format(string* str, bool b) {
     snprintf(buffer, size, *str, b);
     return buffer;
 }
-

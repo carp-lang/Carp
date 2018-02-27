@@ -1,3 +1,5 @@
+#include <math.h>
+
 int Int__PLUS_(int x, int y)   { return x + y; }
 int Int__MINUS_(int x, int y)  { return x - y; }
 int Int__MUL_(int x, int y)    { return x * y; }
@@ -12,7 +14,7 @@ bool Int__GT_(int x, int y)    { return x > y; }
 
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }
-int Int_abs(int x) { return abs(x); }
+int Int_abs(int x) { return x > 0 ? x : -x; }
 int Int_bit_MINUS_shift_MINUS_left(int x, int y) { return x << y; }
 int Int_bit_MINUS_shift_MINUS_right(int x, int y) { return x >> y; }
 int Int_bit_MINUS_and(int x, int y) { return x & y; }

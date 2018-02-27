@@ -1,3 +1,6 @@
+#include <math.h>
+#include <limits.h>
+
 float Float__PLUS_(float x, float y) { return x + y; }
 float Float__MINUS_(float x, float y) { return x - y; }
 float Float__MUL_(float x, float y) { return x * y; }

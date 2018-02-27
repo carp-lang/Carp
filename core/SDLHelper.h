@@ -1,5 +1,7 @@
-#include <core.h>
 #include <SDL.h>
+
+#include <carp_memory.h>
+#include <core.h>
 
 typedef struct {
     SDL_Window *window;
