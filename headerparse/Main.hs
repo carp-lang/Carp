@@ -31,13 +31,8 @@ parseHeaderFile path src =
         cSyntax :: Parsec.Parsec String () [[XObj]]
         cSyntax = Parsec.sepBy line (Parsec.char '\n')
 
-          -- do _ <- Parsec.many Parsec.anyChar
-          --            return [(XObj (Sym (SymPath [] "foobar") Symbol) Nothing Nothing)]
-
         line :: Parsec.Parsec String () [XObj]
         line = Parsec.try functionPrototype <|> discarded
-
-          --Parsec.choice [functionPrototype, discarded]
 
         functionPrototype :: Parsec.Parsec String () [XObj]
         functionPrototype = do Parsec.many spaceOrTab
