@@ -1,5 +1,5 @@
 (system-include "GLFW/glfw3.h")
-(add-lib "-lglfw3")
+(add-cflag "`pkg-config glfw3 --cflags --libs`")
 (mac-only
  (add-lib "-framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo"))
 
