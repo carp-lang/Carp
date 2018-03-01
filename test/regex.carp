@@ -6,22 +6,22 @@
   (with-test test
     (assert-equal test
                   3
-                  (find #"\\d" "   12")
+                  (find #"\d" "   12")
                   "find works as expected"
     )
     (assert-equal test
                   -1
-                  (find #"\\d" "   ")
+                  (find #"\d" "   ")
                   "find works as expected if not found"
     )
     (assert-equal test
                   &[@"12"]
-                  &(match #"(\\d+)" "   12")
+                  &(match #"(\d+)" "   12")
                   "match works as expected"
     )
     (assert-equal test
                   &[]
-                  &(match #"(\\d+)" "   ")
+                  &(match #"(\d+)" "   ")
                   "match works as expected if not found"
     )
     (assert-equal test
@@ -35,13 +35,24 @@
                   "matches? works as exptected II"
     )
     (assert-equal test
+                  true
+                  (and* (matches? #"\n" "\n") (matches? #"\n" "\r")
+                        (matches? #"\n" "\r\n"))
+                  "matches? works as exptected on newlines special case"
+    )
+    (assert-equal test
+                  true
+                  (matches? #"\t" "\t")
+                  "matches? works as exptected on tabs special case"
+    )
+    (assert-equal test
                   &[@"3" @"4"]
-                  (Array.nth &(global-match #"(\\d)-(\\d)" "1-2 2-3 3-4 4-5") 2)
+                  (Array.nth &(global-match #"(\d)-(\d)" "1-2 2-3 3-4 4-5") 2)
                   "global-match works as expected"
     )
     (assert-equal test
                   "1-2"
-                  &(match-str #"(\\d)-(\\d)" "1-2 2-3 3-4 4-5")
+                  &(match-str #"(\d)-(\d)" "1-2 2-3 3-4 4-5")
                   "match-str works as expected"
     )
     (assert-equal test
@@ -51,12 +62,12 @@
     )
     (assert-equal test
                   "sub 2-3 3-4"
-                  &(substitute #"(\\d)-(\\d)" "1-2 2-3 3-4" "sub" 1)
+                  &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" 1)
                   "substitute works as expected"
     )
     (assert-equal test
                   "sub sub sub"
-                  &(substitute #"(\\d)-(\\d)" "1-2 2-3 3-4" "sub" -1)
+                  &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" -1)
                   "substitute works as expected if all should be replaces"
     )
     (print-test-results test)))

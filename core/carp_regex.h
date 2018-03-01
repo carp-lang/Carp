@@ -259,6 +259,17 @@ string match(MatchState *ms, string s, string p) {
             s = NULL;  /* match failed */
             break;
           }
+          case 'n': { /* newline? */
+            if (*s == '\r') { if (*(++s) == '\n') s++; }
+            else if (*s == '\n') s++;
+            else s = NULL;
+            break;
+          }
+          case 't': { /* tab? */
+            if (*s == '\t') s++;
+            else s = NULL;
+            break;
+          }
           case '0': case '1': case '2': case '3':
           case '4': case '5': case '6': case '7':
           case '8': case '9': {  /* capture results (\0-\9)? */

@@ -84,7 +84,12 @@ regex = do i <- createInfo
            str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
            _ <- Parsec.char '"'
            incColumn (length str + 2)
-           return (XObj (Regex str) i Nothing)
+           return (XObj (Regex $ treat str) i Nothing)
+ -- auto-escaping backslashes
+  where treat :: String -> String
+        treat [] = []
+        treat ('\\':r) = "\\\\" ++ treat r
+        treat (x:r) = x : treat r
 
 escaped :: Parsec.Parsec String ParseState Char
 escaped =  do
