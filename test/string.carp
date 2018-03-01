@@ -91,7 +91,7 @@
                   "starts-with? works as expected"
     )
     (assert-equal test
-                  4
+                  3
                   (find "   12" "\\d")
                   "find works as expected"
     )

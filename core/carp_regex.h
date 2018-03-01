@@ -405,6 +405,7 @@ int String_find(string* s, string* p) {
   if (nospecials(pat, lpat)) {
     /* do a plain search */
     string s2 = lmemfind(str, lstr, pat, lpat);
+    if (!s2) return -1;
     return s2-str;
   }
   MatchState ms;
@@ -417,7 +418,7 @@ int String_find(string* s, string* p) {
   do {
     string res;
     reprepstate(&ms);
-    if ((res=match(&ms, s1, pat))) return s1 - str + 1;
+    if ((res=match(&ms, s1, pat))) return s1 - str;
   } while (s1++ < ms.src_end && !anchor);
   return -1;
 }
@@ -465,7 +466,7 @@ string String_match_MINUS_str(string* s, string* p) {
       int end = res - str + 1;
       int len = end - start;
       res = malloc(len + 1);
-      memcpy(res, str, len);
+      memcpy(res, s1, len);
       res[len] = '\0';
       return res;
     }
