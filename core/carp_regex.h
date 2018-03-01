@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-#include <core.h>
+#include <carp_string.h>
 
 #if !defined(CARP_MAXCAPTURES)
 #define CARP_MAXCAPTURES 16
@@ -396,7 +396,7 @@ void reprepstate(MatchState *ms) {
   assert(ms->matchdepth == MAXCCALLS);
 }
 
-int String_find(string* s, string* p) {
+int Regex_find(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -423,7 +423,7 @@ int String_find(string* s, string* p) {
   return -1;
 }
 
-Array String_match(string* s, string* p) {
+Array Regex_match(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -446,7 +446,7 @@ Array String_match(string* s, string* p) {
   return a;
 }
 
-string String_match_MINUS_str(string* s, string* p) {
+string Regex_match_MINUS_str(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -510,7 +510,7 @@ Array push_back(Array res, Array tmp) {
   return res;
 }
 
-Array String_global_MINUS_match(string* s, string* p) {
+Array Regex_global_MINUS_match(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -565,7 +565,7 @@ string add_value(MatchState *ms, string res, string src, string e, string tr) {
   return res;
 }
 
-string String_substitute(string* s, string *p, string *t, int ns) {
+string Regex_substitute(string* p, string *s, string *t, int ns) {
   string str = *s;
   string pat = *p;
   string tr = *t;

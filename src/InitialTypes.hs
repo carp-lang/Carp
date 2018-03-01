@@ -65,6 +65,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Num t _)          -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
                        (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
+                       (Regex _)          -> return (Right (xobj { ty = Just (RefTy RegexTy) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
                        Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
                        (Lst _)            -> visitList env xobj
