@@ -1,3 +1,9 @@
+/*
+** {======================================================
+** PATTERN MATCHING adapted from lstrlib.c of Lua 5.3.4
+** Copyright (C) 1994-2017 Lua.org, PUC-Rio; see LUA_LICENSE
+** =======================================================
+*/
 #include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
