@@ -1,6 +1,6 @@
 (load "Test.carp")
 
-(use-all Regex Test)
+(use-all Pattern Test)
 
 (defn main []
   (with-test test

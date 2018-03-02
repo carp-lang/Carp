@@ -1,0 +1,10 @@
+(system-include "carp_pattern.h")
+
+(defmodule Pattern
+  (register find (Fn [&Pattern &String] Int))
+  (register match (Fn [&Pattern &String] (Array String)))
+  (register match-str (Fn [&Pattern &String] String))
+  (register global-match (Fn [&Pattern &String] (Array (Array String))))
+  (register substitute (Fn [&Pattern &String &String Int] String))
+  (defn matches? [pat s] (/= (find pat s) -1))
+)

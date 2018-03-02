@@ -26,7 +26,7 @@ data Ty = IntTy
         | FloatTy
         | DoubleTy
         | StringTy
-        | RegexTy
+        | PatternTy
         | CharTy
         | FuncTy [Ty] Ty
         | VarTy String
@@ -53,7 +53,7 @@ instance Show Ty where
   show LongTy                = "Long"
   show BoolTy                = "Bool"
   show StringTy              = "String"
-  show RegexTy               = "Regex"
+  show PatternTy             = "Pattern"
   show CharTy                = "Char"
   show (FuncTy argTys retTy) = "(" ++ fnOrLambda ++ " [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
   show (VarTy t)             = t
@@ -88,7 +88,7 @@ tyToCManglePtr _ FloatTy               = "float"
 tyToCManglePtr _ DoubleTy              = "double"
 tyToCManglePtr _ LongTy                = "long"
 tyToCManglePtr _ StringTy              = "string"
-tyToCManglePtr _ RegexTy               = "string"
+tyToCManglePtr _ PatternTy             = "string"
 tyToCManglePtr _ CharTy                = "char"
 tyToCManglePtr _ UnitTy                = "void"
 tyToCManglePtr _ (VarTy x)             = x

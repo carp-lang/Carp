@@ -413,7 +413,7 @@ void reprepstate(MatchState *ms) {
   assert(ms->matchdepth == MAXCCALLS);
 }
 
-int Regex_find(string* p, string* s) {
+int Pattern_find(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -440,7 +440,7 @@ int Regex_find(string* p, string* s) {
   return -1;
 }
 
-Array Regex_match(string* p, string* s) {
+Array Pattern_match(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -463,7 +463,7 @@ Array Regex_match(string* p, string* s) {
   return a;
 }
 
-string Regex_match_MINUS_str(string* p, string* s) {
+string Pattern_match_MINUS_str(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -527,7 +527,7 @@ Array push_back(Array res, Array tmp) {
   return res;
 }
 
-Array Regex_global_MINUS_match(string* p, string* s) {
+Array Pattern_global_MINUS_match(string* p, string* s) {
   string str = *s;
   string pat = *p;
   int lstr = strlen(str);
@@ -582,7 +582,7 @@ string add_value(MatchState *ms, string res, string src, string e, string tr) {
   return res;
 }
 
-string Regex_substitute(string* p, string *s, string *t, int ns) {
+string Pattern_substitute(string* p, string *s, string *t, int ns) {
   string str = *s;
   string pat = *p;
   string tr = *t;

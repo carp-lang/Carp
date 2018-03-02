@@ -24,7 +24,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 10.0    ;; Double
 true    ;; Bool
 "hello" ;; &String
-\#"hello" ;; &Regex
+\#"hello" ;; &Pattern
 \e      ;; Char
 [1 2 3] ;; (Array Int)
 ```
@@ -38,7 +38,7 @@ Float
 Double
 Bool
 String
-Regex
+Pattern
 Char
 (Array t)
 (Fn [<arg-type1> <arg-type2> ...] <return-type>) ;; Function type
