@@ -482,7 +482,7 @@ string Pattern_match_MINUS_str(string* p, string* s) {
       int start = (s1 - str) + 1;
       int end = res - str + 1;
       int len = end - start;
-      res = malloc(len + 1);
+      res = CARP_MALLOC(len + 1);
       memcpy(res, s1, len);
       res[len] = '\0';
       return res;
@@ -613,4 +613,38 @@ string Pattern_substitute(string* p, string *s, string *t, int ns) {
   res = realloc(res, l);
   snprintf(res, l, "%s%s", res, str);
   return res;
+}
+
+string Pattern_copy(string *p) {
+    size_t len = strlen(*p) + 1;
+    string ptr = CARP_MALLOC(len);
+
+    if (ptr == NULL) {
+      return NULL;
+    }
+
+    return (string) memcpy(ptr, *p, len);
+}
+
+void Pattern_delete(string p) {
+  CARP_FREE(p);
+}
+
+string Pattern_init(string* p) {
+  return Pattern_copy(p);
+}
+
+string Pattern_str(string *p) {
+  return Pattern_copy(p);
+}
+
+string Pattern_prn(string *p) {
+    int n = strlen(*p) + 4;
+    string buffer = CARP_MALLOC(n);
+    snprintf(buffer, n, "#\"%s\"", *p);
+    return buffer;
+}
+
+bool Pattern__EQ_(string *a, string *b) {
+    return strcmp(*a, *b) == 0;
 }

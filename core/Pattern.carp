@@ -7,4 +7,12 @@
   (register global-match (Fn [&Pattern &String] (Array (Array String))))
   (register substitute (Fn [&Pattern &String &String Int] String))
   (defn matches? [pat s] (/= (find pat s) -1))
+
+  (register str (Fn [&Pattern] String))
+  (register prn (Fn [&Pattern] String))
+
+  (register init (Fn [&String] Pattern))
+  (register =    (Fn [&Pattern &Pattern] Bool))
+  (register delete     (Fn [Pattern] ()))
+  (register copy       (Fn [&Pattern] Pattern))
 )

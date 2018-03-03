@@ -5,6 +5,31 @@
 (defn main []
   (with-test test
     (assert-equal test
+                  #"1234"
+                  &(init "1234")
+                  "init works as expected"
+    )
+    (assert-equal test
+                  "1234"
+                  &(str #"1234")
+                  "str works as expected"
+    )
+    (assert-equal test
+                  "#\"1234\""
+                  &(prn #"1234")
+                  "prn works as expected"
+    )
+    (assert-equal test
+                  true
+                  (= #"1234" #"1234")
+                  "= works as expected on equality"
+    )
+    (assert-equal test
+                  false
+                  (= #"1234" #"235")
+                  "= works as expected on non-equality"
+    )
+    (assert-equal test
                   3
                   (find #"\d" "   12")
                   "find works as expected"

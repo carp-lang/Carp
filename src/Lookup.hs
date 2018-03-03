@@ -179,7 +179,8 @@ isManaged typeEnv (StructTy name _) =
          Just (_, Binder (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
          Nothing -> error ("Can't find " ++ name ++ " in type env.")
     )
-isManaged _ StringTy = True
+isManaged _ StringTy  = True
+isManaged _ PatternTy = True
 isManaged _ _ = False
 
 {-# ANN validateMembers "HLint: ignore Eta reduce" #-}
@@ -210,13 +211,14 @@ okXObjForType typeEnv typeVariables xobj =
 canBeUsedAsMemberType :: TypeEnv -> [Ty] -> Ty -> Either String ()
 canBeUsedAsMemberType typeEnv typeVariables t =
   case t of
-    IntTy    -> return ()
-    FloatTy  -> return ()
-    DoubleTy -> return ()
-    LongTy   -> return ()
-    BoolTy   -> return ()
-    StringTy -> return ()
-    CharTy   -> return ()
+    IntTy     -> return ()
+    FloatTy   -> return ()
+    DoubleTy  -> return ()
+    LongTy    -> return ()
+    BoolTy    -> return ()
+    StringTy  -> return ()
+    PatternTy -> return ()
+    CharTy    -> return ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
                           return ()
     StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
