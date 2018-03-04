@@ -26,7 +26,21 @@
   (defdynamic cddaar [pair] (cdr (cdr (car (car pair)))))
   (defdynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
   (defdynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
-  (defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair))))))
+  (defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+
+  (defdynamic eval-internal [form]
+    (list 'do
+          (list 'defn 'main [] (list 'IO.println* form))
+          (list 'build)
+          (list 'run)))
+
+  (defmacro eval [form]
+    (eval-internal form))
+
+  (defmacro e [form]
+    (eval-internal form))
+
+  )
 
 (defdynamic cond-internal [xs]
   (if (= (count xs) 0)
