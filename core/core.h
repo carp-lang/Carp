@@ -6,6 +6,7 @@
 #include <stddef.h>
 
 typedef char* string;
+typedef char* pattern;
 
 // Array
 typedef struct {

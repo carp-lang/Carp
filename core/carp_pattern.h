@@ -417,9 +417,9 @@ void Pattern_internal_reprepstate(PatternMatchState *ms) {
   assert(ms->matchdepth == MAXCCALLS);
 }
 
-int Pattern_find(string* p, string* s) {
+int Pattern_find(pattern* p, string* s) {
   string str = *s;
-  string pat = *p;
+  pattern pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   /* explicit request or no special characters? */
@@ -444,9 +444,9 @@ int Pattern_find(string* p, string* s) {
   return -1;
 }
 
-Array Pattern_match(string* p, string* s) {
+Array Pattern_match(pattern* p, string* s) {
   string str = *s;
-  string pat = *p;
+  pattern pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   PatternMatchState ms;
@@ -469,9 +469,9 @@ Array Pattern_match(string* p, string* s) {
   return a;
 }
 
-string Pattern_match_MINUS_str(string* p, string* s) {
+string Pattern_match_MINUS_str(pattern* p, string* s) {
   string str = *s;
-  string pat = *p;
+  pattern pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   PatternMatchState ms;
@@ -534,9 +534,9 @@ Array Array_push_back(Array res, Array tmp) {
   return res;
 }
 
-Array Pattern_global_MINUS_match(string* p, string* s) {
+Array Pattern_global_MINUS_match(pattern* p, string* s) {
   string str = *s;
-  string pat = *p;
+  pattern pat = *p;
   int lstr = strlen(str);
   int lpat = strlen(pat);
   PatternGMatchState gm;
@@ -592,9 +592,9 @@ string Pattern_internal_add_value(PatternMatchState *ms, string res, string src,
   return res;
 }
 
-string Pattern_substitute(string* p, string *s, string *t, int ns) {
+string Pattern_substitute(pattern* p, string *s, string *t, int ns) {
   string str = *s;
-  string pat = *p;
+  pattern pat = *p;
   string tr = *t;
   int lstr = strlen(str);
   int lpat = strlen(pat);
@@ -625,36 +625,34 @@ string Pattern_substitute(string* p, string *s, string *t, int ns) {
   return res;
 }
 
-string Pattern_copy(string *p) {
+pattern Pattern_copy(pattern *p) {
     size_t len = strlen(*p) + 1;
-    string ptr = CARP_MALLOC(len);
+    pattern ptr = CARP_MALLOC(len);
 
-    if (ptr == NULL) {
-      return NULL;
-    }
+    if (!ptr) return NULL;
 
-    return (string) memcpy(ptr, *p, len);
+    return (pattern) memcpy(ptr, *p, len);
 }
 
-void Pattern_delete(string p) {
+void Pattern_delete(pattern p) {
   CARP_FREE(p);
 }
 
-string Pattern_init(string* p) {
+pattern Pattern_init(string* p) {
   return Pattern_copy(p);
 }
 
-string Pattern_str(string *p) {
+string Pattern_str(pattern *p) {
   return Pattern_copy(p);
 }
 
-string Pattern_prn(string *p) {
+string Pattern_prn(pattern *p) {
     int n = strlen(*p) + 4;
     string buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "#\"%s\"", *p);
     return buffer;
 }
 
-bool Pattern__EQ_(string *a, string *b) {
+bool Pattern__EQ_(pattern *a, pattern *b) {
     return strcmp(*a, *b) == 0;
 }
