@@ -91,3 +91,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+The regular expression implementation as found in src/carp_regex.h are
+Copyright (C) 1994-2017 Lua.org, PUC-Rio under the terms of the MIT license.
+Details can be found in the License file LUA_LICENSE.

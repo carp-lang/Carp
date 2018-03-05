@@ -26,6 +26,7 @@ data Ty = IntTy
         | FloatTy
         | DoubleTy
         | StringTy
+        | PatternTy
         | CharTy
         | FuncTy [Ty] Ty
         | VarTy String
@@ -40,7 +41,7 @@ data Ty = IntTy
         | InterfaceTy
         deriving (Eq, Ord)
 
-fnOrLambda = 
+fnOrLambda =
   case platform of
     Windows -> "Fn"
     _ -> "λ"
@@ -52,6 +53,7 @@ instance Show Ty where
   show LongTy                = "Long"
   show BoolTy                = "Bool"
   show StringTy              = "String"
+  show PatternTy             = "Pattern"
   show CharTy                = "Char"
   show (FuncTy argTys retTy) = "(" ++ fnOrLambda ++ " [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
   show (VarTy t)             = t
@@ -86,6 +88,7 @@ tyToCManglePtr _ FloatTy               = "float"
 tyToCManglePtr _ DoubleTy              = "double"
 tyToCManglePtr _ LongTy                = "long"
 tyToCManglePtr _ StringTy              = "string"
+tyToCManglePtr _ PatternTy             = "pattern"
 tyToCManglePtr _ CharTy                = "char"
 tyToCManglePtr _ UnitTy                = "void"
 tyToCManglePtr _ (VarTy x)             = x

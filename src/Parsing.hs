@@ -77,6 +77,20 @@ string = do i <- createInfo
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
 
+pattern :: Parsec.Parsec String ParseState XObj
+pattern = do i <- createInfo
+             _ <- Parsec.char '#'
+             _ <- Parsec.char '"'
+             str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
+             _ <- Parsec.char '"'
+             incColumn (length str + 2)
+             return (XObj (Pattern $ treat str) i Nothing)
+ -- auto-escaping backslashes
+  where treat :: String -> String
+        treat [] = []
+        treat ('\\':r) = "\\\\" ++ treat r
+        treat (x:r) = x : treat r
+
 escaped :: Parsec.Parsec String ParseState Char
 escaped =  do
     _ <- Parsec.char '\\'
@@ -147,7 +161,7 @@ symbol = do i <- createInfo
               name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
-atom = Parsec.choice [number, string, aChar, symbol]
+atom = Parsec.choice [number, pattern, string, aChar, symbol]
 
 incColumn :: Int -> Parsec.Parsec String ParseState ()
 incColumn x = do s <- Parsec.getState

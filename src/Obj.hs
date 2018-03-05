@@ -22,6 +22,7 @@ data Obj = Sym SymPath SymbolMode
          | InterfaceSym String -- refering to an interface. TODO: rename to InterfaceLookupSym?
          | Num Ty Double
          | Str String
+         | Pattern String
          | Chr Char
          | Bol Bool
          | Lst [XObj]
@@ -187,6 +188,7 @@ pretty = visit 0
             Num DoubleTy num -> show num
             Num _ _ -> error "Invalid number type."
             Str str -> show str
+            Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
             Sym path _ -> show path
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
@@ -417,6 +419,7 @@ xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
 xobjToTy (XObj (Sym (SymPath _ "Double") _) _ _) = Just DoubleTy
 xobjToTy (XObj (Sym (SymPath _ "Long") _) _ _) = Just LongTy
 xobjToTy (XObj (Sym (SymPath _ "String") _) _ _) = Just StringTy
+xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)

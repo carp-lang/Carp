@@ -82,6 +82,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Num _ _ -> error "Can't emit invalid number type."
             Bol b -> return (if b then "true" else "false")
             Str _ -> visitString indent xobj
+            Pattern _ -> visitString indent xobj
             Chr c -> return $ case c of
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
@@ -112,7 +113,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Ref -> error (show (DontVisitObj Ref))
             e@(Interface _ _) -> error (show (DontVisitObj e))
 
-        visitString indent (XObj (Str str) (Just i) _) =
+        visitStr' indent str i =
           -- | This will allocate a new string every time the code runs:
           -- do let var = freshVar i
           --    appendToSrc (addIndent indent ++ "string " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
@@ -123,6 +124,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
              appendToSrc (addIndent indent ++ "static string " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
              appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
+        visitString indent (XObj (Str str) (Just i) _) = visitStr' indent str i
+        visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i
         visitString _ _ = error "Not a string."
         escapeString [] = ""
         escapeString ('\"':xs) = "\\\"" ++ escapeString xs
