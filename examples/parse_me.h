@@ -23,3 +23,11 @@ GLFWAPI GLFWwindow* glfwCreateWindow(int width, int height, const char* title, G
 
 // TODO:
 GLFWAPI void glfwPollEvents(void);
+
+
+
+// C Macros
+
+#define K_BLAH 12345
+#define K_BLAX 0x123
+#define K_GLAH 12345

@@ -41,7 +41,21 @@ parseHeaderFile path src prefix kebab =
         line :: Parsec.Parsec String () [XObj]
         line = Parsec.try prefixedFunctionPrototype <|>
                Parsec.try functionPrototype <|>
+               Parsec.try define <|>
                discarded
+
+        define :: Parsec.Parsec String () [XObj]
+        define = do Parsec.many spaceOrTab
+                    Parsec.string "#define"
+                    Parsec.many spaceOrTab
+                    name <- Parsec.many1 identifierChar
+                    Parsec.many spaceOrTab
+                    number <- Parsec.many1 identifierChar
+                    Parsec.many spaceOrTab
+                    let tyXObj =
+                          --toTypeXObj ("a", 0)
+                          XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+                    return (createRegisterForm name tyXObj prefix kebab)
 
         prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
         prefixedFunctionPrototype = do Parsec.many spaceOrTab
@@ -61,18 +75,8 @@ parseHeaderFile path src prefix kebab =
                                Parsec.many spaceOrTab
                                Parsec.char ';'
                                Parsec.many spaceOrTab
-                               let carpName =
-                                     (if kebab then (toKebab . lowerFirst) else id)
-                                       (if prefix == "" then name else removePrefix prefix name)
-                                   emitName = name
-                               return [XObj (Lst ([ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
-                                                  , (XObj (Sym (SymPath [] carpName) Symbol) Nothing Nothing)
-                                                  , toTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
-                                                  ] ++
-                                                  if prefix == ""
-                                                  then []
-                                                  else [(XObj (Str emitName) Nothing Nothing)]
-                                                 )) Nothing Nothing]
+                               let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
+                               return (createRegisterForm name tyXObj prefix kebab)
 
         voidArg :: Parsec.Parsec String () [(String, Int)]
         voidArg = do _ <- Parsec.string "(void)"
@@ -107,12 +111,30 @@ parseHeaderFile path src prefix kebab =
                        return []
                        --return [(XObj (Str ("DISCARDED: " ++ discardedLine)) Nothing Nothing)]
 
-toTypeXObj :: [(String, Int)] -> (String, Int) -> XObj
-toTypeXObj argTypeStrings returnTypeString =
+createRegisterForm :: String -> XObj -> String -> Bool -> [XObj]
+createRegisterForm name tyXObj prefix kebab =
+  let carpName = (if kebab then (toKebab . lowerFirst) else id)
+                   (if prefix == "" then name else removePrefix prefix name)
+      emitName = name
+  in [XObj (Lst ([ (XObj (Sym (SymPath [] "register") Symbol) Nothing Nothing)
+                 , (XObj (Sym (SymPath [] carpName) Symbol) Nothing Nothing)
+                 , tyXObj
+                 ] ++
+                  if prefix == ""
+                  then []
+                  else [(XObj (Str emitName) Nothing Nothing)]
+                )) Nothing Nothing]
+
+toFnTypeXObj :: [(String, Int)] -> (String, Int) -> XObj
+toFnTypeXObj argTypeStrings returnTypeString =
   (XObj (Lst [ (XObj (Sym (SymPath [] "λ") Symbol) Nothing Nothing)
              , (XObj (Arr (map (tyToXObj . cTypeToCarpType) argTypeStrings)) Nothing Nothing)
              , (XObj (Sym (SymPath [] (show (cTypeToCarpType returnTypeString))) Symbol) Nothing Nothing)
              ]) Nothing Nothing)
+
+toTypeXObj :: (String, Int) -> XObj
+toTypeXObj typeString =
+  (XObj (Sym (SymPath [] (show (cTypeToCarpType typeString))) Symbol) Nothing Nothing)
 
 cTypeToCarpType :: (String, Int) -> Ty
 cTypeToCarpType ("char", 0) = CharTy
