@@ -18,12 +18,7 @@
   (register bit-not (λ [Int] Int))
   (register inc (λ [Int] Int))
   (register dec (λ [Int] Int))
-  (register copy (λ [&Int] Int)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
-
-  (not-on-windows
-    (register safe-add (λ [Int Int (Ref Int)] Bool))
-    (register safe-sub (λ [Int Int (Ref Int)] Bool))
-    (register safe-mul (λ [Int Int (Ref Int)] Bool)))
+  (register copy (λ [&Int] Int))
 
   (register abs (λ [Int] Int))
 

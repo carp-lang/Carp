@@ -1,4 +1,5 @@
 (load "Test.carp")
+(load "SafeInt.carp")
 
 (use-all Bool Int Long Test)
 
