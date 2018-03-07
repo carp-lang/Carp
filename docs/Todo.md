@@ -11,8 +11,6 @@
 * [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 
 ## Big Language Features
-* [0.3] The array should use a more efficient re-allocation scheme, a la http://en.cppreference.com/w/cpp/container/vector
-
 * [0.4] Doc strings.
 * [0.4] Stack allocated Array with an explicit size.
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
