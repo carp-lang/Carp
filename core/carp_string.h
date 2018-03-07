@@ -76,6 +76,7 @@ string String_format(string *str, string *s) {
 Array String_chars(string *s) {
     Array chars;
     chars.len = strlen(*s);
+    chars.capacity = chars.len;
     chars.data = String_copy(s);
     return chars;
 }

@@ -78,10 +78,15 @@ templatePushBack =
       (toTemplate $ unlines
         ["$DECL { "
         ,"    a.len++;"
-        -- ,"    void *pre = a.data;"
-        -- ,"    a.data = CARP_MALLOC(sizeof($a) * a.len);"
-        -- ,"    CARP_FREE(pre);"
-        ,"    a.data = realloc(a.data, sizeof($a) * a.len);"
+        ,"    if(a.len > a.capacity) {"
+        ,"        a.capacity = a.len * 2;"
+        ,"        a.data = realloc(a.data, sizeof($a) * a.capacity);"
+        -- ,"        void *pre = a.data;"
+        -- ,"        a.data = CARP_MALLOC(sizeof($a) * a.capacity);"
+        -- ,"        unsigned long s = sizeof($a) * (a.len - 1);"
+        -- ,"        memmove(a.data, pre, s);"
+        -- ,"        CARP_FREE(pre);"
+        ,"    }"
         ,"    (($a*)a.data)[a.len - 1] = value;"
         ,"    return a;"
         ,"}"
@@ -104,12 +109,12 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                                ["$DECL { "
                                ,"  a.len--;"
                                ,"  " ++ deleteElement "a.len"
-                               ,"  a.data = realloc(a.data, sizeof($a) * a.len);"
-                               ,"  void *pre = a.data;"
-                               ,"  unsigned long s = sizeof($a) * a.len;"
-                               ,"  a.data = CARP_MALLOC(s);"
-                               ,"  memcpy(a.data, pre, s);"
-                               ,"  CARP_FREE(pre);"
+                               -- ,"  a.data = realloc(a.data, sizeof($a) * a.len);"
+                               -- ,"  void *pre = a.data;"
+                               -- ,"  unsigned long s = sizeof($a) * a.len;"
+                               -- ,"  a.data = CARP_MALLOC(s);"
+                               -- ,"  memcpy(a.data, pre, s);"
+                               -- ,"  CARP_FREE(pre);"
                                ,"  return a;"
                                ,"}"
                                ]))
@@ -222,6 +227,7 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t
             (const (toTemplate $ unlines ["$DECL {"
                                          ,"    Array a;"
                                          ,"    a.len = n;"
+                                         ,"    a.capacity = n;"
                                          ,"    a.data = CARP_MALLOC(n*sizeof($t));"
                                          ,"    return a;"
                                          ,"}"]))
@@ -274,7 +280,8 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t
                 [TokDecl, TokC "{\n"] ++
                 [TokC "    Array copy;\n"] ++
                 [TokC "    copy.len = a->len;\n"] ++
-                [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a"), TokC ") * a->len);\n"] ++
+                [TokC "    copy.capacity = a->capacity;\n"] ++
+                [TokC "    copy.data = CARP_MALLOC(sizeof(", TokTy (VarTy "a"), TokC ") * a->capacity);\n"] ++
                 copyTy typeEnv env arrayType ++
                 [TokC "    return copy;\n"] ++
                 [TokC "}\n"])

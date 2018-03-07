@@ -11,6 +11,7 @@ typedef char* pattern;
 // Array
 typedef struct {
     size_t len;
+    size_t capacity;
     void *data;
 } Array;
 

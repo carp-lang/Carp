@@ -383,6 +383,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                  Just (StructTy "Array" [innerTy]) = t
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                           " = { .len = " ++ show len ++ "," ++
+                          "     .capacity = " ++ show len ++ "," ++
                           " .data = CARP_MALLOC(sizeof(" ++ tyToC innerTy ++ ") * " ++ show len ++ ") };\n")
              zipWithM_ (visitArrayElement indent arrayVar innerTy) [0..] xobjs
              return arrayVar
