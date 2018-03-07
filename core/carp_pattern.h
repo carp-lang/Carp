@@ -388,6 +388,7 @@ Array Pattern_internal_push_captures(PatternMatchState *ms, string s, string e) 
   int nlevels = (ms->level == 0 && s) ? 1 : ms->level;
   Array res;
   res.len = nlevels;
+  res.capacity = nlevels;
   res.data = CARP_MALLOC(nlevels*sizeof(string));
   for (i = 0; i < nlevels; i++) Pattern_internal_push_onecapture(ms, i, s, e,
                                                                  res);
@@ -465,6 +466,7 @@ Array Pattern_match(pattern* p, string* s) {
   } while (s1++ < ms.src_end && !anchor);
   Array a;
   a.len = 0;
+  a.capacity = 0;
   a.data = NULL;
   return a;
 }
@@ -544,6 +546,7 @@ Array Pattern_global_MINUS_match(pattern* p, string* s) {
   gm.src = str; gm.pat = pat; gm.lastmatch = NULL;
   Array res;
   res.len = 0;
+  res.capacity = 0;
   res.data = NULL;
   PatternGMatchRes tmp = Pattern_internal_gmatch_aux(&gm);
   while (tmp.valid) {
@@ -583,7 +586,7 @@ string Pattern_internal_add_value(PatternMatchState *ms, string res, string src,
       }
       else if (tr[i] == '0') res = String_append(res, src);
       else {
-        Array a = {.len = 0, .data = NULL};
+        Array a = {.len = 0, .capacity = 0, .data = NULL};
         Pattern_internal_push_onecapture(ms, tr[i] - '1', src, e, a);
         res = String_append(res, ((string*)a.data)[0]);  /* add capture to accumulated result */
       }

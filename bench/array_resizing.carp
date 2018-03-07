@@ -1,6 +1,7 @@
 (load "Bench.carp")
 (use Bench)
 (load "Debug.carp")
+;;(Debug.sanitize-addresses)
 
 (def n 10000)
 
