@@ -8,6 +8,7 @@
 ## Critical Bugs
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 * [0.3] Initilization of globals must happen in correct order.
+* [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 
 ## Big Language Features
 * [0.3] The array should use a more efficient re-allocation scheme, a la http://en.cppreference.com/w/cpp/container/vector
