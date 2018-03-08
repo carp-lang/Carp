@@ -51,11 +51,12 @@ main = do args <- SystemEnvironment.getArgs
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
+              projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
               startingContext = (Context
                                  (startingGlobalEnv noArray)
                                  (TypeEnv startingTypeEnv)
                                   []
-                                  projectWithCarpDir
+                                  projectWithCustomPrompt
                                   ""
                                   execMode)
           context <- loadFiles startingContext coreModulesToLoad
@@ -74,9 +75,14 @@ main = do args <- SystemEnvironment.getArgs
             Check -> do return ()
 
 -- | Options for how to run the compiler.
-data OtherOptions = NoCore | LogMemory | Optimize deriving (Show, Eq)
+data OtherOptions = NoCore
+                  | LogMemory
+                  | Optimize
+                  | SetPrompt String
+                  deriving (Show, Eq)
 
 -- | Parse the arguments sent to the compiler from the terminal.
+-- | TODO: Switch to 'cmdargs' library for parsing these!
 parseArgs :: [String] -> ([FilePath], ExecutionMode, [OtherOptions])
 parseArgs args = parseArgsInternal [] Repl [] args
   where parseArgsInternal filesToLoad execMode otherOptions [] =
@@ -89,4 +95,17 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
+            "--prompt" -> case restArgs of
+                             newPrompt : restRestArgs ->
+                               parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs
+                             _ ->
+                               error "No prompt given after --prompt"
             file -> parseArgsInternal (filesToLoad ++ [file]) execMode otherOptions restArgs
+
+setCustomPromptFromOptions :: Project -> [OtherOptions] -> Project
+setCustomPromptFromOptions project (o:os) =
+  case o of
+    SetPrompt newPrompt -> setCustomPromptFromOptions (project { projectPrompt = newPrompt }) os
+    _ -> setCustomPromptFromOptions project os
+setCustomPromptFromOptions project _ =
+  project
