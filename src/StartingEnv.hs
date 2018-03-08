@@ -140,6 +140,17 @@ dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envMod
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
+-- | A template function for copying deref:ing) anything.
+templateUnsafeDeref :: (String, Binder)
+templateUnsafeDeref = defineTemplate
+  (SymPath [] "unsafe-deref")
+  (FuncTy [RefTy (VarTy "a")] (VarTy "a"))
+  (toTemplate "$a $NAME ($a* ref)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *ref;"
+                        ,"}"])
+  (const [])
+
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -153,6 +164,7 @@ startingGlobalEnv noArray =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
+                                  , templateUnsafeDeref
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]

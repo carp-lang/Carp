@@ -219,6 +219,7 @@ canBeUsedAsMemberType typeEnv typeVariables t =
     StringTy  -> return ()
     PatternTy -> return ()
     CharTy    -> return ()
+    FuncTy _ _ -> return ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
                           return ()
     StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner

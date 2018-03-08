@@ -3,10 +3,17 @@
 ;; (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defmodule Foo
-  (register quit (Fn [Int] ()) "exit"))
+(deftype Enemy [hp Int
+                attack (Fn [Enemy] Enemy)])
+
+(defn fire [e]
+  (Enemy.update-hp e dec))
+
+(defn attack [attacker target]
+  (let [f (unsafe-deref (Enemy.attack attacker))]
+    (f target)))
 
 (defn main []
-  (do (IO.println "aaa")
-      (Foo.quit 123)
-      (IO.println "bbb")))
+  (let [enemy (Enemy.init 100 fire)
+        hero (Enemy.init 100 fire)]
+    (println* &(attack &enemy hero))))
