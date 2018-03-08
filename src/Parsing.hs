@@ -77,15 +77,67 @@ string = do i <- createInfo
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
 
+parseInternalPattern :: Parsec.Parsec String ParseState String
+parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
+                          str <- Parsec.many (Parsec.try patternEscaped <|>
+                                              Parsec.try bracketClass <|>
+                                              Parsec.try capture <|>
+                                              simple)
+                          maybeEnd <- Parsec.optionMaybe (Parsec.char '$')
+                          return $ unwrapMaybe maybeAnchor ++ concat str ++
+                                   unwrapMaybe maybeEnd
+    where unwrapMaybe (Just c) = [c]
+          unwrapMaybe (Nothing) = []
+          simple :: Parsec.Parsec String ParseState String
+          simple = do char <- Parsec.noneOf "^$()[]\\\""
+                      return [char]
+          patternEscaped :: Parsec.Parsec String ParseState String
+          patternEscaped = do
+            _ <- Parsec.char '\\'
+            c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
+                               'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
+                               'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
+                               '^']
+            case c of
+              'b' -> do c1 <- Parsec.noneOf ['"']
+                        c2 <- Parsec.noneOf ['"']
+                        return ['\\', c, c1, c2]
+              'f' -> do str <- bracketClass
+                        return $ '\\' : c : str
+              _   -> return ['\\', c]
+          capture :: Parsec.Parsec String ParseState String
+          capture = do
+            opening <- Parsec.char '('
+            str <- Parsec.many (Parsec.try patternEscaped <|>
+                                Parsec.try bracketClass <|>
+                                simple)
+            closing <- Parsec.char ')'
+            return $ "(" ++ concat str ++ ")"
+          range :: Parsec.Parsec String ParseState String
+          range = do
+            begin <- Parsec.alphaNum
+            _ <- Parsec.char '-'
+            end <- Parsec.alphaNum
+            return [begin, '-', end]
+          bracketClass :: Parsec.Parsec String ParseState String
+          bracketClass = do
+            opening <- Parsec.char '['
+            maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
+            str <- Parsec.many (Parsec.try range <|>
+                                Parsec.many (Parsec.noneOf "-^$()[]\\\""))
+            closing <- Parsec.char ']'
+            return $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
+
+
 pattern :: Parsec.Parsec String ParseState XObj
 pattern = do i <- createInfo
              _ <- Parsec.char '#'
              _ <- Parsec.char '"'
-             str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
+             str <- parseInternalPattern
              _ <- Parsec.char '"'
              incColumn (length str + 2)
              return (XObj (Pattern $ treat str) i Nothing)
- -- auto-escaping backslashes
+  -- auto-escaping backslashes
   where treat :: String -> String
         treat [] = []
         treat ('\\':r) = "\\\\" ++ treat r
