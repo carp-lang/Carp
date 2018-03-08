@@ -134,7 +134,6 @@ pattern = do i <- createInfo
              _ <- Parsec.char '#'
              _ <- Parsec.char '"'
              str <- parseInternalPattern
-             --str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
              _ <- Parsec.char '"'
              incColumn (length str + 2)
              return (XObj (Pattern $ treat str) i Nothing)
