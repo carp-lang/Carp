@@ -16,6 +16,7 @@
 * [0.4] Kind-checking for types (make sure the type variables match, etc).
 * [0.4] Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
 * [0.4] Deps function for templates should return an Either to enable errors when instantiating deps.
+* [0.4] Support functions as members of structs (work begun in 'functions-as-members' branch).
 
 * [1.0] Good hashmap implementation with support for "{}" syntax.
 * [1.0] Tagged unions (also known as "sum types" or "enums")
