@@ -97,7 +97,7 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
                                'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
                                'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
-                               '(', ')', '^']
+                               '(', ')', '^', '"']
             case c of
               'b' -> do c1 <- Parsec.noneOf ['"']
                         c2 <- Parsec.noneOf ['"']
