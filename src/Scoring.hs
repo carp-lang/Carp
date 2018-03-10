@@ -93,7 +93,7 @@ scoreBody :: Env -> XObj -> Int
 scoreBody env root = visit root
   where
     visit xobj =
-      case obj (trace ("visit " ++ show xobj) xobj) of
+      case obj xobj of
         (Lst _) ->
           visitList xobj
         (Arr _) ->
@@ -104,9 +104,14 @@ scoreBody env root = visit root
               let (score, _) = scoreValueBinder env foundBinder
               in  score + 1
             Nothing ->
-              error ("Failed to lookup '" ++ show path ++ "'.")
+              -- error ("Failed to lookup '" ++ show path ++ "'.")
+              0
         _ -> 0
+    visitList (XObj (Lst []) _ _) =
+      0
     visitList (XObj (Lst xobjs) _ _) =
       maximum (map visit xobjs)
-    visitArray (XObj (Lst xobjs) _ _) =
+    visitArray (XObj (Arr []) _ _) =
+      0
+    visitArray (XObj (Arr xobjs) _ _) =
       maximum (map visit xobjs)

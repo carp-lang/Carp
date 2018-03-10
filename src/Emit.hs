@@ -534,7 +534,7 @@ envToC env toCMode =
             -- Globals need to be sorted:
            Globals ->
              mapM (\(score, binder) ->
-                     fmap (\s -> if s == "" then "" else ("\n    // " ++ show binder ++ ", depth " ++ show score ++ "\n") ++ s)
+                     fmap (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
                      (binderToC toCMode binder))
                   (sortGlobalVariableBinders env (map snd binders))
            -- Don't sort:
