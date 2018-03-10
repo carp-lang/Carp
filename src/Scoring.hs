@@ -1,13 +1,16 @@
-module Scoring (scoreBinder) where
+module Scoring (scoreTypeBinder, scoreValueBinder) where
+
+import Debug.Trace
 
 import Types
 import Obj
 import Lookup
 
+-- | Scoring of types.
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
-scoreBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
+scoreTypeBinder :: TypeEnv -> Binder -> (Int, Binder)
+scoreTypeBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
@@ -20,9 +23,9 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) 
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
       (500, b)
-scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
+scoreTypeBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (1000, b)
-scoreBinder _ x = error ("Can't score: " ++ show x)
+scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
@@ -68,3 +71,42 @@ depthOfType typeEnv selfName = visitType
               case map (depthOfType typeEnv name) varTys of
                 [] -> 50
                 xs -> (maximum xs) + 1
+
+
+
+-- | Scoring of value bindings ('def' and 'defn')
+-- | The score is used for sorting the bindings before emitting them.
+-- | A lower score means appearing earlier in the emitted file.
+scoreValueBinder :: Env -> Binder -> (Int, Binder)
+scoreValueBinder env binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+  (0, binder)
+scoreValueBinder env binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+  (scoreBody env body, binder)
+scoreValueBinder env binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+  (scoreBody env body, binder)
+scoreValueBinder _ b@(Binder (XObj (Mod _) _ _)) =
+  (1000, b)
+scoreValueBinder _ binder =
+  (0, binder) -- error ("Can't score " ++ show binder)
+
+scoreBody :: Env -> XObj -> Int
+scoreBody env root = visit root
+  where
+    visit xobj =
+      case obj (trace ("visit " ++ show xobj) xobj) of
+        (Lst _) ->
+          visitList xobj
+        (Arr _) ->
+          visitArray xobj
+        (Sym path LookupGlobal) ->
+          case lookupInEnv path env of
+            Just (_, foundBinder) ->
+              let (score, _) = scoreValueBinder env foundBinder
+              in  score + 1
+            Nothing ->
+              error ("Failed to lookup '" ++ show path ++ "'.")
+        _ -> 0
+    visitList (XObj (Lst xobjs) _ _) =
+      maximum (map visit xobjs)
+    visitArray (XObj (Lst xobjs) _ _) =
+      maximum (map visit xobjs)

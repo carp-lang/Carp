@@ -529,15 +529,23 @@ binderToDeclaration typeEnv binder =
 
 envToC :: Env -> ToCMode -> Either ToCError String
 envToC env toCMode =
-  let binders = map snd (Map.toList (envBindings env))
-  in  do okCodes <- mapM (binderToC toCMode) binders
+  let binders = Map.toList (envBindings env)
+  in  do okCodes <- case toCMode of
+            -- Globals need to be sorted:
+           Globals ->
+             mapM (\(score, binder) ->
+                     fmap (\s -> if s == "" then "" else ("\n    // " ++ show binder ++ ", depth " ++ show score ++ "\n") ++ s)
+                     (binderToC toCMode binder))
+                  (sortGlobalVariableBinders env (map snd binders))
+           -- Don't sort:
+           _       ->
+             mapM (binderToC toCMode . snd) binders
          return (concat okCodes)
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
   let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
   in  do okDecls <- mapM (\(score, binder) ->
-                            -- | Uncomment this line to emit the score of each binding:
                             fmap (\s -> if s == "" then "" else ("\n// Depth " ++ show score ++ "\n") ++ s)
                             (binderToDeclaration typeEnv binder))
                          bindersWithScore
@@ -549,7 +557,11 @@ envToDeclarations typeEnv env =
 sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  sortOn fst (map (scoreBinder typeEnv) binders)
+  sortOn fst (map (scoreTypeBinder typeEnv) binders)
+
+sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
+sortGlobalVariableBinders env binders =
+  sortOn fst (map (scoreValueBinder env) binders)
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols = visit
