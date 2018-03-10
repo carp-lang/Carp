@@ -1,6 +1,7 @@
 module Scoring (scoreTypeBinder, scoreValueBinder) where
 
 import Debug.Trace
+import qualified Data.Set as Set
 
 import Types
 import Obj
@@ -50,7 +51,7 @@ depthOfType typeEnv selfName = visitType
     visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
     visitType (FuncTy argTys retTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      maximum (visitType retTy : map visitType argTys) + 1
+      maximum (visitType retTy : fmap visitType argTys) + 1
     visitType (PointerTy p) = visitType p
     visitType (RefTy r) = visitType r
     visitType _ = 100
@@ -68,7 +69,7 @@ depthOfType typeEnv selfName = visitType
                                          -- their definition in time so we get nothing for those.
                                          -- Instead, let's try the type vars.
       where depthOfVarTys =
-              case map (depthOfType typeEnv name) varTys of
+              case fmap (depthOfType typeEnv name) varTys of
                 [] -> 50
                 xs -> (maximum xs) + 1
 
@@ -77,20 +78,20 @@ depthOfType typeEnv selfName = visitType
 -- | Scoring of value bindings ('def' and 'defn')
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
-scoreValueBinder :: Env -> Binder -> (Int, Binder)
-scoreValueBinder env binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
+scoreValueBinder env _ binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
   (0, binder)
-scoreValueBinder env binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
-  (scoreBody env body, binder)
-scoreValueBinder env binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
-  (scoreBody env body, binder)
-scoreValueBinder _ b@(Binder (XObj (Mod _) _ _)) =
+scoreValueBinder env visited binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+  (scoreBody env visited body, binder)
+scoreValueBinder env visited binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+  (scoreBody env visited body, binder)
+scoreValueBinder _ _ b@(Binder (XObj (Mod _) _ _)) =
   (1000, b)
-scoreValueBinder _ binder =
+scoreValueBinder _ _ binder =
   (0, binder) -- error ("Can't score " ++ show binder)
 
-scoreBody :: Env -> XObj -> Int
-scoreBody env root = visit root
+scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
+scoreBody env visited root = visit root
   where
     visit xobj =
       case obj xobj of
@@ -99,19 +100,21 @@ scoreBody env root = visit root
         (Arr _) ->
           visitArray xobj
         (Sym path LookupGlobal) ->
-          case lookupInEnv path env of
-            Just (_, foundBinder) ->
-              let (score, _) = scoreValueBinder env foundBinder
-              in  score + 1
-            Nothing ->
-              -- error ("Failed to lookup '" ++ show path ++ "'.")
-              0
+          if Set.member path visited
+          then 0
+          else case lookupInEnv path env of
+                 Just (_, foundBinder) ->
+                   let (score, _) = scoreValueBinder env (Set.insert path visited) foundBinder
+                   in  score + 1
+                 Nothing ->
+                   -- error ("Failed to lookup '" ++ show path ++ "'.")
+                   0
         _ -> 0
     visitList (XObj (Lst []) _ _) =
       0
     visitList (XObj (Lst xobjs) _ _) =
-      maximum (map visit xobjs)
+      maximum (fmap visit xobjs)
     visitArray (XObj (Arr []) _ _) =
       0
     visitArray (XObj (Arr xobjs) _ _) =
-      maximum (map visit xobjs)
+      maximum (fmap visit xobjs)

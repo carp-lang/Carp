@@ -11,6 +11,7 @@ import Data.List (intercalate, sortOn)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 import Debug.Trace
 
@@ -561,7 +562,7 @@ sortDeclarationBinders typeEnv binders =
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
 sortGlobalVariableBinders env binders =
-  sortOn fst (map (scoreValueBinder env) binders)
+  sortOn fst (map (scoreValueBinder env Set.empty) binders)
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols = visit
