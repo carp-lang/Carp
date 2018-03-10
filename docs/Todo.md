@@ -33,10 +33,10 @@
 * [0.4] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
 * [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
-* [0.4] Refactor the SDL module.
 * [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
 * [0.4] Split up core into smaller modules.
 
+* [1.0] Macros for generating 'read' functions to read objects back into memory from string representation.
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
 * [1.0] Register could take an optional argument which would be the name you want the function to have in the Carp module, i.e. (register glfwCreateWindow (Fn [] ()) create-window)
@@ -50,7 +50,6 @@
 ## Tooling
 * [0.3] Enable memory balance checks for all tests.
 
-* [0.4] Make the --check compiler flag report all errors (don't stop on first) in a machine friendly way (one message / line).
 * [0.4] Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting).
 * [0.4] Entering the name of a symbol at the REPL prints nothing.
 * [0.4] Show "call stack" when getting an error during concretization.
@@ -59,6 +58,7 @@
 * [1.0] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 * [1.0] Preserve whitespace to allow saving forms back to disk
 * [1.0] Refactorings at the REPL. Rename, extract function, add/remove parameter?
+* [1.0] --watch flag for recompiling when the files in the project change
 
 ## Code generation
 * [1.X] LLVM backend
@@ -69,6 +69,7 @@
 * Threading
 * Glfw
 * OpenGL
+* Move SDL into its own module, implement 'App' in Carp.
 
 ## Documentation
 * [0.4] Document all core functions
