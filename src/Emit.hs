@@ -1,5 +1,6 @@
 module Emit (toC,
              envToC,
+             globalsToC,
              projectIncludesToC,
              envToDeclarations,
              checkForUnresolvedSymbols,
@@ -20,6 +21,7 @@ import Types
 import Util
 import Template
 import Scoring
+import Lookup
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '
@@ -531,16 +533,16 @@ binderToDeclaration typeEnv binder =
 envToC :: Env -> ToCMode -> Either ToCError String
 envToC env toCMode =
   let binders = Map.toList (envBindings env)
-  in  do okCodes <- case toCMode of
-            -- Globals need to be sorted:
-           Globals ->
-             mapM (\(score, binder) ->
-                     fmap (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
-                     (binderToC toCMode binder))
-                  (sortGlobalVariableBinders env (map snd binders))
-           -- Don't sort:
-           _       ->
-             mapM (binderToC toCMode . snd) binders
+  in  do okCodes <- mapM (binderToC toCMode . snd) binders
+         return (concat okCodes)
+
+globalsToC :: Env -> Either ToCError String
+globalsToC globalEnv =
+  let allGlobalBinders = findAllGlobalVariables globalEnv
+  in  do okCodes <- mapM (\(score, binder) ->
+                            fmap (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
+                           (binderToC Globals binder))
+                         (sortGlobalVariableBinders globalEnv allGlobalBinders)
          return (concat okCodes)
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
@@ -561,8 +563,8 @@ sortDeclarationBinders typeEnv binders =
   sortOn fst (map (scoreTypeBinder typeEnv) binders)
 
 sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
-sortGlobalVariableBinders env binders =
-  sortOn fst (map (scoreValueBinder env Set.empty) binders)
+sortGlobalVariableBinders globalEnv binders =
+  sortOn fst (map (scoreValueBinder globalEnv Set.empty) binders)
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols = visit

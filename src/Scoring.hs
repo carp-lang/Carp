@@ -79,19 +79,17 @@ depthOfType typeEnv selfName = visitType
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
-scoreValueBinder env _ binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+scoreValueBinder globalEnv _ binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
   (0, binder)
-scoreValueBinder env visited binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
-  (scoreBody env visited body, binder)
-scoreValueBinder env visited binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
-  (scoreBody env visited body, binder)
-scoreValueBinder _ _ b@(Binder (XObj (Mod _) _ _)) =
-  (1000, b)
+scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+  (scoreBody globalEnv visited body, binder)
+scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+  (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
-  (0, binder) -- error ("Can't score " ++ show binder)
+  (0, binder)
 
 scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
-scoreBody env visited root = visit root
+scoreBody globalEnv visited root = visit root
   where
     visit xobj =
       case obj xobj of
@@ -102,13 +100,12 @@ scoreBody env visited root = visit root
         (Sym path LookupGlobal) ->
           if Set.member path visited
           then 0
-          else case lookupInEnv path env of
+          else case lookupInEnv path globalEnv of
                  Just (_, foundBinder) ->
-                   let (score, _) = scoreValueBinder env (Set.insert path visited) foundBinder
+                   let (score, _) = scoreValueBinder globalEnv (Set.insert path visited) foundBinder
                    in  score + 1
                  Nothing ->
-                   -- error ("Failed to lookup '" ++ show path ++ "'.")
-                   0
+                   error ("Failed to lookup '" ++ show path ++ "'.")
         _ -> 0
     visitList (XObj (Lst []) _ _) =
       0

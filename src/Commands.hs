@@ -164,7 +164,7 @@ commandBuild args =
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                   c <- envToC env Functions
-                  initGlobals <- fmap wrapInInitFunction (envToC env Globals)
+                  initGlobals <- fmap wrapInInitFunction (globalsToC env)
                   return ("//Types:\n" ++ typeDecl ++
                           "\n\n//Declarations:\n" ++ decl ++
                           "\n\n//Init globals:\n" ++ initGlobals ++
