@@ -4,6 +4,7 @@ import Control.Monad
 import qualified System.Environment as SystemEnvironment
 import System.IO (stdout)
 import System.Console.Haskeline (runInputT)
+import System.Directory (doesPathExist, getHomeDirectory)
 
 import ColorText
 import Obj
@@ -60,16 +61,23 @@ main = do args <- SystemEnvironment.getArgs
                                   ""
                                   execMode)
           context <- loadFiles startingContext coreModulesToLoad
-          context' <- loadFiles context argFilesToLoad
+          home <- getHomeDirectory
+          let carpProfile = home ++ "/.carp/profile.carp"
+          hasProfile <- doesPathExist carpProfile
+          context' <- if hasProfile
+                      then loadFiles context [carpProfile]
+                      else do putStrLn ("No '" ++ carpProfile ++ "' found.")
+                              return context
+          finalContext <- loadFiles context' argFilesToLoad
           settings <- readlineSettings
           case execMode of
             Repl -> do putStrLn "Welcome to Carp 0.2.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
-                       runInputT settings (repl context' "")
-            Build -> do _ <- executeString True context' ":b" "Compiler (Build)"
+                       runInputT settings (repl finalContext "")
+            Build -> do _ <- executeString True finalContext ":b" "Compiler (Build)"
                         return ()
-            BuildAndRun -> do _ <- executeString True context' ":bx" "Compiler (Build & Run)"
+            BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
             Check -> do return ()
