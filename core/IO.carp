@@ -4,6 +4,7 @@
   (register println (Fn [(Ref String)] ()))
   (register print (Fn [(Ref String)] ()))
   (register get-line (Fn [] String))
+  (register get-char (Fn [] Char) "getchar")
   (register read-file (Fn [&String] String))
   (register exit (Fn [Int] a))
 )

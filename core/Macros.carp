@@ -215,5 +215,8 @@
 (defmacro println* [:rest forms]
   (list 'IO.println (list 'ref (build-str* forms))))
 
+(defmacro print* [:rest forms]
+  (list 'IO.print (list 'ref (build-str* forms))))
+
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))
