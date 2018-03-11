@@ -118,6 +118,8 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                       return (proj { projectCompiler = compiler })
                      "title" -> do title <- unwrapStringXObj value
                                    return (proj { projectTitle = title })
+                     "output-directory" -> do outDir <- unwrapStringXObj value
+                                              return (proj { projectOutDir = outDir })
                      _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
      case newProj of
        Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
@@ -146,7 +148,7 @@ commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outExe = "\"" ++ outDir ++ projectTitle (contextProj ctx) ++ "\""
+         outExe = "\"" ++ outDir ++ "/" ++ projectTitle (contextProj ctx) ++ "\""
      liftIO $ do handle <- spawnCommand outExe
                  exitCode <- waitForProcess handle
                  case exitCode of
@@ -180,7 +182,7 @@ commandBuild args =
                          includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                          switches = " -g "
                          flags = projectFlags proj ++ includeCorePath ++ switches
-                         outDir = projectOutDir proj
+                         outDir = projectOutDir proj ++ "/"
                          outMain = outDir ++ "main.c"
                          outExe = outDir ++ projectTitle proj
                          outLib = outDir ++ projectTitle proj
