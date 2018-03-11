@@ -1,0 +1,26 @@
+(load "Bench.carp")
+(use Bench)
+(load "Debug.carp")
+(Debug.sanitize-addresses)
+(use Array)
+
+(def n 1000)
+
+
+(defn some-subarray []
+  (let-do [a (replicate n &1)
+           b (subarray &a 0 (/ n 2))]
+    (assert (= (/ n 2) (count &b)))))
+
+(defn perform-bench [new-n]
+  (do
+    (set! n new-n)
+    (println* "\nTaking sub-array of array with count " n)
+    (bench some-subarray)))
+
+(defn main []
+  (do
+    (perform-bench 1000)
+    (perform-bench 10000)
+    (perform-bench 100000)
+    ))

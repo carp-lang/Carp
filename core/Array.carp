@@ -53,7 +53,7 @@
     (let [result []]
       (do
         (for [i start-index end-index]
-          (set! result (push-back @&result @(nth xs i))))
+          (set! result (push-back result @(nth xs i))))
         result)))
 
   (defn prefix-array [xs end-index]

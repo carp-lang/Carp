@@ -17,8 +17,8 @@
 
 (defn perform-bench [new-n]
   (do
-    (println* "\nUpdating array with count " n)
     (set! n new-n)
+    (println* "\nUpdating array with count " n)
     (bench some-updating)))
 
 (defn main []

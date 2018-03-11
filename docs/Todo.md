@@ -34,7 +34,6 @@
 * [0.4] The type error when setting a variable but missing the '&' is confusing: "Can't unify Int with &Int"
 * [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
-* [0.4] Split up core into smaller modules.
 
 * [1.0] Macros for generating 'read' functions to read objects back into memory from string representation.
 * [1.0] A way to assert compiler errors in tests
