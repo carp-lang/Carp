@@ -3,7 +3,7 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
-  (register append     (Fn [String String] String)) ;; TODO: should take a &String as its second argument?
+  (register append     (Fn [String String] String)) ;; TODO: should take &String:s
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
   (register count      (Fn [&String] Int))
@@ -96,6 +96,13 @@
     (= sub &(suffix-string s (- (count s) (count sub)))))
 
   (defn zero [] @"")
+
+  (defn join [strings]
+    (let-do [result @""
+             len (Array.count strings)]
+      (for [i 0 len]
+        (set! result (String.append result @(Array.nth strings i))))
+      result))
 )
 
 (defmodule StringCopy
@@ -111,6 +118,7 @@
     '(String.copy "")
     (list 'String.append (car strs) (string-join- (cdr strs)))))
 
+;; TODO: Remove this function and replace uses with 'str*'
 (defmacro string-join [:rest strs]
   (string-join- strs))
 
