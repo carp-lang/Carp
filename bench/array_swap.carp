@@ -7,7 +7,7 @@
 
 (defn some-swapping []
   (let [b @&a]
-    (ignore (Array.swap &b 0 1))))
+    (ignore (Array.swap b 0 1))))
 
 (defn perform-bench [n]
   (do

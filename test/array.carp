@@ -124,7 +124,7 @@
       )
       (assert-equal test
                     &[1 2]
-                    &(swap &[2 1] 0 1)
+                    &(swap [2 1] 0 1)
                     "swap works as expected"
       )
       (assert-equal test

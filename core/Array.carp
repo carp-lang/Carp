@@ -95,9 +95,9 @@
     (aset! a i (f (nth a i))))
 
   (defn swap [a i j]
-    (let [x @(nth a i)
-          y @(nth a j)]
-      (aset (aset @a i y) j x)))
+    (let [x @(nth &a i)
+          y @(nth &a j)]
+      (aset (aset a i y) j x)))
 
   (defn swap! [a i j]
     (let-do [x @(nth a i)
