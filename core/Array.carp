@@ -89,7 +89,8 @@
       c))
 
   (defn aupdate [a i f]
-    (aset @a i (f (nth a i))))
+    (let [new-value (f (nth &a i))]
+      (aset a i new-value)))
 
   (defn aupdate! [a i f]
     (aset! a i (f (nth a i))))
