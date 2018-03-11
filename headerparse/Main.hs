@@ -55,7 +55,7 @@ parseHeaderFile path src prefix kebab =
                     let tyXObj =
                           --toTypeXObj ("a", 0)
                           XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
-                    return (createRegisterForm name tyXObj prefix kebab)
+                    return (createRegisterForm name tyXObj prefix False) -- OBS! Never kebab
 
         prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
         prefixedFunctionPrototype = do Parsec.many spaceOrTab
