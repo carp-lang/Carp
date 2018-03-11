@@ -54,6 +54,12 @@ eval env xobj =
         [XObj (Sym (SymPath [] "source-location") _) _ _] ->
           return (Right (XObj (Str (prettyInfoFromXObj listXObj)) i t))
 
+        [XObj (Sym (SymPath [] "source-dir") _) _ _] ->
+          let file = case info listXObj of
+                       Just info -> infoFile info
+                       Nothing -> "No file"
+          in  return (Right (XObj (Str (file)) i t))
+
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
              case evaledList of
