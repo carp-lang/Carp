@@ -97,6 +97,7 @@
 
   (defn zero [] @"")
 
+  ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
   (defn join [strings]
     (let-do [result @""
              len (Array.count strings)]
