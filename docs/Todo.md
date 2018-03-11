@@ -7,7 +7,6 @@
 
 ## Critical Bugs
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
-* [0.3] Initilization of globals must happen in correct order.
 * [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 
 ## Big Language Features
@@ -25,6 +24,7 @@
 ## Smaller Language Features ("niceties")
 * [0.3] Optimization: Don't copy the whole array in Array.swap, Array.aupdate, etc.
 
+* [0.4] Array.copy should just do a memcopy for primitive/plain types.
 * [0.4] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.4] Errors in macros should present the code location of both the macro and of the code that uses of it.
 * [0.4] Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
