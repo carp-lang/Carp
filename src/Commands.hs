@@ -139,7 +139,7 @@ commandCat :: CommandCallback
 commandCat args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "main.c"
+         outMain = outDir ++ "/" ++ "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
 
