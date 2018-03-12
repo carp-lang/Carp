@@ -116,6 +116,14 @@
     (do (set! r &t) ;; Here the set variable is a ref.
         ())))
 
+(defn set-me [s]
+  (do (for [i 0 10]
+        (set! s @"other"))
+      s))
+
+(defn setting-5 []
+  (let [s @""]
+    (assert (= @"other" (set-me s)))))
 
 (def g1 @"Hello")
 
@@ -174,6 +182,11 @@
   (branch-in-let false))
 
 
+(defn array-aset []
+  (let [xs [@"a" @"b" @"c"]]
+    (do (aset! &xs 0 @"q")
+        (assert (= &[@"q" @"b" @"c"] &xs)))))
+
 (defn append-ref [a b]
   (String.append @a @b))
 
@@ -218,9 +231,14 @@
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
     (assert (= &[@"c" @"d"] &(Array.subarray &xs 2 4)))))
 
-(defn array-reverse []
+(defn array-reverse-1 []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
     (assert (= &[@"e" @"d" @"c" @"b" @"a"]
+               &(Array.reverse xs)))))
+
+(defn array-reverse-2 []
+  (let [xs [@"a" @"b" @"c" @"d" @"e" @"f" @"g" @"h" @"i" @"j"]]
+    (assert (= &[@"j" @"i" @"h" @"g" @"f" @"e" @"d" @"c" @"b" @"a"]
                &(Array.reverse xs)))))
 
 (defn array-index-of []
@@ -320,6 +338,7 @@
       (assert-no-leak test setting-2 "setting-2 does not leak")
       (assert-no-leak test setting-3 "setting-3 does not leak")
       (assert-no-leak test setting-4 "setting-4 does not leak")
+      (assert-no-leak test setting-5 "setting-5 does not leak")
       (assert-no-leak test global-1 "global-1 does not leak")
       (assert-no-leak test global-2 "global-2 does not leak")
       (assert-no-leak test if-1 "if-1 does not leak")
@@ -328,6 +347,7 @@
       (assert-no-leak test if-4 "if-4 does not leak")
       (assert-no-leak test if-5 "if-5 does not leak")
       (assert-no-leak test if-6 "if-6 does not leak")
+      (assert-no-leak test array-aset "array-aset does not leak")
       (assert-no-leak test array-reduce "array-reduce does not leak")
       (assert-no-leak test array-first "array-first does not leak")
       (assert-no-leak test array-last "array-last does not leak")
@@ -337,15 +357,16 @@
       (assert-no-leak test array-minimum "array-minimum does not leak")
       (assert-no-leak test array-sum "array-sum does not leak")
       (assert-no-leak test array-subarray "array-subarray does not leak")
-      ;; LEAKS! (assert-no-leak test array-reverse "array-reverse does not leak")
+      (assert-no-leak test array-reverse-1 "array-reverse-2 does not leak")
+      (assert-no-leak test array-reverse-2 "array-reverse-2 does not leak")
       (assert-no-leak test array-index-of "array-index-of does not leak")
       (assert-no-leak test array-element-count "array-element-count does not leak")
-      ;; LEAKS! (assert-no-leak test array-aupdate "array-aupdate does not leak")
-      ;; LEAKS! (assert-no-leak test array-aupdate! "array-aupdate! does not leak")
-      ;; LEAKS! (assert-no-leak test array-swap "array-swap does not leak")
-      ;; LEAKS! (assert-no-leak test array-swap! "array-swap! does not leak")
+      ;; (assert-no-leak test array-aupdate "array-aupdate does not leak")
+      ;; (assert-no-leak test array-aupdate! "array-aupdate! does not leak")
+      (assert-no-leak test array-swap "array-swap does not leak")
+      (assert-no-leak test array-swap! "array-swap! does not leak")
       (assert-no-leak test array-range "array-range does not leak")
-      ;; (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
+      ;; PROBLEMATIC (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
       (assert-no-leak test array-sort-2 "array-sort-2 does not leak")
       (assert-no-leak test array-repeat "array-repeat does not leak")
       (assert-no-leak test array-replicate "array-replicate does not leak")

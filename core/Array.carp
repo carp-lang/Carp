@@ -124,22 +124,22 @@
 
   (defn repeat [n f]
     (let-do [a (allocate n)]
-      (for [i 0 n] (aset! &a i (f)))
+      (for [i 0 n] (aset-uninitialized! &a i (f)))
       a))
 
   (defn repeat-indexed [n f]
     (let-do [a (allocate n)]
-      (for [i 0 n] (aset! &a i (f i)))
+      (for [i 0 n] (aset-uninitialized! &a i (f i)))
       a))
 
   (defn replicate [n e]
     (let-do [a (allocate n)]
-      (for [i 0 n] (aset! &a i @e))
+      (for [i 0 n] (aset-uninitialized! &a i @e))
       a))
 
   (defn copy-map [f a]
     (let-do [na (allocate (count a))]
       (for [i 0 (count a)]
-        (aset! &na i (f (nth a i))))
+        (aset-uninitialized! &na i (f (nth a i))))
       na))
 )
