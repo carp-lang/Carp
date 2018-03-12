@@ -40,7 +40,7 @@
         (for [i 0 len]
           (let [c (Array.nth &cs i)]
             (do
-              (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) @c))
+              (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) c))
                 (if (= 0 (String.count &word))
                   () ;; no word
                   (do (set! result (Array.push-back @&result @&word))

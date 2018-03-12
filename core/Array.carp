@@ -85,7 +85,7 @@
   (defn element-count [a e]
     (let-do [c 0]
       (for [i 0 (count a)]
-        (when (= e @(nth a i)) (set! c (Int.inc c))))
+        (when (= e (nth a i)) (set! c (Int.inc c))))
       c))
 
   (defn aupdate [a i f]

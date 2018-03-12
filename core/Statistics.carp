@@ -83,7 +83,7 @@
             (let [x @(Array.nth data (/ n 2)) ; else
                   l (- x (/ (from-int interval) 2.0))
                   cf (Array.index-of data x)
-                  f (Array.element-count data x)]
+                  f (Array.element-count data &x)]
               (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
                       (from-int f)))))))
 
