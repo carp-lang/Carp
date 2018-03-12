@@ -485,7 +485,7 @@ commandMacroError :: CommandCallback
 commandMacroError [msg] =
   case msg of
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
-    _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
+    x                  -> return (Left (EvalError (pretty x)))
 
 commandEq :: CommandCallback
 commandEq [a, b] =
