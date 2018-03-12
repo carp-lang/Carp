@@ -174,6 +174,133 @@
   (branch-in-let false))
 
 
+(defn append-ref [a b]
+  (String.append @a @b))
+
+(defn array-reduce []
+  (let [xs [@"a" @"b" @"c"]
+        result (Array.reduce append-ref @"" &xs)]
+    (assert (= @"abc" result))))
+
+(defn array-first []
+  (let [xs [@"a" @"b" @"c"]
+        result (Array.first &xs)]
+    (assert (= @"a" result))))
+
+(defn array-last []
+  (let [xs [@"a" @"b" @"c"]
+        result (Array.last &xs)]
+    (assert (= @"c" result))))
+
+(defn array-eq-1 []
+  (let [xs [@"a" @"b" @"c"]
+        ys [@"x" @"y" @"z"]]
+    (assert (not (= &xs &ys)))))
+
+(defn array-eq-2 []
+  (let [xs [@"a" @"b" @"c"]
+        ys [@"a" @"b" @"c"]]
+    (assert (= &xs &ys))))
+
+(defn array-maximum []
+  (let [xs [1 7 2 9 3 8 4 6 5]]
+    (assert (= 9 (maximum &xs)))))
+
+(defn array-minimum []
+  (let [xs [8 4 6 5 1 7 2 9 3]]
+    (assert (= 1 (minimum &xs)))))
+
+(defn array-sum []
+  (let [xs [10 20 30 40 50]]
+    (assert (= 150 (sum &xs)))))
+
+(defn array-subarray []
+  (let [xs [@"a" @"b" @"c" @"d" @"e"]]
+    (assert (= &[@"c" @"d"] &(Array.subarray &xs 2 4)))))
+
+(defn array-reverse []
+  (let [xs [@"a" @"b" @"c" @"d" @"e"]]
+    (assert (= &[@"e" @"d" @"c" @"b" @"a"]
+               &(Array.reverse xs)))))
+
+(defn array-index-of []
+  (let [xs [@"a" @"b" @"c" @"d" @"e"]]
+    (assert (= 2 (Array.index-of &xs @"c")))))
+
+(defn array-element-count []
+  (let [xs [@"a" @"b" @"a" @"a" @"b"]]
+    (assert (= 3 (Array.element-count &xs "a")))))
+
+(defn first-letter [s]
+  (String.substring s 0 1))
+
+(defn array-aupdate []
+  (let [xs [@"abc" @"xyz"]
+        ys (Array.aupdate xs 1 first-letter)]
+    (assert (= &[@"abc" @"x"] &ys))))
+
+(defn array-aupdate! []
+  (let [xs [@"abc" @"xyz"]]
+    (do
+      (Array.aupdate! &xs 1 first-letter)
+      (assert (= &[@"abc" @"x"] &xs)))))
+
+(defn array-swap []
+  (let [xs [@"a" @"b" @"c"]
+        ys (Array.swap xs 0 2)]
+    (assert (= &[@"c" @"b" @"a"] &ys))))
+
+(defn array-swap! []
+  (let [xs [@"a" @"b" @"c"]]
+    (do
+      (Array.swap! &xs 0 2)
+      (assert (= &[@"c" @"b" @"a"] &xs)))))
+
+(defn array-range []
+  (let [xs (Array.range 0 5 1)]
+    (assert (= &[0 1 2 3 4 5] &xs))))
+
+;; TODO! Failing to compile this...
+;; (defmodule ArrayCompareExtension
+;;   (defn < [a b]
+;;     (Int.< (Array.count a)
+;;            (Array.count b)))
+;;   (defn > [a b]
+;;     (Int.> (Array.count a)
+;;            (Array.count b))))
+;; (defn array-sort-1 []
+;;   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
+;;         ys (Array.sort xs)]
+;;     (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
+
+(defn array-sort-2 []
+  (let [xs [5 2 4 3 1]
+        ys (Array.sort xs)]
+    (assert (= &[1 2 3 4 5] &ys))))
+
+(defn f [] @"Hello")
+
+(defn array-repeat []
+  (let [xs (Array.repeat 4 f)]
+    (assert (= &[@"Hello" @"Hello" @"Hello" @"Hello"] &xs))))
+
+(defn array-replicate []
+  (let [xs (Array.replicate 4 "Hello")]
+    (assert (= &[@"Hello" @"Hello" @"Hello" @"Hello"] &xs))))
+
+(defn array-copy-map-1 []
+  (let [xs [@"a" @"bb" @"ccc"]
+        ys (Array.copy-map String.count &xs)]
+    (assert (= &[1 2 3] &ys))))
+
+(defn str-ref [r]
+  (Int.str @r))
+
+(defn array-copy-map-2 []
+  (let [xs [1 2 3 4]
+        ys (Array.copy-map str-ref &xs)]
+    (assert (= &[@"1" @"2" @"3" @"4"] &ys))))
+
 (defn main []
   (let []
     (with-test test
@@ -201,4 +328,27 @@
       (assert-no-leak test if-4 "if-4 does not leak")
       (assert-no-leak test if-5 "if-5 does not leak")
       (assert-no-leak test if-6 "if-6 does not leak")
+      (assert-no-leak test array-reduce "array-reduce does not leak")
+      (assert-no-leak test array-first "array-first does not leak")
+      (assert-no-leak test array-last "array-last does not leak")
+      (assert-no-leak test array-eq-1 "array-eq-1 does not leak")
+      (assert-no-leak test array-eq-2 "array-eq-2 does not leak")
+      (assert-no-leak test array-maximum "array-maximum does not leak")
+      (assert-no-leak test array-minimum "array-minimum does not leak")
+      (assert-no-leak test array-sum "array-sum does not leak")
+      (assert-no-leak test array-subarray "array-subarray does not leak")
+      ;; LEAKS! (assert-no-leak test array-reverse "array-reverse does not leak")
+      (assert-no-leak test array-index-of "array-index-of does not leak")
+      (assert-no-leak test array-element-count "array-element-count does not leak")
+      ;; LEAKS! (assert-no-leak test array-aupdate "array-aupdate does not leak")
+      ;; LEAKS! (assert-no-leak test array-aupdate! "array-aupdate! does not leak")
+      ;; LEAKS! (assert-no-leak test array-swap "array-swap does not leak")
+      ;; LEAKS! (assert-no-leak test array-swap! "array-swap! does not leak")
+      (assert-no-leak test array-range "array-range does not leak")
+      ;; (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
+      (assert-no-leak test array-sort-2 "array-sort-2 does not leak")
+      (assert-no-leak test array-repeat "array-repeat does not leak")
+      (assert-no-leak test array-replicate "array-replicate does not leak")
+      (assert-no-leak test array-copy-map-1 "array-copy-map-1 does not leak")
+      (assert-no-leak test array-copy-map-2 "array-copy-map-2 does not leak")
       (print-test-results test))))
