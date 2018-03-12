@@ -14,3 +14,5 @@
 (def d (f))
 
 ;;(defn main [] (println* &[a b c]))
+
+(macro-error (source-dir))

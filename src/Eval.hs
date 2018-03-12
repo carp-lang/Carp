@@ -8,7 +8,7 @@ import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesPathExist)
+import System.Directory (doesPathExist, canonicalizePath)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -54,10 +54,10 @@ eval env xobj =
         [XObj (Sym (SymPath [] "source-location") _) _ _] ->
           return (Right (XObj (Str (prettyInfoFromXObj listXObj)) i t))
 
-        [XObj (Sym (SymPath [] "source-dir") _) _ _] ->
+        [XObj (Sym (SymPath [] "source-path") _) _ _] ->
           let file = case info listXObj of
                        Just info -> infoFile info
-                       Nothing -> "No file"
+                       Nothing -> ""
           in  return (Right (XObj (Str (file)) i t))
 
         XObj Do _ _ : rest ->
@@ -812,16 +812,17 @@ commandLoad [XObj (Str path) _ _] =
          liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
                      return dynamicNil
        firstPathFound : _ ->
-         do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
-                                    handle <- SysIO.openFile firstPathFound SysIO.ReadMode
+         do canonicalPath <- liftIO (canonicalizePath firstPathFound)
+            contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
+                                    handle <- SysIO.openFile canonicalPath SysIO.ReadMode
                                     SysIO.hSetEncoding handle SysIO.utf8
                                     SysIO.hGetContents handle
             let files = projectFiles proj
-                files' = if firstPathFound `elem` files
+                files' = if canonicalPath `elem` files
                          then files
-                         else files ++ [firstPathFound]
+                         else files ++ [canonicalPath]
                 proj' = proj { projectFiles = files' }
-            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents firstPathFound
+            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
             put newCtx
             return dynamicNil
 

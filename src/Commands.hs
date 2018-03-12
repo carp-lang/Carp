@@ -16,6 +16,7 @@ import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.FilePath (takeDirectory)
 import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
@@ -576,6 +577,24 @@ commandStringCount [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
+commandStringJoin :: CommandCallback
+commandStringJoin [a] =
+  return $ case a of
+    XObj (Arr strings) _ _ ->
+      case (sequence (map unwrapStringXObj strings)) of
+        Left err -> Left (EvalError err)
+        Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
+commandStringDirectory :: CommandCallback
+commandStringDirectory [a] =
+  return $ case a of
+    XObj (Str s) _ _ ->
+      Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
     _ ->
       Left (EvalError ("Can't call count with " ++ pretty a))
 

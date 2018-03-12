@@ -133,6 +133,8 @@ dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModu
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "substring" 3 commandSubstring
                                 , addCommand "count" 1 commandStringCount
+                                , addCommand "join" 1 commandStringJoin
+                                , addCommand "directory" 1 commandStringDirectory
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
