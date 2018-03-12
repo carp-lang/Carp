@@ -13,7 +13,7 @@
   (register prn        (Fn [&String] String))
   (register char-at    (Fn [&String Int] Char))
   (register chars      (Fn [&String] (Array Char)))
-  (register from-chars (Fn [(Array Char)] String))
+  (register from-chars (Fn [&(Array Char)] String))
   (register tail (λ [(Ref String)] String))
   (register format (Fn [&String &String] String))
 
@@ -45,7 +45,7 @@
                   () ;; no word
                   (do (set! result (Array.push-back @&result @&word))
                       (set! word @"")))
-                (set! word (append @&word (from-chars [@c])))))))
+                (set! word (append @&word (from-chars &[@c])))))))
         ;; Some sweet code duplication for the final word:
         (if (= 0 (String.count &word))
           ()
@@ -61,11 +61,11 @@
 
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append (from-chars (Array.replicate x &pad)) @s)))
+      (append (from-chars &(Array.replicate x &pad)) @s)))
 
   (defn pad-right [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append @s (from-chars (Array.replicate x &pad)))))
+      (append @s (from-chars &(Array.replicate x &pad)))))
 
   (defn count-char [s c]
     (let-do [n 0]
@@ -75,19 +75,19 @@
       n))
 
   (defn reverse [s]
-    (from-chars (Array.reverse (chars s))))
+    (from-chars &(Array.reverse (chars s))))
 
   (defn empty? [s]
     (Int.= (count s) 0))
 
   (defn substring [s a b]
-    (from-chars (Array.subarray &(chars s) a b)))
+    (from-chars &(Array.subarray &(chars s) a b)))
 
   (defn prefix-string [s a]
-    (from-chars (Array.prefix-array &(chars s) a)))
+    (from-chars &(Array.prefix-array &(chars s) a)))
 
   (defn suffix-string [s b]
-    (from-chars (Array.suffix-array &(chars s) b)))
+    (from-chars &(Array.suffix-array &(chars s) b)))
 
   (defn starts-with? [s sub]
     (= sub &(prefix-string s (count sub))))

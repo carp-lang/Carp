@@ -39,5 +39,5 @@
 
 (defmodule String
   (defn random-sized [n]
-    (from-chars (Array.repeat n Char.random)))
+    (from-chars &(Array.repeat n Char.random)))
 )

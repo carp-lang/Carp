@@ -57,7 +57,7 @@
     )
     (assert-equal test
                   "erik"
-                  &(from-chars [\e \r \i \k])
+                  &(from-chars &[\e \r \i \k])
                   "from-chars works as expected"
     )
     (assert-equal test

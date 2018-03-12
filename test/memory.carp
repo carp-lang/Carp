@@ -181,6 +181,10 @@
 (defn if-6 []
   (branch-in-let false))
 
+(defn string-substring []
+  (let [s1 @"abcde"
+        s2 (String.substring &s1 0 3)]
+    (assert (= "abc" &s2))))
 
 (defn array-aset []
   (let [xs [@"a" @"b" @"c"]]
@@ -234,11 +238,6 @@
 (defn array-reverse-1 []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
     (assert (= &[@"e" @"d" @"c" @"b" @"a"]
-               &(Array.reverse xs)))))
-
-(defn array-reverse-2 []
-  (let [xs [@"a" @"b" @"c" @"d" @"e" @"f" @"g" @"h" @"i" @"j"]]
-    (assert (= &[@"j" @"i" @"h" @"g" @"f" @"e" @"d" @"c" @"b" @"a"]
                &(Array.reverse xs)))))
 
 (defn array-index-of []
@@ -347,6 +346,7 @@
       (assert-no-leak test if-4 "if-4 does not leak")
       (assert-no-leak test if-5 "if-5 does not leak")
       (assert-no-leak test if-6 "if-6 does not leak")
+      (assert-no-leak test string-substring "string-substring does not leak")
       (assert-no-leak test array-aset "array-aset does not leak")
       (assert-no-leak test array-reduce "array-reduce does not leak")
       (assert-no-leak test array-first "array-first does not leak")
@@ -358,11 +358,10 @@
       (assert-no-leak test array-sum "array-sum does not leak")
       (assert-no-leak test array-subarray "array-subarray does not leak")
       (assert-no-leak test array-reverse-1 "array-reverse-2 does not leak")
-      (assert-no-leak test array-reverse-2 "array-reverse-2 does not leak")
       (assert-no-leak test array-index-of "array-index-of does not leak")
       (assert-no-leak test array-element-count "array-element-count does not leak")
-      ;; (assert-no-leak test array-aupdate "array-aupdate does not leak")
-      ;; (assert-no-leak test array-aupdate! "array-aupdate! does not leak")
+      (assert-no-leak test array-aupdate "array-aupdate does not leak")
+      (assert-no-leak test array-aupdate! "array-aupdate! does not leak")
       (assert-no-leak test array-swap "array-swap does not leak")
       (assert-no-leak test array-swap! "array-swap! does not leak")
       (assert-no-leak test array-range "array-range does not leak")
