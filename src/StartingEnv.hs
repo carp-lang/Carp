@@ -99,6 +99,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "cons-last" 2 commandConsLast
                     , addCommand "append" 2 commandAppend
                     , addCommand "macro-error" 1 commandMacroError
+                    , addCommand "str" 1 commandStr
                     , addCommand "=" 2 commandEq
                     , addCommand "<" 2 commandLt
                     , addCommand ">" 2 commandGt

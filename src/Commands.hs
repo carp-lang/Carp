@@ -637,3 +637,8 @@ commandMul [a, b] =
       else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
+
+-- | TODO: Allow varargs
+commandStr :: CommandCallback
+commandStr [x] =
+  return (Right (XObj (Str (pretty x)) (Just dummyInfo) (Just StringTy)))

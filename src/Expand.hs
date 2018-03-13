@@ -4,6 +4,7 @@ import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put
 import Control.Monad.State
 import Debug.Trace
 
+import Types
 import Obj
 import Util
 import Lookup

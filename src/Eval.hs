@@ -57,7 +57,7 @@ eval env xobj =
         [XObj (Sym (SymPath [] "source-path") _) _ _] ->
           let file = case info listXObj of
                        Just info -> infoFile info
-                       Nothing -> ""
+                       Nothing -> "no info"
           in  return (Right (XObj (Str (file)) i t))
 
         XObj Do _ _ : rest ->
@@ -235,8 +235,12 @@ eval env xobj =
 
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          case checkMatchingNrOfArgs f params args of
-                           Left err -> return (Left err)
-                           Right () -> apply env body params args
+                           Left err ->
+                             return (Left err)
+                           Right () ->
+                             -- Replace info so that the macro which is called gets the source location info of the expansion site.
+                             let replacedBody = (replaceSourceInfoOnXObj (info xobj) body)
+                             in  apply env replacedBody params args
 
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          do evaledArgs <- fmap sequence (mapM (eval env) args)
@@ -364,11 +368,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    -- to make it stick in the environment.
                    -- To log the intermediate result:
                    -- putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
-
-                   -- Replace info so that macros called at the top-level get the location of the expansion site.
-                   let evaledWithNewInfo = replaceSourceInfoOnXObj (info xobj) evaled
-
-                   (result', newCtx') <- runStateT (eval env evaledWithNewInfo) newCtx
+                   (result', newCtx') <- runStateT (eval env evaled) newCtx
                    case result' of
                      Left e ->
                        do putStrLnWithColor Red (show e)
