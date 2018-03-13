@@ -22,6 +22,8 @@
 * [1.0] Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 ## Smaller Language Features ("niceties")
+* [0.3] Short circuit 'and' and 'or'. Make vararg macros for those also.
+
 * [0.4] Array.copy should just do a memcopy for primitive/plain types.
 * [0.4] If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 * [0.4] Errors in macros should present the code location of both the macro and of the code that uses of it.
