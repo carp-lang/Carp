@@ -182,6 +182,21 @@
                   &(collapse-whitespace "too   much  whitespace.")
                   "collapse-whitespace works as expected"
     )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(words "erik sved hej\tfoo")
+                  "words works correctly"
+    )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(lines "erik\nsved\nhej\nfoo")
+                  "lines works correctly"
+    )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(split-by "erikmsvedlhejxfoo" &[\m \l \x])
+                  "split-by works correctly"
+    )
     (print-test-results test)
   )
 )

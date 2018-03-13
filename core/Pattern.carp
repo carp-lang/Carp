@@ -15,6 +15,9 @@
   (register =    (Fn [&Pattern &Pattern] Bool))
   (register delete     (Fn [Pattern] ()))
   (register copy       (Fn [&Pattern] Pattern))
+
+  (defn from-chars [chars]
+    (Pattern.init &(string-join @"[" (String.from-chars chars) @"]")))
 )
 
 (defmodule String
@@ -53,4 +56,22 @@
 
   (defn collapse-whitespace [s]
     (Pattern.substitute #"\s+" s " " -1))
+
+  (defn split-by [_s separators]
+    (let-do [s @_s
+             result (the (Array String) [])
+             pat (Pattern.from-chars separators)
+             idx (Pattern.find &pat &s)]
+      (while (Int./= idx -1)
+        (do
+          (set! result (Array.push-back result (prefix-string &s idx)))
+          (set! s (suffix-string &s (+ idx 1)))
+          (set! idx (Pattern.find &pat &s))))
+      (Array.push-back result s)))
+
+  (defn words [s]
+    (split-by s &[\tab \space]))
+
+  (defn lines [s]
+    (split-by s &[\newline]))
 )
