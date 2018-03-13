@@ -2,5 +2,10 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
+;; (defmacro asserts []
+;;   (list ))
+
+;; (list 'defn 'f [] (list 'copy (list 'source-path)))
+
 (defn main []
   (assert false))

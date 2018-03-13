@@ -1,4 +1,4 @@
-module Expand (expandAll, replaceSourceInfo) where
+module Expand (expandAll, replaceSourceInfoOnXObj) where
 
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import Control.Monad.State
@@ -110,7 +110,7 @@ expand eval env xobj =
                          --trace ("Found dynamic: " ++ pretty xobj)
                          eval env xobj
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                         --trace ("Found macro: " ++ pretty xobj)
+                         --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
                          eval env xobj
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          (getCommand callback) args
@@ -206,3 +206,9 @@ replaceSourceInfo newFile newLine newColumn root = visit root
                                          , infoColumn = newColumn
                                          })})
         Nothing -> xobj
+
+replaceSourceInfoOnXObj :: Maybe Info -> XObj -> XObj
+replaceSourceInfoOnXObj newInfo xobj =
+  case newInfo of
+    Just i  -> replaceSourceInfo (infoFile i) (infoLine i) (infoColumn i) xobj
+    Nothing -> xobj

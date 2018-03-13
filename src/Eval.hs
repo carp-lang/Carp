@@ -144,7 +144,7 @@ eval env xobj =
           specialCommandDefine xobj
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
-          do evaledValue <- expandAll eval env value
+          do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
              return $ do okValue <- evaledValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
@@ -366,10 +366,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    -- putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
 
                    -- Replace info so that macros called at the top-level get the location of the expansion site.
-                   let evaledWithNewInfo =
-                         case info xobj of
-                           Just i  -> replaceSourceInfo (infoFile i) (infoLine i) (infoColumn i) evaled
-                           Nothing -> xobj
+                   let evaledWithNewInfo = replaceSourceInfoOnXObj (info xobj) evaled
 
                    (result', newCtx') <- runStateT (eval env evaledWithNewInfo) newCtx
                    case result' of
