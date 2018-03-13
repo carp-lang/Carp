@@ -30,35 +30,6 @@
           (set! str (append str @inpt)))
         str)))
 
-  ;; A temporary version of this function, until we have some nicer way to write it
-  (defn split-by [s separators]
-    (let [len (count &s)
-          result (the (Array String) [])
-          cs (chars &s)
-          word @""]
-      (do
-        (for [i 0 len]
-          (let [c (Array.nth &cs i)]
-            (do
-              (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) c))
-                (if (= 0 (String.count &word))
-                  () ;; no word
-                  (do (set! result (Array.push-back @&result @&word))
-                      (set! word @"")))
-                (set! word (append @&word (from-chars &[@c])))))))
-        ;; Some sweet code duplication for the final word:
-        (if (= 0 (String.count &word))
-          ()
-          (do (set! result (Array.push-back @&result @&word))
-              (set! word @"")))
-        result)))
-
-  (defn words [s]
-    (split-by s [\space \tab]))
-
-  (defn lines [s]
-    (split-by s [\newline]))
-
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
       (append (from-chars &(Array.replicate x &pad)) @s)))
