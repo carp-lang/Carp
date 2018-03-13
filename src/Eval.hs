@@ -363,8 +363,15 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    -- constitutes a 'def' or 'defn'. So let's evaluate again
                    -- to make it stick in the environment.
                    -- To log the intermediate result:
-                   --putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
-                   (result', newCtx') <- runStateT (eval env evaled) newCtx
+                   -- putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
+
+                   -- Replace info so that macros called at the top-level get the location of the expansion site.
+                   let evaledWithNewInfo =
+                         case info xobj of
+                           Just i  -> replaceSourceInfo (infoFile i) (infoLine i) (infoColumn i) evaled
+                           Nothing -> xobj
+
+                   (result', newCtx') <- runStateT (eval env evaledWithNewInfo) newCtx
                    case result' of
                      Left e ->
                        do putStrLnWithColor Red (show e)

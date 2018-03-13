@@ -2,17 +2,3 @@
 ;; (load "Debug.carp")
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
-
-(def c 1)
-(def b c)
-(def a b)
-(def x b)
-
-(defn f []
-  x)
-
-(def d (f))
-
-;;(defn main [] (println* &[a b c]))
-
-(macro-error (source-dir))
