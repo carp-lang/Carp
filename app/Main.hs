@@ -66,7 +66,7 @@ main = do args <- SystemEnvironment.getArgs
           hasProfile <- doesPathExist carpProfile
           context' <- if hasProfile
                       then loadFiles context [carpProfile]
-                      else do putStrLn ("No '" ++ carpProfile ++ "' found.")
+                      else do --putStrLn ("No '" ++ carpProfile ++ "' found.")
                               return context
           finalContext <- loadFiles context' argFilesToLoad
           settings <- readlineSettings
