@@ -16,3 +16,41 @@
   (register delete     (Fn [Pattern] ()))
   (register copy       (Fn [&Pattern] Pattern))
 )
+
+(defmodule String
+  (defn in? [s sub]
+    (Pattern.matches? &(Pattern.init sub) s))
+
+  (defn upper? [s]
+    (Pattern.matches? #"^[\u\s\p]*$" s))
+
+  (defn lower? [s]
+    (Pattern.matches? #"^[\l\s\p]*$" s))
+
+  (defn num? [s]
+    (Pattern.matches? #"^[0-9]*$" s))
+
+  (defn alpha? [s]
+    (Pattern.matches? #"^[\u\l]*$" s))
+
+  (defn alphanum? [s]
+    (Pattern.matches? #"^[\w]*$" s))
+
+  (defn hex? [s]
+    (Pattern.matches? #"^[\x]*$" s))
+
+  (defn trim-left [s]
+    (Pattern.substitute #"^\s+" s "" 1))
+
+  (defn trim-right [s]
+    (Pattern.substitute #"\s+$" s "" 1))
+
+  (defn trim [s]
+    (trim-left &(trim-right s)))
+
+  (defn chomp [s]
+    (Pattern.substitute #"\n$" s "" 1))
+
+  (defn collapse-whitespace [s]
+    (Pattern.substitute #"\s+" s " " -1))
+)
