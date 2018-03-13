@@ -1,4 +1,3 @@
-(load "Debug.carp")
 (Project.config "print-ast" true)
 (Debug.sanitize-addresses)
 

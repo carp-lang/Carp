@@ -1,6 +1,5 @@
 (load "Bench.carp")
 (use Bench)
-(load "Debug.carp")
 (Debug.sanitize-addresses)
 (use Array)
 

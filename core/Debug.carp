@@ -40,6 +40,6 @@
         ()
         (list 'do
               (list 'IO.println (list 'ref
-                                      (list 'String.append (list 'String.copy "Assertion failed ")
+                                      (list 'String.append (list 'String.copy "Assertion failed at ")
                                             (list 'String.copy (source-location)))))
               '(System.exit 1))))

@@ -4,7 +4,6 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
-(load "Debug.carp")
 
 (Debug.sanitize-addresses)
 

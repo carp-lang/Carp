@@ -1,4 +1,3 @@
-(load "Debug.carp")
 (load "Test.carp")
 
 (use IO)

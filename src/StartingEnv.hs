@@ -29,6 +29,7 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       , "IO"
                                                                       , "System"
                                                                       , "Pattern"
+                                                                      , "Debug"
                                                                       ]
 
 -- | The array module contains functions for working with the Array type.

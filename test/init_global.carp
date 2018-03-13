@@ -2,8 +2,6 @@
 ;; It initializes a global with a something that needs to allocate memory and call functions,
 ;; then checks that the memory balance is correct after the init step.
 
-(load "Debug.carp")
-
 (def g (copy (Array.nth &[@"A" @"B" @"C"] 1)))
 
 ;; The one allocation left after 'carp_init_globals' should be 'g' itself:
