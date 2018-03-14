@@ -36,7 +36,6 @@
 * [1.0] Macros for generating 'read' functions to read objects back into memory from string representation.
 * [1.0] A way to assert compiler errors in tests
 * [1.0] Rename type variables from t0, t1, t2 to a, b, c, etc.
-* [1.0] Register could take an optional argument which would be the name you want the function to have in the Carp module, i.e. (register glfwCreateWindow (Fn [] ()) create-window)
 
 ## Macro System
 * [1.0] Quasiquote
