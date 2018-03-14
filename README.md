@@ -21,7 +21,7 @@ The key features of Carp are the following:
 
 ## Learn more
 
-* [Installation](docs/Install.md) - how to build the Carp compiler
+* [Installation](docs/Install.md) - how to build and configure the Carp compiler
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
 * [Libraries](docs/Libraries.md) - how to work with libraries and modules
