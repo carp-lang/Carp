@@ -35,7 +35,7 @@ On macOS and Linux it defaults to `clang`, on Windows it's `cl.exe`.
 You can configure the exact compiler command like so:
 
 ```clojure
-(Project.config "compiler" "some-other-compiler --important-flag")
+(Project.config "compiler" "gcc --important-flag")
 ```
 
 ## SDL, GLFW, etc
