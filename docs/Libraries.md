@@ -15,7 +15,7 @@ To see what functions a certain module contains, use the `info` command:
 (info "Bench")
 ```
 
-External librares can be loaded by using their relative or absolute location in your file system as the path. To make a library publically available in a more general way you can add it to your Carp project's `search-path` (found by running `:p` in the repl). For instance, here's how you would add the NCurses library so that it can be loaded with just `(load "NCurses.carp")`.
+External librares can be loaded by using their relative or absolute location in your file system as the path. To make a library publically available in a more general way you can add it to your Carp project's search path:s (found by running `:p` in the repl). For instance, here's how you would add the NCurses library so that it can be loaded with just `(load "NCurses.carp")`.
 
 ```clojure
 (Project.config "search-path" "~/Projects/carp-ncurses")
