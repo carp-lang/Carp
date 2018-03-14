@@ -1,13 +1,15 @@
 ## Working with libraries and modules
 
 Below is a list of 'core' modules that comes included with the Carp compiler.
-Modules marked with the symbol '⦁' are imported by default, other modules are imported by loading their file. For example, to get access to the Bench module, do the following:
+Modules marked with the symbol '⦁' are imported by default, other modules must be imported by loading their file. For example, to get access to the Bench module, do the following:
 
 ```clojure
 (load "Bench.carp")
 ```
 
-External librares (listed at the end of this file) can be loaded in the same way, using their location in your file system as the path. To make a library publically available in an easy way you can add it to your Carp project's `search-path` (found by running `:p` in the repl). Here's how you'd add the NCurses library so that it can be loaded with just `(load "NCurses.carp")`.
+Using the functions in the Bench module still requires pre-pending them with the module name, i.e. `(Bench.bench fib)`. To avoid that, also do `(use Bench)`.
+
+External librares (listed at the end of this file) can be loaded by using their relative or absolute location in your file system as the path. To make a library publically available in a more general way you can add it to your Carp project's `search-path` (found by running `:p` in the repl). For instance, here's how you would add the NCurses library so that it can be loaded with just `(load "NCurses.carp")`.
 
 ```clojure
 (Project.config "search-path" "~/Projects/carp-ncurses")
