@@ -1,40 +1,60 @@
+## Working with libraries and modules
+
+Below is a list of 'core' modules that comes included with the Carp compiler.
+Modules marked with the symbol '⦁' are imported by default, other modules are imported by loading their file. For example, to get access to the Bench module, do the following:
+
+```clojure
+(load "Bench.carp")
+```
+
+External librares (listed at the end of this file) can be loaded in the same way, using their location in your file system as the path. To make a library publically available in an easy way you can add it to your Carp project's `search-path` (found by running `:p` in the repl). Here's how you'd add the NCurses library so that it can be loaded with just `(load "NCurses.carp")`.
+
+```clojure
+(Project.config "search-path" "~/Projects/carp-ncurses")
+```
+
+This line of configuration can be put into a `~/.carp/profile.carp` file to make it apply everywhere.
+
 ## Core Modules
 
+### Basics
+* [Macros ⦁](../core/Macros.carp)
+* [Interfaces ⦁](../core/Interfaces.carp)
+* [Dynamic ⦁](../core/Dynamic.carp) (only available in the repl and at compile time)
+
 ### Numerics
-* [Int](../core/Int.carp)
+* [Int ⦁](../core/Int.carp)
 * [SafeInt](../core/SafeInt.carp)
-* [Long](../core/Long.carp)
-* [Bool](../core/Bool.carp)
-* [Float](../core/Float.carp)
-* [Double](../core/Double.carp)
+* [Long ⦁](../core/Long.carp)
+* [Bool ⦁](../core/Bool.carp)
+* [Float ⦁](../core/Float.carp)
+* [Double ⦁](../core/Double.carp)
 * [Vector](../core/Vector.carp)
 * [Geometry](../core/Geometry.carp)
+* [Statistics](../core/Statistics.carp)
 
 ### Text
-* [String](../core/String.carp)
-* [Char](../core/Char.carp)
+* [String ⦁](../core/String.carp)
+* [Char ⦁](../core/Char.carp)
 * [Format](../core/Format.carp)
-* [Pattern](../core/Pattern.carp)
+* [Pattern ⦁](../core/Pattern.carp)
 
 ### Collections
-* [Array](../core/Array.carp)
+* [Array ⦁](../core/Array.carp)
 
-### Misc
-* [IO](../core/IO.carp)
-* [System](../core/System.carp)
-* [SDL](../core/sdl.carp)
-* [Macros](../core/Macros.carp)
+### System
+* [IO ⦁](../core/IO.carp)
+* [System ⦁](../core/System.carp)
+
+### Development
+* [Debug ⦁](../core/Debug.carp)
 * [Test](../core/Test.carp)
-* [Statistics](../core/Statistics.carp)
 * [Bench](../core/Bench.carp)
-* [Debug](../core/Debug.carp)
-* [Interfaces](../core/Interfaces.carp)
-* [Dynamic](../core/Dynamic.carp) (Functions used in the REPL / at compile time.)
 
 ### Graphics
-* [OpenGL](../core/OpenGL.carp)
-* [GLFW](../core/GLFW.carp)
 * [SDL](../core/SDL.carp)
+* [GLFW](../core/GLFW.carp)
+* [OpenGL](../core/OpenGL.carp)
 
 ## External Libraries
 * [Stdint](https://github.com/hellerve/stdint) (A wrapper around the types defined in stdint.h)

@@ -24,7 +24,7 @@ The key features of Carp are the following:
 * [Installation](docs/Install.md) - how to build the Carp compiler
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
-* [Libraries](docs/Libraries.md) - the various libraries that come built into Carp
+* [Libraries](docs/Libraries.md) - how to work with libraries and modules
 * [Tooling](docs/Tooling.md) - supported editors
 * [Game Example](examples/game.carp) - an example of how to use SDL with Carp
 
