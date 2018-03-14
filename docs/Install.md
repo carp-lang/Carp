@@ -4,10 +4,8 @@ Carp is mainly developed on macOS, but it also works fine on Linux. Windows is c
 
 ## Building the Carp executable from source
 
-Carp is written in Haskell which is very easy to install and use:
-
 1. Make sure you have [Stack](https://docs.haskellstack.org/en/stable/README/) installed.
-2. Clone this repo.
+2. Clone this repo to your machine.
 3. Run ```stack build``` in the root of the project directory.
 4. ```stack install``` will install the Carp command line tool for easy access on your system.
 5. Make sure that the directory where stack installs executables is on your PATH, i.e: ```export PATH=~/.local/bin:$PATH```.
