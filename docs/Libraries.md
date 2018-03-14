@@ -44,7 +44,7 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 ### Text
 * [String ⦁](../core/String.carp)
 * [Char ⦁](../core/Char.carp)
-* [Format](../core/Format.carp)
+* [Format ⦁](../core/Format.carp)
 * [Pattern ⦁](../core/Pattern.carp)
 
 ### Collections
