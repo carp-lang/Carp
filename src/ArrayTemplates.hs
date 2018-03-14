@@ -107,6 +107,9 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                let deleteElement = insideArrayDeletion typeEnv env insideTy
                in toTemplate (unlines
                                ["$DECL { "
+                               ,"  #ifndef OPTIMIZE"
+                               ,"  assert(a.len > 0);"
+                               ,"  #endif"
                                ,"  a.len--;"
                                ,"  " ++ deleteElement "a.len"
                                ,"    if(a.len < (a.capacity / 4)) {"
