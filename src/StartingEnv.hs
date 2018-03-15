@@ -85,6 +85,59 @@ templateExit = defineTemplate
                         ,"}"])
   (const [])
 
+maxArity :: Int
+maxArity = 9
+
+-- | The Function module contains functions for dealing with functions.
+functionModule :: Env
+functionModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Function", envUseModules = [], envMode = ExternalEnv }
+  where
+    bindEnv env = let Just name = envModuleName env
+                  in  (name, Binder (XObj (Mod env) Nothing Nothing))
+    bindings = Map.fromList (map (bindEnv . generateInnerFunctionModule) [0..maxArity])
+
+-- | Each arity of functions need their own module to enable copying and string representation
+generateInnerFunctionModule :: Int -> Env
+generateInnerFunctionModule arity =
+  Env { envBindings = bindings
+      , envParent = Nothing
+      , envModuleName = Just ("Arity" ++ show arity)
+      , envUseModules = []
+      , envMode = ExternalEnv
+      }
+  where
+    alphabet = ['d'..'y']
+    charToTyName c = [c]
+    funcTy = FuncTy (take arity (map (VarTy . charToTyName) alphabet)) (VarTy "z")
+    bindings = Map.fromList [generateTemplateFuncCopy funcTy
+                            ,generateTemplateFuncStrOrPrn "str" funcTy
+                            ,generateTemplateFuncStrOrPrn "prn" funcTy
+                            ]
+
+
+-- | A template function for generating 'copy' functions for function pointers.
+generateTemplateFuncCopy :: Ty -> (String, Binder)
+generateTemplateFuncCopy funcTy = defineTemplate
+  (SymPath [] "copy")
+  (FuncTy [RefTy funcTy] (VarTy "a"))
+  (toTemplate "$a $NAME ($a* ref)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *ref;"
+                        ,"}"])
+  (const [])
+
+-- | A template function for generating 'str' or 'prn' functions for function pointers.
+generateTemplateFuncStrOrPrn :: String -> Ty -> (String, Binder)
+generateTemplateFuncStrOrPrn name funcTy = defineTemplate
+  (SymPath [] name)
+  (FuncTy [funcTy] StringTy)
+  (toTemplate "string $NAME (void *f)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    static string lambda = \"λ\";"
+                        ,"    return String_copy(&lambda);"
+                        ,"}"])
+  (const [])
+
 -- | The dynamic module contains dynamic functions only available in the repl and during compilation.
 dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
@@ -146,17 +199,6 @@ dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envMod
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
--- | A template function for copying deref:ing) anything.
-templateUnsafeDeref :: (String, Binder)
-templateUnsafeDeref = defineTemplate
-  (SymPath [] "unsafe-deref")
-  (FuncTy [RefTy (VarTy "a")] (VarTy "a"))
-  (toTemplate "$a $NAME ($a* ref)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return *ref;"
-                        ,"}"])
-  (const [])
-
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -170,12 +212,12 @@ startingGlobalEnv noArray =
                                   , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
                                   , register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
-                                  , templateUnsafeDeref
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]
                    ++ [("System", Binder (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
+                   ++ [("Function", Binder (XObj (Mod functionModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
@@ -186,11 +228,24 @@ startingTypeEnv = Env { envBindings = bindings
                       , envMode = ExternalEnv
                       }
   where bindings = Map.fromList
-          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a")) [SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] builtInSymbolInfo
-            , interfaceBinder "str" (FuncTy [(VarTy "a")] StringTy) [SymPath ["Array"] "str"] builtInSymbolInfo
-            , interfaceBinder "prn" (FuncTy [(VarTy "a")] StringTy) [] builtInSymbolInfo
+          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a"))
+              ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
+              builtInSymbolInfo
+
+            , interfaceBinder "str" (FuncTy [(VarTy "a")] StringTy)
+              ([SymPath ["Array"] "str"] ++ registerFunctionFunctionsWithInterface "str")
+              builtInSymbolInfo
+
+            , interfaceBinder "prn" (FuncTy [(VarTy "a")] StringTy)
+              (registerFunctionFunctionsWithInterface "prn")
+              builtInSymbolInfo
             ]
         builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
+
+-- | Make the functions in the Function.Arity<N> modules register with the interfaces in the type Env.
+registerFunctionFunctionsWithInterface :: String -> [SymPath]
+registerFunctionFunctionsWithInterface interfaceName =
+  map (\arity -> (SymPath ["Function", "Arity" ++ show arity] interfaceName)) [0..maxArity]
 
 -- | Create a binder for an interface definition.
 interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)

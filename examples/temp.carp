@@ -7,7 +7,7 @@
                 attack (Fn [Int] Int)])
 
 (defn attack [attacker target]
-  (let [f (unsafe-deref (Enemy.attack attacker))
+  (let [f @(Enemy.attack attacker)
         new-hp (f @(Enemy.hp &target))]
     (Enemy.set-hp target new-hp)))
 
