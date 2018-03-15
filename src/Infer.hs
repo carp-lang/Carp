@@ -23,7 +23,6 @@ import TypeError
 import InitialTypes
 import AssignTypes
 import GenerateConstraints
-import ManageMemory
 import Concretize
 
 -- | Performs all the steps of creating initial types, solving constraints and assigning the types.
@@ -53,7 +52,7 @@ annotateUntilDone typeEnv globalEnv xobj deps limiter =
 annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
-  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints --(trace ("CONSTRAINTS:\n" ++ joinWith "\n" (map show constraints)) constraints)
+  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints -- (trace (getName xobj ++ "CONSTRAINTS:\n" ++ joinWith "\n" (map show constraints)) constraints)
   typed <- assignTypes mappings xobj
   concretizeXObj allowAmbiguity typeEnv env [] typed
 

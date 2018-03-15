@@ -8,6 +8,8 @@
 (load "sdl_image.carp")
 (use Keycode)
 
+(Project.config "title" "Game")
+
 (def rand-max 400)
 
 (defn r []

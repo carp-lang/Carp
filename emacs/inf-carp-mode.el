@@ -27,9 +27,6 @@ mode.  Default is whitespace followed by 0 or 1 single-letter colon-keyword
   (let ((map (copy-keymap comint-mode-map)))
     (define-key map "\C-x\C-e" #'inf-carp-eval-last-sexp)
     (define-key map "\C-c\C-l" #'inf-carp-load-file)
-    (define-key map "\C-c\C-a" #'inf-carp-show-arglist)
-    (define-key map "\C-c\C-v" #'inf-carp-show-var-documentation)
-    (define-key map "\C-c\C-s" #'inf-carp-show-var-source)
     (define-key map "\C-c\M-o" #'inf-carp-clear-repl-buffer)
     (easy-menu-define inf-carp-mode-menu map
       "Inferior Carp REPL Menu"
@@ -39,31 +36,29 @@ mode.  Default is whitespace followed by 0 or 1 single-letter colon-keyword
         ["Load file" inf-carp-load-file t]
         "--"
         ["Show arglist" inf-carp-show-arglist t]
-        ["Show documentation for var" inf-carp-show-var-documentation t]
-        ["Show source for var" inf-carp-show-var-source t]
+        ;;["Show documentation for var" inf-carp-show-var-documentation t]
+        ;;["Show info for var" inf-carp-show-var-info t]
         "--"
         ["Clear REPL" inf-carp-clear-repl-buffer]))
     map))
 
 (defvar inf-carp-minor-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "\M-\C-x"  #'inf-carp-eval-defun)     ; Gnu convention
-    (define-key map "\C-x\C-e" #'inf-carp-eval-last-sexp) ; Gnu convention
+    (define-key map "\M-\C-x"  #'inf-carp-eval-defun)
+    (define-key map "\C-x\C-e" #'inf-carp-eval-last-sexp)
     (define-key map "\C-c\C-e" #'inf-carp-eval-last-sexp)
-    (define-key map "\C-c\C-c" #'inf-carp-bake)
-    (define-key map (kbd "<s-return>") #'inf-carp-eval-defun)     ; Light Table style
-    (define-key map "\C-c\C-b" #'inf-carp-eval-buffer)
+    (define-key map "\C-c\C-c" #'inf-carp-build-and-run)
+    (define-key map (kbd "<s-return>") #'inf-carp-eval-defun)
+    (define-key map "\C-c\C-k" #'inf-carp-build)
     (define-key map "\C-c\C-r" #'inf-carp-eval-region)
     (define-key map "\C-c\C-n" #'inf-carp-eval-form-and-next)
     (define-key map "\C-c\C-z" #'inf-carp-switch-to-repl)
-    (define-key map "\C-c\C-i" #'inf-carp-show-ns-vars)
-    (define-key map "\C-c\C-A" #'inf-carp-apropos)
     (define-key map "\C-c\C-m" #'inf-carp-macroexpand)
-    (define-key map "\C-c\C-l" #'inf-carp-load-file)
-    (define-key map "\C-c\C-a" #'inf-carp-show-arglist)
-    (define-key map "\C-c\C-v" #'inf-carp-show-var-documentation)
-    (define-key map "\C-c\C-s" #'inf-carp-show-var-source)
-    (define-key map "\C-c\M-n" #'inf-carp-set-ns)
+    (define-key map "\C-c\C-l" #'inf-carp-eval-buffer)
+    ;; TODO:
+    ;; (define-key map "\C-c\C-v" #'inf-carp-show-var-documentation)
+    ;; (define-key map "\C-c\C-t" #'inf-carp-show-var-type)
+
     (easy-menu-define inf-carp-minor-mode-menu map
       "Inferior Carp Minor Mode Menu"
       '("Inf-Carp"
@@ -77,11 +72,7 @@ mode.  Default is whitespace followed by 0 or 1 single-letter colon-keyword
         ["Switch to REPL" inf-carp-switch-to-repl t]
         ["Set REPL ns" inf-carp-set-ns t]
         "--"
-        ["Show arglist" inf-carp-show-arglist t]
-        ["Show documentation for var" inf-carp-show-var-documentation t]
-        ["Show source for var" inf-carp-show-var-source t]
-        ["Show vars in ns" inf-carp-show-ns-varst]
-        ["Apropos" inf-carp-apropos t]
+        ;;["Show documentation for var" inf-carp-show-var-documentation t]
         ["Macroexpand" inf-carp-macroexpand t]))
     map))
 
@@ -245,7 +236,7 @@ to continue it."
    (t str)))
 
 (defvar inf-carp-project-root-files
-  '("project.clj" "build.boot" "project.carp")
+  '("project.carp")
   "A list of files that can be considered project markers.")
 
 (defun inf-carp-project-root ()
@@ -411,20 +402,26 @@ Used by this command to determine defaults."
 ;;; Command strings
 ;;; ===============
 
-(defcustom inf-carp-var-bake-command
-  "(bake %s)\n"
-  "Command to bake a form."
+(defcustom inf-carp-build-command
+  "(do (reload) (build))\n"
+  "Command to build the project."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-var-doc-command
-  "(carp.repl/doc %s)\n"
-  "Command to query inferior Carp for a var's documentation."
+(defcustom inf-carp-build-and-run-command
+  "(do (reload) (build) (run))\n"
+  "Command to build and run the project."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-var-source-command
-  "(carp.repl/source %s)\n"
+(defcustom inf-carp-var-type-command
+  "(type %s)\n"
+  "Command to query inferior Carp for a var's type."
+  :type 'string
+  :group 'inf-carp)
+
+(defcustom inf-carp-var-info-command
+  "(info %s)\n"
   "Command to query inferior Carp for a var's source."
   :type 'string
   :group 'inf-carp)
@@ -446,34 +443,9 @@ Used by this command to determine defaults."
   :type 'string
   :group 'inf-carp)
 
-(defcustom inf-carp-ns-vars-command
-  "(carp.repl/dir %s)\n"
-  "Command to show the public vars in a namespace."
-  :type 'string
-  :group 'inf-carp)
-
-(defcustom inf-carp-set-ns-command
-  "(carp.core/in-ns '%s)\n"
-  "Command to set the namespace of the inferior Carp process."
-  :type 'string
-  :group 'inf-carp)
-
-(defcustom inf-carp-apropos-command
-  "(doseq [var (sort (carp.repl/apropos \"%s\"))]
-     (println (str var)))\n"
-  "Command to invoke apropos."
-  :type 'string
-  :group 'inf-carp)
-
 (defcustom inf-carp-macroexpand-command
-  "(carp.core/macroexpand '%s)\n"
+  "(expand '%s)\n"
   "Command to invoke macroexpand."
-  :type 'string
-  :group 'inf-carp)
-
-(defcustom inf-carp-macroexpand-1-command
-  "(carp.core/macroexpand-1 '%s)\n"
-  "Command to invoke macroexpand-1."
   :type 'string
   :group 'inf-carp)
 
@@ -518,6 +490,19 @@ The value is nil if it can't find one."
   "Return the name of the symbol at point, otherwise nil."
   (or (thing-at-point 'symbol) ""))
 
+(defun inf-carp-build ()
+  "Send a command to the inferior Carp to build a form.
+See variable `inf-carp-var-build-command'."
+  (interactive)
+  (comint-proc-query (inf-carp-proc) (format inf-carp-build-command)))
+
+(defun inf-carp-build-and-run ()
+  "Send a command to the inferior Carp to build a form.
+See variable `inf-carp-var-build-command'."
+  (interactive)
+  (inf-carp-eval-buffer)
+  (comint-proc-query (inf-carp-proc) (format inf-carp-build-and-run-command)))
+
 (defun inf-carp-bake (var)
   "Send a command to the inferior Carp to bake a form.
 See variable `inf-carp-var-bake-command'."
@@ -527,17 +512,11 @@ See variable `inf-carp-var-bake-command'."
 ;;; Documentation functions: var doc and arglist.
 ;;; ======================================================================
 
-(defun inf-carp-show-var-documentation (var)
-  "Send a command to the inferior Carp to give documentation for VAR.
-See variable `inf-carp-var-doc-command'."
-  (interactive (inf-carp-symprompt "Var doc" (inf-carp-var-at-pt)))
-  (comint-proc-query (inf-carp-proc) (format inf-carp-var-doc-command var)))
-
-(defun inf-carp-show-var-source (var)
-  "Send a command to the inferior Carp to give source for VAR.
-See variable `inf-carp-var-source-command'."
-  (interactive (inf-carp-symprompt "Var source" (inf-carp-var-at-pt)))
-  (comint-proc-query (inf-carp-proc) (format inf-carp-var-source-command var)))
+(defun inf-carp-show-var-type (var)
+  "Send a command to the inferior Carp to give type for VAR.
+See variable `inf-carp-var-type-command'."
+  (interactive (inf-carp-symprompt "Var type" (inf-carp-var-at-pt)))
+  (comint-proc-query (inf-carp-proc) (format inf-carp-var-type-command var)))
 
 (defun inf-carp-arglist (fn)
   "Send a query to the inferior Carp for the arglist for function FN.

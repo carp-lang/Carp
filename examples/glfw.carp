@@ -1,0 +1,25 @@
+(load "GLFW.carp")
+(use GLFW)
+
+(load "OpenGL.carp")
+
+(defn t []
+  (Double.to-float (get-time)))
+
+(defn-do main []
+  (let-do [_ (init)
+           window (create-window 400 300 (cstr "GLFW <3 CARP") NULL NULL)]
+    (make-context-current window)
+    (while (= 0 (window-should-close window))
+      (do
+        (GL.clearColor 1.0f 0.5f 0.2f 1.0f)
+        (GL.clear GL.COLOR_BUFFER_BIT)
+        (GL.color3f 0.0f 0.0f 0.0f)
+        (GL.lineWidth 2.5f)
+        (GL.begin GL.LINES)
+        (GL.vertex3f 0.0f 0.0f 0.0f)
+        (GL.vertex3f (Float.cos (t)) (Float.sin (t)) 0.0f)
+        (GL.end)
+        (swap-buffers window)
+        (poll-events))))
+  0)

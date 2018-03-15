@@ -1,3 +1,4 @@
+(Debug.sanitize-addresses)
 (use Array)
 
 (deftype (Trivial t) [x t])
@@ -17,7 +18,7 @@
     (for [i 0 (count pairs)]
       (let [pair (nth pairs i)]
         (when (= (Entry.key pair) &lookup-key)
-          (set! &result @(Entry.value pair)))))
+          (set! result @(Entry.value pair)))))
     result))
 
 (defn try-dictionary []

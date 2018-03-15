@@ -24,6 +24,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 10.0    ;; Double
 true    ;; Bool
 "hello" ;; &String
+\#"hello" ;; &Pattern
 \e      ;; Char
 [1 2 3] ;; (Array Int)
 ```
@@ -37,6 +38,7 @@ Float
 Double
 Bool
 String
+Pattern
 Char
 (Array t)
 (Fn [<arg-type1> <arg-type2> ...] <return-type>) ;; Function type
@@ -174,6 +176,8 @@ Specifying the type solves this error:
 
 (register blah (Fn [Int Int] String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
+
+(register blah (Fn [Int Int] String) "exit") ;; Will register the function 'blah' but use the name 'exit' in the emitted C code.
 
 (register-type Apple) ;; Register an opaque C type
 (register-type Banana [price Double, size Int]) ;; Register an external C-structs, this will generate getters, setters and updaters.

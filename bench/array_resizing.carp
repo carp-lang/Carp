@@ -1,0 +1,19 @@
+(load "Bench.carp")
+(use Bench)
+(Debug.sanitize-addresses)
+
+(def n 10000)
+
+(defn grow-and-shrink []
+  (ignore (let-do [a [0]]
+            (for [i 1 n]
+              (set! a (Array.push-back a i)))
+            (assert (= n (Array.count &a)))
+            (for [i 1 n]
+              (set! a (Array.pop-back a)))
+            (assert (= 1 (Array.count &a))))))
+
+(defn main []
+  (do
+    (IO.println "Grow and shrink")
+    (bench grow-and-shrink)))

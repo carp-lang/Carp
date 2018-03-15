@@ -14,6 +14,9 @@ https://news.ycombinator.com/item?id=12039268
 - https://github.com/hellerve/sc/tree/real_closures
 - https://yosefk.com/blog/c-as-an-intermediate-language.html
 
+# LAMBDAS
+- http://walfield.org/blog/2010/08/25/lambdas-in-c.html
+
 # OWNERSHIP & BORROWING
 
 - http://blog.piston.rs/2016/01/23/dynamo/
@@ -22,7 +25,7 @@ https://news.ycombinator.com/item?id=12039268
 - http://www.pipeline.com/~hbaker1/LinearLisp.html
 - http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/
 - https://doc.rust-lang.org/book/deref-coercions.html
-- http://ticki.github.io/blog/lambda_crabs_1/
+- http://ticki.github.io/blog/lambda-crabs-part-1-a-mathematical-introduction-to-lifetimes-and-regions/
 - https://gankro.github.io/blah/linear-rust/
 
 # MODULES & FUNCTORS

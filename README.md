@@ -21,10 +21,10 @@ The key features of Carp are the following:
 
 ## Learn more
 
-* [Installation](docs/Install.md) - how to build the Carp compiler
+* [Installation](docs/Install.md) - how to build and configure the Carp compiler
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
-* [Libraries](docs/Libraries.md) - the various libraries that come built into Carp
+* [Libraries](docs/Libraries.md) - how to work with libraries and modules
 * [Tooling](docs/Tooling.md) - supported editors
 * [Game Example](examples/game.carp) - an example of how to use SDL with Carp
 
@@ -48,7 +48,7 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
             (if (= &guess "q\n")
               (do
                 (println "Good bye...")
-                (set! &play false))
+                (set! play false))
               (do
                 (cond (< num answer) (println "Too low.")
                       (> num answer) (println "Too high.")
@@ -78,7 +78,7 @@ Are you missing from the contributors list? Please send a pull request!
 
 ## License
 
-Copyright 2016 - 2017 Erik Svedäng
+Copyright 2016 - 2018 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -91,3 +91,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+The regular expression implementation as found in src/carp_regex.h are
+Copyright (C) 1994-2017 Lua.org, PUC-Rio under the terms of the MIT license.
+Details can be found in the License file LUA_LICENSE.

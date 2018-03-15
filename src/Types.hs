@@ -2,7 +2,7 @@ module Types ( TypeMappings
              , Ty(..)
              , showMaybeTy
              , tyToC
-             , typeIsGeneric
+             , isTypeGeneric
              , SymPath(..)
              , unifySignatures
              , replaceTyVars
@@ -26,6 +26,7 @@ data Ty = IntTy
         | FloatTy
         | DoubleTy
         | StringTy
+        | PatternTy
         | CharTy
         | FuncTy [Ty] Ty
         | VarTy String
@@ -40,6 +41,11 @@ data Ty = IntTy
         | InterfaceTy
         deriving (Eq, Ord)
 
+fnOrLambda =
+  case platform of
+    Windows -> "Fn"
+    _ -> "λ"
+
 instance Show Ty where
   show IntTy                 = "Int"
   show FloatTy               = "Float"
@@ -47,8 +53,9 @@ instance Show Ty where
   show LongTy                = "Long"
   show BoolTy                = "Bool"
   show StringTy              = "String"
+  show PatternTy             = "Pattern"
   show CharTy                = "Char"
-  show (FuncTy argTys retTy) = "(λ [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
+  show (FuncTy argTys retTy) = "(" ++ fnOrLambda ++ " [" ++ joinWithComma (map show argTys) ++ "] " ++ show retTy ++ ")"
   show (VarTy t)             = t
   show UnitTy                = "()"
   show ModuleTy              = "Module"
@@ -81,6 +88,7 @@ tyToCManglePtr _ FloatTy               = "float"
 tyToCManglePtr _ DoubleTy              = "double"
 tyToCManglePtr _ LongTy                = "long"
 tyToCManglePtr _ StringTy              = "string"
+tyToCManglePtr _ PatternTy             = "pattern"
 tyToCManglePtr _ CharTy                = "char"
 tyToCManglePtr _ UnitTy                = "void"
 tyToCManglePtr _ (VarTy x)             = x
@@ -94,13 +102,13 @@ tyToCManglePtr _ TypeTy                = error "Can't emit the type of types."
 tyToCManglePtr _ MacroTy               = error "Can't emit the type of macros."
 tyToCManglePtr _ DynamicTy             = error "Can't emit the type of dynamic functions."
 
-typeIsGeneric :: Ty -> Bool
-typeIsGeneric (VarTy _) = True
-typeIsGeneric (FuncTy argTys retTy) = any typeIsGeneric argTys || typeIsGeneric retTy
-typeIsGeneric (StructTy _ tyArgs) = any typeIsGeneric tyArgs
-typeIsGeneric (PointerTy p) = typeIsGeneric p
-typeIsGeneric (RefTy r) = typeIsGeneric r
-typeIsGeneric _ = False
+isTypeGeneric :: Ty -> Bool
+isTypeGeneric (VarTy _) = True
+isTypeGeneric (FuncTy argTys retTy) = any isTypeGeneric argTys || isTypeGeneric retTy
+isTypeGeneric (StructTy _ tyArgs) = any isTypeGeneric tyArgs
+isTypeGeneric (PointerTy p) = isTypeGeneric p
+isTypeGeneric (RefTy r) = isTypeGeneric r
+isTypeGeneric _ = False
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
 type TypeMappings = Map.Map String Ty

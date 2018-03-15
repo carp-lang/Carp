@@ -1,5 +1,6 @@
 module Emit (toC,
              envToC,
+             globalsToC,
              projectIncludesToC,
              envToDeclarations,
              checkForUnresolvedSymbols,
@@ -11,12 +12,16 @@ import Data.List (intercalate, sortOn)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Maybe (fromMaybe)
 import Debug.Trace
 
 import Obj
 import Types
 import Util
 import Template
+import Scoring
+import Lookup
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '
@@ -34,6 +39,7 @@ data ToCError = InvalidParameter XObj
               | UnresolvedMultiSymbol XObj
               | UnresolvedInterfaceSymbol XObj
               | UnresolvedGenericType XObj
+              | CannotSet XObj
 
 instance Show ToCError where
   show (InvalidParameter xobj) = "Invalid parameter: " ++ show (obj xobj)
@@ -52,6 +58,7 @@ instance Show ToCError where
     " at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
+  show (CannotSet xobj) = "Can't emit code for setting " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
 
 data ToCMode = Functions | Globals | All deriving Show
 
@@ -78,6 +85,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Num _ _ -> error "Can't emit invalid number type."
             Bol b -> return (if b then "true" else "false")
             Str _ -> visitString indent xobj
+            Pattern _ -> visitString indent xobj
             Chr c -> return $ case c of
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
@@ -92,7 +100,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Do -> error (show (DontVisitObj Do))
             e@(Typ _) -> error (show (DontVisitObj e))
             Mod _ -> error (show CannotEmitModKeyword)
-            External -> error (show CannotEmitExternal)
+            External _ -> error (show CannotEmitExternal)
             ExternalType -> error (show (DontVisitObj ExternalType))
             e@(Command _) -> error (show (DontVisitObj e))
             e@(Deftemplate _) ->  error (show (DontVisitObj e))
@@ -108,7 +116,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Ref -> error (show (DontVisitObj Ref))
             e@(Interface _ _) -> error (show (DontVisitObj e))
 
-        visitString indent (XObj (Str str) (Just i) _) =
+        visitStr' indent str i =
           -- | This will allocate a new string every time the code runs:
           -- do let var = freshVar i
           --    appendToSrc (addIndent indent ++ "string " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
@@ -119,15 +127,19 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
              appendToSrc (addIndent indent ++ "static string " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
              appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
+        visitString indent (XObj (Str str) (Just i) _) = visitStr' indent str i
+        visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i
         visitString _ _ = error "Not a string."
         escapeString [] = ""
         escapeString ('\"':xs) = "\\\"" ++ escapeString xs
         escapeString (x:xs) = x : escapeString xs
 
         visitSymbol :: XObj -> State EmitterState String
+        visitSymbol xobj@(XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ t) =
+          return overrideWithName
         visitSymbol xobj@(XObj (Sym path _) _ t) =
           let Just t' = t
-          in if typeIsGeneric t'
+          in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
              else return (pathToC path)
@@ -165,6 +177,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      let innerIndent = indent + indentAmount
                      ret <- visit innerIndent expr
                      appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
+                     delete innerIndent i
                      appendToSrc (addIndent indent ++ "}\n")
                      return ""
 
@@ -220,8 +233,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               let indent' = indent + indentAmount
                   Just exprTy = ty expr
                   conditionVar = freshVar i
+                  Just exprInfo = info expr
               in  do exprRetVar <- visitWhileExpression indent
                      appendToSrc (addIndent indent ++ tyToC exprTy ++ " " ++ conditionVar ++ " = " ++ exprRetVar ++ ";\n")
+                     delete indent exprInfo
                      appendToSrc (addIndent indent ++ "while (" ++ conditionVar ++ ") {\n")
                      _ <- visit indent' body
                      exprRetVar' <- visitWhileExpression indent'
@@ -262,13 +277,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do valueVar <- visit indent value
                  let properVariableName =
                        case variable of
-                         (XObj (Lst (XObj Ref _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> pathToC sym
+                         (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym sym _) _ _) : _)) _ _) -> "*" ++ pathToC sym
                          (XObj (Sym sym _) _ _) -> pathToC sym
-                         v -> error ("Can't 'set!' this: " ++ show v)
+                         v -> error (show (CannotSet variable))
                      Just varInfo = info variable
+                 --appendToSrc (addIndent indent ++ "// " ++ show (length (infoDelete varInfo)) ++ " deleters for " ++ properVariableName ++ ":\n")
                  delete indent varInfo
                  appendToSrc (addIndent indent ++ properVariableName ++ " = " ++ valueVar ++ "; "
-                              ++ " // " ++ (show (ty variable)) ++ " = " ++ (show (ty value))
+                              ++ " // " ++ (show (fromMaybe (VarTy "?") (ty variable))) ++ " = " ++ (show (fromMaybe (VarTy "?") (ty value)))
                               ++ "\n")
                  return ""
 
@@ -315,7 +331,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               return ""
 
             -- External
-            XObj External _ _ : _ ->
+            XObj (External _) _ _ : _ ->
               return ""
 
             -- Macro
@@ -370,6 +386,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                  Just (StructTy "Array" [innerTy]) = t
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                           " = { .len = " ++ show len ++ "," ++
+                          " .capacity = " ++ show len ++ "," ++
                           " .data = CARP_MALLOC(sizeof(" ++ tyToC innerTy ++ ") * " ++ show len ++ ") };\n")
              zipWithM_ (visitArrayElement indent arrayVar innerTy) [0..] xobjs
              return arrayVar
@@ -426,6 +443,8 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       memberToDecl :: (XObj, XObj) -> State EmitterState ()
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
+          -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
+          Just (FuncTy _ _) -> appendToSrc (addIndent indent' ++ "void* " ++ mangle (getName memberName) ++ ";\n")
           Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
           Nothing -> error ("Invalid memberType: " ++ show memberType)
 
@@ -434,7 +453,7 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
                  _ <- mapM typedefCaseToMemberDecl rest
                  appendToSrc ("} " ++ tyToC structTy ++ ";\n")
 
-  in if typeIsGeneric structTy
+  in if isTypeGeneric structTy
      then "" -- ("// " ++ show structTy ++ "\n")
      else emitterSrc (execState visit (EmitterState ""))
 
@@ -469,7 +488,7 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       defaliasToDeclaration aliasTy path
     [XObj (Interface _ _) _ _, _] ->
       ""
-    XObj External _ _ : _ ->
+    XObj (External _) _ _ : _ ->
       ""
     XObj ExternalType _ _ : _ ->
       ""
@@ -493,12 +512,12 @@ binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =
   let xobj = binderXObj binder
   in  case xobj of
-        XObj External _ _ -> Right ""
+        XObj (External _) _ _ -> Right ""
         XObj ExternalType _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode
         _ -> case ty xobj of
-               Just t -> if typeIsGeneric t
+               Just t -> if isTypeGeneric t
                          then Right ""
                          else do checkForUnresolvedSymbols xobj
                                  return (toC toCMode xobj)
@@ -510,20 +529,28 @@ binderToDeclaration typeEnv binder =
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
         _ -> case ty xobj of
-               Just t -> if typeIsGeneric t then Right "" else Right (toDeclaration xobj ++ "")
+               Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration xobj ++ "")
                Nothing -> Left (BinderIsMissingType binder)
 
 envToC :: Env -> ToCMode -> Either ToCError String
 envToC env toCMode =
-  let binders = map snd (Map.toList (envBindings env))
-  in  do okCodes <- mapM (binderToC toCMode) binders
+  let binders = Map.toList (envBindings env)
+  in  do okCodes <- mapM (binderToC toCMode . snd) binders
+         return (concat okCodes)
+
+globalsToC :: Env -> Either ToCError String
+globalsToC globalEnv =
+  let allGlobalBinders = findAllGlobalVariables globalEnv
+  in  do okCodes <- mapM (\(score, binder) ->
+                            fmap (\s -> if s == "" then "" else ("\n    // Depth " ++ show score ++ "\n") ++ s)
+                           (binderToC Globals binder))
+                         (sortGlobalVariableBinders globalEnv allGlobalBinders)
          return (concat okCodes)
 
 envToDeclarations :: TypeEnv -> Env -> Either ToCError String
 envToDeclarations typeEnv env =
   let bindersWithScore = sortDeclarationBinders typeEnv (map snd (Map.toList (envBindings env)))
   in  do okDecls <- mapM (\(score, binder) ->
-                            -- | Uncomment this line to emit the score of each binding:
                             fmap (\s -> if s == "" then "" else ("\n// Depth " ++ show score ++ "\n") ++ s)
                             (binderToDeclaration typeEnv binder))
                          bindersWithScore
@@ -535,7 +562,11 @@ envToDeclarations typeEnv env =
 sortDeclarationBinders :: TypeEnv -> [Binder] -> [(Int, Binder)]
 sortDeclarationBinders typeEnv binders =
   --trace ("\nSORTED: " ++ (show (sortOn fst (map (scoreBinder typeEnv) binders))))
-  sortOn fst (map (scoreBinder typeEnv) binders)
+  sortOn fst (map (scoreTypeBinder typeEnv) binders)
+
+sortGlobalVariableBinders :: Env -> [Binder] -> [(Int, Binder)]
+sortGlobalVariableBinders globalEnv binders =
+  sortOn fst (map (scoreValueBinder globalEnv Set.empty) binders)
 
 checkForUnresolvedSymbols :: XObj -> Either ToCError ()
 checkForUnresolvedSymbols = visit
@@ -544,7 +575,7 @@ checkForUnresolvedSymbols = visit
     visit xobj =
       case ty xobj of
         Nothing -> visitXObj
-        Just t -> if typeIsGeneric t
+        Just t -> if isTypeGeneric t
                   then Left (UnresolvedGenericType xobj)
                   else visitXObj
       where

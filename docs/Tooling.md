@@ -16,7 +16,16 @@ It will hopefully be rewritten and put into one of the package managers eventual
 (add-to-list 'auto-mode-alist '("\\.carp\\'" . carp-mode))
 ```
 
-To start an interactive session, make sure `carp` is in your path (inside Emacs) and do `M-x inf-carp`.
+For Flycheck:
+```
+(require 'carp-flycheck)
+
+(add-hook 'carp-mode-hook
+          (lambda ()
+            (flycheck-mode 1)))
+```
+
+To start an interactive session, make sure `carp` is in your path (inside Emacs) and execute `M-x run-carp`.
 
 ## Other editors
 Clojure syntax highlighting works very well with Carp since it uses the same symbols for most things.

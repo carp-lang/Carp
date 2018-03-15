@@ -1,16 +1,46 @@
 ;; This file contains examples of unsolved bugs
 
-(load "Debug.carp")
-(project-set! "printAST" "true")
 (Debug.sanitize-addresses)
+(Project.config "print-ast" true)
 
 ;; This shouldn't compile:
 ;; (defn faulty-repeat [n inpt]
 ;;     (let [str ""]
 ;;       (do
 ;;         (for [i 0 n]
-;;           (set! &str &(append @str @inpt)))
+;;           (set! str &(append @str @inpt)))
 ;;         @str)))
 ;; (defn main []
 ;;   (let [strings (faulty-repeat 20 "x")]
 ;;     (IO.println &strings)))
+
+;; ;; Dangling reference to member variable.
+;; (deftype S [f String])
+;; (defn main []
+;;   (let [s (S.init @"hello")
+;;         r (S.f &s)
+;;         _ (S.set-f s @"bye")]
+;;     (IO.println r)))
+
+;; ;; Dangling reference to variable.
+;; (defn main []
+;;   (let [s @"hello"
+;;         r &s]
+;;     (do (String.delete s)
+;;         (IO.println r))))
+
+;; ;; This crashes the compiler:
+;; (defn x [a] (the Inthdfdf a))
+
+;; ;; The error message for this is really bad:
+;; (defn f []
+;;   (let [s @"hej"]
+;;     (do (delete s)
+;;         s)))
+
+;; Setting ref to value in short-lived scope
+(defn main []
+  (let-do [r &[1 2 3]]
+    (let [xs [4 5 6]]
+      (set! r &xs))
+    (println* r)))

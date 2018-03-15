@@ -1,3 +1,5 @@
+(system-include "carp_int.h")
+
 (defmodule Int
   (register + (λ [Int Int] Int))
   (register - (λ [Int Int] Int))
@@ -8,11 +10,6 @@
   (register = (λ [Int Int] Bool))
   (register /= (λ [Int Int] Bool))
   (register mod (λ [Int Int] Int))
-  (register seed (λ [Int] ()))
-  (register random (λ [] Int))
-  (register random-between (λ [Int Int] Int))
-  (register str (λ [Int] String))
-  (register from-string (λ [&String] Int))
   (register bit-shift-left (λ [Int Int] Int))
   (register bit-shift-right (λ [Int Int] Int))
   (register bit-and (λ [Int Int] Int))
@@ -21,12 +18,7 @@
   (register bit-not (λ [Int] Int))
   (register inc (λ [Int] Int))
   (register dec (λ [Int] Int))
-  (register copy (λ [&Int] Int)) ;; TODO: Should not be needed when refs to value types are auto-converted to non-refs.
-  (register format (Fn [&String Int] String))
-
-  (register safe-add (λ [Int Int (Ref Int)] Bool))
-  (register safe-sub (λ [Int Int (Ref Int)] Bool))
-  (register safe-mul (λ [Int Int (Ref Int)] Bool))
+  (register copy (λ [&Int] Int))
 
   (register abs (λ [Int] Int))
 
@@ -51,9 +43,9 @@
       (while (/= y 0)
         (do
           (when (/= (bit-and y 1) 0)
-            (set! &r (* r x)))
-          (set! &y (/ y 2))
-          (set! &x (* x x))))
+            (set! r (* r x)))
+          (set! y (/ y 2))
+          (set! x (* x x))))
       r))
 )
 

@@ -1,10 +1,12 @@
 module Polymorphism where
 
+import Debug.Trace
+
 import Obj
 import Types
 import Util
 import TypeError
-import Debug.Trace
+import Lookup
 
 -- | Calculate the full, mangled name of a concretized polymorphic function.
 -- | For example, The 'id' in "(id 3)" will become 'id__int'.

@@ -1,6 +1,6 @@
 (load "Statistics.carp")
 
-(system-include "bench.h")
+(system-include "carp_bench.h")
 (register get-time-elapsed (Fn [] Double))
 
 (defmodule Bench
@@ -9,7 +9,7 @@
   (defn set-min-runs! [n]
     ; / 2 because we run it twice per benchmarking run,
     ; but this is an implementation detail
-    (set! &min-runs (/ n 2)))
+    (set! min-runs (/ n 2)))
 
   (defn get-unit [n]
     (cond
@@ -27,15 +27,15 @@
   (defn ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
-        (for [i 0 n] (ignore f))
+        (for [i 0 n] (ignore (f)))
         (Double.- (get-time-elapsed) start))))
 
   (defn print-bench-results [res total]
     (do
       (print "Total time elapsed: " total)
-      (print "Best case: " (Statistics.Summary.min res))
-      (print "Worst case: " (Statistics.Summary.max res))
-      (print "Standard deviation: " (Statistics.Summary.stdev res))))
+      (print "Best case: " @(Statistics.Summary.min res))
+      (print "Worst case: " @(Statistics.Summary.max res))
+      (print "Standard deviation: " @(Statistics.Summary.stdev res))))
 
   (defn get-samples [f n]
     (let [zero 0.0
@@ -57,7 +57,7 @@
           n (min-one _n)
           total 0.0
           done false
-          res &(Statistics.summary &[0.0])]
+          res (Statistics.summary &[0.0])]
       (do
         (while (and (Double.< total 3000000000.0) (not done))
           (let [loop-start (get-time-elapsed)
@@ -67,22 +67,22 @@
             (if (and
                   (Double.> loop-run 100000.0)
                   (and
-                    (Double.< (Statistics.Summary.median-abs-dev-pct &summ) 1.0)
-                    (Double.< (Double.- (Statistics.Summary.median &summ)
-                                        (Statistics.Summary.median &summ5))
-                              (Statistics.Summary.median-abs-dev &summ5))))
+                    (Double.< @(Statistics.Summary.median-abs-dev-pct &summ) 1.0)
+                    (Double.< (Double.- @(Statistics.Summary.median &summ)
+                                        @(Statistics.Summary.median &summ5))
+                              @(Statistics.Summary.median-abs-dev &summ5))))
               (do
-                (set! &total (Double.+ total loop-run))
-                (set! &done true)
-                (set! &res &summ5))
+                (set! total (Double.+ total loop-run))
+                (set! done true)
+                (set! res summ5))
               (do
-                (set! &total (Double.+ total loop-run))
+                (set! total (Double.+ total loop-run))
                 (if (< (Double.* n 10.0) n)
                   ; abort on overflow
-                  (set! &total (Double.+ total 3000000000.0))
-                  (set! &n (Double.* n 2.0)))))))
+                  (set! total (Double.+ total 3000000000.0))
+                  (set! n (Double.* n 2.0)))))))
           (if done
-            (print-bench-results res total)
+            (print-bench-results &res total)
             (IO.println "Could not stabilize benchmark after more than 3 seconds!")))))
 )
 

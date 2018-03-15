@@ -1,16 +1,19 @@
+(system-include "carp_string.h")
+
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
-  (register append     (Fn [String String] String)) ;; TODO: should take a &String as its second argument?
+  (register append     (Fn [String String] String)) ;; TODO: should take &String:s
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
   (register count      (Fn [&String] Int))
   (register duplicate  (Fn [&String] String))
   (register cstr       (Fn [&String] (Ptr Char)))
   (register str        (Fn [&String] String))
+  (register prn        (Fn [&String] String))
   (register char-at    (Fn [&String Int] Char))
   (register chars      (Fn [&String] (Array Char)))
-  (register from-chars (Fn [(Array Char)] String))
+  (register from-chars (Fn [&(Array Char)] String))
   (register tail (λ [(Ref String)] String))
   (register format (Fn [&String &String] String))
 
@@ -24,70 +27,38 @@
     (let [str @""]
       (do
         (for [i 0 n]
-          (set! &str (append str @inpt)))
+          (set! str (append str @inpt)))
         str)))
-
-  ;; A temporary version of this function, until we have some nicer way to write it
-  (defn split-by [s separators]
-    (let [len (count &s)
-          result (the (Array String) [])
-          cs (chars &s)
-          word @""]
-      (do
-        (for [i 0 len]
-          (let [c (Array.nth &cs i)]
-            (do
-              (if (Int.< 0 (Array.element-count &(the (Array Char) @&separators) @c))
-                (if (= 0 (String.count &word))
-                  () ;; no word
-                  (do (set! &result (Array.push-back @&result @&word))
-                      (set! &word @"")))
-                (set! &word (append @&word (from-chars [@c])))))))
-        ;; Some sweet code duplication for the final word:
-        (if (= 0 (String.count &word))
-          ()
-          (do (set! &result (Array.push-back @&result @&word))
-              (set! &word @"")))
-        result)))
-
-  (defn words [s]
-    (split-by s [\space \tab]))
-
-  (defn lines [s]
-    (split-by s [\newline]))
 
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append (from-chars (Array.replicate x &pad)) @s)))
+      (append (from-chars &(Array.replicate x &pad)) @s)))
 
   (defn pad-right [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append @s (from-chars (Array.replicate x &pad)))))
+      (append @s (from-chars &(Array.replicate x &pad)))))
 
   (defn count-char [s c]
     (let-do [n 0]
       (for [i 0 (count s)]
         (when (= c (char-at s i))
-          (set! &n (Int.inc n))))
+          (set! n (Int.inc n))))
       n))
 
   (defn reverse [s]
-    (from-chars (Array.reverse (chars s))))
+    (from-chars &(Array.reverse (chars s))))
 
   (defn empty? [s]
     (Int.= (count s) 0))
 
-  (defn random-sized [n]
-    (from-chars (Array.repeat n Char.random)))
-
   (defn substring [s a b]
-    (from-chars (Array.subarray &(chars s) a b)))
+    (from-chars &(Array.subarray &(chars s) a b)))
 
   (defn prefix-string [s a]
-    (from-chars (Array.prefix-array &(chars s) a)))
+    (from-chars &(Array.prefix-array &(chars s) a)))
 
   (defn suffix-string [s b]
-    (from-chars (Array.suffix-array &(chars s) b)))
+    (from-chars &(Array.suffix-array &(chars s) b)))
 
   (defn starts-with? [s sub]
     (= sub &(prefix-string s (count sub))))
@@ -96,6 +67,14 @@
     (= sub &(suffix-string s (- (count s) (count sub)))))
 
   (defn zero [] @"")
+
+  ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
+  (defn join [strings]
+    (let-do [result @""
+             len (Array.count strings)]
+      (for [i 0 len]
+        (set! result (String.append result @(Array.nth strings i))))
+      result))
 )
 
 (defmodule StringCopy
@@ -111,5 +90,46 @@
     '(String.copy "")
     (list 'String.append (car strs) (string-join- (cdr strs)))))
 
+;; TODO: Remove this function and replace uses with 'str*'
 (defmacro string-join [:rest strs]
   (string-join- strs))
+
+(defmodule Bool
+  (register str (Fn [Bool] String))
+  (register format (Fn [&String Bool] String))
+)
+
+(defmodule Int
+  (register str (Fn [Int] String))
+  (register format (Fn [&String Int] String))
+  (register from-string (λ [&String] Int))
+)
+
+(defmodule Float
+  (register str (Fn [Float] String))
+  (register format (Fn [&String Float] String))
+)
+
+(defmodule Long
+  (register str (Fn [Long] String))
+  (register format (Fn [&String Long] String))
+  (register from-string (λ [&String] Long))
+)
+
+(defmodule Double
+  (register str (Fn [Double] String))
+  (register format (Fn [&String Double] String))
+)
+
+(defmodule Char
+  (register str (Fn [Char] String))
+  (register format (Fn [&String Char] String))
+)
+
+(defmodule Int (defn prn [x] (Int.str x)))
+(defmodule Long (defn prn [x] (Long.str x)))
+(defmodule Float (defn prn [x] (Float.str x)))
+(defmodule Double (defn prn [x] (Double.str x)))
+(defmodule Bool (defn prn [x] (Bool.str x)))
+(defmodule Char (defn prn [x] (Char.str x)))
+(defmodule Array (defn prn [x] (Array.str x)))

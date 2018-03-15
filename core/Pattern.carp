@@ -1,0 +1,77 @@
+(system-include "carp_pattern.h")
+
+(defmodule Pattern
+  (register find (Fn [&Pattern &String] Int))
+  (register match (Fn [&Pattern &String] (Array String)))
+  (register match-str (Fn [&Pattern &String] String))
+  (register global-match (Fn [&Pattern &String] (Array (Array String))))
+  (register substitute (Fn [&Pattern &String &String Int] String))
+  (defn matches? [pat s] (/= (find pat s) -1))
+
+  (register str (Fn [&Pattern] String))
+  (register prn (Fn [&Pattern] String))
+
+  (register init (Fn [&String] Pattern))
+  (register =    (Fn [&Pattern &Pattern] Bool))
+  (register delete     (Fn [Pattern] ()))
+  (register copy       (Fn [&Pattern] Pattern))
+
+  (defn from-chars [chars]
+    (Pattern.init &(string-join @"[" (String.from-chars chars) @"]")))
+)
+
+(defmodule String
+  (defn in? [s sub]
+    (Pattern.matches? &(Pattern.init sub) s))
+
+  (defn upper? [s]
+    (Pattern.matches? #"^[\u\s\p]*$" s))
+
+  (defn lower? [s]
+    (Pattern.matches? #"^[\l\s\p]*$" s))
+
+  (defn num? [s]
+    (Pattern.matches? #"^[0-9]*$" s))
+
+  (defn alpha? [s]
+    (Pattern.matches? #"^[\u\l]*$" s))
+
+  (defn alphanum? [s]
+    (Pattern.matches? #"^[\w]*$" s))
+
+  (defn hex? [s]
+    (Pattern.matches? #"^[\x]*$" s))
+
+  (defn trim-left [s]
+    (Pattern.substitute #"^\s+" s "" 1))
+
+  (defn trim-right [s]
+    (Pattern.substitute #"\s+$" s "" 1))
+
+  (defn trim [s]
+    (trim-left &(trim-right s)))
+
+  (defn chomp [s]
+    (Pattern.substitute #"\n$" s "" 1))
+
+  (defn collapse-whitespace [s]
+    (Pattern.substitute #"\s+" s " " -1))
+
+  (defn split-by [_s separators]
+    (let-do [s @_s
+             result (the (Array String) [])
+             pat (Pattern.from-chars separators)
+             idx (Pattern.find &pat &s)]
+      (while (Int./= idx -1)
+        (do
+          (set! result (Array.push-back result (prefix-string &s idx)))
+          (set! s (suffix-string &s (+ idx 1)))
+          (set! idx (Pattern.find &pat &s))))
+      (Array.push-back result s)))
+
+  (defn words [s]
+    (split-by s &[\tab \space]))
+
+  (defn lines [s]
+    (split-by s &[\newline]))
+)

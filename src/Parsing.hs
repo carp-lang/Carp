@@ -30,6 +30,7 @@ maybeSigned = do i <- createInfo
 double :: Parsec.Parsec String ParseState XObj
 double = do (i, num) <- maybeSigned
             _ <- Parsec.char '.'
+            incColumn 1
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
             if num == "-"
@@ -76,6 +77,73 @@ string = do i <- createInfo
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
 
+parseInternalPattern :: Parsec.Parsec String ParseState String
+parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
+                          str <- Parsec.many (Parsec.try patternEscaped <|>
+                                              Parsec.try bracketClass <|>
+                                              Parsec.try capture <|>
+                                              simple)
+                          maybeEnd <- Parsec.optionMaybe (Parsec.char '$')
+                          return $ unwrapMaybe maybeAnchor ++ concat str ++
+                                   unwrapMaybe maybeEnd
+    where unwrapMaybe (Just c) = [c]
+          unwrapMaybe (Nothing) = []
+          simple :: Parsec.Parsec String ParseState String
+          simple = do char <- Parsec.noneOf "^$()[]\\\""
+                      return [char]
+          patternEscaped :: Parsec.Parsec String ParseState String
+          patternEscaped = do
+            _ <- Parsec.char '\\'
+            c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
+                               'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
+                               'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
+                               '(', ')', '^', '"']
+            case c of
+              'b' -> do c1 <- Parsec.noneOf ['"']
+                        c2 <- Parsec.noneOf ['"']
+                        return ['\\', c, c1, c2]
+              'f' -> do str <- bracketClass
+                        return $ '\\' : c : str
+              _   -> return ['\\', c]
+          capture :: Parsec.Parsec String ParseState String
+          capture = do
+            opening <- Parsec.char '('
+            str <- Parsec.many (Parsec.try patternEscaped <|>
+                                Parsec.try bracketClass <|>
+                                simple)
+            closing <- Parsec.char ')'
+            return $ "(" ++ concat str ++ ")"
+          range :: Parsec.Parsec String ParseState String
+          range = do
+            begin <- Parsec.alphaNum
+            _ <- Parsec.char '-'
+            end <- Parsec.alphaNum
+            return [begin, '-', end]
+          bracketClass :: Parsec.Parsec String ParseState String
+          bracketClass = do
+            opening <- Parsec.char '['
+            maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
+            str <- Parsec.many (Parsec.try range <|>
+                                Parsec.try patternEscaped <|>
+                                Parsec.many1 (Parsec.noneOf "-^$()[]\\\""))
+            closing <- Parsec.char ']'
+            return $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
+
+
+pattern :: Parsec.Parsec String ParseState XObj
+pattern = do i <- createInfo
+             _ <- Parsec.char '#'
+             _ <- Parsec.char '"'
+             str <- parseInternalPattern
+             _ <- Parsec.char '"'
+             incColumn (length str + 2)
+             return (XObj (Pattern $ treat str) i Nothing)
+  -- auto-escaping backslashes
+  where treat :: String -> String
+        treat [] = []
+        treat ('\\':r) = "\\\\" ++ treat r
+        treat (x:r) = x : treat r
+
 escaped :: Parsec.Parsec String ParseState Char
 escaped =  do
     _ <- Parsec.char '\\'
@@ -115,7 +183,7 @@ aChar = do i <- createInfo
 
 {-# ANN validCharacters "HLint: ignore Use String" #-}
 validCharacters :: [Char]
-validCharacters = "+-*/?!><=_:"
+validCharacters = "+-*/?!><=_:\9580\9559"
 
 symbolSegment :: Parsec.Parsec String ParseState String
 symbolSegment = do sym <- Parsec.many1 validInSymbol
@@ -146,7 +214,7 @@ symbol = do i <- createInfo
               name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
-atom = Parsec.choice [number, string, aChar, symbol]
+atom = Parsec.choice [number, pattern, string, aChar, symbol]
 
 incColumn :: Int -> Parsec.Parsec String ParseState ()
 incColumn x = do s <- Parsec.getState
@@ -170,7 +238,7 @@ linebreak = do s <- Parsec.getState
                    line = infoLine i
                    identifier = infoIdentifier i
                    file = infoFile i
-                   newInfo = Info (line + 1) 0 file (Set.fromList [])  identifier
+                   newInfo = Info (line + 1) 1 file (Set.fromList [])  identifier
                Parsec.putState (s { parseInfo = newInfo })
                _ <- Parsec.char '\n'
                return ()
@@ -259,7 +327,7 @@ lispSyntax = do padding <- Parsec.many whitespace
                 Parsec.sepBy sexpr whitespaceOrNothing
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
-parse text fileName = let initState = ParseState (Info 1 0 fileName (Set.fromList []) 0)
+parse text fileName = let initState = ParseState (Info 1 1 fileName (Set.fromList []) 0)
                       in  Parsec.runParser lispSyntax initState fileName text
 
 

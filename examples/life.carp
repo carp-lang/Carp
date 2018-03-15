@@ -9,6 +9,8 @@
 (use Keycode)
 (use MouseState)
 
+(Project.config "title" "Life")
+
 (def width  60)
 (def height 60)
 
@@ -70,10 +72,10 @@
 (defn neighbours [world x y]
   (let [a (cell-value world (dec x) (dec y))
         b (cell-value world x       (dec y))
-        c (cell-value world (inc x) (dec y))        
+        c (cell-value world (inc x) (dec y))
         d (cell-value world (dec x) y)
         e 0
-        f (cell-value world (inc x) y)     
+        f (cell-value world (inc x) y)
         g (cell-value world (dec x) (inc y))
         h (cell-value world x       (inc y))
         i (cell-value world (inc x) (inc y))]
@@ -117,4 +119,3 @@
                 ())))
           (draw rend (ref world) play)
           (SDL_Delay 30))))))
-

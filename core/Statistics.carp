@@ -23,7 +23,7 @@
       (let [total @(Array.nth data 0)]
         (do
           (for [i 1 (Array.count data)]
-            (set! &total (+ total @(Array.nth data i))))
+            (set! total (+ total @(Array.nth data i))))
           total))))
 
   (defn mean [data]
@@ -34,14 +34,14 @@
       (do
         (for [i 0 (Array.count a)]
           (let [tmp (Double.- (Double.copy (Array.nth a i)) mean)]
-            (set! &sum (Double.* tmp tmp))))
+            (set! sum (Double.* tmp tmp))))
         sum)))
 
   (defn _xx [a mean]
     (let [sum 0.0]
       (do
         (for [i 0 (Array.count a)]
-          (set! &sum (Double.- (Double.copy (Array.nth a i)) mean)))
+          (set! sum (Double.- (Double.copy (Array.nth a i)) mean)))
         sum)))
 
   (defn _ss [data]
@@ -83,7 +83,7 @@
             (let [x @(Array.nth data (/ n 2)) ; else
                   l (- x (/ (from-int interval) 2.0))
                   cf (Array.index-of data x)
-                  f (Array.element-count data x)]
+                  f (Array.element-count data &x)]
               (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
                       (from-int f)))))))
 

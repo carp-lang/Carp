@@ -7,6 +7,7 @@ import Types
 import Obj
 import Util
 import TypeError
+import Lookup
 
 -- | Create a fresh type variable (eg. 'VarTy t0', 'VarTy t1', etc...)
 genVarTyWithPrefix :: String -> State Integer Ty
@@ -64,6 +65,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Num t _)          -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
                        (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
+                       (Pattern _)          -> return (Right (xobj { ty = Just (RefTy PatternTy) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
                        Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
                        (Lst _)            -> visitList env xobj
@@ -79,7 +81,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        Do                 -> return (Left (InvalidObj Do xobj))
                        (Mod _)            -> return (Left (InvalidObj If xobj))
                        e@(Typ _)          -> return (Left (InvalidObj e xobj))
-                       External           -> return (Left (InvalidObj External xobj))
+                       e@(External _)     -> return (Left (InvalidObj e xobj))
                        ExternalType       -> return (Left (InvalidObj ExternalType xobj))
                        e@(Deftemplate _)  -> return (Left (InvalidObj e xobj))
                        e@(Instantiate _)  -> return (Left (InvalidObj e xobj))

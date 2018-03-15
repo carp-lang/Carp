@@ -32,7 +32,7 @@
 
 (defn main []
   (do
-    (System.srand (System.time))
+    (System.seed-random (System.time))
     (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
       (do
         (println (ref (Array.str &monsters)))

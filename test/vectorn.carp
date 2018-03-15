@@ -1,3 +1,5 @@
+(Debug.sanitize-addresses)
+
 (load "Test.carp")
 (load "Vector.carp")
 (load "Geometry.carp")

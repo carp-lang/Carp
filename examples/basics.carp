@@ -28,9 +28,9 @@
   (let [me (Person.init (String.copy "Erik") 30)]
     (println (Person.name (ref me)))))
 
-(defn heap-allocations []
-  (let [friend (Person.new (String.copy "Oscar") 30)]
-    ()))
+;; (defn heap-allocations []
+;;   (let [friend (Person.new (String.copy "Oscar") 30)]
+;;     ()))
 
 (defn refer-up []
   (let [a 10
@@ -153,7 +153,7 @@
   (Float.random-between 10.0f 20.0f))
 
 (defn print-random-floats []
-  (do (System.srand (System.time))
+  (do (System.seed-random (System.time))
       (let [rands (Array.repeat 10 random-float)]
         (println (ref (Array.str &rands))))))
 
@@ -186,12 +186,19 @@
         c2 (count &b)]
     (println* &(str (+ c1 c2)))))
 
+(defn changing-target-of-ref []
+  (let [s1 @"hello"
+        s2 @"goodbye"
+        r &s1]
+    (do (set! r &s2)
+        (IO.println r))))
+
 (defn main []
   (do (Things.call)
       (use-doubles)
       (println (ref (str (fib 10))))
       (use-person)
-      (heap-allocations)
+      ;;(heap-allocations)
       (println (ref (str (refer-up))))
       (println (ref (str (ref [10 20 30 40 50]))))
       ;;(println (ref (str (ref (endo-map Thing.val [(Thing.init 100) (Thing.init 200)])))))
@@ -200,7 +207,7 @@
       (more-array)
       (macrooo)
       (macrooo2)
-      (seed (System.time))
+      (System.seed-random (System.time))
       (println (ref (str (ref (repeat 10 flip)))))
       (calling-delete)
       (updating)
@@ -219,4 +226,5 @@
       (threading)
       (multiple-stringification-of-arrays)
       (two-counts-in-same-func)
+      (changing-target-of-ref)
       ))

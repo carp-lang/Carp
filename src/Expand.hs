@@ -1,9 +1,13 @@
-module Expand (expandAll) where
+module Expand (expandAll, replaceSourceInfoOnXObj) where
 
+import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
+import Control.Monad.State
+import Debug.Trace
+
+import Types
 import Obj
 import Util
-import Control.Monad.State
-import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
+import Lookup
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Env -> XObj -> StateT Context IO (Either EvalError XObj)
@@ -37,7 +41,7 @@ expand eval env xobj =
     expandList (XObj (Lst xobjs) i t) =
       case xobjs of
         [] -> return (Right xobj)
-        XObj External _ _ : _ -> return (Right xobj)
+        XObj (External _) _ _ : _ -> return (Right xobj)
         XObj (Instantiate _) _ _ : _ -> return (Right xobj)
         XObj (Deftemplate _) _ _ : _ -> return (Right xobj)
         XObj (Defalias _) _ _ : _ -> return (Right xobj)
@@ -107,7 +111,7 @@ expand eval env xobj =
                          --trace ("Found dynamic: " ++ pretty xobj)
                          eval env xobj
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr _) _ _, _]) _ _) ->
-                         --trace ("Found macro: " ++ pretty xobj)
+                         --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
                          eval env xobj
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          (getCommand callback) args
@@ -128,7 +132,7 @@ expand eval env xobj =
     expandSymbol :: XObj -> StateT Context IO (Either a XObj)
     expandSymbol (XObj (Sym path _) _ _) =
       case lookupInEnv path env of
-        Just (_, Binder (XObj (Lst (XObj External _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
@@ -172,3 +176,40 @@ setNewIdentifiers root = let final = evalState (visit root) 0
          case info xobj of
            Just i -> return (xobj { info = Just (i { infoIdentifier = counter })})
            Nothing -> return xobj
+
+-- | Replaces the file, line and column info on an XObj an all its children.
+replaceSourceInfo :: FilePath -> Int -> Int -> XObj -> XObj
+replaceSourceInfo newFile newLine newColumn root = visit root
+  where
+    visit :: XObj -> XObj
+    visit xobj =
+      case obj xobj of
+        (Lst _) -> visitList xobj
+        (Arr _) -> visitArray xobj
+        _ -> setNewInfo xobj
+
+    visitList :: XObj -> XObj
+    visitList (XObj (Lst xobjs) i t) =
+      setNewInfo (XObj (Lst (map visit xobjs)) i t)
+    visitList _ =
+      error "The function 'visitList' only accepts XObjs with lists in them."
+
+    visitArray :: XObj -> XObj
+    visitArray (XObj (Arr xobjs) i t) =
+      setNewInfo (XObj (Arr (map visit xobjs)) i t)
+    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    setNewInfo :: XObj -> XObj
+    setNewInfo xobj =
+      case info xobj of
+        Just i -> (xobj { info = Just (i { infoFile = newFile
+                                         , infoLine = newLine
+                                         , infoColumn = newColumn
+                                         })})
+        Nothing -> xobj
+
+replaceSourceInfoOnXObj :: Maybe Info -> XObj -> XObj
+replaceSourceInfoOnXObj newInfo xobj =
+  case newInfo of
+    Just i  -> replaceSourceInfo (infoFile i) (infoLine i) (infoColumn i) xobj
+    Nothing -> xobj

@@ -1,0 +1,7 @@
+(system-include "carp_safe_int.h")
+
+(defmodule Int
+  (register safe-add (λ [Int Int (Ref Int)] Bool))
+  (register safe-sub (λ [Int Int (Ref Int)] Bool))
+  (register safe-mul (λ [Int Int (Ref Int)] Bool))
+  )

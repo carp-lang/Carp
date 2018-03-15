@@ -1,31 +1,46 @@
-(defdynamic caar [pair] (car (car pair)))
-(defdynamic cadr [pair] (car (cdr pair)))
-(defdynamic cdar [pair] (cdr (car pair)))
-(defdynamic cddr [pair] (cdr (cdr pair)))
-(defdynamic caaar [pair] (car (car (car pair))))
-(defdynamic caadr [pair] (car (car (cdr pair))))
-(defdynamic cadar [pair] (car (cdr (car pair))))
-(defdynamic cdaar [pair] (cdr (car (car pair))))
-(defdynamic caddr [pair] (car (cdr (cdr pair))))
-(defdynamic cdadr [pair] (cdr (car (cdr pair))))
-(defdynamic cddar [pair] (cdr (cdr (car pair))))
-(defdynamic cdddr [pair] (cdr (cdr (cdr pair))))
-(defdynamic caaaar [pair] (car (car (car (car pair)))))
-(defdynamic caaadr [pair] (car (car (car (cdr pair)))))
-(defdynamic caadar [pair] (car (car (cdr (car pair)))))
-(defdynamic caaddr [pair] (car (car (cdr (cdr pair)))))
-(defdynamic cadaar [pair] (car (cdr (car (car pair)))))
-(defdynamic cadadr [pair] (car (cdr (car (cdr pair)))))
-(defdynamic caddar [pair] (car (cdr (cdr (car pair)))))
-(defdynamic cadddr [pair] (car (cdr (cdr (cdr pair)))))
-(defdynamic cdaaar [pair] (cdr (car (car (car pair)))))
-(defdynamic cdaadr [pair] (cdr (car (car (cdr pair)))))
-(defdynamic cdadar [pair] (cdr (car (cdr (car pair)))))
-(defdynamic cdaddr [pair] (cdr (car (cdr (cdr pair)))))
-(defdynamic cddaar [pair] (cdr (cdr (car (car pair)))))
-(defdynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
-(defdynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
-(defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+(defmodule Dynamic
+  (defdynamic caar [pair] (car (car pair)))
+  (defdynamic cadr [pair] (car (cdr pair)))
+  (defdynamic cdar [pair] (cdr (car pair)))
+  (defdynamic cddr [pair] (cdr (cdr pair)))
+  (defdynamic caaar [pair] (car (car (car pair))))
+  (defdynamic caadr [pair] (car (car (cdr pair))))
+  (defdynamic cadar [pair] (car (cdr (car pair))))
+  (defdynamic cdaar [pair] (cdr (car (car pair))))
+  (defdynamic caddr [pair] (car (cdr (cdr pair))))
+  (defdynamic cdadr [pair] (cdr (car (cdr pair))))
+  (defdynamic cddar [pair] (cdr (cdr (car pair))))
+  (defdynamic cdddr [pair] (cdr (cdr (cdr pair))))
+  (defdynamic caaaar [pair] (car (car (car (car pair)))))
+  (defdynamic caaadr [pair] (car (car (car (cdr pair)))))
+  (defdynamic caadar [pair] (car (car (cdr (car pair)))))
+  (defdynamic caaddr [pair] (car (car (cdr (cdr pair)))))
+  (defdynamic cadaar [pair] (car (cdr (car (car pair)))))
+  (defdynamic cadadr [pair] (car (cdr (car (cdr pair)))))
+  (defdynamic caddar [pair] (car (cdr (cdr (car pair)))))
+  (defdynamic cadddr [pair] (car (cdr (cdr (cdr pair)))))
+  (defdynamic cdaaar [pair] (cdr (car (car (car pair)))))
+  (defdynamic cdaadr [pair] (cdr (car (car (cdr pair)))))
+  (defdynamic cdadar [pair] (cdr (car (cdr (car pair)))))
+  (defdynamic cdaddr [pair] (cdr (car (cdr (cdr pair)))))
+  (defdynamic cddaar [pair] (cdr (cdr (car (car pair)))))
+  (defdynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
+  (defdynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
+  (defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+
+  (defdynamic eval-internal [form]
+    (list 'do
+          (list 'defn 'main [] (list 'IO.println* form))
+          (list 'build)
+          (list 'run)))
+
+  (defmacro eval [form]
+    (eval-internal form))
+
+  (defmacro e [form]
+    (eval-internal form))
+
+  )
 
 (defdynamic cond-internal [xs]
   (if (= (count xs) 0)
@@ -44,7 +59,7 @@
   (cond-internal xs))
 
 (defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
-  (if (> (count body) 1) 
+  (if (> (count body) 1)
     (macro-error "Warning: the body of the 'for' loop can only contain one expression")
     (list
      'let
@@ -59,7 +74,7 @@
                 (car body)
                 body))
             (list
-             'set! (list 'ref (car settings))
+             'set! (car settings)
              (list 'Int.+
                    (car settings)
                    (if (= 4 (count settings)) ;; optional arg for step
@@ -71,8 +86,8 @@
         (list 'str x)))
 
 (defmacro foreach [f xs]
-  (list 'for ['i 0 (list 'count (list 'ref xs))]
-        (list f (list 'nth (list 'ref xs) 'i))))
+  (list 'for ['i 0 (list 'Array.count (list 'ref xs))]
+        (list f (list 'Array.nth (list 'ref xs) 'i))))
 
 (defdynamic thread-first-internal [xs]
   (if (= (count xs) 2)
@@ -105,10 +120,10 @@
   (thread-last-internal forms))
 
 (defmacro swap! [x y]
-  (list 'let (array 'tmp y) (list 'do (list 'set! &y x) (list 'set! &x 'tmp))))
+  (list 'let (array 'tmp y) (list 'do (list 'set! y x) (list 'set! x 'tmp))))
 
 (defmacro update! [x f]
-  (list 'set! &x (list f x)))
+  (list 'set! x (list f x)))
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
@@ -122,6 +137,11 @@
 
 (defmacro windows-only [:rest forms]
   (if (= "windows" (os))
+    (cons (quote do) forms)
+    ()))
+
+(defmacro not-on-windows [:rest forms]
+  (if (not (= "windows" (os)))
     (cons (quote do) forms)
     ()))
 
@@ -195,5 +215,15 @@
 (defmacro println* [:rest forms]
   (list 'IO.println (list 'ref (build-str* forms))))
 
+(defmacro print* [:rest forms]
+  (list 'IO.print (list 'ref (build-str* forms))))
+
 (defmacro ignore [form]
-  (let [_ form] ()))
+  (list 'let (array '_ form) (list)))
+
+;; Allows inclusion of C headers relative to the Carp file in which this macro is called.
+(defmacro relative-include [file]
+  (list 'local-include
+        (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'source-path))
+                                    "/"
+                                    file])))

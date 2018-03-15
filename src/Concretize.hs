@@ -4,6 +4,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
+import Data.Set ((\\))
 import Data.List (foldl')
 import Debug.Trace
 
@@ -13,9 +14,9 @@ import Types
 import Util
 import TypeError
 import AssignTypes
-import ManageMemory
 import Polymorphism
 import InitialTypes
+import Lookup
 
 -- | This function performs two things:
 -- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
@@ -35,10 +36,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do visited <- visitList allowAmbig env xobj
          return $ do okVisited <- visited
                      Right (XObj (Lst okVisited) i t)
-    visit allowAmbig env (XObj (Arr arr) i (Just t)) =
+    visit allowAmbig env xobj@(XObj (Arr arr) i (Just t)) =
       do visited <- fmap sequence (mapM (visit allowAmbig env) arr)
-         modify (depsForDeleteFunc typeEnv env t ++)
-         modify (defineArrayTypeAlias t : )
+         concretizeTypeOfXObj typeEnv xobj
          return $ do okVisited <- visited
                      Right (XObj (Arr okVisited) i (Just t))
     visit _ _ x = return (Right x)
@@ -48,22 +48,22 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
-      then return $ Left (MainCannotHaveArguments (length argsArr))
+      then return $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
       else do visitedBody <- visit False env body -- allowAmbig == 'False'
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if t /= UnitTy && t /= IntTy
-                          then Left (MainCanOnlyReturnUnitOrInt t)
+                          then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                           else return [defn, nameSymbol, args, okBody]
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
-      do mapM_ checkForNeedOfTypedefs argsArr
+      do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
              Just funcTy = t
-             allowAmbig = typeIsGeneric funcTy
+             allowAmbig = isTypeGeneric funcTy
          visitedBody <- visit allowAmbig envWithArgs body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
@@ -71,7 +71,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
       do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
          visitedBody <- visit allowAmbig env body
-         mapM_ checkForNeedOfTypedefs (map fst (pairwise bindings))
+         mapM_ (concretizeTypeOfXObj typeEnv) (map fst (pairwise bindings))
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
@@ -82,20 +82,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [theExpr, typeXObj, okVisitedValue]
 
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
-      do f <- visit allowAmbig env func
+      do concretizeTypeOfXObj typeEnv func
+         mapM_ (concretizeTypeOfXObj typeEnv) args
+         f <- visit allowAmbig env func
          a <- fmap sequence (mapM (visit allowAmbig env) args)
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
-
-    checkForNeedOfTypedefs :: XObj -> State [XObj] (Either TypeError ())
-    checkForNeedOfTypedefs (XObj _ _ (Just t)) =
-      case t of
-        (FuncTy _ _) | typeIsGeneric t -> return (Right ())
-                     | otherwise -> do modify (defineFunctionTypeAlias t :)
-                                       return (Right ())
-        _ -> return (Right ())
-    checkForNeedOfTypedefs _ = error "Missing type."
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -108,7 +101,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   Just something -> something
                                   Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
-                  typeIsGeneric theType && not (typeIsGeneric typeOfVisited)
+                  isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
                          Left err -> return (Left err)
                          Right (concrete, deps) ->
@@ -186,15 +179,75 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
 
+-- | Do the signatures match?
 matchingSignature :: Ty -> (Ty, SymPath) -> Bool
-matchingSignature tA (tB, _) =
-  let result = areUnifiable tA tB
-  in --(trace ("Are " ++ show tA ++ " unifyable with " ++ show tB ++ "? " ++ show result))
-     result
+matchingSignature tA (tB, _) = areUnifiable tA tB
 
--- matchingNonGenericSignature :: Ty -> (Ty, SymPath) -> Bool
--- matchingNonGenericSignature actualType (t, s) =
---   matchingSignature actualType (t, s) && not (typeIsGeneric t)
+-- | Does the type of an XObj require additional concretization of generic types or some typedefs for function types, etc?
+-- | If so, perform the concretization and append the results to the list of dependencies.
+concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
+concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
+  case concretizeType typeEnv t of
+    Right t -> do modify (t ++)
+                  return (Right ())
+    Left err -> return (Left (InvalidMemberType err))
+concretizeTypeOfXObj _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
+
+-- | Find all the concrete deps of a type.
+concretizeType :: TypeEnv -> Ty -> Either String [XObj]
+concretizeType _ ft@(FuncTy _ _) =
+  if isTypeGeneric ft
+  then Right []
+  else Right [defineFunctionTypeAlias ft]
+concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
+  if isTypeGeneric arrayTy
+  then Right []
+  else do deps <- mapM (concretizeType typeEnv) varTys
+          Right ([defineArrayTypeAlias arrayTy] ++ concat deps)
+concretizeType typeEnv genericStructTy@(StructTy name _) =
+  case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
+    Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
+      if isTypeGeneric originalStructTy
+      then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
+      else Right []
+    Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
+      Right []
+    Just (_, Binder x) ->
+      error ("Non-deftype found in type env: " ++ show x)
+    Nothing ->
+      error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
+concretizeType _ t =
+    Right [] -- ignore all other types
+
+-- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
+instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either String [XObj]
+instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
+  -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
+  let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+      fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
+      XObj (Arr memberXObjs) _ _ = head membersXObjs
+  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
+        Left e -> error (show e)
+        Right mappings ->
+          let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
+          in  case validateMembers typeEnv originalTyVars concretelyTypedMembers of
+                Left err -> Left err
+                Right () ->
+                  let deps = sequence (map (f typeEnv) (pairwise concretelyTypedMembers))
+                  in case deps of
+                       Left err -> Left err
+                       Right okDeps ->
+                         Right $ [ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
+                                              XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                              [(XObj (Arr concretelyTypedMembers) Nothing Nothing)])
+                                        ) (Just dummyInfo) (Just TypeTy)
+                                 ] ++ concat okDeps
+
+f :: TypeEnv -> (XObj, XObj) -> Either String [XObj]
+f typeEnv (_, tyXObj) =
+  case (xobjToTy tyXObj) of
+    Just okTy -> concretizeType typeEnv okTy
+    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type.")
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
@@ -231,7 +284,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
       XObj (Lst (XObj (Deftemplate (TemplateCreator templateCreator)) _ _ : _)) _ _ ->
         let template = templateCreator typeEnv globalEnv
         in  Right (instantiateTemplate newPath concreteType template)
-      XObj (Lst [XObj External _ _, _]) _ _ ->
+      XObj (Lst [XObj (External _) _ _, _]) _ _ ->
         if name == "NULL"
         then Right (definition, []) -- A hack to make all versions of NULL have the same name
         else let withNewPath = setPath definition newPath
@@ -254,7 +307,7 @@ depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XOb
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] ->
-      (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+      (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
     -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
     -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
@@ -282,11 +335,11 @@ depsForCopyFunc typeEnv env t =
   else []
 
 -- | Helper for finding the 'str' function for a type.
-depsForStrFunc :: TypeEnv -> Env -> Ty -> [XObj]
-depsForStrFunc typeEnv env t =
+depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
+depsForPrnFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [RefTy t] StringTy)
-  else depsOfPolymorphicFunction typeEnv env [] "str" (FuncTy [t] StringTy)
+  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t] StringTy)
+  else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
@@ -407,6 +460,17 @@ manageMemory typeEnv globalEnv root =
                             Right _ ->
                               do okBody <- visitedBody
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
+
+            [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
+              do visitedExpr <- visit expr
+                 result <- unmanage expr
+                 return $
+                   case result of
+                     Left e -> Left e
+                     Right () ->
+                       do okExpr <- visitedExpr
+                          return (XObj (Lst [def, nameSymbol, okExpr]) i t)
+
             [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
               let Just letReturnType = t
               in case letReturnType of
@@ -430,36 +494,63 @@ manageMemory typeEnv globalEnv root =
                             return $ do okBody <- visitedBody
                                         okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
                                         return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
+
+            -- Set!
             [setbangExpr@(XObj SetBang _ _), variable, value] ->
-              do visitedValue <- visit value
-                 unmanage value -- The assigned value can't be used anymore
-
                  let varInfo = info variable
-                     correctVariable = case variable of
-                                         XObj (Lst (XObj Ref _ _ : x : _)) _ _ -> x -- Peek inside the ref to get the actual variable to set
-                                         x -> x
+                     correctVariableAndMode =
+                       case variable of
+                         -- DISABLE FOR NOW: (XObj (Lst (XObj (Sym (SymPath _ "copy") _) _ _ : symObj@(XObj (Sym _ _) _ _) : _)) _ _) -> Right symObj
+                         symObj@(XObj (Sym _ mode) _ _) -> Right (symObj, mode)
+                         anythingElse -> Left (CannotSet anythingElse)
+                 in
+                 case correctVariableAndMode of
+                   Left err ->
+                     return (Left err)
+                   Right (okCorrectVariable, okMode) ->
+                     do MemState preDeleters _ <- get
+                        ownsTheVarBefore <- case createDeleter okCorrectVariable of
+                                              Nothing -> return (Right ())
+                                              Just d -> if Set.member d preDeleters || okMode == LookupGlobal
+                                                        then return (Right ())
+                                                        else return (Left (UsingUnownedValue variable))
 
-                 MemState managed deps  <- get
+                        visitedValue <- visit value
+                        unmanage value -- The assigned value can't be used anymore
+                        MemState managed deps <- get
+                        -- Delete the value previously stored in the variable, if it's still alive
+                        let deleters = case createDeleter okCorrectVariable of
+                                         Just d  -> Set.fromList [d]
+                                         Nothing -> Set.empty
+                            newVariable =
+                              case okMode of
+                                Symbol -> error "How to handle this?"
+                                LookupLocal ->
+                                  if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
+                                  then variable { info = setDeletersOnInfo varInfo deleters }
+                                  else variable -- don't add the new info = no deleter
+                                LookupGlobal ->
+                                  variable { info = setDeletersOnInfo varInfo deleters }
 
-                 -- Delete the value previously stored in the variable, if it's still alive
-                 let deleters = case createDeleter correctVariable of
-                                  Just d  -> Set.fromList [d]
-                                  Nothing -> Set.empty
-                     newVarInfo = setDeletersOnInfo varInfo deleters
-                     newVariable =
-                       if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
-                       then variable { info = newVarInfo }
-                       else variable -- don't add the new info = no deleter
+                            traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
+                                               "unmanaged " ++ pretty value ++ "\n" ++
+                                               "managed: " ++ show managed ++ "\n" ++
+                                               "deleters: " ++ show deleters ++ "\n")
 
-                 when True $ -- Should be when the variable itself isn't a ref
-                   manage correctVariable -- The variable can be used again
+                        case okMode of
+                          Symbol -> error "Should only be be a global/local lookup symbol."
+                          LookupLocal -> manage okCorrectVariable
+                          LookupGlobal -> return ()
 
-                 return $ do okValue <- visitedValue
-                             return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
+                        return $ do okValue <- visitedValue
+                                    okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
+                                    return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
+
             [addressExpr@(XObj Address _ _), value] ->
               do visitedValue <- visit value
                  return $ do okValue <- visitedValue
                              return (XObj (Lst [addressExpr, okValue]) i t)
+
             [theExpr@(XObj The _ _), typeXObj, value] ->
               do visitedValue <- visit value
                  result <- transferOwnership value xobj
@@ -467,6 +558,7 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ -> do okValue <- visitedValue
                                           return (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+
             [refExpr@(XObj Ref _ _), value] ->
               do visitedValue <- visit value
                  case visitedValue of
@@ -476,6 +568,7 @@ manageMemory typeEnv globalEnv root =
                         case checkResult of
                           Left e -> return (Left e)
                           Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
+
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM visit expressions
                  result <- transferOwnership (last expressions) xobj
@@ -483,55 +576,82 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ -> do okExpressions <- sequence visitedExpressions
                                           return (XObj (Lst (doExpr : okExpressions)) i t)
+
             [whileExpr@(XObj While _ _), expr, body] ->
               do MemState preDeleters _ <- get
                  visitedExpr <- visit expr
+                 MemState afterExprDeleters _ <- get
                  visitedBody <- visit body
                  manage body
                  MemState postDeleters deps <- get
                  -- Visit an extra time to simulate repeated use
                  visitedExpr2 <- visit expr
                  visitedBody2 <- visit body
-                 let diff = postDeleters Set.\\ preDeleters
-                 put (MemState (postDeleters Set.\\ diff) deps) -- Same as just pre deleters, right?!
+                 let diff = postDeleters \\ preDeleters
+                 put (MemState (postDeleters \\ diff) deps) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
                              okBody <- visitedBody
                              okExpr2 <- visitedExpr2 -- This evaluates the second visit so that it actually produces the error
                              okBody2 <- visitedBody2 -- And this one too. Laziness FTW.
                              let newInfo = setDeletersOnInfo i diff
-                             return (XObj (Lst [whileExpr, okExpr, okBody]) newInfo t)
+                                 -- Also need to set deleters ON the expression (for first run through the loop)
+                                 XObj objExpr objInfo objTy = okExpr
+                                 newExprInfo = setDeletersOnInfo objInfo (afterExprDeleters \\ preDeleters)
+                                 newExpr = XObj objExpr newExprInfo objTy
+                             return (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
               do visitedExpr <- visit expr
-                 MemState deleters deps <- get
+                 MemState preDeleters deps <- get
 
                  let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
                                                                       result <- transferOwnership ifTrue xobj;
                                                                       return $ case result of
-                                                                                 Left e -> Left e
-                                                                                 Right _ -> v
+                                                                                 Left e -> error (show e) -- Left e
+                                                                                 Right () -> v
                                                                     })
-                                                       (MemState deleters deps)
+                                                       (MemState preDeleters deps)
 
                      (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
                                                                       result <- transferOwnership ifFalse xobj;
                                                                       return $ case result of
-                                                                                 Left e -> Left e
-                                                                                 Right _ -> v
+                                                                                 Left e -> error (show e) -- Left e
+                                                                                 Right () -> v
                                                                     })
-                                                       (MemState deleters deps)
+                                                       (MemState preDeleters deps)
 
-                 let removeTrue  = memStateDeleters stillAliveTrue
-                     removeFalse = memStateDeleters stillAliveFalse
-                     -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
-                     deletedInTrue  = deleters Set.\\ removeTrue
-                     deletedInFalse = deleters Set.\\ removeFalse
-                     common = Set.intersection deletedInTrue deletedInFalse
-                     delsTrue  = deletedInFalse Set.\\ common
-                     delsFalse = deletedInTrue  Set.\\ common
-                     stillAlive = deleters Set.\\ Set.union deletedInTrue deletedInFalse
+                 let -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
+                     deletedInTrue  = preDeleters \\ (memStateDeleters stillAliveTrue)
+                     deletedInFalse = preDeleters \\ (memStateDeleters stillAliveFalse)
+                     deletedInBoth  = Set.intersection deletedInTrue deletedInFalse
+                     createdInTrue  = (memStateDeleters stillAliveTrue)  \\ preDeleters
+                     createdInFalse = (memStateDeleters stillAliveFalse) \\ preDeleters
+                     selfDeleter = case createDeleter xobj of
+                                     Just ok -> Set.fromList [ok]
+                                     Nothing -> Set.empty
+                     createdAndDeletedInTrue  = createdInTrue  \\ selfDeleter
+                     createdAndDeletedInFalse = createdInFalse \\ selfDeleter
+                     delsTrue  = Set.union (deletedInFalse \\ deletedInBoth) createdAndDeletedInTrue
+                     delsFalse = Set.union (deletedInTrue  \\ deletedInBoth) createdAndDeletedInFalse
+                     stillAliveAfter = preDeleters \\ (Set.union deletedInTrue deletedInFalse)
 
-                 put (MemState stillAlive deps)
+                     traceDeps = trace ("IF-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
+                                        "preDeleters: " ++ show (preDeleters) ++ "\n" ++
+                                        "stillAliveTrue: " ++ show (memStateDeleters stillAliveTrue) ++ "\n" ++
+                                        "stillAliveFalse: " ++ show (memStateDeleters stillAliveFalse) ++ "\n" ++
+                                        "createdInTrue: " ++ show (createdInTrue) ++ "\n" ++
+                                        "createdInFalse: " ++ show (createdInFalse) ++ "\n" ++
+                                        "createdAndDeletedInTrue: " ++ show (createdAndDeletedInTrue) ++ "\n" ++
+                                        "createdAndDeletedInFalse: " ++ show (createdAndDeletedInFalse) ++ "\n" ++
+                                        "deletedInTrue: " ++ show (deletedInTrue) ++ "\n" ++
+                                        "deletedInFalse: " ++ show (deletedInFalse) ++ "\n" ++
+                                        "deletedInBoth: " ++ show (deletedInBoth) ++ "\n" ++
+                                        "delsTrue: " ++ show (delsTrue) ++ "\n" ++
+                                        "delsFalse: " ++ show (delsFalse) ++ "\n" ++
+                                        "stillAlive: " ++ show (stillAliveAfter) ++ "\n"
+                                       )
+
+                 put (MemState stillAliveAfter deps)
                  manage xobj
 
                  return $ do okExpr  <- visitedExpr
@@ -635,9 +755,8 @@ manageMemory typeEnv globalEnv root =
           do result <- unmanage from
              case result of
                Left e -> return (Left e)
-               Right _ -> do manage to
+               Right _ -> do manage to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
                              return (Right ())
-             --trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") $ return ()
 
         varOfXObj :: XObj -> String
         varOfXObj xobj =

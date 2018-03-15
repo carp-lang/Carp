@@ -1,11 +1,13 @@
+(system-include "carp_bool.h")
+
 (defmodule Bool
   (register = (Fn [Bool Bool] Bool))
   (register /= (Fn [Bool Bool] Bool))
-  (register str (Fn [Bool] String))
   (register copy (Fn [&Bool] Bool))
   (register format (Fn [&String Bool] String))
-  )
+)
 
 (defmodule RefBool
   (defn = [a b]
     (Bool.= @a @b)))
+)

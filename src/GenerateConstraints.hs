@@ -57,7 +57,7 @@ genConstraints root = fmap sort (gen root)
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info xobj) (Just BoolTy)
+                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info expr) (Just BoolTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
                                     sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
                                     Just t = ty xobj
@@ -72,7 +72,7 @@ genConstraints root = fmap sort (gen root)
                                 insideBodyConstraints <- gen body
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
-                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info xobj) (Just BoolTy)
+                                let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info expr) (Just BoolTy)
                                     expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (info xobj) (Just UnitTy)
                                     conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
                                     wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
@@ -101,10 +101,11 @@ genConstraints root = fmap sort (gen root)
                            -- Set!
                            [XObj SetBang _ _, variable, value] ->
                              do insideValueConstraints <- gen value
+                                insideVariableConstraints <- gen variable
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType (RefTy valueType) variable value OrdSetBang
-                                return (sameTypeConstraint : insideValueConstraints)
+                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
+                                return (sameTypeConstraint : insideValueConstraints ++ insideVariableConstraints)
 
                            -- The
                            [XObj The _ _, _, value] ->

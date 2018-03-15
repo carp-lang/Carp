@@ -4,9 +4,10 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
-(load "Debug.carp")
 
 (Debug.sanitize-addresses)
+
+(Project.config "title" "Ant")
 
 (deftype State
     [width Int
@@ -17,7 +18,7 @@
      dir Int])
 
 (defn coord-to-index [state x y]
-  (+ (* y (State.width state)) x))
+  (+ (* y @(State.width state)) x))
 
 (defn get-square [state x y]
   @(nth (State.grid state) (coord-to-index state x y)))
@@ -27,13 +28,13 @@
     (SDL_SetRenderDrawBlendMode rend SDL_BLENDMODE_ADD)
     (SDL_SetRenderDrawColor rend 0 0 0 0)
     (SDL_RenderClear rend)
-    (for [y 0 (State.height state)]
-      (for [x 0 (State.width state)]
-        (let [w (/ 800 (State.width state))
-              h (/ 600 (State.height state))]
+    (for [y 0 @(State.height state)]
+      (for [x 0 @(State.width state)]
+        (let [w (/ 800 @(State.width state))
+              h (/ 600 @(State.height state))]
           (do
             (cond
-              (and (= x (State.x state)) (= y (State.y state))) (SDL_SetRenderDrawColor rend 255 0 0 255)
+              (and (= x @(State.x state)) (= y @(State.y state))) (SDL_SetRenderDrawColor rend 255 0 0 255)
               (get-square state x y) (SDL_SetRenderDrawColor rend 0 0 0 255)
               (SDL_SetRenderDrawColor rend 255 255 255 255))
             (SDL_RenderFillRect rend (address (make-rect (* x w) (* y h) (dec w) (dec h))))))))
@@ -48,8 +49,8 @@
               ())))))
 
 (defn flip-at-ant [state]
-  (let [x (State.x &state)
-        y (State.y &state)
+  (let [x @(State.x &state)
+        y @(State.y &state)
         n (coord-to-index &state x y)
         b (nth (State.grid &state) n)]
     (do (aset! (State.grid &state) n (not @b))
@@ -62,11 +63,11 @@
   (if (= dir 0) 3 (dec dir)))
 
 (defn move-ant [state]
-  (let [x (State.x &state)
-        y (State.y &state)
+  (let [x @(State.x &state)
+        y @(State.y &state)
         n (coord-to-index &state x y)
         b (nth (State.grid &state) n)
-        dir (State.dir &state)
+        dir @(State.dir &state)
         new-dir (if @b (turn-left dir) (turn-right dir))
         new-x (case new-dir
                 0 (inc x)
@@ -102,7 +103,7 @@
         (do
           (handle-events &app rend)
           (draw rend &state)
-          (set! &state (tick state))
+          (set! state (tick state))
           (SDL_Delay 2)))))
 
 ;; Just the model
@@ -112,7 +113,7 @@
 ;;     (let [state (create-state)]
 ;;       (for [i 0 10000]
 ;;         (do
-;;           (set! &state (tick state))
+;;           (set! state (tick state))
 ;;           (IO.println &(str (State.dir &state)))
 ;;           (IO.println &(str (Debug.memory-balance)))
 ;;           (System.sleep-micros 1000)

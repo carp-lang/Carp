@@ -10,3 +10,5 @@
 /Carp.prof
 dist/
 /releases
+main.obj
+examples/out

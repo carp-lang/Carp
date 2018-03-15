@@ -16,6 +16,7 @@ import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.FilePath (takeDirectory)
 import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
@@ -65,8 +66,7 @@ addCommandConfigurable name maybeArity callback =
         withoutArity args =
           callback args
 
-
--- | Command for changing various project settings.
+-- | DEPRECATED Command for changing various project settings.
 commandProjectSet :: CommandCallback
 commandProjectSet [XObj (Str key) _ _, value] =
   do ctx <- get
@@ -84,12 +84,50 @@ commandProjectSet [XObj (Str key) _ _, value] =
                       "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
                       "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
                       "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
-                      _ -> err ("Unrecognized key: '" ++ key ++ "'") ctx
+                      _ -> presentError ("Unrecognized key: '" ++ key ++ "'") ctx
           put newCtx
           return dynamicNil
-       val -> err "Argument to project-set! must be a string" dynamicNil
-    where err msg ret = liftIO $ do putStrLnWithColor Red msg
-                                    return ret
+       val -> presentError "Argument to project-set! must be a string" dynamicNil
+
+presentError :: MonadIO m => String -> a -> m a
+presentError msg ret =
+  liftIO $ do putStrLnWithColor Red msg
+              return ret
+
+-- | Command for changing various project settings.
+commandProjectConfig :: CommandCallback
+commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
+  do ctx <- get
+     let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+         newProj = case key of
+                     "cflag" -> do cflag <- unwrapStringXObj value
+                                   return (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
+                     "libflag" -> do libflag <- unwrapStringXObj value
+                                     return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
+                     "prompt" -> do prompt <- unwrapStringXObj value
+                                    return (proj { projectPrompt = prompt })
+                     "search-path" -> do searchPath <- unwrapStringXObj value
+                                         return (proj { projectCarpSearchPaths = addIfNotPresent searchPath (projectCarpSearchPaths proj) })
+                     "print-ast" -> do printAST <- unwrapBoolXObj value
+                                       return (proj { projectPrintTypedAST = printAST })
+                     "echo-c" -> do echoC <- unwrapBoolXObj value
+                                    return (proj { projectEchoC = echoC })
+                     "echo-compiler-cmd" -> do echoCompilerCmd <- unwrapBoolXObj value
+                                               return (proj { projectEchoCompilationCommand = echoCompilerCmd })
+                     "compiler" -> do compiler <- unwrapStringXObj value
+                                      return (proj { projectCompiler = compiler })
+                     "title" -> do title <- unwrapStringXObj value
+                                   return (proj { projectTitle = title })
+                     "output-directory" -> do outDir <- unwrapStringXObj value
+                                              return (proj { projectOutDir = outDir })
+                     _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
+     case newProj of
+       Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
+       Right ok -> do put (ctx { contextProj = ok })
+                      return dynamicNil
+commandProjectConfig [faultyKey, _] =
+  do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
@@ -102,7 +140,7 @@ commandCat :: CommandCallback
 commandCat args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "main.c"
+         outMain = outDir ++ "/" ++ "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
 
@@ -111,7 +149,7 @@ commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outExe = outDir ++ projectTitle (contextProj ctx)
+         outExe = "\"" ++ outDir ++ "/" ++ projectTitle (contextProj ctx) ++ "\""
      liftIO $ do handle <- spawnCommand outExe
                  exitCode <- waitForProcess handle
                  case exitCode of
@@ -129,7 +167,7 @@ commandBuild args =
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                   c <- envToC env Functions
-                  initGlobals <- fmap wrapInInitFunction (envToC env Globals)
+                  initGlobals <- fmap wrapInInitFunction (globalsToC env)
                   return ("//Types:\n" ++ typeDecl ++
                           "\n\n//Declarations:\n" ++ decl ++
                           "\n\n//Init globals:\n" ++ initGlobals ++
@@ -145,19 +183,19 @@ commandBuild args =
                          includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                          switches = " -g "
                          flags = projectFlags proj ++ includeCorePath ++ switches
-                         outDir = projectOutDir proj
+                         outDir = projectOutDir proj ++ "/"
                          outMain = outDir ++ "main.c"
                          outExe = outDir ++ projectTitle proj
                          outLib = outDir ++ projectTitle proj
                      createDirectoryIfMissing False outDir
                      writeFile outMain (incl ++ okSrc)
                      case Map.lookup "main" (envBindings env) of
-                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o " ++ outExe ++ " " ++ flags
+                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
                                     when echoCompilationCommand (putStrLn cmd)
                                     callCommand cmd
                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                                     return dynamicNil
-                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o " ++ outLib ++ " " ++ flags
+                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
                                      when echoCompilationCommand (putStrLn cmd)
                                      callCommand cmd
                                      when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
@@ -288,6 +326,22 @@ commandHelp [XObj(Str "interop") _ _] =
               putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
               return dynamicNil
 
+commandHelp [XObj(Str "project") _ _] =
+  liftIO $ do putStrLn "(Project.config <setting> <value>) handles the following settings:"
+              putStrLn ""
+              putStrLn "'cflag'              - Add a flag to the compiler."
+              putStrLn "'libflag'            - Add a library flag to the compiler."
+              putStrLn "'compiler'           - Set what compiler should be run with the 'build' command."
+              putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
+              putStrLn "'prompt'             - Set the prompt in the repl."
+              putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."
+              putStrLn ""
+              putStrLn "'echo-c'             - When a form is defined using 'def' or 'defn' its C code will be printed."
+              putStrLn "'echo-compiler-cmd'  - When building the project the command for running the C compiler will be printed."
+              putStrLn "'print-ast'          - The 'info' command will print the AST for a binding."
+              putStrLn ""
+              return dynamicNil
+
 commandHelp [] =
   liftIO $ do putStrLn "Compiler commands:"
               putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
@@ -300,9 +354,9 @@ commandHelp [] =
               putStrLn "(info <symbol>)    - Get information about a binding."
               putStrLn "(project)          - Display information about your project."
               putStrLn "(quit)             - Terminate this Carp REPL."
-              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"interop\", \"shortcuts\", \"about\"."
+              putStrLn "(help <chapter>)   - Available chapters: \"language\", \"macros\", \"structs\", \"interop\", \"shortcuts\", \"project\", \"about\"."
               putStrLn ""
-              putStrLn "(project-set! <setting> <value>) - Change a project setting (not fully implemented)."
+              putStrLn "(Project.config! <setting> <value>) - Change a project setting."
               putStrLn ""
               putStrLn "To define things:"
               putStrLn "(def <name> <constant>)                       - Define a global variable."
@@ -316,6 +370,8 @@ commandHelp [] =
               putStrLn "-x                               - Build and run."
               putStrLn "--no-core                        - Don't load the core library."
               putStrLn "--log-memory                     - Enables use of memory logging functions in the Debug module."
+              putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
+              putStrLn "--check                          - Report all errors found in a machine readable way."
               return dynamicNil
 
 commandHelp args =
@@ -429,7 +485,7 @@ commandMacroError :: CommandCallback
 commandMacroError [msg] =
   case msg of
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
-    _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
+    x                  -> return (Left (EvalError (pretty x)))
 
 commandEq :: CommandCallback
 commandEq [a, b] =
@@ -524,6 +580,24 @@ commandStringCount [a] =
     _ ->
       Left (EvalError ("Can't call count with " ++ pretty a))
 
+commandStringJoin :: CommandCallback
+commandStringJoin [a] =
+  return $ case a of
+    XObj (Arr strings) _ _ ->
+      case (sequence (map unwrapStringXObj strings)) of
+        Left err -> Left (EvalError err)
+        Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
+commandStringDirectory :: CommandCallback
+commandStringDirectory [a] =
+  return $ case a of
+    XObj (Str s) _ _ ->
+      Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
 commandPlus :: CommandCallback
 commandPlus [a, b] =
   return $ case (a, b) of
@@ -563,3 +637,8 @@ commandMul [a, b] =
       else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
+
+-- | TODO: Allow varargs
+commandStr :: CommandCallback
+commandStr [x] =
+  return (Right (XObj (Str (pretty x)) (Just dummyInfo) (Just StringTy)))

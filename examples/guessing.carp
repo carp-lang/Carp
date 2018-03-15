@@ -4,6 +4,8 @@
 (use Int)
 (use String)
 
+(Project.config "title" "Guessing")
+
 (def guessing true)
 (def answer 0)
 
@@ -11,14 +13,14 @@
   (do (println "~ The Number Guessing Game ~")
       (println "(Enter q to quit.)\n")
 
-      (set! &guessing true)
-      (set! &answer (random-between 1 100))
+      (set! guessing true)
+      (set! answer (random-between 1 100))
 
       (print "Please enter a number between 1 - 99: ")))
 
 (defn exit! []
   (do (println "Good bye...")
-      (set! &guessing false)))
+      (set! guessing false)))
 
 (defn play-again? [user-input]
   (if (= user-input "y\n") true false))
@@ -37,7 +39,7 @@
 
 (defn main []
   (do (println "Seeding random number generator...\n")
-      (seed (System.time))
+      (System.seed-random (System.time))
       (start-new-game!)
       (while guessing
         (let [user-input (get-line)
