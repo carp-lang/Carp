@@ -239,7 +239,7 @@ templitizeTy :: Ty -> Ty
 templitizeTy (VarTy vt) = VarTy ("$" ++ vt)
 templitizeTy (FuncTy argTys retTy) = (FuncTy (map templitizeTy argTys) (templitizeTy retTy))
 templitizeTy t = t
-
+-- TODO: Handle more types here!
 
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> String -> Either String ((String, Binder), [XObj])
@@ -321,7 +321,7 @@ calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
               strFuncType = FuncTy [refOrNotRefType] StringTy
            in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
                 Just strFunctionPath ->
-                  unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
+                  unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ "); "
                           , "  size += snprintf(NULL, 0, \"%s \", temp);"
                           , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                           ]

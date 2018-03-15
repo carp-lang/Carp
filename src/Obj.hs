@@ -295,6 +295,8 @@ replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _)
      else xobj
 replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
   (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
+replaceGenericTypeSymbols mappings (XObj (Arr arr) i t) =
+  (XObj (Arr (map (replaceGenericTypeSymbols mappings) arr)) i t)
 replaceGenericTypeSymbols _ xobj = xobj
 
 -- | Convert a Ty to the s-expression that represents that type.
