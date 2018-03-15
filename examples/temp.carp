@@ -4,16 +4,14 @@
 (Project.config "print-ast" true)
 
 (deftype Enemy [hp Int
-                attack (Fn [Enemy] Enemy)])
-
-(defn fire [e]
-  (Enemy.update-hp e dec))
+                attack (Fn [Int] Int)])
 
 (defn attack [attacker target]
-  (let [f (unsafe-deref (Enemy.attack attacker))]
-    (f target)))
+  (let [f (unsafe-deref (Enemy.attack attacker))
+        new-hp (f @(Enemy.hp &target))]
+    (Enemy.set-hp target new-hp)))
 
 (defn main []
-  (let [enemy (Enemy.init 100 fire)
-        hero (Enemy.init 100 fire)]
+  (let [enemy (Enemy.init 100 dec)
+        hero (Enemy.init 100 dec)]
     (println* &(attack &enemy hero))))

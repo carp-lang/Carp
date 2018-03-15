@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Deftype (moduleForDeftype, bindingsForRegisteredType) where
 
 import qualified Data.Map as Map
@@ -106,9 +108,9 @@ templateSetter typeEnv env memberName memberTy =
                                 ,"    p." ++ memberName ++ " = newValue;"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\_ -> if isManaged typeEnv memberTy
-           then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
-           else [])
+    (\_ -> if | isManaged typeEnv memberTy -> depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+              | isFunctionType memberTy -> [defineFunctionTypeAlias memberTy]
+              | otherwise -> [])
 
 -- | The template for setters of a generic deftype.
 templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
