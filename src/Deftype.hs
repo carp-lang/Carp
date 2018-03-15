@@ -77,7 +77,7 @@ templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> 
 templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) (RefTy t))
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) t)
      , if isTypeGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
        else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
@@ -88,11 +88,16 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
-templateGetter member fixedMemberTy =
+templateGetter member memberTy =
   Template
     (FuncTy [RefTy (VarTy "p")] (VarTy "t"))
     (const (toTemplate "$t $NAME($(Ref p) p)"))
-    (const (toTemplate ("$DECL { return &(p->" ++ member ++ "); }\n")))
+    (const $
+     let fixForVoidStarMembers =
+           if isFunctionType memberTy && (not (isTypeGeneric memberTy))
+           then "(" ++ tyToC (RefTy memberTy) ++ ")"
+           else ""
+     in  (toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ member ++ ")); }\n")))
     (const [])
 
 -- | The template for setters of a concrete deftype.
@@ -227,13 +232,13 @@ tokensForInit allocationMode typeName membersXObjs =
 -- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
 memberArg (memberName, memberTy) =
-  templitizeTy memberTy ++ " " ++ memberName
+  tyToC (templitizeTy memberTy) ++ " " ++ memberName
 
 -- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
-templitizeTy :: Ty -> String
-templitizeTy t =
-  (if isFullyGenericType t then "$" else "") ++ tyToC t
-
+templitizeTy :: Ty -> Ty
+templitizeTy (VarTy vt) = VarTy ("$" ++ vt)
+templitizeTy (FuncTy argTys retTy) = (FuncTy (map templitizeTy argTys) (templitizeTy retTy))
+templitizeTy t = t
 
 
 -- | Helper function to create the binder for the 'str' template.

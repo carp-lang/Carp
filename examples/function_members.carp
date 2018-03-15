@@ -16,9 +16,15 @@
 (defn change-self [self]
   (SelfReferencer.update-hp self inc))
 
+;;(deftype (GenericFuncMember a) [f (λ [a] a)])
+
 (defn main []
   (let-do [enemy (Enemy.init 100 dec)
            hero (Enemy.init 100 dec)
-           selfer (SelfReferencer.init 100 change-self)]
+           selfer (SelfReferencer.init 100 change-self)
+           ;;gen (GenericFuncMember.init Int.inc)
+           ]
     (println* &(attack &enemy hero))
-    (println* &(change-self selfer))))
+    (println* &(change-self selfer))
+    ;;(println* &gen)
+    ))
