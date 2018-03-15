@@ -191,9 +191,14 @@ symbolSegment = do sym <- Parsec.many1 validInSymbol
                    return sym
   where validInSymbol = Parsec.choice [Parsec.letter, Parsec.digit, Parsec.oneOf validCharacters]
 
+period :: Parsec.Parsec String ParseState ()
+period = do Parsec.char '.'
+            incColumn 1
+            return ()
+
 symbol :: Parsec.Parsec String ParseState XObj
 symbol = do i <- createInfo
-            segments <- Parsec.sepBy1 symbolSegment (Parsec.char '.')
+            segments <- Parsec.sepBy1 symbolSegment period
             case last segments of
               "defn" -> return (XObj Defn i Nothing)
               "def" -> return (XObj Def i Nothing)
