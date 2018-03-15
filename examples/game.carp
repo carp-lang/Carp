@@ -6,7 +6,6 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
-(use Keycode)
 
 (Project.config "title" "Game")
 
@@ -16,9 +15,9 @@
   (the Int (random-between 0 rand-max)))
 
 (defn random-lines []
-  (let [p1 (make-point (r) (r))
-        p2 (make-point (r) (r))
-        p3 (make-point (r) (r))]
+  (let [p1 (SDL.make-point (r) (r))
+        p2 (SDL.make-point (r) (r))
+        p3 (SDL.make-point (r) (r))]
     [p1 p2 p3 p1]))
 
 (deftype Images
@@ -29,52 +28,52 @@
   (let [w 0
         h 0]
     (do
-      (SDL_QueryTexture texture NULL NULL (address w) (address h))
-      (make-rect 0 0 w h))))
+      (SDL.QueryTexture texture NULL NULL (address w) (address h))
+      (SDL.make-rect 0 0 w h))))
 
 (defn draw [rend images]
-  (let [rect (make-rect 32 32 (- 512 64) (- 512 64))]
+  (let [rect (SDL.make-rect 32 32 (- 512 64) (- 512 64))]
     (do
-      (SDL_SetRenderDrawBlendMode rend SDL_BLENDMODE_ADD)
-      (SDL_SetRenderDrawColor rend 0 0 0 255)
-      (SDL_RenderClear rend)
-      (SDL_SetRenderDrawColor rend 200 250 255 255)
-      (SDL_RenderFillRect rend (address rect))
-      (SDL_SetRenderDrawColor rend 100 50 255 155)
-      (let [rects [(make-rect 48 48 16 16)
-                   (make-rect 48 80 16 16)
-                   (make-rect 48 112 16 16)
-                   (make-rect 48 144 16 16)]
+      (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
+      (SDL.SetRenderDrawColor rend 0 0 0 255)
+      (SDL.RenderClear rend)
+      (SDL.SetRenderDrawColor rend 200 250 255 255)
+      (SDL.RenderFillRect rend (address rect))
+      (SDL.SetRenderDrawColor rend 100 50 255 155)
+      (let [rects [(SDL.make-rect 48 48 16 16)
+                   (SDL.make-rect 48 80 16 16)
+                   (SDL.make-rect 48 112 16 16)
+                   (SDL.make-rect 48 144 16 16)]
             n (count &rects)]
-        (SDL_RenderFillRects rend (raw rects) n))
-      (SDL_SetRenderDrawColor rend 255 50 100 255)
+        (SDL.RenderFillRects rend (raw rects) n))
+      (SDL.SetRenderDrawColor rend 255 50 100 255)
       (for [x 0 512 16]
         (do
-          (SDL_RenderDrawLine rend x 0 512 512)
-          (SDL_RenderDrawLine rend 512 (+ 256 (/ x 2)) 0 512)))
-      (SDL_SetRenderDrawColor rend 0 0 0 255)
+          (SDL.RenderDrawLine rend x 0 512 512)
+          (SDL.RenderDrawLine rend 512 (+ 256 (/ x 2)) 0 512)))
+      (SDL.SetRenderDrawColor rend 0 0 0 255)
       (let [lines (random-lines)
             n (count &lines)]
-        (SDL_RenderDrawLines rend (raw lines) n))
+        (SDL.RenderDrawLines rend (raw lines) n))
       (let [img @(Images.img1 (the (Ref Images) images))]
-        (SDL_RenderCopyEx rend
+        (SDL.RenderCopyEx rend
                           img
                           (address (dimensions img))
-                          (address (make-rect 100 100 300 300))
-                          (* 0.1 (from-int (SDL_GetTicks)))
-                          (address (make-point 150 150))
-                          SDL_FLIP_NONE))
-      (SDL_RenderPresent rend)
+                          (address (SDL.make-rect 100 100 300 300))
+                          (* 0.1 (from-int (SDL.GetTicks)))
+                          (address (SDL.make-point 150 150))
+                          SDL.FLIP_NONE))
+      (SDL.RenderPresent rend)
       )))
 
 (defn handle-events [app rend]
-  (let [event (SDL_Event_init)]
-    (while (SDL_PollEvent (address event))
-      (let [et (event-type &event)]
-        (cond (= et SDL_QUIT) (quit &app)
-              (= et SDL_KEYDOWN) (let [key (event-keycode &event)]
+  (let [event (SDL.event-init)]
+    (while (SDL.poll-event (address event))
+      (let [et (SDL.event-type &event)]
+        (cond (= et SDL.QUIT) (quit &app)
+              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
                                    (cond
-                                     (= key SDLK_ESCAPE) (quit &app)
+                                     (= key SDL.key-escape) (quit &app)
                                      (println "Unrecognized key.")))
               (println "Some other event happened..."))))))
 
@@ -90,7 +89,7 @@
         (do
           (handle-events app rend)
           (draw rend &images)
-          (SDL_Delay 30))))))
+          (SDL.Delay 30))))))
 
 ;; (build)
 ;; (run)

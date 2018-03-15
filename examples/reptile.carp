@@ -4,7 +4,6 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
-(use Keycode)
 
 (load "Vector.carp")
 (use Vector2)
@@ -37,55 +36,55 @@
             y (* grid-size (to-int @(Vector2.V2.y part)))]
         (if (= i 0)
           (do
-            (SDL_SetRenderDrawColor rend 200 255 (+ 100 (* body-count 10)) 255)
-            (SDL_RenderFillRect rend (address (make-rect x y grid-size grid-size))))
+            (SDL.SetRenderDrawColor rend 200 255 (+ 100 (* body-count 10)) 255)
+            (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size))))
           (do
-            (SDL_SetRenderDrawColor rend 200 (+ 50 (* i (/ 200 body-count))) 100 255)
-            (SDL_RenderFillRect rend (address (make-rect x y grid-size grid-size)))))))))
+            (SDL.SetRenderDrawColor rend 200 (+ 50 (* i (/ 200 body-count))) 100 255)
+            (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size)))))))))
 
 (defn draw-human [rend human]
   (do
-    (SDL_SetRenderDrawColor rend 100 100 250 255)
+    (SDL.SetRenderDrawColor rend 100 100 250 255)
     (let [x (* grid-size (to-int @(Vector2.V2.x human)))
           y (* grid-size (to-int @(Vector2.V2.y human)))]
-      (SDL_RenderFillRect rend (address (make-rect x y grid-size grid-size))))))
+      (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size))))))
 
 (defn draw [rend world]
   (do
-    (SDL_SetRenderDrawBlendMode rend SDL_BLENDMODE_ADD)
-    (SDL_SetRenderDrawColor rend (- bg-col @(Snake.freeze (World.snake world))) bg-col bg-col 255)
-    (SDL_RenderClear rend)
+    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
+    (SDL.SetRenderDrawColor rend (- bg-col @(Snake.freeze (World.snake world))) bg-col bg-col 255)
+    (SDL.RenderClear rend)
     (draw-snake rend (snake world))
     (draw-human rend (World.human world))
-    (SDL_RenderPresent rend)
+    (SDL.RenderPresent rend)
     ))
 
-(def input-dir SDLK_DOWN)
+(def input-dir SDL.key-down)
 (def reset false)
 
 (defn handle-events [app rend world]
-  (let [event (SDL_Event_init)]
-    (while (SDL_PollEvent (address event))
-      (let [et (event-type &event)]
-        (cond (= et SDL_QUIT) (quit app)
-              (= et SDL_KEYDOWN) (let [key (event-keycode &event)]
+  (let [event (SDL.event-init)]
+    (while (SDL.poll-event (address event))
+      (let [et (SDL.event-type &event)]
+        (cond (= et SDL.QUIT) (quit app)
+              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
                                    (cond
-                                     (or (= key SDLK_RIGHT)
-                                     (or (= key SDLK_UP)
-                                     (or (= key SDLK_LEFT) (= key SDLK_DOWN))))
+                                     (or (= key SDL.key-right)
+                                     (or (= key SDL.key-up)
+                                     (or (= key SDL.key-left) (= key SDL.key-down))))
                                        (set! input-dir key)
-                                     (= key SDLK_RETURN) (set! reset true)
-                                     (= key SDLK_ESCAPE) (quit app)
+                                     (= key SDL.key-return) (set! reset true)
+                                     (= key SDL.key-escape) (quit app)
                                      ()))
               ()
               )))))
 
 (defn move [vec dir]
   (cond
-    (= SDLK_RIGHT dir) (add &vec &(Vector2.init 1.0 0.0))
-    (= SDLK_UP dir)    (add &vec &(Vector2.init 0.0 -1.0))
-    (= SDLK_LEFT dir)  (add &vec &(Vector2.init -1.0 0.0))
-    (= SDLK_DOWN dir)  (add &vec &(Vector2.init 0.0 1.0))
+    (= SDL.key-right dir) (add &vec &(Vector2.init 1.0 0.0))
+    (= SDL.key-up dir)    (add &vec &(Vector2.init 0.0 -1.0))
+    (= SDL.key-left dir)  (add &vec &(Vector2.init -1.0 0.0))
+    (= SDL.key-down dir)  (add &vec &(Vector2.init 0.0 1.0))
     vec))
 
 (defn shift-body [body]
@@ -152,18 +151,18 @@
                            (Vector2.init 9.0 10.0)
                            (Vector2.init 8.0 10.0)
                            (Vector2.init 7.0 10.0)]
-                          SDLK_DOWN
+                          SDL.key-down
                           0)
                (create-human)
                false))
 
 (defn render-dead [rend]
   (do
-    (SDL_SetRenderDrawBlendMode rend SDL_BLENDMODE_ADD)
-    (SDL_SetRenderDrawColor rend 200 90 90 255)
-    (SDL_RenderClear rend)
-    (SDL_RenderPresent rend)
-    (SDL_Delay 2000)
+    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
+    (SDL.SetRenderDrawColor rend 200 90 90 255)
+    (SDL.RenderClear rend)
+    (SDL.RenderPresent rend)
+    (SDL.Delay 2000)
   ))
 
 (defn main []
@@ -174,7 +173,7 @@
       (while (not @(World.dead &world))
         (if reset
           (do
-            (set! input-dir SDLK_RIGHT)
+            (set! input-dir SDL.key-right)
             (set! world (create-world))
             (set! reset false))
           (do
@@ -182,5 +181,5 @@
               (set! world new-world))
             (handle-events &app rend &world)
             (draw rend &world)
-            (SDL_Delay 50))))
+            (SDL.Delay 50))))
        (render-dead rend))))

@@ -25,27 +25,27 @@
 
 (defn draw [rend state]
   (do
-    (SDL_SetRenderDrawBlendMode rend SDL_BLENDMODE_ADD)
-    (SDL_SetRenderDrawColor rend 0 0 0 0)
-    (SDL_RenderClear rend)
+    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
+    (SDL.SetRenderDrawColor rend 0 0 0 0)
+    (SDL.RenderClear rend)
     (for [y 0 @(State.height state)]
       (for [x 0 @(State.width state)]
         (let [w (/ 800 @(State.width state))
               h (/ 600 @(State.height state))]
           (do
             (cond
-              (and (= x @(State.x state)) (= y @(State.y state))) (SDL_SetRenderDrawColor rend 255 0 0 255)
-              (get-square state x y) (SDL_SetRenderDrawColor rend 0 0 0 255)
-              (SDL_SetRenderDrawColor rend 255 255 255 255))
-            (SDL_RenderFillRect rend (address (make-rect (* x w) (* y h) (dec w) (dec h))))))))
-    (SDL_RenderPresent rend)
+              (and (= x @(State.x state)) (= y @(State.y state))) (SDL.SetRenderDrawColor rend 255 0 0 255)
+              (get-square state x y) (SDL.SetRenderDrawColor rend 0 0 0 255)
+              (SDL.SetRenderDrawColor rend 255 255 255 255))
+            (SDL.RenderFillRect rend (address (SDL.make-rect (* x w) (* y h) (dec w) (dec h))))))))
+    (SDL.RenderPresent rend)
     ))
 
 (defn handle-events [app rend]
-  (let [event (SDL_Event_init)]
-    (while (SDL_PollEvent (address event))
-      (let [et (event-type &event)]
-        (cond (= et SDL_QUIT) (quit app)
+  (let [event (SDL.event-init)]
+    (while (SDL.poll-event (address event))
+      (let [et (SDL.event-type &event)]
+        (cond (= et SDL.QUIT) (quit app)
               ())))))
 
 (defn flip-at-ant [state]
@@ -104,7 +104,7 @@
           (handle-events &app rend)
           (draw rend &state)
           (set! state (tick state))
-          (SDL_Delay 2)))))
+          (SDL.Delay 2)))))
 
 ;; Just the model
 ;; (defn main []
