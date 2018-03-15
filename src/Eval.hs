@@ -79,9 +79,7 @@ eval env xobj =
              return $ do okEvaledArray <- evaledArray
                          Right (XObj (Arr okEvaledArray) i t)
 
-        -- and, or, and not are defined here because they are expected to
-        -- shortcircuit and because they would otherwise clash with the regular
-        -- functions
+        -- 'and' and 'or' are defined here because they are expected to short circuit
         [XObj And _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
@@ -115,16 +113,6 @@ eval env xobj =
                                            Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okB))
                            _ ->
                              Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okA))
-
-        [XObj (Sym (SymPath [] "not") _) _ _, a] ->
-          do evaledA <- eval env a
-             return $ do okA <- evaledA
-                         case okA of
-                           XObj (Bol ab) _ _ ->
-                             if ab
-                             then Right falseXObj else Right trueXObj
-                           _ ->
-                            Left (EvalError ("Can't perform logical operation (not) on " ++ pretty okA))
 
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition

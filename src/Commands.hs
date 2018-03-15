@@ -638,7 +638,16 @@ commandMul [a, b] =
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
 
--- | TODO: Allow varargs
 commandStr :: CommandCallback
-commandStr [x] =
-  return (Right (XObj (Str (pretty x)) (Just dummyInfo) (Just StringTy)))
+commandStr xs =
+  return (Right (XObj (Str (join (map pretty xs))) (Just dummyInfo) (Just StringTy)))
+
+commandNot :: CommandCallback
+commandNot [x] =
+  case x of
+    XObj (Bol ab) _ _ ->
+      if ab
+      then return (Right falseXObj)
+      else return (Right trueXObj)
+    _ ->
+      return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x)))
