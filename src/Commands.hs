@@ -487,6 +487,14 @@ commandMacroError [msg] =
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
     x                  -> return (Left (EvalError (pretty x)))
 
+commandMacroLog :: CommandCallback
+commandMacroLog [msg] =
+  case msg of
+    XObj (Str msg) _ _ -> do liftIO (putStrLn msg)
+                             return dynamicNil
+    x                  -> do liftIO (putStrLn (pretty x))
+                             return dynamicNil
+
 commandEq :: CommandCallback
 commandEq [a, b] =
   return $ case (a, b) of

@@ -153,6 +153,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "cons-last" 2 commandConsLast
                     , addCommand "append" 2 commandAppend
                     , addCommand "macro-error" 1 commandMacroError
+                    , addCommand "macro-log" 1 commandMacroLog
                     , addCommandConfigurable "str" Nothing commandStr
                     , addCommand "not" 1 commandNot
                     , addCommand "=" 2 commandEq
