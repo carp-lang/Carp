@@ -237,9 +237,11 @@ memberArg (memberName, memberTy) =
 -- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
 templitizeTy :: Ty -> Ty
 templitizeTy (VarTy vt) = VarTy ("$" ++ vt)
-templitizeTy (FuncTy argTys retTy) = (FuncTy (map templitizeTy argTys) (templitizeTy retTy))
+templitizeTy (FuncTy argTys retTy) = FuncTy (map templitizeTy argTys) (templitizeTy retTy)
+templitizeTy (StructTy name tys) = StructTy name (map templitizeTy tys)
+templitizeTy (RefTy t) = RefTy (templitizeTy t)
+templitizeTy (PointerTy t) = PointerTy (templitizeTy t)
 templitizeTy t = t
--- TODO: Handle more types here!
 
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> String -> Either String ((String, Binder), [XObj])

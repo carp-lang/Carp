@@ -1,24 +1,2 @@
 (Debug.sanitize-addresses)
-
 (Project.config "print-ast" true)
-
-(deftype Enemy [hp Int
-                attack (Fn [Int] Int)])
-
-(defn attack [attacker target]
-  (let [f @(Enemy.attack attacker)
-        new-hp (f @(Enemy.hp &target))]
-    (Enemy.set-hp target new-hp)))
-
-(deftype SelfReferencer [hp Int
-                         f (λ [SelfReferencer] SelfReferencer)])
-
-(defn change-self [self]
-  (SelfReferencer.update-hp self inc))
-
-(defn main []
-  (let-do [enemy (Enemy.init 100 dec)
-           hero (Enemy.init 100 dec)
-           selfer (SelfReferencer.init 100 change-self)]
-    (println* &(attack &enemy hero))
-    (println* &(change-self selfer))))
