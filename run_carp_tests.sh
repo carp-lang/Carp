@@ -14,6 +14,7 @@ carp ./examples/sorting.carp -x;
 carp ./examples/globals.carp -x --log-memory;
 carp ./examples/generic_structs.carp -x;
 carp ./examples/setting_variables.carp -x;
+carp ./examples/function_members.carp -x;
 
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do

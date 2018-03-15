@@ -195,6 +195,11 @@ isManaged _ StringTy  = True
 isManaged _ PatternTy = True
 isManaged _ _ = False
 
+-- | Is this type a function type?
+isFunctionType :: Ty -> Bool
+isFunctionType (FuncTy _ _) = True
+isFunctionType _ = False
+
 {-# ANN validateMembers "HLint: ignore Eta reduce" #-}
 -- | Make sure that the member declarations in a type definition
 -- | Follow the pattern [<name> <type>, <name> <type>, ...]
@@ -231,6 +236,7 @@ canBeUsedAsMemberType typeEnv typeVariables t =
     StringTy  -> return ()
     PatternTy -> return ()
     CharTy    -> return ()
+    FuncTy _ _ -> return ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner
                           return ()
     StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner

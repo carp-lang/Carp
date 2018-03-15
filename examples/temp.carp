@@ -1,6 +1,2 @@
-;;(Project.config "echo-compiler-cmd" true)
-;; (Debug.sanitize-addresses)
-;; (Project.config "print-ast" true)
-
-(defn main []
-  (assert (= 2 3)))
+(Debug.sanitize-addresses)
+(Project.config "print-ast" true)

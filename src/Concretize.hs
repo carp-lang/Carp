@@ -307,7 +307,7 @@ depsOfPolymorphicFunction :: TypeEnv -> Env -> [SymPath] -> String -> Ty -> [XOb
 depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionType =
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] ->
-      (trace $ "No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
+      (trace $ "[Warning] No '" ++ functionName ++ "' function found with type " ++ show functionType ++ ".")
       []
     -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
     -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
