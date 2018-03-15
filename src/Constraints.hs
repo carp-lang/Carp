@@ -32,6 +32,8 @@ data ConstraintOrder = OrdNo
                      | OrdDoStatement
                      | OrdSetBang
                      | OrdThe
+                     | OrdAnd
+                     | OrdOr
                      | OrdFuncAppVarTy
                      | OrdFuncAppArg
                      | OrdArrBetween

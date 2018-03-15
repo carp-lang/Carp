@@ -81,6 +81,20 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
+    visitList allowAmbig env (XObj (Lst [andExpr@(XObj And _ _), expr1, expr2]) _ _) =
+      do visitedExpr1 <- visit allowAmbig env expr1
+         visitedExpr2 <- visit allowAmbig env expr2
+         return $ do okVisitedExpr1 <- visitedExpr1
+                     okVisitedExpr2 <- visitedExpr2
+                     return [andExpr, okVisitedExpr1, okVisitedExpr2]
+
+    visitList allowAmbig env (XObj (Lst [orExpr@(XObj Or _ _), expr1, expr2]) _ _) =
+      do visitedExpr1 <- visit allowAmbig env expr1
+         visitedExpr2 <- visit allowAmbig env expr2
+         return $ do okVisitedExpr1 <- visitedExpr1
+                     okVisitedExpr2 <- visitedExpr2
+                     return [orExpr, okVisitedExpr1, okVisitedExpr2]
+
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args

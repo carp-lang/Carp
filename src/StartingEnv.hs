@@ -208,9 +208,7 @@ startingGlobalEnv noArray =
         envUseModules = [SymPath [] "String"],
         envMode = ExternalEnv
       }
-  where bindings = Map.fromList $ [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
-                                  , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
-                                  , register "not" (FuncTy [BoolTy] BoolTy)
+  where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])

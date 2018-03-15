@@ -34,6 +34,8 @@ data Obj = Sym SymPath SymbolMode
          | While
          | Break
          | If
+         | And
+         | Or
          | Mod Env
          | Typ Ty
          | With
@@ -197,6 +199,8 @@ pretty = visit 0
             Defn -> "defn"
             Def -> "def"
             If -> "if"
+            And -> "and"
+            Or -> "or"
             While -> "while"
             Do -> "do"
             Let -> "let"

@@ -57,6 +57,7 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
   in  setFullyQualifiedSymbols typeEnv env' expression
 setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
+  -- TODO: Perhaps this general case can be sufficient? No need with all the cases above..?
   let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
   in  XObj (Lst xobjs') i t
 setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
