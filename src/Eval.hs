@@ -212,10 +212,10 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "type-as-data") _) _ _, target] ->
-          specialCommandTypeAsData target
-        XObj (Sym (SymPath [] "type-as-data") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to 'type-as-data' command: " ++ pretty xobj)))
+        [XObj (Sym (SymPath [] "members") _) _ _, target] ->
+          specialCommandMembers target
+        XObj (Sym (SymPath [] "members") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'members' command: " ++ pretty xobj)))
 
         [XObj (Sym (SymPath [] "use") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
           specialCommandUse xobj path
@@ -367,6 +367,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
+              Right result@(XObj (Arr _) _ _) ->
+                do putStrLnWithColor Yellow ("=> " ++ (pretty result))
+                   return newCtx
               Right evaled ->
                 do -- HACK?! The result after evalution might be a list that
                    -- constitutes a 'def' or 'defn'. So let's evaluate again
@@ -768,34 +771,26 @@ specialCommandType target =
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
 
-specialCommandTypeAsData :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandTypeAsData target =
+specialCommandMembers :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandMembers target =
   do ctx <- get
-     let env = contextGlobalEnv ctx
+     let typeEnv = contextTypeEnv ctx
      case target of
            XObj (Sym path@(SymPath [] name) _) _ _ ->
-             case lookupInEnv path env of
-               Just (_, Binder (XObj _ _ (Just foundType))) ->
-                 return (Right (quoted (XObj (Lst [(tyToXObj foundType)]) Nothing Nothing)))
-               Nothing ->
-                 case multiLookupALL name env of
-                   [] ->
-                     notFound path
-                   binders ->
-                     return (Right (quoted (XObj (Lst (map (tyToXObj . fromJust . ty . binderXObj . snd) binders)) Nothing Nothing)))
-           XObj (Sym qualifiedPath _) _ _ ->
-             case lookupInEnv qualifiedPath env of
-               Just (_, Binder (XObj _ _ (Just foundType))) ->
-                 return (Right (quoted (XObj (Lst [(tyToXObj foundType)]) Nothing Nothing)))
-               Nothing ->
-                 notFound qualifiedPath
+             case lookupInEnv path (getTypeEnv typeEnv) of
+               Just (_, Binder (XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                                           XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                                           XObj (Arr members) _ _ :
+                                           []))
+                                 _ _))
+                 ->
+                      return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
+               _ ->
+                 liftIO $ do putStrLnWithColor Red ("Can't find a struct type named '" ++ name ++ "' in type environment.")
+                             return dynamicNil
            _ ->
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
-
-quoted :: XObj -> XObj
-quoted xobj =
-  (XObj (Lst [(XObj (Sym (SymPath [] "quote") Symbol) Nothing Nothing), xobj]) Nothing Nothing)
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =
