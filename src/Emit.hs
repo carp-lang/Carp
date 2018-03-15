@@ -237,10 +237,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               in  do appendToSrc (addIndent indent ++ "bool " ++ retVar ++ " = false;\n")
                      expr1Var <- visit indent expr1
                      appendToSrc (addIndent indent ++ "if(" ++ expr1Var ++ ") {\n")
-                     appendToSrc (addIndent indent' ++ retVar ++ " = true;\n")
-                     appendToSrc (addIndent indent ++ "} else {\n")
                      expr2Var <- visit indent' expr2
                      appendToSrc (addIndent indent' ++ retVar ++ " = " ++ expr2Var ++ ";\n")
+                     appendToSrc (addIndent indent ++ "} else {\n")
+                     appendToSrc (addIndent indent' ++ retVar ++ " = false;\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      return retVar
 
@@ -250,8 +250,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   retVar = freshVar i
               in  do appendToSrc (addIndent indent ++ "bool " ++ retVar ++ " = false;\n")
                      expr1Var <- visit indent expr1
-                     appendToSrc (addIndent indent ++ "if(!" ++ expr1Var ++ ") {\n")
-                     appendToSrc (addIndent indent' ++ retVar ++ " = false;\n")
+                     appendToSrc (addIndent indent ++ "if(" ++ expr1Var ++ ") {\n")
+                     appendToSrc (addIndent indent' ++ retVar ++ " = true;\n")
                      appendToSrc (addIndent indent ++ "} else {\n")
                      expr2Var <- visit indent' expr2
                      appendToSrc (addIndent indent' ++ retVar ++ " = " ++ expr2Var ++ ";\n")

@@ -82,7 +82,7 @@ eval env xobj =
         -- and, or, and not are defined here because they are expected to
         -- shortcircuit and because they would otherwise clash with the regular
         -- functions
-        [XObj (Sym (SymPath [] "and") _) _ _, a, b] ->
+        [XObj And _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
@@ -99,7 +99,7 @@ eval env xobj =
                            _ ->
                              Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
-        [XObj (Sym (SymPath [] "or") _) _ _, a, b] ->
+        [XObj Or _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
