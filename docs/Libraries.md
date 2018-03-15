@@ -68,4 +68,5 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 * [Stdint](https://github.com/hellerve/stdint) (A wrapper around the types defined in stdint.h)
 * [Socket](https://github.com/hellerve/socket) (A wrapper around C sockets)
 * [Physics](https://github.com/hellerve/physics) (A port of phys.js)
-* [NCurses](https://github.com/eriksvedang/carp-ncurses)
+* [NCurses](https://github.com/eriksvedang/carp-ncurses) ([https://www.gnu.org/software/ncurses/](https://www.gnu.org/software/ncurses/))
+* [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
