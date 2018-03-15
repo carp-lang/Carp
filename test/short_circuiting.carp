@@ -1,0 +1,33 @@
+(load "Test.carp")
+(use Test)
+
+(def g 0) ;; Global variable used to detect if too many forms are evaluated.
+
+(defn inc-and-true []
+  (do (update! g inc)
+      true))
+
+(defn inc-and-false []
+  (do (update! g inc)
+      false))
+
+(defn short-circuit-and []
+  (do (set! g 0)
+      (ignore (and (inc-and-false) (inc-and-true))) ;; Only the first form should be evaluated.
+      g))
+
+(defn short-circuit-or []
+  (do (set! g 0)
+      (ignore (or (inc-and-true) (inc-and-false))) ;; Only the first form should be evaluated.
+      g))
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  1
+                  (short-circuit-and)
+                  "'and' short circuits")
+    (assert-equal test
+                  1
+                  (short-circuit-or)
+                  "'or' short circuits")))
