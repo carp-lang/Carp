@@ -6,6 +6,7 @@
   (register seed-random (Fn [Int] ()))
   (register sleep-seconds (Fn [Int] ()))
   (register sleep-micros (Fn [Int] ()))
+  (register system (Fn [&String] ()))
 )
 
 (defmodule Int
@@ -38,5 +39,5 @@
 
 (defmodule String
   (defn random-sized [n]
-    (from-chars (Array.repeat n Char.random)))
+    (from-chars &(Array.repeat n Char.random)))
 )

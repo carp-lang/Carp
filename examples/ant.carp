@@ -4,9 +4,10 @@
 
 (load "sdl.carp")
 (load "sdl_image.carp")
-(load "Debug.carp")
 
 (Debug.sanitize-addresses)
+
+(Project.config "title" "Ant")
 
 (deftype State
     [width Int

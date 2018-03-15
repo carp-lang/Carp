@@ -622,6 +622,9 @@ string Pattern_substitute(pattern* p, string *s, string *t, int ns) {
     else break;  /* end of subject */
     if (anchor) break;
   }
+
+  if (!res) return String_copy(&str);
+
   int l = strlen(res)+strlen(str)+1;
   res = realloc(res, l);
   snprintf(res, l, "%s%s", res, str);

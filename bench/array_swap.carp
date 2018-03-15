@@ -1,0 +1,35 @@
+(load "Bench.carp")
+(use Bench)
+(Debug.sanitize-addresses)
+
+(def a [0])
+
+(defn some-swapping []
+  (let [b @&a]
+    (ignore (Array.swap b 0 1))))
+
+(defn perform-bench [n]
+  (do
+    (println* "\nSwap with array count " n)
+    (set! a (Array.replicate n &1))
+    (bench some-swapping)))
+
+(defn some-mutable-swapping []
+  (let [b @&a]
+    (ignore (Array.swap! &b 0 1))))
+
+(defn perform-mutable-bench [n]
+  (do
+    (println* "\nMutable swap with array count " n)
+    (set! a (Array.replicate n &1))
+    (bench some-mutable-swapping)))
+
+(defn main []
+  (do (perform-bench 1000)
+      (perform-bench 10000)
+      (perform-bench 100000)
+      (perform-bench 1000000)
+      (perform-mutable-bench 1000)
+      (perform-mutable-bench 10000)
+      (perform-mutable-bench 100000)
+      (perform-mutable-bench 1000000)))

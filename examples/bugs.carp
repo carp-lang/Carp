@@ -1,6 +1,5 @@
 ;; This file contains examples of unsolved bugs
 
-(load "Debug.carp")
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 

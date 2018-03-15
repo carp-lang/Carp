@@ -4,6 +4,8 @@
 (use Int)
 (use String)
 
+(Project.config "title" "Guessing")
+
 (def guessing true)
 (def answer 0)
 

@@ -47,6 +47,7 @@ library
                      , containers
                      , process
                      , directory
+                     , filepath
                      , split
                      , haskeline
 

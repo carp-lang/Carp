@@ -23,3 +23,7 @@
   (defn /= [a b]
     (not (= (the Char a) b)))
 )
+
+(defmodule CharRef
+  (defn = [a b]
+    (Char.= @a @b)))

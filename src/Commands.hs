@@ -16,6 +16,7 @@ import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.FilePath (takeDirectory)
 import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
@@ -118,6 +119,8 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                       return (proj { projectCompiler = compiler })
                      "title" -> do title <- unwrapStringXObj value
                                    return (proj { projectTitle = title })
+                     "output-directory" -> do outDir <- unwrapStringXObj value
+                                              return (proj { projectOutDir = outDir })
                      _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
      case newProj of
        Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
@@ -137,7 +140,7 @@ commandCat :: CommandCallback
 commandCat args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "main.c"
+         outMain = outDir ++ "/" ++ "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
 
@@ -146,7 +149,7 @@ commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outExe = "\"" ++ outDir ++ projectTitle (contextProj ctx) ++ "\""
+         outExe = "\"" ++ outDir ++ "/" ++ projectTitle (contextProj ctx) ++ "\""
      liftIO $ do handle <- spawnCommand outExe
                  exitCode <- waitForProcess handle
                  case exitCode of
@@ -164,7 +167,7 @@ commandBuild args =
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                   c <- envToC env Functions
-                  initGlobals <- fmap wrapInInitFunction (envToC env Globals)
+                  initGlobals <- fmap wrapInInitFunction (globalsToC env)
                   return ("//Types:\n" ++ typeDecl ++
                           "\n\n//Declarations:\n" ++ decl ++
                           "\n\n//Init globals:\n" ++ initGlobals ++
@@ -180,7 +183,7 @@ commandBuild args =
                          includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                          switches = " -g "
                          flags = projectFlags proj ++ includeCorePath ++ switches
-                         outDir = projectOutDir proj
+                         outDir = projectOutDir proj ++ "/"
                          outMain = outDir ++ "main.c"
                          outExe = outDir ++ projectTitle proj
                          outLib = outDir ++ projectTitle proj
@@ -482,7 +485,7 @@ commandMacroError :: CommandCallback
 commandMacroError [msg] =
   case msg of
     XObj (Str msg) _ _ -> return (Left (EvalError msg))
-    _                  -> return (Left (EvalError "Calling 'macro-error' with non-string argument"))
+    x                  -> return (Left (EvalError (pretty x)))
 
 commandEq :: CommandCallback
 commandEq [a, b] =
@@ -577,6 +580,24 @@ commandStringCount [a] =
     _ ->
       Left (EvalError ("Can't call count with " ++ pretty a))
 
+commandStringJoin :: CommandCallback
+commandStringJoin [a] =
+  return $ case a of
+    XObj (Arr strings) _ _ ->
+      case (sequence (map unwrapStringXObj strings)) of
+        Left err -> Left (EvalError err)
+        Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
+commandStringDirectory :: CommandCallback
+commandStringDirectory [a] =
+  return $ case a of
+    XObj (Str s) _ _ ->
+      Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
+    _ ->
+      Left (EvalError ("Can't call count with " ++ pretty a))
+
 commandPlus :: CommandCallback
 commandPlus [a, b] =
   return $ case (a, b) of
@@ -616,3 +637,8 @@ commandMul [a, b] =
       else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
     _ ->
       Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b))
+
+-- | TODO: Allow varargs
+commandStr :: CommandCallback
+commandStr [x] =
+  return (Right (XObj (Str (pretty x)) (Just dummyInfo) (Just StringTy)))

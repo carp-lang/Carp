@@ -1,6 +1,6 @@
 ;;(Project.config "echo-compiler-cmd" true)
-;; (load "Debug.carp")
 ;; (Debug.sanitize-addresses)
+
 (Project.config "print-ast" true)
 
 (deftype Enemy [hp Int

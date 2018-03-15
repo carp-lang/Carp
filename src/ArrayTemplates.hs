@@ -107,6 +107,9 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                let deleteElement = insideArrayDeletion typeEnv env insideTy
                in toTemplate (unlines
                                ["$DECL { "
+                               ,"  #ifndef OPTIMIZE"
+                               ,"  assert(a.len > 0);"
+                               ,"  #endif"
                                ,"  a.len--;"
                                ,"  " ++ deleteElement "a.len"
                                ,"    if(a.len < (a.capacity / 4)) {"
@@ -170,23 +173,56 @@ templateRaw = defineTemplate
   (\(FuncTy [arrayType] _) -> [])
 
 templateAset :: (String, Binder)
-templateAset = defineTemplate
-  (SymPath ["Array"] "aset")
-  (FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
-  (toTemplate "Array $NAME (Array a, int n, $t newValue)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    #ifndef OPTIMIZE"
-                        ,"    assert(n >= 0);"
-                        ,"    assert(n < a.len);"
-                        ,"    #endif"
-                        ,"    (($t*)a.data)[n] = newValue;"
-                        ,"    return a;"
-                        ,"}"])
-  (\(FuncTy [arrayType, _, _] _) -> [])
+templateAset = defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath ["Array"] "aset"
+        t = (FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (\_ -> toTemplate $ "Array $NAME (Array a, int n, $t newValue)")
+            (\(FuncTy [_, _, insideTy] _) ->
+               let deleter = insideArrayDeletion typeEnv env insideTy
+               in  toTemplate $ unlines ["$DECL {"
+                                        ,"    #ifndef OPTIMIZE"
+                                        ,"    assert(n >= 0);"
+                                        ,"    assert(n < a.len);"
+                                        ,"    #endif"
+                                        ,     deleter "n"
+                                        ,"    (($t*)a.data)[n] = newValue;"
+                                        ,"    return a;"
+                                        ,"}"])
+            (\(FuncTy [_, _, insideTy] _) ->
+                depsForDeleteFunc typeEnv env insideTy)
 
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
   where path = (SymPath ["Array"] "aset!")
+        t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy)
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
+            (\(FuncTy [_, _, insideTy] _) ->
+               let deleter = insideArrayDeletion typeEnv env insideTy
+               in  (toTemplate $ unlines ["$DECL {"
+                                         ,"    Array a = *aRef;"
+                                         ,"    #ifndef OPTIMIZE"
+                                         ,"    assert(n >= 0);"
+                                         ,"    assert(n < a.len);"
+                                         ,"    #endif"
+                                         ,     deleter "n"
+                                         ,"    (($t*)a.data)[n] = newValue;"
+                                         ,"}"]))
+            (\(FuncTy [(RefTy arrayType), _, _] _) ->
+               depsForDeleteFunc typeEnv env arrayType)
+
+-- | This function can set uninitialized memory in an array (used together with 'allocate').
+-- | It will NOT try to free the value that is alredy at location 'n'.
+templateAsetUninitializedBang :: (String, Binder)
+templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator path t
+  where path = (SymPath ["Array"] "aset-uninitialized!")
         t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy)
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -201,8 +237,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
                                          ,"    #endif"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
-            (\(FuncTy [(RefTy arrayType), _, _] _) ->
-               depsForDeleteFunc typeEnv env arrayType)
+            (const [])
 
 templateCount :: (String, Binder)
 templateCount = defineTypeParameterizedTemplate templateCreator path t

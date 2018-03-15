@@ -34,12 +34,15 @@
 
   )
 
+;; HACK! This silences compiler errors about 'source-location' and 'source-path' being undefined.
+;; Actual calls to these special forms will be handled directly in the dynamic evaluator, see 'Eval.hs'.
+(defdynamic source-location [] "")
+(defdynamic source-path [] "")
+
 ;; Crash the program with an error message unless the expression evaluates to 'true'.
 (defmacro assert [expr]
   (list 'if (list '= true expr)
         ()
         (list 'do
-              (list 'IO.println (list 'ref
-                                      (list 'String.append (list 'String.copy "Assertion failed ")
-                                            (list 'String.copy (source-location)))))
+              (list 'println* "Assertion '" (str expr) "' failed at " (list 'source-location))
               '(System.exit 1))))

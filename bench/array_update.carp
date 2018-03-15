@@ -1,0 +1,29 @@
+(load "Bench.carp")
+(use Bench)
+(Debug.sanitize-addresses)
+(use Array)
+
+(def n 1000)
+
+(defn inc-ref [ir]
+  (+ 1 @ir))
+
+(defn some-updating []
+  (let-do [a (replicate n &12345)
+        b (aupdate a 0 inc-ref)]
+    (assert (= (nth &b 0) &12346))
+    (assert (= (nth &b 1) &12345))))
+
+(defn perform-bench [new-n]
+  (do
+    (set! n new-n)
+    (println* "\nUpdating array with count " n)
+    (bench some-updating)))
+
+(defn main []
+  (do
+    (perform-bench 1000)
+    (perform-bench 10000)
+    (perform-bench 100000)
+    (perform-bench 1000000)
+    (perform-bench 10000000)))

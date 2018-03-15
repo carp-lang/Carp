@@ -9,6 +9,8 @@
 (load "Vector.carp")
 (use Vector2)
 
+(Project.config "title" "Reptile")
+
 (deftype Snake
     [body (Array V2)
      dir SDL_Keycode

@@ -1,13 +1,17 @@
-module Scoring (scoreBinder) where
+module Scoring (scoreTypeBinder, scoreValueBinder) where
+
+import Debug.Trace
+import qualified Data.Set as Set
 
 import Types
 import Obj
 import Lookup
 
+-- | Scoring of types.
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
-scoreBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
+scoreTypeBinder :: TypeEnv -> Binder -> (Int, Binder)
+scoreTypeBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
@@ -20,9 +24,9 @@ scoreBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) 
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
       (500, b)
-scoreBinder _ b@(Binder (XObj (Mod _) _ _)) =
+scoreTypeBinder _ b@(Binder (XObj (Mod _) _ _)) =
   (1000, b)
-scoreBinder _ x = error ("Can't score: " ++ show x)
+scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
 depthOfDeftype :: TypeEnv -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
@@ -47,7 +51,7 @@ depthOfType typeEnv selfName = visitType
     visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
     visitType (FuncTy argTys retTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      maximum (visitType retTy : map visitType argTys) + 1
+      maximum (visitType retTy : fmap visitType argTys) + 1
     visitType (PointerTy p) = visitType p
     visitType (RefTy r) = visitType r
     visitType _ = 100
@@ -65,6 +69,49 @@ depthOfType typeEnv selfName = visitType
                                          -- their definition in time so we get nothing for those.
                                          -- Instead, let's try the type vars.
       where depthOfVarTys =
-              case map (depthOfType typeEnv name) varTys of
+              case fmap (depthOfType typeEnv name) varTys of
                 [] -> 50
                 xs -> (maximum xs) + 1
+
+
+
+-- | Scoring of value bindings ('def' and 'defn')
+-- | The score is used for sorting the bindings before emitting them.
+-- | A lower score means appearing earlier in the emitted file.
+scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
+scoreValueBinder globalEnv _ binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+  (0, binder)
+scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+  (scoreBody globalEnv visited body, binder)
+scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+  (scoreBody globalEnv visited body, binder)
+scoreValueBinder _ _ binder =
+  (0, binder)
+
+scoreBody :: Env -> Set.Set SymPath -> XObj -> Int
+scoreBody globalEnv visited root = visit root
+  where
+    visit xobj =
+      case obj xobj of
+        (Lst _) ->
+          visitList xobj
+        (Arr _) ->
+          visitArray xobj
+        (Sym path LookupGlobal) ->
+          if Set.member path visited
+          then 0
+          else case lookupInEnv path globalEnv of
+                 Just (_, foundBinder) ->
+                   let (score, _) = scoreValueBinder globalEnv (Set.insert path visited) foundBinder
+                   in  score + 1
+                 Nothing ->
+                   error ("Failed to lookup '" ++ show path ++ "'.")
+        _ -> 0
+    visitList (XObj (Lst []) _ _) =
+      0
+    visitList (XObj (Lst xobjs) _ _) =
+      maximum (fmap visit xobjs)
+    visitArray (XObj (Arr []) _ _) =
+      0
+    visitArray (XObj (Arr xobjs) _ _) =
+      maximum (fmap visit xobjs)

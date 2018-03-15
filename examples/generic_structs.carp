@@ -1,4 +1,3 @@
-(load "Debug.carp")
 (Debug.sanitize-addresses)
 (use Array)
 

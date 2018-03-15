@@ -29,6 +29,8 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       , "IO"
                                                                       , "System"
                                                                       , "Pattern"
+                                                                      , "Debug"
+                                                                      , "Format"
                                                                       ]
 
 -- | The array module contains functions for working with the Array type.
@@ -41,6 +43,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateRaw
                                 , templateAset
                                 , templateAsetBang
+                                , templateAsetUninitializedBang
                                 , templateCount
                                 , templatePushBack
                                 , templatePopBack
@@ -97,6 +100,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "cons-last" 2 commandConsLast
                     , addCommand "append" 2 commandAppend
                     , addCommand "macro-error" 1 commandMacroError
+                    , addCommand "str" 1 commandStr
                     , addCommand "=" 2 commandEq
                     , addCommand "<" 2 commandLt
                     , addCommand ">" 2 commandGt
@@ -132,6 +136,8 @@ dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModu
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "substring" 3 commandSubstring
                                 , addCommand "count" 1 commandStringCount
+                                , addCommand "join" 1 commandStringJoin
+                                , addCommand "directory" 1 commandStringDirectory
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.

@@ -21,10 +21,10 @@ The key features of Carp are the following:
 
 ## Learn more
 
-* [Installation](docs/Install.md) - how to build the Carp compiler
+* [Installation](docs/Install.md) - how to build and configure the Carp compiler
 * [The Compiler Manual](docs/Manual.md) - how to compile code and configure your projects
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
-* [Libraries](docs/Libraries.md) - the various libraries that come built into Carp
+* [Libraries](docs/Libraries.md) - how to work with libraries and modules
 * [Tooling](docs/Tooling.md) - supported editors
 * [Game Example](examples/game.carp) - an example of how to use SDL with Carp
 
@@ -78,7 +78,7 @@ Are you missing from the contributors list? Please send a pull request!
 
 ## License
 
-Copyright 2016 - 2017 Erik Svedäng
+Copyright 2016 - 2018 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

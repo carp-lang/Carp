@@ -81,10 +81,10 @@ Array String_chars(string *s) {
     return chars;
 }
 
-string String_from_MINUS_chars(Array a) {
-    string s = CARP_MALLOC(a.len+1);
-    memmove(s, a.data, a.len);
-    s[a.len] = '\0';
+string String_from_MINUS_chars(Array *a) {
+    string s = CARP_MALLOC(a->len+1);
+    memmove(s, a->data, a->len);
+    s[a->len] = '\0';
     return s;
 }
 

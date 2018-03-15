@@ -45,10 +45,9 @@
                   (empty? "lisp")
                   "empty? returns false on non-empty string"
     )
-    (assert-equal test
-                  true
-                  (empty? "")
-                  "empty? returns true on empty string"
+    (assert-true test
+                 (empty? "")
+                 "empty? returns true on empty string"
     )
     (assert-equal test
                   &[\e \r \i \k]
@@ -57,7 +56,7 @@
     )
     (assert-equal test
                   "erik"
-                  &(from-chars [\e \r \i \k])
+                  &(from-chars &[\e \r \i \k])
                   "from-chars works as expected"
     )
     (assert-equal test
@@ -75,20 +74,129 @@
                   &(suffix-string "svedang" 3)
                   "suffix-string works as expected"
     )
-    (assert-equal test
-                  true
-                  (ends-with? "heller" "ler")
-                  "ends-with? works as expected"
+    (assert-true test
+                 (ends-with? "heller" "ler")
+                 "ends-with? works as expected"
+    )
+    (assert-true test
+                 (ends-with? "ller" "ler")
+                 "ends-with? works (regression test for #157)"
+    )
+    (assert-true test
+                 (starts-with? "heller" "hell")
+                 "starts-with? works as expected"
+    )
+    (assert-true test
+                 (in? "metacarpenter" "carp")
+                 "in? works on matching pattern"
+    )
+    (assert-false test
+                  (in? "metabolism" "carp")
+                  "in? works on non-matching pattern"
+    )
+    (assert-true test
+                 (upper? "I AM SCREAMING!")
+                 "upper? works on matching pattern"
+    )
+    (assert-false test
+                  (upper? "I am not screaming.")
+                  "upper? works on non-matching pattern"
+    )
+    (assert-true test
+                 (lower? "i am not screaming.")
+                 "lower? works on matching pattern"
+    )
+    (assert-false test
+                  (lower? "I am not screaming!")
+                  "lower? works on non-matching pattern"
+    )
+    (assert-true test
+                 (num? "11123456789123")
+                 "num? works on matching pattern"
+    )
+    (assert-false test
+                  (num? "111l23456789123")
+                  "num? works on non-matching pattern"
+    )
+    (assert-true test
+                 (alpha? "abcdefghijklmz")
+                 "alpha? works on matching pattern"
+    )
+    (assert-false test
+                  (alpha? "abcdefghijklm1234567")
+                  "alpha? works on non-matching pattern"
+    )
+    (assert-true test
+                 (alphanum? "abcdefghijklm1234567")
+                 "alphanum? works on matching pattern"
+    )
+    (assert-false test
+                  (alphanum? "abcdefghijklm1234567?")
+                  "alphanum? works on non-matching pattern"
+    )
+    (assert-true test
+                 (hex? "c0ffee")
+                 "hex? works on matching pattern"
+    )
+    (assert-false test
+                  (hex? "c0ffeebar")
+                  "hex? works on non-matching pattern"
     )
     (assert-equal test
-                  true
-                  (ends-with? "ller" "ler")
-                  "ends-with? works (regression test for #157)"
+                  "string  "
+                  &(trim-left "   string  ")
+                  "trim-left works as expected"
     )
     (assert-equal test
-                  true
-                  (starts-with? "heller" "hell")
-                  "starts-with? works as expected"
+                  "   string"
+                  &(trim-right "   string  ")
+                  "trim-right works as expected"
+    )
+    (assert-equal test
+                  "string"
+                  &(trim "   string  ")
+                  "trim works as expected"
+    )
+    (assert-equal test
+                  "string"
+                  &(chomp "string\n")
+                  "chomp works as expected I"
+    )
+    (assert-equal test
+                  "string\n"
+                  &(chomp "string\n\n")
+                  "chomp works as expected II"
+    )
+    (assert-equal test
+                  "string"
+                  &(chomp "string\r\n")
+                  "chomp works as expected III"
+    )
+    (assert-equal test
+                  "string"
+                  &(chomp "string\r")
+                  "chomp works as expected IV"
+    )
+    (assert-equal test
+                  "too much whitespace."
+                  &(collapse-whitespace "too   much  whitespace.")
+                  "collapse-whitespace works as expected"
+    )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(words "erik sved hej\tfoo")
+                  "words works correctly"
+    )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(lines "erik\nsved\nhej\nfoo")
+                  "lines works correctly"
+    )
+    (assert-equal test
+                  &[@"erik" @"sved" @"hej" @"foo"]
+                  &(split-by "erikmsvedlhejxfoo" &[\m \l \x])
+                  "split-by works correctly"
     )
     (print-test-results test)
-))
+  )
+)

@@ -27,6 +27,18 @@ lookupInEnv path@(SymPath (p : ps) name) env =
         Just parent -> lookupInEnv path parent
         Nothing -> Nothing
 
+-- |
+findAllGlobalVariables :: Env -> [Binder]
+findAllGlobalVariables env =
+  concatMap finder (envBindings env)
+  where finder :: Binder -> [Binder]
+        finder def@(Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) =
+          [def]
+        finder (Binder (XObj (Mod innerEnv) _ _)) =
+          findAllGlobalVariables innerEnv
+        finder _ =
+          []
+
 -- | Find all the possible (imported) symbols that could be referred to
 multiLookup :: String -> Env -> [(Env, Binder)]
 multiLookup = multiLookupInternal False

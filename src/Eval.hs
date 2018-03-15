@@ -8,7 +8,7 @@ import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesPathExist)
+import System.Directory (doesPathExist, canonicalizePath)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -53,6 +53,12 @@ eval env xobj =
 
         [XObj (Sym (SymPath [] "source-location") _) _ _] ->
           return (Right (XObj (Str (prettyInfoFromXObj listXObj)) i t))
+
+        [XObj (Sym (SymPath [] "source-path") _) _ _] ->
+          let file = case info listXObj of
+                       Just info -> infoFile info
+                       Nothing -> "no info"
+          in  return (Right (XObj (Str (file)) i t))
 
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
@@ -138,7 +144,7 @@ eval env xobj =
           specialCommandDefine xobj
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
-          do evaledValue <- expandAll eval env value
+          do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
              return $ do okValue <- evaledValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
@@ -229,8 +235,12 @@ eval env xobj =
 
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          case checkMatchingNrOfArgs f params args of
-                           Left err -> return (Left err)
-                           Right () -> apply env body params args
+                           Left err ->
+                             return (Left err)
+                           Right () ->
+                             -- Replace info so that the macro which is called gets the source location info of the expansion site.
+                             let replacedBody = (replaceSourceInfoOnXObj (info xobj) body)
+                             in  apply env replacedBody params args
 
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
                          do evaledArgs <- fmap sequence (mapM (eval env) args)
@@ -357,7 +367,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    -- constitutes a 'def' or 'defn'. So let's evaluate again
                    -- to make it stick in the environment.
                    -- To log the intermediate result:
-                   --putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
+                   -- putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
                    (result', newCtx') <- runStateT (eval env evaled) newCtx
                    case result' of
                      Left e ->
@@ -806,16 +816,17 @@ commandLoad [XObj (Str path) _ _] =
          liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
                      return dynamicNil
        firstPathFound : _ ->
-         do contents <- liftIO $ do --putStrLn ("Will load '" ++ firstPathFound ++ "'")
-                                    handle <- SysIO.openFile firstPathFound SysIO.ReadMode
+         do canonicalPath <- liftIO (canonicalizePath firstPathFound)
+            contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
+                                    handle <- SysIO.openFile canonicalPath SysIO.ReadMode
                                     SysIO.hSetEncoding handle SysIO.utf8
                                     SysIO.hGetContents handle
             let files = projectFiles proj
-                files' = if firstPathFound `elem` files
+                files' = if canonicalPath `elem` files
                          then files
-                         else files ++ [firstPathFound]
+                         else files ++ [canonicalPath]
                 proj' = proj { projectFiles = files' }
-            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents firstPathFound
+            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
             put newCtx
             return dynamicNil
 
