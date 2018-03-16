@@ -129,9 +129,9 @@ machineReadableErrorStrings err =
   case err of
     (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) ->
       [machineReadableInfoFromXObj aObj ++ " " ++ pretty aObj ++ " : " ++
-       showTypeFromXObj mappings aObj ++ " can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
+       showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
       ,machineReadableInfoFromXObj bObj ++ " " ++ pretty bObj ++ " : " ++
-       showTypeFromXObj mappings bObj ++ " can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
+       showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
     (DefnMissingType xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Function definition '" ++ getName xobj ++ "' missing type."]
