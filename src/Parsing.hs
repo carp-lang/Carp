@@ -4,7 +4,6 @@ module Parsing (parse, validCharacters, balance) where
 
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
-import qualified Data.Char as Char
 import qualified Data.Set as Set
 import Obj
 import Types
