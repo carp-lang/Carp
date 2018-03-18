@@ -42,3 +42,6 @@ String IO_read_MINUS_file(String *filename) {
     return buffer;
 }
 
+FILE *IO_fopen(String *filename, String *mode) {
+    return fopen(*filename, *mode);
+}
