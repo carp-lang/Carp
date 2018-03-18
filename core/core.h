@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef char* string;
-typedef char* pattern;
+typedef char* String;
+typedef char* Pattern;
 
 // Array
 typedef struct {

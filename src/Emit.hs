@@ -121,13 +121,13 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         visitStr' indent str i =
           -- | This will allocate a new string every time the code runs:
           -- do let var = freshVar i
-          --    appendToSrc (addIndent indent ++ "string " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
+          --    appendToSrc (addIndent indent ++ "String " ++ var ++ " = strdup(\"" ++ str ++ "\");\n")
           --    return var
           -- | This will use the statically allocated string in the C binary (can't be freed):
           do let var = freshVar i
                  varRef = freshVar i ++ "_ref";
-             appendToSrc (addIndent indent ++ "static string " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
-             appendToSrc (addIndent indent ++ "string *" ++ varRef ++ " = &" ++ var ++ ";\n")
+             appendToSrc (addIndent indent ++ "static String " ++ var ++ " = \"" ++ escapeString str ++ "\";\n")
+             appendToSrc (addIndent indent ++ "String *" ++ varRef ++ " = &" ++ var ++ ";\n")
              return varRef
         visitString indent (XObj (Str str) (Just i) _) = visitStr' indent str i
         visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i
