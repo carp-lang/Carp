@@ -37,6 +37,6 @@ int Int_random_MINUS_between(int lower, int upper) {
     return lower + (rand() % diff);
 }
 
-void System_system(string *command) {
+void System_system(String *command) {
     system(*command);
 }

@@ -257,7 +257,7 @@ concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
 concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOrPrn =
   Template
     (FuncTy [RefTy concreteStructTy] StringTy)
-    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "string $NAME(" ++ tyToC structTy ++ " *p)"))
+    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "String $NAME(" ++ tyToC structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
         (tokensForStr typeEnv env typeName memberPairs concreteStructTy))
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
@@ -277,7 +277,7 @@ genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs 
             Template
             t
             (\(FuncTy [RefTy concreteStructTy] StringTy) ->
-               (toTemplate $ "string $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
+               (toTemplate $ "String $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
             (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
@@ -296,13 +296,13 @@ genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs 
 tokensForStr :: TypeEnv -> Env -> String -> [(String, Ty)] -> Ty -> [Token]
 tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
   (toTemplate $ unlines [ "$DECL {"
-                        , "  // convert members to string here:"
-                        , "  string temp = NULL;"
+                        , "  // convert members to String here:"
+                        , "  String temp = NULL;"
                         , "  int tempsize = 0;"
                         , "  (void)tempsize; // that way we remove the occasional unused warning "
                         , calculateStructStrSize typeEnv env memberPairs concreteStructTy
-                        , "  string buffer = CARP_MALLOC(size);"
-                        , "  string bufferPtr = buffer;"
+                        , "  String buffer = CARP_MALLOC(size);"
+                        , "  String bufferPtr = buffer;"
                         , ""
                         , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
                         , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
