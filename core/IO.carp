@@ -1,5 +1,7 @@
 (system-include "carp_io.h")
 
+(register-type FILE)
+
 (defmodule IO
   (register println (Fn [(Ref String)] ()))
   (register print (Fn [(Ref String)] ()))
@@ -7,4 +9,6 @@
   (register get-char (Fn [] Char) "getchar")
   (register read-file (Fn [&String] String))
   (register exit (Fn [Int] a))
+  (register fopen (Fn [String String] (Ptr FILE)) "fopen")
+  (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
 )

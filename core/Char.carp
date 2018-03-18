@@ -27,3 +27,6 @@
 (defmodule CharRef
   (defn = [a b]
     (Char.= @a @b)))
+
+(defmodule PtrChar
+  (register str (Fn [(Ptr Char)] String)))
