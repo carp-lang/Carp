@@ -458,8 +458,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
               Nothing -> return ()
             case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
               Left err ->
-                do putStrLnWithColor Red err
-                   return ctx
+                reportExecutionError ctx annXObj err
               Right ctx' ->
                 return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
@@ -604,8 +603,7 @@ specialCommandRegister name typeXObj overrideName =
                          env' = envInsertAt env path binding
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
-                             do liftIO (putStrLnWithColor Red err)
-                                return dynamicNil
+                             return (Left (EvalError err))
                            Right ctx' ->
                              do put (ctx' { contextGlobalEnv = env' })
                                 return dynamicNil

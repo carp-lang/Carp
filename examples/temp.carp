@@ -1,4 +1,9 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-( "   )
+(definterface f (Fn [] Double))
+
+(defmodule M
+  (defn f [] @"ererre"))
+
+(register f (Fn [] Int))
