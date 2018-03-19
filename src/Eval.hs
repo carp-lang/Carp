@@ -14,6 +14,8 @@ import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad
 import Control.Exception
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Error as ParsecError
 import Debug.Trace
 
 import Parsing
@@ -308,17 +310,16 @@ found binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return dynamicNil
 
--- | Print error message for bounder that wasn't found.
-notFound path =
-  liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-              return dynamicNil
+-- | Print error message for binder that wasn't found.
+notFound :: ExecutionMode -> XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
+notFound execMode xobj path =
+  return $ Left $ EvalError $ case execMode of
+                                Check -> machineReadableInfoFromXObj xobj ++ (" Can't find '" ++ show path ++ "'")
+                                _ -> "Can't find '" ++ show path ++ "'"
 
 -- | A command at the REPL
 -- | TODO: Is it possible to remove the error cases?
-data ReplCommand = ReplMacroError String
-                 | ReplTypeError String
-                 | ReplParseError String
-                 | ReplCodegenError String
+data ReplCommand = ReplParseError String XObj
                  | ReplEval XObj
                  | ListOfCallbacks [CommandCallback]
 
@@ -326,7 +327,13 @@ data ReplCommand = ReplMacroError String
 executeString :: Bool -> Context -> String -> String -> IO Context
 executeString doCatch ctx input fileName = if doCatch then catch exec (catcher ctx) else exec
   where exec = case parse input fileName of
-                 Left parseError -> executeCommand ctx (ReplParseError (show parseError))
+                 Left parseError ->
+                   let sourcePos = Parsec.errorPos parseError
+                       parseErrorXObj = XObj (Lst []) (Just dummyInfo { infoFile = fileName
+                                                                      , infoLine = Parsec.sourceLine sourcePos
+                                                                      , infoColumn = Parsec.sourceColumn sourcePos
+                                                                      }) Nothing
+                   in  executeCommand ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
                  Right xobjs -> foldM folder ctx xobjs
 
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
@@ -345,13 +352,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do (result, newCtx) <- runStateT (eval env xobj) ctx
             case result of
               Left e ->
-                case contextExecMode ctx of
-                  Check ->
-                    do putStrLn (show e)
-                       return ctx
-                  _ ->
-                    do putStrLnWithColor Red (show e)
-                       throw CancelEvaluationException
+                reportExecutionError ctx xobj (show e)
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
@@ -367,26 +368,22 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    (result', newCtx') <- runStateT (eval env evaled) newCtx
                    case result' of
                      Left e ->
-                       do putStrLnWithColor Red (show e)
-                          return newCtx'
+                       reportExecutionError newCtx' evaled (show e)
                      Right (XObj (Lst []) _ _) ->
                        return newCtx' -- Once again, don't print nil result
                      Right okResult' ->
                        do putStrLnWithColor Yellow ("=> " ++ (pretty okResult'))
                           return newCtx'
-       ReplParseError e ->
-         do putStrLnWithColor Red ("[PARSE ERROR] " ++ e)
-            return ctx
-       ReplMacroError e ->
-         do putStrLnWithColor Red ("[MACRO ERROR] " ++ e)
-            return ctx
-       ReplTypeError e ->
-         do putStrLnWithColor Red ("[TYPE ERROR] " ++ e)
-            return ctx
-       ReplCodegenError e ->
-         do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ e)
-            return ctx
+       ReplParseError e xobj ->
+         reportExecutionError ctx xobj ("[PARSE ERROR] " ++ e)
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
+
+reportExecutionError :: Context -> XObj -> String -> IO Context
+reportExecutionError ctx xobj msg =
+  do case contextExecMode ctx of
+       Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
+       _ -> putStrLnWithColor Red msg
+     return ctx
 
 -- | Call a CommandCallback.
 callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
@@ -461,8 +458,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
               Nothing -> return ()
             case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
               Left err ->
-                do putStrLnWithColor Red err
-                   return ctx
+                reportExecutionError ctx annXObj err
               Right ctx' ->
                 return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
@@ -607,8 +603,7 @@ specialCommandRegister name typeXObj overrideName =
                          env' = envInsertAt env path binding
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
-                             do liftIO (putStrLnWithColor Red err)
-                                return dynamicNil
+                             return (Left (EvalError err))
                            Right ctx' ->
                              do put (ctx' { contextGlobalEnv = env' })
                                 return dynamicNil
@@ -694,6 +689,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          proj = contextProj ctx
+         execMode = contextExecMode ctx
          printer allowLookupInALL binderPair itIsAnErrorNotToFindIt =
            case binderPair of
              Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
@@ -709,7 +705,10 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                then case multiLookupALL name env of
                       [] ->
                         do when itIsAnErrorNotToFindIt $
-                             putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                             putStrLn $
+                               case execMode of
+                                 Check -> machineReadableInfoFromXObj target ++ (" Can't find '" ++ show path ++ "'")
+                                 _ -> strWithColor Red ("Can't find '" ++ show path ++ "'")
                            return ()
                       binders ->
                         do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
@@ -729,7 +728,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
             return dynamicNil
        qualifiedPath ->
          do case lookupInEnv path env of
-              Nothing -> notFound path
+              Nothing -> notFound execMode target path
               found -> do liftIO (printer False found True)
                           return dynamicNil
 
@@ -737,6 +736,7 @@ specialCommandType :: XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandType target =
   do ctx <- get
      let env = contextGlobalEnv ctx
+         execMode = contextExecMode ctx
      case target of
            XObj (Sym path@(SymPath [] name) _) _ _ ->
              case lookupInEnv path env of
@@ -745,7 +745,7 @@ specialCommandType target =
                Nothing ->
                  case multiLookupALL name env of
                    [] ->
-                     notFound path
+                     notFound execMode target path
                    binders ->
                      liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
                                  return dynamicNil
@@ -754,7 +754,7 @@ specialCommandType target =
                Just (_, binder) ->
                  found binder
                Nothing ->
-                 notFound qualifiedPath
+                 notFound execMode target qualifiedPath
            _ ->
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
@@ -774,11 +774,9 @@ specialCommandMembers target =
                  ->
                       return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
                _ ->
-                 liftIO $ do putStrLnWithColor Red ("Can't find a struct type named '" ++ name ++ "' in type environment.")
-                             return dynamicNil
+                 return (Left (EvalError ("Can't find a struct type named '" ++ name ++ "' in type environment.")))
            _ ->
-             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
-                         return dynamicNil
+             return (Left (EvalError ("Can't get the members of non-symbol: " ++ pretty target)))
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =
@@ -817,7 +815,7 @@ specialCommandWith xobj path forms =
 
 -- | Command for loading a Carp file.
 commandLoad :: CommandCallback
-commandLoad [XObj (Str path) _ _] =
+commandLoad [xobj@(XObj (Str path) _ _)] =
   do ctx <- get
      let proj = contextProj ctx
          carpDir = projectCarpDir proj
@@ -830,8 +828,11 @@ commandLoad [XObj (Str path) _ _] =
      existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
      case existingPaths of
        [] ->
-         liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
-                     return dynamicNil
+         return $ Left $ EvalError $ case contextExecMode ctx of
+                                       Check ->
+                                         (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+                                       _ ->
+                                         "Invalid path: '" ++ path ++ "'"
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
@@ -873,14 +874,12 @@ commandExpand [xobj] =
      result <- expandAll eval (contextGlobalEnv ctx) xobj
      case result of
        Left e ->
-         liftIO $ do putStrLnWithColor Red (show e)
-                     return dynamicNil
+         return (Left e)
        Right expanded ->
          liftIO $ do putStrLnWithColor Yellow (pretty expanded)
                      return dynamicNil
 commandExpand args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
+  return (Left (EvalError ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))))
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"

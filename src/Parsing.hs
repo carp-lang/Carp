@@ -306,6 +306,7 @@ list = do i <- createInfo
 ref :: Parsec.Parsec String ParseState XObj
 ref = do i <- createInfo
          _ <- Parsec.char '&'
+         incColumn 1
          expr <- sexpr
          return (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
 
@@ -313,6 +314,7 @@ copy :: Parsec.Parsec String ParseState XObj
 copy = do i1 <- createInfo
           i2 <- createInfo
           _ <- Parsec.char '@'
+          incColumn 1
           expr <- sexpr
           return (XObj (Lst [XObj (Sym (SymPath [] "copy") Symbol) i1 Nothing, expr]) i2 Nothing)
 
@@ -320,6 +322,7 @@ quote :: Parsec.Parsec String ParseState XObj
 quote = do i1 <- createInfo
            i2 <- createInfo
            _ <- Parsec.char '\''
+           incColumn 1
            expr <- sexpr
            return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 

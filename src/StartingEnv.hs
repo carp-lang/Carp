@@ -131,9 +131,9 @@ generateTemplateFuncStrOrPrn :: String -> Ty -> (String, Binder)
 generateTemplateFuncStrOrPrn name funcTy = defineTemplate
   (SymPath [] name)
   (FuncTy [funcTy] StringTy)
-  (toTemplate "string $NAME (void *f)")
+  (toTemplate "String $NAME (void *f)")
   (toTemplate $ unlines ["$DECL {"
-                        ,"    static string lambda = \"λ\";"
+                        ,"    static String lambda = \"λ\";"
                         ,"    return String_copy(&lambda);"
                         ,"}"])
   (const [])

@@ -3,20 +3,20 @@
 
 #include <carp_string.h>
 
-void IO_println(string *s) { puts(*s); }
-void IO_print(string *s) { printf("%s", *s); }
+void IO_println(String *s) { puts(*s); }
+void IO_print(String *s) { printf("%s", *s); }
 
 #ifndef _WIN32
-string IO_get_MINUS_line() {
+String IO_get_MINUS_line() {
     size_t size = 1024;
-    string buffer = CARP_MALLOC(size);
+    String buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
 #endif
 
-string IO_read_MINUS_file(string *filename) {
-    string buffer = 0;
+String IO_read_MINUS_file(String *filename) {
+    String buffer = 0;
     long length;
     FILE *f = fopen(*filename, "rb");
 
@@ -42,3 +42,6 @@ string IO_read_MINUS_file(string *filename) {
     return buffer;
 }
 
+FILE *IO_fopen(String *filename, String *mode) {
+    return fopen(*filename, *mode);
+}

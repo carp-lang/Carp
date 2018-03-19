@@ -353,7 +353,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
           \typeEnv env ->
              Template
              t
-             (const (toTemplate "string $NAME (Array* a)"))
+             (const (toTemplate "String $NAME (Array* a)"))
              (\(FuncTy [RefTy arrayType] StringTy) ->
                 [TokDecl, TokC " {\n"] ++
                 strTy typeEnv env arrayType ++
@@ -367,10 +367,10 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t
 strTy :: TypeEnv -> Env -> Ty -> [Token]
 strTy typeEnv env (StructTy "Array" [innerType]) =
   [ TokC   ""
-  , TokC   "  string temp = NULL;\n"
+  , TokC   "  String temp = NULL;\n"
   , TokC $ calculateStrSize typeEnv env innerType
-  , TokC   "  string buffer = CARP_MALLOC(size);\n"
-  , TokC   "  string bufferPtr = buffer;\n"
+  , TokC   "  String buffer = CARP_MALLOC(size);\n"
+  , TokC   "  String bufferPtr = buffer;\n"
   , TokC   "\n"
   , TokC   "  snprintf(buffer, size, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"

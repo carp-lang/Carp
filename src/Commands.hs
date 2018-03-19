@@ -516,6 +516,8 @@ commandEq [a, b] =
       if ca == cb then Right trueXObj else Right falseXObj
     (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) ->
       if sa == sb then Right trueXObj else Right falseXObj
+    (XObj (Bol xa) _ _, XObj (Bol xb) _ _) ->
+      if xa == xb then Right trueXObj else Right falseXObj
     _ ->
       Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))
 
