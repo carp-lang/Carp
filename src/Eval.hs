@@ -774,11 +774,9 @@ specialCommandMembers target =
                  ->
                       return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
                _ ->
-                 liftIO $ do putStrLnWithColor Red ("Can't find a struct type named '" ++ name ++ "' in type environment.")
-                             return dynamicNil
+                 return (Left (EvalError ("Can't find a struct type named '" ++ name ++ "' in type environment.")))
            _ ->
-             liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
-                         return dynamicNil
+             return (Left (EvalError ("Can't get the members of non-symbol: " ++ pretty target)))
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =

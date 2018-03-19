@@ -1,9 +1,7 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(definterface f (Fn [] Double))
+(deftype Foo [x Int
+              y String])
 
-(defmodule M
-  (defn f [] @"ererre"))
-
-(register f (Fn [] Int))
+(members 123)
