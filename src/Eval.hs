@@ -368,8 +368,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    (result', newCtx') <- runStateT (eval env evaled) newCtx
                    case result' of
                      Left e ->
-                       do putStrLnWithColor Red (show e)
-                          return newCtx'
+                       reportExecutionError newCtx' evaled (show e)
                      Right (XObj (Lst []) _ _) ->
                        return newCtx' -- Once again, don't print nil result
                      Right okResult' ->
