@@ -14,6 +14,8 @@ import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad
 import Control.Exception
+import qualified Text.Parsec as Parsec
+import qualified Text.Parsec.Error as ParsecError
 import Debug.Trace
 
 import Parsing
@@ -317,10 +319,7 @@ notFound execMode xobj path =
 
 -- | A command at the REPL
 -- | TODO: Is it possible to remove the error cases?
-data ReplCommand = ReplMacroError String
-                 | ReplTypeError String
-                 | ReplParseError String
-                 | ReplCodegenError String
+data ReplCommand = ReplParseError String XObj
                  | ReplEval XObj
                  | ListOfCallbacks [CommandCallback]
 
@@ -328,7 +327,13 @@ data ReplCommand = ReplMacroError String
 executeString :: Bool -> Context -> String -> String -> IO Context
 executeString doCatch ctx input fileName = if doCatch then catch exec (catcher ctx) else exec
   where exec = case parse input fileName of
-                 Left parseError -> executeCommand ctx (ReplParseError (show parseError))
+                 Left parseError ->
+                   let sourcePos = Parsec.errorPos parseError
+                       parseErrorXObj = XObj (Lst []) (Just dummyInfo { infoFile = fileName
+                                                                      , infoLine = Parsec.sourceLine sourcePos
+                                                                      , infoColumn = Parsec.sourceColumn sourcePos
+                                                                      }) Nothing
+                   in  executeCommand ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
                  Right xobjs -> foldM folder ctx xobjs
 
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
@@ -347,13 +352,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do (result, newCtx) <- runStateT (eval env xobj) ctx
             case result of
               Left e ->
-                case contextExecMode ctx of
-                  Check ->
-                    do putStrLn (show e)
-                       return ctx
-                  _ ->
-                    do putStrLnWithColor Red (show e)
-                       throw CancelEvaluationException
+                reportExecutionError ctx xobj (show e)
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
@@ -376,19 +375,16 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                      Right okResult' ->
                        do putStrLnWithColor Yellow ("=> " ++ (pretty okResult'))
                           return newCtx'
-       ReplParseError e ->
-         do putStrLnWithColor Red ("[PARSE ERROR] " ++ e)
-            return ctx
-       ReplMacroError e ->
-         do putStrLnWithColor Red ("[MACRO ERROR] " ++ e)
-            return ctx
-       ReplTypeError e ->
-         do putStrLnWithColor Red ("[TYPE ERROR] " ++ e)
-            return ctx
-       ReplCodegenError e ->
-         do putStrLnWithColor Red ("[CODEGEN ERROR] " ++ e)
-            return ctx
+       ReplParseError e xobj ->
+         reportExecutionError ctx xobj ("[PARSE ERROR] " ++ e)
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
+
+reportExecutionError :: Context -> XObj -> String -> IO Context
+reportExecutionError ctx xobj msg =
+  do case contextExecMode ctx of
+       Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
+       _ -> putStrLnWithColor Red msg
+     return ctx
 
 -- | Call a CommandCallback.
 callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
