@@ -1,7 +1,2 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
-
-(deftype Foo [x Int
-              y String])
-
-(members 123)

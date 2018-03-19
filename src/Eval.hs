@@ -874,14 +874,12 @@ commandExpand [xobj] =
      result <- expandAll eval (contextGlobalEnv ctx) xobj
      case result of
        Left e ->
-         liftIO $ do putStrLnWithColor Red (show e)
-                     return dynamicNil
+         return (Left e)
        Right expanded ->
          liftIO $ do putStrLnWithColor Yellow (pretty expanded)
                      return dynamicNil
 commandExpand args =
-  liftIO $ do putStrLnWithColor Red ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))
-              return dynamicNil
+  return (Left (EvalError ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))))
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
