@@ -54,7 +54,7 @@ SDL_Keycode SDL_Keycode_copy(SDL_Keycode* a) {
     return *a;
 }
 
-String Keycode_str(SDL_Keycode a) {
+String SDL_Keycode_str(SDL_Keycode a) {
     char *buffer = CARP_MALLOC(32);
     snprintf(buffer, 32, "%d", a);
     return buffer;
