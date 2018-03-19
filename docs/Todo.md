@@ -8,6 +8,7 @@
 ## Critical Bugs
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 * [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
+* [0.3] The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
 
 ## Big Language Features
 * [0.4] Doc strings and type annotations.
