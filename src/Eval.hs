@@ -308,10 +308,12 @@ found binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return dynamicNil
 
--- | Print error message for bounder that wasn't found.
-notFound path =
-  liftIO $ do putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
-              return dynamicNil
+-- | Print error message for binder that wasn't found.
+notFound :: ExecutionMode -> XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
+notFound execMode xobj path =
+  return $ Left $ EvalError $ case execMode of
+                                Check -> machineReadableInfoFromXObj xobj ++ (" Can't find '" ++ show path ++ "'")
+                                _ -> "Can't find '" ++ show path ++ "'"
 
 -- | A command at the REPL
 -- | TODO: Is it possible to remove the error cases?
@@ -694,6 +696,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          proj = contextProj ctx
+         execMode = contextExecMode ctx
          printer allowLookupInALL binderPair itIsAnErrorNotToFindIt =
            case binderPair of
              Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
@@ -709,7 +712,10 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                then case multiLookupALL name env of
                       [] ->
                         do when itIsAnErrorNotToFindIt $
-                             putStrLnWithColor Red ("Can't find '" ++ show path ++ "'")
+                             putStrLn $
+                               case execMode of
+                                 Check -> machineReadableInfoFromXObj target ++ (" Can't find '" ++ show path ++ "'")
+                                 _ -> strWithColor Red ("Can't find '" ++ show path ++ "'")
                            return ()
                       binders ->
                         do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
@@ -729,7 +735,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
             return dynamicNil
        qualifiedPath ->
          do case lookupInEnv path env of
-              Nothing -> notFound path
+              Nothing -> notFound execMode target path
               found -> do liftIO (printer False found True)
                           return dynamicNil
 
@@ -737,6 +743,7 @@ specialCommandType :: XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandType target =
   do ctx <- get
      let env = contextGlobalEnv ctx
+         execMode = contextExecMode ctx
      case target of
            XObj (Sym path@(SymPath [] name) _) _ _ ->
              case lookupInEnv path env of
@@ -745,7 +752,7 @@ specialCommandType target =
                Nothing ->
                  case multiLookupALL name env of
                    [] ->
-                     notFound path
+                     notFound execMode target path
                    binders ->
                      liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
                                  return dynamicNil
@@ -754,7 +761,7 @@ specialCommandType target =
                Just (_, binder) ->
                  found binder
                Nothing ->
-                 notFound qualifiedPath
+                 notFound execMode target qualifiedPath
            _ ->
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
@@ -817,7 +824,7 @@ specialCommandWith xobj path forms =
 
 -- | Command for loading a Carp file.
 commandLoad :: CommandCallback
-commandLoad [XObj (Str path) _ _] =
+commandLoad [xobj@(XObj (Str path) _ _)] =
   do ctx <- get
      let proj = contextProj ctx
          carpDir = projectCarpDir proj
@@ -830,8 +837,11 @@ commandLoad [XObj (Str path) _ _] =
      existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
      case existingPaths of
        [] ->
-         liftIO $ do putStrLnWithColor Red ("Invalid path " ++ path)
-                     return dynamicNil
+         return $ Left $ EvalError $ case contextExecMode ctx of
+                                       Check ->
+                                         (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+                                       _ ->
+                                         "Invalid path: '" ++ path ++ "'"
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
