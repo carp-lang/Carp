@@ -352,7 +352,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
          do (result, newCtx) <- runStateT (eval env xobj) ctx
             case result of
               Left e ->
-                reportExecutionError ctx xobj (show e)
+                reportExecutionError newCtx (show e)
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 do return newCtx
@@ -368,22 +368,30 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
                    (result', newCtx') <- runStateT (eval env evaled) newCtx
                    case result' of
                      Left e ->
-                       reportExecutionError newCtx' evaled (show e)
+                       reportExecutionError newCtx' (show e)
                      Right (XObj (Lst []) _ _) ->
                        return newCtx' -- Once again, don't print nil result
                      Right okResult' ->
                        do putStrLnWithColor Yellow ("=> " ++ (pretty okResult'))
                           return newCtx'
+       -- TODO: This is a weird case:
        ReplParseError e xobj ->
-         reportExecutionError ctx xobj ("[PARSE ERROR] " ++ e)
+         do let msg =  ("[PARSE ERROR] " ++ e)
+            case contextExecMode ctx of
+              Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
+              _ -> putStrLnWithColor Red msg
+            return ctx
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
 
-reportExecutionError :: Context -> XObj -> String -> IO Context
-reportExecutionError ctx xobj msg =
-  do case contextExecMode ctx of
-       Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
-       _ -> putStrLnWithColor Red msg
-     return ctx
+reportExecutionError :: Context -> String -> IO Context
+reportExecutionError ctx errorMessage =
+  case contextExecMode ctx of
+    Check ->
+      do putStrLn errorMessage
+         return ctx
+    _ ->
+      do putStrLnWithColor Red errorMessage
+         throw CancelEvaluationException
 
 -- | Call a CommandCallback.
 callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
@@ -458,7 +466,10 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
               Nothing -> return ()
             case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
               Left err ->
-                reportExecutionError ctx annXObj err
+                do case contextExecMode ctx of
+                     Check -> putStrLn ((machineReadableInfoFromXObj annXObj) ++ " " ++ err)
+                     _ -> putStrLnWithColor Red err
+                   return ctx
               Right ctx' ->
                 return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
 
@@ -603,7 +614,10 @@ specialCommandRegister name typeXObj overrideName =
                          env' = envInsertAt env path binding
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
-                             return (Left (EvalError err))
+                             let prefix = case contextExecMode ctx of
+                                            Check -> machineReadableInfoFromXObj typeXObj ++ " "
+                                            _ -> ""
+                             in  return (Left (EvalError (prefix ++ err)))
                            Right ctx' ->
                              do put (ctx' { contextGlobalEnv = env' })
                                 return dynamicNil
