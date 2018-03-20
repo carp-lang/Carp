@@ -5,7 +5,7 @@
 (use Array)
 
 (load "SDL.carp")
-(load "sdl_image.carp")
+(load "SDL_image.carp")
 
 (Project.config "title" "Game")
 
@@ -15,9 +15,9 @@
   (the Int (random-between 0 rand-max)))
 
 (defn random-lines []
-  (let [p1 (SDL.make-point (r) (r))
-        p2 (SDL.make-point (r) (r))
-        p3 (SDL.make-point (r) (r))]
+  (let [p1 (SDL.point (r) (r))
+        p2 (SDL.point (r) (r))
+        p3 (SDL.point (r) (r))]
     [p1 p2 p3 p1]))
 
 (deftype Images
@@ -28,50 +28,50 @@
   (let [w 0
         h 0]
     (do
-      (SDL.QueryTexture texture NULL NULL (address w) (address h))
-      (SDL.make-rect 0 0 w h))))
+      (SDL.query-texture texture NULL NULL (address w) (address h))
+      (SDL.rect 0 0 w h))))
 
 (def images (Images.init NULL NULL))
 
 (defn draw [app rend]
-  (let [rect (SDL.make-rect 32 32 (- 512 64) (- 512 64))]
+  (let [rect (SDL.rect 32 32 (- 512 64) (- 512 64))]
     (do
-      (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
-      (SDL.SetRenderDrawColor rend 0 0 0 255)
-      (SDL.RenderClear rend)
-      (SDL.SetRenderDrawColor rend 200 250 255 255)
-      (SDL.RenderFillRect rend (address rect))
-      (SDL.SetRenderDrawColor rend 100 50 255 155)
-      (let [rects [(SDL.make-rect 48 48 16 16)
-                   (SDL.make-rect 48 80 16 16)
-                   (SDL.make-rect 48 112 16 16)
-                   (SDL.make-rect 48 144 16 16)]
+      (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
+      (SDL.set-render-draw-color rend 0 0 0 255)
+      (SDL.render-clear rend)
+      (SDL.set-render-draw-color rend 200 250 255 255)
+      (SDL.render-fill-rect rend (address rect))
+      (SDL.set-render-draw-color rend 100 50 255 155)
+      (let [rects [(SDL.rect 48 48 16 16)
+                   (SDL.rect 48 80 16 16)
+                   (SDL.rect 48 112 16 16)
+                   (SDL.rect 48 144 16 16)]
             n (count &rects)]
-        (SDL.RenderFillRects rend (raw rects) n))
-      (SDL.SetRenderDrawColor rend 255 50 100 255)
+        (SDL.render-fill-rects rend (raw rects) n))
+      (SDL.set-render-draw-color rend 255 50 100 255)
       (for [x 0 512 16]
         (do
-          (SDL.RenderDrawLine rend x 0 512 512)
-          (SDL.RenderDrawLine rend 512 (+ 256 (/ x 2)) 0 512)))
-      (SDL.SetRenderDrawColor rend 0 0 0 255)
+          (SDL.render-draw-line rend x 0 512 512)
+          (SDL.render-draw-line rend 512 (+ 256 (/ x 2)) 0 512)))
+      (SDL.set-render-draw-color rend 0 0 0 255)
       (let [lines (random-lines)
             n (count &lines)]
-        (SDL.RenderDrawLines rend (raw lines) n))
+        (SDL.render-draw-lines rend (raw lines) n))
       (let [img @(Images.img1 &images)]
-        (SDL.RenderCopyEx rend
-                          img
-                          (address (dimensions img))
-                          (address (SDL.make-rect 100 100 300 300))
-                          (* 0.1 (from-int (SDL.GetTicks)))
-                          (address (SDL.make-point 150 150))
-                          SDL.FLIP_NONE)))))
+        (SDL.render-copy-ex rend
+                            img
+                            (address (dimensions img))
+                            (address (SDL.rect 100 100 300 300))
+                            (* 0.1 (from-int (SDL.get-ticks)))
+                            (address (SDL.point 150 150))
+                            SDL.flip-none)))))
 
 (defn handle-events [app]
   (let [event (SDL.event-init)]
     (while (SDL.poll-event (address event))
       (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (SDLApp.stop app)
-              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
+        (cond (= et SDL.event-quit) (SDLApp.stop app)
+              (= et SDL.event-key-down) (let [key (SDL.event-keycode &event)]
                                    (cond
                                      (= key SDL.key-escape) (SDLApp.stop app)
                                      (println "Unrecognized key.")))
@@ -81,6 +81,6 @@
   (let [app (SDLApp.create "~ CARP ~" 512 512 draw handle-events)
         rend @(SDLApp.renderer &app)]
     (do
-      (set! images (Images.init (IMG_LoadTexture rend (cstr "./img/square.png"))
-                                (IMG_LoadTexture rend (cstr "./img/carp_logo_969_no_texture.png"))))
+      (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
+                                (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
       (SDLApp.run &app))))

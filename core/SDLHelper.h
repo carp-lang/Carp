@@ -30,7 +30,7 @@ String SDL_Keycode_str(SDL_Keycode a) {
     return buffer;
 }
 
-SDL_Rect SDL_make_MINUS_rect(int x, int y, int w, int h) {
+SDL_Rect SDL_rect(int x, int y, int w, int h) {
     SDL_Rect r;
     r.x = x;
     r.y = y;
@@ -39,7 +39,7 @@ SDL_Rect SDL_make_MINUS_rect(int x, int y, int w, int h) {
     return r;
 }
 
-SDL_Point SDL_make_MINUS_point(int x, int y) {
+SDL_Point SDL_point(int x, int y) {
     SDL_Point p;
     p.x = x;
     p.y = y;
