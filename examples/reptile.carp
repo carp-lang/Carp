@@ -36,27 +36,27 @@
             y (* grid-size (to-int @(Vector2.V2.y part)))]
         (if (= i 0)
           (do
-            (SDL.SetRenderDrawColor rend 200 255 (+ 100 (* body-count 10)) 255)
-            (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size))))
+            (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-count 10)) 255)
+            (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))
           (do
-            (SDL.SetRenderDrawColor rend 200 (+ 50 (* i (/ 200 body-count))) 100 255)
-            (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size)))))))))
+            (SDL.set-render-draw-color rend 200 (+ 50 (* i (/ 200 body-count))) 100 255)
+            (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size)))))))))
 
 (defn draw-human [rend human]
   (do
-    (SDL.SetRenderDrawColor rend 100 100 250 255)
+    (SDL.set-render-draw-color rend 100 100 250 255)
     (let [x (* grid-size (to-int @(Vector2.V2.x human)))
           y (* grid-size (to-int @(Vector2.V2.y human)))]
-      (SDL.RenderFillRect rend (address (SDL.make-rect x y grid-size grid-size))))))
+      (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))))
 
 (defn draw [rend world]
   (do
-    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
-    (SDL.SetRenderDrawColor rend (- bg-col @(Snake.freeze (World.snake world))) bg-col bg-col 255)
-    (SDL.RenderClear rend)
+    (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
+    (SDL.set-render-draw-color rend (- bg-col @(Snake.freeze (World.snake world))) bg-col bg-col 255)
+    (SDL.render-clear rend)
     (draw-snake rend (snake world))
     (draw-human rend (World.human world))
-    (SDL.RenderPresent rend)
+    (SDL.render-present rend)
     ))
 
 (def input-dir SDL.key-down)
@@ -66,16 +66,16 @@
   (let [event (SDL.event-init)]
     (while (SDL.poll-event (address event))
       (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (quit app)
-              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
-                                   (cond
-                                     (or (= key SDL.key-right)
-                                     (or (= key SDL.key-up)
-                                     (or (= key SDL.key-left) (= key SDL.key-down))))
-                                       (set! input-dir key)
-                                     (= key SDL.key-return) (set! reset true)
-                                     (= key SDL.key-escape) (quit app)
-                                     ()))
+        (cond (= et SDL.event-quit) (SDLApp.stop app)
+              (= et SDL.event-key-down) (let [key (SDL.event-keycode &event)]
+                                          (cond
+                                            (or (= key SDL.key-right)
+                                                (or (= key SDL.key-up)
+                                                    (or (= key SDL.key-left) (= key SDL.key-down))))
+                                            (set! input-dir key)
+                                            (= key SDL.key-return) (set! reset true)
+                                            (= key SDL.key-escape) (SDLApp.stop app)
+                                            ()))
               ()
               )))))
 
@@ -158,16 +158,16 @@
 
 (defn render-dead [rend]
   (do
-    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
-    (SDL.SetRenderDrawColor rend 200 90 90 255)
-    (SDL.RenderClear rend)
-    (SDL.RenderPresent rend)
-    (SDL.Delay 2000)
+    (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
+    (SDL.set-render-draw-color rend 200 90 90 255)
+    (SDL.render-clear rend)
+    (SDL.render-present rend)
+    (SDL.delay 2000)
   ))
 
 (defn main []
-  (let [app (app-init @"R E P T I L E" 832 640)
-        rend (app-renderer app)
+  (let [app (SDLApp.create "R E P T I L E" 832 640 SDLApp.no-draw SDLApp.no-event-handler)
+        rend @(SDLApp.renderer &app)
         world (create-world)]
     (do
       (while (not @(World.dead &world))
@@ -181,5 +181,5 @@
               (set! world new-world))
             (handle-events &app rend &world)
             (draw rend &world)
-            (SDL.Delay 50))))
+            (SDL.delay 50))))
        (render-dead rend))))

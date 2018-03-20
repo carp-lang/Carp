@@ -25,27 +25,27 @@
 
 (defn draw [rend state]
   (do
-    (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
-    (SDL.SetRenderDrawColor rend 0 0 0 0)
-    (SDL.RenderClear rend)
+    (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
+    (SDL.set-render-draw-color rend 0 0 0 0)
+    (SDL.render-clear rend)
     (for [y 0 @(State.height state)]
       (for [x 0 @(State.width state)]
         (let [w (/ 800 @(State.width state))
               h (/ 600 @(State.height state))]
           (do
             (cond
-              (and (= x @(State.x state)) (= y @(State.y state))) (SDL.SetRenderDrawColor rend 255 0 0 255)
-              (get-square state x y) (SDL.SetRenderDrawColor rend 0 0 0 255)
-              (SDL.SetRenderDrawColor rend 255 255 255 255))
-            (SDL.RenderFillRect rend (address (SDL.make-rect (* x w) (* y h) (dec w) (dec h))))))))
-    (SDL.RenderPresent rend)
+              (and (= x @(State.x state)) (= y @(State.y state))) (SDL.set-render-draw-color rend 255 0 0 255)
+              (get-square state x y) (SDL.set-render-draw-color rend 0 0 0 255)
+              (SDL.set-render-draw-color rend 255 255 255 255))
+            (SDL.render-fill-rect rend (address (SDL.rect (* x w) (* y h) (dec w) (dec h))))))))
+    (SDL.render-present rend)
     ))
 
 (defn handle-events [app rend]
   (let [event (SDL.event-init)]
     (while (SDL.poll-event (address event))
       (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (quit app)
+        (cond (= et SDL.event-quit) (SDLApp.stop app)
               ())))))
 
 (defn flip-at-ant [state]
@@ -96,15 +96,15 @@
 
 (defn-do main []
   (Debug.log-memory-balance! true)
-  (let [app (app-init @"Langton's Ant" 800 600)
-        rend (app-renderer app)
+  (let [app (SDLApp.create "Langton's Ant" 800 600 SDLApp.no-draw SDLApp.no-event-handler)
+        rend @(SDLApp.renderer &app)
         state (create-state)]
       (while true
         (do
           (handle-events &app rend)
           (draw rend &state)
           (set! state (tick state))
-          (SDL.Delay 2)))))
+          (SDL.delay 2)))))
 
 ;; Just the model
 ;; (defn main []

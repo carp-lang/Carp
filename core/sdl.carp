@@ -143,4 +143,8 @@
   (defn stop [app]
     (do (SDL.destroy-window @(window app))
         (SDL.quit)
-        (System.exit 0))))
+        (System.exit 0)))
+  (defn no-draw [app rend]
+    ())
+  (defn no-event-handler [app]
+    ()))
