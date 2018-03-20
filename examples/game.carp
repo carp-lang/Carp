@@ -4,7 +4,7 @@
 (use Double)
 (use Array)
 
-(load "sdl.carp")
+(load "SDL.carp")
 (load "sdl_image.carp")
 
 (Project.config "title" "Game")
@@ -31,7 +31,9 @@
       (SDL.QueryTexture texture NULL NULL (address w) (address h))
       (SDL.make-rect 0 0 w h))))
 
-(defn draw [rend images]
+(def images (Images.init NULL NULL))
+
+(defn draw [app rend]
   (let [rect (SDL.make-rect 32 32 (- 512 64) (- 512 64))]
     (do
       (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
@@ -55,41 +57,30 @@
       (let [lines (random-lines)
             n (count &lines)]
         (SDL.RenderDrawLines rend (raw lines) n))
-      (let [img @(Images.img1 (the (Ref Images) images))]
+      (let [img @(Images.img1 &images)]
         (SDL.RenderCopyEx rend
                           img
                           (address (dimensions img))
                           (address (SDL.make-rect 100 100 300 300))
                           (* 0.1 (from-int (SDL.GetTicks)))
                           (address (SDL.make-point 150 150))
-                          SDL.FLIP_NONE))
-      (SDL.RenderPresent rend)
-      )))
+                          SDL.FLIP_NONE)))))
 
-(defn handle-events [app rend]
+(defn handle-events [app]
   (let [event (SDL.event-init)]
     (while (SDL.poll-event (address event))
       (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (quit &app)
+        (cond (= et SDL.QUIT) (SDLApp.stop app)
               (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
                                    (cond
-                                     (= key SDL.key-escape) (quit &app)
+                                     (= key SDL.key-escape) (SDLApp.stop app)
                                      (println "Unrecognized key.")))
               (println "Some other event happened..."))))))
 
 (defn main []
-  (let [app (app-init (String.copy "~ CARP ~") 512 512)
-        rend (app-renderer app)
-        img1 (IMG_LoadTexture rend (cstr "./img/square.png"))
-        img2 (IMG_LoadTexture rend (cstr "./img/carp_logo_969_no_texture.png"))
-        images (Images.init img1 img2)]
+  (let [app (SDLApp.create "~ CARP ~" 512 512 draw handle-events)
+        rend @(SDLApp.renderer &app)]
     (do
-      (println (ref (Images.str &images)))
-      (while true
-        (do
-          (handle-events app rend)
-          (draw rend &images)
-          (SDL.Delay 30))))))
-
-;; (build)
-;; (run)
+      (set! images (Images.init (IMG_LoadTexture rend (cstr "./img/square.png"))
+                                (IMG_LoadTexture rend (cstr "./img/carp_logo_969_no_texture.png"))))
+      (SDLApp.run &app))))
