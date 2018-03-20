@@ -1,11 +1,22 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(definterface f (Fn [] Double))
+(load "SDL.carp")
 
-(defmodule M
-  (defn f [] @"ererre"))
+(defn handle-events [app]
+  (let [event (SDL.event-init)]
+    (while (SDL.poll-event (address event))
+      (let [et (SDL.event-type &event)]
+        (cond (= et SDL.QUIT) (System.exit 0)
+              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
+                                   (cond
+                                     (= key SDL.key-escape) (System.exit 0)
+                                     (IO.println "Unrecognized key.")))
+              (IO.println "Some other event happened..."))))))
 
-(defn f [] @"hjhjh")
-
-(register f (Fn [] Int))
+(defn main []
+  (let [app (SDLApp.start "Temp" 400 300)]
+    (while true
+      (do
+        (handle-events &app)
+        (SDL.Delay 30)))))

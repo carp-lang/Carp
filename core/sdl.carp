@@ -13,13 +13,17 @@
 (register-type SDL_Renderer)
 (register-type SDL_BlendMode)
 (register-type SDL_RendererFlip)
+(register-type SDL_Window)
 
 (defmodule SDL
   ;; Setup and quit
   (register Init (Fn [Int] ()))
+  (register CreateWindowAndRenderer (Fn [Int Int Int (Ptr (Ptr SDL_Window)) (Ptr (Ptr SDL_Renderer))] ()))
+  (register SetWindowTitle (Fn [(Ptr SDL_Window) (Ptr Char)] ()))
   (register Delay (Fn [Int] ()))
   (register INIT_EVERYTHING Int)
-  (register Quit (Fn [] ()))
+  (register DestroyWindow (Fn [(Ptr Window)] ()))
+  (register Quit (Fn [(Ptr Window)] ()))
 
   ;; SDL_EventType
   (register QUIT SDL_EventType)
@@ -111,12 +115,17 @@
   )
 
 ;; App helper
-(register-type App)
-(register app-init (Fn [String Int Int] App))
-(register app-window (Fn [App] (Ptr SDL_Window)))
-(register app-renderer (Fn [App] (Ptr SDL_Renderer)))
-(register app-stop (Fn [(Ref App)] ()))
+(deftype SDLApp
+    [window (Ptr SDL_Window)
+     renderer (Ptr SDL_Renderer)])
 
-(defn quit [app]
-  (do (app-stop app)
-      (System.exit 0)))
+(defmodule SDLApp
+  (defn start [title width height]
+    (let [_ SDL.INIT_EVERYTHING
+          win NULL
+          ren NULL]
+      (do (SDL.CreateWindowAndRenderer width height 0 (address win) (address ren))
+          (SDL.SetWindowTitle win (cstr title))
+          (SDLApp.init win ren))))
+  (defn stop [app]
+    (do ())))
