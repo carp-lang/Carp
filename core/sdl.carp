@@ -88,23 +88,25 @@
       (not (SDL.Keycode.= x y))))
 
   ;; Mouse
-  ;; (register get-mouse-state (Fn [(Ptr Int) (Ptr Int)] Int) "SDL_GetMouseState")
-  ;; (register button (Fn [Int] Int) "SDL_BUTTON")
-  ;; (register button-left Int "BUTTON_LEFT")
-  ;; (register button-right Int "BUTTON_RIGHT")
+  (defmodule Mouse
+    (register get-mouse-state (Fn [(Ptr Int) (Ptr Int)] Int) "SDL_GetMouseState")
+    (register button (Fn [Int] Int) "SDL_BUTTON")
+    (register button-left Int "SDL_BUTTON_LEFT")
+    (register button-right Int "SDL_BUTTON_RIGHT"))
 
-  ;; (deftype MouseState [x Int
-  ;;                      y Int
-  ;;                      left Bool
-  ;;                      right Bool])
+  (deftype MouseState [x Int
+                       y Int
+                       left Bool
+                       right Bool])
 
-  ;; (defn get-mouse-state []
-  ;;   (let [x 0
-  ;;         y 0
-  ;;         state (SDL.get-mouse-state (address x) (address y))
-  ;;         l (/= 0 (Int.bit-and state (SDL.button SDL.button-left)))
-  ;;         r (/= 0 (Int.bit-and state (SDL.button SDL.button-right)))]
-  ;;     (MouseState.init x y l r)))
+  (defmodule MouseState
+    (defn get []
+      (let [x 0
+            y 0
+            state (SDL.Mouse.get-mouse-state (address x) (address y))
+            l (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-left)))
+            r (/= 0 (Int.bit-and state (SDL.Mouse.button SDL.Mouse.button-right)))]
+        (SDL.MouseState.init x y l r))))
 
   ;; Time
   (register get-ticks (Fn [] Int) "SDL_GetTicks")

@@ -4,20 +4,21 @@
 (load "SDL.carp")
 
 (defn draw [app rend]
-  (let [rect (SDL.make-rect 50 50 300 200)]
+  (let [mouse-state (SDL.MouseState.get)
+        rect (SDL.rect 50 50 @(SDL.MouseState.x &mouse-state) 200)]
     (do
-      (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
-      (SDL.SetRenderDrawColor rend 0 0 0 255)
-      (SDL.RenderClear rend)
-      (SDL.SetRenderDrawColor rend 200 250 255 255)
-      (SDL.RenderFillRect rend (address rect)))))
+      (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
+      (SDL.set-render-draw-color rend 0 0 0 255)
+      (SDL.render-clear rend)
+      (SDL.set-render-draw-color rend 200 250 255 255)
+      (SDL.render-fill-rect rend (address rect)))))
 
 (defn handle-events [app]
-  (let [event (SDL.event-init)]
-    (while (SDL.poll-event (address event))
-      (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (SDLApp.stop app)
-              (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
+  (let [event (SDL.Event.init)]
+    (while (SDL.Event.poll (address event))
+      (let [et (SDL.Event.type &event)]
+        (cond (= et SDL.Event.quit) (SDLApp.stop app)
+              (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
                                    (cond
                                      (= key SDL.key-escape) (SDLApp.stop app)
                                      (IO.println "Unrecognized key.")))
