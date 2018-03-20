@@ -201,6 +201,17 @@ dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envMod
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
+-- | A hack-ish function for converting any enum to an int.
+templateEnumToInt :: (String, Binder)
+templateEnumToInt = defineTemplate
+  (SymPath [] "enum-to-int")
+  (FuncTy [(VarTy "a")] IntTy)
+  (toTemplate "int $NAME ($a e)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return (int)e;"
+                        ,"}"])
+  (const [])
+
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -212,11 +223,12 @@ startingGlobalEnv noArray =
       }
   where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
+                                  , register "enum-to-int" (FuncTy [(VarTy "a")] IntTy)
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
-                   ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]
-                   ++ [("System", Binder (XObj (Mod systemModule) Nothing Nothing))]
-                   ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
+                   ++ [("Pointer",  Binder (XObj (Mod pointerModule) Nothing Nothing))]
+                   ++ [("System",   Binder (XObj (Mod systemModule) Nothing Nothing))]
+                   ++ [("Dynamic",  Binder (XObj (Mod dynamicModule) Nothing Nothing))]
                    ++ [("Function", Binder (XObj (Mod functionModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.

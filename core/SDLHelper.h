@@ -22,9 +22,6 @@ bool SDL_Event__EQ_(SDL_EventType a, SDL_EventType b) {
 }
 
 // Keycode
-int SDL_Keycode__EQ_(SDL_Keycode a, SDL_Keycode b) {
-    return a == b;
-}
 
 SDL_Keycode SDL_Keycode_copy(SDL_Keycode* a) {
     return *a;
