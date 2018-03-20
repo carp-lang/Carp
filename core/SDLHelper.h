@@ -3,36 +3,6 @@
 #include <carp_memory.h>
 #include <core.h>
 
-typedef struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-} App;
-
-App app_MINUS_init(const char *title, int width, int height) {
-    SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer);
-    SDL_SetWindowTitle(window, title);
-    App app;
-    app.window = window;
-    app.renderer = renderer;
-    return app;
-}
-
-SDL_Window *app_MINUS_window(App app) {
-    return app.window;
-}
-
-SDL_Renderer *app_MINUS_renderer(App app) {
-    return app.renderer;
-}
-
-void app_MINUS_stop(App *app) {
-    SDL_DestroyWindow(app->window);
-    SDL_Quit();
-}
-
 SDL_Event SDL_event_MINUS_init() {
     SDL_Event e;
     return e;

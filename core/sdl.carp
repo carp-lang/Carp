@@ -22,8 +22,8 @@
   (register SetWindowTitle (Fn [(Ptr SDL_Window) (Ptr Char)] ()))
   (register Delay (Fn [Int] ()))
   (register INIT_EVERYTHING Int)
-  (register DestroyWindow (Fn [(Ptr Window)] ()))
-  (register Quit (Fn [(Ptr Window)] ()))
+  (register DestroyWindow (Fn [(Ptr SDL_Window)] ()))
+  (register Quit (Fn [] ()))
 
   ;; SDL_EventType
   (register QUIT SDL_EventType)
@@ -117,15 +117,28 @@
 ;; App helper
 (deftype SDLApp
     [window (Ptr SDL_Window)
-     renderer (Ptr SDL_Renderer)])
+     renderer (Ptr SDL_Renderer)
+     draw (Fn [&SDLApp (Ptr SDL_Renderer)] ())
+     event-handler (Fn [&SDLApp] ())])
 
 (defmodule SDLApp
-  (defn start [title width height]
+  (defn create [title width height draw-fn event-fn]
     (let [_ SDL.INIT_EVERYTHING
           win NULL
           ren NULL]
       (do (SDL.CreateWindowAndRenderer width height 0 (address win) (address ren))
           (SDL.SetWindowTitle win (cstr title))
-          (SDLApp.init win ren))))
+          (SDLApp.init win ren draw-fn event-fn))))
+  (defn run [app]
+    (let [event-fn @(SDLApp.event-handler app)
+          draw-fn @(SDLApp.draw app)
+          rend @(SDLApp.renderer app)]
+      (while true
+        (do
+          (event-fn app)
+          (draw-fn app rend)
+          (SDL.RenderPresent rend)
+          (SDL.Delay 30)))))
   (defn stop [app]
-    (do ())))
+    (do (SDL.DestroyWindow @(window app))
+        (SDL.Quit))))

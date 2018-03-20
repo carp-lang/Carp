@@ -3,20 +3,26 @@
 
 (load "SDL.carp")
 
+(defn draw [app rend]
+  (let [rect (SDL.make-rect 50 50 300 200)]
+    (do
+      (SDL.SetRenderDrawBlendMode rend SDL.BLENDMODE_ADD)
+      (SDL.SetRenderDrawColor rend 0 0 0 255)
+      (SDL.RenderClear rend)
+      (SDL.SetRenderDrawColor rend 200 250 255 255)
+      (SDL.RenderFillRect rend (address rect)))))
+
 (defn handle-events [app]
   (let [event (SDL.event-init)]
     (while (SDL.poll-event (address event))
       (let [et (SDL.event-type &event)]
-        (cond (= et SDL.QUIT) (System.exit 0)
+        (cond (= et SDL.QUIT) (SDLApp.stop app)
               (= et SDL.KEYDOWN) (let [key (SDL.event-keycode &event)]
                                    (cond
-                                     (= key SDL.key-escape) (System.exit 0)
+                                     (= key SDL.key-escape) (SDLApp.stop app)
                                      (IO.println "Unrecognized key.")))
               (IO.println "Some other event happened..."))))))
 
 (defn main []
-  (let [app (SDLApp.start "Temp" 400 300)]
-    (while true
-      (do
-        (handle-events &app)
-        (SDL.Delay 30)))))
+  (let [app (SDLApp.create "Temp" 400 300 draw handle-events)]
+    (SDLApp.run &app)))
