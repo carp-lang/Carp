@@ -166,7 +166,7 @@
   ))
 
 (defn main []
-  (let [app (SDLApp.create "R E P T I L E" 832 640 SDLApp.no-draw SDLApp.no-event-handler)
+  (let [app (SDLApp.create "R E P T I L E" 832 640)
         rend @(SDLApp.renderer &app)
         world (create-world)]
     (do

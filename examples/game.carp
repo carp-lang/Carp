@@ -33,7 +33,7 @@
 
 (def images (Images.init NULL NULL))
 
-(defn draw [app rend]
+(defn draw [app rend state-ref]
   (let [rect (SDL.rect 32 32 (- 512 64) (- 512 64))]
     (do
       (SDL.set-render-draw-blend-mode rend SDL.blend-mode-add)
@@ -77,10 +77,13 @@
                                      (println "Unrecognized key.")))
               (println "Some other event happened..."))))))
 
+(defn tick [state] state)
+
 (defn main []
-  (let [app (SDLApp.create "~ CARP ~" 512 512 draw handle-events)
-        rend @(SDLApp.renderer &app)]
+  (let [app (SDLApp.create "~ CARP ~" 512 512)
+        rend @(SDLApp.renderer &app)
+        initial-state 0]
     (do
       (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
                                 (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
-      (SDLApp.run &app))))
+      (SDLApp.run-with-callbacks &app handle-events tick draw initial-state))))

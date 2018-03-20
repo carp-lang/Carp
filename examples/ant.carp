@@ -96,7 +96,7 @@
 
 (defn-do main []
   (Debug.log-memory-balance! true)
-  (let [app (SDLApp.create "Langton's Ant" 800 600 SDLApp.no-draw SDLApp.no-event-handler)
+  (let [app (SDLApp.create "Langton's Ant" 800 600)
         rend @(SDLApp.renderer &app)
         state (create-state)]
       (while true

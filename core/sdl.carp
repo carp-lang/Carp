@@ -117,32 +117,44 @@
 (deftype SDLApp
     [window (Ptr SDL_Window)
      renderer (Ptr SDL_Renderer)
-     draw (Fn [&SDLApp (Ptr SDL_Renderer)] ())
-     event-handler (Fn [&SDLApp] ())])
+     fps Int])
 
 (defmodule SDLApp
-  (defn create [title width height draw-fn event-fn]
+  (defn create [title width height]
     (let [_ SDL.INIT_EVERYTHING
           win NULL
           ren NULL]
       (do (SDL.create-window-and-renderer width height 0 (address win) (address ren))
           (SDL.set-window-title win (cstr title))
-          (SDLApp.init win ren draw-fn event-fn))))
-  (defn run [app]
-    (let [event-fn @(SDLApp.event-handler app)
-          draw-fn @(SDLApp.draw app)
-          rend @(SDLApp.renderer app)]
+          (SDLApp.init win ren 60))))
+
+  (defn run-with-callbacks [app event-fn update-fn draw-fn initial-state]
+    (let [rend @(SDLApp.renderer app)
+          state initial-state]
       (while true
         (do
           (event-fn app)
-          (draw-fn app rend)
+          (set! state (update-fn state))
+          (draw-fn app rend &state)
           (SDL.render-present rend)
-          (SDL.delay 30)))))
+          (SDL.delay (/ 1000 @(SDLApp.fps app)))))))
+
   (defn stop [app]
     (do (SDL.destroy-window @(window app))
         (SDL.quit)
         (System.exit 0)))
-  (defn no-draw [app rend]
-    ())
-  (defn no-event-handler [app]
-    ()))
+
+  (defn default-draw [app rend]
+    (do (SDL.set-render-draw-color rend 0 0 0 255)
+        (SDL.render-clear rend)))
+
+  (defn default-event-handler [app]
+    (let [event (SDL.Event.init)]
+    (while (SDL.Event.poll (address event))
+      (let [et (SDL.Event.type &event)]
+        (cond (= et SDL.Event.quit) (SDLApp.stop app)
+              (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
+                                          (if (= key SDL.key-escape)
+                                            (SDLApp.stop app)
+                                            ()))
+              ()))))))
