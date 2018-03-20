@@ -2,8 +2,8 @@
 (use Double)
 (use Array)
 
-(load "sdl.carp")
-(load "sdl_image.carp")
+(load "SDL.carp")
+(load "SDL_image.carp")
 
 (Debug.sanitize-addresses)
 
@@ -42,10 +42,10 @@
     ))
 
 (defn handle-events [app rend]
-  (let [event (SDL.event-init)]
-    (while (SDL.poll-event (address event))
-      (let [et (SDL.event-type &event)]
-        (cond (= et SDL.event-quit) (SDLApp.stop app)
+  (let [event (SDL.Event.init)]
+    (while (SDL.Event.poll (address event))
+      (let [et (SDL.Event.type &event)]
+        (cond (= et SDL.Event.quit) (SDLApp.stop app)
               ())))))
 
 (defn flip-at-ant [state]

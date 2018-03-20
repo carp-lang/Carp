@@ -25,17 +25,19 @@
   (register destroy-window             (Fn [(Ptr SDL_Window)] ()) "SDL_DestroyWindow")
   (register quit                       (Fn [] ()) "SDL_Quit")
 
-  ;; SDL_EventType
-  (register event-quit              SDL_EventType "SDL_QUIT")
-  (register event-key-down          SDL_EventType "SDL_KEYDOWN")
-  (register event-key-up            SDL_EventType "SDL_KEYUP")
-  (register event-mouse-motion      SDL_EventType "SDL_MOUSEMOTION")
-  (register event-mouse-button-down SDL_EventType "SDL_MOUSEBUTTONDOWN")
-  (register event-mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
-  (register event-mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL")
-
-  (defmodule EventType
-    (register = (Fn [SDL_EventType SDL_EventType] Bool)))
+  (defmodule Event
+    (register init (Fn [] SDL_Event))
+    (register type (Fn [(Ref SDL_Event)] SDL_EventType))
+    (register keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
+    (register poll (Fn [(Ptr SDL_Event)] Bool) "SDL_PollEvent")
+    (register = (Fn [SDL_EventType SDL_EventType] Bool))
+    (register quit              SDL_EventType "SDL_QUIT")
+    (register key-down          SDL_EventType "SDL_KEYDOWN")
+    (register key-up            SDL_EventType "SDL_KEYUP")
+    (register mouse-motion      SDL_EventType "SDL_MOUSEMOTION")
+    (register mouse-button-down SDL_EventType "SDL_MOUSEBUTTONDOWN")
+    (register mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
+    (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL"))
 
   ;; Helpers (not part of SDL)
   (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
@@ -66,12 +68,6 @@
   (register flip-none SDL_RendererFlip "SDL_FLIP_NONE")
   (register flip-horizontal SDL_RendererFlip "SDL_FLIP_HORIZONTAL")
   (register flip-vertical SDL_RendererFlip "SDL_FLIP_VERTICAL")
-
-  ;; Events
-  (register poll-event (Fn [(Ptr SDL_Event)] Bool) "SDL_PollEvent")
-  (register event-init (Fn [] SDL_Event))
-  (register event-type (Fn [(Ref SDL_Event)] SDL_EventType))
-  (register event-keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
 
   ;; Keys
   (register key-return SDL_Keycode "SDLK_RETURN")

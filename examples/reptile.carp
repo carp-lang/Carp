@@ -2,8 +2,8 @@
 (use Double)
 (use Array)
 
-(load "sdl.carp")
-(load "sdl_image.carp")
+(load "SDL.carp")
+(load "SDL_image.carp")
 
 (load "Vector.carp")
 (use Vector2)
@@ -63,11 +63,11 @@
 (def reset false)
 
 (defn handle-events [app rend world]
-  (let [event (SDL.event-init)]
-    (while (SDL.poll-event (address event))
-      (let [et (SDL.event-type &event)]
-        (cond (= et SDL.event-quit) (SDLApp.stop app)
-              (= et SDL.event-key-down) (let [key (SDL.event-keycode &event)]
+  (let [event (SDL.Event.init)]
+    (while (SDL.Event.poll (address event))
+      (let [et (SDL.Event.type &event)]
+        (cond (= et SDL.Event.quit) (SDLApp.stop app)
+              (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
                                           (cond
                                             (or (= key SDL.key-right)
                                                 (or (= key SDL.key-up)

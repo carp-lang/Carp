@@ -67,11 +67,11 @@
                             SDL.flip-none)))))
 
 (defn handle-events [app]
-  (let [event (SDL.event-init)]
-    (while (SDL.poll-event (address event))
-      (let [et (SDL.event-type &event)]
-        (cond (= et SDL.event-quit) (SDLApp.stop app)
-              (= et SDL.event-key-down) (let [key (SDL.event-keycode &event)]
+  (let [event (SDL.Event.init)]
+    (while (SDL.Event.poll (address event))
+      (let [et (SDL.Event.type &event)]
+        (cond (= et SDL.Event.quit) (SDLApp.stop app)
+              (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
                                    (cond
                                      (= key SDL.key-escape) (SDLApp.stop app)
                                      (println "Unrecognized key.")))
