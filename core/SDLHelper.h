@@ -3,6 +3,7 @@
 #include <carp_memory.h>
 #include <core.h>
 
+// Event
 SDL_Event SDL_Event_init() {
     SDL_Event e;
     return e;
@@ -16,6 +17,11 @@ SDL_Keycode SDL_Event_keycode(SDL_Event *e) {
     return e->key.keysym.sym;
 }
 
+bool SDL_Event__EQ_(SDL_EventType a, SDL_EventType b) {
+    return a == b;
+}
+
+// Keycode
 int SDL_Keycode__EQ_(SDL_Keycode a, SDL_Keycode b) {
     return a == b;
 }
@@ -30,6 +36,7 @@ String SDL_Keycode_str(SDL_Keycode a) {
     return buffer;
 }
 
+// Helpers
 SDL_Rect SDL_rect(int x, int y, int w, int h) {
     SDL_Rect r;
     r.x = x;
@@ -44,8 +51,4 @@ SDL_Point SDL_point(int x, int y) {
     p.x = x;
     p.y = y;
     return p;
-}
-
-bool SDL_Event__EQ_(SDL_EventType a, SDL_EventType b) {
-    return a == b;
 }
