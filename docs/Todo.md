@@ -30,6 +30,8 @@
 * [0.4] Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 * [0.4] Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
+* [0.4] Array.init-empty-with-capacity function. What's a better name?
+* [0.4] Undefined symbol does not stop execution when running with -x
 
 * [1.0] Macros for generating 'read' functions to read objects back into memory from string representation.
 * [1.0] A way to assert compiler errors in tests
@@ -49,6 +51,8 @@
 * [0.4] Show "call stack" when getting an error during concretization.
 * [0.4] Allow echoing of infered type at the REPL (must be silenced when loading a file though)
 * [0.4] Only reload files once, keep track of which ones have already been reloaded.
+* [0.4] Prevent run if no exe has been successfully built.
+* [0.4] Flycheck hangs and eats all resources sometimes.
 
 * [1.0] Project templates.
 * [1.0] Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
