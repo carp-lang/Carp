@@ -53,3 +53,5 @@
 
 (defn min [a b]
   (if (< a b) a b))
+
+(defn id [x] x)

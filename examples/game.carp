@@ -24,13 +24,6 @@
     [img1 (Ptr SDL_Texture)
      img2 (Ptr SDL_Texture)])
 
-(defn dimensions [texture]
-  (let [w 0
-        h 0]
-    (do
-      (SDL.query-texture texture NULL NULL (address w) (address h))
-      (SDL.rect 0 0 w h))))
-
 (def images (Images.init NULL NULL))
 
 (defn draw [app rend state-ref]
@@ -60,7 +53,7 @@
       (let [img @(Images.img1 &images)]
         (SDL.render-copy-ex rend
                             img
-                            (address (dimensions img))
+                            (address (SDL.dimensions img))
                             (address (SDL.rect 100 100 300 300))
                             (* 0.1 (from-int (SDL.get-ticks)))
                             (address (SDL.point 150 150))

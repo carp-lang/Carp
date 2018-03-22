@@ -52,3 +52,12 @@ SDL_Point SDL_point(int x, int y) {
     p.y = y;
     return p;
 }
+
+SDL_Color SDL_color(int r, int g, int b) {
+    SDL_Color p;
+    p.r = r;
+    p.g = g;
+    p.b = b;
+    p.a = 255;
+    return p;
+}

@@ -14,6 +14,7 @@
 (register-type SDL_BlendMode)
 (register-type SDL_RendererFlip)
 (register-type SDL_Window)
+(register-type SDL_Color)
 
 (defmodule SDL
   ;; Setup and teardown
@@ -39,10 +40,6 @@
     (register mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
     (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL"))
 
-  ;; Helpers (not part of SDL)
-  (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
-  (register point (Fn [Int Int] SDL_Point)) ;; x y
-
   ;; Rendering
   (register render-present (Fn [(Ptr SDL_Renderer)] ()) "SDL_RenderPresent")
   (register render-clear (Fn [(Ptr SDL_Renderer)] ()) "SDL_RenderClear")
@@ -57,6 +54,17 @@
   (register set-render-draw-blend-mode (Fn [(Ptr SDL_Renderer) SDL_BlendMode] ()) "SDL_SetRenderDrawBlendMode")
   (register blit-surface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ()) "SDL_BlitSurface") ;; src, srcrect, dst, dstrect
   (register query-texture (Fn [(Ptr SDL_Texture) (Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int)] ()) "SDL_QueryTexture") ;; ? ? w h
+  (register create-texture-from-surface (Fn [(Ptr SDL_Renderer) (Ptr SDL_Surface)] (Ptr SDL_Texture)) "SDL_CreateTextureFromSurface")
+
+  ;; Helpers (not part of SDL)
+  (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
+  (register point (Fn [Int Int] SDL_Point)) ;; x y
+  (register color (Fn [Int Int Int] SDL_Color)) ;; x y
+
+  (defn dimensions [texture]
+    (let-do [w 0 h 0]
+      (query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
+      (SDL.rect 0 0 w h)))
 
   ;; Blend modes
   (register blend-mode-none SDL_BlendMode "SDL_BLENDMODE_NONE")

@@ -1,0 +1,28 @@
+(system-include "SDL2/SDL_ttf.h")
+(add-lib "-lSDL2_ttf")
+(Project.config "cflag" "-Wno-incompatible-pointer-types-discards-qualifiers")
+
+(register-type TTF_Font)
+
+(defmodule TTF
+  (register init (Fn [] Int) "TTF_Init")
+  (register quit (Fn [] ()) "TTF_Quit")
+  (register get-error (Fn [] (Ptr Char)) "TTF_GetError")
+
+  ;; Loading / unloading
+  (register open-font (Fn [(Ptr Char) Int] (Ptr TTF_Font)) "TTF_OpenFont")
+  (register close-font (Fn [(Ptr TTF_Font)] ()) "TTF_CloseFont")
+
+  ;; Styles
+  ;; int TTF_GetFontStyle(TTF_Font *font)
+  ;; void TTF_SetFontStyle(TTF_Font *font, int style)
+  ;; TTF_STYLE_BOLD
+  ;; TTF_STYLE_ITALIC
+  ;; TTF_STYLE_UNDERLINE
+  ;; TTF_STYLE_STRIKETHROUGH
+
+  ;; Render
+  ;; SDL_Surface *TTF_RenderText_Solid(TTF_Font *font, const char *text, SDL_Color fg)
+  (register render-text-solid (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface)) "TTF_RenderText_Solid")
+
+  )
