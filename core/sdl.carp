@@ -14,7 +14,14 @@
 (register-type SDL_BlendMode)
 (register-type SDL_RendererFlip)
 (register-type SDL_Window)
+(register-type Uint8)
 (register-type SDL_Color)
+
+(defmodule SDL_Color
+  (register r (Fn [&SDL_Color] &Int))
+  (register g (Fn [&SDL_Color] &Int))
+  (register b (Fn [&SDL_Color] &Int))
+  (register a (Fn [&SDL_Color] &Int)))
 
 (defmodule SDL
   ;; Setup and teardown
@@ -55,17 +62,6 @@
   (register blit-surface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ()) "SDL_BlitSurface") ;; src, srcrect, dst, dstrect
   (register query-texture (Fn [(Ptr SDL_Texture) (Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int)] ()) "SDL_QueryTexture") ;; ? ? w h
   (register create-texture-from-surface (Fn [(Ptr SDL_Renderer) (Ptr SDL_Surface)] (Ptr SDL_Texture)) "SDL_CreateTextureFromSurface")
-
-  ;; Helpers (not part of SDL)
-  (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
-  (register point (Fn [Int Int] SDL_Point)) ;; x y
-  (register rgb (Fn [Int Int Int] SDL_Color)) ;; x y
-  (register rgba (Fn [Int Int Int] SDL_Color)) ;; x y
-
-  (defn dimensions [texture]
-    (let-do [w 0 h 0]
-      (query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
-      (SDL.rect 0 0 w h)))
 
   ;; Blend modes
   (register blend-mode-none SDL_BlendMode "SDL_BLENDMODE_NONE")
@@ -119,6 +115,34 @@
 
   ;; Time
   (register get-ticks (Fn [] Int) "SDL_GetTicks")
+
+  ;; Helpers (not part of SDL)
+  (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
+  (register point (Fn [Int Int] SDL_Point)) ;; x y
+  (register rgb (Fn [Int Int Int] SDL_Color)) ;; x y
+  (register rgba (Fn [Int Int Int] SDL_Color)) ;; x y
+
+  (defn dimensions [texture]
+    (let-do [w 0 h 0]
+      (query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
+      (SDL.rect 0 0 w h)))
+
+  (defn draw-texture-at [rend texture point]
+    (let [dims (SDL.dimensions texture)
+          dest (SDL.rect @(SDL_Point.x point)
+                         @(SDL_Point.y point)
+                         @(SDL_Rect.w &dims)
+                         @(SDL_Rect.h &dims))]
+      (render-copy rend texture (address dims) (address dest))))
+
+  (defn-do bg [rend color]
+    (with Int
+          (set-render-draw-color rend
+                                 @(SDL_Color.r color)
+                                 @(SDL_Color.g color)
+                                 @(SDL_Color.b color)
+                                 255))
+    (render-clear rend))
 
   )
 
