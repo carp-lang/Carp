@@ -5,8 +5,8 @@
 
 ;; Types
 (register-type SDL_Keycode)
-(register-type SDL_Rect)
-(register-type SDL_Point)
+(register-type SDL_Rect [x Int, y Int, w Int, h Int])
+(register-type SDL_Point [x Int, y Int])
 (register-type SDL_Event)
 (register-type SDL_EventType)
 (register-type SDL_Texture)
@@ -59,7 +59,8 @@
   ;; Helpers (not part of SDL)
   (register rect (Fn [Int Int Int Int] SDL_Rect)) ;; x y w h
   (register point (Fn [Int Int] SDL_Point)) ;; x y
-  (register color (Fn [Int Int Int] SDL_Color)) ;; x y
+  (register rgb (Fn [Int Int Int] SDL_Color)) ;; x y
+  (register rgba (Fn [Int Int Int] SDL_Color)) ;; x y
 
   (defn dimensions [texture]
     (let-do [w 0 h 0]

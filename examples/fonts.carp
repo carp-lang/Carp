@@ -1,27 +1,26 @@
 (load "SDL.carp")
 (load "SDL_ttf.carp")
 
-(def font    (the (Ptr TTF_Font)    NULL))
-(def texture (the (Ptr SDL_Texture) NULL))
+(def text1 (the (Ptr SDL_Texture) NULL))
 
 (defn draw [app rend state-ref]
     (do (SDL.set-render-draw-color rend 240 240 220 255)
         (SDL.render-clear rend)
-        (SDL.render-copy rend
-                         texture
-                         (address (SDL.dimensions texture))
-                         (address (SDL.rect 100 100 300 300)))
-        ))
+        (let [dims (SDL.dimensions text1)
+              dest (SDL.rect (- 200 (/ @(SDL_Rect.w &dims) 2))
+                             (- 150 @(SDL_Rect.h &dims))
+                             @(SDL_Rect.w &dims)
+                             @(SDL_Rect.h &dims))]
+          (SDL.render-copy rend text1 (address dims) (address dest)))))
 
 (defn main []
-  (let [app (SDLApp.create "Font Rendering with SDL_ttf" 800 600)
+  (let [app (SDLApp.create "Font Rendering with SDL_ttf" 400 300)
         rend @(SDLApp.renderer &app)]
     (do
       (if (= 0 (TTF.init))
-        (do
-          (set! font (TTF.open-font (cstr "resources/Hasklig.otf") 20))
-          (let [surface (TTF.render-text-solid font (cstr "Carp!") (SDL.color 0 0 0))]
-            (set! texture (SDL.create-texture-from-surface rend surface)))
+        (let-do [font (TTF.open-font (cstr "resources/Hasklig.otf") 20)
+                 surface (TTF.render-text-blended font (cstr "Carp!") (SDL.rgb 0 0 0))]
+          (set! text1 (SDL.create-texture-from-surface rend surface))
           (SDLApp.run-with-callbacks &app SDLApp.default-event-handler id draw 0))
         (println* "Failed to initialize SDL_ttf: " &(str (TTF.get-error))))
       0)))

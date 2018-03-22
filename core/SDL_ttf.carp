@@ -22,7 +22,16 @@
   ;; TTF_STYLE_STRIKETHROUGH
 
   ;; Render
-  ;; SDL_Surface *TTF_RenderText_Solid(TTF_Font *font, const char *text, SDL_Color fg)
-  (register render-text-solid (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface)) "TTF_RenderText_Solid")
+  (register render-text-solid
+            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface))
+            "TTF_RenderText_Solid")
+
+  (register render-text-shaded
+            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color SDL_Color] (Ptr SDL_Surface))
+            "TTF_RenderText_Shaded")
+
+  (register render-text-blended
+            (Fn [(Ptr TTF_Font) (Ptr Char) SDL_Color] (Ptr SDL_Surface))
+            "TTF_RenderText_Blended")
 
   )
