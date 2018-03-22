@@ -1,6 +1,9 @@
 (load "SDL.carp")
 (load "SDL_ttf.carp")
 
+(Debug.sanitize-addresses)
+
+(def font (the (Ptr TTF_Font) NULL))
 (def text1 (the (Ptr SDL_Texture) NULL))
 
 (defn shifting-bg-color []
@@ -12,13 +15,33 @@
             point (SDL.point (- 200 (/ @(SDL_Rect.w &dims) 2)) (- 150 @(SDL_Rect.h &dims)))]
         (SDL.draw-texture-at rend text1 &point))))
 
+(defn change-text [rend]
+  (do (when (not (Pointer.eq NULL text1))
+        (do
+          (IO.println "Destroy texture.")
+          (SDL.destroy-texture text1)))
+      (set! text1 (TTF.render-text-to-texture rend font &(str* "TICK: " (SDL.get-ticks))))
+      ()))
+
+(defn event-handler [app]
+    (let [event (SDL.Event.init)]
+      (while (SDL.Event.poll (address event))
+        (let [et (SDL.Event.type &event)]
+          (cond (= et SDL.Event.quit) (SDLApp.stop app)
+                (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
+                                            (cond
+                                              (= key SDL.key-escape) (SDLApp.stop app)
+                                              (= key SDL.key-return) (change-text @(SDLApp.renderer app))
+                                              ()))
+                ())))))
+
 (defn main []
   (let [app (SDLApp.create "Font Rendering with SDL_ttf" 400 300)
         rend @(SDLApp.renderer &app)]
     (do
       (if (TTF.ok? (TTF.init))
-        (let-do [font (TTF.open-font (cstr "resources/Hasklig.otf") 20)]
-          (set! text1 (TTF.render-to-texture rend font "Carp!"))
-          (SDLApp.run-with-callbacks &app SDLApp.default-event-handler id draw 0))
+        (do (set! font (TTF.open-font (cstr "resources/Hasklig.otf") 20))
+            (set! text1 (TTF.render-text-to-texture rend font "Carp!"))
+            (SDLApp.run-with-callbacks &app event-handler id draw 0))
         (println* "Failed to initialize SDL_ttf: " &(str (TTF.get-error))))
       0)))

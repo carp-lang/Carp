@@ -71,18 +71,18 @@ SDL_Color SDL_rgba(int r, int g, int b, int a) {
     return p;
 }
 
-int *SDL_Color_r(SDL_Color *col) {
-    return (int*)&col->r;
+int SDL_Color_r(SDL_Color *col) {
+    return (int)(col->r);
 }
 
-int *SDL_Color_g(SDL_Color *col) {
-    return (int*)&col->g;
+int SDL_Color_g(SDL_Color *col) {
+    return (int)(col->g);
 }
 
-int *SDL_Color_b(SDL_Color *col) {
-    return (int*)&col->b;
+int SDL_Color_b(SDL_Color *col) {
+    return (int)(col->b);
 }
 
-int *SDL_Color_a(SDL_Color *col) {
-    return (int*)&col->a;
+int SDL_Color_a(SDL_Color *col) {
+    return (int)(col->a);
 }

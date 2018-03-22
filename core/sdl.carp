@@ -18,10 +18,10 @@
 (register-type SDL_Color)
 
 (defmodule SDL_Color
-  (register r (Fn [&SDL_Color] &Int))
-  (register g (Fn [&SDL_Color] &Int))
-  (register b (Fn [&SDL_Color] &Int))
-  (register a (Fn [&SDL_Color] &Int)))
+  (register r (Fn [&SDL_Color] Int))
+  (register g (Fn [&SDL_Color] Int))
+  (register b (Fn [&SDL_Color] Int))
+  (register a (Fn [&SDL_Color] Int)))
 
 (defmodule SDL
   ;; Setup and teardown
@@ -62,6 +62,7 @@
   (register blit-surface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ()) "SDL_BlitSurface") ;; src, srcrect, dst, dstrect
   (register query-texture (Fn [(Ptr SDL_Texture) (Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int)] ()) "SDL_QueryTexture") ;; ? ? w h
   (register create-texture-from-surface (Fn [(Ptr SDL_Renderer) (Ptr SDL_Surface)] (Ptr SDL_Texture)) "SDL_CreateTextureFromSurface")
+  (register free-surface (Fn [(Ptr SDL_Surface)] ()) "SDL_FreeSurface")
 
   ;; Blend modes
   (register blend-mode-none SDL_BlendMode "SDL_BLENDMODE_NONE")
@@ -138,9 +139,9 @@
   (defn-do bg [rend color]
     (with Int
           (set-render-draw-color rend
-                                 @(SDL_Color.r color)
-                                 @(SDL_Color.g color)
-                                 @(SDL_Color.b color)
+                                 (SDL_Color.r color)
+                                 (SDL_Color.g color)
+                                 (SDL_Color.b color)
                                  255))
     (render-clear rend))
 

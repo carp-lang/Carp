@@ -56,7 +56,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
 -- | The Pointer module contains functions for dealing with pointers.
 pointerModule :: Env
 pointerModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Pointer", envUseModules = [], envMode = ExternalEnv }
-  where bindings = Map.fromList [ templatePointerCopy ]
+  where bindings = Map.fromList [ templatePointerCopy, templatePointerEqual ]
 
 -- | A template function for copying (= deref:ing) any pointer.
 templatePointerCopy :: (String, Binder)
@@ -68,6 +68,16 @@ templatePointerCopy = defineTemplate
                         ,"    return *ptrRef;"
                         ,"}"])
   (const [])
+
+templatePointerEqual = defineTemplate
+  (SymPath ["Pointer"] "eq")
+  (FuncTy [(PointerTy (VarTy "p")), (PointerTy (VarTy "p"))] BoolTy)
+  (toTemplate "bool $NAME ($p *p1, $p *p2)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p1 == p2;"
+                        ,"}"])
+  (const [])
+
 
 -- | The System module contains functions for various OS related things like timing and process control.
 systemModule :: Env
