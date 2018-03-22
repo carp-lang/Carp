@@ -1,7 +1,7 @@
 (load "SDL.carp")
 (load "SDL_ttf.carp")
 
-(Debug.sanitize-addresses)
+;;(Debug.sanitize-addresses)
 
 (def font (the (Ptr TTF_Font) NULL))
 (def text1 (the (Ptr SDL_Texture) NULL))
