@@ -4,10 +4,10 @@
 (def text1 (the (Ptr SDL_Texture) NULL))
 
 (defn shifting-bg-color []
-  (SDL.color (/ (SDL.get-ticks) 10) 240 220 255))
+  (SDL.rgb (/ (SDL.get-ticks) 10) 240 220))
 
 (defn draw [app rend state-ref]
-  (do (SDL.bg rend (shifting-bg-color))
+  (do (SDL.bg rend &(shifting-bg-color))
       (let [dims (SDL.dimensions text1)
             point (SDL.point (- 200 (/ @(SDL_Rect.w &dims) 2)) (- 150 @(SDL_Rect.h &dims)))]
         (SDL.draw-texture-at rend text1 &point))))
