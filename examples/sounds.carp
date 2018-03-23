@@ -1,12 +1,37 @@
 (load "SDL.carp")
 (load "SDL_mixer.carp")
 
-(defn draw [app rend state]
-  (SDL.bg rend &(SDL.rgb 255 0 0)))
+(def fx1 (the (Ptr Mix_Chunk) NULL))
+
+(defn play-sound-fx1 []
+  (ignore (Mixer.play-channel Mixer.any-free-channel fx1 0)))
+
+(defn event-handler [app]
+    (let [event (SDL.Event.init)]
+      (while (SDL.Event.poll (address event))
+        (let [et (SDL.Event.type &event)]
+          (cond (= et SDL.Event.quit)
+                (SDLApp.stop app)
+                (= et SDL.Event.key-down)
+                (let [key (SDL.Event.keycode &event)]
+                  (case key
+                    SDL.key-escape (SDLApp.stop app)
+                    SDL.key-return (play-sound-fx1)
+                    ()))
+                ())))))
 
 (defn main []
   (let [app (SDLApp.create "Sound Effects with SDL_mixer" 400 300)
         rend @(SDLApp.renderer &app)]
     (do
-      (SDLApp.run-with-callbacks &app SDLApp.default-event-handler id draw 0)
+      (if (Mixer.ok? (Mixer.open-audio 22050 Mixer.default-format 2 4096))
+        (println* "Audio initialized.")
+        (println* "Failed to initialize audio."))
+      (set! fx1 (Mixer.load-wav (cstr "resources/fx1.wav")))
+      (assert (not-null? fx1))
+      (let-do [n (Mixer.nr-of-music-decoders)]
+        (println* "Nr of music decoders: " n))
+      (let-do [music (Mixer.load-music (cstr "resources/song.aif"))]
+        (println* "Music null? " (null? music)))
+      (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0)
       0)))

@@ -7,13 +7,65 @@
 
 (defmodule Mixer
 
-  (register default-format
-            Int
-            "MIX_DEFAULT_FORMAT")
-
-  ;; freq format channels chunksize
+  ;; Setup
   (register open-audio
-            (Fn [Int Int Int Int] ())
+            ;; freq format channels chunksize
+            (Fn [Int Int Int Int] Int)
             "Mix_OpenAudio")
+
+  (register default-format Int "MIX_DEFAULT_FORMAT")
+
+  (register ogg-support Int "MIX_INIT_OGG")
+  (register mp3-support Int "MIX_INIT_MP3")
+  (register mod-support Int "MIX_INIT_MOD")
+  (register flac-support Int "MIX_INIT_FLAC")
+
+  (register init (Fn [Int] Int) "Mix_Init")
+  (register quit (Fn [Int] Int) "Mix_Quit")
+
+  ;; Loading
+  (register load-wav
+            (Fn [(Ptr Char)] (Ptr Mix_Chunk))
+            "Mix_LoadWAV")
+
+  (register load-music
+            (Fn [(Ptr Char)] (Ptr Mix_Music))
+            "Mix_LoadMUS")
+
+  ;; Playing samples (Mix_Chunk:s)
+  (register play-channel
+            ;; args: channel chunk loops
+            ;; ret: channel
+            (Fn [Int (Ptr Mix_Chunk) Int] Int)
+            "Mix_PlayChannel")
+
+  (register channel-playing?
+            (Fn [Int] Bool)
+            "Mix_Playing")
+
+  ;; Music
+  (register nr-of-music-decoders
+            (Fn [] Int)
+            "Mix_GetNumMusicDecoders")
+
+  ;; This function seems flakey, returns NULL?
+  (register get-music-decoder
+            (Fn [Int] (Ptr Char))
+            "Mix_GetMusicDecoder")
+
+  (register play-music
+            ;; args: music loops
+            ;; ret: ok-code
+            (Fn [(Ptr Mix_Music) Int] Int)
+            "Mix_PlayMusic")
+
+  ;; Helpers
+  (defn ok? [error-code]
+    (= 0 error-code))
+
+  (def any-free-channel -1)
+
+  (defn valid-channel? [ch]
+    (not (= ch -1)))
 
   )

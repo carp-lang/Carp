@@ -55,3 +55,9 @@
   (if (< a b) a b))
 
 (defn id [x] x)
+
+(defn null? [p]
+  (Pointer.eq NULL (the (Ptr t) p)))
+
+(defn not-null? [p]
+  (not (null? p)))
