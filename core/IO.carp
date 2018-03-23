@@ -8,6 +8,7 @@
   (register get-line (Fn [] String))
   (register get-char (Fn [] Char) "getchar")
   (register read-file (Fn [&String] String))
+  (register read-file-eof (Fn [&String] String))
   (register exit (Fn [Int] a))
   (register fopen (Fn [&String &String] (Ptr FILE)))
   (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
