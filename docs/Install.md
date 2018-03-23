@@ -40,4 +40,12 @@ You can configure the exact compiler command like so:
 
 ## SDL, GLFW, etc
 
-Some of the more advanced examples will require additional libraries installed on your system. Please let us know if you have trouble getting it to work.
+The graphical examples will require the following libraries installed on your system:
+
+* [SDL 2](https://www.libsdl.org/download-2.0.php) (cross platform game/interactivity library)
+* [SDL_image 2](https://www.libsdl.org/projects/SDL_image/) (image helpers)
+* [SDL_ttf 2](https://www.libsdl.org/projects/SDL_ttf/) (font rendering
+* [SDL_mixer 2](https://www.libsdl.org/projects/SDL_mixer/) (audio playback)
+* [glfw](http://www.glfw.org) (Create a rendering context for OpenGL or Vulcan)
+
+Please let us know if you have trouble getting these examples to work.
