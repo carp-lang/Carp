@@ -38,8 +38,8 @@
         (println* "Nr of music decoders: " n)
         (for [i 0 n]
           (println* " - " &(str (Mixer.get-music-decoder i)))))
-      (let-do [music (Mixer.load-music (cstr "resources/Quarter.mp3"))]
-        (println* "Music " (if (null? music) "NULL..." "not null!"))
+      (let-do [music (Mixer.load-music (cstr "resources/song.mp3"))]
+        (println* "Music is " (if (null? music) "null." "not null."))
         (println* "Play result: " (Mixer.play-music music -1))
         )
       (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0)
