@@ -57,7 +57,7 @@ String IO_read_MINUS_file_MINUS_eof(String *filename) {
                 break;
             bufsize = bufsize + lsz + 1;
             buffer = realloc(buffer, bufsize);
-            snprintf(buffer, bufsize, "%s%s", buffer, line);
+            strncat(buffer, line, lsz);
         } while (!feof (f));
 
         fclose (f);
