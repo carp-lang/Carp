@@ -42,6 +42,33 @@ String IO_read_MINUS_file(String *filename) {
     return buffer;
 }
 
+String IO_read_MINUS_file_MINUS_eof(String *filename) {
+    String buffer = String_empty();
+    size_t bufsize = 0;
+    String line = 0;
+    size_t sz = 0;
+
+    FILE *f = fopen(*filename, "rb");
+
+    if(f) {
+        do {
+            ssize_t lsz = getline(&line, &sz, f);
+            if (lsz < 0)
+                break;
+            bufsize = bufsize + lsz + 1;
+            buffer = realloc(buffer, bufsize);
+            snprintf(buffer, bufsize, "%s%s", buffer, line);
+        } while (!feof (f));
+
+        fclose (f);
+    } else {
+        printf("Failed to open file: %s\n", *filename);
+        buffer = String_empty();
+    }
+
+    return buffer;
+}
+
 FILE *IO_fopen(String *filename, String *mode) {
     return fopen(*filename, *mode);
 }
