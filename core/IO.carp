@@ -8,8 +8,21 @@
   (register get-line (Fn [] String))
   (register get-char (Fn [] Char) "getchar")
   (register read-file (Fn [&String] String))
-  (register read-file-eof (Fn [&String] String))
   (register exit (Fn [Int] a))
+  (register EOF Char)
   (register fopen (Fn [&String &String] (Ptr FILE)))
+  (register fclose (Fn [(Ptr FILE)] ()))
+  (register fgetc (Fn [(Ptr FILE)] Char))
   (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
+
+  (defn read->EOF [filename]
+    (let [f (IO.fopen filename "rb")
+          c (Char.from-int 0)
+          r []]
+      (do
+        (while (do (set! c (IO.fgetc f))
+                   (/= c IO.EOF))
+          (set! r (Array.push-back r c)))
+        (IO.fclose f)
+        (String.from-chars &r))))
 )
