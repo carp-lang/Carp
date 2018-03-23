@@ -1,0 +1,12 @@
+(load "SDL.carp")
+(load "SDL_mixer.carp")
+
+(defn draw [app rend state]
+  (SDL.bg rend &(SDL.rgb 255 0 0)))
+
+(defn main []
+  (let [app (SDLApp.create "Sound Effects with SDL_mixer" 400 300)
+        rend @(SDLApp.renderer &app)]
+    (do
+      (SDLApp.run-with-callbacks &app SDLApp.default-event-handler id draw 0)
+      0)))

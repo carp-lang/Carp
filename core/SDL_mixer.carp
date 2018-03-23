@@ -1,0 +1,19 @@
+(system-include "SDL2/SDL_mixer.h")
+(add-lib "-lSDL2_mixer")
+(Project.config "cflag" "-Wno-incompatible-pointer-types-discards-qualifiers")
+
+(register-type Mix_Chunk)
+(register-type Mix_Music)
+
+(defmodule Mixer
+
+  (register default-format
+            Int
+            "MIX_DEFAULT_FORMAT")
+
+  ;; freq format channels chunksize
+  (register open-audio
+            (Fn [Int Int Int Int] ())
+            "Mix_OpenAudio")
+
+  )
