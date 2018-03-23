@@ -13,15 +13,18 @@
             (Fn [Int Int Int Int] Int)
             "Mix_OpenAudio")
 
+  ;; Argument to open-audio:s "format"
   (register default-format Int "MIX_DEFAULT_FORMAT")
 
+  (register init (Fn [Int] Int) "Mix_Init")
+
+  ;; Argument to "init" function, can be xor:ed
   (register ogg-support Int "MIX_INIT_OGG")
   (register mp3-support Int "MIX_INIT_MP3")
   (register mod-support Int "MIX_INIT_MOD")
   (register flac-support Int "MIX_INIT_FLAC")
 
-  (register init (Fn [Int] Int) "Mix_Init")
-  (register quit (Fn [Int] Int) "Mix_Quit")
+  (register quit (Fn [] ()) "Mix_Quit")
 
   ;; Loading
   (register load-wav
@@ -58,6 +61,11 @@
             ;; ret: ok-code
             (Fn [(Ptr Mix_Music) Int] Int)
             "Mix_PlayMusic")
+
+  ;; Error handling
+  (register get-error
+            (Fn [] (Ptr Char))
+            "Mix_GetError")
 
   ;; Helpers
   (defn ok? [error-code]
