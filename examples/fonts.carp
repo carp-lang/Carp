@@ -17,11 +17,8 @@
 
 (defn change-text [rend]
   (do (when (not (Pointer.eq NULL text1))
-        (do
-          (IO.println "Destroy texture.")
-          (SDL.destroy-texture text1)))
-      (set! text1 (TTF.render-text-to-texture rend font &(str* "TICK: " (SDL.get-ticks))))
-      ()))
+        (SDL.destroy-texture text1))
+      (set! text1 (TTF.render-text-to-texture rend font &(str* "TICK: " (SDL.get-ticks))))))
 
 (defn event-handler [app]
     (let [event (SDL.Event.init)]
