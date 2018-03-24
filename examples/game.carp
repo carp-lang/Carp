@@ -35,10 +35,12 @@
       (SDL.set-render-draw-color rend 200 250 255 255)
       (SDL.render-fill-rect rend (address rect))
       (SDL.set-render-draw-color rend 100 50 255 155)
-      (let [rects [(SDL.rect 48 48 16 16)
-                   (SDL.rect 48 80 16 16)
-                   (SDL.rect 48 112 16 16)
-                   (SDL.rect 48 144 16 16)]
+      (let [mouse-state (SDL.MouseState.get)
+            x @(SDL.MouseState.x &mouse-state)
+            rects [(SDL.rect x 48 16 16)
+                   (SDL.rect (* x 2) 80 16 16)
+                   (SDL.rect (* x 4) 112 16 16)
+                   (SDL.rect (* x 8) 144 16 16)]
             n (count &rects)]
         (SDL.render-fill-rects rend (raw rects) n))
       (SDL.set-render-draw-color rend 255 50 100 255)
