@@ -9,6 +9,7 @@
 * [0.3] References must keep track of their origin and prevent usage of them if the origin has been given away.
 * [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * [0.3] The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
+* [0.3] This hangs the repl: `(expand '(load-and-use SDL))`
 * [0.4] When using external functions registered in the *same* module their overridden name is ignored.
 
 ## Big Language Features
@@ -32,6 +33,7 @@
 * [0.4] Report correct column in errors at all times, sometimes it's a bit too low.
 * [0.4] Array.init-empty-with-capacity function. What's a better name?
 * [0.4] Undefined symbol does not stop execution when running with -x
+* [0.4] A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
 
 * [1.0] Macros for generating 'read' functions to read objects back into memory from string representation.
 * [1.0] A way to assert compiler errors in tests
