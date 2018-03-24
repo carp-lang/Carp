@@ -155,6 +155,11 @@
 (defmacro use-all [:rest names]
   (cons 'do (use-all-fn names)))
 
+(defmacro load-and-use [name]
+  (list 'do
+        (list 'load (str name ".carp"))
+        (list 'use name)))
+
 (defmacro when [condition form]
   (list 'if condition form (list)))
 
