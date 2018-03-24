@@ -650,7 +650,9 @@ commandMul [a, b] =
 
 commandStr :: CommandCallback
 commandStr xs =
-  return (Right (XObj (Str (join (map pretty xs))) (Just dummyInfo) (Just StringTy)))
+  return (Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
+  where f (XObj (Str s) _ _) = s
+        f x = pretty x
 
 commandNot :: CommandCallback
 commandNot [x] =
