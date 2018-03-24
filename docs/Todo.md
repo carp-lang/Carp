@@ -10,6 +10,7 @@
 * [0.3] Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * [0.3] The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
 * [0.3] This hangs the repl: `(expand '(load-and-use SDL))`
+* [0.3] Some kind of memory allocation when using 'foreach' macro in ant.carp ??!
 * [0.4] When using external functions registered in the *same* module their overridden name is ignored.
 
 ## Big Language Features
