@@ -59,8 +59,11 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 * [Test](../core/Test.carp)
 * [Bench](../core/Bench.carp)
 
-### Graphics
+### Graphics, sound and interaction
 * [SDL](../core/SDL.carp)
+* [SDL Image](../core/SDL_image.carp)
+* [SDL TTF](../core/SDL_ttf.carp)
+* [SDL Mixer](../core/SDL_mixer.carp)
 * [GLFW](../core/GLFW.carp)
 * [OpenGL](../core/OpenGL.carp)
 
@@ -70,3 +73,4 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 * [Physics](https://github.com/hellerve/physics) (A port of phys.js)
 * [NCurses](https://github.com/eriksvedang/carp-ncurses) ([https://www.gnu.org/software/ncurses/](https://www.gnu.org/software/ncurses/))
 * [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
+* [Curl](https://github.com/eriksvedang/carp-curl) (Simple bindings to the Curl library)

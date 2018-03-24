@@ -40,7 +40,7 @@ You can configure the exact compiler command like so:
 
 ## SDL, GLFW, etc
 
-The graphical examples will require the following libraries installed on your system:
+The examples involving graphics/sound/interaction will require the following libraries installed on your system:
 
 * [SDL 2](https://www.libsdl.org/download-2.0.php) (cross platform game/interactivity library)
 * [SDL_image 2](https://www.libsdl.org/projects/SDL_image/) (image helpers)
