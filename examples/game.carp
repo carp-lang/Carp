@@ -66,9 +66,9 @@
     (case (SDL.Event.type event)
       SDL.Event.quit (SDLApp.stop app)
       SDL.Event.key-down (let [key (SDL.Event.keycode event)]
-                                  (cond
-                                    (= key SDL.key-escape) (SDLApp.stop app)
-                                    (println "Unrecognized key.")))
+                           (cond
+                             (= key SDL.key-escape) (SDLApp.stop app)
+                             (println "Unrecognized key.")))
       (println "Some other event happened..."))))
 
 (defn tick [state] state)
