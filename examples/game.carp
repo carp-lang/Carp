@@ -62,15 +62,14 @@
                             SDL.flip-none)))))
 
 (defn handle-events [app]
-  (let [event (SDL.Event.init)]
-    (while (SDL.Event.poll (address event))
-      (let [et (SDL.Event.type &event)]
-        (cond (= et SDL.Event.quit) (SDLApp.stop app)
-              (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
-                                   (cond
-                                     (= key SDL.key-escape) (SDLApp.stop app)
-                                     (println "Unrecognized key.")))
-              (println "Some other event happened..."))))))
+  (foreach [event &(SDL.Event.all)]
+    (case (SDL.Event.type event)
+      SDL.Event.quit (SDLApp.stop app)
+      SDL.Event.key-down (let [key (SDL.Event.keycode event)]
+                                  (cond
+                                    (= key SDL.key-escape) (SDLApp.stop app)
+                                    (println "Unrecognized key.")))
+      (println "Some other event happened..."))))
 
 (defn tick [state] state)
 
