@@ -39,13 +39,12 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
   (+ state 10))
 
 (defn draw [app rend state]
-  (bg rend &(rgb @state (/ @state 2) (/ @state 3))))
+  (bg rend &(rgb (/ @state 2) (/ @state 3) (/ @state 4))))
 
 (defn main []
   (let [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
         state 0]
-    (SDLApp.run-with-callbacks &app SDLApp.default-event-handler tick draw state)))
-
+    (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
