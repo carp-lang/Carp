@@ -6,6 +6,8 @@
 void IO_println(String *s) { puts(*s); }
 void IO_print(String *s) { printf("%s", *s); }
 
+char IO_EOF = (char) EOF;
+
 #ifndef _WIN32
 String IO_get_MINUS_line() {
     size_t size = 1024;
@@ -40,6 +42,14 @@ String IO_read_MINUS_file(String *filename) {
 
 
     return buffer;
+}
+
+char IO_fgetc(FILE *f) {
+    return (char) fgetc(f);
+}
+
+void IO_fclose(FILE *f) {
+    fclose(f);
 }
 
 FILE *IO_fopen(String *filename, String *mode) {
