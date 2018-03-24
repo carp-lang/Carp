@@ -626,9 +626,10 @@ String Pattern_substitute(Pattern* p, String *s, String *t, int ns) {
   if (!res) return String_copy(&str);
 
   int l = strlen(res)+strlen(str)+1;
-  res = realloc(res, l);
-  snprintf(res, l, "%s%s", res, str);
-  return res;
+  String buffer = CARP_MALLOC(l);
+  snprintf(buffer, l, "%s%s", res, str);
+  CARP_FREE(res);
+  return buffer;
 }
 
 Pattern Pattern_copy(Pattern *p) {
