@@ -20,6 +20,15 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 :q   Quit the repl
 ```
 
+### Differences compared to REPL:s in other Lisp:s
+While powerful, the REPL in Carp currently has some big limitations compared to most other Lisp:s. To execute the code in a compiled function (the ones defined with `defn`) you have to define a function called `main` and then build & run the project (with `:bx` or `(build) (run)`. To make this somewhat nicer there is a helper macro called `eval` that can be used like this:
+
+```clojure
+> (eval (my-function 12345 "w00t"))
+```
+
+Dynamic functions (defined with `defdynamic`) do not share this limitation but they are not available in compiled code.
+
 ### Getting types from bindings
 ```
 (type <binding>)
