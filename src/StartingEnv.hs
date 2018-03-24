@@ -153,6 +153,7 @@ dynamicModule :: Env
 dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
   where bindings = Map.fromList $
                     [ addCommand "list?" 1 commandIsList
+                    , addCommand "array?" 1 commandIsArray
                     , addCommand "symbol?" 1 commandIsSymbol
                     , addCommand "count" 1 commandCount
                     , addCommand "car" 1 commandCar

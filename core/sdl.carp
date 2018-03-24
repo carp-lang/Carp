@@ -39,13 +39,25 @@
     (register keycode (Fn [(Ref SDL_Event)] SDL_Keycode))
     (register poll (Fn [(Ptr SDL_Event)] Bool) "SDL_PollEvent")
     (register = (Fn [SDL_EventType SDL_EventType] Bool))
+    (register copy (Fn [&SDL_Event] SDL_Event))
+
+    ;; Event types
     (register quit              SDL_EventType "SDL_QUIT")
     (register key-down          SDL_EventType "SDL_KEYDOWN")
     (register key-up            SDL_EventType "SDL_KEYUP")
     (register mouse-motion      SDL_EventType "SDL_MOUSEMOTION")
     (register mouse-button-down SDL_EventType "SDL_MOUSEBUTTONDOWN")
     (register mouse-button-up   SDL_EventType "SDL_MOUSEBUTTONUP")
-    (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL"))
+    (register mouse-wheel       SDL_EventType "SDL_MOUSEWHEEL")
+
+    (defn all []
+      (let-do [events []
+               e (SDL.Event.init)]
+        (while (poll (address e))
+          (set! events (Array.push-back events e)))
+        events))
+
+    )
 
   ;; Rendering
   (register render-present (Fn [(Ptr SDL_Renderer)] ()) "SDL_RenderPresent")

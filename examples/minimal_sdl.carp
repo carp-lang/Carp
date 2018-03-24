@@ -1,4 +1,5 @@
 (load-and-use SDL)
+(use Array)
 
 (defn tick [state]
   (+ state 10))
@@ -6,7 +7,17 @@
 (defn draw [app rend state]
   (bg rend &(rgb @state (/ @state 2) (/ @state 3))))
 
+(defn handle-events [app]
+  (foreach [event &(SDL.Event.all)]
+    (case (SDL.Event.type event)
+      SDL.Event.quit (SDLApp.stop app)
+      SDL.Event.key-down (let [key (SDL.Event.keycode event)]
+                           (if (= key SDL.key-escape)
+                             (SDLApp.stop app)
+                             ()))
+      ())))
+
 (defn main []
   (let [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
         state 0]
-    (SDLApp.run-with-callbacks &app SDLApp.default-event-handler tick draw state)))
+    (SDLApp.run-with-callbacks &app handle-events tick draw state)))

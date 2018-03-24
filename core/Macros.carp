@@ -85,9 +85,22 @@
   (list 'ref
         (list 'str x)))
 
-(defmacro foreach [f xs]
-  (list 'for ['i 0 (list 'Array.count (list 'ref xs))]
-        (list f (list 'Array.nth (list 'ref xs) 'i))))
+;; Old foreach, what's a better name for this? (it's just 'map' with side effects)
+;; (defmacro foreach [f xs]
+;;   (list 'for ['i 0 (list 'Array.count (list 'ref xs))]
+;;         (list f (list 'Array.nth (list 'ref xs) 'i))))
+
+(defdynamic foreach-internal [var xs expr]
+  (list 'let ['xs xs
+              'len (list 'count 'xs)]
+        (list 'for ['i 0 'len]
+              (list 'let [var (list 'nth 'xs 'i)]
+                    expr))))
+
+(defmacro foreach [binding expr]
+  (if (array? binding)
+    (foreach-internal (car binding) (cadr binding) expr)
+    (macro-error "Binding has to be an array.")))
 
 (defdynamic thread-first-internal [xs]
   (if (= (count xs) 2)

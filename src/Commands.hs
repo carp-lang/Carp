@@ -419,6 +419,12 @@ commandIsList [x] =
     XObj (Lst _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
 
+commandIsArray :: CommandCallback
+commandIsArray [x] =
+  case x of
+    XObj (Arr _) _ _ -> return (Right trueXObj)
+    _ -> return (Right falseXObj)
+
 commandIsSymbol :: CommandCallback
 commandIsSymbol [x] =
   case x of
