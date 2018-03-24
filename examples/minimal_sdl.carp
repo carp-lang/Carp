@@ -1,17 +1,12 @@
-(load "SDL.carp")
+(load-and-use SDL)
 
-(defn tick [s]
-  (inc s))
+(defn tick [state]
+  (+ state 10))
 
-(defn draw [app rend state-ref]
-  (let [mouse-state (SDL.MouseState.get)
-        rect (SDL.rect 50 50 @(SDL.MouseState.x &mouse-state) 200)]
-    (do
-      (SDL.set-render-draw-color rend @state-ref 0 0 255)
-      (SDL.render-clear rend)
-      (SDL.set-render-draw-color rend 200 250 255 255)
-      (SDL.render-fill-rect rend (address rect)))))
+(defn draw [app rend state]
+  (bg rend &(rgb @state (/ @state 2) (/ @state 3))))
 
 (defn main []
-  (let [app (SDLApp.create "Minimal" 400 300)]
-    (SDLApp.run-with-callbacks &app SDLApp.default-event-handler tick draw 0)))
+  (let [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
+        state 0]
+    (SDLApp.run-with-callbacks &app SDLApp.default-event-handler tick draw state)))

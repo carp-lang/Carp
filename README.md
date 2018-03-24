@@ -26,34 +26,26 @@ The key features of Carp are the following:
 * [Carp Language Guide](docs/LanguageGuide.md) - syntax and semantics of the language
 * [Libraries](docs/Libraries.md) - how to work with libraries and modules
 * [Tooling](docs/Tooling.md) - supported editors
-* [Game Example](examples/game.carp) - an example of how to use SDL with Carp
+* [Game Example](examples/reptile.carp) - a Snake clone in Carp
 
 The Carp REPL has built-in documentation, run ```(help)``` to access it!
 
-## A Small Example
+## A Very Small Example
 
 ```clojure
-(use IO)
-(use Int)
-(use String)
+(load-and-use SDL)
+
+(defn tick [state]
+  (+ state 10))
+
+(defn draw [app rend state]
+  (bg rend &(rgb @state (/ @state 2) (/ @state 3))))
 
 (defn main []
-  (do (println "~ The number guessing game ~")
-      (print "Please enter a number between 1 - 99: ")
-      (let [play true
-            answer (random-between 1 100)]
-        (while play
-          (let [guess (get-line)
-                num (from-string &guess)]
-            (if (= &guess "q\n")
-              (do
-                (println "Good bye...")
-                (set! play false))
-              (do
-                (cond (< num answer) (println "Too low.")
-                      (> num answer) (println "Too high.")
-                      (println "Correct!"))
-                (print "Please guess again: "))))))))
+  (let [app (SDLApp.create "The Minimalistic Color Generator" 400 300)
+        state 0]
+    (SDLApp.run-with-callbacks &app SDLApp.default-event-handler tick draw state)))
+
 ```
 
 To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start.
