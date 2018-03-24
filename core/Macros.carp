@@ -92,9 +92,9 @@
 
 (defdynamic foreach-internal [var xs expr]
   (list 'let ['xs xs
-              'len (list 'count 'xs)]
+              'len (list 'Array.count 'xs)]
         (list 'for ['i 0 'len]
-              (list 'let [var (list 'nth 'xs 'i)]
+              (list 'let [var (list 'Array.nth 'xs 'i)]
                     expr))))
 
 (defmacro foreach [binding expr]

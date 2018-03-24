@@ -194,13 +194,12 @@
     (do (SDL.set-render-draw-color rend 0 0 0 255)
         (SDL.render-clear rend)))
 
-  (defn default-event-handler [app]
-    (let [event (SDL.Event.init)]
-      (while (SDL.Event.poll (address event))
-        (let [et (SDL.Event.type &event)]
-          (cond (= et SDL.Event.quit) (SDLApp.stop app)
-                (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
-                                            (if (= key SDL.key-escape)
-                                              (SDLApp.stop app)
-                                              ()))
-                ()))))))
+  (defn quit-on-esc [app]
+    (foreach [event &(SDL.Event.all)]
+             (case (SDL.Event.type event)
+               SDL.Event.quit (SDLApp.stop app)
+               SDL.Event.key-down (let [key (SDL.Event.keycode event)]
+                                    (if (= key SDL.key-escape)
+                                      (SDLApp.stop app)
+                                      ()))
+               ()))))
