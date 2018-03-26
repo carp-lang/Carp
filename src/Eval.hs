@@ -251,10 +251,10 @@ eval env xobj =
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
     evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name) _) _ _) =
       case lookupInEnv (SymPath ("Dynamic" : pathStrings) name) env of -- A slight hack!
-        Just (_, Binder found) -> return (Right found) -- use the found value
+        Just (_, Binder emptyMeta found) -> return (Right found) -- use the found value
         Nothing ->
           case lookupInEnv path env of
-            Just (_, Binder found) -> return (Right found)
+            Just (_, Binder _ found) -> return (Right found)
             Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "' at " ++ prettyInfoFromXObj xobj)))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
 
@@ -445,7 +445,7 @@ define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
-          Just (_, Binder found) -> ty found
+          Just (_, Binder emptyMeta found) -> ty found
           Nothing -> Nothing
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
@@ -491,13 +491,13 @@ registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
 registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
   let typeEnv = (getTypeEnv (contextTypeEnv ctx))
   in case lookupInEnv (SymPath [] name) typeEnv of
-       Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
+       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
          if areUnifiable interfaceSignature definitionSignature
          then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
               in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
          else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
                     " doesn't match the interface signature " ++ show interfaceSignature)
-       Just (_, Binder x) ->
+       Just (_, Binder _ x) ->
          error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
        Nothing ->
          return ctx
@@ -632,7 +632,7 @@ specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty
      case xobjToTy typeXObj of
        Just t ->
          case lookupInEnv path typeEnv of
-           Just (_, Binder (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _)) ->
+           Just (_, Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _)) ->
              -- The interface already exists, so it will be left as-is.
              if foundType == t
              then return dynamicNil
@@ -677,7 +677,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
          execMode = contextExecMode ctx
          proj = contextProj ctx
      result <- case lookupInEnv (SymPath pathStrings moduleName) env of
-                 Just (_, Binder (XObj (Mod _) _ _)) ->
+                 Just (_, Binder _ (XObj (Mod _) _ _)) ->
                    do let ctx' = (Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode) -- use { = } syntax instead
                       ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
                       put (popModulePath ctxAfterModuleAdditions)
@@ -706,11 +706,11 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
          execMode = contextExecMode ctx
          printer allowLookupInALL binderPair itIsAnErrorNotToFindIt =
            case binderPair of
-             Just (_, binder@(Binder x@(XObj _ (Just i) _))) ->
+             Just (_, binder@(Binder _ x@(XObj _ (Just i) _))) ->
                do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
                   when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
                   return ()
-             Just (_, binder@(Binder x)) ->
+             Just (_, binder@(Binder _ x)) ->
                do putStrLnWithColor White (show binder)
                   when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
                   return ()
@@ -725,7 +725,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                                  _ -> strWithColor Red ("Can't find '" ++ show path ++ "'")
                            return ()
                       binders ->
-                        do mapM_ (\(env, binder@(Binder (XObj _ i _))) ->
+                        do mapM_ (\(env, binder@(Binder _ (XObj _ i _))) ->
                                     case i of
                                       Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
                                       Nothing -> putStrLnWithColor White (show binder))
@@ -780,11 +780,11 @@ specialCommandMembers target =
      case target of
            XObj (Sym path@(SymPath [] name) _) _ _ ->
              case lookupInEnv path (getTypeEnv typeEnv) of
-               Just (_, Binder (XObj (Lst (XObj (Typ structTy) Nothing Nothing :
-                                           XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
-                                           XObj (Arr members) _ _ :
-                                           []))
-                                 _ _))
+               Just (_, Binder _ (XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                                             XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                                             XObj (Arr members) _ _ :
+                                             []))
+                                  _ _))
                  ->
                       return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
                _ ->
@@ -802,7 +802,7 @@ specialCommandUse xobj path =
          e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
          innerEnv = getEnv env pathStrings -- Duplication of e?
      case lookupInEnv path innerEnv of
-       Just (_, Binder _) ->
+       Just (_, Binder _ _) ->
          do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
             return dynamicNil
        Nothing ->

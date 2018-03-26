@@ -95,16 +95,16 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                     if finalRecurse
                     then xobj -- This was the TRUE global env, stop here and leave 'xobj' as is.
                     else doesNotBelongToAnInterface True globalEnv
-          [(_, Binder foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
+          [(_, Binder _ foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
-          [(e, Binder foundOne)] ->
+          [(e, Binder _ foundOne)] ->
             if envIsExternal e
             then XObj (Sym (getPath foundOne) LookupGlobal) i t
             else XObj (Sym (getPath foundOne) LookupLocal) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:
-              (_, Binder local) : _ -> XObj (Sym (getPath local) LookupLocal) i t
+              (_, Binder _ local) : _ -> XObj (Sym (getPath local) LookupLocal) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
                 case path of

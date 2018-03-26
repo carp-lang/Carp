@@ -29,7 +29,7 @@ defineTemplate path t declaration definition depsFunc =
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-  in  (name, Binder (XObj (Lst defLst) (Just i) (Just t)))
+  in  (name, Binder emptyMeta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
 defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> (String, Binder)
@@ -37,19 +37,19 @@ defineTypeParameterizedTemplate templateCreator path t =
   let (SymPath _ name) = path
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-  in  (name, Binder (XObj (Lst defLst) (Just i) (Just t)))
+  in  (name, Binder emptyMeta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
 instanceBinder :: SymPath -> Ty -> Template -> (String, Binder)
 instanceBinder path@(SymPath _ name) actualType template =
   let (x, _) = instantiateTemplate path actualType template
-  in  (name, Binder x)
+  in  (name, Binder emptyMeta x)
 
 -- -- | Create a binding pair and don't discard the dependencies
 instanceBinderWithDeps :: SymPath -> Ty -> Template -> ((String, Binder), [XObj])
 instanceBinderWithDeps path@(SymPath _ name) actualType template =
   let (x, deps) = instantiateTemplate path actualType template
-  in  ((name, Binder x), deps)
+  in  ((name, Binder emptyMeta x), deps)
 
 -- | Concretizes the types used in @token
 --   @cName is the name of the definition, i.e. the "foo" in "void foo() { ... }"

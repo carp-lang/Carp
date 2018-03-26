@@ -55,7 +55,7 @@ addCommandConfigurable name maybeArity callback =
                       ,XObj (Sym path Symbol) Nothing Nothing
                       ])
             (Just dummyInfo) (Just DynamicTy)
-  in (name, Binder cmd)
+  in (name, Binder emptyMeta cmd)
   where f = case maybeArity of
               Just arity -> withArity arity
               Nothing -> withoutArity

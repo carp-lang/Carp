@@ -11,20 +11,20 @@ import Lookup
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreTypeBinder :: TypeEnv -> Binder -> (Int, Binder)
-scoreTypeBinder typeEnv b@(Binder (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
+scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ : _)) _ _)) =
   case x of
     Defalias aliasedType ->
       let selfName = ""
       in  (depthOfType typeEnv selfName aliasedType, b)
     Typ (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys), b)
+        Just (_, Binder _ typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys), b)
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
       (500, b)
-scoreTypeBinder _ b@(Binder (XObj (Mod _) _ _)) =
+scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
   (1000, b)
 scoreTypeBinder _ x = error ("Can't score: " ++ show x)
 
@@ -63,7 +63,7 @@ depthOfType typeEnv selfName = visitType
         _ | name == selfName -> 30
           | otherwise ->
               case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                Just (_, Binder typedef) -> (depthOfDeftype typeEnv typedef varTys) + 1
+                Just (_, Binder _ typedef) -> (depthOfDeftype typeEnv typedef varTys) + 1
                 Nothing -> --trace ("Unknown type: " ++ name) $
                            depthOfVarTys -- The problem here is that generic types don't generate
                                          -- their definition in time so we get nothing for those.
@@ -79,11 +79,11 @@ depthOfType typeEnv selfName = visitType
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
-scoreValueBinder globalEnv _ binder@(Binder (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
   (0, binder)
-scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
-scoreValueBinder globalEnv visited binder@(Binder (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
   (0, binder)

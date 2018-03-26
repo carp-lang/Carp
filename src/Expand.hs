@@ -132,13 +132,13 @@ expand eval env xobj =
     expandSymbol :: XObj -> StateT Context IO (Either a XObj)
     expandSymbol (XObj (Sym path _) _ _) =
       case lookupInEnv path env of
-        Just (_, Binder (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder found) -> return (Right found) -- use the found value
+        Just (_, Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ found) -> return (Right found) -- use the found value
         Nothing -> return (Right xobj) -- symbols that are not found are left as-is
     expandSymbol _ = error "Can't expand non-symbol in expandSymbol."
 

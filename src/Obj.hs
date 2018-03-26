@@ -260,22 +260,28 @@ prettyTyped = visit 0
                Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]" ++ suffix
                _ -> pretty xobj ++ suffix
 
+-- | Datatype for holding meta data about a binder, like type annotation or docstring.
+newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Show)
+
+emptyMeta :: MetaData
+emptyMeta = (MetaData Map.empty)
+
 -- | Wraps and holds an XObj in an environment.
-newtype Binder = Binder { binderXObj :: XObj } deriving Eq
+data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
 
 instance Show Binder where
   show binder = showBinderIndented 0 (getName (binderXObj binder), binder)
 
 showBinderIndented :: Int -> (String, Binder) -> String
-showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
+showBinderIndented indent (name, Binder _ (XObj (Mod env) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n" ++
   prettyEnvironmentIndented (indent + 4) env ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
+showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
   replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    " ++
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder xobj) =
+showBinderIndented indent (name, Binder _ xobj) =
   replicate indent ' ' ++ name ++
   -- " (" ++ show (getPath xobj) ++ ")" ++
   " : " ++ showMaybeTy (ty xobj)
@@ -315,9 +321,10 @@ tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
-register name t = (name, Binder (XObj (Lst [XObj (External Nothing) Nothing Nothing,
-                                            XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
-                                 (Just dummyInfo) (Just t)))
+register name t = (name, Binder emptyMeta
+                    (XObj (Lst [XObj (External Nothing) Nothing Nothing,
+                                XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
+                      (Just dummyInfo) (Just t)))
 
 data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
 
