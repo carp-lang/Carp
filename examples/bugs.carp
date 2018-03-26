@@ -50,6 +50,7 @@
 (relative-include "banana.h")
 (defmodule Banana
   (register magic (Fn [] Int) "magic")
+  (defn g [] (magic))
   (defn f [] (Banana.magic)))
 
 (defn main []

@@ -125,6 +125,11 @@ instance Show SymPath where
 pathToC :: SymPath -> String
 pathToC (SymPath modulePath name) = concatMap ((++ "_") . mangle) modulePath ++ mangle name
 
+-- | Add qualifying strings to beginning of a path.
+consPath :: [String] -> SymPath -> SymPath
+consPath qualifyers (SymPath stringPaths name) =
+  SymPath (qualifyers ++ stringPaths) name
+
 -- | Replaces symbols not allowed in C-identifiers.
 mangle :: String -> String
 mangle = replaceChars (Map.fromList [('+', "_PLUS_")
