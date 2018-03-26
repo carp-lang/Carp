@@ -261,7 +261,7 @@ eval env xobj =
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
     evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name) _) _ _) =
       case lookupInEnv (SymPath ("Dynamic" : pathStrings) name) env of -- A slight hack!
-        Just (_, Binder emptyMeta found) -> return (Right found) -- use the found value
+        Just (_, Binder _ found) -> return (Right found) -- use the found value
         Nothing ->
           case lookupInEnv path env of
             Just (_, Binder _ found) -> return (Right found)
@@ -450,19 +450,26 @@ catcher ctx exception =
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitWith ExitSuccess
 
+existingMeta :: Env -> XObj -> MetaData
+existingMeta globalEnv xobj =
+  case lookupInEnv (getPath xobj) globalEnv of
+    Just (_, Binder meta _) -> meta
+    Nothing -> emptyMeta
+
 -- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Context -> XObj -> IO Context
 define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
-          Just (_, Binder emptyMeta found) -> ty found
+          Just (_, Binder _ found) -> ty found
           Nothing -> Nothing
+      previousMeta = existingMeta globalEnv annXObj
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
          --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder emptyMeta annXObj)) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder previousMeta annXObj)) })
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder emptyMeta annXObj)) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder previousMeta annXObj)) })
        _ ->
          do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
             when (projectEchoC proj) $
@@ -481,7 +488,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
                      _ -> putStrLnWithColor Red err
                    return ctx
               Right ctx' ->
-                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder emptyMeta annXObj) })
+                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder previousMeta annXObj) })
 
 -- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
 registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
@@ -661,20 +668,22 @@ specialCommandDefdynamic :: String -> XObj -> XObj -> StateT Context IO (Either 
 specialCommandDefdynamic name params body =
   do ctx <- get
      let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
+         globalEnv = contextGlobalEnv ctx
          path = SymPath pathStrings name
          dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
-     put (ctx { contextGlobalEnv = envInsertAt env path (Binder emptyMeta dynamic) })
+         meta = existingMeta globalEnv dynamic
+     put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta dynamic) })
      return dynamicNil
 
 specialCommandDefmacro :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefmacro name params body =
   do ctx <- get
      let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
+         globalEnv = contextGlobalEnv ctx
          path = SymPath pathStrings name
          macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just MacroTy)
-     put (ctx { contextGlobalEnv = envInsertAt env path (Binder emptyMeta macro) })
+         meta = existingMeta globalEnv macro
+     put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta macro) })
      return dynamicNil
 
 specialCommandDefmodule :: XObj -> String -> [XObj] -> StateT Context IO (Either EvalError XObj)

@@ -1,10 +1,9 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
+(doc f "This function will return 123.")
+(sig f (Fn [] Int))
 (defn f [] 123)
-
-(meta-set! f "doc" "This function will return 123.")
-(meta-set! f "sig" '(Fn [] Int))
 
 (defmodule Foo
   (defn f [] 666)
