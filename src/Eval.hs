@@ -840,16 +840,30 @@ specialCommandMetaSet path key value =
      let pathStrings = contextPath ctx
          globalEnv = contextGlobalEnv ctx
      case lookupInEnv (consPath pathStrings path) globalEnv of
-       Just (_, binder@(Binder metaData xobj)) ->
-         do let newMetaData = MetaData (Map.insert key value (getMeta metaData))
-                xobjPath = getPath xobj
-                newBinder = binder { binderMeta = newMetaData }
-                newEnv = envInsertAt globalEnv xobjPath newBinder
-            liftIO (putStrLn ("Added meta data on " ++ show xobjPath ++ ", '" ++ key ++ "' = " ++ pretty value))
-            put (ctx { contextGlobalEnv = newEnv })
-            return dynamicNil
+       Just (_, binder@(Binder _ xobj)) ->
+         -- | Set meta on existing binder
+         setMetaOn ctx binder
        Nothing ->
-         return (Left (EvalError ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'.")))
+         case path of
+           -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
+           (SymPath [] name) ->
+             setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj (External Nothing) Nothing Nothing,
+                                                         XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
+                                              (Just dummyInfo)
+                                              (Just (VarTy "a"))))
+           (SymPath _ _) ->
+             return (Left (EvalError ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'.")))
+       where
+         setMetaOn :: Context -> Binder -> StateT Context IO (Either EvalError XObj)
+         setMetaOn ctx binder@(Binder metaData xobj) =
+           do let globalEnv = contextGlobalEnv ctx
+                  newMetaData = MetaData (Map.insert key value (getMeta metaData))
+                  xobjPath = getPath xobj
+                  newBinder = binder { binderMeta = newMetaData }
+                  newEnv = envInsertAt globalEnv xobjPath newBinder
+                  --liftIO (putStrLn ("Added meta data on " ++ show xobjPath ++ ", '" ++ key ++ "' = " ++ pretty value))
+              put (ctx { contextGlobalEnv = newEnv })
+              return dynamicNil
 
 -- | Get meta data for a Binder
 specialCommandMetaGet :: SymPath -> String -> StateT Context IO (Either EvalError XObj)

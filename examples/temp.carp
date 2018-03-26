@@ -9,6 +9,8 @@
 (defmodule Foo
   (defn f [] 666)
   (meta-set! f "doc" "This is an evil function.")
-  (defn g [] 10000))
+  (defn g [] 10000)
+  (meta-set! no "doc" "I don't exist yet.")
+  )
 
 (meta-set! Foo.g "doc" "The 10000 dollar function.")
