@@ -125,8 +125,9 @@ extendEnv :: Env -> String -> XObj -> Env
 extendEnv env name xobj = envAddBinding env name (Binder emptyMeta xobj)
 
 -- | Add a Binder to an environment at a specific path location.
-envInsertAt :: Env -> SymPath -> XObj -> Env
-envInsertAt env (SymPath [] name) xobj = envAddBinding env name (Binder emptyMeta xobj)
+envInsertAt :: Env -> SymPath -> Binder -> Env
+envInsertAt env (SymPath [] name) binder =
+  envAddBinding env name binder
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
     Just (Binder _ (XObj (Mod innerEnv) i t)) ->

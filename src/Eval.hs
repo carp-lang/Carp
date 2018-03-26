@@ -202,6 +202,16 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to 'type' command: " ++ pretty xobj)))
 
+        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), (XObj (Str key) _ _), value] ->
+          specialCommandMetaSet path key value
+        XObj (Sym (SymPath [] "meta-set!") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'meta-set!' command: " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "meta") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), (XObj (Str key) _ _)] ->
+          specialCommandMetaGet path key
+        XObj (Sym (SymPath [] "meta") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to 'meta' command: " ++ pretty xobj)))
+
         [XObj (Sym (SymPath [] "members") _) _ _, target] ->
           specialCommandMembers target
         XObj (Sym (SymPath [] "members") _) _ _ : _ ->
@@ -450,9 +460,9 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
          --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder emptyMeta annXObj)) })
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) annXObj) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder emptyMeta annXObj)) })
        _ ->
          do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
             when (projectEchoC proj) $
@@ -471,7 +481,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
                      _ -> putStrLnWithColor Red err
                    return ctx
               Right ctx' ->
-                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) annXObj })
+                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder emptyMeta annXObj) })
 
 -- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
 registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
@@ -551,7 +561,7 @@ specialCommandRegisterType typeName rest =
            Left errorMessage ->
              return (Left (EvalError (show errorMessage)))
            Right (typeModuleName, typeModuleXObj, deps) ->
-             let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) typeModuleXObj
+             let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
              in do contextWithDefs <- liftIO $ foldM define ctx' deps
@@ -582,7 +592,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                               XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)
-                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
+                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
              in do ctxWithDeps <- liftIO (foldM define ctx' deps)
@@ -611,7 +621,7 @@ specialCommandRegister name typeXObj overrideName =
                          binding = XObj (Lst [XObj (External overrideName) Nothing Nothing,
                                               XObj (Sym path Symbol) Nothing Nothing])
                                    (info typeXObj) (Just t)
-                         env' = envInsertAt env path binding
+                         env' = envInsertAt env path (Binder emptyMeta binding)
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
                              let prefix = case contextExecMode ctx of
@@ -640,7 +650,7 @@ specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty
                               return dynamicNil
            Nothing ->
              let interface = defineInterface name t [] (info nameXObj)
-                 typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) interface)
+                 typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
              in  do put (ctx { contextTypeEnv = typeEnv' })
                     return dynamicNil
        Nothing ->
@@ -654,7 +664,7 @@ specialCommandDefdynamic name params body =
          env = contextGlobalEnv ctx
          path = SymPath pathStrings name
          dynamic = XObj (Lst [XObj Dynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just DynamicTy)
-     put (ctx { contextGlobalEnv = envInsertAt env path dynamic })
+     put (ctx { contextGlobalEnv = envInsertAt env path (Binder emptyMeta dynamic) })
      return dynamicNil
 
 specialCommandDefmacro :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
@@ -664,7 +674,7 @@ specialCommandDefmacro name params body =
          env = contextGlobalEnv ctx
          path = SymPath pathStrings name
          macro = XObj (Lst [XObj Macro Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) (info body) (Just MacroTy)
-     put (ctx { contextGlobalEnv = envInsertAt env path macro })
+     put (ctx { contextGlobalEnv = envInsertAt env path (Binder emptyMeta macro) })
      return dynamicNil
 
 specialCommandDefmodule :: XObj -> String -> [XObj] -> StateT Context IO (Either EvalError XObj)
@@ -688,7 +698,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
                    do let parentEnv = getEnv env pathStrings
                           innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
                           newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
-                          globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) newModule
+                          globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder emptyMeta newModule)
                           ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode -- TODO: also change
                       ctxAfterModuleDef <- liftIO $ foldM folder ctx' innerExpressions
                       put (popModulePath ctxAfterModuleDef)
@@ -822,6 +832,43 @@ specialCommandWith xobj path forms =
          ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
      put ctxAfter'
      return dynamicNil
+
+-- | Set meta data for a Binder
+specialCommandMetaSet :: SymPath -> String -> XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandMetaSet path key value =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         globalEnv = contextGlobalEnv ctx
+     case multiLookupQualified path globalEnv of
+       [(_, binder@(Binder metaData xobj))] ->
+         do let newMetaData = MetaData (Map.insert key value (getMeta metaData))
+                xobjPath = getPath xobj
+                newBinder = binder { binderMeta = newMetaData }
+                newEnv = envInsertAt globalEnv xobjPath newBinder
+            put (ctx { contextGlobalEnv = newEnv })
+            return dynamicNil
+       [] ->
+         return (Left (EvalError ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'.")))
+       _ ->
+         return (Left (EvalError ("Special command 'meta-set!' failed, found too many candidates.")))
+
+-- | Get meta data for a Binder
+specialCommandMetaGet :: SymPath -> String -> StateT Context IO (Either EvalError XObj)
+specialCommandMetaGet path key =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         globalEnv = contextGlobalEnv ctx
+     case multiLookupQualified path globalEnv of
+       [(_, Binder metaData _)] ->
+           case Map.lookup key (getMeta metaData) of
+             Just foundValue ->
+               return (Right foundValue)
+             Nothing ->
+               return dynamicNil
+       [] ->
+         return (Left (EvalError ("Special command 'meta' failed, can't find '" ++ show path ++ "'.")))
+       _ ->
+         return (Left (EvalError ("Special command 'meta' failed, found too many candidates.")))
 
 
 
