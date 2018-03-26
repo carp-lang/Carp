@@ -11,9 +11,8 @@
 
 (defn draw [app rend state-ref]
   (do (SDL.bg rend &(shifting-bg-color))
-      (let [dims (SDL.dimensions text1)
-            point (SDL.point (- 200 (/ @(SDL_Rect.w &dims) 2)) (- 150 @(SDL_Rect.h &dims)))]
-        (SDL.draw-texture-at rend text1 &point))))
+      (let [dims (SDL.dimensions text1)]
+        (SDL.draw-texture-centered rend text1 &(SDL.point 200 150)))))
 
 (defn change-text [rend]
   (do (when (not (Pointer.eq NULL text1))

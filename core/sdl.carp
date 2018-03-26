@@ -140,12 +140,22 @@
       (SDL.query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
       (SDL.rect 0 0 w h)))
 
-  (defn draw-texture-at [rend texture point]
+  (defn draw-texture [rend texture point]
     (let [dims (SDL.dimensions texture)
           dest (SDL.rect @(SDL_Point.x point)
                          @(SDL_Point.y point)
                          @(SDL_Rect.w &dims)
                          @(SDL_Rect.h &dims))]
+      (SDL.render-copy rend texture (address dims) (address dest))))
+
+  (defn draw-texture-centered [rend texture point]
+    (let [dims (SDL.dimensions texture)
+          w @(SDL_Rect.w &dims)
+          h @(SDL_Rect.h &dims)
+          dest (SDL.rect (- @(SDL_Point.x point) (/ w 2))
+                         (- @(SDL_Point.y point) (/ h 2))
+                         w
+                         h)]
       (SDL.render-copy rend texture (address dims) (address dest))))
 
   (defn-do bg [rend color]
