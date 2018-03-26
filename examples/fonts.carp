@@ -26,8 +26,8 @@
           (cond (= et SDL.Event.quit) (SDLApp.stop app)
                 (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
                                             (cond
-                                              (= key SDL.key-escape) (SDLApp.stop app)
-                                              (= key SDL.key-return) (change-text @(SDLApp.renderer app))
+                                              (= key SDL.Keycode.escape) (SDLApp.stop app)
+                                              (= key SDL.Keycode.return) (change-text @(SDLApp.renderer app))
                                               ()))
                 ())))))
 

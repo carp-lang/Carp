@@ -87,15 +87,6 @@
   (register flip-horizontal SDL_RendererFlip "SDL_FLIP_HORIZONTAL")
   (register flip-vertical SDL_RendererFlip "SDL_FLIP_VERTICAL")
 
-  ;; Keys
-  (register key-return SDL_Keycode "SDLK_RETURN")
-  (register key-space SDL_Keycode "SDLK_SPACE")
-  (register key-escape SDL_Keycode "SDLK_ESCAPE")
-  (register key-left SDL_Keycode "SDLK_LEFT")
-  (register key-right SDL_Keycode "SDLK_RIGHT")
-  (register key-up SDL_Keycode "SDLK_UP")
-  (register key-down SDL_Keycode "SDLK_DOWN")
-
   (defmodule Keycode
     (register = (Fn [SDL_Keycode SDL_Keycode] Bool))
     (register copy (Fn [(Ref SDL_Keycode)] SDL_Keycode))
@@ -103,7 +94,17 @@
     (defn prn [x]
       (SDL.Keycode.str x))
     (defn /= [x y]
-      (not (SDL.Keycode.= x y))))
+      (not (SDL.Keycode.= x y)))
+
+    (register return SDL_Keycode "SDLK_RETURN")
+    (register space SDL_Keycode "SDLK_SPACE")
+    (register escape SDL_Keycode "SDLK_ESCAPE")
+    (register left SDL_Keycode "SDLK_LEFT")
+    (register right SDL_Keycode "SDLK_RIGHT")
+    (register up SDL_Keycode "SDLK_UP")
+    (register down SDL_Keycode "SDLK_DOWN")
+
+    )
 
   ;; Mouse
   (defmodule Mouse
@@ -209,7 +210,7 @@
              (case (SDL.Event.type event)
                SDL.Event.quit (SDLApp.stop app)
                SDL.Event.key-down (let [key (SDL.Event.keycode event)]
-                                    (if (= key SDL.key-escape)
+                                    (if (= key SDL.Keycode.escape)
                                       (SDLApp.stop app)
                                       ()))
                ()))))

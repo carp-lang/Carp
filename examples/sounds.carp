@@ -17,8 +17,8 @@
                 (= et SDL.Event.key-down)
                 (let [key (SDL.Event.keycode &event)]
                   (case key
-                    SDL.key-escape (SDLApp.stop app)
-                    SDL.key-return (play-sound-fx1)
+                    SDL.Keycode.escape (SDLApp.stop app)
+                    SDL.Keycode.return (play-sound-fx1)
                     ()))
                 ())))))
 

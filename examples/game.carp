@@ -67,7 +67,7 @@
       SDL.Event.quit (SDLApp.stop app)
       SDL.Event.key-down (let [key (SDL.Event.keycode event)]
                            (cond
-                             (= key SDL.key-escape) (SDLApp.stop app)
+                             (= key SDL.Keycode.escape) (SDLApp.stop app)
                              (println "Unrecognized key.")))
       (println "Some other event happened..."))))
 

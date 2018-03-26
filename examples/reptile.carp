@@ -59,7 +59,7 @@
     (SDL.render-present rend)
     ))
 
-(def input-dir SDL.key-down)
+(def input-dir SDL.Keycode.down)
 (def reset false)
 
 (defn handle-events [app rend world]
@@ -69,22 +69,22 @@
         (cond (= et SDL.Event.quit) (SDLApp.stop app)
               (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
                                           (cond
-                                            (or (= key SDL.key-right)
-                                                (or (= key SDL.key-up)
-                                                    (or (= key SDL.key-left) (= key SDL.key-down))))
+                                            (or (= key SDL.Keycode.right)
+                                                (or (= key SDL.Keycode.up)
+                                                    (or (= key SDL.Keycode.left) (= key SDL.Keycode.down))))
                                             (set! input-dir key)
-                                            (= key SDL.key-return) (set! reset true)
-                                            (= key SDL.key-escape) (SDLApp.stop app)
+                                            (= key SDL.Keycode.return) (set! reset true)
+                                            (= key SDL.Keycode.escape) (SDLApp.stop app)
                                             ()))
               ()
               )))))
 
 (defn move [vec dir]
   (cond
-    (= SDL.key-right dir) (add &vec &(Vector2.init 1.0 0.0))
-    (= SDL.key-up dir)    (add &vec &(Vector2.init 0.0 -1.0))
-    (= SDL.key-left dir)  (add &vec &(Vector2.init -1.0 0.0))
-    (= SDL.key-down dir)  (add &vec &(Vector2.init 0.0 1.0))
+    (= SDL.Keycode.right dir) (add &vec &(Vector2.init 1.0 0.0))
+    (= SDL.Keycode.up dir)    (add &vec &(Vector2.init 0.0 -1.0))
+    (= SDL.Keycode.left dir)  (add &vec &(Vector2.init -1.0 0.0))
+    (= SDL.Keycode.down dir)  (add &vec &(Vector2.init 0.0 1.0))
     vec))
 
 (defn shift-body [body]
@@ -151,7 +151,7 @@
                            (Vector2.init 9.0 10.0)
                            (Vector2.init 8.0 10.0)
                            (Vector2.init 7.0 10.0)]
-                          SDL.key-down
+                          SDL.Keycode.down
                           0)
                (create-human)
                false))
@@ -173,7 +173,7 @@
       (while (not @(World.dead &world))
         (if reset
           (do
-            (set! input-dir SDL.key-right)
+            (set! input-dir SDL.Keycode.right)
             (set! world (create-world))
             (set! reset false))
           (do
