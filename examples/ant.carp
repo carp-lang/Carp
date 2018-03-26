@@ -15,7 +15,8 @@
      grid (Array Bool)
      x Int
      y Int
-     dir Int])
+     dir Int
+     stopped Bool])
 
 (defn coord-to-index [state x y]
   (+ (* y @(State.width state)) x))
@@ -77,10 +78,15 @@
                 1 (inc y)
                 3 (dec y)
                 y)]
-    (=> state
-        (State.set-x new-x)
-        (State.set-y new-y)
-        (State.set-dir new-dir))))
+    (if (or* (< new-x 0)
+             (< new-y 0)
+             (>= new-x @(State.width &state))
+             (>= new-y @(State.height &state)))
+      (State.set-stopped state true)
+      (=> state
+          (State.set-x new-x)
+          (State.set-y new-y)
+          (State.set-dir new-dir)))))
 
 (defn tick [state]
   (=> state
@@ -92,19 +98,20 @@
         h 60
         b false
         arr (Array.replicate (* w h) &b)]
-    (State.init w h arr (/ w 2) (/ h 2) 0)))
+    (State.init w h arr (/ w 2) (/ h 2) 0 false)))
 
 (defn-do main []
   (Debug.log-memory-balance! true)
-  (let [app (SDLApp.create "Langton's Ant" 800 600)
-        rend @(SDLApp.renderer &app)
-        state (create-state)]
-      (while true
-        (do
-          (handle-events &app rend)
-          (draw rend &state)
-          (set! state (tick state))
-          (SDL.delay 2)))))
+  (let-do [app (SDLApp.create "Langton's Ant" 800 600)
+           rend @(SDLApp.renderer &app)
+           state (create-state)]
+    (while (not @(State.stopped &state))
+      (do
+        (handle-events &app rend)
+        (draw rend &state)
+        (set! state (tick state))
+        (SDL.delay 1))))
+  0)
 
 ;; Just the model
 ;; (defn main []
