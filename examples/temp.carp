@@ -6,10 +6,8 @@
 (defn f [] 123)
 
 (defmodule Foo
+  (doc f "This is an evil function.")
   (defn f [] 666)
-  (meta-set! f "doc" "This is an evil function.")
-  (defn g [] 10000)
-  (meta-set! no "doc" "I don't exist yet.")
-  )
+  (defn g [] 10000))
 
-(meta-set! Foo.g "doc" "The 10000 dollar function.")
+(doc Foo.g "The 10000 dollar function, annotated from afar.")
