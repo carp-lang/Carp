@@ -22,8 +22,8 @@ setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 -- | Changes all symbols EXCEPT bound vars (defn names, variable names, etc) to their fully qualified paths.
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
 -- | This function does NOT go into function-body scope environments and the like.
-setFullyQualifiedSymbols :: TypeEnv -> Env -> XObj -> XObj
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [defn@(XObj Defn _ _),
+setFullyQualifiedSymbols :: TypeEnv -> Env -> Env -> XObj -> XObj
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
                                                  sym@(XObj (Sym (SymPath _ functionName) _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])
@@ -33,34 +33,34 @@ setFullyQualifiedSymbols typeEnv env (XObj (Lst [defn@(XObj Defn _ _),
   let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
       envWithSelf = extendEnv functionEnv functionName sym
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
-  in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv envWithArgs body]) i t
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
-  let value' = setFullyQualifiedSymbols typeEnv env value
+  in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
+  let value' = setFullyQualifiedSymbols typeEnv globalEnv env value
   in  XObj (Lst [the, typeXObj, value']) i t
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
-  let expr' = setFullyQualifiedSymbols typeEnv env expr
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
+  let expr' = setFullyQualifiedSymbols typeEnv globalEnv env expr
   in  XObj (Lst [def, sym, expr']) i t
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
   if even (length bindings)
   then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
            envWithBindings = foldl' (\e (binderSym@(XObj (Sym (SymPath _ binderName) _) _ _), _) ->
                                        extendEnv e binderName binderSym)
                                     innerEnv
                                     (pairwise bindings)
-           newBinders = XObj (Arr (concatMap (\(s, o) -> [s, setFullyQualifiedSymbols typeEnv envWithBindings o])
+           newBinders = XObj (Arr (concatMap (\(s, o) -> [s, setFullyQualifiedSymbols typeEnv globalEnv envWithBindings o])
                                    (pairwise bindings))) bindi bindt
-           newBody = setFullyQualifiedSymbols typeEnv envWithBindings body
+           newBody = setFullyQualifiedSymbols typeEnv globalEnv envWithBindings body
        in  XObj (Lst [letExpr, newBinders, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
-setFullyQualifiedSymbols typeEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
-  in  setFullyQualifiedSymbols typeEnv env' expression
-setFullyQualifiedSymbols typeEnv env (XObj (Lst xobjs) i t) =
+  in  setFullyQualifiedSymbols typeEnv globalEnv env' expression
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst xobjs) i t) =
   -- TODO: Perhaps this general case can be sufficient? No need with all the cases above..?
-  let xobjs' = map (setFullyQualifiedSymbols typeEnv env) xobjs
+  let xobjs' = map (setFullyQualifiedSymbols typeEnv globalEnv env) xobjs
   in  XObj (Lst xobjs') i t
-setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
+setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t) =
   case path of
     -- Unqualified:
     SymPath [] name ->
@@ -68,25 +68,33 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
         Just found ->
           -- Found an interface with the same path!
           -- Have to ensure it's not a local variable with the same name as the interface
-          case lookupInEnv path env of
+          case lookupInEnv path localEnv of
             Just (foundEnv, _) ->
               if envIsExternal foundEnv
               then createInterfaceSym name
-              else doesNotBelongToAnInterface
+              else doesNotBelongToAnInterface False localEnv
             Nothing ->
               --trace ("Will turn '" ++ show path ++ "' " ++ prettyInfoFromXObj xobj ++ " into an interface symbol.")
                 createInterfaceSym name
         Nothing ->
-          doesNotBelongToAnInterface
+          doesNotBelongToAnInterface False localEnv
     -- Qualified:
     _ ->
-      doesNotBelongToAnInterface
+      doesNotBelongToAnInterface False localEnv
   where
     createInterfaceSym name =
       XObj (InterfaceSym name) i t
-    doesNotBelongToAnInterface =
-      case multiLookupQualified path env of
-          [] -> xobj -- Nothing found, leave the symbol as is
+    doesNotBelongToAnInterface :: Bool -> Env -> XObj
+    doesNotBelongToAnInterface finalRecurse theEnv =
+      case multiLookupQualified path theEnv of
+          [] -> case envParent theEnv of
+                  Just p ->
+                    doesNotBelongToAnInterface False p
+                  Nothing ->
+                    -- | OBS! The environment with no parent is the global env but it's an old one without the latest bindings!
+                    if finalRecurse
+                    then xobj -- This was the TRUE global env, stop here and leave 'xobj' as is.
+                    else doesNotBelongToAnInterface True globalEnv
           [(_, Binder foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder foundOne)] ->
@@ -106,7 +114,7 @@ setFullyQualifiedSymbols typeEnv env xobj@(XObj (Sym path _) i t) =
                   pathWithQualifiers ->
                     -- The symbol IS qualified but can't be found, should produce an error later during compilation.
                     trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers LookupGlobal) i t)
-setFullyQualifiedSymbols typeEnv env xobj@(XObj (Arr array) i t) =
-  let array' = map (setFullyQualifiedSymbols typeEnv env) array
+setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
+  let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t
-setFullyQualifiedSymbols _ _ xobj = xobj
+setFullyQualifiedSymbols _ _ _ xobj = xobj

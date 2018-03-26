@@ -510,17 +510,17 @@ specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefine xobj =
   do ctx <- get
      let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
+         globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
-         innerEnv = getEnv env pathStrings
-     expansionResult <- expandAll eval env xobj
+         innerEnv = getEnv globalEnv pathStrings
+     expansionResult <- expandAll eval globalEnv xobj
      ctxAfterExpansion <- get
      case expansionResult of
        Left err -> return (Left (EvalError (show err)))
        Right expanded ->
          let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
-             xobjFullSymbols = setFullyQualifiedSymbols typeEnv innerEnv xobjFullPath
-         in case annotate typeEnv env xobjFullSymbols of
+             xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
+         in case annotate typeEnv globalEnv xobjFullSymbols of
               Left err ->
                 case contextExecMode ctx of
                   Check ->
@@ -536,9 +536,9 @@ specialCommandRegisterType :: String -> [XObj] -> StateT Context IO (Either Eval
 specialCommandRegisterType typeName rest =
   do ctx <- get
      let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
+         globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
-         innerEnv = getEnv env pathStrings
+         innerEnv = getEnv globalEnv pathStrings
          path = SymPath pathStrings typeName
          typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
          i = Nothing
@@ -547,11 +547,11 @@ specialCommandRegisterType typeName rest =
          do put (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition) })
             return dynamicNil
        members ->
-         case bindingsForRegisteredType typeEnv env pathStrings typeName members i of
+         case bindingsForRegisteredType typeEnv globalEnv pathStrings typeName members i of
            Left errorMessage ->
              return (Left (EvalError (show errorMessage)))
            Right (typeModuleName, typeModuleXObj, deps) ->
-             let ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) typeModuleXObj
+             let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) typeModuleXObj
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
              in do contextWithDefs <- liftIO $ foldM define ctx' deps
@@ -906,7 +906,7 @@ commandC [xobj] =
      case result of
        Left err -> return (Left (EvalError (show err)))
        Right expanded ->
-         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv expanded) of
+         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
            Left err -> return (Left (EvalError (show err)))
            Right annXObjs ->
              do liftIO (mapM printC annXObjs)

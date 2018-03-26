@@ -137,7 +137,7 @@
 
   (defn dimensions [texture]
     (let-do [w 0 h 0]
-      (query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
+      (SDL.query-texture texture NULL NULL (address w) (address h)) ;; TODO: Can't qualify 'query-texture' ??!
       (SDL.rect 0 0 w h)))
 
   (defn draw-texture-at [rend texture point]
@@ -146,7 +146,7 @@
                          @(SDL_Point.y point)
                          @(SDL_Rect.w &dims)
                          @(SDL_Rect.h &dims))]
-      (render-copy rend texture (address dims) (address dest))))
+      (SDL.render-copy rend texture (address dims) (address dest))))
 
   (defn-do bg [rend color]
     (with Int

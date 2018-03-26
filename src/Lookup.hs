@@ -7,6 +7,7 @@ import Data.Maybe (mapMaybe, fromMaybe, fromJust)
 import Types
 import Obj
 import Util
+import Debug.Trace
 
 -- | Find the Binder at a specified path.
 lookupInEnv :: SymPath -> Env -> Maybe (Env, Binder)
