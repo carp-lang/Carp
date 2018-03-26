@@ -1,2 +1,14 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
+
+(defn f [] 123)
+
+(meta-set! f "doc" "This function will return 123.")
+(meta-set! f "sig" '(Fn [] Int))
+
+(defmodule Foo
+  (defn f [] 666)
+  (meta-set! f "doc" "This is an evil function.")
+  (defn g [] 10000))
+
+(meta-set! Foo.g "doc" "The 10000 dollar function.")

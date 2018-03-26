@@ -839,18 +839,17 @@ specialCommandMetaSet path key value =
   do ctx <- get
      let pathStrings = contextPath ctx
          globalEnv = contextGlobalEnv ctx
-     case multiLookupQualified path globalEnv of
-       [(_, binder@(Binder metaData xobj))] ->
+     case lookupInEnv (consPath pathStrings path) globalEnv of
+       Just (_, binder@(Binder metaData xobj)) ->
          do let newMetaData = MetaData (Map.insert key value (getMeta metaData))
                 xobjPath = getPath xobj
                 newBinder = binder { binderMeta = newMetaData }
                 newEnv = envInsertAt globalEnv xobjPath newBinder
+            liftIO (putStrLn ("Added meta data on " ++ show xobjPath ++ ", '" ++ key ++ "' = " ++ pretty value))
             put (ctx { contextGlobalEnv = newEnv })
             return dynamicNil
-       [] ->
+       Nothing ->
          return (Left (EvalError ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'.")))
-       _ ->
-         return (Left (EvalError ("Special command 'meta-set!' failed, found too many candidates.")))
 
 -- | Get meta data for a Binder
 specialCommandMetaGet :: SymPath -> String -> StateT Context IO (Either EvalError XObj)
@@ -858,17 +857,15 @@ specialCommandMetaGet path key =
   do ctx <- get
      let pathStrings = contextPath ctx
          globalEnv = contextGlobalEnv ctx
-     case multiLookupQualified path globalEnv of
-       [(_, Binder metaData _)] ->
+     case lookupInEnv (consPath pathStrings path) globalEnv of
+       Just (_, Binder metaData _) ->
            case Map.lookup key (getMeta metaData) of
              Just foundValue ->
                return (Right foundValue)
              Nothing ->
                return dynamicNil
-       [] ->
+       Nothing ->
          return (Left (EvalError ("Special command 'meta' failed, can't find '" ++ show path ++ "'.")))
-       _ ->
-         return (Left (EvalError ("Special command 'meta' failed, found too many candidates.")))
 
 
 
