@@ -17,7 +17,21 @@ import Util
 saveDocsForEnvs :: FilePath -> String -> [(SymPath, Env)] -> IO ()
 saveDocsForEnvs dirPath projectTitle envs =
   let allEnvNames = (fmap (getModuleName . snd) envs)
-  in  mapM_ (saveDocsForEnv dirPath projectTitle allEnvNames) envs
+  in  do mapM_ (saveDocsForEnv dirPath projectTitle allEnvNames) envs
+         writeFile (dirPath ++ "/" ++ projectTitle ++ "_index.html") (projectIndexPage projectTitle allEnvNames)
+
+projectIndexPage :: String -> [String] -> String
+projectIndexPage projectTitle moduleNames =
+  let html = renderText $ do head_ $
+                               do meta_ [charset_ "UTF-8"]
+                                  link_ [rel_ "stylesheet", href_ "carp_style.css"]
+                             body_ $
+                               do div_ [class_ "content"] $
+                                    do div_ [class_ "logo"] $
+                                         do img_ [src_ "logo.png"]
+                                       h1_ (toHtml projectTitle)
+                                       moduleIndex moduleNames
+  in  T.unpack html
 
 getModuleName :: Env -> String
 getModuleName env =
@@ -43,13 +57,17 @@ envToHtml env projectTitle moduleName moduleNames =
                 do div_ [class_ "content"] $
                      do div_ [class_ "logo"] $
                           do a_ [href_ "http://github.com/carp-lang/Carp"] $
-                               do img_ [src_ "logo2.png"]
+                               do img_ [src_ "logo.png"]
                              --span_ "CARP DOCS FOR"
                              div_ [class_ "title"] (toHtml projectTitle)
-                             div_ [class_ "index"] $
-                               ul_ $ do mapM_ moduleLink moduleNames
+                             moduleIndex moduleNames
                         h1_ (toHtml moduleName)
                         mapM_ (binderToHtml . snd) (Map.toList (envBindings env))
+
+moduleIndex :: [String] -> Html ()
+moduleIndex moduleNames =
+  do div_ [class_ "index"] $
+       ul_ $ do mapM_ moduleLink moduleNames
 
 moduleLink :: String -> Html ()
 moduleLink name =
