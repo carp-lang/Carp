@@ -673,8 +673,8 @@ commandNot [x] =
     _ ->
       return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x)))
 
-commandSaveDocs :: CommandCallback
-commandSaveDocs [modulePath, saveDir] =
+commandSaveDocsInternal :: CommandCallback
+commandSaveDocsInternal [modulePath, saveDir] =
   case (modulePath, saveDir) of
     (XObj (Sym path _) _ _, XObj (Str saveDirStr) _ _) ->
       do ctx <- get
@@ -688,4 +688,4 @@ commandSaveDocs [modulePath, saveDir] =
            Nothing ->
              return (Left (EvalError ("Can't find module at '" ++ show path ++ "'")))
     (arg1, arg2) ->
-      return (Left (EvalError ("Invalid args to save-docs " ++ pretty arg1 ++ ", " ++ pretty arg2)))
+      return (Left (EvalError ("Invalid args to save-docs (expected symbol and string): " ++ pretty arg1 ++ ", " ++ pretty arg2)))

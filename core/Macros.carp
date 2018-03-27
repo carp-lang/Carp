@@ -273,3 +273,7 @@
         (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'source-path))
                                     "/"
                                     file])))
+
+(defmacro save-docs [module dir-path]
+  ;; A trick to be able to send unquoted symbols to 'save-docs'
+  (list 'save-docs-internal (list 'quote module) dir-path))

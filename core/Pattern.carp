@@ -33,6 +33,7 @@
   (defn num? [s]
     (Pattern.matches? #"^[0-9]*$" s))
 
+  (doc alpha? "Check if a string contains only alpha characters (a-Z).")
   (defn alpha? [s]
     (Pattern.matches? #"^[\u\l]*$" s))
 

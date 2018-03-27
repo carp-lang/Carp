@@ -1,0 +1,50 @@
+html {
+    font-family: "Helvetica", sans-serif;
+}
+
+a {
+    color: #ff0000;
+}
+
+.logo {
+    text-align: center;
+    float: right;
+    width: 150px;
+    font-family: "Hasklig", "Lucida Console", monospace;
+}
+
+.logo img {
+    width: 150px;
+}
+
+.content {
+    margin: 3em auto auto auto;
+    width: 80%;
+}
+
+h1 {
+    margin-bottom: 1.5em;
+}
+
+h3 {
+    margin: 0em;
+}
+
+.binder {
+    margin: 0em 0em 3.5em 0em;
+}
+
+.sig {
+    font-family: "Hasklig", "Lucida Console", monospace;
+}
+
+.doc {
+    /* font-style: italic; */
+    color: #456;
+}
+
+.description {
+    margin-top: 0.3em;
+    font-size: 0.8em;
+    color: #aaa;
+}

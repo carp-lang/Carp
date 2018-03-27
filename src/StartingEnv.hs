@@ -190,6 +190,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "os" 0 commandOS
                     , addCommand "system-include" 1 commandAddSystemInclude
                     , addCommand "local-include" 1 commandAddLocalInclude
+                    , addCommand "save-docs-internal" 2 commandSaveDocsInternal
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing))
