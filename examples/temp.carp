@@ -8,6 +8,13 @@
 (defmodule Foo
   (doc f "This is an evil function.")
   (defn f [] 666)
+  (hidden h)
+  (defn h [] @"trash")
   (defn g [] 10000))
 
 (doc Foo.g "The 10000 dollar function, annotated from afar.")
+
+(Project.config "docs-directory" "./out/")
+(Project.config "title" "Temp")
+
+(save-docs Foo)

@@ -19,6 +19,7 @@ saveDocsForEnvs dirPath projectTitle envs =
   let allEnvNames = (fmap (getModuleName . snd) envs)
   in  do mapM_ (saveDocsForEnv dirPath projectTitle allEnvNames) envs
          writeFile (dirPath ++ "/" ++ projectTitle ++ "_index.html") (projectIndexPage projectTitle allEnvNames)
+         putStrLn ("Generated docs to '" ++ dirPath ++ "'")
 
 projectIndexPage :: String -> [String] -> String
 projectIndexPage projectTitle moduleNames =
@@ -63,7 +64,11 @@ envToHtml env projectTitle moduleName moduleNames =
                              div_ [class_ "title"] (toHtml projectTitle)
                              moduleIndex moduleNames
                         h1_ (toHtml moduleName)
-                        mapM_ (binderToHtml . snd) (Map.toList (envBindings env))
+                        mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
+
+shouldEmitDocsForBinder :: (String, Binder) -> Bool
+shouldEmitDocsForBinder (name, Binder meta xobj) =
+  not (metaIsTrue meta "hidden")
 
 moduleIndex :: [String] -> Html ()
 moduleIndex moduleNames =
