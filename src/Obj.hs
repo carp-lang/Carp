@@ -145,6 +145,7 @@ getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Mod _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
@@ -588,3 +589,8 @@ unwrapStringXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFro
 unwrapBoolXObj :: XObj -> Either String Bool
 unwrapBoolXObj (XObj (Bol b) _ _) = Right b
 unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Bool.")
+
+-- | Symbol
+unwrapSymPathXObj :: XObj -> Either String SymPath
+unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
+unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")

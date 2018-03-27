@@ -677,19 +677,33 @@ commandNot [x] =
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal [modulePath] =
-  case modulePath of
-    XObj (Sym path _) _ _ ->
-      do ctx <- get
-         let globalEnv = contextGlobalEnv ctx
-             proj = contextProj ctx
-             docsDir = projectDocsDir proj
-         case lookupInEnv path globalEnv of
-           Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
-             do liftIO (saveDocsForEnv foundEnv docsDir)
-                return dynamicNil
-           Just (_, Binder _ x) ->
-             return (Left (EvalError ("Non module can't be saved: " ++ pretty x)))
-           Nothing ->
-             return (Left (EvalError ("Can't find module at '" ++ show path ++ "'")))
-    (arg1) ->
-      return (Left (EvalError ("Invalid arg to save-docs-internal (expected symbol): " ++ pretty arg1)))
+  do ctx <- get
+     let globalEnv = contextGlobalEnv ctx
+     case modulePath of
+       XObj (Lst xobjs) _ _ ->
+         case sequence (map unwrapSymPathXObj xobjs) of
+           Left err -> return (Left (EvalError err))
+           Right okPaths ->
+             case sequence (map (getEnvironmentForDocumentation globalEnv) okPaths) of
+               Left err -> return (Left err)
+               Right ok -> saveDocs ok
+       x ->
+         return (Left (EvalError ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x)))
+  where getEnvironmentForDocumentation :: Env -> SymPath -> Either EvalError Env
+        getEnvironmentForDocumentation env path =
+          case lookupInEnv path env of
+            Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
+              Right foundEnv
+            Just (_, Binder _ x) ->
+              Left (EvalError ("Non module can't be saved: " ++ pretty x))
+            Nothing ->
+              Left (EvalError ("Can't find module at '" ++ show path ++ "'"))
+
+saveDocs :: [Env] -> StateT Context IO (Either EvalError XObj)
+saveDocs envs =
+  do ctx <- get
+     let proj = contextProj ctx
+         docsDir = projectDocsDir proj
+         title = projectTitle proj
+     liftIO (saveDocsForEnvs docsDir title envs)
+     return dynamicNil

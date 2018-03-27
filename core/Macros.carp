@@ -274,6 +274,6 @@
                                     "/"
                                     file])))
 
-(defmacro save-docs [module]
+(defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (list 'save-docs-internal (list 'quote module)))
+  (list 'save-docs-internal (list 'quote modules)))

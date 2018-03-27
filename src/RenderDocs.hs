@@ -14,19 +14,27 @@ import Obj
 import Types
 import Util
 
-saveDocsForEnv :: Env -> FilePath -> IO ()
-saveDocsForEnv env dirPath =
+saveDocsForEnvs :: FilePath -> String -> [Env] -> IO ()
+saveDocsForEnvs dirPath projectTitle envs =
+  mapM_ (saveDocsForEnv dirPath projectTitle (fmap getModuleName envs)) envs
+
+getModuleName :: Env -> String
+getModuleName env =
+  case envModuleName env of
+    Just hasName -> hasName
+    Nothing -> "Global"
+
+saveDocsForEnv :: FilePath -> String -> [String] -> Env -> IO ()
+saveDocsForEnv dirPath projectTitle moduleNames env =
   do let string = T.unpack text
-         name = case envModuleName env of
-                  Just hasName -> hasName
-                  Nothing -> "global"
-         fullPath = dirPath ++ "/" ++ name ++ ".html"
-         text = renderText (envToHtml env name)
+         moduleName = getModuleName env
+         fullPath = dirPath ++ "/" ++ moduleName ++ ".html"
+         text = renderText (envToHtml env projectTitle moduleName moduleNames)
      createDirectoryIfMissing False dirPath
      writeFile fullPath string
 
-envToHtml :: Env -> String -> Html ()
-envToHtml env name =
+envToHtml :: Env -> String -> String -> [String] -> Html ()
+envToHtml env projectTitle moduleName moduleNames =
    html_ $ do head_ $
                 do meta_ [charset_ "UTF-8"]
                    link_ [rel_ "stylesheet", href_ "carp_style.css"]
@@ -35,9 +43,16 @@ envToHtml env name =
                      do div_ [class_ "logo"] $
                           do a_ [href_ "http://github.com/carp-lang/Carp"] $
                                do img_ [src_ "logo2.png"]
-                             span_ "CARP DOCS"
-                        h1_ (toHtml name)
+                             --span_ "CARP DOCS FOR"
+                             div_ [class_ "title"] (toHtml projectTitle)
+                             div_ [class_ "links"] $
+                               ul_ $ do mapM_ moduleLink moduleNames
+                        h1_ (toHtml moduleName)
                         mapM_ (binderToHtml . snd) (Map.toList (envBindings env))
+
+moduleLink :: String -> Html ()
+moduleLink name =
+  li_ $ a_ [href_ (Text.pack (name ++ ".html"))] (toHtml name)
 
 binderToHtml :: Binder -> Html ()
 binderToHtml (Binder meta xobj) =
