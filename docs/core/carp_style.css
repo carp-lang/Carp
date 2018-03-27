@@ -20,6 +20,8 @@ a {
 
 ul {
     list-style-type: none;
+    font-family: "Hasklig", "Lucida Console", monospace;
+    line-height: 1.4em;
 }
 
 .title {
