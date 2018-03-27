@@ -26,38 +26,38 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 ## Core Modules
 
 ### Basics
-* [Macros ⦁](../core/Macros.carp)
-* [Interfaces ⦁](../core/Interfaces.carp)
-* [Dynamic ⦁](../core/Dynamic.carp) (only available in the repl and at compile time)
+* [Macros ⦁](http://carp-lang.github.io/Carp/core/Macros.html)
+* [Interfaces ⦁](http://carp-lang.github.io/Carp/core/Interfaces.html)
+* [Dynamic ⦁](http://carp-lang.github.io/Carp/core/Dynamic.html) (only available in the repl and at compile time)
 
 ### Numerics
-* [Int ⦁](../core/Int.carp)
-* [SafeInt](../core/SafeInt.carp)
-* [Long ⦁](../core/Long.carp)
-* [Bool ⦁](../core/Bool.carp)
-* [Float ⦁](../core/Float.carp)
-* [Double ⦁](../core/Double.carp)
-* [Vector](../core/Vector.carp)
-* [Geometry](../core/Geometry.carp)
-* [Statistics](../core/Statistics.carp)
+* [Int ⦁](http://carp-lang.github.io/Carp/core/Int.html)
+* SafeInt
+* [Long ⦁](http://carp-lang.github.io/Carp/core/Long.html)
+* [Bool ⦁](http://carp-lang.github.io/Carp/core/Bool.html)
+* [Float ⦁](http://carp-lang.github.io/Carp/core/Float.html)
+* [Double ⦁](http://carp-lang.github.io/Carp/core/Double.html)
+* [Vector](http://carp-lang.github.io/Carp/core/Vector.html)
+* [Geometry](http://carp-lang.github.io/Carp/core/Geometry.html)
+* [Statistics](http://carp-lang.github.io/Carp/core/Statistics.html)
 
 ### Text
-* [String ⦁](../core/String.carp)
-* [Char ⦁](../core/Char.carp)
-* [Format ⦁](../core/Format.carp)
-* [Pattern ⦁](../core/Pattern.carp)
+* [String ⦁](http://carp-lang.github.io/Carp/core/String.html)
+* [Char ⦁](http://carp-lang.github.io/Carp/core/Char.html)
+* Format ⦁
+* [Pattern ⦁](http://carp-lang.github.io/Carp/core/Pattern.html)
 
 ### Collections
-* [Array ⦁](../core/Array.carp)
+* [Array ⦁](http://carp-lang.github.io/Carp/core/Array.html)
 
 ### System
-* [IO ⦁](../core/IO.carp)
-* [System ⦁](../core/System.carp)
+* [IO ⦁](http://carp-lang.github.io/Carp/core/IO.html)
+* [System ⦁](http://carp-lang.github.io/Carp/core/System.html)
 
 ### Development
-* [Debug ⦁](../core/Debug.carp)
-* [Test](../core/Test.carp)
-* [Bench](../core/Bench.carp)
+* [Debug ⦁](http://carp-lang.github.io/Carp/core/Debug.html)
+* [Test](http://carp-lang.github.io/Carp/core/Test.html)
+* [Bench](http://carp-lang.github.io/Carp/core/Bench.html)
 
 ### Graphics, sound and interaction
 * [SDL](../core/SDL.carp)
