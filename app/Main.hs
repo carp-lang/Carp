@@ -24,7 +24,7 @@ defaultProject =
           , projectEchoC = False
           , projectCarpDir = "./"
           , projectOutDir = "./out/"
-          , projectDocsDir = "./docs/core/"
+          , projectDocsDir = "./docs/"
           , projectPrompt = case platform of
                               MacOS -> "鲮 "
                               _     -> "> "

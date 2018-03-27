@@ -67,3 +67,8 @@ h3 {
     font-size: 0.8em;
     color: #aaa;
 }
+
+.huge {
+    font-size: 15em;
+    margin: 0em;
+}

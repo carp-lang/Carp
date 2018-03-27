@@ -27,10 +27,11 @@ projectIndexPage projectTitle moduleNames =
                                   link_ [rel_ "stylesheet", href_ "carp_style.css"]
                              body_ $
                                do div_ [class_ "content"] $
-                                    do div_ [class_ "logo"] $
-                                         do img_ [src_ "logo.png"]
-                                       h1_ (toHtml projectTitle)
-                                       moduleIndex moduleNames
+                                    do a_ [href_ "http://github.com/carp-lang/Carp"] $
+                                         do div_ [class_ "logo"] $
+                                              do img_ [src_ "logo.png"]
+                                                 moduleIndex moduleNames
+                                            h1_ [class_ "huge"] (toHtml projectTitle)
   in  T.unpack html
 
 getModuleName :: Env -> String

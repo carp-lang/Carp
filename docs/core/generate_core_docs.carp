@@ -1,4 +1,5 @@
 (Project.config "title" "core")
+(Project.config "docs-directory" "./docs/core/")
 
 (load "SafeInt.carp")
 (load "Vector.carp")
