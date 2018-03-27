@@ -9,6 +9,9 @@ import Deftype
 import ColorText
 import Template
 import Util
+import Lookup
+import RenderDocs
+
 import System.Directory
 import System.Info (os)
 import Control.Monad.State
@@ -669,3 +672,20 @@ commandNot [x] =
       else return (Right trueXObj)
     _ ->
       return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x)))
+
+commandSaveDocs :: CommandCallback
+commandSaveDocs [modulePath, saveDir] =
+  case (modulePath, saveDir) of
+    (XObj (Sym path _) _ _, XObj (Str saveDirStr) _ _) ->
+      do ctx <- get
+         let globalEnv = contextGlobalEnv ctx
+         case lookupInEnv path globalEnv of
+           Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
+             do liftIO (saveDocsForEnv foundEnv saveDirStr)
+                return dynamicNil
+           Just (_, Binder _ x) ->
+             return (Left (EvalError ("Non module can't be saved: " ++ pretty x)))
+           Nothing ->
+             return (Left (EvalError ("Can't find module at '" ++ show path ++ "'")))
+    (arg1, arg2) ->
+      return (Left (EvalError ("Invalid args to save-docs " ++ pretty arg1 ++ ", " ++ pretty arg2)))
