@@ -17,11 +17,11 @@
   (list 'macro-log (list 'meta name "sig")))
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
-(defmacro hide [name signature]
+(defmacro hide [name]
   (list 'meta-set! name "hide" true))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
-(defmacro private [name signature]
+(defmacro private [name]
   (list 'meta-set! name "private" true))
 
 (doc private? "Is this binding private?")

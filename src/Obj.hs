@@ -267,6 +267,13 @@ newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Sho
 emptyMeta :: MetaData
 emptyMeta = (MetaData Map.empty)
 
+metaIsTrue :: MetaData -> String -> Bool
+metaIsTrue metaData key =
+  case Map.lookup "hidden" (getMeta metaData) of
+    Just (XObj (Bol True) _ _) -> True
+    _ -> False
+
+
 -- | Wraps and holds an XObj in an environment.
 data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
 
@@ -282,11 +289,13 @@ showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _
   replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    " ++
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder _ xobj) =
-  replicate indent ' ' ++ name ++
-  -- " (" ++ show (getPath xobj) ++ ")" ++
-  " : " ++ showMaybeTy (ty xobj)
-  -- ++ " <" ++ getBinderDescription xobj ++ ">"
+showBinderIndented indent (name, Binder meta xobj) =
+  if metaIsTrue meta "hidden"
+  then ""
+  else replicate indent ' ' ++ name ++
+       -- " (" ++ show (getPath xobj) ++ ")" ++
+       " : " ++ showMaybeTy (ty xobj)
+       -- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
