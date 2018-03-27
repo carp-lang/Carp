@@ -29,6 +29,23 @@ While powerful, the REPL in Carp currently has some big limitations compared to 
 
 Dynamic functions (defined with `defdynamic`) do not share this limitation but they are not available in compiled code.
 
+### Adding annotations
+Carp has a flexible meta data system (inspired by the one in Clojure) that lets anyone add and retrieve data on the bindings in the environment. The general way to do that is with `(meta-set! <path> <key> <value>)` and `(meta <path> <key>)`.
+
+A couple of useful macros are implemented on top of this system:
+
+```clojure
+(doc <path> "This is a nice function.") ; Documentation
+(sig <path> (Fn [Int] Bool))            ; Type annotation
+(private <path>)                        ; Will make the function inaccesible to other modules
+```
+
+To generate html docs from the doc strings, run:
+
+```clojure
+(save-docs <module 1> <module 2> <etc>)
+```
+
 ### Getting types from bindings
 ```clojure
 鲮 (type <binding>)
@@ -48,6 +65,8 @@ The current session in the repl is called a "project" and can be configured usin
 * ```"title"```              - Set the title of the current project, will affect the name of the binary produced.
 * ```"prompt"```             - Set the prompt in the repl.
 * ```"search-path"```        - Add a path where the Carp compiler will look for '*.carp' files.
+* ```"out-directory"```      - Where to put build artifacts.
+* ```"doc-directory"```      - Where to put generated docs.
 
 * ```"echo-c"```             - When a form is defined using 'def' or 'defn' its C code will be printed.
 * ```"echo-compiler-cmd"```  - When building the project the command for running the C compiler will be printed.
