@@ -145,6 +145,7 @@ getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
+getBinderDescription (XObj (Mod _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
@@ -260,22 +261,28 @@ prettyTyped = visit 0
                Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]" ++ suffix
                _ -> pretty xobj ++ suffix
 
+-- | Datatype for holding meta data about a binder, like type annotation or docstring.
+newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Show)
+
+emptyMeta :: MetaData
+emptyMeta = (MetaData Map.empty)
+
 -- | Wraps and holds an XObj in an environment.
-newtype Binder = Binder { binderXObj :: XObj } deriving Eq
+data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
 
 instance Show Binder where
   show binder = showBinderIndented 0 (getName (binderXObj binder), binder)
 
 showBinderIndented :: Int -> (String, Binder) -> String
-showBinderIndented indent (name, Binder (XObj (Mod env) _ _)) =
+showBinderIndented indent (name, Binder _ (XObj (Mod env) _ _)) =
   replicate indent ' ' ++ name ++ " : Module = {\n" ++
   prettyEnvironmentIndented (indent + 4) env ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
+showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _ _, _]) _ _)) =
   replicate indent ' ' ++ name ++ " : " ++ show t ++ " = {\n    " ++
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
-showBinderIndented indent (name, Binder xobj) =
+showBinderIndented indent (name, Binder _ xobj) =
   replicate indent ' ' ++ name ++
   -- " (" ++ show (getPath xobj) ++ ")" ++
   " : " ++ showMaybeTy (ty xobj)
@@ -315,9 +322,10 @@ tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
 register :: String -> Ty -> (String, Binder)
-register name t = (name, Binder (XObj (Lst [XObj (External Nothing) Nothing Nothing,
-                                            XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
-                                 (Just dummyInfo) (Just t)))
+register name t = (name, Binder emptyMeta
+                    (XObj (Lst [XObj (External Nothing) Nothing Nothing,
+                                XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
+                      (Just dummyInfo) (Just t)))
 
 data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
 
@@ -356,6 +364,18 @@ prettyEnvironmentIndented indent env =
                       then []
                       else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
 
+pathToEnv :: Env -> [String]
+pathToEnv rootEnv = visit rootEnv
+  where
+    visit env =
+      case envModuleName env of
+        Just name -> name : parent
+        Nothing -> parent
+        where parent =
+                case envParent env of
+                  Just p -> visit p
+                  Nothing -> []
+
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 
@@ -368,6 +388,7 @@ data Project = Project { projectTitle :: String
                        , projectEchoC :: Bool
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
+                       , projectDocsDir :: FilePath
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
@@ -388,6 +409,7 @@ instance Show Project where
         echoC
         carpDir
         outDir
+        docsDir
         prompt
         searchPaths
         printTypedAST
@@ -403,6 +425,7 @@ instance Show Project where
             , "Echo C: " ++ if echoC then "true" else "false"
             , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
             , "Output directory: " ++ outDir
+            , "Docs directory: " ++ docsDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
@@ -578,3 +601,8 @@ unwrapStringXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFro
 unwrapBoolXObj :: XObj -> Either String Bool
 unwrapBoolXObj (XObj (Bol b) _ _) = Right b
 unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Bool.")
+
+-- | Symbol
+unwrapSymPathXObj :: XObj -> Either String SymPath
+unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
+unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")

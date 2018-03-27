@@ -103,7 +103,7 @@ functionModule :: Env
 functionModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Function", envUseModules = [], envMode = ExternalEnv }
   where
     bindEnv env = let Just name = envModuleName env
-                  in  (name, Binder (XObj (Mod env) Nothing Nothing))
+                  in  (name, Binder emptyMeta (XObj (Mod env) Nothing Nothing))
     bindings = Map.fromList (map (bindEnv . generateInnerFunctionModule) [0..maxArity])
 
 -- | Each arity of functions need their own module to enable copying and string representation
@@ -190,9 +190,10 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     , addCommand "os" 0 commandOS
                     , addCommand "system-include" 1 commandAddSystemInclude
                     , addCommand "local-include" 1 commandAddLocalInclude
+                    , addCommand "save-docs-internal" 1 commandSaveDocsInternal
                     ]
-                    ++ [("String", Binder (XObj (Mod dynamicStringModule) Nothing Nothing))
-                       ,("Project", Binder (XObj (Mod dynamicProjectModule) Nothing Nothing))
+                    ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
+                       ,("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing))
                        ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
@@ -224,11 +225,11 @@ startingGlobalEnv noArray =
   where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
                                   ]
-                   ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
-                   ++ [("Pointer", Binder (XObj (Mod pointerModule) Nothing Nothing))]
-                   ++ [("System", Binder (XObj (Mod systemModule) Nothing Nothing))]
-                   ++ [("Dynamic", Binder (XObj (Mod dynamicModule) Nothing Nothing))]
-                   ++ [("Function", Binder (XObj (Mod functionModule) Nothing Nothing))]
+                   ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
+                   ++ [("Pointer",  Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
+                   ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
+                   ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
+                   ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
@@ -260,4 +261,4 @@ registerFunctionFunctionsWithInterface interfaceName =
 
 -- | Create a binder for an interface definition.
 interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)
-interfaceBinder name t paths i = (name, Binder (defineInterface name t paths (Just i)))
+interfaceBinder name t paths i = (name, Binder emptyMeta (defineInterface name t paths (Just i)))

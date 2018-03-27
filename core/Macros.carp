@@ -1,3 +1,31 @@
+;; Defining the meta data macros early so that they can be used by all the other code.
+
+(meta-set! doc "doc" "Set documentation for a binding.")
+(defmacro doc [name string]
+  (list 'meta-set! name "doc" string))
+
+(doc print-doc "Print the documentation for a binding.")
+(defmacro print-doc [name]
+  (list 'macro-log (list 'meta name "doc")))
+
+(doc sig "Annotate a binding with the desired signature.")
+(defmacro sig [name signature]
+  (list 'meta-set! name "sig" signature))
+
+(doc print-sig "Print the annotated signature for a binding.")
+(defmacro print-sig [name]
+  (list 'macro-log (list 'meta name "sig")))
+
+(doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
+(defmacro hide [name signature]
+  (list 'meta-set! name "hide" true))
+
+(doc private "Mark a binding as private, this will make it inaccessible from other modules.")
+(defmacro private [name signature]
+  (list 'meta-set! name "private" true))
+
+
+
 (defmodule Dynamic
   (defdynamic caar [pair] (car (car pair)))
   (defdynamic cadr [pair] (car (cdr pair)))
@@ -245,3 +273,7 @@
         (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'source-path))
                                     "/"
                                     file])))
+
+(defmacro save-docs [:rest modules]
+  ;; A trick to be able to send unquoted symbols to 'save-docs'
+  (list 'save-docs-internal (list 'quote modules)))

@@ -19,7 +19,7 @@ lookupInEnv (SymPath [] name) env =
                  Nothing -> Nothing
 lookupInEnv path@(SymPath (p : ps) name) env =
   case Map.lookup p (envBindings env) of
-    Just (Binder xobj) ->
+    Just (Binder _ xobj) ->
       case xobj of
         (XObj (Mod modEnv) _ _) -> lookupInEnv (SymPath ps name) modEnv
         _ -> Nothing
@@ -33,9 +33,9 @@ findAllGlobalVariables :: Env -> [Binder]
 findAllGlobalVariables env =
   concatMap finder (envBindings env)
   where finder :: Binder -> [Binder]
-        finder def@(Binder (XObj (Lst (XObj Def _ _ : _)) _ _)) =
+        finder def@(Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) =
           [def]
-        finder (Binder (XObj (Mod innerEnv) _ _)) =
+        finder (Binder _ (XObj (Mod innerEnv) _ _)) =
           findAllGlobalVariables innerEnv
         finder _ =
           []
@@ -69,7 +69,7 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
           mapMaybe (\path -> fmap getEnvFromBinder (lookupInEnv path env)) (envUseModules env)
 
         binderToEnv :: Binder -> Maybe Env
-        binderToEnv (Binder (XObj (Mod e) _ _)) = Just e
+        binderToEnv (Binder _ (XObj (Mod e) _ _)) = Just e
         binderToEnv _ = Nothing
 
         importsLookup :: Env -> [(Env, Binder)]
@@ -90,8 +90,8 @@ multiLookupInternal allowLookupInAllModules name rootEnv = recursiveLookup rootE
             spine ++ leaves ++ above
 
 getEnvFromBinder :: (a, Binder) -> Env
-getEnvFromBinder (_, Binder (XObj (Mod foundEnv) _ _)) = foundEnv
-getEnvFromBinder (_, Binder err) = error ("Can't handle imports of non modules yet: " ++ show err)
+getEnvFromBinder (_, Binder _ (XObj (Mod foundEnv) _ _)) = foundEnv
+getEnvFromBinder (_, Binder _ err) = error ("Can't handle imports of non modules yet: " ++ show err)
 
 -- | Enables look up "semi qualified" (and fully qualified) symbols.
 -- | i.e. if there are nested environments with a function A.B.f
@@ -102,7 +102,7 @@ multiLookupQualified (SymPath [] name) rootEnv =
   multiLookup name rootEnv
 multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
   case lookupInEnv (SymPath [] p) rootEnv of
-    Just (_, Binder (XObj (Mod _) _ _)) ->
+    Just (_, Binder _ (XObj (Mod _) _ _)) ->
       -- Found a module with the correct name, that means we should not look at anything else:
       case lookupInEnv path rootEnv of
         Just found -> [found]
@@ -122,15 +122,16 @@ multiLookupQualified path@(SymPath (p:ps) name) rootEnv =
 
 -- | Add an XObj to a specific environment. TODO: rename to envInsert
 extendEnv :: Env -> String -> XObj -> Env
-extendEnv env name xobj = envAddBinding env name (Binder xobj)
+extendEnv env name xobj = envAddBinding env name (Binder emptyMeta xobj)
 
 -- | Add a Binder to an environment at a specific path location.
-envInsertAt :: Env -> SymPath -> XObj -> Env
-envInsertAt env (SymPath [] name) xobj = envAddBinding env name (Binder xobj)
+envInsertAt :: Env -> SymPath -> Binder -> Env
+envInsertAt env (SymPath [] name) binder =
+  envAddBinding env name binder
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
-    Just (Binder (XObj (Mod innerEnv) i t)) ->
-      let newInnerEnv = Binder (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
+    Just (Binder _ (XObj (Mod innerEnv) i t)) ->
+      let newInnerEnv = Binder emptyMeta (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
       in  env { envBindings = Map.insert p newInnerEnv (envBindings env) }
     Just _ -> error ("Can't insert into non-module: " ++ p)
     Nothing -> error ("Can't insert into non-existing module: " ++ p)
@@ -139,8 +140,8 @@ envReplaceEnvAt :: Env -> [String] -> Env -> Env
 envReplaceEnvAt _ [] replacement = replacement
 envReplaceEnvAt env (p:ps) replacement =
   case Map.lookup p (envBindings env) of
-    Just (Binder (XObj (Mod innerEnv) i t)) ->
-      let newInnerEnv = Binder (XObj (Mod (envReplaceEnvAt innerEnv ps replacement)) i t)
+    Just (Binder _ (XObj (Mod innerEnv) i t)) ->
+      let newInnerEnv = Binder emptyMeta (XObj (Mod (envReplaceEnvAt innerEnv ps replacement)) i t)
       in  env { envBindings = Map.insert p newInnerEnv (envBindings env) }
     Just _ -> error ("Can't replace non-module: " ++ p)
     Nothing -> error ("Can't replace non-existing module: " ++ p)
@@ -158,7 +159,7 @@ addListOfBindings env bindingsToAdd = foldl' (\e (n, b) -> envAddBinding e n b) 
 getEnv :: Env -> [String] -> Env
 getEnv env [] = env
 getEnv env (p:ps) = case Map.lookup p (envBindings env) of
-                      Just (Binder (XObj (Mod innerEnv) _ _)) -> getEnv innerEnv ps
+                      Just (Binder _ (XObj (Mod innerEnv) _ _)) -> getEnv innerEnv ps
                       Just _ -> error "Can't get non-env."
                       Nothing -> error "Can't get env."
 
@@ -176,7 +177,7 @@ isExternalType typeEnv (PointerTy p) =
   isExternalType typeEnv p
 isExternalType typeEnv (StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-    Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
+    Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
     Just _ -> False
     Nothing -> False
 isExternalType _ _ =
@@ -187,9 +188,9 @@ isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
   (name == "Array") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-         Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
-         Just (_, Binder (XObj (Lst (XObj (Typ _) _ _ : _)) _ _)) -> True
-         Just (_, Binder (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
+         Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
+         Just (_, Binder _ (XObj (Lst (XObj (Typ _) _ _ : _)) _ _)) -> True
+         Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
          Nothing -> error ("Can't find " ++ name ++ " in type env.")
     )
 isManaged _ StringTy  = True

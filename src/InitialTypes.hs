@@ -121,8 +121,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitInterfaceSym :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitInterfaceSym env xobj@(XObj (InterfaceSym name) _ _) =
       do freshTy <- case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                      Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
-                      Just (_, Binder x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
+                      Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature _) _ _, _]) _ _)) -> renameVarTys interfaceSignature
+                      Just (_, Binder _ x) -> error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
                       Nothing -> genVarTy
          return (Right xobj { ty = Just freshTy })
 
@@ -304,7 +304,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
               case obj sym of
                 (Sym (SymPath _ name) _) -> do visited <- visit env' expr
                                                return $ do okVisited <- visited
-                                                           return (envAddBinding env' name (Binder okVisited))
+                                                           return (envAddBinding env' name (Binder emptyMeta okVisited))
                 _ -> error ("Can't create let-binder for non-symbol: " ++ show sym)
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
@@ -323,5 +323,5 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             (Sym (SymPath _ name) _) ->
               do t <- genVarTy
                  let xobjWithTy = xobj { ty = Just t }
-                 return (name, Binder xobjWithTy)
+                 return (name, Binder emptyMeta xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."

@@ -166,7 +166,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitInterfaceSym :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitInterfaceSym allowAmbig env xobj@(XObj (InterfaceSym name) i t) =
       case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-        Just (_, Binder (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
+        Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature interfacePaths) _ _, _]) _ _)) ->
           let Just actualType = t
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
@@ -220,13 +220,13 @@ concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
           Right ([defineArrayTypeAlias arrayTy] ++ concat deps)
 concretizeType typeEnv genericStructTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-    Just (_, Binder (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
+    Just (_, Binder _ (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
       then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
       else Right []
-    Just (_, Binder (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
+    Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
       Right []
-    Just (_, Binder x) ->
+    Just (_, Binder _ x) ->
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
       error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
@@ -267,7 +267,7 @@ f typeEnv (_, tyXObj) =
 typeFromPath :: Env -> SymPath -> Ty
 typeFromPath env p =
   case lookupInEnv p env of
-    Just (e, Binder found)
+    Just (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
     Nothing -> error ("Couldn't find " ++ show p ++ " in env " ++ safeEnvModuleName env)
@@ -326,7 +326,7 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
     -- TODO: this code was added to solve a bug (presumably) but it seems OK to comment it out?!
     -- [(_, (Binder xobj@(XObj (Lst (XObj (Instantiate template) _ _ : _)) _ _)))] ->
     --   []
-    [(_, Binder single)] ->
+    [(_, Binder _ single)] ->
       case concretizeDefinition False typeEnv env visitedDefinitions single functionType of
         Left err -> error (show err)
         Right (ok, deps) -> ok : deps
@@ -382,7 +382,7 @@ findFunctionForMember typeEnv env functionName functionType (memberName, memberT
     case allFunctionsWithNameAndSignature env functionName functionType of
       [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
                               memberName ++ "' of type " ++ show functionType)
-      [(_, Binder single)] ->
+      [(_, Binder _ single)] ->
         let concretizedPath = getConcretizedPath single functionType
         in  FunctionFound (pathToC concretizedPath)
       _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++
@@ -395,7 +395,7 @@ findFunctionForMemberIncludePrimitives typeEnv env functionName functionType (me
   case allFunctionsWithNameAndSignature env functionName functionType of
     [] -> FunctionNotFound ("Can't find any '" ++ functionName ++ "' function for member '" ++
                             memberName ++ "' of type " ++ show functionType)
-    [(_, Binder single)] ->
+    [(_, Binder _ single)] ->
       let concretizedPath = getConcretizedPath single functionType
       in  FunctionFound (pathToC concretizedPath)
     _ -> FunctionNotFound ("Can't find a single '" ++ functionName ++ "' function for member '" ++

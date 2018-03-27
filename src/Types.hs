@@ -12,6 +12,7 @@ module Types ( TypeMappings
              , typesDeleterFunctionType
              , typesCopyFunctionType
              , isFullyGenericType
+             , consPath
              ) where
 
 import qualified Data.Map as Map
