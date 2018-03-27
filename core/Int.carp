@@ -20,6 +20,7 @@
   (register dec (λ [Int] Int))
   (register copy (λ [&Int] Int))
 
+  (doc abs "The absolute value (removes the negative sign) of an Int.")
   (register abs (λ [Int] Int))
 
   (defn even? [a] (= (mod a 2) 0))

@@ -622,13 +622,14 @@ specialCommandRegister :: String -> XObj -> Maybe String -> StateT Context IO (E
 specialCommandRegister name typeXObj overrideName =
   do ctx <- get
      let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
+         globalEnv = contextGlobalEnv ctx
      case xobjToTy typeXObj of
            Just t -> let path = SymPath pathStrings name
-                         binding = XObj (Lst [XObj (External overrideName) Nothing Nothing,
-                                              XObj (Sym path Symbol) Nothing Nothing])
-                                   (info typeXObj) (Just t)
-                         env' = envInsertAt env path (Binder emptyMeta binding)
+                         registration = XObj (Lst [XObj (External overrideName) Nothing Nothing,
+                                                   XObj (Sym path Symbol) Nothing Nothing])
+                                        (info typeXObj) (Just t)
+                         meta = existingMeta globalEnv registration
+                         env' = envInsertAt globalEnv path (Binder meta registration)
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
                              let prefix = case contextExecMode ctx of

@@ -375,6 +375,7 @@ data Project = Project { projectTitle :: String
                        , projectEchoC :: Bool
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
+                       , projectDocsDir :: FilePath
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
@@ -395,6 +396,7 @@ instance Show Project where
         echoC
         carpDir
         outDir
+        docsDir
         prompt
         searchPaths
         printTypedAST
@@ -410,6 +412,7 @@ instance Show Project where
             , "Echo C: " ++ if echoC then "true" else "false"
             , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
             , "Output directory: " ++ outDir
+            , "Docs directory: " ++ docsDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths

@@ -124,6 +124,8 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                    return (proj { projectTitle = title })
                      "output-directory" -> do outDir <- unwrapStringXObj value
                                               return (proj { projectOutDir = outDir })
+                     "docs-directory" -> do docsDir <- unwrapStringXObj value
+                                            return (proj { projectDocsDir = docsDir })
                      _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
      case newProj of
        Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
@@ -674,18 +676,20 @@ commandNot [x] =
       return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x)))
 
 commandSaveDocsInternal :: CommandCallback
-commandSaveDocsInternal [modulePath, saveDir] =
-  case (modulePath, saveDir) of
-    (XObj (Sym path _) _ _, XObj (Str saveDirStr) _ _) ->
+commandSaveDocsInternal [modulePath] =
+  case modulePath of
+    XObj (Sym path _) _ _ ->
       do ctx <- get
          let globalEnv = contextGlobalEnv ctx
+             proj = contextProj ctx
+             docsDir = projectDocsDir proj
          case lookupInEnv path globalEnv of
            Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
-             do liftIO (saveDocsForEnv foundEnv saveDirStr)
+             do liftIO (saveDocsForEnv foundEnv docsDir)
                 return dynamicNil
            Just (_, Binder _ x) ->
              return (Left (EvalError ("Non module can't be saved: " ++ pretty x)))
            Nothing ->
              return (Left (EvalError ("Can't find module at '" ++ show path ++ "'")))
-    (arg1, arg2) ->
-      return (Left (EvalError ("Invalid args to save-docs (expected symbol and string): " ++ pretty arg1 ++ ", " ++ pretty arg2)))
+    (arg1) ->
+      return (Left (EvalError ("Invalid arg to save-docs-internal (expected symbol): " ++ pretty arg1)))

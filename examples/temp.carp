@@ -12,4 +12,5 @@
 
 (doc Foo.g "The 10000 dollar function, annotated from afar.")
 
-(save-docs String "docs/core/")
+(save-docs String)
+(save-docs Int)
