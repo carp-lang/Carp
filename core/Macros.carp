@@ -24,6 +24,13 @@
 (defmacro private [name signature]
   (list 'meta-set! name "private" true))
 
+(doc private? "Is this binding private?")
+(defmacro private? [name]
+  (list 'not (list '= () (list 'meta name "private")))) ;; TODO: This is buggy, will report true when meta is set to 'false'!
+
+(doc hidden? "Is this binding hidden?")
+(defmacro hidden? [name]
+  (list 'not (list '= () (list 'meta name "hidden")))) ;; TODO: This is buggy, will report true when meta is set to 'false'!
 
 
 (defmodule Dynamic

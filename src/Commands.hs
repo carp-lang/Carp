@@ -529,6 +529,8 @@ commandEq [a, b] =
       if sa == sb then Right trueXObj else Right falseXObj
     (XObj (Bol xa) _ _, XObj (Bol xb) _ _) ->
       if xa == xb then Right trueXObj else Right falseXObj
+    (XObj (Lst []) _ _, XObj (Lst []) _ _) ->
+      Right trueXObj
     _ ->
       Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b))
 
