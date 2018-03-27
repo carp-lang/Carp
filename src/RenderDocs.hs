@@ -14,9 +14,10 @@ import Obj
 import Types
 import Util
 
-saveDocsForEnvs :: FilePath -> String -> [Env] -> IO ()
+saveDocsForEnvs :: FilePath -> String -> [(SymPath, Env)] -> IO ()
 saveDocsForEnvs dirPath projectTitle envs =
-  mapM_ (saveDocsForEnv dirPath projectTitle (fmap getModuleName envs)) envs
+  let allEnvNames = (fmap (getModuleName . snd) envs)
+  in  mapM_ (saveDocsForEnv dirPath projectTitle allEnvNames) envs
 
 getModuleName :: Env -> String
 getModuleName env =
@@ -24,12 +25,12 @@ getModuleName env =
     Just hasName -> hasName
     Nothing -> "Global"
 
-saveDocsForEnv :: FilePath -> String -> [String] -> Env -> IO ()
-saveDocsForEnv dirPath projectTitle moduleNames env =
+saveDocsForEnv :: FilePath -> String -> [String] -> (SymPath, Env) -> IO ()
+saveDocsForEnv dirPath projectTitle moduleNames (pathToEnv, env) =
   do let string = T.unpack text
-         moduleName = getModuleName env
+         SymPath _ moduleName = pathToEnv
          fullPath = dirPath ++ "/" ++ moduleName ++ ".html"
-         text = renderText (envToHtml env projectTitle moduleName moduleNames)
+         text = renderText (envToHtml env projectTitle (show pathToEnv) moduleNames)
      createDirectoryIfMissing False dirPath
      writeFile fullPath string
 
@@ -45,7 +46,7 @@ envToHtml env projectTitle moduleName moduleNames =
                                do img_ [src_ "logo2.png"]
                              --span_ "CARP DOCS FOR"
                              div_ [class_ "title"] (toHtml projectTitle)
-                             div_ [class_ "links"] $
+                             div_ [class_ "index"] $
                                ul_ $ do mapM_ moduleLink moduleNames
                         h1_ (toHtml moduleName)
                         mapM_ (binderToHtml . snd) (Map.toList (envBindings env))
@@ -67,7 +68,8 @@ binderToHtml (Binder meta xobj) =
                     Just found -> pretty found
                     Nothing -> ""
   in  do div_ [class_ "binder"] $
-           do h3_ [id_ (Text.pack name)] (toHtml name)
+           do a_ [class_ "anchor", href_ (Text.pack ("#" ++ name))] $
+                do h3_ [id_ (Text.pack name)] (toHtml name)
               div_ [class_ "description"] (toHtml description)
               p_ [class_ "sig"] (toHtml typeSignature)
               p_ [class_ "doc"] (toHtml docString)

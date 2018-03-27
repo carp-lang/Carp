@@ -364,6 +364,18 @@ prettyEnvironmentIndented indent env =
                       then []
                       else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
 
+pathToEnv :: Env -> [String]
+pathToEnv rootEnv = visit rootEnv
+  where
+    visit env =
+      case envModuleName env of
+        Just name -> name : parent
+        Nothing -> parent
+        where parent =
+                case envParent env of
+                  Just p -> visit p
+                  Nothing -> []
+
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 

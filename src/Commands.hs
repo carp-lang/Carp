@@ -686,7 +686,7 @@ commandSaveDocsInternal [modulePath] =
            Right okPaths ->
              case sequence (map (getEnvironmentForDocumentation globalEnv) okPaths) of
                Left err -> return (Left err)
-               Right ok -> saveDocs ok
+               Right okEnvs -> saveDocs (zip okPaths okEnvs)
        x ->
          return (Left (EvalError ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x)))
   where getEnvironmentForDocumentation :: Env -> SymPath -> Either EvalError Env
@@ -699,11 +699,11 @@ commandSaveDocsInternal [modulePath] =
             Nothing ->
               Left (EvalError ("Can't find module at '" ++ show path ++ "'"))
 
-saveDocs :: [Env] -> StateT Context IO (Either EvalError XObj)
-saveDocs envs =
+saveDocs :: [(SymPath, Env)] -> StateT Context IO (Either EvalError XObj)
+saveDocs pathsAndEnvs =
   do ctx <- get
      let proj = contextProj ctx
          docsDir = projectDocsDir proj
          title = projectTitle proj
-     liftIO (saveDocsForEnvs docsDir title envs)
+     liftIO (saveDocsForEnvs docsDir title pathsAndEnvs)
      return dynamicNil

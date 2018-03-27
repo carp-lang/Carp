@@ -3,7 +3,7 @@ html {
 }
 
 a {
-    color: #ff0000;
+    color: #f00;
 }
 
 .logo {
@@ -39,6 +39,15 @@ h3 {
     margin: 0em;
 }
 
+.anchor {
+    color: #000;
+    text-decoration: none;
+}
+
+.anchor:hover {
+    text-decoration: underline;
+}
+
 .binder {
     margin: 0em 0em 3.5em 0em;
 }
@@ -49,7 +58,6 @@ h3 {
 
 .doc {
     /* font-style: italic; */
-    color: #456;
 }
 
 .description {
