@@ -7,7 +7,8 @@
 (load "Test.carp")
 (load "Bench.carp")
 
-(save-docs Int
+(save-docs Dynamic
+           Int
            Long
            Bool
            Float

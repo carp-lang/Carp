@@ -26,8 +26,8 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 ## Core Modules
 
 ### Basics
-* [Macros ⦁](http://carp-lang.github.io/Carp/core/Macros.html)
-* [Interfaces ⦁](http://carp-lang.github.io/Carp/core/Interfaces.html)
+* [Macros ⦁](../core/Macros.carp)
+* [Interfaces ⦁](../core/Interfaces.carp)
 * [Dynamic ⦁](http://carp-lang.github.io/Carp/core/Dynamic.html) (only available in the repl and at compile time)
 
 ### Numerics
