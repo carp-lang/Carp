@@ -367,7 +367,7 @@ prettyEnvironment = prettyEnvironmentIndented 0
 
 prettyEnvironmentIndented :: Int -> Env -> String
 prettyEnvironmentIndented indent env =
-  joinWith "\n" $ map (showBinderIndented indent) (Map.toList (envBindings env)) ++
+  joinWith "\n" $ filter (/= "") (map (showBinderIndented indent) (Map.toList (envBindings env))) ++
                   let modules = envUseModules env
                   in  if null modules
                       then []
