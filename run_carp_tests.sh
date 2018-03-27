@@ -34,4 +34,7 @@ carp examples/sounds.carp -b
 carp examples/fonts.carp -b
 carp ./examples/no_core.carp --no-core -b;
 
+# Generate core docs
+carp ./docs/core/generate_core_docs.carp -b;
+
 echo "ALL TESTS DONE."
