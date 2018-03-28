@@ -23,9 +23,7 @@ saveDocsForEnvs dirPath projectTitle envs =
 
 projectIndexPage :: String -> [String] -> String
 projectIndexPage projectTitle moduleNames =
-  let html = renderText $ do head_ $
-                               do meta_ [charset_ "UTF-8"]
-                                  link_ [rel_ "stylesheet", href_ "carp_style.css"]
+  let html = renderText $ do headOfPage
                              body_ $
                                do div_ [class_ "content"] $
                                     do a_ [href_ "http://github.com/carp-lang/Carp"] $
@@ -34,6 +32,13 @@ projectIndexPage projectTitle moduleNames =
                                                  moduleIndex moduleNames
                                             h1_ [class_ "huge"] (toHtml projectTitle)
   in  T.unpack html
+
+headOfPage :: Html ()
+headOfPage =
+  head_ $
+    do meta_ [charset_ "UTF-8"]
+       meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"]
+       link_ [rel_ "stylesheet", href_ "carp_style.css"]
 
 getModuleName :: Env -> String
 getModuleName env =
@@ -52,9 +57,7 @@ saveDocsForEnv dirPath projectTitle moduleNames (pathToEnv, env) =
 
 envToHtml :: Env -> String -> String -> [String] -> Html ()
 envToHtml env projectTitle moduleName moduleNames =
-   html_ $ do head_ $
-                do meta_ [charset_ "UTF-8"]
-                   link_ [rel_ "stylesheet", href_ "carp_style.css"]
+   html_ $ do headOfPage
               body_ $
                 do div_ [class_ "content"] $
                      do div_ [class_ "logo"] $
