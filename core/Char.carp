@@ -6,6 +6,7 @@
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
 
+  (doc meaning "Convert a numerical char into the appropriate number.")
   (defn meaning [char-ref]
     (cond
       (= @char-ref \0) 0

@@ -2,6 +2,7 @@
 
 (defmodule Debug
 
+  (doc sanitize-addresses "Instruct the compiler to sanitize addresses.")
   (defdynamic sanitize-addresses []
     (add-cflag "-fsanitize=address"))
 
@@ -9,14 +10,14 @@
   (register reset-memory-balance! (Fn [] ()))
   (register log-memory-balance! (Fn [Bool] ()))
 
-  ;; The calls inside the form will be logged to stdout. Requires compiling with --log-memory.
+  (doc memory-logged "Log all calls to memory allocation within te form. Requires compiling with --log-memory.")
   (defmacro memory-logged [form]
     (list 'do
           '(Debug.log-memory-balance! true)
           form
           '(Debug.log-memory-balance! false)))
 
-  ;; Raises an error if the memory balance (nr of alloc:s minus nr of free:s) isn't 0. Requires compiling with --log-memory.
+  (doc assert-balanced "Raises an error if the memory balance (numberr of alloc:s - number of free:s) isn't 0. Requires compiling with --log-memory.")
   (defmacro assert-balanced [form]
     (list 'let '[balance (Debug.memory-balance)]
           (list 'do
@@ -28,16 +29,17 @@
                        (System.exit 1)))
                 ())))
 
-  ;; Print the value of an expression to stdout, then return its value.
+  (doc trace "Print the value of an expression to stdout, then return its value.")
   (defn trace [x]
     (do
       (IO.println &(str &x))
       x))
 
-  ;; Leak some memory. Useful for testing tools that detect leaks.
+  (doc leak-array "Leak some memory. Useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
   )
+)
 
 ;; HACK! This silences compiler errors about 'source-location' and 'source-path' being undefined.
 ;; Actual calls to these special forms will be handled directly in the dynamic evaluator, see 'Eval.hs'.

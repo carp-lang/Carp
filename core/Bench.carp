@@ -5,12 +5,17 @@
 
 (defmodule Bench
   (def min-runs 50)
+  (private min-runs)
+  (hidden min-runs)
 
+  (doc set-min-runs! "Set the minimum number of runs. If your functions takes a large amount of time, experimenting with this might make sense.")
   (defn set-min-runs! [n]
     ; / 2 because we run it twice per benchmarking run,
     ; but this is an implementation detail
     (set! min-runs (/ n 2)))
 
+  (private get-unit)
+  (hidden get-unit)
   (defn get-unit [n]
     (cond
       (< n 1000.0) (String.append (Double.str n) @"ns")
@@ -18,18 +23,24 @@
       (< n 1000000000.0) (String.append (Double.str (/ n 1000000.0)) @"ms")
       (String.append (Double.str (/ n 1000000000.0)) @"s")))
 
+  (private print)
+  (hidden print)
   (defn print [title n]
     (let [unit (get-unit n)]
       (do
         (IO.print title)
         (IO.println &unit))))
 
+  (private ns-iter-inner)
+  (hidden ns-iter-inner)
   (defn ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
         (for [i 0 n] (ignore (f)))
         (Double.- (get-time-elapsed) start))))
 
+  (private print-bench-results)
+  (hidden print-bench-results)
   (defn print-bench-results [res total]
     (do
       (print "Total time elapsed: " total)
@@ -37,6 +48,8 @@
       (print "Worst case: " @(Statistics.Summary.max res))
       (print "Standard deviation: " @(Statistics.Summary.stdev res))))
 
+  (private get-samples)
+  (hidden get-samples)
   (defn get-samples [f n]
     (let [zero 0.0
           samples (Array.replicate min-runs &zero)]
@@ -45,11 +58,14 @@
           (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
         (Statistics.summary &(Statistics.winsorize &samples 5.0)))))
 
+  (private min-one)
+  (hidden min-one)
   (defn min-one [n]
     (if (> 1.0 n) n 1.0))
 
   ; it is actually possible to make this run forever by supplying a _really_
   ; long-running function, where long-running is everything over 30ms.
+  (doc bench "Benchmark function f and print the results.")
   (defn bench [f]
     (let [ns (ns-iter-inner f 1)
           ns-target-total 1000000.0
