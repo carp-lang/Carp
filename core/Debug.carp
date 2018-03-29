@@ -1,3 +1,5 @@
+(system-include "carp_debug.h")
+
 (defmodule Debug
 
   (defdynamic sanitize-addresses []
@@ -31,6 +33,9 @@
     (do
       (IO.println &(str &x))
       x))
+
+  ;; Leak some memory. Useful for testing tools that detect leaks.
+  (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
   )
 
