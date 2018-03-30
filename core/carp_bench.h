@@ -1,4 +1,4 @@
-#include <sys/time.h>
+#include <time.h>
 
 double get_MINUS_time_MINUS_elapsed() {
   struct timespec tv;
