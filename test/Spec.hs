@@ -30,7 +30,7 @@ assertSolution constraints solution = TestCase $
   assertEqual "Solution" (Right (Map.fromList solution)) (solve constraints)
 
 -- | A dummy XObj
-x = XObj External Nothing Nothing
+x = XObj (External Nothing) Nothing Nothing
 
 -- | Some type variables
 t0 = VarTy "t0"
