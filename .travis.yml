@@ -1,0 +1,33 @@
+# language `ghc` drags in old ghc versions
+# language `generic` drags in too many others deps
+# language `c` is lighter weight, and is fine since we declare most of our own deps
+language: c
+
+# sudo false gives us faster build times as it can use newer infrastructure
+sudo: false
+
+os:
+    - linux
+    - osx
+
+# cache only works if sudo is false
+# this will attempt to cache the contents of the specified directories between
+# runs to speed up install times
+cache:
+    directories:
+        - $HOME/.stack
+
+# download and unpack the stack executable
+before_install:
+    - mkdir -p ~/.local/bin
+    - export PATH=$HOME/.local/bin:$PATH
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz ; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then travis_retry curl -L https://www.stackage.org/stack/osx-x86_64   | tar xz ; fi
+    - cp stack-*/stack ~/.local/bin/
+    - chmod a+x ~/.local/bin/stack
+
+script:
+    - travis_wait stack setup --no-terminal
+    - travis_wait stack build --no-terminal
+    - travis_wait stack test  --no-terminal
+
