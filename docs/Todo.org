@@ -94,4 +94,5 @@
 ** Reintroduce the p-string patch but with support for embedded string literals?
 
 * Notes
+** Travis
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
