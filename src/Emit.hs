@@ -159,13 +159,17 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   do let innerIndent = indent + indentAmount
                          Just (FuncTy _ retTy) = t
                          defnDecl = defnToDeclaration path argList retTy
-                     appendToSrc (defnDecl ++ " {\n")
+                     if (name == "main")
+                       then appendToSrc "int main(int argc, char** argv) {\n"
+                       else appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
-                       appendToSrc (addIndent innerIndent ++ "carp_init_globals();\n")
+                       appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                      ret <- visit innerIndent body
                      delete innerIndent i
                      when (retTy /= UnitTy) $
                        appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
+                     when (name == "main") $
+                       appendToSrc (addIndent innerIndent ++ "Array_delete__String(System_args);\n")
                      appendToSrc "}\n\n"
                      return ""
 
@@ -440,11 +444,11 @@ delete indent i = mapM_ deleterToC (infoDelete i)
 
 defnToDeclaration :: SymPath -> [XObj] -> Ty -> String
 defnToDeclaration path@(SymPath _ name) argList retTy =
-  let retTyAsC = tyToC $ if name == "main"
-                         then IntTy
-                         else retTy
-      paramsAsC = paramListToC argList
-  in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
+  if name == "main"
+    then "int main(int argc, char** argv)"
+    else let retTyAsC = tyToC retTy
+             paramsAsC = paramListToC argList
+         in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
 
 templateToC :: Template -> SymPath -> Ty -> String
 templateToC template path actualTy =
@@ -633,7 +637,14 @@ checkForUnresolvedSymbols = visit
 
 wrapInInitFunction :: String -> String
 wrapInInitFunction src =
-  "void carp_init_globals() {\n" ++
+  "Array System_args;\n\n" ++
+  "void carp_init_globals(int argc, char** argv) {\n" ++
+  "  System_args.len = argc;\n" ++
+  "  System_args.data = CARP_MALLOC(argc*sizeof(String));\n" ++
+  "  for (int i = 0; i < argc; i++) {\n" ++
+  "    ((String*)System_args.data)[i] = malloc(strlen(argv[i])+1);\n" ++
+  "    strcpy(((String*)System_args.data)[i], argv[i]);\n" ++
+  "  }\n" ++
   src ++
   "}"
 
