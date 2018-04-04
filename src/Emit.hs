@@ -168,8 +168,6 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      delete innerIndent i
                      when (retTy /= UnitTy) $
                        appendToSrc (addIndent innerIndent ++ "return " ++ ret ++ ";\n")
-                     when (name == "main") $
-                       appendToSrc (addIndent innerIndent ++ "Array_delete__String(System_args);\n")
                      appendToSrc "}\n\n"
                      return ""
 
@@ -637,14 +635,9 @@ checkForUnresolvedSymbols = visit
 
 wrapInInitFunction :: String -> String
 wrapInInitFunction src =
-  "Array System_args;\n\n" ++
   "void carp_init_globals(int argc, char** argv) {\n" ++
   "  System_args.len = argc;\n" ++
-  "  System_args.data = CARP_MALLOC(argc*sizeof(String));\n" ++
-  "  for (int i = 0; i < argc; i++) {\n" ++
-  "    ((String*)System_args.data)[i] = malloc(strlen(argv[i])+1);\n" ++
-  "    strcpy(((String*)System_args.data)[i], argv[i]);\n" ++
-  "  }\n" ++
+  "  System_args.data = argv;\n" ++
   src ++
   "}"
 
