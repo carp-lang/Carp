@@ -7,6 +7,8 @@
   (register sleep-seconds (Fn [Int] ()))
   (register sleep-micros (Fn [Int] ()))
   (register system (Fn [&String] ()))
+  (register get-arg (Fn [Int] (Ref String)))
+  (register get-args-len (Fn [] Int))
 )
 
 (defmodule Int
