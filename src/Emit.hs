@@ -633,12 +633,13 @@ checkForUnresolvedSymbols = visit
         Right _ -> return ()
     visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
 
-wrapInInitFunction :: String -> String
-wrapInInitFunction src =
+wrapInInitFunction :: Bool -> String -> String
+wrapInInitFunction with_core src =
   "void carp_init_globals(int argc, char** argv) {\n" ++
-  "  System_args.len = argc;\n" ++
-  "  System_args.data = argv;\n" ++
-  src ++
+  (if with_core
+    then "  System_args.len = argc;\n  System_args.data = argv;\n"
+    else "")
+  ++ src ++
   "}"
 
 isNumericLiteral :: XObj -> Bool

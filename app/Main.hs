@@ -33,6 +33,7 @@ defaultProject =
           , projectCompiler = case platform of
                                 Windows -> "cl.exe -lm"
                                 _ ->       "clang -fPIC -lm"
+          , projectCore = True
           , projectEchoCompilationCommand = False
           }
 
@@ -46,8 +47,8 @@ main = do args <- SystemEnvironment.getArgs
               optimize = Optimize `elem` otherOptions
               projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (if optimize then ["-O3 -D OPTIMIZE"] else []) ++
-                                                                  (projectCFlags defaultProject)
-                                                }
+                                                                  (projectCFlags defaultProject),
+                                                  projectCore = not noCore}
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of

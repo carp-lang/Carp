@@ -403,6 +403,7 @@ data Project = Project { projectTitle :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
                        , projectCompiler :: String
+                       , projectCore :: Bool
                        , projectEchoCompilationCommand :: Bool
                        }
 
@@ -424,6 +425,7 @@ instance Show Project where
         searchPaths
         printTypedAST
         compiler
+        core
         echoCompilationCommand
        ) =
     unlines [ "Title: " ++ title
@@ -438,6 +440,7 @@ instance Show Project where
             , "Docs directory: " ++ docsDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
+            , "Using Core: " ++ show core
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
             , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
             ]

@@ -32,7 +32,9 @@
 
 (defn main []
   (do
-    (System.seed-random (System.time))
+    ; here we always use the same seed for determinism, for simple random
+    ; numbers that change you can for instance use (System.time)
+    (System.seed-random 10)
     (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
       (do
         (println (ref (Array.str &monsters)))

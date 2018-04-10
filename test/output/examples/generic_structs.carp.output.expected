@@ -1,0 +1,12 @@
+[(Trivial 0) (Trivial 1) (Trivial 2) (Trivial 3) (Trivial 4)]
+[(Trivial (Trivial 0)) (Trivial (Trivial 1)) (Trivial (Trivial 2)) (Trivial (Trivial 3)) (Trivial (Trivial 4))]
+(Pair (Pair [(Pair 1f \q)] 20) (Pair true false))
+(Pair 10 @"hello")
+(Pair true 3.2)
+(Pair [1 2 3] [true false true false])
+(Pair 101 100)
+(Pair 100 200)
+100
+(Bucket [(Entry @"hello" 12345) (Entry @"goodbye" 666)])
+12345
+yo
