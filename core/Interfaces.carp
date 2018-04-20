@@ -54,6 +54,12 @@
 (defn min [a b]
   (if (< a b) a b))
 
+(defn pos? [x]
+  (<= (zero) x))
+
+(defn neg? [x]
+  (< x (zero)))
+
 (defn id [x] x)
 
 (defn null? [p]

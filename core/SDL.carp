@@ -232,15 +232,22 @@
           (SDLApp.init win ren 60))))
 
   (defn run-with-callbacks [app event-fn update-fn draw-fn initial-state]
-    (let [rend @(SDLApp.renderer app)
-          state initial-state]
+    (let-do [rend @(SDLApp.renderer app)
+             state initial-state
+             last-t (SDL.get-ticks)
+             target-dt (/ 1000 @(SDLApp.fps app))]
       (while true
         (do
           (event-fn app)
           (set! state (update-fn state))
+          (let-do [dt (- (SDL.get-ticks) last-t)
+                time-left (- target-dt dt)]
+            ;;(println* "dt: " dt ", time left: " time-left)
+            (when (pos? time-left)
+              (SDL.delay time-left)))
+          (set! last-t (SDL.get-ticks))
           (draw-fn app rend &state)
-          (SDL.render-present rend)
-          (SDL.delay (/ 1000 @(SDLApp.fps app)))))))
+          (SDL.render-present rend)))))
 
   (defn stop [app]
     (do (SDL.destroy-window @(window app))
