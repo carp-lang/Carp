@@ -338,6 +338,8 @@ commandHelp [XObj(Str "project") _ _] =
               putStrLn "'libflag'            - Add a library flag to the compiler."
               putStrLn "'compiler'           - Set what compiler should be run with the 'build' command."
               putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
+              putStrLn "'output-directory'   - Where to put compiler artifacts, etc."
+              putStrLn "'docs-directory'     - Where to put generated documentation."
               putStrLn "'prompt'             - Set the prompt in the repl."
               putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."
               putStrLn ""
