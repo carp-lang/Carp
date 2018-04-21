@@ -54,8 +54,11 @@
 (defn min [a b]
   (if (< a b) a b))
 
+(defn zero? [x]
+  (= (zero) x))
+
 (defn pos? [x]
-  (<= (zero) x))
+  (< (zero) x))
 
 (defn neg? [x]
   (< x (zero)))
