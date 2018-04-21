@@ -68,7 +68,8 @@
   (register render-fill-rect (Fn [(Ptr SDL_Renderer) (Ptr SDL_Rect)] ()) "SDL_RenderFillRect")
   (register render-fill-rects (Fn [(Ptr SDL_Renderer) (Ptr SDL_Rect) Int] ()) "SDL_RenderFillRects") ;; rects, count
   (register render-draw-line (Fn [(Ptr SDL_Renderer) Int Int Int Int] ()) "SDL_RenderDrawLine") ;; x1 y1 x2 y2
-  (register render-draw-lines (Fn [(Ptr SDL_Renderer) (Ptr SDL_Point) Int] ()) "SDL_RenderDrawLines") ;; lines, count
+  (register render-draw-lines (Fn [(Ptr SDL_Renderer) (Ptr SDL_Point) Int] ()) "SDL_RenderDrawLines")
+  (register render-draw-point (Fn [(Ptr SDL_Renderer) Int Int] ()) "SDL_RenderDrawPoint")
   (register destroy-texture (Fn [(Ptr SDL_Texture)] ()) "SDL_DestroyTexture")
   (register set-render-draw-blend-mode (Fn [(Ptr SDL_Renderer) SDL_BlendMode] ()) "SDL_SetRenderDrawBlendMode")
   (register blit-surface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ()) "SDL_BlitSurface") ;; src, srcrect, dst, dstrect
