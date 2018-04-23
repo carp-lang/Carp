@@ -142,4 +142,14 @@
       (for [i 0 (count a)]
         (aset-uninitialized! &na i (f (nth a i))))
       na))
+
+  (defn concat [xs]
+    (let-do [result []
+             len (Array.count xs)]
+      (for [i 0 len]
+        (let [ys (nth xs i)
+              inner-len (Array.count ys)]
+          (for [j 0 inner-len]
+            (set! result (Array.push-back result @(nth ys j))))))
+      result))
 )
