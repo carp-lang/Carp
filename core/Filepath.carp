@@ -1,0 +1,15 @@
+(defmodule Filepath
+
+  (use Array)
+
+  (defn append-slash [s]
+  (str* s "/"))
+
+  (doc dir-from-path "Removes the file-name part of a path to a file.")
+  (defn dir-from-path [path]
+    (let [segments (split-by path &[\/])
+          n (dec (count &segments))
+          without-last (prefix-array &segments n)]
+      (join &(copy-map append-slash &without-last))))
+
+  )
