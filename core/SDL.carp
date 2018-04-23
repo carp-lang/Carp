@@ -33,6 +33,11 @@
   (register destroy-window             (Fn [(Ptr SDL_Window)] ()) "SDL_DestroyWindow")
   (register quit                       (Fn [] ()) "SDL_Quit")
 
+  (defmodule Hint
+    (register set (Fn [(Ptr Char) (Ptr Char)] ()) "SDL_SetHint")
+    (register render-vsync (Ptr Char) "SDL_HINT_RENDER_VSYNC")
+    (register video-mac-fullscreen-spaces (Ptr Char) "SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES"))
+
   (defmodule Event
     (register init (Fn [] SDL_Event))
     (register type (Fn [(Ref SDL_Event)] SDL_EventType))
@@ -228,7 +233,8 @@
     (let [_ SDL.INIT_EVERYTHING
           win NULL
           ren NULL]
-      (do (SDL.create-window-and-renderer width height 0 (address win) (address ren))
+      (do (SDL.Hint.set SDL.Hint.render-vsync (cstr "1"))
+          (SDL.create-window-and-renderer width height 0 (address win) (address ren))
           (SDL.set-window-title win (cstr title))
           (SDLApp.init win ren 60))))
 
