@@ -61,7 +61,8 @@
 *** Prevent run if no exe has been successfully built.
 *** Flycheck hangs and eats all resources sometimes.
 
-
+*** Emacs-mode: Make foreach and deftype indent correctly.
+*** Make foreach, and*, not*, etc. proper keywords.
 ** 1.0
 *** Project templates.
 *** Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
@@ -93,6 +94,7 @@
 ** Distinguish immutable/mutable refs?
 ** Reintroduce the p-string patch but with support for embedded string literals?
 
+** Rename deftype to defstruct?
 * Notes
 ** Travis
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
