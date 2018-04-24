@@ -42,8 +42,8 @@
   (defn ok? [error-code]
     (= 0 error-code))
 
-  (defn render-text-to-texture [rend font str]
-    (let [surface (render-text-blended font (cstr str) (SDL.rgb 0 0 0))
+  (defn render-text-to-texture [rend font str color]
+    (let [surface (render-text-blended font (cstr str) color)
           texture (SDL.create-texture-from-surface rend surface)]
       (do (SDL.free-surface surface)
           texture)))
