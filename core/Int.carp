@@ -54,6 +54,9 @@
   (defn = [a b]
     (Int.= @a @b))
 
+  (defn /= [a b]
+    (Int./= @a @b))
+
   (defn < [a b]
     (Int.< @a @b))
 
