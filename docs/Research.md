@@ -27,6 +27,7 @@ https://news.ycombinator.com/item?id=12039268
 - https://doc.rust-lang.org/book/deref-coercions.html
 - http://ticki.github.io/blog/lambda-crabs-part-1-a-mathematical-introduction-to-lifetimes-and-regions/
 - https://gankro.github.io/blah/linear-rust/
+- http://smallcultfollowing.com/babysteps/blog/2018/04/27/an-alias-based-formulation-of-the-borrow-checker/
 
 # MODULES & FUNCTORS
 
