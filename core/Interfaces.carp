@@ -31,6 +31,8 @@
 
 (definterface pi a)
 
+(definterface neg (λ [a] a))
+
 
 
 ;; The following functions make use of the interfaces
