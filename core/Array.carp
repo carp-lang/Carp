@@ -16,7 +16,7 @@
   (defn last [a]
     @(Array.nth a (Int.dec (Array.count a))))
 
-  (defn = "Compare two arrays.")
+  (doc = "Compare two arrays.")
   (defn = [a b]
     (if (/= (count a) (count b))
       false
