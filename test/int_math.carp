@@ -48,4 +48,12 @@
                   2
                   (bit-shift-right 16 3)
                   "bit-shift-right works as expected")
+    (assert-equal test
+                  -2
+                  (neg 2)
+                  "neg works as expected")
+    (assert-equal test
+                  2
+                  (neg -2)
+                  "neg works as expected II")
     (print-test-results test)))

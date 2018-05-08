@@ -9,6 +9,7 @@ bool Int__EQ_(int x, int y)     { return x == y; }
 bool Int__DIV__EQ_(int x, int y) { return x != y; }
 bool Int__LT_(int x, int y)    { return x < y; }
 bool Int__GT_(int x, int y)    { return x > y; }
+int Int_neg(int x)    { return -x; }
 
 int Int_inc(int x) { return x + 1; }
 int Int_dec(int x) { return x - 1; }

@@ -13,6 +13,7 @@ bool Long_safe_MINUS_mul(long x, long y, long* res) { return __builtin_smull_ove
 bool Long__EQ_(long x, long y)     { return x == y; }
 bool Long__LT_(long x, long y)    { return x < y; }
 bool Long__GT_(long x, long y)    { return x > y; }
+long Long_neg(long x) { return -x; }
 
 long Long_inc(long x) { return x + 1; }
 long Long_dec(long x) { return x - 1; }

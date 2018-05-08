@@ -9,6 +9,7 @@
   (register > (λ [Int Int] Bool))
   (register = (λ [Int Int] Bool))
   (register /= (λ [Int Int] Bool))
+  (register neg (λ [Int] Int))
   (register mod (λ [Int Int] Int))
   (register bit-shift-left (λ [Int Int] Int))
   (register bit-shift-right (λ [Int Int] Int))

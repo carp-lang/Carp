@@ -8,6 +8,7 @@
   (register < (λ [Long Long] Bool))
   (register > (λ [Long Long] Bool))
   (register = (λ [Long Long] Bool))
+  (register neg (λ [Long] Long))
   (register mod (λ [Long Long] Long))
   (register seed (λ [Long] ()))
   (register bit-shift-left (λ [Long Long] Long))
