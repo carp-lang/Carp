@@ -2,8 +2,10 @@
 
   (use Array)
 
+  (private append-slash)
+  (hidden append-slash)
   (defn append-slash [s]
-  (str* s "/"))
+    (str* s "/"))
 
   (doc dir-from-path "Removes the file-name part of a path to a file.")
   (defn dir-from-path [path]

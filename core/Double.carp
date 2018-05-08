@@ -46,6 +46,7 @@
         min
         val)))
 
+  (doc approx "checks whether x and y are approximately (i.e. margin of error of 0.00001) equal")
   (defn approx [x y]
     (if (> x y)
       (< (- x y) 0.00001)
