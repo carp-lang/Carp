@@ -37,49 +37,38 @@
 
 ;; The following functions make use of the interfaces
 
-(doc <= "Checks whether a is lower or equal than b.")
 (defn <= [a b]
   (or (< a b)
       (= a b)))
 
-(doc >= "Checks whether a is higher or equal than b.")
 (defn >= [a b]
   (or (> a b)
       (= a b)))
 
-(doc cmp "Returns -1 if a is lower than b, 1 if it is higher, and 0 otherwise.")
 (defn cmp [a b]
   (if (= a b)
     0
     (if (< a b) -1 1)))
 
-(doc max "Returns the higher number between a and b.")
 (defn max [a b]
   (if (> a b) a b))
 
-(doc min "Returns the lower number between a and b.")
 (defn min [a b]
   (if (< a b) a b))
 
-(doc zero? "Checks whether x is zero.")
 (defn zero? [x]
   (= (zero) x))
 
-(doc pos? "Checks whether x is positive.")
 (defn pos? [x]
   (< (zero) x))
 
-(doc neg? "Checks whether x is negative.")
 (defn neg? [x]
   (< x (zero)))
 
-(doc id "Returns the argument as is.")
 (defn id [x] x)
 
-(doc null? "Checks whether x is NULL.")
 (defn null? [p]
   (Pointer.eq NULL (the (Ptr t) p)))
 
-(doc not-null? "Checks whether x is not NULL.")
 (defn not-null? [p]
   (not (null? p)))
