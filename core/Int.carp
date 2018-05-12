@@ -40,6 +40,7 @@
         min
         val)))
 
+  (doc pow "Raise x to the power of y.")
   (defn pow [x y]
     (let-do [r 1]
       (while (/= y 0)
