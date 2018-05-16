@@ -38,7 +38,6 @@
   (doc leak-array "Leak some memory. Useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
-  )
 )
 
 ;; HACK! This silences compiler errors about 'source-location' and 'source-path' being undefined.
