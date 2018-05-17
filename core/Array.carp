@@ -1,5 +1,6 @@
 (defmodule Array
 
+  (doc reduce "Reduce an array, using the function f.")
   (defn reduce [f x xs]
     (let [total x]
       (do
@@ -7,12 +8,15 @@
           (set! total (f &total (nth xs i))))
         total)))
 
+  (doc first "Take the first element of an array.")
   (defn first [a]
     @(Array.nth a 0))
 
+  (doc last "Take the last element of an array.")
   (defn last [a]
     @(Array.nth a (Int.dec (Array.count a))))
 
+  (doc = "Compare two arrays.")
   (defn = [a b]
     (if (/= (count a) (count b))
       false
@@ -24,6 +28,7 @@
               (break))))
         eq)))
 
+  (doc maximum "Get the maximum in an array (elements must support <).")
   (defn maximum [xs]
     (let [result (first xs)
           n (count xs)]
@@ -35,6 +40,7 @@
               ())))
         result)))
 
+  (doc minimum "Get the maximum in an array (elements must support >).")
   (defn minimum [xs]
     (let [result (first xs)
           n (count xs)]
@@ -46,9 +52,11 @@
               ())))
         result)))
 
+  (doc minimum "Sum an array (elements must support + and zero).")
   (defn sum [xs]
     (Array.reduce add-ref (zero) xs))
 
+  (doc subarray "Get subarray from start-index to end-index.")
   (defn subarray [xs start-index end-index]
     (let [result []]
       (do
@@ -56,12 +64,15 @@
           (set! result (push-back result @(nth xs i))))
         result)))
 
+  (doc prefix-array "Get prefix-array to end-index.")
   (defn prefix-array [xs end-index]
     (subarray xs 0 end-index))
 
+  (doc suffix-array "Get subarray from start-index.")
   (defn suffix-array [xs start-index]
     (subarray xs start-index (count xs)))
 
+  (doc reverse "Reverse an array.")
   (defn reverse [a]
     (let-do [i 0
              j (Int.dec (count &a))]
@@ -73,6 +84,7 @@
           (set! j (Int.dec j))))
       a))
 
+  (doc index-of "Get the index of element e in an array.")
   (defn index-of [a e]
     (let-do [idx -1]
       (for [i 0 (count a)]
@@ -82,24 +94,29 @@
             (break))))
       idx))
 
+  (doc element-count "Count occurrences of element e in an array.")
   (defn element-count [a e]
     (let-do [c 0]
       (for [i 0 (count a)]
         (when (= e (nth a i)) (set! c (Int.inc c))))
       c))
 
+  (doc aupdate "Transmute the element at index i of array a using function f.")
   (defn aupdate [a i f]
     (let [new-value (f (nth &a i))]
       (aset a i new-value)))
 
+  (doc aupdate "Transmute the element at index i of array a using function f in place.")
   (defn aupdate! [a i f]
     (aset! a i (f (nth a i))))
 
+  (doc aupdate "Swap indices i and j of array a.")
   (defn swap [a i j]
     (let [x @(nth &a i)
           y @(nth &a j)]
       (aset (aset a i y) j x)))
 
+  (doc aupdate "Swap indices i and j of array a in place.")
   (defn swap! [a i j]
     (let-do [x @(nth a i)
              y @(nth a j)]
@@ -107,6 +124,7 @@
       (aset! a j x)))
 
   ; cannot use for, because we want also be able to go downwards
+  (doc range "Create an array from start to end with step between them (the elements must support <, <=, and >=).")
   (defn range [start end step]
     (let-do [x (allocate (Int.inc (Int.abs (/ (- end start) step))))
              e start
@@ -119,24 +137,29 @@
           (set! e (+ e step))))
       x))
 
+  (doc sort "Sort an array (the elements must support cmp).")
   (defn sort [a]
     (sort-with a cmp))
 
+  (doc repeat "Repeat function f n times and store the results in an array.")
   (defn repeat [n f]
     (let-do [a (allocate n)]
       (for [i 0 n] (aset-uninitialized! &a i (f)))
       a))
 
+  (doc repeat-indexed "Repeat function f n times and store the results in an array (will be supplied with the index).")
   (defn repeat-indexed [n f]
     (let-do [a (allocate n)]
       (for [i 0 n] (aset-uninitialized! &a i (f i)))
       a))
 
+  (doc replicate "Repeat element e n times and store the results in an array.")
   (defn replicate [n e]
     (let-do [a (allocate n)]
       (for [i 0 n] (aset-uninitialized! &a i @e))
       a))
 
+  (doc copy-map "Map over array a using function f (copies the array).")
   (defn copy-map [f a]
     (let-do [na (allocate (count a))]
       (for [i 0 (count a)]

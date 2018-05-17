@@ -1,13 +1,21 @@
 (system-include "carp_system.h")
 
 (defmodule System
+  (doc free "Frees an object. Should not be called except in direst circumstances.")
   (register free (Fn [t] ()))
+  (doc time "Gets the current system time as an integer.")
   (register time (Fn [] Int))
+  (doc seed-random "Seeds the random number generator.")
   (register seed-random (Fn [Int] ()))
+  (doc sleep-seconds "Sleeps for a specified number of seconds.")
   (register sleep-seconds (Fn [Int] ()))
+  (doc sleep-seconds "Sleeps for a specified number of microseconds.")
   (register sleep-micros (Fn [Int] ()))
+  (doc system "Performs a system command.")
   (register system (Fn [&String] ()))
+  (doc get-arg "Gets the command line argument at a specified index.")
   (register get-arg (Fn [Int] (Ref String)))
+  (doc get-arg "Gets the number of command line arguments.")
   (register get-args-len (Fn [] Int))
 )
 
