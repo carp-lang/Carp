@@ -249,6 +249,13 @@
                   &(repeat 3 "hello")
                   "repeat works correctly"
     )
+    (assert-equal test
+                  "aaba"
+                  &(let-do [str @"aaaa"]
+                    (string-set! &str 2 \b)
+                    str)
+                  "string-set! works correctly"
+    )
     (print-test-results test)
   )
 )
