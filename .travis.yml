@@ -3,8 +3,10 @@
 # language `c` is lighter weight, and is fine since we declare most of our own deps
 language: c
 
-# sudo false gives us faster build times as it can use newer infrastructure
-sudo: false
+# sudo false would give us faster build times
+# but we need sudo true if we want to use leak sanitizer on travis due to
+# github.com/travis-ci/travis-ci/issues/9033
+sudo: true
 
 os:
     - linux
