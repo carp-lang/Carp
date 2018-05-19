@@ -12,6 +12,6 @@
     (let [segments (split-by path &[\/])
           n (dec (count &segments))
           without-last (prefix-array &segments n)]
-      (join &(copy-map append-slash &without-last))))
+      (concat &(copy-map append-slash &without-last))))
 
   )

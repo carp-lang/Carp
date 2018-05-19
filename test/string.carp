@@ -199,23 +199,23 @@
     )
     (assert-equal test
                   "hello world"
-                  &(join &[@"hello" @" " @"world"])
-                  "join works correctly"
+                  &(concat &[@"hello" @" " @"world"])
+                  "concat works correctly"
     )
     (assert-equal test
                   "hello world"
-                  &(join-with "" &[@"hello" @" " @"world"])
-                  "join-with works correctly I"
+                  &(join "" &[@"hello" @" " @"world"])
+                  "join works correctly I"
     )
     (assert-equal test
                   "hello world"
-                  &(join-with " " &[@"hello" @"world"])
-                  "join-with works correctly II"
+                  &(join " " &[@"hello" @"world"])
+                  "join works correctly II"
     )
     (assert-equal test
                   "hello aaaa there aaaa world"
-                  &(join-with " aaaa " &[@"hello" @"there" @"world"])
-                  "join-with works correctly III"
+                  &(join " aaaa " &[@"hello" @"there" @"world"])
+                  "join works correctly III"
     )
     (print-test-results test)
   )
