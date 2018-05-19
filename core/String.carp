@@ -7,7 +7,6 @@
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
   (register count      (Fn [&String] Int))
-  (register duplicate  (Fn [&String] String))
   (register cstr       (Fn [&String] (Ptr Char)))
   (register str        (Fn [&String] String))
   (register prn        (Fn [&String] String))

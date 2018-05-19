@@ -38,11 +38,6 @@ int String_count(String *s) {
     return strlen(*s);
 }
 
-// Replace with 'copy' later:
-String String_duplicate(String *s) {
-    return String_copy(s);
-}
-
 char* String_cstr(String *s) {
     return *s;
 }
