@@ -219,7 +219,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
                depsForDeleteFunc typeEnv env arrayType)
 
 -- | This function can set uninitialized memory in an array (used together with 'allocate').
--- | It will NOT try to free the value that is alredy at location 'n'.
+-- | It will NOT try to free the value that is already at location 'n'.
 templateAsetUninitializedBang :: (String, Binder)
 templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator path t
   where path = (SymPath ["Array"] "aset-uninitialized!")
