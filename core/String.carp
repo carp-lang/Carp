@@ -79,12 +79,24 @@
   (defn zero [] @"")
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
-  (doc join "Returns a new string which is the concatenation of the provided strings.")
+  (doc join "Returns a new string which is the concatenation of the provided `strings`.")
   (defn join [strings]
     (let-do [result @""
              len (Array.count strings)]
       (for [i 0 len]
         (set! result (String.append result @(Array.nth strings i))))
+      result))
+
+  ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
+  (doc join-with "Returns a new string which is the concatenation of the provided `strings` separated by `sep`.")
+  (defn join-with [sep strings]
+    (let-do [result @""
+             len (Array.count strings)]
+      (for [i 0 len]
+        (do
+          (when (> i 0)
+            (set! result (String.append result @sep)))
+          (set! result (String.append result @(Array.nth strings i)))))
       result))
 )
 
