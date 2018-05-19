@@ -3,7 +3,6 @@
 set -e; # will make the script stop if there are any errors
 
 stack build;
-stack install;
 
 # Build and run some examples
 ./test/check.sh ./examples/basics.carp
@@ -19,22 +18,22 @@ stack install;
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do
     echo $f
-    carp -x --log-memory $f
+    stack exec carp -- -x --log-memory $f
     echo
 done
 
 # Just make sure these compile
-carp ./examples/mutual_recursion.carp -b
-carp ./examples/guessing.carp -b
-carp ./examples/ant.carp -b
-carp ./examples/reptile.carp -b
-carp ./examples/game.carp -b
-carp ./examples/minimal_sdl.carp -b
-carp examples/sounds.carp -b
-carp examples/fonts.carp -b
-carp ./examples/no_core.carp --no-core -b
+stack exec carp -- ./examples/mutual_recursion.carp -b
+stack exec carp -- ./examples/guessing.carp -b
+stack exec carp -- ./examples/ant.carp -b
+stack exec carp -- ./examples/reptile.carp -b
+stack exec carp -- ./examples/game.carp -b
+stack exec carp -- ./examples/minimal_sdl.carp -b
+stack exec carp -- examples/sounds.carp -b
+stack exec carp -- examples/fonts.carp -b
+stack exec carp -- ./examples/no_core.carp --no-core -b
 
 # Generate core docs
-carp ./docs/core/generate_core_docs.carp -b
+stack exec carp -- ./docs/core/generate_core_docs.carp -b
 
 echo "ALL TESTS DONE."
