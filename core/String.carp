@@ -79,6 +79,7 @@
   (defn zero [] @"")
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
+  ;; TODO: in s-el this would be called concat https://github.com/magnars/s.el#s-concat-rest-strings
   (doc join "Returns a new string which is the concatenation of the provided `strings`.")
   (defn join [strings]
     (let-do [result @""
@@ -88,6 +89,7 @@
       result))
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
+  ;; TODO in s-el this would be called join https://github.com/magnars/s.el#s-join-separator-strings
   (doc join-with "Returns a new string which is the concatenation of the provided `strings` separated by `sep`.")
   (defn join-with [sep strings]
     (let-do [result @""
