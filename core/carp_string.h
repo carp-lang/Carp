@@ -8,6 +8,10 @@ void String_delete(String s) {
     CARP_FREE(s);
 }
 
+void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
+    (*s)[i] = ch;
+}
+
 String String_copy(String *s) {
     size_t len = strlen(*s) + 1;
     String ptr = CARP_MALLOC(len);
