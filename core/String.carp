@@ -20,9 +20,11 @@
   (defn /= [a b]
     (not (= (the (Ref String) a) b)))
 
+  (doc head "Returns the character at start of string.")
   (defn head [s]
     (char-at s 0))
 
+  (doc repeat "Returns a new string which is `inpt` repeated `n` times.")
   (defn repeat [n inpt]
     (let [str @""]
       (do
@@ -38,6 +40,7 @@
     (let [x (Int.max 0 (- len (count s)))]
       (append @s (from-chars &(Array.replicate x &pad)))))
 
+  (doc count-char "Returns the number of occurrences of `c` in the string `s`.")
   (defn count-char [s c]
     (let-do [n 0]
       (for [i 0 (count s)]
@@ -45,30 +48,38 @@
           (set! n (Int.inc n))))
       n))
 
+  (doc reverse "Produce a new string which is `s` reversed.")
   (defn reverse [s]
     (from-chars &(Array.reverse (chars s))))
 
+  (doc empty? "Check if the string is the empty string.")
   (defn empty? [s]
     (Int.= (count s) 0))
 
   (defn substring [s a b]
     (from-chars &(Array.subarray &(chars s) a b)))
 
+  (doc prefix-string "Return the first `a` characters of the string `s`.")
   (defn prefix-string [s a]
     (from-chars &(Array.prefix-array &(chars s) a)))
 
+  (doc suffix-string "Return the last `b` characters of the string `s`.")
   (defn suffix-string [s b]
     (from-chars &(Array.suffix-array &(chars s) b)))
 
+  (doc starts-with? "Check if the string `s` begins with the string `sub`.")
   (defn starts-with? [s sub]
     (= sub &(prefix-string s (count sub))))
 
+  (doc starts-with? "Check if the string `s` ends with the string `sub`.")
   (defn ends-with? [s sub]
     (= sub &(suffix-string s (- (count s) (count sub)))))
 
+  (doc zero "The empty string.")
   (defn zero [] @"")
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
+  (doc join "Returns a new string which is the concatenation of the provided strings.")
   (defn join [strings]
     (let-do [result @""
              len (Array.count strings)]
