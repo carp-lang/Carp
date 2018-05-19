@@ -210,7 +210,7 @@
       (more-array)
       (macrooo)
       (macrooo2)
-      (println (ref (str (ref (repeat 10 flip)))))
+      ;;(println (ref (str (ref (repeat 10 flip))))) <- BUGGY see github issue #227
       (calling-delete)
       (updating)
       (character)
@@ -221,7 +221,7 @@
       (let [stuff (replicate 3 "Yo")]
         (println &(Array.str &(endo-map exclaim stuff))))
       (print-structs)
-      (print-random-floats)
+      ;;(print-random-floats) <- BUGGY see github issue #227
       ;;(turn-any-array-into-string) <- BUGGY FOR NOW!
       (convert-struct-with-array-member-to-string)
       (threading)
