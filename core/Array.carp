@@ -166,13 +166,28 @@
         (aset-uninitialized! &na i (f (nth a i))))
       na))
 
+  (doc sum-count "Returns the sum of counts from an Array of Arrays.")
+  (defn sum-count [xs]
+    (let-do [sum 0
+             lxs (Array.count xs)]
+      (for [i 0 lxs]
+        (set! sum (+ sum (Array.count (Array.nth xs i)))))
+      sum))
+
+  (doc concat "Returns a new Array which is the concatenation of the provided `xs`.")
   (defn concat [xs]
-    (let-do [result []
-             len (Array.count xs)]
-      (for [i 0 len]
-        (let [ys (nth xs i)
-              inner-len (Array.count ys)]
-          (for [j 0 inner-len]
-            (set! result (Array.push-back result @(nth ys j))))))
+    ;; This is using a StringBuilder pattern to only perform one allocation and
+    ;; to only copy each of the incoming Array(s) once.
+    ;; This currently performs wasted Array.count calls, as we call it for each
+    ;; Array once here and once in sum-count.
+    (let-do [j 0
+             lxs (Array.count xs)
+             result (Array.allocate (sum-count xs))]
+      (for [i 0 lxs]
+        (let-do [arr (Array.nth xs i)
+                 len (Array.count arr)]
+          (for [k 0 len]
+            (aset-uninitialized! &result (+ j k) @(Array.nth arr k)))
+          (set! j (+ j len))))
       result))
 )
