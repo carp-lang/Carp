@@ -20,7 +20,7 @@
   (register format (Fn [&String &String] String))
   (register string-set! (Fn [&String Int Char] ()))
   (register string-set-at! (Fn [&String Int &String] ()))
-  (register allocate (Fn [Int, Char] String))
+  (register allocate (Fn [Int Char] String))
 
   (defn /= [a b]
     (not (= (the (Ref String) a) b)))
