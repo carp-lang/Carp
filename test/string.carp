@@ -293,6 +293,21 @@
                   (count &(allocate 5 \a))
                   "allocate works correctly III"
     )
+    (assert-equal test
+                  2
+                  (index-of "abcde" \c)
+                  "index-of works correctly I"
+    )
+    (assert-equal test
+                  4
+                  (index-of "abcde" \e)
+                  "index-of works correctly II"
+    )
+    (assert-equal test
+                  -1
+                  (index-of "abcde" \f)
+                  "index-of works correctly III"
+    )
     (print-test-results test)
   )
 )
