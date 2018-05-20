@@ -290,7 +290,7 @@
     )
     (assert-equal test
                   5
-                  (count &(allocate 5 \a))
+                  (length &(allocate 5 \a))
                   "allocate works correctly III"
     )
     (assert-equal test

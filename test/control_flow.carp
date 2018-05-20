@@ -41,11 +41,11 @@
       x)))
 
 (defn all-eq [a b]
-  (if (/= (Array.count a) (Array.count b))
+  (if (/= (Array.length a) (Array.length b))
     false
     (let [eq true]
       (do
-        (for [i 0 (Array.count a)]
+        (for [i 0 (Array.length a)]
           (if (/= @(Array.nth a i) @(Array.nth b i))
             (set! eq false)
             ()))

@@ -8,10 +8,10 @@
   (ignore (let-do [a [0]]
             (for [i 1 n]
               (set! a (Array.push-back a i)))
-            (assert (= n (Array.count &a)))
+            (assert (= n (Array.length &a)))
             (for [i 1 n]
               (set! a (Array.pop-back a)))
-            (assert (= 1 (Array.count &a))))))
+            (assert (= 1 (Array.length &a))))))
 
 (defn main []
   (do

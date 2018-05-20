@@ -10,7 +10,7 @@
 
 (defn perform-bench [n]
   (do
-    (println* "\nSwap with array count " n)
+    (println* "\nSwap with array length " n)
     (set! a (Array.replicate n &1))
     (bench some-swapping)))
 
@@ -20,7 +20,7 @@
 
 (defn perform-mutable-bench [n]
   (do
-    (println* "\nMutable swap with array count " n)
+    (println* "\nMutable swap with array length " n)
     (set! a (Array.replicate n &1))
     (bench some-mutable-swapping)))
 

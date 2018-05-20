@@ -279,11 +279,11 @@
 ;; TODO! Failing to compile this...
 ;; (defmodule ArrayCompareExtension
 ;;   (defn < [a b]
-;;     (Int.< (Array.count a)
-;;            (Array.count b)))
+;;     (Int.< (Array.length a)
+;;            (Array.length b)))
 ;;   (defn > [a b]
-;;     (Int.> (Array.count a)
-;;            (Array.count b))))
+;;     (Int.> (Array.length a)
+;;            (Array.length b))))
 ;; (defn array-sort-1 []
 ;;   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
 ;;         ys (Array.sort xs)]
@@ -306,7 +306,7 @@
 
 (defn array-copy-map-1 []
   (let [xs [@"a" @"bb" @"ccc"]
-        ys (Array.copy-map String.count &xs)]
+        ys (Array.copy-map String.length &xs)]
     (assert (= &[1 2 3] &ys))))
 
 (defn str-ref [r]

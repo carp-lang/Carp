@@ -239,9 +239,9 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
                                          ,"}"]))
             (const [])
 
-templateCount :: (String, Binder)
-templateCount = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "count")
+templateLength :: (String, Binder)
+templateLength = defineTypeParameterizedTemplate templateCreator path t
+  where path = (SymPath ["Array"] "length")
         t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"])] IntTy)
         templateCreator = TemplateCreator $
           \typeEnv env ->

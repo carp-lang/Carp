@@ -104,7 +104,7 @@ String StringCopy_append(String a, String b) {
     return buffer;
 }
 
-int String_count(String *s) {
+int String_length(String *s) {
     return strlen(*s);
 }
 

@@ -24,7 +24,7 @@
      [@"bg-cyan" @"46"]
      [@"bg-white" @"47"]])
 
-  (def len-color-table (Array.count &color-table))
+  (def len-color-table (Array.length &color-table))
 
   (defn color-name-to-ansi [cname]
     (let [res @""]
@@ -103,7 +103,7 @@
 )
 
 (defdynamic with-test-internal [name forms]
-  (if (= (count forms) 1)
+  (if (= (length forms) 1)
     (list (list 'set! name (list 'ref (car forms))))
     (cons (list 'set! name (list 'ref (car forms)))
           (with-test-internal name (cdr forms)))))

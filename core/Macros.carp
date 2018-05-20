@@ -78,11 +78,11 @@
   )
 
 (defdynamic cond-internal [xs]
-  (if (= (count xs) 0)
+  (if (= (length xs) 0)
     (list)
-    (if (= (count xs) 2)
+    (if (= (length xs) 2)
       (macro-error "cond has even number of branches; add an else branch")
-      (if (= (count xs) 1)
+      (if (= (length xs) 1)
         (car xs)
         (list
          'if
@@ -94,7 +94,7 @@
   (cond-internal xs))
 
 (defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
-  (if (> (count body) 1)
+  (if (> (length body) 1)
     (macro-error "Warning: the body of the 'for' loop can only contain one expression")
     (list
      'let
@@ -103,7 +103,7 @@
       'while
       (list 'Int.< (car settings) (caddr settings))
       (list 'do
-            (if (= (count body) 0)
+            (if (= (length body) 0)
               ()
               (if (list? body)
                 (car body)
@@ -112,7 +112,7 @@
              'set! (car settings)
              (list 'Int.+
                    (car settings)
-                   (if (= 4 (count settings)) ;; optional arg for step
+                   (if (= 4 (length settings)) ;; optional arg for step
                      (cadddr settings)
                      1))))))))
 
@@ -122,12 +122,12 @@
 
 ;; Old foreach, what's a better name for this? (it's just 'map' with side effects)
 ;; (defmacro foreach [f xs]
-;;   (list 'for ['i 0 (list 'Array.count (list 'ref xs))]
+;;   (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
 ;;         (list f (list 'Array.nth (list 'ref xs) 'i))))
 
 (defdynamic foreach-internal [var xs expr]
   (list 'let ['xs xs
-              'len (list 'Array.count 'xs)]
+              'len (list 'Array.length 'xs)]
         (list 'for ['i 0 'len]
               (list 'let [var (list 'Array.nth 'xs 'i)]
                     expr))))
@@ -138,7 +138,7 @@
     (macro-error "Binding has to be an array.")))
 
 (defdynamic thread-first-internal [xs]
-  (if (= (count xs) 2)
+  (if (= (length xs) 2)
     (if (list? (last xs))
       (cons (caadr xs)
             (cons (car xs)
@@ -153,7 +153,7 @@
       (list (last xs) (thread-first-internal (all-but-last xs))))))
 
 (defdynamic thread-last-internal [xs]
-  (if (= (count xs) 2)
+  (if (= (length xs) 2)
     (if (list? (last xs))
       (cons-last (car xs) (last xs))
       (list (cadr xs) (car xs)))
@@ -194,9 +194,9 @@
     ()))
 
 (defdynamic use-all-fn [names]
-  (if (= (count names) 0)
+  (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
-    (if (= (count names) 1)
+    (if (= (length names) 1)
       (list (list 'use (car names)))
       (cons (list 'use (car names)) (use-all-fn (cdr names))))));(use-all (cdr names))))))
 
@@ -228,11 +228,11 @@
   (list 'while true (cons 'do forms)))
 
 (defdynamic case-internal [name xs]
-  (if (= (count xs) 0)
+  (if (= (length xs) 0)
     (list)
-    (if (= (count xs) 2)
+    (if (= (length xs) 2)
       (macro-error "case has even number of branches; add an else branch")
-      (if (= (count xs) 1)
+      (if (= (length xs) 1)
         (car xs)
         (list 'if
          (list '= name (car xs))
@@ -243,9 +243,9 @@
   (case-internal name forms))
 
 (defdynamic build-vararg [fn forms]
-  (if (= (count forms) 0)
+  (if (= (length forms) 0)
     (macro-error "vararg macro needs at least one argument")
-    (if (= (count forms) 1)
+    (if (= (length forms) 1)
       (car forms)
       (list fn (car forms) (build-vararg fn (cdr forms))))))
 
@@ -256,9 +256,9 @@
   (build-vararg 'or forms))
 
 (defdynamic build-str* [forms]
-  (if (= (count forms) 0)
+  (if (= (length forms) 0)
     (list "")
-    (if (= (count forms) 1)
+    (if (= (length forms) 1)
       (list 'str (car forms))
       (list 'StringCopy.append (list 'str (car forms)) (build-str* (cdr forms))))))
 

@@ -127,7 +127,7 @@ you need to qualify it with the module name, like this: ```Float.cos```.
 
 If there are several used modules that contain symbols with the same name, the type inferer will try to figure
 out which one of the symbols you really mean (based on the types in your code). If it can't, it will display an error.
-For example, both the module ```String``` and ```Array``` contain a function named 'count'. In the following code it's
+For example, both the module ```String``` and ```Array``` contain a function named 'length'. In the following code it's
 possible to see that it's the array version that is needed, and that one will be called:
 
 ```
@@ -135,7 +135,7 @@ possible to see that it's the array version that is needed, and that one will be
 (use Array)
 
 (defn f []
-  (count [1 2 3 4 5]))
+  (length [1 2 3 4 5]))
 ```
 
 In the following example it's not possible to figure out which type is intended:
@@ -144,7 +144,7 @@ In the following example it's not possible to figure out which type is intended:
 (use Array)
 
 (defn f [x]
-  (count x))
+  (length x))
 ```
 
 Specifying the type solves this error:
@@ -153,7 +153,7 @@ Specifying the type solves this error:
 (use Array)
 
 (defn f [x]
-  (String.count x))
+  (String.length x))
 ```
 
 ### Structs

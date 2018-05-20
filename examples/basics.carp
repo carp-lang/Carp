@@ -125,7 +125,7 @@
       (println (refstr after)))))
 
 (defn get-last-string [xs] ;; Should be generic preferably...
-  (let [i (dec (Array.count &xs))]
+  (let [i (dec (Array.length &xs))]
     (String.copy (Array.nth &xs i))))
 
 (defn print-last-string []
@@ -179,11 +179,11 @@
     ))
 
 ;; This used to be a bug becuase of multisym:s getting the same type variables:
-(defn two-counts-in-same-func []
+(defn two-lengths-in-same-func []
   (let [a [[1]]
         b [1 2 3]
-        c1 (count &a)
-        c2 (count &b)]
+        c1 (length &a)
+        c2 (length &b)]
     (println* &(str (+ c1 c2)))))
 
 (defn changing-target-of-ref []
@@ -226,6 +226,6 @@
       (convert-struct-with-array-member-to-string)
       (threading)
       (multiple-stringification-of-arrays)
-      (two-counts-in-same-func)
+      (two-lengths-in-same-func)
       (changing-target-of-ref)
       ))

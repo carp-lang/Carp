@@ -29,17 +29,17 @@
 (def grid-size 32)
 
 (defn draw-snake [rend snake]
-  (let [body-count (count (body snake))]
-    (for [i 0 body-count]
+  (let [body-length (length (body snake))]
+    (for [i 0 body-length]
       (let [part (nth (body snake) i)
             x (* grid-size (to-int @(Vector2.V2.x part)))
             y (* grid-size (to-int @(Vector2.V2.y part)))]
         (if (= i 0)
           (do
-            (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-count 10)) 255)
+            (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-length 10)) 255)
             (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))
           (do
-            (SDL.set-render-draw-color rend 200 (+ 50 (* i (/ 200 body-count))) 100 255)
+            (SDL.set-render-draw-color rend 200 (+ 50 (* i (/ 200 body-length))) 100 255)
             (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size)))))))))
 
 (defn draw-human [rend human]
@@ -89,7 +89,7 @@
 
 (defn shift-body [body]
   (do
-     (let [i (- (Array.count body) 2)]
+     (let [i (- (Array.length body) 2)]
        (while (> i -1)
          (do
            (aset! body (inc i) @(nth body i))

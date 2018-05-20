@@ -9,12 +9,12 @@
 (defn some-subarray []
   (let-do [a (replicate n &1)
            b (subarray &a 0 (/ n 2))]
-    (assert (= (/ n 2) (count &b)))))
+    (assert (= (/ n 2) (length &b)))))
 
 (defn perform-bench [new-n]
   (do
     (set! n new-n)
-    (println* "\nTaking sub-array of array with count " n)
+    (println* "\nTaking sub-array of array with length " n)
     (bench some-subarray)))
 
 (defn main []

@@ -438,12 +438,12 @@ commandIsSymbol [x] =
     XObj (Sym _ _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
 
-commandCount :: CommandCallback
-commandCount [x] =
+commandLength :: CommandCallback
+commandLength [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
     XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
-    _ -> return (Left (EvalError ("Applying 'count' to non-list: " ++ pretty x ++ " at " ++ prettyInfoFromXObj x)))
+    _ -> return (Left (EvalError ("Applying 'length' to non-list: " ++ pretty x ++ " at " ++ prettyInfoFromXObj x)))
 
 commandCar :: CommandCallback
 commandCar [x] =
@@ -597,13 +597,13 @@ commandSubstring [a, b, c] =
     _ ->
       Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c))
 
-commandStringCount :: CommandCallback
-commandStringCount [a] =
+commandStringLength :: CommandCallback
+commandStringLength [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call count with " ++ pretty a))
+      Left (EvalError ("Can't call length with " ++ pretty a))
 
 commandStringJoin :: CommandCallback
 commandStringJoin [a] =

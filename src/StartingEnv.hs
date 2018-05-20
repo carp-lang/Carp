@@ -45,7 +45,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateAset
                                 , templateAsetBang
                                 , templateAsetUninitializedBang
-                                , templateCount
+                                , templateLength
                                 , templatePushBack
                                 , templatePopBack
                                 , templateDeleteArray
@@ -156,7 +156,7 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
                     [ addCommand "list?" 1 commandIsList
                     , addCommand "array?" 1 commandIsArray
                     , addCommand "symbol?" 1 commandIsSymbol
-                    , addCommand "count" 1 commandCount
+                    , addCommand "length" 1 commandLength
                     , addCommand "car" 1 commandCar
                     , addCommand "cdr" 1 commandCdr
                     , addCommand "last" 1 commandLast
@@ -203,7 +203,7 @@ dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModu
   where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "substring" 3 commandSubstring
-                                , addCommand "count" 1 commandStringCount
+                                , addCommand "length" 1 commandStringLength
                                 , addCommand "join" 1 commandStringJoin
                                 , addCommand "directory" 1 commandStringDirectory
                                 ]

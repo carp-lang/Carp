@@ -6,6 +6,6 @@
 (defn main []
   (with-test test
     (assert-equal test 1 2 "1 == 2")
-    (assert-true test (Int.> (Array.count &[1 2 3]) 1) "len([1 2 3]) == 1")
+    (assert-true test (Int.> (Array.length &[1 2 3]) 1) "len([1 2 3]) == 1")
     (assert-not-equal test "hi" "bye" "hi != bye")
     (print-test-results test)))

@@ -84,7 +84,7 @@
               g h i]))))
 
 (defn tick [world newWorld]
-  (for [i 0 (count world)]
+  (for [i 0 (length world)]
     (let [x (mod i height)
           y (/ i width)
           total (neighbours world x y)

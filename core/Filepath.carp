@@ -10,7 +10,7 @@
   (doc dir-from-path "Removes the file-name part of a path to a file.")
   (defn dir-from-path [path]
     (let [segments (split-by path &[\/])
-          n (dec (count &segments))
+          n (dec (length &segments))
           without-last (prefix-array &segments n)]
       (concat &(copy-map append-slash &without-last))))
 

@@ -15,7 +15,7 @@
 (defn lookup [bucket lookup-key]
   (let-do [pairs (Bucket.entries bucket)
            result (zero)]
-    (for [i 0 (count pairs)]
+    (for [i 0 (length pairs)]
       (let [pair (nth pairs i)]
         (when (= (Entry.key pair) &lookup-key)
           (set! result @(Entry.value pair)))))

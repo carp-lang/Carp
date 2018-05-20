@@ -58,7 +58,7 @@ A simple piece of code:
 
 (defn say-hi [text]
   (while true
-    (if (< (count &text) 10)
+    (if (< (length &text) 10)
       (println "Too short!")
       (println &text))))
 ```
@@ -69,7 +69,7 @@ void say_MINUS_hi(string text) {
     bool _5 = true;
     while (_5) {
         string* _14 = &text; // ref
-        int _12 = String_count(_14);
+        int _12 = String_length(_14);
         bool _10 = Int__LT_(_12, 10);
         if (_10) {
             string _19 = "Too short!";
@@ -89,7 +89,7 @@ If-statements are kind of tricky in regards to memory management:
 ```clojure
 (defn say-what [text]
   (let [manage (copy &text)]
-    (if (< (count &text) 10)
+    (if (< (length &text) 10)
       (copy "Too short")
       manage)))
 ```
@@ -105,7 +105,7 @@ string say_MINUS_what(string text) {
         string manage = _9;
         string _13;
         string* _19 = &text; // ref
-        int _17 = String_count(_19);
+        int _17 = String_length(_19);
         bool _15 = Int__LT_(_17, 10);
         if (_15) {
             string _24 = "Too short";

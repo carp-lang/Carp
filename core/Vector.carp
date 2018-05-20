@@ -216,9 +216,9 @@
   (defn zip- [f a b]
     (let [total []]
       (do
-        (for [i 0 (Array.count a)]
+        (for [i 0 (Array.length a)]
           (set! total (Array.push-back @&total (f @(Array.nth a i) @(Array.nth b i)))))
-        (VN.init (Array.count a) total))))
+        (VN.init (Array.length a) total))))
 
   (defn zip [f a b]
     (if (= @(VN.n a) @(VN.n b))

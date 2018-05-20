@@ -41,7 +41,7 @@
                    (SDL.rect (* x 2) 80 16 16)
                    (SDL.rect (* x 4) 112 16 16)
                    (SDL.rect (* x 8) 144 16 16)]
-            n (count &rects)]
+            n (length &rects)]
         (SDL.render-fill-rects rend (raw rects) n))
       (SDL.set-render-draw-color rend 255 50 100 255)
       (for [x 0 512 16]
@@ -50,7 +50,7 @@
           (SDL.render-draw-line rend 512 (+ 256 (/ x 2)) 0 512)))
       (SDL.set-render-draw-color rend 0 0 0 255)
       (let [lines (random-lines)
-            n (count &lines)]
+            n (length &lines)]
         (SDL.render-draw-lines rend (raw lines) n))
       (let [img @(Images.img1 &images)]
         (SDL.render-copy-ex rend

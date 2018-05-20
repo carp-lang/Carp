@@ -18,21 +18,21 @@
   ])
 
   (defn sum [data]
-    (if (= 0 (Array.count data))
+    (if (= 0 (Array.length data))
       0.0
       (let [total @(Array.nth data 0)]
         (do
-          (for [i 1 (Array.count data)]
+          (for [i 1 (Array.length data)]
             (set! total (+ total @(Array.nth data i))))
           total))))
 
   (defn mean [data]
-    (/ (Statistics.sum data) (from-int (Array.count data))))
+    (/ (Statistics.sum data) (from-int (Array.length data))))
 
   (defn _pp [a mean]
     (let [sum 0.0]
       (do
-        (for [i 0 (Array.count a)]
+        (for [i 0 (Array.length a)]
           (let [tmp (Double.- (Double.copy (Array.nth a i)) mean)]
             (set! sum (Double.* tmp tmp))))
         sum)))
@@ -40,7 +40,7 @@
   (defn _xx [a mean]
     (let [sum 0.0]
       (do
-        (for [i 0 (Array.count a)]
+        (for [i 0 (Array.length a)]
           (set! sum (Double.- (Double.copy (Array.nth a i)) mean)))
         sum)))
 
@@ -49,10 +49,10 @@
           tmp (_xx data m)]
       (Double.- (_pp data m)
                 (Double./ (Double.* tmp tmp)
-                          (Double.from-int (Array.count data))))))
+                          (Double.from-int (Array.length data))))))
 
   (defn median [data]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
@@ -62,21 +62,21 @@
                   2.0)))))
 
   (defn low-median [data]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             @(Array.nth data (dec (/ n 2)))))) ; else
 
   (defn high-median [data]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           sorted (Array.sort @data)]
       (if (= n 0)
         0.0
         @(Array.nth data (/ n 2)))))
 
   (defn grouped-median [data interval]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           sorted (Array.sort @data)]
       (cond (= n 0) 0.0
             (= n 1) @(Array.nth data 0)
@@ -88,12 +88,12 @@
                       (from-int f)))))))
 
   (defn variance [data]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           ss (_ss data)]
       (/ ss (from-int (dec n)))))
 
   (defn pvariance [data]
-    (let [n (Array.count data)
+    (let [n (Array.length data)
           ss (_ss data)]
       (/ ss (from-int n))))
 
@@ -109,10 +109,10 @@
   (defn median-abs-dev [data]
     (let [med (median data)
           zero 0.0
-          abs-devs (Array.replicate (Array.count data) &zero)
+          abs-devs (Array.replicate (Array.length data) &zero)
           n 1.4826] ; taken from Rust and R, because that’s how it’s done apparently
       (do
-        (for [i 0 (Array.count data)]
+        (for [i 0 (Array.length data)]
           (Array.aset! &abs-devs i (abs (- med @(Array.nth data i)))))
         (* (median &abs-devs) n))))
 
@@ -121,12 +121,12 @@
 
   (defn percentile-of-sorted [sorted pct]
     (cond
-      (Int.= 0 (Array.count sorted)) -1.0 ; should abort here
+      (Int.= 0 (Array.length sorted)) -1.0 ; should abort here
       (Double.< pct 0.0) -1.0 ; should abort here
       (Double.> pct 100.0) -1.0 ; should abort here
-      (Int.= 1 (Array.count sorted)) @(Array.nth sorted 0)
-      (Double.= 100.0 pct) @(Array.nth sorted (Int.dec (Array.count sorted)))
-      (let [len (Int.dec (Array.count sorted))
+      (Int.= 1 (Array.length sorted)) @(Array.nth sorted 0)
+      (Double.= 100.0 pct) @(Array.nth sorted (Int.dec (Array.length sorted)))
+      (let [len (Int.dec (Array.length sorted))
             rank (Double.* (Double./ pct 100.0) (Double.from-int len))
             lrank (Double.floor rank)
             d (Double.- rank lrank)
@@ -154,7 +154,7 @@
           lo (Statistics.percentile-of-sorted tmp pct)
           hi (Statistics.percentile-of-sorted tmp (Double.- 100.0 pct))]
       (do
-        (for [i 0 (Array.count tmp)]
+        (for [i 0 (Array.length tmp)]
           (let [samp @(Array.nth tmp i)]
             (cond
               (> samp hi) (Array.aset! tmp i hi)
