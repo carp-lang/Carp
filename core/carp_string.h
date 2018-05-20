@@ -265,3 +265,17 @@ String Long_format(String* str, long x) {
 long Long_from_MINUS_string(String *s) {
     return atol(*s);
 }
+
+int String_index_MINUS_of(String *s, char c) {
+    /* Return index of first occurrence of `c` in `s`
+     * Returns -1 if not found
+     */
+    int i = 0;
+    int len = strlen(*s);
+    for (i=0; i<len; ++i) {
+      if (c == (*s)[i]) {
+        return i;
+      }
+    }
+    return -1;
+}
