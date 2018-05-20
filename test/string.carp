@@ -9,6 +9,10 @@
                   (= @"hello world" @"hello world")
                   "string = works as expected"
     )
+    (assert-true test
+                  (/= @"hello world" @"bob")
+                  "string /= works as expected"
+    )
     (assert-equal test
                   \s
                   (char-at "lisp" 2)
