@@ -5,6 +5,10 @@
 
 (defn main []
   (with-test test
+    (assert-true test
+                  (= @"hello world" @"hello world")
+                  "string = works as expected"
+    )
     (assert-equal test
                   \s
                   (char-at "lisp" 2)
