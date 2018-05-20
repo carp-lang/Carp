@@ -4,6 +4,19 @@
 #include <carp_memory.h>
 #include <core.h>
 
+String String_allocate(int len, char byte) {
+    /* Allocate a string of length 'len + 1'
+     * setting the first len bytes to byte
+     * and adding a null terminator
+     *
+     * String_alloc(10, "a") == "aaaaaaaaaa"
+     */
+    String ptr = CARP_MALLOC(len+1);
+    memset(ptr, byte, len);
+    ptr[len] = '\0';
+    return ptr;
+}
+
 void String_delete(String s) {
     CARP_FREE(s);
 }
