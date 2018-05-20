@@ -267,6 +267,11 @@
                            str)
                   "string-set-at! works correctly"
     )
+    (assert-equal test
+                  "aaaaaaaaaa"
+                  &(allocate 10 \a)
+                  "allocate works correctly"
+    )
     (print-test-results test)
   )
 )
