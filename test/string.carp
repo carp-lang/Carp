@@ -199,6 +199,11 @@
     )
     (assert-equal test
                   "hello world"
+                  &(append @"hello " @"world")
+                  "append works correctly"
+    )
+    (assert-equal test
+                  "hello world"
                   &(concat &[@"hello" @" " @"world"])
                   "concat works correctly"
     )
