@@ -10,64 +10,80 @@
   (with-test test
     (assert-equal test
                   &(init 4 [0.0 0.0 0.0 0.0]) &(zero-sized 4)
-                  "zero-sized works")
+                  "zero-sized works"
+    )
     (assert-equal test
                   &(init 4 [1.0 2.0 3.0 4.0]) &(init 4 [1.0 2.0 3.0 4.0])
-                  "= operator works")
+                  "= operator works"
+    )
     (assert-op test
                &(init 4 [1.0 2.0 3.0 4.0]) &(init 4 [1.0 1.0 3.0 4.0])
                "/= operator works"
-               VectorN./=)
+               VectorN./=
+    )
     (assert-equal test
                   &(init 3 [3.0 3.0 4.5])
                   &(add &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 2.5]))
-                  "add operator works")
+                  "add operator works"
+    )
     (assert-equal test
                   &(init 3 [1.0 -1.0 -1.5])
                   &(sub &(init 3 [2.0 1.0 2.0]) &(init 3 [1.0 2.0 3.5]))
-                  "sub operator works")
+                  "sub operator works"
+    )
     (assert-equal test
                   &(init 3 [4.0 2.0 2.2])
                   &(mul &(init 3 [2.0 1.0 1.1]) 2.0)
-                  "mul operator works")
+                  "mul operator works"
+    )
     (assert-equal test
                   &(init 3 [1.0 0.5 0.25])
                   &(div &(init 3 [2.0 1.0 0.5]) 2.0)
-                  "div operator works")
+                  "div operator works"
+    )
     (assert-equal test
                   5.0
                   (mag &(init 3 [3.0 4.0 0.0]))
-                  "mag works")
+                  "mag works"
+    )
     (assert-equal test
                   101.0
                   (mag-sq &(init 3 [10.0 1.0 0.0]))
-                  "mag-sq works")
+                  "mag-sq works"
+    )
     (assert-equal test
                   &(init 3 [0.6 0.8 0.0])
                   &(normalize &(init 3 [3.0 4.0 0.0]))
-                  "normalize works")
+                  "normalize works"
+    )
     (assert-op test
                90.0
                (radians-to-degree (angle-between &(init 3 [1.0 0.0 0.0])
                                                  &(init 3 [0.0 1.0 0.0])))
                "angle-between works"
-               Double.approx)
+               Double.approx
+    )
     (assert-true test
                  (anti-parallel? &(init 4 [1.0 0.0 0.0 0.0]) &(init 4 [-1.0 0.0 0.0 0.0]))
-                 "anti-parallel? works")
+                 "anti-parallel? works"
+    )
     (assert-true test
                  (parallel? &(init 4 [1.0 0.0 0.0 0.0]) &(init 4 [1.0 0.0 0.0 0.0]))
-                 "parallel? works")
+                 "parallel? works"
+    )
     (assert-true test
                  (perpendicular? &(init 4 [1.0 0.0 0.0 0.0]) &(init 4 [0.0 0.0 1.0 0.0]))
-                 "perpendicular? works")
+                 "perpendicular? works"
+    )
     (assert-equal test
                   53.0
                   (dot &(init 3 [10.0 2.0 3.0]) &(init 3 [2.0 12.0 3.0]))
-                  "dot works")
+                  "dot works"
+    )
     (assert-equal test
                   &(init 1 [2.0])
                   &(lerp &(init 1 [0.0]) &(init 1 [5.0]) 0.4)
-                  "lerp works")
+                  "lerp works"
+    )
     (print-test-results test)
 ))

@@ -22,61 +22,76 @@
     (with-test test
       (assert-true test
                    (= &[1 2 3] &[1 2 3])
-                   "= works as expected")
+                   "= works as expected"
+      )
       (assert-false test
                     (= &[1 2 3] &[1 2 3 4])
-                    "= works as expected")
+                    "= works as expected"
+      )
       (assert-false test
                     (= &[1 2 3] &[1 2 34])
-                    "= works as expected")
+                    "= works as expected"
+      )
       (assert-equal test
                     &[0 0 0 0]
                     &(replicate 4 &0)
-                    "replicate works as expected")
+                    "replicate works as expected"
+      )
       (assert-equal test
                     &[0 0 0 0]
                     &(repeat 4 make-zero)
-                    "repeat works as expected")
+                    "repeat works as expected"
+      )
       (assert-equal test
                     &[0 1 2 3]
                     &(repeat-indexed 4 make-idx)
-                    "repeat-indexed works as expected")
+                    "repeat-indexed works as expected"
+      )
       (assert-equal test
                     1
                     (first &[1 2 3])
-                    "first works as expected")
+                    "first works as expected"
+      )
       (assert-equal test
                     \c
                     (last &[\a \b \c])
-                    "last works as expected")
+                    "last works as expected"
+      )
       (assert-equal test
                     &[3 2 1]
                     &(reverse [1 2 3])
-                    "reverse works as expected")
+                    "reverse works as expected"
+      )
       (assert-equal test
                     10
                     (maximum &(range 1 10 1))
-                    "maximum works as expected")
+                    "maximum works as expected"
+      )
       (assert-equal test
                     1
                     (minimum &(range 1 10 1))
-                    "minimum works as expected")
+                    "minimum works as expected"
+      )
       (assert-equal test
                     55
                     (sum &(range 1 10 1))
-                    "sum works as expected")
+                    "sum works as expected"
+      )
       (assert-equal test
                     &[2 3]
                     &(subarray &(range 1 10 1) 1 3)
-                    "subarray works as expected")
+                    "subarray works as expected"
+      )
       (assert-equal test
                     &[1 2 3]
                     &(prefix-array &(range 1 10 1) 3)
-                    "prefix-array works as expected")
+                    "prefix-array works as expected"
+      )
       (assert-equal test
                     &[8 9 10]
                     &(suffix-array &(range 1 10 1) 7)
-                    "suffix-array works as expected")
+                    "suffix-array works as expected"
+      )
       (assert-equal test
                     5
                     @(nth &a 5)

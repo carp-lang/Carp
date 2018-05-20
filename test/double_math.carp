@@ -7,90 +7,112 @@
     (assert-equal test
                   -1.0
                   (neg 1.0)
-                  "neg works as expected")
+                  "neg works as expected"
+    )
     (assert-equal test
                   0.0
                   (acos 1.0)
-                  "acos works as expected")
+                  "acos works as expected"
+    )
     (assert-equal test
                   0.0
                   (asin 0.0)
-                  "asin works as expected")
+                  "asin works as expected"
+    )
     (assert-equal test
                   0.0
                   (atan 0.0)
-                  "atan works as expected")
+                  "atan works as expected"
+    )
     (assert-equal test
                   0.0
                   (atan2 0.0 0.0)
-                  "atan2 works as expected")
+                  "atan2 works as expected"
+    )
     (assert-equal test
                   1.0
                   (cos 0.0)
-                  "cos works as expected")
+                  "cos works as expected"
+    )
     (assert-equal test
                   1.0
                   (cosh 0.0)
-                  "cosh works as expected")
+                  "cosh works as expected"
+    )
     (assert-equal test
                   1.0
                   (cosh 0.0)
-                  "cosh works as expected")
+                  "cosh works as expected"
+    )
     (assert-equal test
                   0.0
                   (sin 0.0)
-                  "sin works as expected")
+                  "sin works as expected"
+    )
     (assert-equal test
                   0.0
                   (sinh 0.0)
-                  "sinh works as expected")
+                  "sinh works as expected"
+    )
     (assert-equal test
                   0.0
                   (tanh 0.0)
-                  "tanh works as expected")
+                  "tanh works as expected"
+    )
     (assert-equal test
                   Double.e
                   (exp 1.0)
-                  "exp works as expected")
+                  "exp works as expected"
+    )
     (assert-equal test
                   8.0
                   (ldexp 2.0 2)
-                  "ldexp works as expected")
+                  "ldexp works as expected"
+    )
     (assert-equal test
                   1.0
                   (log Double.e)
-                  "log works as expected")
+                  "log works as expected"
+    )
     (assert-equal test
                   1.0
                   (log10 10.0)
-                  "log10 works as expected")
+                  "log10 works as expected"
+    )
     (assert-equal test
                   256.0
                   (pow 2.0 8.0)
-                  "pow works as expected")
+                  "pow works as expected"
+    )
     (assert-equal test
                   3.0
                   (sqrt 9.0)
-                  "sqrt works as expected")
+                  "sqrt works as expected"
+    )
     (assert-equal test
                   2.0
                   (ceil 1.3)
-                  "ceil works as expected")
+                  "ceil works as expected"
+    )
     (assert-equal test
                   2.0
                   (abs -2.0)
-                  "abs works as expected")
+                  "abs works as expected"
+    )
     (assert-equal test
                   1.0
                   (floor 1.9)
-                  "floor works as expected")
+                  "floor works as expected"
+    )
     (assert-equal test
                   1.0
                   (floor 1.9)
-                  "floor works as expected")
+                  "floor works as expected"
+    )
     (assert-op test
                0.3
                (mod 9.3 3.0)
                "mod works as expected"
-               Double.approx)
+               Double.approx
+    )
     (print-test-results test)))
