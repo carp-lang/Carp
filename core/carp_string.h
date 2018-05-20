@@ -17,6 +17,49 @@ void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
     (*s)[i] = ch;
 }
 
+void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
+    char *dest = (*into) + i;
+    int lsrc = strlen(*src);
+
+#ifndef OPTIMIZE
+    int linto = strlen(*into);
+    assert(i >= 0);
+    /* given a string and indicies
+     *
+     *  0 1 2 3 4 5 6 7 8 9
+     * "a b c d e f g h i j"
+     * linto = strlen(...) = 10
+     *
+     * if we want to insert at '6' a string of length '4'
+     *
+     *  0 1 2 3
+     * "w x y z"
+     * ldest = strlen(...) = 4
+     *
+     * we need to make sure that the new string will not grow the first
+     *
+     *  0 1 2 3 4 5 6 7 8 9
+     * "a b c d e f g h i j"
+     *              ^
+     *              |
+     *              0 1 2 3
+     *             "w x y z"
+     *
+     * we check this by
+     *      (i + ldest - 1) < linto
+     *      (6 +     4 - 1) < 10
+     *      (10        - 1) < 10
+     *      9               < 10
+     *      true
+     *
+     * so this write is safe
+     */
+    assert((i+lsrc-1) < linto);
+#endif
+
+    strncpy(dest, *src, lsrc);
+}
+
 String String_copy(String *s) {
     size_t len = strlen(*s) + 1;
     String ptr = CARP_MALLOC(len);
