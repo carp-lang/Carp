@@ -14,6 +14,16 @@
                   "string /= works as expected"
     )
     (assert-equal test
+                  "true"
+                  &(str true)
+                  "str on true works as expected"
+    )
+    (assert-equal test
+                  "false"
+                  &(str false)
+                  "str on false works as expected"
+    )
+    (assert-equal test
                   \s
                   (char-at "lisp" 2)
                   "char-at works as expected"
