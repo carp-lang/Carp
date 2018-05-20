@@ -259,6 +259,14 @@
                            str)
                   "string-set! works correctly"
     )
+    (assert-equal test
+                  "aaaabcdeaq"
+                  &(let-do [str @"aaaaaaaaaa"]
+                           (string-set-at! &str 4 "bcde")
+                           (string-set-at! &str 9 "q")
+                           str)
+                  "string-set-at! works correctly"
+    )
     (print-test-results test)
   )
 )
