@@ -308,6 +308,36 @@
                   (index-of "abcde" \f)
                   "index-of works correctly III"
     )
+    (assert-equal test
+                  0
+                  (index-of "abcde" \a)
+                  "index-of works correctly IIII"
+    )
+    (assert-equal test
+                  -1
+                  (index-of-from "abcde" \a 0)
+                  "index-of-from works correctly I"
+    )
+    (assert-equal test
+                  0
+                  (index-of-from "abcde" \a -1)
+                  "index-of-from works correctly II"
+    )
+    (assert-equal test
+                  2
+                  (index-of-from "abcab" \c 1)
+                  "index-of-from works correctly III"
+    )
+    (assert-equal test
+                  -1
+                  (index-of-from "abcab" \c 2)
+                  "index-of-from works correctly IV"
+    )
+    (assert-equal test
+                  5
+                  (index-of-from "abcabc" \c 2)
+                  "index-of-from works correctly IV"
+    )
     (print-test-results test)
   )
 )
