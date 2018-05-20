@@ -222,6 +222,11 @@
                   &(join " aaaa " &[@"hello" @"there" @"world"])
                   "join works correctly III"
     )
+    (assert-equal test
+                  "hellohellohello"
+                  &(repeat 3 "hello")
+                  "repeat works correctly"
+    )
     (print-test-results test)
   )
 )
