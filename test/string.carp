@@ -49,6 +49,10 @@
                  (empty? "")
                  "empty? returns true on empty string"
     )
+    (assert-true test
+                 (empty? &(zero))
+                 "empty? returns true on (zero)"
+    )
     (assert-equal test
                   &[\e \r \i \k]
                   &(chars "erik")
