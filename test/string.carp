@@ -229,20 +229,31 @@
                   &(concat &[@"hello" @" " @"world"])
                   "concat works correctly"
     )
+
     (assert-equal test
                   "hello world"
-                  &(join "" &[@"hello" @" " @"world"])
+                  &(join @"" &[@"hello" @" " @"world"])
                   "join works correctly I"
     )
     (assert-equal test
                   "hello world"
-                  &(join " " &[@"hello" @"world"])
+                  &(join @" " &[@"hello" @"world"])
                   "join works correctly II"
     )
     (assert-equal test
                   "hello aaaa there aaaa world"
-                  &(join " aaaa " &[@"hello" @"there" @"world"])
+                  &(join @" aaaa " &[@"hello" @"there" @"world"])
                   "join works correctly III"
+    )
+    (assert-equal test
+                  "hello there world"
+                  &(join-with-char \  &[@"hello" @"there" @"world"])
+                  "join-with-char works correctly I"
+    )
+    (assert-equal test
+                  "hello, there, world"
+                  &(join-with-char \, &[@"hello" @" there" @" world"])
+                  "join-with-char works correctly II"
     )
     (assert-equal test
                   "hellohellohello"

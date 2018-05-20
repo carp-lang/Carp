@@ -96,8 +96,8 @@
     ;; This currently performs wasted String.count calls, as we call it for each
     ;; string once here and once in sum-count.
     (let-do [j 0
-             result (String.allocate (sum-count strings) \ )
-             lstrings (Array.count strings)]
+             lstrings (Array.count strings)
+             result (String.allocate (sum-count strings) \ )]
       (for [i 0 lstrings]
         (let-do [str (Array.nth strings i)
                  len (String.count str)]
@@ -105,16 +105,41 @@
           (set! j (+ j len))))
       result))
 
-  ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
-  (doc join "Returns a new string which is the concatenation of the provided `strings` separated by `sep`.")
+  (doc join "Returns a new string which is the concatenation of the provided `strings` separated by string `sep`.")
   (defn join [sep strings]
-    (let-do [result @""
-             len (Array.count strings)]
-      (for [i 0 len]
-        (do
+    (let-do [j 0
+             lstrings (Array.count strings)
+             num-seps (- lstrings 1)
+             sep-length (String.count &sep)
+             seps-size (* num-seps sep-length)
+             result (String.allocate (+ seps-size (sum-count strings)) \ )]
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
           (when (> i 0)
-            (set! result (String.append &result sep)))
-          (set! result (String.append &result (Array.nth strings i)))))
+            (do
+              (string-set-at! &result j &sep)
+              (set! j (+ j sep-length))))
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
+      result))
+
+  (doc join-with-char "Returns a new string which is the concatenation of the provided `strings` separated by char `sep`.")
+  (defn join-with-char [sep strings]
+    ;; (= (join-with-char \  ["Hello" "world"]) (join " " ["Hello" "world"]))
+    (let-do [j 0
+             lstrings (Array.count strings)
+             sep-count (- lstrings 1)
+             result (String.allocate (+ sep-count (sum-count strings)) \ )]
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
+          (when (> i 0)
+            (do
+              (string-set! &result j sep)
+              (set! j (+ j 1))))
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
       result))
 )
 
