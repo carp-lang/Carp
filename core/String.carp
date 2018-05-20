@@ -81,6 +81,7 @@
   (doc zero "The empty string.")
   (defn zero [] @"")
 
+  (doc sum-count "Returns the sum of counts from an array of Strings.")
   (defn sum-count [strings]
     (let-do [sum 0
              lstrings (Array.count strings)]
