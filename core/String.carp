@@ -3,7 +3,7 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
-  (register append     (Fn [String String] String)) ;; TODO: should take &String:s
+  (register append     (Fn [&String &String] String))
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
   (register count      (Fn [&String] Int))
@@ -31,16 +31,16 @@
     (let [str @""]
       (do
         (for [i 0 n]
-          (set! str (append str @inpt)))
+          (set! str (append &str inpt)))
         str)))
 
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append (from-chars &(Array.replicate x &pad)) @s)))
+      (append &(from-chars &(Array.replicate x &pad)) s)))
 
   (defn pad-right [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append @s (from-chars &(Array.replicate x &pad)))))
+      (append s &(from-chars &(Array.replicate x &pad)))))
 
   (doc count-char "Returns the number of occurrences of `c` in the string `s`.")
   (defn count-char [s c]
@@ -86,7 +86,7 @@
     (let-do [result @""
              len (Array.count strings)]
       (for [i 0 len]
-        (set! result (String.append result @(Array.nth strings i))))
+        (set! result (String.append &result (Array.nth strings i))))
       result))
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
@@ -97,12 +97,14 @@
       (for [i 0 len]
         (do
           (when (> i 0)
-            (set! result (String.append result @sep)))
-          (set! result (String.append result @(Array.nth strings i)))))
+            (set! result (String.append &result sep)))
+          (set! result (String.append &result (Array.nth strings i)))))
       result))
 )
 
 (defmodule StringCopy
+  (register append     (Fn [String String] String))
+
   (defn = [a b]
     (String.= &a &b))
 
@@ -113,7 +115,7 @@
 (defdynamic string-join- [strs]
   (if (= (count strs) 0)
     '(String.copy "")
-    (list 'String.append (car strs) (string-join- (cdr strs)))))
+    (list 'StringCopy.append (car strs) (string-join- (cdr strs)))))
 
 ;; TODO: Remove this function and replace uses with 'str*'
 (defmacro string-join [:rest strs]

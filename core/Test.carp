@@ -33,7 +33,7 @@
           (if (String.= cname (Array.nth (Array.nth &color-table i) 0))
              (set! res @(Array.nth (Array.nth &color-table i) 1))
              ()))
-        (String.append @"\x1b[" (String.append res @"m")))))
+        (StringCopy.append @"\x1b[" (StringCopy.append res @"m")))))
 
 
   (defn color [cname]
@@ -85,11 +85,11 @@
         (if (Int.> (Int.+ passed failed) 0)
           (do
             (IO.color "green")
-            (if (Int.> passed 0) (IO.print &(String.append @"\t|" (String.repeat passed "="))) ())
+            (if (Int.> passed 0) (IO.print &(StringCopy.append @"\t|" (String.repeat passed "="))) ())
             (if (Int.= failed 0) (IO.print "|") ())
             (IO.color "red")
             (if (Int.= passed 0) (IO.print "\t|") ())
-            (if (Int.> failed 0) (IO.print &(String.append (String.repeat failed "=") @"|")) ())
+            (if (Int.> failed 0) (IO.print &(StringCopy.append (String.repeat failed "=") @"|")) ())
             (IO.println ""))
           ())
         (IO.color "green")

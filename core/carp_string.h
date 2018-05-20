@@ -75,12 +75,17 @@ bool String__EQ_(String *a, String *b) {
     return strcmp(*a, *b) == 0;
 }
 
-String String_append(String a, String b) {
-    int la = strlen(a);
-    int lb = strlen(b);
+String String_append(String *a, String *b) {
+    int la = strlen(*a);
+    int lb = strlen(*b);
     int total = la + lb + 1;
     String buffer = CARP_MALLOC(total);
-    snprintf(buffer, total, "%s%s", a, b);
+    snprintf(buffer, total, "%s%s", *a, *b);
+    return buffer;
+}
+
+String StringCopy_append(String a, String b) {
+    String buffer = String_append(&a, &b);
     CARP_FREE(a);
     CARP_FREE(b);
     return buffer;
