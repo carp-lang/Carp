@@ -120,6 +120,12 @@ String Bool_format(String* str, bool b) {
 }
 
 String Char_str(char c) {
+    String buffer = CARP_MALLOC(2);
+    snprintf(buffer, 2, "%c", c);
+    return buffer;
+}
+
+String Char_prn(char c) {
     String buffer = CARP_MALLOC(3);
     snprintf(buffer, 3, "\\%c", c);
     return buffer;

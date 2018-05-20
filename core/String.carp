@@ -123,6 +123,7 @@
 
 (defmodule Char
   (register str (Fn [Char] String))
+  (register prn (Fn [Char] String))
   (register format (Fn [&String Char] String))
 )
 
@@ -131,5 +132,4 @@
 (defmodule Float (defn prn [x] (Float.str x)))
 (defmodule Double (defn prn [x] (Double.str x)))
 (defmodule Bool (defn prn [x] (Bool.str x)))
-(defmodule Char (defn prn [x] (Char.str x)))
 (defmodule Array (defn prn [x] (Array.str x)))
