@@ -270,7 +270,12 @@
     (assert-equal test
                   "aaaaaaaaaa"
                   &(allocate 10 \a)
-                  "allocate works correctly"
+                  "allocate works correctly I"
+    )
+    (assert-equal test
+                  ""
+                  &(allocate 0 \a)
+                  "allocate works correctly II"
     )
     (print-test-results test)
   )
