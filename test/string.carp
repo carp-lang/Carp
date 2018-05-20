@@ -250,10 +250,13 @@
                   "repeat works correctly"
     )
     (assert-equal test
-                  "aaba"
+                  "bcde"
                   &(let-do [str @"aaaa"]
-                    (string-set! &str 2 \b)
-                    str)
+                           (string-set! &str 0 \b)
+                           (string-set! &str 1 \c)
+                           (string-set! &str 2 \d)
+                           (string-set! &str 3 \e)
+                           str)
                   "string-set! works correctly"
     )
     (print-test-results test)
