@@ -12,6 +12,7 @@
   (register str        (Fn [&String] String))
   (register prn        (Fn [&String] String))
   (register index-of   (Fn [&String Char] Int))
+  (register index-of-from (Fn [&String Char Int] Int))
   (register char-at    (Fn [&String Int] Char))
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [&(Array Char)] String))

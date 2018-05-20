@@ -266,16 +266,23 @@ long Long_from_MINUS_string(String *s) {
     return atol(*s);
 }
 
-int String_index_MINUS_of(String *s, char c) {
-    /* Return index of first occurrence of `c` in `s`
+int String_index_MINUS_of_MINUS_from(String *s, char c, int i) {
+    /* Return index of first occurrence of `c` in `s` AFTER index i
      * Returns -1 if not found
      */
-    int i = 0;
+    ++i; // skip first character as we want AFTER i
     int len = strlen(*s);
-    for (i=0; i<len; ++i) {
+    for (; i<len; ++i) {
       if (c == (*s)[i]) {
         return i;
       }
     }
     return -1;
+}
+
+int String_index_MINUS_of(String *s, char c) {
+    /* Return index of first occurrence of `c` in `s`
+     * Returns -1 if not found
+     */
+    return String_index_MINUS_of_MINUS_from(s, c, -1);
 }
