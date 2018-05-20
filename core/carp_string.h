@@ -9,6 +9,11 @@ void String_delete(String s) {
 }
 
 void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
+#ifndef OPTIMIZE
+    int l = strlen(*s);
+    assert(i >= 0);
+    assert(i < l);
+#endif
     (*s)[i] = ch;
 }
 
