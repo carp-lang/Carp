@@ -98,12 +98,12 @@
     (let-do [j 0
              result (String.allocate (sum-count strings) \ )
              lstrings (Array.count strings)]
-         (for [i 0 lstrings]
-           (let-do [str (Array.nth strings i)
-                    len (String.count str)]
-             (string-set-at! &result j str)
-             (set! j (+ j len))))
-         result))
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
+      result))
 
   ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
   (doc join "Returns a new string which is the concatenation of the provided `strings` separated by `sep`.")
