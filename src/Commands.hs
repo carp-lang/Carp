@@ -613,7 +613,7 @@ commandStringJoin [a] =
         Left err -> Left (EvalError err)
         Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call count with " ++ pretty a))
+      Left (EvalError ("Can't call join with " ++ pretty a))
 
 commandStringDirectory :: CommandCallback
 commandStringDirectory [a] =
@@ -621,7 +621,7 @@ commandStringDirectory [a] =
     XObj (Str s) _ _ ->
       Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call count with " ++ pretty a))
+      Left (EvalError ("Can't call directory with " ++ pretty a))
 
 commandPlus :: CommandCallback
 commandPlus [a, b] =
