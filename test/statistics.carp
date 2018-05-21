@@ -30,77 +30,95 @@
     (assert-equal test
                   2.0
                   (median &[1.0 2.0 3.0])
-                  "median works as expected")
+                  "median works as expected"
+    )
     (assert-equal test
                   2.5
                   (mean &[1.0 2.0 4.5])
-                  "mean works as expected")
+                  "mean works as expected"
+    )
     (assert-equal test
                   2.0
                   (low-median &[1.0 2.0 4.0 5.0])
-                  "low-median works as expected")
+                  "low-median works as expected"
+    )
     (assert-equal test
                   4.0
                   (high-median &[1.0 2.0 4.0 5.0])
-                  "high-median works as expected")
+                  "high-median works as expected"
+    )
     (assert-equal test
                   3.0
                   (grouped-median &[1.0 2.0 4.0 5.0] 2)
-                  "grouped-median works as expected I")
+                  "grouped-median works as expected I"
+    )
     (assert-equal test
                   2.5
                   (grouped-median &[1.0 2.0 4.0 5.0] 3)
-                  "grouped-median works as expected II")
+                  "grouped-median works as expected II"
+    )
     (assert-equal test
                   1.0
                   (variance &[1.0 2.0 4.0 5.0])
-                  "variance works as expected")
+                  "variance works as expected"
+    )
     (assert-equal test
                   0.75
                   (pvariance &[1.0 2.0 4.0 5.0])
-                  "pvariance works as expected")
+                  "pvariance works as expected"
+    )
     (assert-equal test
                   2.0
                   (stdev &[1.0 1.0 9.0 9.0])
-                  "stdev works as expected")
+                  "stdev works as expected"
+    )
     (assert-equal test
                   2.0
                   (pstdev &[1.0 9.0])
-                  "pstdev works as expected")
+                  "pstdev works as expected"
+    )
     (assert-op test
                &[0.0 0.0 0.0 0.0 8.0]
                &(winsorize &[0.0 0.0 0.0 0.0 10.0] 5.0)
                "winsorizing works as expected"
-               all-approx)
+               all-approx
+    )
     (assert-op test
                &[2.5 5.0 7.5]
                &(quartiles &[0.0 2.5 5.0 7.5 10.0])
                "quartiles work as expected"
-               all-eq)
+               all-eq
+    )
     (assert-equal test
                   5.0
                   (iqr &[0.0 2.5 5.0 7.5 10.0])
-                  "iqr works as expected")
+                  "iqr works as expected"
+    )
     (assert-equal test
                   10.0
                   (sum &[2.5 5.0 2.0 0.5])
-                  "sum works as expected")
+                  "sum works as expected"
+    )
     (assert-equal test
                   40.0
                   (stdev-pct &[1.0 1.0 9.0 9.0])
-                  "stdev-pct works as expected")
+                  "stdev-pct works as expected"
+    )
     (assert-op test
                3.7065
                (median-abs-dev &[5.0 10.0])
                "median-abs-dev works as expected"
-               Double.approx)
+               Double.approx
+    )
     (assert-op test
                49.42
                (median-abs-dev-pct &[5.0 10.0])
                "median-abs-dev-pct works as expected"
-               Double.approx)
+               Double.approx
+    )
     (assert-equal test
                   2.0
                   @(Summary.median &(summary &[1.0 2.0 3.0]))
-                  "summary works as expected")
+                  "summary works as expected"
+    )
     (print-test-results test)))

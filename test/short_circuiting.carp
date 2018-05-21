@@ -46,25 +46,31 @@
     (assert-equal test
                   1
                   (short-circuit-and)
-                  "'and' short circuits")
+                  "'and' short circuits"
+    )
     (assert-equal test
                   1
                   (short-circuit-or)
-                  "'or' short circuits")
+                  "'or' short circuits"
+    )
     (assert-equal test
                   2
                   (eval-both-expr-in-and)
-                  "'and' can evaluate second expr")
+                  "'and' can evaluate second expr"
+    )
     (assert-equal test
                   2
                   (eval-both-expr-in-or)
-                  "'or' can evaluate second expr")
+                  "'or' can evaluate second expr"
+    )
     (assert-equal test
                   3
                   (vararg-and)
-                  "'and*' works")
+                  "'and*' works"
+    )
     (assert-equal test
                   3
                   (vararg-or)
-                  "'or*' works")
-    ))
+                  "'or*' works"
+    )
+  ))
