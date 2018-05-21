@@ -30,6 +30,14 @@ double Double_from_MINUS_float(float x) {
     return (double)x;
 }
 
+long Double_to_MINUS_long(double x) {
+    return (long)x;
+}
+
+double Double_from_MINUS_long(long x) {
+    return (double)x;
+}
+
 double Double_abs(double x) {
     return x > 0.0 ? x : -x;
 }
@@ -112,14 +120,4 @@ double Double_floor(double x) {
 
 double Double_mod(double x, double y) {
     return fmod(x, y);
-}
-
-double Double_random() {
-    return rand();
-}
-
-double Double_random_MINUS_between(double lower, double upper) {
-    float diff = upper - lower;
-    double r = ((double)(rand() % INT_MAX)) / ((double)INT_MAX);
-    return lower + diff * r;
 }

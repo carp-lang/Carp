@@ -1,0 +1,74 @@
+(defmodule Random
+
+  (def a 69069.0)
+  (hidden a)
+  (private a)
+  (def c 1.0)
+  (hidden c)
+  (private c)
+  (def m 4294967296.0)
+  (hidden m)
+  (private m)
+  (def s 19380110.0)
+  (hidden s)
+  (private s)
+
+  (doc seed "seed resets the seed of the random number generator to `new-seed`.")
+  (defn seed [new-seed]
+    (set! s new-seed))
+
+  (doc random "random returns a float from 0 to 1.")
+  (defn random []
+    (do
+      (set! s (mod (+ (* s a) c) m))
+      (/ s m)))
+)
+
+(defmodule Int
+  (defn random-between [lower upper]
+    (let [diff (- upper lower)]
+      (+ (Double.to-int (* (Double.from-int diff) (Random.random))) lower)))
+
+  (defn random []
+    (random-between 0 MAX))
+)
+
+(defmodule Float
+  (defn random-between [lower upper]
+    (let [diff (- upper lower)]
+      (+ (Double.to-float (* (Double.from-float diff) (Random.random))) lower)))
+
+  (defn random []
+    (random-between 0.0f (from-int Int.MAX)))
+)
+
+(defmodule Long
+  (defn random-between [lower upper]
+    (let [diff (- upper lower)]
+      (+ (Double.to-long (* (Double.from-long diff) (Random.random))) lower)))
+
+  (defn random []
+    (random-between 0l (from-int Int.MAX)))
+)
+
+(defmodule Double
+  (defn random-between [lower upper]
+    (let [diff (- upper lower)]
+      (+ (* diff (Random.random)) lower)))
+
+  (defn random []
+    (random-between 0.0 (from-int Int.MAX)))
+)
+
+(defmodule Char
+  (defn random []
+    (from-int (Int.random)))
+
+  (defn random-between [a b]
+    (from-int (Int.random-between (to-int a) (to-int b))))
+)
+
+(defmodule String
+  (defn random-sized [n]
+    (from-chars &(Array.repeat n Char.random)))
+)

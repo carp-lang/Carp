@@ -1,2 +1,2 @@
-[(Monster (Pos 22.4f 84.7f) 100 @"Pegasus") (Monster (Pos 1f 110.9f) 100 @"Dragon") (Monster (Pos 0.4f 36f) 100 @"Devil")]
-[(Monster (Pos 23.4f 85.7f) 100 @"Pegasus") (Monster (Pos 2f 111.9f) 100 @"Dragon") (Monster (Pos 1.4f 37f) 100 @"Devil")]
+[(Monster (Pos 0.000160837f 11.1089f) 100 @"Pegasus") (Monster (Pos 77.5975f 80.477f) 100 @"Dragon") (Monster (Pos 65.4871f 29.3212f) 100 @"Devil")]
+[(Monster (Pos 1.00016f 12.1089f) 100 @"Pegasus") (Monster (Pos 78.5975f 81.477f) 100 @"Dragon") (Monster (Pos 66.4871f 30.3212f) 100 @"Devil")]

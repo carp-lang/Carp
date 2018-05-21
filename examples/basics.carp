@@ -153,7 +153,7 @@
   (Float.random-between 10.0f 20.0f))
 
 (defn print-random-floats []
-  (do (System.seed-random 12)
+  (do (Random.seed 0.2)
       (let [rands (Array.repeat 10 random-float)]
         (println (ref (Array.str &rands))))))
 
@@ -196,7 +196,7 @@
 (defn main []
   ; here we always use the same seed for determinism, for simple random
   ; numbers that change you can for instance use (System.time)
-  (do (System.seed-random 10)
+  (do (Random.seed 0.1)
       (Things.call)
       (use-doubles)
       (println (ref (str (fib 10))))
