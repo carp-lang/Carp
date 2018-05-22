@@ -26,6 +26,7 @@
 
 (defn main []
   (do
+    ;; TODO: Go back to old code that used random generation and 'copy-map'.
     (let [monsters [(Monster.init (Pos.init 22.4f  84.7f) 100 @"Pegasus")
                     (Monster.init (Pos.init 1.0f  110.9f) 100 @"Dragon")
                     (Monster.init (Pos.init 0.4f   36.0f) 100 @"Devil")]]
@@ -37,4 +38,3 @@
     0 ;; <- Return value, should not be needed?!
 
     ))
-
