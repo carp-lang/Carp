@@ -4,8 +4,73 @@
 #include <carp_memory.h>
 #include <core.h>
 
+String String_allocate(int len, char byte) {
+    /* Allocate a string of length 'len + 1'
+     * setting the first len bytes to byte
+     * and adding a null terminator
+     *
+     * String_alloc(10, "a") == "aaaaaaaaaa"
+     */
+    String ptr = CARP_MALLOC(len+1);
+    memset(ptr, byte, len);
+    ptr[len] = '\0';
+    return ptr;
+}
+
 void String_delete(String s) {
     CARP_FREE(s);
+}
+
+void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
+#ifndef OPTIMIZE
+    int l = strlen(*s);
+    assert(i >= 0);
+    assert(i < l);
+#endif
+    (*s)[i] = ch;
+}
+
+void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
+    char *dest = (*into) + i;
+    int lsrc = strlen(*src);
+
+#ifndef OPTIMIZE
+    int linto = strlen(*into);
+    assert(i >= 0);
+    /* given a string and indicies
+     *
+     *  0 1 2 3 4 5 6 7 8 9
+     * "a b c d e f g h i j"
+     * linto = strlen(...) = 10
+     *
+     * if we want to insert at '6' a string of length '4'
+     *
+     *  0 1 2 3
+     * "w x y z"
+     * ldest = strlen(...) = 4
+     *
+     * we need to make sure that the new string will not grow the first
+     *
+     *  0 1 2 3 4 5 6 7 8 9
+     * "a b c d e f g h i j"
+     *              ^
+     *              |
+     *              0 1 2 3
+     *             "w x y z"
+     *
+     * we check this by
+     *      (i + ldest - 1) < linto
+     *      (6 +     4 - 1) < 10
+     *      (10        - 1) < 10
+     *      9               < 10
+     *      true
+     *
+     * so this write is safe
+     */
+    assert((i+lsrc-1) < linto);
+#endif
+
+    strncpy(dest, *src, lsrc);
 }
 
 String String_copy(String *s) {
@@ -23,12 +88,17 @@ bool String__EQ_(String *a, String *b) {
     return strcmp(*a, *b) == 0;
 }
 
-String String_append(String a, String b) {
-    int la = strlen(a);
-    int lb = strlen(b);
+String String_append(String *a, String *b) {
+    int la = strlen(*a);
+    int lb = strlen(*b);
     int total = la + lb + 1;
     String buffer = CARP_MALLOC(total);
-    snprintf(buffer, total, "%s%s", a, b);
+    snprintf(buffer, total, "%s%s", *a, *b);
+    return buffer;
+}
+
+String StringCopy_append(String a, String b) {
+    String buffer = String_append(&a, &b);
     CARP_FREE(a);
     CARP_FREE(b);
     return buffer;
@@ -195,4 +265,25 @@ String Long_format(String* str, long x) {
 
 long Long_from_MINUS_string(String *s) {
     return atol(*s);
+}
+
+int String_index_MINUS_of_MINUS_from(String *s, char c, int i) {
+    /* Return index of first occurrence of `c` in `s` AFTER index i
+     * Returns -1 if not found
+     */
+    ++i; // skip first character as we want AFTER i
+    int len = strlen(*s);
+    for (; i<len; ++i) {
+      if (c == (*s)[i]) {
+        return i;
+      }
+    }
+    return -1;
+}
+
+int String_index_MINUS_of(String *s, char c) {
+    /* Return index of first occurrence of `c` in `s`
+     * Returns -1 if not found
+     */
+    return String_index_MINUS_of_MINUS_from(s, c, -1);
 }

@@ -3,40 +3,48 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
-  (register append     (Fn [String String] String)) ;; TODO: should take &String:s
+  (register append     (Fn [&String &String] String))
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
   (register count      (Fn [&String] Int))
   (register cstr       (Fn [&String] (Ptr Char)))
   (register str        (Fn [&String] String))
   (register prn        (Fn [&String] String))
+  (register index-of   (Fn [&String Char] Int))
+  (register index-of-from (Fn [&String Char Int] Int))
   (register char-at    (Fn [&String Int] Char))
   (register chars      (Fn [&String] (Array Char)))
   (register from-chars (Fn [&(Array Char)] String))
   (register tail (λ [(Ref String)] String))
   (register format (Fn [&String &String] String))
+  (register string-set! (Fn [&String Int Char] ()))
+  (register string-set-at! (Fn [&String Int &String] ()))
+  (register allocate (Fn [Int Char] String))
 
   (defn /= [a b]
     (not (= (the (Ref String) a) b)))
 
+  (doc head "Returns the character at start of string.")
   (defn head [s]
     (char-at s 0))
 
+  (doc repeat "Returns a new string which is `inpt` repeated `n` times.")
   (defn repeat [n inpt]
     (let [str @""]
       (do
         (for [i 0 n]
-          (set! str (append str @inpt)))
+          (set! str (append &str inpt)))
         str)))
 
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append (from-chars &(Array.replicate x &pad)) @s)))
+      (append &(from-chars &(Array.replicate x &pad)) s)))
 
   (defn pad-right [len pad s]
     (let [x (Int.max 0 (- len (count s)))]
-      (append @s (from-chars &(Array.replicate x &pad)))))
+      (append s &(from-chars &(Array.replicate x &pad)))))
 
+  (doc count-char "Returns the number of occurrences of `c` in the string `s`.")
   (defn count-char [s c]
     (let-do [n 0]
       (for [i 0 (count s)]
@@ -44,39 +52,101 @@
           (set! n (Int.inc n))))
       n))
 
+  (doc reverse "Produce a new string which is `s` reversed.")
   (defn reverse [s]
     (from-chars &(Array.reverse (chars s))))
 
+  (doc empty? "Check if the string is the empty string.")
   (defn empty? [s]
     (Int.= (count s) 0))
 
   (defn substring [s a b]
     (from-chars &(Array.subarray &(chars s) a b)))
 
+  (doc prefix-string "Return the first `a` characters of the string `s`.")
   (defn prefix-string [s a]
     (from-chars &(Array.prefix-array &(chars s) a)))
 
+  (doc suffix-string "Return the last `b` characters of the string `s`.")
   (defn suffix-string [s b]
     (from-chars &(Array.suffix-array &(chars s) b)))
 
+  (doc starts-with? "Check if the string `s` begins with the string `sub`.")
   (defn starts-with? [s sub]
     (= sub &(prefix-string s (count sub))))
 
+  (doc starts-with? "Check if the string `s` ends with the string `sub`.")
   (defn ends-with? [s sub]
     (= sub &(suffix-string s (- (count s) (count sub)))))
 
+  (doc zero "The empty string.")
   (defn zero [] @"")
 
-  ;; TODO: Should use some kind of "StringBuilder" instead of generating intermediate strings.
-  (defn join [strings]
-    (let-do [result @""
-             len (Array.count strings)]
-      (for [i 0 len]
-        (set! result (String.append result @(Array.nth strings i))))
+  (doc sum-count "Returns the sum of counts from an array of Strings.")
+  (defn sum-count [strings]
+    (let-do [sum 0
+             lstrings (Array.count strings)]
+      (for [i 0 lstrings]
+        (set! sum (+ sum (String.count (Array.nth strings i)))))
+      sum))
+
+  (doc concat "Returns a new string which is the concatenation of the provided `strings`.")
+  (defn concat [strings]
+    ;; This is using a StringBuilder pattern to only perform one allocation and
+    ;; to only copy each of the incoming strings once.
+    ;; This currently performs wasted String.count calls, as we call it for each
+    ;; string once here and once in sum-count.
+    (let-do [j 0
+             lstrings (Array.count strings)
+             result (String.allocate (sum-count strings) \ )]
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
+      result))
+
+  (doc join "Returns a new string which is the concatenation of the provided `strings` separated by string `sep`.")
+  (defn join [sep strings]
+    (let-do [j 0
+             lstrings (Array.count strings)
+             num-seps (- lstrings 1)
+             sep-length (String.count &sep)
+             seps-size (* num-seps sep-length)
+             result (String.allocate (+ seps-size (sum-count strings)) \ )]
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
+          (when (> i 0)
+            (do
+              (string-set-at! &result j &sep)
+              (set! j (+ j sep-length))))
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
+      result))
+
+  (doc join-with-char "Returns a new string which is the concatenation of the provided `strings` separated by char `sep`.")
+  (defn join-with-char [sep strings]
+    ;; (= (join-with-char \  ["Hello" "world"]) (join " " ["Hello" "world"]))
+    (let-do [j 0
+             lstrings (Array.count strings)
+             sep-count (- lstrings 1)
+             result (String.allocate (+ sep-count (sum-count strings)) \ )]
+      (for [i 0 lstrings]
+        (let-do [str (Array.nth strings i)
+                 len (String.count str)]
+          (when (> i 0)
+            (do
+              (string-set! &result j sep)
+              (set! j (+ j 1))))
+          (string-set-at! &result j str)
+          (set! j (+ j len))))
       result))
 )
 
 (defmodule StringCopy
+  (register append     (Fn [String String] String))
+
   (defn = [a b]
     (String.= &a &b))
 
@@ -87,7 +157,7 @@
 (defdynamic string-join- [strs]
   (if (= (count strs) 0)
     '(String.copy "")
-    (list 'String.append (car strs) (string-join- (cdr strs)))))
+    (list 'StringCopy.append (car strs) (string-join- (cdr strs)))))
 
 ;; TODO: Remove this function and replace uses with 'str*'
 (defmacro string-join [:rest strs]

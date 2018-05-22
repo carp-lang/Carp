@@ -260,7 +260,7 @@
     (list "")
     (if (= (count forms) 1)
       (list 'str (car forms))
-      (list 'String.append (list 'str (car forms)) (build-str* (cdr forms))))))
+      (list 'StringCopy.append (list 'str (car forms)) (build-str* (cdr forms))))))
 
 (defmacro str* [:rest forms]
   (build-str* forms))

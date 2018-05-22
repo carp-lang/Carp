@@ -5,6 +5,24 @@
 
 (defn main []
   (with-test test
+    (assert-true test
+                  (= @"hello world" @"hello world")
+                  "string = works as expected"
+    )
+    (assert-true test
+                  (/= @"hello world" @"bob")
+                  "string /= works as expected"
+    )
+    (assert-equal test
+                  "true"
+                  &(str true)
+                  "str on true works as expected"
+    )
+    (assert-equal test
+                  "false"
+                  &(str false)
+                  "str on false works as expected"
+    )
     (assert-equal test
                   \s
                   (char-at "lisp" 2)
@@ -48,6 +66,10 @@
     (assert-true test
                  (empty? "")
                  "empty? returns true on empty string"
+    )
+    (assert-true test
+                 (empty? &(zero))
+                 "empty? returns true on (zero)"
     )
     (assert-equal test
                   &[\e \r \i \k]
@@ -196,6 +218,125 @@
                   &[@"erik" @"sved" @"hej" @"foo"]
                   &(split-by "erikmsvedlhejxfoo" &[\m \l \x])
                   "split-by works correctly"
+    )
+    (assert-equal test
+                  "hello world"
+                  &(append "hello " "world")
+                  "append works correctly"
+    )
+    (assert-equal test
+                  "hello world"
+                  &(concat &[@"hello" @" " @"world"])
+                  "concat works correctly"
+    )
+
+    (assert-equal test
+                  "hello world"
+                  &(join @"" &[@"hello" @" " @"world"])
+                  "join works correctly I"
+    )
+    (assert-equal test
+                  "hello world"
+                  &(join @" " &[@"hello" @"world"])
+                  "join works correctly II"
+    )
+    (assert-equal test
+                  "hello aaaa there aaaa world"
+                  &(join @" aaaa " &[@"hello" @"there" @"world"])
+                  "join works correctly III"
+    )
+    (assert-equal test
+                  "hello there world"
+                  &(join-with-char \  &[@"hello" @"there" @"world"])
+                  "join-with-char works correctly I"
+    )
+    (assert-equal test
+                  "hello, there, world"
+                  &(join-with-char \, &[@"hello" @" there" @" world"])
+                  "join-with-char works correctly II"
+    )
+    (assert-equal test
+                  "hellohellohello"
+                  &(repeat 3 "hello")
+                  "repeat works correctly"
+    )
+    (assert-equal test
+                  "bcde"
+                  &(let-do [str @"aaaa"]
+                           (string-set! &str 0 \b)
+                           (string-set! &str 1 \c)
+                           (string-set! &str 2 \d)
+                           (string-set! &str 3 \e)
+                           str)
+                  "string-set! works correctly"
+    )
+    (assert-equal test
+                  "aaaabcdeaq"
+                  &(let-do [str @"aaaaaaaaaa"]
+                           (string-set-at! &str 4 "bcde")
+                           (string-set-at! &str 9 "q")
+                           str)
+                  "string-set-at! works correctly"
+    )
+    (assert-equal test
+                  "aaaaaaaaaa"
+                  &(allocate 10 \a)
+                  "allocate works correctly I"
+    )
+    (assert-equal test
+                  ""
+                  &(allocate 0 \a)
+                  "allocate works correctly II"
+    )
+    (assert-equal test
+                  5
+                  (count &(allocate 5 \a))
+                  "allocate works correctly III"
+    )
+    (assert-equal test
+                  2
+                  (index-of "abcde" \c)
+                  "index-of works correctly I"
+    )
+    (assert-equal test
+                  4
+                  (index-of "abcde" \e)
+                  "index-of works correctly II"
+    )
+    (assert-equal test
+                  -1
+                  (index-of "abcde" \f)
+                  "index-of works correctly III"
+    )
+    (assert-equal test
+                  0
+                  (index-of "abcde" \a)
+                  "index-of works correctly IIII"
+    )
+    (assert-equal test
+                  -1
+                  (index-of-from "abcde" \a 0)
+                  "index-of-from works correctly I"
+    )
+    (assert-equal test
+                  0
+                  (index-of-from "abcde" \a -1)
+                  "index-of-from works correctly II"
+    )
+    (assert-equal test
+                  2
+                  (index-of-from "abcab" \c 1)
+                  "index-of-from works correctly III"
+    )
+    (assert-equal test
+                  -1
+                  (index-of-from "abcab" \c 2)
+                  "index-of-from works correctly IV"
+    )
+    (assert-equal test
+                  5
+                  (index-of-from "abcabc" \c 2)
+                  "index-of-from works correctly IV"
     )
     (print-test-results test)
   )
