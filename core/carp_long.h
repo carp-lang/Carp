@@ -35,15 +35,6 @@ void Long_seed(long seed) {
     srand(seed);
 }
 
-long Long_random() {
-    return rand();
-}
-
-long Long_random_MINUS_between(long lower, long upper) {
-    long diff = upper - lower;
-    return lower + (rand() % diff);
-}
-
 bool Long_mask(long a, long b) {
     return a & b;
 }

@@ -5,8 +5,6 @@
   (register free (Fn [t] ()))
   (doc time "Gets the current system time as an integer.")
   (register time (Fn [] Int))
-  (doc seed-random "Seeds the random number generator.")
-  (register seed-random (Fn [Int] ()))
   (doc sleep-seconds "Sleeps for a specified number of seconds.")
   (register sleep-seconds (Fn [Int] ()))
   (doc sleep-seconds "Sleeps for a specified number of microseconds.")
@@ -19,35 +17,3 @@
   (register get-args-len (Fn [] Int))
 )
 
-(defmodule Int
-  (register random (λ [] Int))
-  (register random-between (λ [Int Int] Int))
-)
-
-(defmodule Float
-  (register random (λ [] Float))
-  (register random-between (λ [Float Float] Float))
-)
-
-(defmodule Long
-  (register random (λ [] Long))
-  (register random-between (λ [Long Long] Long))
-)
-
-(defmodule Double
-  (register random (λ [] Double))
-  (register random-between (λ [Double Double] Double))
-)
-
-(defmodule Char
-  (defn random []
-    (from-int (Int.random)))
-
-  (defn random-between [a b]
-    (from-int (Int.random-between (to-int a) (to-int b))))
-)
-
-(defmodule String
-  (defn random-sized [n]
-    (from-chars &(Array.repeat n Char.random)))
-)

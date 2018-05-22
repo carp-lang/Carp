@@ -21,16 +21,6 @@ float Float_from_MINUS_int(int x) {
     return (float)x;
 }
 
-float Float_random() {
-    return rand();
-}
-
-float Float_random_MINUS_between(float lower, float upper) {
-    float diff = upper - lower;
-    float r = ((float)(rand() % INT_MAX)) / ((float)INT_MAX);
-    return lower + diff * r;
-}
-
 float Float_abs(float x) {
     return fabs(x);
 }
