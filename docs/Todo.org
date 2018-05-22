@@ -14,7 +14,7 @@
 *** def needs to come before hidden, or the compiler chokes
 * Big Language Features
 ** 0.4
-*** Doc strings and type annotations.
+*** Type annotations and private/hide flags should be honored.
 *** Stack allocated Array with an explicit size.
 *** Deps function for templates should return an Either to enable errors when instantiating deps.
 ***
