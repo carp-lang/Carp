@@ -21,21 +21,14 @@
      name String])
 
 (defmodule Monster
-  (defn init-random [name]
-    (Monster.init
-     (Pos.init (Float.random-between 0.0f 100.0f)
-               (Float.random-between 0.0f 100.0f))
-     100
-     @name))
   (defn move [monster]
     (Monster.update-pos monster Pos.move)))
 
 (defn main []
   (do
-    ; here we always use the same seed for determinism, for simple random
-    ; numbers that change you can for instance use (System.time)
-    (System.seed-random 10)
-    (let [monsters (Array.copy-map Monster.init-random &[@"Pegasus" @"Dragon" @"Devil"])]
+    (let [monsters [(Monster.init (Pos.init 22.4f  84.7f) 100 @"Pegasus")
+                    (Monster.init (Pos.init 1.0f  110.9f) 100 @"Dragon")
+                    (Monster.init (Pos.init 0.4f   36.0f) 100 @"Devil")]]
       (do
         (println (ref (Array.str &monsters)))
         (let [new-monsters (Array.endo-map Monster.move monsters)]
@@ -45,6 +38,3 @@
 
     ))
 
-(build)
-(run)
-(quit)
