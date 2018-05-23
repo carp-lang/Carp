@@ -9,6 +9,9 @@ if [[ $# -gt 0 ]] && [[ "$1" == "--no_sdl" ]]; then
 fi
 
 stack build;
+# This is useful for devs, but these tests should not rely on `carp` being in
+# PATH.
+stack install;
 
 # Build and run some examples
 ./test/check.sh ./examples/basics.carp
