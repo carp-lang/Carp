@@ -77,6 +77,41 @@
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
 
+  (defn run-child [x]
+    (let [pid (System.fork)
+          status 0]
+      (if (= pid 0)
+        (do
+          (x)
+          0)
+        (do
+          (ignore (System.wait (address status)))
+          (System.get-exit-status status)))))
+
+  (defn handle-signal [x] (System.exit x))
+
+  (defn run-child-signals [x]
+    (let [pid (System.fork)
+          status 0]
+      (if (= pid 0)
+        (do
+          (System.signal System.signal-abort handle-signal)
+          (System.signal System.signal-fpe handle-signal)
+          (System.signal System.signal-ill handle-signal)
+          (System.signal System.signal-segv handle-signal)
+          (System.signal System.signal-term handle-signal)
+          (x)
+          0)
+        (do
+          (ignore (System.wait (address status)))
+          (System.get-exit-status status)))))
+
+  (defn assert-exit [state exit-code x descr]
+    (assert-equal state exit-code (run-child x) descr))
+
+  (defn assert-signal [state signal x descr]
+    (assert-equal state signal (run-child-signals x) descr))
+
   (defn print-test-results [state]
     (let [passed @(State.passed state)
           failed @(State.failed state)]
