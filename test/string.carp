@@ -7,259 +7,204 @@
   (with-test test
     (assert-true test
                   (= @"hello world" @"hello world")
-                  "string = works as expected"
-    )
+                  "string = works as expected")
     (assert-true test
                   (/= @"hello world" @"bob")
-                  "string /= works as expected"
-    )
+                  "string /= works as expected")
     (assert-equal test
                   "true"
                   &(str true)
-                  "str on true works as expected"
-    )
+                  "str on true works as expected")
     (assert-equal test
                   "false"
                   &(str false)
-                  "str on false works as expected"
-    )
+                  "str on false works as expected")
     (assert-equal test
                   \s
                   (char-at "lisp" 2)
-                  "char-at works as expected"
-    )
+                  "char-at works as expected")
     (assert-equal test
                   \s
                   (head "silk")
-                  "head works as expected"
-    )
+                  "head works as expected")
     (assert-equal test
                   "ilk"
                   &(tail "silk")
-                  "tail works as expected"
-    )
+                  "tail works as expected")
     (assert-equal test
                   "sshello"
                   &(pad-left 7 \s "hello")
-                  "pad-left works as expected"
-    )
+                  "pad-left works as expected")
     (assert-equal test
                   "helloss"
                   &(pad-right 7 \s "hello")
-                  "pad-right works as expected"
-    )
+                  "pad-right works as expected")
     (assert-equal test
                   5
                   (count-char "lisssssp" \s)
-                  "count-char works as expected"
-    )
+                  "count-char works as expected")
     (assert-equal test
                   "olleh"
                   &(reverse "hello")
-                  "reverse works as expected"
-    )
+                  "reverse works as expected")
     (assert-equal test
                   false
                   (empty? "lisp")
-                  "empty? returns false on non-empty string"
-    )
+                  "empty? returns false on non-empty string")
     (assert-true test
                  (empty? "")
-                 "empty? returns true on empty string"
-    )
+                 "empty? returns true on empty string")
     (assert-true test
                  (empty? &(zero))
-                 "empty? returns true on (zero)"
-    )
+                 "empty? returns true on (zero)")
     (assert-equal test
                   &[\e \r \i \k]
                   &(chars "erik")
-                  "chars works as expected"
-    )
+                  "chars works as expected")
     (assert-equal test
                   "erik"
                   &(from-chars &[\e \r \i \k])
-                  "from-chars works as expected"
-    )
+                  "from-chars works as expected")
     (assert-equal test
                   "edan"
                   &(substring "svedang" 2 6)
-                  "substring works as expected"
-    )
+                  "substring works as expected")
     (assert-equal test
                   "sved"
                   &(prefix-string "svedang" 4)
-                  "prefix-string works as expected"
-    )
+                  "prefix-string works as expected")
     (assert-equal test
                   "dang"
                   &(suffix-string "svedang" 3)
-                  "suffix-string works as expected"
-    )
+                  "suffix-string works as expected")
     (assert-true test
                  (ends-with? "heller" "ler")
-                 "ends-with? works as expected"
-    )
+                 "ends-with? works as expected")
     (assert-true test
                  (ends-with? "ller" "ler")
-                 "ends-with? works (regression test for #157)"
-    )
+                 "ends-with? works (regression test for #157)")
     (assert-true test
                  (starts-with? "heller" "hell")
-                 "starts-with? works as expected"
-    )
+                 "starts-with? works as expected")
     (assert-true test
                  (in? "metacarpenter" "carp")
-                 "in? works on matching pattern"
-    )
+                 "in? works on matching pattern")
     (assert-false test
                   (in? "metabolism" "carp")
-                  "in? works on non-matching pattern"
-    )
+                  "in? works on non-matching pattern")
     (assert-true test
                  (upper? "I AM SCREAMING!")
-                 "upper? works on matching pattern"
-    )
+                 "upper? works on matching pattern")
     (assert-false test
                   (upper? "I am not screaming.")
-                  "upper? works on non-matching pattern"
-    )
+                  "upper? works on non-matching pattern")
     (assert-true test
                  (lower? "i am not screaming.")
-                 "lower? works on matching pattern"
-    )
+                 "lower? works on matching pattern")
     (assert-false test
                   (lower? "I am not screaming!")
-                  "lower? works on non-matching pattern"
-    )
+                  "lower? works on non-matching pattern")
     (assert-true test
                  (num? "11123456789123")
-                 "num? works on matching pattern"
-    )
+                 "num? works on matching pattern")
     (assert-false test
                   (num? "111l23456789123")
-                  "num? works on non-matching pattern"
-    )
+                  "num? works on non-matching pattern")
     (assert-true test
                  (alpha? "abcdefghijklmz")
-                 "alpha? works on matching pattern"
-    )
+                 "alpha? works on matching pattern")
     (assert-false test
                   (alpha? "abcdefghijklm1234567")
-                  "alpha? works on non-matching pattern"
-    )
+                  "alpha? works on non-matching pattern")
     (assert-true test
                  (alphanum? "abcdefghijklm1234567")
-                 "alphanum? works on matching pattern"
-    )
+                 "alphanum? works on matching pattern")
     (assert-false test
                   (alphanum? "abcdefghijklm1234567?")
-                  "alphanum? works on non-matching pattern"
-    )
+                  "alphanum? works on non-matching pattern")
     (assert-true test
                  (hex? "c0ffee")
-                 "hex? works on matching pattern"
-    )
+                 "hex? works on matching pattern")
     (assert-false test
                   (hex? "c0ffeebar")
-                  "hex? works on non-matching pattern"
-    )
+                  "hex? works on non-matching pattern")
     (assert-equal test
                   "string  "
                   &(trim-left "   string  ")
-                  "trim-left works as expected"
-    )
+                  "trim-left works as expected")
     (assert-equal test
                   "   string"
                   &(trim-right "   string  ")
-                  "trim-right works as expected"
-    )
+                  "trim-right works as expected")
     (assert-equal test
                   "string"
                   &(trim "   string  ")
-                  "trim works as expected"
-    )
+                  "trim works as expected")
     (assert-equal test
                   "string"
                   &(chomp "string\n")
-                  "chomp works as expected I"
-    )
+                  "chomp works as expected I")
     (assert-equal test
                   "string\n"
                   &(chomp "string\n\n")
-                  "chomp works as expected II"
-    )
+                  "chomp works as expected II")
     (assert-equal test
                   "string"
                   &(chomp "string\r\n")
-                  "chomp works as expected III"
-    )
+                  "chomp works as expected III")
     (assert-equal test
                   "string"
                   &(chomp "string\r")
-                  "chomp works as expected IV"
-    )
+                  "chomp works as expected IV")
     (assert-equal test
                   "too much whitespace."
                   &(collapse-whitespace "too   much  whitespace.")
-                  "collapse-whitespace works as expected"
-    )
+                  "collapse-whitespace works as expected")
     (assert-equal test
                   &[@"erik" @"sved" @"hej" @"foo"]
                   &(words "erik sved hej\tfoo")
-                  "words works correctly"
-    )
+                  "words works correctly")
     (assert-equal test
                   &[@"erik" @"sved" @"hej" @"foo"]
                   &(lines "erik\nsved\nhej\nfoo")
-                  "lines works correctly"
-    )
+                  "lines works correctly")
     (assert-equal test
                   &[@"erik" @"sved" @"hej" @"foo"]
                   &(split-by "erikmsvedlhejxfoo" &[\m \l \x])
-                  "split-by works correctly"
-    )
+                  "split-by works correctly")
     (assert-equal test
                   "hello world"
                   &(append "hello " "world")
-                  "append works correctly"
-    )
+                  "append works correctly")
     (assert-equal test
                   "hello world"
                   &(concat &[@"hello" @" " @"world"])
-                  "concat works correctly"
-    )
+                  "concat works correctly")
 
     (assert-equal test
                   "hello world"
                   &(join @"" &[@"hello" @" " @"world"])
-                  "join works correctly I"
-    )
+                  "join works correctly I")
     (assert-equal test
                   "hello world"
                   &(join @" " &[@"hello" @"world"])
-                  "join works correctly II"
-    )
+                  "join works correctly II")
     (assert-equal test
                   "hello aaaa there aaaa world"
                   &(join @" aaaa " &[@"hello" @"there" @"world"])
-                  "join works correctly III"
-    )
+                  "join works correctly III")
     (assert-equal test
                   "hello there world"
                   &(join-with-char \  &[@"hello" @"there" @"world"])
-                  "join-with-char works correctly I"
-    )
+                  "join-with-char works correctly I")
     (assert-equal test
                   "hello, there, world"
                   &(join-with-char \, &[@"hello" @" there" @" world"])
-                  "join-with-char works correctly II"
-    )
+                  "join-with-char works correctly II")
     (assert-equal test
                   "hellohellohello"
                   &(repeat 3 "hello")
-                  "repeat works correctly"
-    )
+                  "repeat works correctly")
     (assert-equal test
                   "bcde"
                   &(let-do [str @"aaaa"]
@@ -268,76 +213,62 @@
                            (string-set! &str 2 \d)
                            (string-set! &str 3 \e)
                            str)
-                  "string-set! works correctly"
-    )
+                  "string-set! works correctly")
     (assert-equal test
                   "aaaabcdeaq"
                   &(let-do [str @"aaaaaaaaaa"]
                            (string-set-at! &str 4 "bcde")
                            (string-set-at! &str 9 "q")
                            str)
-                  "string-set-at! works correctly"
-    )
+                  "string-set-at! works correctly")
     (assert-equal test
                   "aaaaaaaaaa"
                   &(allocate 10 \a)
-                  "allocate works correctly I"
-    )
+                  "allocate works correctly I")
     (assert-equal test
                   ""
                   &(allocate 0 \a)
-                  "allocate works correctly II"
-    )
+                  "allocate works correctly II")
     (assert-equal test
                   5
                   (length &(allocate 5 \a))
-                  "allocate works correctly III"
-    )
+                  "allocate works correctly III")
     (assert-equal test
                   2
                   (index-of "abcde" \c)
-                  "index-of works correctly I"
-    )
+                  "index-of works correctly I")
     (assert-equal test
                   4
                   (index-of "abcde" \e)
-                  "index-of works correctly II"
-    )
+                  "index-of works correctly II")
     (assert-equal test
                   -1
                   (index-of "abcde" \f)
-                  "index-of works correctly III"
-    )
+                  "index-of works correctly III")
     (assert-equal test
                   0
                   (index-of "abcde" \a)
-                  "index-of works correctly IIII"
-    )
+                  "index-of works correctly IIII")
     (assert-equal test
                   -1
                   (index-of-from "abcde" \a 0)
-                  "index-of-from works correctly I"
-    )
+                  "index-of-from works correctly I")
     (assert-equal test
                   0
                   (index-of-from "abcde" \a -1)
-                  "index-of-from works correctly II"
-    )
+                  "index-of-from works correctly II")
     (assert-equal test
                   2
                   (index-of-from "abcab" \c 1)
-                  "index-of-from works correctly III"
-    )
+                  "index-of-from works correctly III")
     (assert-equal test
                   -1
                   (index-of-from "abcab" \c 2)
-                  "index-of-from works correctly IV"
-    )
+                  "index-of-from works correctly IV")
     (assert-equal test
                   5
                   (index-of-from "abcabc" \c 2)
-                  "index-of-from works correctly IV"
-    )
+                  "index-of-from works correctly IV")
     (print-test-results test)
   )
 )
