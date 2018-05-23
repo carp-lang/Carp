@@ -18,5 +18,12 @@
   (register fork (Fn [] Int) "fork")
   (register wait (Fn [(Ptr Int)] Int) "wait")
   (register get-exit-status (Fn [Int] Int) "WEXITSTATUS")
+  (register signal (Fn [Int (Fn [Int] ())] ()) "signal")
+  (register signal-abort Int "SIGABRT")
+  (register signal-fpe Int "SIGFPE")
+  (register signal-ill Int "SIGILL")
+  (register signal-int Int "SIGINT")
+  (register signal-segv Int "SIGSEGV")
+  (register signal-term Int "SIGTERM")
 )
 
