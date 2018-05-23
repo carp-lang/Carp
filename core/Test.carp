@@ -77,6 +77,18 @@
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
 
+  (defn run-child [x]
+    (let [pid (System.fork)
+          status 0]
+      (if (= pid 0)
+        (x)
+        (do
+          (ignore (System.wait (address status)))
+          (System.get-exit-status status)))))
+
+  (defn assert-fails [state exit-code x descr]
+    (assert-equal state exit-code (run-child x) descr))
+
   (defn print-test-results [state]
     (let [passed @(State.passed state)
           failed @(State.failed state)]
