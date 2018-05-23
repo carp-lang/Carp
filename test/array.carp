@@ -80,61 +80,49 @@
       (assert-equal test
                     5
                     @(nth &a 5)
-                    "nth works as expected"
-      )
+                    "nth works as expected")
       (assert-equal test
                     &[1 2 3]
                     (nth &(nested) 0)
-                    "nth works as expected"
-      )
+                    "nth works as expected")
       (assert-equal test
                     &[10 11 12 13 14 15]
                     &(range 10 15 1)
-                    "range works as expected"
-      )
+                    "range works as expected")
       (assert-equal test
                     &[10 9 8 7 6 5 4 3 2 1 0]
                     &(range 10 0 -1)
-                    "range backwards works as expected"
-      )
+                    "range backwards works as expected")
       (assert-equal test
                     &[1 3 5 7 9]
                     &(range 1 10 2)
-                    "range works as expected if we dont exactly hit"
-      )
+                    "range works as expected if we dont exactly hit")
       (assert-equal test
                     &[10 8 6 4 2]
                     &(range 10 1 -2)
-                    "range backwards works as expected if we dont exactly hit"
-      )
+                    "range backwards works as expected if we dont exactly hit")
       (assert-equal test
                     &[1 2 3 4 5 6 7 8 9]
                     &(sort (range 9 1 -1))
-                    "sort works as expected"
-      )
+                    "sort works as expected")
       (assert-equal test
                     &[@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     &(copy-map excl-ref &b)
-                    "copy-map works as expected"
-      )
+                    "copy-map works as expected")
       (assert-equal test
                     &[@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     &(endo-map excl b)
-                    "endo-map works as expected"
-      )
+                    "endo-map works as expected")
       (assert-equal test
                     &[1 2]
                     &(swap [2 1] 0 1)
-                    "swap works as expected"
-      )
+                    "swap works as expected")
       (assert-equal test
                     &[1 3]
                     &(aupdate [1 2] 1 inc-ref)
-                    "aupdate works as expected"
-      )
+                    "aupdate works as expected")
       (assert-equal test
                     &[1 2 3 4 5 6 7 8]
                     &(concat &[[1] [2 3] [4 5 6] [7 8]])
-                    "concat works as expected"
-      )
+                    "concat works as expected")
       (print-test-results test))))

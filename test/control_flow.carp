@@ -56,26 +56,21 @@
     (assert-equal test
                   5
                   (break-test)
-                  "break works as expected"
-    )
+                  "break works as expected")
     (assert-equal test
                   5
                   (when-test-true)
-                  "when works as expected when true"
-    )
+                  "when works as expected when true")
     (assert-equal test
                   0
                   (when-test-false)
-                  "when works as expected when false"
-    )
+                  "when works as expected when false")
     (assert-equal test
                   0
                   (unless-test-true)
-                  "unless works as expected when true"
-    )
+                  "unless works as expected when true")
     (assert-equal test
                   5
                   (unless-test-false)
-                  "unless works as expected when false"
-    )
+                  "unless works as expected when false")
     (print-test-results test)))

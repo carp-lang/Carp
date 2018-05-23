@@ -7,92 +7,74 @@
     (assert-equal test
                   #"1234"
                   &(init "1234")
-                  "init works as expected"
-    )
+                  "init works as expected")
     (assert-equal test
                   "1234"
                   &(str #"1234")
-                  "str works as expected"
-    )
+                  "str works as expected")
     (assert-equal test
                   "#\"1234\""
                   &(prn #"1234")
-                  "prn works as expected"
-    )
+                  "prn works as expected")
     (assert-equal test
                   true
                   (= #"1234" #"1234")
-                  "= works as expected on equality"
-    )
+                  "= works as expected on equality")
     (assert-equal test
                   false
                   (= #"1234" #"235")
-                  "= works as expected on non-equality"
-    )
+                  "= works as expected on non-equality")
     (assert-equal test
                   3
                   (find #"\d" "   12")
-                  "find works as expected"
-    )
+                  "find works as expected")
     (assert-equal test
                   -1
                   (find #"\d" "   ")
-                  "find works as expected if not found"
-    )
+                  "find works as expected if not found")
     (assert-equal test
                   &[@"12"]
                   &(match #"(\d+)" "   12")
-                  "match works as expected"
-    )
+                  "match works as expected")
     (assert-equal test
                   &[]
                   &(match #"(\d+)" "   ")
-                  "match works as expected if not found"
-    )
+                  "match works as expected if not found")
     (assert-equal test
                   true
                   (matches? #"ana" "banana")
-                  "matches? works as exptected"
-    )
+                  "matches? works as exptected")
     (assert-equal test
                   false
                   (matches? #"ano" "banana")
-                  "matches? works as exptected II"
-    )
+                  "matches? works as exptected II")
     (assert-equal test
                   true
                   (and* (matches? #"\n" "\n") (matches? #"\n" "\r")
                         (matches? #"\n" "\r\n"))
-                  "matches? works as exptected on newlines special case"
-    )
+                  "matches? works as exptected on newlines special case")
     (assert-equal test
                   true
                   (matches? #"\t" "\t")
-                  "matches? works as exptected on tabs special case"
-    )
+                  "matches? works as exptected on tabs special case")
     (assert-equal test
                   &[@"3" @"4"]
                   (Array.nth &(global-match #"(\d)-(\d)" "1-2 2-3 3-4 4-5") 2)
-                  "global-match works as expected"
-    )
+                  "global-match works as expected")
     (assert-equal test
                   "1-2"
                   &(match-str #"(\d)-(\d)" "1-2 2-3 3-4 4-5")
-                  "match-str works as expected"
-    )
+                  "match-str works as expected")
     (assert-equal test
                   ""
                   &(match-str #"erik" "1-2 2-3 3-4 4-5")
-                  "match-str works as expected II"
-    )
+                  "match-str works as expected II")
     (assert-equal test
                   "sub 2-3 3-4"
                   &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" 1)
-                  "substitute works as expected"
-    )
+                  "substitute works as expected")
     (assert-equal test
                   "sub sub sub"
                   &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" -1)
-                  "substitute works as expected if all should be replaces"
-    )
+                  "substitute works as expected if all should be replaces")
     (print-test-results test)))
