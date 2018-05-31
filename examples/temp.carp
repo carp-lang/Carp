@@ -1,5 +1,5 @@
-(Debug.sanitize-addresses)
-(Project.config "print-ast" true)
+;; (Debug.sanitize-addresses)
+;; (Project.config "print-ast" true)
 
 ;; (doc f "This function will return 123.")
 ;; (sig f (Fn [] Int))
@@ -38,5 +38,24 @@
 ;; (Project.config "title" "ABC")
 ;; (save-docs Abc)
 
-(sig foo (Fn [Int] String))
-(defn foo [] 123)
+;; (sig foo String)
+;; (def foo 123)
+
+(load "Macros.carp")
+;; (load "Int.carp")
+;; (load "Char.carp")
+;; (load "IO.carp")
+
+(defmodule A
+  (private f)
+  (defn f [] 127)
+  ;;(defn g [] (f))
+  )
+
+(defn amam []
+  (A.f))
+
+(use A)
+
+(defn main []
+  (f))
