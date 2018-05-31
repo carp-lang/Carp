@@ -29,12 +29,12 @@ import Concretize
 -- | Returns a list of all the bindings that need to be added for the new form to work.
 -- | The concretization of MultiSym:s (= ambiguous use of symbols, resolved by type usage)
 -- | makes it possible to solve more types so let's do it several times.
-annotate :: TypeEnv -> Env -> XObj -> Either TypeError [XObj]
+annotate :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
 annotate typeEnv globalEnv xobj =
   do initiated <- initialTypes typeEnv globalEnv xobj
      (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated [] 100
      (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
-     return (final : dependencies ++ deleteDeps)
+     return (final, dependencies ++ deleteDeps)
 
 -- | Call the 'annotateOne' function until nothing changes
 annotateUntilDone :: TypeEnv -> Env -> XObj -> [XObj] -> Int -> Either TypeError (XObj, [XObj])

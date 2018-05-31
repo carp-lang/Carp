@@ -457,21 +457,24 @@ existingMeta globalEnv xobj =
     Nothing -> emptyMeta
 
 -- | Sort different kinds of definitions into the globalEnv or the typeEnv.
-define :: Context -> XObj -> IO Context
-define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
+define :: Bool -> Context -> XObj -> IO Context
+define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
           Just (_, Binder _ found) -> ty found
           Nothing -> Nothing
       previousMeta = existingMeta globalEnv annXObj
+      adjustedMeta = if hidden
+                     then previousMeta { getMeta = Map.insert "hidden" trueXObj (getMeta previousMeta) }
+                     else previousMeta
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
          --putStrLnWithColor Yellow (show (getPath annXObj) ++ " : " ++ show annXObj)
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder previousMeta annXObj)) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder previousMeta annXObj)) })
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
-         do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj))
+         do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj) ++ (if hidden then " [HIDDEN]" else ""))
             when (projectEchoC proj) $
               putStrLn (toC All annXObj)
             case previousType of
@@ -488,7 +491,7 @@ define ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
                      _ -> putStrLnWithColor Red err
                    return ctx
               Right ctx' ->
-                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder previousMeta annXObj) })
+                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj) })
 
 -- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
 registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
@@ -544,9 +547,10 @@ specialCommandDefine xobj =
                     return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings err))))
                   _ ->
                     return (Left (EvalError (show err)))
-              Right annXObjs ->
-                do ctxWithDefs <- liftIO $ foldM define ctxAfterExpansion annXObjs
-                   put ctxWithDefs
+              Right (annXObj, annDeps) ->
+                do ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
+                   ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
+                   put ctxWithDef
                    return dynamicNil
 
 specialCommandRegisterType :: String -> [XObj] -> StateT Context IO (Either EvalError XObj)
@@ -571,7 +575,7 @@ specialCommandRegisterType typeName rest =
              let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
-             in do contextWithDefs <- liftIO $ foldM define ctx' deps
+             in do contextWithDefs <- liftIO $ foldM (define True) ctx' deps
                    put contextWithDefs
                    return dynamicNil
 
@@ -602,7 +606,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                  ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
-             in do ctxWithDeps <- liftIO (foldM define ctx' deps)
+             in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
                    let ctxWithInterfaceRegistrations =
                          foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
                                [((SymPath (pathStrings ++ [typeModuleName]) "str"), FuncTy [(RefTy structTy)] StringTy)
@@ -976,8 +980,9 @@ commandC [xobj] =
        Right expanded ->
          case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
            Left err -> return (Left (EvalError (show err)))
-           Right annXObjs ->
-             do liftIO (mapM printC annXObjs)
+           Right (annXObj, annDeps) ->
+             do liftIO (printC annXObj)
+                liftIO (mapM printC annDeps)
                 return dynamicNil
 commandC args =
   return (Left (EvalError ("Invalid args to 'c': " ++ joinWithComma (map pretty args))))
