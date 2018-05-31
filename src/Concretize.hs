@@ -68,6 +68,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
+    visitList _ env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
+      do let Just defTy = t
+             allowAmbig = isTypeGeneric defTy
+         visitedBody <- visit allowAmbig env body
+         return $ do okBody <- visitedBody
+                     return [def, nameSymbol, okBody]
+
     visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
       do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
          visitedBody <- visit allowAmbig env body

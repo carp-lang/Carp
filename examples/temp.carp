@@ -1,20 +1,23 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(doc f "This function will return 123.")
-(sig f (Fn [] Int))
-(defn f [] 123)
+;; (doc f "This function will return 123.")
+;; (sig f (Fn [] Int))
+;; (defn f [] 123)
 
-(defmodule Foo
-  (doc f "This is an evil function.")
-  (defn f [] 666)
-  (hidden h)
-  (defn h [] @"trash")
-  (defn g [] 10000))
+;; (defmodule Foo
+;;   (doc f "This is an evil function.")
+;;   (defn f [] 666)
+;;   (hidden h)
+;;   (defn h [] @"trash")
+;;   (defn g [] 10000))
 
-(doc Foo.g "The 10000 dollar function, annotated from afar.")
+;; (doc Foo.g "The 10000 dollar function, annotated from afar.")
 
-(Project.config "docs-directory" "./out/")
-(Project.config "title" "Temp")
+;; (Project.config "docs-directory" "./out/")
+;; (Project.config "title" "Temp")
 
-(save-docs Foo)
+;; (save-docs Foo)
+
+(hidden foo)
+(def foo 12345)
