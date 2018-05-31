@@ -270,7 +270,7 @@ emptyMeta = (MetaData Map.empty)
 
 metaIsTrue :: MetaData -> String -> Bool
 metaIsTrue metaData key =
-  case Map.lookup "hidden" (getMeta metaData) of
+  case Map.lookup key (getMeta metaData) of
     Just (XObj (Bol True) _ _) -> True
     _ -> False
 
