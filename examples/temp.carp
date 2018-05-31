@@ -19,5 +19,19 @@
 
 ;; (save-docs Foo)
 
-(hidden foo)
-(def foo 12345)
+(defmodule Abc
+
+  (defn a [] 123)
+  (hidden b)
+  (defn b [] 123.0)
+  (defn c [x] x)
+  (defn d []
+    (c 123))
+  (defn e []
+    (c @"hej"))
+
+  )
+
+(Project.config "docs-directory" "./out/")
+(Project.config "title" "ABC")
+(save-docs Abc)
