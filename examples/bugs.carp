@@ -46,12 +46,4 @@
 ;;     (println* r)))
 
 
-;; Qualified referral to registered function inside a module doesn't work...
-(relative-include "banana.h")
-(defmodule Banana
-  (register magic (Fn [] Int) "magic")
-  (defn g [] (magic))
-  (defn f [] (Banana.magic)))
-
 (defn main []
-  (println* (Banana.f)))
