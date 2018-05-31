@@ -474,7 +474,15 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
-         do --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj) ++ (if hidden then " [HIDDEN]" else ""))
+         do case Map.lookup "sig" (getMeta adjustedMeta) of
+              Just foundSignature ->
+                do let Just sigTy = xobjToTy foundSignature
+                   when (not (areUnifiable (forceTy annXObj) sigTy)) $
+                     throw $ EvalException (EvalError ("Definition at " ++ prettyInfoFromXObj annXObj ++ " does not match 'sig' annotation " ++
+                                                       show sigTy ++ ", actual type is " ++ show (forceTy annXObj)))
+              Nothing ->
+                return ()
+            --putStrLnWithColor Blue (show (getPath annXObj) ++ " : " ++ showMaybeTy (ty annXObj) ++ (if hidden then " [HIDDEN]" else ""))
             when (projectEchoC proj) $
               putStrLn (toC All annXObj)
             case previousType of

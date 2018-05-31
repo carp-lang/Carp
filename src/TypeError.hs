@@ -39,6 +39,7 @@ data TypeError = SymbolMissingType XObj Env
                | TooManyAnnotateCalls XObj
                | InvalidMemberType String
                | CannotSet XObj
+               | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -123,6 +124,8 @@ instance Show TypeError where
     msg
   show (CannotSet xobj) =
     "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+  show (DoesNotMatchSignatureAnnotation xobj sigTy) =
+    "Definition at " ++ prettyInfoFromXObj xobj ++ " does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)
 
 machineReadableErrorStrings :: TypeError -> [String]
 machineReadableErrorStrings err =
@@ -214,6 +217,10 @@ machineReadableErrorStrings err =
       [machineReadableInfoFromXObj xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
     (CannotConcretize xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Unable to concretize '" ++ pretty xobj ++ "'."]
+
+    (DoesNotMatchSignatureAnnotation xobj sigTy) ->
+      [machineReadableInfoFromXObj xobj ++ "Definition does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)]
+
     _ ->
       [show err]
 
