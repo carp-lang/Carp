@@ -166,6 +166,13 @@
         (aset-uninitialized! &na i (f (nth a i))))
       na))
 
+  (defn copy-map-2 [f a b]
+    (let-do [l (Int.min (length a) (length b))
+             na (allocate l)]
+      (for [i 0 l]
+        (aset-uninitialized! &na i (f (nth a i) (nth b i))))
+      na))
+
   (doc sum-length "Returns the sum of lengths from an Array of Arrays.")
   (defn sum-length [xs]
     (let-do [sum 0
@@ -190,4 +197,7 @@
             (aset-uninitialized! &result (+ j k) @(Array.nth arr k)))
           (set! j (+ j len))))
       result))
+
+  (defn enumerated [xs]
+    ())
 )
