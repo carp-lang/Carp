@@ -41,21 +41,32 @@
 ;; (sig foo String)
 ;; (def foo 123)
 
-(load "Macros.carp")
-;; (load "Int.carp")
-;; (load "Char.carp")
-;; (load "IO.carp")
 
-(defmodule A
-  (private f)
-  (defn f [] 127)
-  ;;(defn g [] (f))
-  )
+;; PRIVATE
+;; (load "Macros.carp")
+;; ;; (load "Int.carp")
+;; ;; (load "Char.carp")
+;; ;; (load "IO.carp")
 
-(defn amam []
-  (A.f))
+;; (defmodule A
+;;   (private f)
+;;   (defn f [] 127)
+;;   ;;(defn g [] (f))
+;;   )
 
-(use A)
+;; (defn amam []
+;;   (A.f))
 
-(defn main []
-  (f))
+;; (use A)
+
+;; (defn main []
+;;   (f))
+
+
+(defmacro restt
+  [l]
+  (cdr (cdr l)))
+
+(defn main
+  []
+  (println* &(restt [1 2 3 4 5])))
