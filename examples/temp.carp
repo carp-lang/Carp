@@ -61,12 +61,3 @@
 
 ;; (defn main []
 ;;   (f))
-
-
-(defmacro restt
-  [l]
-  (cdr (cdr l)))
-
-(defn main
-  []
-  (println* &(restt [1 2 3 4 5])))

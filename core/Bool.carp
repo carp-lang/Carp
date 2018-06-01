@@ -10,4 +10,3 @@
 (defmodule RefBool
   (defn = [a b]
     (Bool.= @a @b)))
-)

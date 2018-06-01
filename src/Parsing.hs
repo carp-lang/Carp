@@ -334,7 +334,9 @@ sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]
 lispSyntax :: Parsec.Parsec String ParseState [XObj]
 lispSyntax = do padding <- Parsec.many whitespace
                 incColumn (length padding)
-                Parsec.sepBy sexpr whitespaceOrNothing
+                result <- Parsec.sepBy sexpr whitespaceOrNothing
+                Parsec.eof
+                return result
 
 parse :: String -> String -> Either Parsec.ParseError [XObj]
 parse text fileName = let initState = ParseState (Info 1 1 fileName (Set.fromList []) 0)
