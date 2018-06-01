@@ -390,7 +390,7 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
             case contextExecMode ctx of
               Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
               _ -> putStrLnWithColor Red msg
-            return ctx
+            throw CancelEvaluationException
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
 
 reportExecutionError :: Context -> String -> IO Context
