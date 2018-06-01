@@ -29,9 +29,8 @@
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
 *** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 *** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
-*** Report correct column in errors at all times, sometimes it's a bit too low.
+*** Can't define '=' in terms of '=' on generic members of type, see Pair.=
 *** Array.init-empty-with-capacity function. What's a better name?
-*** Undefined symbol does not stop execution when running with -x
 *** A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
 ** 1.0
 *** Macros for generating 'read' functions to read objects back into memory from string representation.
@@ -50,7 +49,6 @@
 * Tooling
 ** 0.4
 *** Make the flags sent to the compiler be saved into different groups depending on actual compiler.
-*** Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting).
 *** Show "call stack" when getting an error during concretization.
 *** Allow echoing of infered type at the REPL (must be silenced when loading a file though)
 *** Only reload files once, keep track of which ones have already been reloaded.

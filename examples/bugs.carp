@@ -46,12 +46,6 @@
 ;;     (println* r)))
 
 
-(defn fnOne
-  []
-  @"hello")) ;;extra paren
+(defn f [] a)
 
-(defn main
-  []
-  (do
-    (println* &(fnOne))
-    0))
+(defn g [] 123)
