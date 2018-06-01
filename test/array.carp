@@ -125,4 +125,12 @@
                     &[1 2 3 4 5 6 7 8]
                     &(concat &[[1] [2 3] [4 5 6] [7 8]])
                     "concat works as expected")
+      (assert-equal test
+                    &[11 22 33]
+                    &(zip IntRef.+ &[1 2 3 4 5 6 7] &[10 20 30])
+                    "zip works as expected")
+      (assert-equal test
+                    "[(Pair 0 @\"a\") (Pair 1 @\"b\") (Pair 2 @\"c\")]"
+                    &(str &(Array.enumerated &[@"a" @"b" @"c"]))
+                    "enumerated works as expected")
       (print-test-results test))))

@@ -22,6 +22,7 @@ coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfa
                                                                       , "Long"
                                                                       , "Double"
                                                                       , "Float"
+                                                                      , "Tuples"
                                                                       , "Array"
                                                                       , "Char"
                                                                       , "Bool"

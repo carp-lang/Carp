@@ -166,7 +166,8 @@
         (aset-uninitialized! &na i (f (nth a i))))
       na))
 
-  (defn copy-map-2 [f a b]
+  (doc zip "Map over two arrays using a function that takes two arguments. Produces a new array with the length of the shorter input.")
+  (defn zip [f a b]
     (let-do [l (Int.min (length a) (length b))
              na (allocate l)]
       (for [i 0 l]
@@ -198,6 +199,9 @@
           (set! j (+ j len))))
       result))
 
+  (doc enumerated "Create a new array of Pair:s where the first position is the index and the second position is the element from the original array.")
   (defn enumerated [xs]
-    ())
+    (zip Pair.init-from-refs
+         &(range 0 (length xs) 1) ;; Inefficient, creates a temporary array.
+         xs))
 )

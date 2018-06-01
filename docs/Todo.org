@@ -4,7 +4,6 @@
 ** 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 * Unsorted Todo:s
-** Syntax for pointer type, perhaps "^"?
 * Critical Bugs
 ** 0.3
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
@@ -14,7 +13,7 @@
 *** Parse error doesn't stop execution when running with -x flag from command line
 * Big Language Features
 ** 0.4
-*** Type annotations and private/hide flags should be honored.
+*** Type annotations should affect the type, not just check it.
 *** Stack allocated Array with an explicit size.
 *** Deps function for templates should return an Either to enable errors when instantiating deps.
 ***
@@ -56,7 +55,6 @@
 ** 0.4
 *** Make the flags sent to the compiler be saved into different groups depending on actual compiler.
 *** Hide instances of templates/generic functions when printing the environment (by default, allow it as a setting).
-*** Entering the name of a symbol at the REPL prints nothing.
 *** Show "call stack" when getting an error during concretization.
 *** Allow echoing of infered type at the REPL (must be silenced when loading a file though)
 *** Only reload files once, keep track of which ones have already been reloaded.
@@ -64,14 +62,13 @@
 *** Flycheck hangs and eats all resources sometimes.
 
 *** Emacs-mode: Make foreach and deftype indent correctly.
-*** Make foreach, and*, not*, etc. proper keywords.
+*** Emacs-mode: Make foreach, and*, not*, etc. into keywords (highlight them).
 ** 1.0
 *** Project templates.
 *** Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 *** Preserve whitespace to allow saving forms back to disk.
 *** Refactorings at the REPL. Rename, extract function, add/remove parameter?
 *** --watch flag for recompiling when the files in the project change?
-
 * Code generation
 ** [1.X] LLVM backend
 ** [?] Emit #LINE macros in the generated C code?
@@ -97,6 +94,7 @@
 ** Reintroduce the p-string patch but with support for embedded string literals?
 
 ** Rename deftype to defstruct?
+** Syntax for pointer type, perhaps "^"?
 * Notes
 ** Travis
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
