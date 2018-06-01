@@ -455,8 +455,8 @@ commandCar [x] =
 commandCdr :: CommandCallback
 commandCdr [x] =
   case x of
-    XObj (Lst (_ : cdr)) _ _ -> return (Right (XObj (Lst cdr) Nothing Nothing))
-    XObj (Arr (_ : cdr)) _ _ -> return (Right (XObj (Arr cdr) Nothing Nothing))
+    XObj (Lst (_ : cdr)) i _ -> return (Right (XObj (Lst cdr) i Nothing))
+    XObj (Arr (_ : cdr)) i _ -> return (Right (XObj (Arr cdr) i Nothing))
     _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list"))
 
 commandLast :: CommandCallback
@@ -469,8 +469,8 @@ commandLast [x] =
 commandAllButLast :: CommandCallback
 commandAllButLast [x] =
   case x of
-    XObj (Lst lst) _ _ -> return (Right (XObj (Lst (init lst)) Nothing Nothing))
-    XObj (Arr arr) _ _ -> return (Right (XObj (Arr (init arr)) Nothing Nothing))
+    XObj (Lst lst) i _ -> return (Right (XObj (Lst (init lst)) i Nothing))
+    XObj (Arr arr) i _ -> return (Right (XObj (Arr (init arr)) i Nothing))
     _ -> return (Left (EvalError "Applying 'all-but-last' to non-list or empty list."))
 
 commandCons :: CommandCallback

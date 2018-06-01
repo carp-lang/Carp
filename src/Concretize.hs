@@ -783,8 +783,9 @@ manageMemory typeEnv globalEnv root =
         varOfXObj xobj =
           case xobj of
             XObj (Sym (SymPath [] name) _) _ _ -> name
-            _ -> let Just i = info xobj
-                 in  freshVar i
+            _ -> case info xobj of
+                   Just i -> freshVar i
+                   Nothing -> error ("Missing info on " ++ show xobj)
 
 suffixTyVars :: String -> Ty -> Ty
 suffixTyVars suffix t =
