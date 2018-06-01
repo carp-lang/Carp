@@ -90,6 +90,10 @@
                   1.0f
                   (floor 1.9f)
                   "floor works as expected")
+    (assert-equal test
+                  123.0f
+                  123f
+                  "float literals works as expected")
     (assert-op test
                0.3f
                (mod 9.3f 3.0f)

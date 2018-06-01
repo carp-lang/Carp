@@ -13,7 +13,6 @@
 *** Parse error doesn't stop execution when running with -x flag from command line
 * Big Language Features
 ** 0.4
-*** Type annotations should affect the type, not just check it.
 *** Stack allocated Array with an explicit size.
 *** Deps function for templates should return an Either to enable errors when instantiating deps.
 ***
@@ -24,12 +23,12 @@
 
 * Smaller Language Features ("niceties")
 ** 0.4
+*** Type annotations should affect the type, not just check it.
 *** Handle self-referencing members in structs (also for function types, i.e. "(deftype Foo [f (Fn [Foo] Foo)])")
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
 *** If main returns the value of a function returning a generic type it will fail (because there is no constraint for "Int or ()")
 *** Errors in macros should present the code location of both the macro and of the code that uses of it.
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
-*** Should be possible to read float literal without '.', eg. "3f" (because that's how they print sometimes)
 *** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 *** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 *** Report correct column in errors at all times, sometimes it's a bit too low.

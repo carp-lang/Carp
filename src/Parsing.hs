@@ -49,6 +49,15 @@ float = do (i, num) <- maybeSigned
              then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
              else return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
 
+floatNoPeriod :: Parsec.Parsec String ParseState XObj
+floatNoPeriod =
+  do (i, num) <- maybeSigned
+     _ <- Parsec.char 'f'
+     incColumn 1
+     if num == "-"
+       then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
+       else return (XObj (Num FloatTy (read num)) i Nothing)
+
 integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- maybeSigned
              if num == "-"
@@ -65,6 +74,7 @@ long = do (i, num) <- maybeSigned
 
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
+         Parsec.try floatNoPeriod <|>
          Parsec.try double <|>
          Parsec.try long <|>
          Parsec.try integer
