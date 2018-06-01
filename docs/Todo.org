@@ -9,7 +9,6 @@
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
 *** Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 *** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
-*** This hangs the repl: `(expand '(load-and-use SDL))`
 * Big Language Features
 ** 0.4
 *** Stack allocated Array with an explicit size.
