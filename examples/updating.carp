@@ -39,8 +39,4 @@
       (do
         (println (ref (Array.str &monsters)))
         (let [new-monsters (Array.endo-map Monster.move monsters)]
-          (println (ref (Array.str &new-monsters))))))
-
-    0 ;; <- Return value, should not be needed?!
-
-    ))
+          (println (ref (Array.str &new-monsters))))))))

@@ -15,4 +15,4 @@
 (defn main []
   (do
     (f)
-    0))
+    0)) ;; Need a return value to get a concrete type.

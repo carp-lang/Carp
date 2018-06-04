@@ -45,7 +45,7 @@
 ;;       (set! r &xs))
 ;;     (println* r)))
 
+(defn f [] (the t0 123))
 
-(defn f [] a)
-
-(defn g [] 123)
+(defn main []
+  (f))

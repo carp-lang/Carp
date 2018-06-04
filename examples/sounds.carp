@@ -42,5 +42,4 @@
         (println* "Music is " (if (null? music) "null." "not null."))
         (println* "Play result: " (Mixer.play-music music -1))
         )
-      (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0)
-      0)))
+      (SDLApp.run-with-callbacks &app event-handler id SDLApp.default-draw 0))))

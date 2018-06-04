@@ -52,7 +52,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       else do visitedBody <- visit False env body -- allowAmbig == 'False'
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
-                          if t /= UnitTy && t /= IntTy
+                          if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
                           then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                           else return [defn, nameSymbol, args, okBody]
 
