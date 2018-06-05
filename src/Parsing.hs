@@ -4,9 +4,14 @@ module Parsing (parse, validCharacters, balance) where
 
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
+-- import Text.Parsec.Error (newErrorMessage, Message(..))
+-- import Text.Parsec.Pos (newPos)
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Obj
 import Types
+import Util
+import Control.Monad.Error.Class (throwError)
 
 import Debug.Trace
 
@@ -313,6 +318,18 @@ list = do i <- createInfo
           incColumn 1
           return (XObj (Lst objs) i Nothing)
 
+dictionary :: Parsec.Parsec String ParseState XObj
+dictionary = do i <- createInfo
+                _ <- Parsec.char '{'
+                incColumn 1
+                objs <- readObjs
+                _ <- Parsec.char '}'
+                incColumn 1
+                let objs' = if even (length objs) then objs else init objs -- Drop last if uneven nr of forms.
+                -- TODO! Signal error here!
+                return (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
+
+
 ref :: Parsec.Parsec String ParseState XObj
 ref = do i <- createInfo
          _ <- Parsec.char '&'
@@ -337,7 +354,7 @@ quote = do i1 <- createInfo
            return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
-sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, atom]
+sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, dictionary, atom]
            _ <- whitespaceOrNothing
            return x
 

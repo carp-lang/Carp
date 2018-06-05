@@ -14,7 +14,7 @@ data SymbolMode = Symbol
                 | LookupLocal
                 | LookupGlobal
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
-                deriving (Eq, Show)
+                deriving (Eq, Show, Ord)
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
@@ -27,6 +27,7 @@ data Obj = Sym SymPath SymbolMode
          | Bol Bool
          | Lst [XObj]
          | Arr [XObj]
+         | Dict (Map.Map XObj XObj)
          | Defn
          | Def
          | Do
@@ -54,6 +55,12 @@ data Obj = Sym SymPath SymbolMode
          | Interface Ty [SymPath]
          deriving (Show, Eq)
 
+-- | This instance is needed for the dynamic Dictionary
+instance Ord Obj where
+  compare (Str a) (Str b) = compare a b
+  compare (Num _ a) (Num _ b) = compare a b
+  compare a b = compare (show a) (show b)
+  -- TODO: handle comparison of lists, arrays and dictionaries
 
 newtype CommandFunctionType = CommandFunction { getCommand :: ([XObj] -> StateT Context IO (Either EvalError XObj)) }
 
@@ -80,7 +87,7 @@ data Info = Info { infoLine :: Int
                  , infoFile :: String
                  , infoDelete :: Set.Set Deleter
                  , infoIdentifier :: Int
-                 } deriving (Show, Eq)
+                 } deriving (Show, Eq, Ord)
 
 dummyInfo :: Info
 dummyInfo = Info 0 0 "dummy-file" Set.empty (-1)
@@ -130,7 +137,7 @@ freshVar i = "_" ++ show (infoIdentifier i)
 data XObj = XObj { obj :: Obj
                  , info :: Maybe Info
                  , ty :: Maybe Ty
-                 } deriving (Show, Eq)
+                 } deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
 getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
@@ -186,6 +193,7 @@ pretty = visit 0
           case obj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
+            Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
             Num FloatTy num -> show num ++ "f"
