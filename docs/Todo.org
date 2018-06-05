@@ -9,6 +9,7 @@
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
 *** Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 *** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
+*** Can't define '=' in terms of '=' on generic members of type, see Pair.=
 * Big Language Features
 ** 0.4
 *** Stack allocated Array with an explicit size.
@@ -21,17 +22,15 @@
 
 * Smaller Language Features ("niceties")
 ** 0.4
-*** Type annotations should affect the type, not just check it.
-*** Handle self-referencing members in structs (also for function types, i.e. "(deftype Foo [f (Fn [Foo] Foo)])")
-*** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
 *** Errors in macros should present the code location of both the macro and of the code that uses of it.
-*** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass.
 *** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 *** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
-*** Can't define '=' in terms of '=' on generic members of type, see Pair.=
-*** Array.init-empty-with-capacity function. What's a better name?
-*** A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
+*** Type annotations should affect the type, not just check it.
 ** 1.0
+*** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
+*** Array.init-empty-with-capacity function. What's a better name?
+*** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
+*** A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
 *** Macros for generating 'read' functions to read objects back into memory from string representation.
 *** A way to assert compiler errors in tests
 *** Rename type variables from t0, t1, t2 to a, b, c, etc.
@@ -47,21 +46,19 @@
 
 * Tooling
 ** 0.4
-*** Make the flags sent to the compiler be saved into different groups depending on actual compiler.
-*** Show "call stack" when getting an error during concretization.
-*** Allow echoing of infered type at the REPL (must be silenced when loading a file though)
 *** Only reload files once, keep track of which ones have already been reloaded.
 *** Prevent run if no exe has been successfully built.
 *** Flycheck hangs and eats all resources sometimes.
 
-*** Emacs-mode: Make foreach and deftype indent correctly.
-*** Emacs-mode: Make foreach, and*, not*, etc. into keywords (highlight them).
 ** 1.0
+*** Show "call stack" when getting an error during concretization.
+*** Make the flags sent to the compiler be saved into different groups depending on actual compiler.
 *** Project templates.
 *** Somehow make it possible to enter ":t foo" at the REPL (can't be done now because each atom is evaluated separately)
 *** Preserve whitespace to allow saving forms back to disk.
 *** Refactorings at the REPL. Rename, extract function, add/remove parameter?
-*** --watch flag for recompiling when the files in the project change?
+*** Emacs-mode: Make foreach and deftype indent correctly.
+*** Emacs-mode: Make foreach, and*, not*, etc. into keywords (highlight them).
 * Code generation
 ** [1.X] LLVM backend
 ** [?] Emit #LINE macros in the generated C code?
@@ -69,11 +66,11 @@
 * Libraries
 ** Make Vector generic
 ** Threading
+** Game development libraries with switchable backends
 * Documentation
 ** Document all core functions
 ** Write a guide to how the compiler internals work
 ** Improve the Memory.md docs
-
 * Ugliness
 ** Would be nice if Info from deftypes propagated to the templates for source location of their member functions.
 
@@ -89,5 +86,4 @@
 ** Rename deftype to defstruct?
 ** Syntax for pointer type, perhaps "^"?
 * Notes
-** Travis
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
