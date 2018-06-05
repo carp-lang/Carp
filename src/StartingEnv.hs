@@ -14,26 +14,7 @@ import Eval
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
-coreModules carpDir = map (\s -> carpDir ++ "/core/" ++ s ++ ".carp") [ "Interfaces"
-                                                                      , "Macros"
-                                                                      , "Dynamic"
-                                                                      , "Format"
-                                                                      , "Int"
-                                                                      , "Long"
-                                                                      , "Double"
-                                                                      , "Float"
-                                                                      , "Tuples"
-                                                                      , "Array"
-                                                                      , "Char"
-                                                                      , "Bool"
-                                                                      , "String"
-                                                                      , "IO"
-                                                                      , "System"
-                                                                      , "Pattern"
-                                                                      , "Debug"
-                                                                      , "Format"
-                                                                      , "Random"
-                                                                      ]
+coreModules carpDir = [carpDir ++ "/core/Core.carp"]
 
 -- | The array module contains functions for working with the Array type.
 arrayModule :: Env
