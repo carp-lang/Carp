@@ -2,6 +2,7 @@
 (load "SDL_ttf.carp")
 
 ;;(Debug.sanitize-addresses)
+(Project.config "title" "Fonts")
 
 (def font (the (Ptr TTF_Font) NULL))
 (def text1 (the (Ptr SDL_Texture) NULL))

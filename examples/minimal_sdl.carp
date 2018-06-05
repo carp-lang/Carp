@@ -1,5 +1,7 @@
 (load-and-use SDL)
 
+(Project.config "title" "Minimal")
+
 (defn tick [state]
   (+ state 10))
 

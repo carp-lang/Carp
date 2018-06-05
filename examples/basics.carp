@@ -3,6 +3,7 @@
 (use Float)
 (use Array)
 (use IO)
+(Project.no-echo)
 
 (defn fib [n]
   (if (< n 2)

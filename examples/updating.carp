@@ -1,6 +1,7 @@
 ;; A slightly bigger example of how to work with structs and arrays that change
 
 (use IO)
+(Project.no-echo)
 
 (deftype Pos
     [x Float

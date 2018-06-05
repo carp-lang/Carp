@@ -1,4 +1,5 @@
 (Debug.sanitize-addresses)
+(Project.no-echo)
 (use Array)
 
 (deftype (Trivial t) [x t])

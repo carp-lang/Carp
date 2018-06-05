@@ -1,6 +1,7 @@
 (use IO)
 (use Int)
 (use Array)
+(Project.no-echo)
 
 (definterface fmap (λ [(λ [a] a) b] b))
 

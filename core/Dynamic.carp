@@ -7,6 +7,13 @@
   (defdynamic dec [x]
     (- x 1))
 
+  (defmodule Project
+    (doc no-echo "Turn off debug printing in the compiler.")
+    (defdynamic no-echo []
+      (do
+        (Project.config "print-ast" false)
+        (Project.config "echo-compiler-cmd" false))))
+
   )
 
 

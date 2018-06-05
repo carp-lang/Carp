@@ -1,3 +1,5 @@
+(Project.no-echo)
+
 (defn changing-target-of-ref []
   (let [s1 @"hello"
         s2 @"goodbye"

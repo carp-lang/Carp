@@ -1,4 +1,5 @@
 (use Array)
+(Project.no-echo)
 
 (deftype Age [x Int])
 

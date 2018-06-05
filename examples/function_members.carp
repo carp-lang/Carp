@@ -1,3 +1,4 @@
+(Project.no-echo)
 (Debug.sanitize-addresses)
 
 (Project.config "print-ast" true)

@@ -1,4 +1,5 @@
 (local-include "../examples/banana.h")
+(Project.no-echo)
 
 (register-type Apple)
 (register-type Banana [price Double, size Int])
