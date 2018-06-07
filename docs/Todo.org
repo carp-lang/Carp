@@ -12,18 +12,17 @@
 *** Can't define '=' in terms of '=' on generic members of type, see Pair.=
 * Big Language Features
 ** 0.4
-*** Stack allocated Array with an explicit size.
 ** 1.0
+*** Stack allocated Array with an explicit size.
 *** Good hashmap implementation with support for "{}" syntax.
 *** Tagged unions (also known as "sum types" or "enums")
 *** Lambdas (anonymous functions) that compile on Windows and don't leak memory!
 
 * Smaller Language Features ("niceties")
 ** 0.4
-*** Prevent usage of 'private' functions from outside their module.
-*** Errors in macros should present the code location of both the macro and of the code that uses of it.
+*** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.
 *** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
-*** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
+*** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
@@ -84,5 +83,6 @@
 
 ** Rename deftype to defstruct?
 ** Syntax for pointer type, perhaps "^"?
+** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * Notes
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
