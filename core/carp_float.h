@@ -21,6 +21,12 @@ float Float_from_MINUS_int(int x) {
     return (float)x;
 }
 
+int Float_to_MINUS_bytes(float x) {
+    int y;
+    memcpy(&y, &x, sizeof(float));
+    return y;
+}
+
 float Float_abs(float x) {
     return fabs(x);
 }

@@ -93,4 +93,14 @@
                (mod 9.3 3.0)
                "mod works as expected"
                Double.approx)
+    (assert-equal test
+                  4607182418800017408l
+                  (to-bytes 1.0)
+                  "to-bytes works as expected I"
+    )
+    (assert-equal test
+                  0l
+                  (to-bytes 0.0)
+                  "to-bytes works as expected II"
+    )
     (print-test-results test)))

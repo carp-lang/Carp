@@ -22,6 +22,12 @@ double Double_from_MINUS_int(int x) {
     return (double)x;
 }
 
+long Double_to_MINUS_bytes(double x) {
+    long y;
+    memcpy(&y, &x, sizeof(double));
+    return y;
+}
+
 float Double_to_MINUS_float(double x) {
     return (float)x;
 }
