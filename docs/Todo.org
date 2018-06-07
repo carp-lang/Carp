@@ -43,7 +43,6 @@
 
 * Tooling
 ** 0.4
-*** Only reload files once, keep track of which ones have already been reloaded.
 *** Prevent run if no exe has been successfully built.
 *** Flycheck hangs and eats all resources sometimes.
 

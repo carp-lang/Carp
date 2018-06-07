@@ -50,6 +50,7 @@ isArrayTypeOK _ = True
 
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
+-- | TODO: Only change variables that are machine generated.
 beautifyTypeVariables :: XObj -> Either TypeError XObj
 beautifyTypeVariables root =
   let Just t = ty root
