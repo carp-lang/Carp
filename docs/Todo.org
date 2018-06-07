@@ -31,7 +31,6 @@
 *** A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
 *** Macros for generating 'read' functions to read objects back into memory from string representation.
 *** A way to assert compiler errors in tests
-*** Rename type variables from t0, t1, t2 to a, b, c, etc.
 *** Kind-checking for types (make sure the type variables match, etc).
 *** Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
 *** Enable errors when instantiating deps. Requires that the deps function for templates should return an Either.

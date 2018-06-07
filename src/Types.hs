@@ -63,7 +63,7 @@ instance Show Ty where
   show TypeTy                = "Type"
   show InterfaceTy           = "Interface"
   show (StructTy s [])       = s
-  show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithComma (map show typeArgs) ++ ")"
+  show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"
   show (RefTy r)             =
     case r of
