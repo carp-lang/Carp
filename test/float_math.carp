@@ -93,10 +93,20 @@
     (assert-equal test
                   123.0f
                   123f
-                  "float literals works as expected")
+                  "float literals work as expected")
     (assert-op test
                0.3f
                (mod 9.3f 3.0f)
                "mod works as expected"
                Float.approx)
+    (assert-equal test
+                  1065353216
+                  (to-bytes 1f)
+                  "to-bytes works as expected I"
+    )
+    (assert-equal test
+                  0
+                  (to-bytes 0.0f)
+                  "to-bytes works as expected II"
+    )
     (print-test-results test)))

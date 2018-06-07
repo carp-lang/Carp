@@ -17,6 +17,7 @@
   (register from-float (Fn [Float] Double))
   (register to-long (Fn [Double] Long))
   (register from-long (Fn [Long] Double))
+  (register to-bytes (Fn [Double] Long))
   (register sin (Fn [Double] Double))
   (register cos (Fn [Double] Double))
   (register tan (Fn [Double] Double))
