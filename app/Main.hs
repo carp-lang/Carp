@@ -36,6 +36,7 @@ defaultProject =
                                 _ ->       "clang -fPIC -lm"
           , projectCore = True
           , projectEchoCompilationCommand = False
+          , projectCanExecute = False
           }
 
 -- | Starting point of the application.

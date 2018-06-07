@@ -414,6 +414,7 @@ data Project = Project { projectTitle :: String
                        , projectCompiler :: String
                        , projectCore :: Bool
                        , projectEchoCompilationCommand :: Bool
+                       , projectCanExecute :: Bool
                        }
 
 projectFlags :: Project -> String
@@ -437,6 +438,7 @@ instance Show Project where
         compiler
         core
         echoCompilationCommand
+        canExecute
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
@@ -447,6 +449,7 @@ instance Show Project where
             , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
             , "Echo C: " ++ if echoC then "true" else "false"
             , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
+            , "Can execute: " ++ if canExecute then "true" else "false"
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
             , "CARP_DIR: " ++ carpDir

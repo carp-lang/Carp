@@ -43,7 +43,6 @@
 
 * Tooling
 ** 0.4
-*** Prevent run if no exe has been successfully built.
 *** Flycheck hangs and eats all resources sometimes.
 
 ** 1.0

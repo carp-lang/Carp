@@ -153,13 +153,17 @@ commandCat args =
 commandRunExe :: CommandCallback
 commandRunExe args =
   do ctx <- get
-     let outDir = projectOutDir (contextProj ctx)
+     let proj = contextProj ctx
+         outDir = projectOutDir proj
          outExe = "\"" ++ outDir ++ "/" ++ projectTitle (contextProj ctx) ++ "\""
-     liftIO $ do handle <- spawnCommand outExe
-                 exitCode <- waitForProcess handle
-                 case exitCode of
-                   ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
-                   ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
+     if projectCanExecute proj
+       then liftIO $ do handle <- spawnCommand outExe
+                        exitCode <- waitForProcess handle
+                        case exitCode of
+                          ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
+                          ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
+       else liftIO $ do putStrLnWithColor Red "Can't call the 'run' command, need to build an executable first (requires a 'main' function)."
+                        return dynamicNil
 
 -- | Command for building the project, producing an executable binary or a shared library.
 commandBuild :: CommandCallback
@@ -182,29 +186,40 @@ commandBuild args =
        Left err ->
          return (Left (EvalError ("[CODEGEN ERROR] " ++ show err)))
        Right okSrc ->
-         liftIO $ do let compiler = projectCompiler proj
-                         echoCompilationCommand = projectEchoCompilationCommand proj
-                         incl = projectIncludesToC proj
-                         includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-                         switches = " -g "
-                         flags = projectFlags proj ++ includeCorePath ++ switches
-                         outDir = projectOutDir proj ++ "/"
-                         outMain = outDir ++ "main.c"
-                         outExe = outDir ++ projectTitle proj
-                         outLib = outDir ++ projectTitle proj
-                     createDirectoryIfMissing False outDir
-                     writeFile outMain (incl ++ okSrc)
-                     case Map.lookup "main" (envBindings env) of
-                       Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
-                                    when echoCompilationCommand (putStrLn cmd)
-                                    callCommand cmd
-                                    when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
-                                    return dynamicNil
-                       Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
-                                     when echoCompilationCommand (putStrLn cmd)
-                                     callCommand cmd
-                                     when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
-                                     return dynamicNil
+         do let compiler = projectCompiler proj
+                echoCompilationCommand = projectEchoCompilationCommand proj
+                incl = projectIncludesToC proj
+                includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
+                switches = " -g "
+                flags = projectFlags proj ++ includeCorePath ++ switches
+                outDir = projectOutDir proj ++ "/"
+                outMain = outDir ++ "main.c"
+                outExe = outDir ++ projectTitle proj
+                outLib = outDir ++ projectTitle proj
+            liftIO $ createDirectoryIfMissing False outDir
+            liftIO $ writeFile outMain (incl ++ okSrc)
+            case Map.lookup "main" (envBindings env) of
+              Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
+                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                       callCommand cmd
+                                       when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
+                           setProjectCanExecute True
+                           return dynamicNil
+              Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
+                            liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                        callCommand cmd
+                                        when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
+                            setProjectCanExecute False
+                            return dynamicNil
+
+setProjectCanExecute :: Bool -> StateT Context IO ()
+setProjectCanExecute value =
+  do ctx <- get
+     let proj = contextProj ctx
+         proj' = proj { projectCanExecute = value }
+         ctx' = ctx { contextProj = proj' }
+     put ctx'
+     return ()
 
 -- | Command for printing all the bindings in the current environment.
 commandListBindings :: CommandCallback
