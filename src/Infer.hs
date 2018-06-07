@@ -34,7 +34,8 @@ annotate typeEnv globalEnv xobj =
   do initiated <- initialTypes typeEnv globalEnv xobj
      (annotated, dependencies) <- annotateUntilDone typeEnv globalEnv initiated [] 100
      (final, deleteDeps) <- manageMemory typeEnv globalEnv annotated
-     return (final, dependencies ++ deleteDeps)
+     finalWithNiceTypes <- beautifyTypeVariables final
+     return (finalWithNiceTypes, dependencies ++ deleteDeps)
 
 -- | Call the 'annotateOne' function until nothing changes
 annotateUntilDone :: TypeEnv -> Env -> XObj -> [XObj] -> Int -> Either TypeError (XObj, [XObj])

@@ -4,6 +4,10 @@ import Types
 import Obj
 import Util
 import TypeError
+import Data.List (nub)
+import qualified Data.Map as Map
+
+import Debug.Trace
 
 {-# ANN assignTypes "HLint: ignore Eta reduce" #-}
 -- | Walk the whole expression tree and replace all occurences of VarTy with their corresponding actual type.
@@ -43,3 +47,27 @@ assignTypes mappings root = visit root
 isArrayTypeOK :: Ty -> Bool
 isArrayTypeOK (StructTy "Array" [RefTy _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
+
+
+-- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
+beautifyTypeVariables :: XObj -> Either TypeError XObj
+beautifyTypeVariables root =
+  let Just t = ty root
+      tys = nub (typeVariablesInOrderOfAppearance t)
+      mappings = Map.fromList (zip (map (\(VarTy name) -> name) tys)
+                                   (map (VarTy . (:[])) ['a'..]))
+  in  assignTypes mappings root
+
+typeVariablesInOrderOfAppearance :: Ty -> [Ty]
+typeVariablesInOrderOfAppearance (FuncTy argTys retTy) =
+  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy
+typeVariablesInOrderOfAppearance (StructTy _ typeArgs) =
+  concatMap typeVariablesInOrderOfAppearance typeArgs
+typeVariablesInOrderOfAppearance (RefTy innerTy) =
+  typeVariablesInOrderOfAppearance innerTy
+typeVariablesInOrderOfAppearance (PointerTy innerTy) =
+  typeVariablesInOrderOfAppearance innerTy
+typeVariablesInOrderOfAppearance t@(VarTy _) =
+  [t]
+typeVariablesInOrderOfAppearance _ =
+  []
