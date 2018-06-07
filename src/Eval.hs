@@ -929,17 +929,21 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                                          "Invalid path: '" ++ path ++ "'"
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
-            contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
-                                    handle <- SysIO.openFile canonicalPath SysIO.ReadMode
-                                    SysIO.hSetEncoding handle SysIO.utf8
-                                    SysIO.hGetContents handle
-            let files = projectFiles proj
-                files' = if canonicalPath `elem` files
-                         then files
-                         else files ++ [canonicalPath]
-                proj' = proj { projectFiles = files' }
-            newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
-            put newCtx
+            let alreadyLoaded = projectAlreadyLoaded proj
+            if canonicalPath `elem` alreadyLoaded
+              then do --liftIO (putStrLn ("Ignoring 'load' command for already loaded file '" ++ canonicalPath ++ "'"))
+                      return ()
+              else do contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
+                                              handle <- SysIO.openFile canonicalPath SysIO.ReadMode
+                                              SysIO.hSetEncoding handle SysIO.utf8
+                                              SysIO.hGetContents handle
+                      let files = projectFiles proj
+                          files' = if canonicalPath `elem` files
+                                   then files
+                                   else files ++ [canonicalPath]
+                          proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
+                      newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
+                      put newCtx
             return dynamicNil
 
 -- | Load several files in order.
@@ -955,8 +959,15 @@ commandReload args =
   do ctx <- get
      let paths = projectFiles (contextProj ctx)
          f :: Context -> FilePath -> IO Context
-         f context filepath = do contents <- readFile filepath
-                                 executeString False context contents filepath
+         f context filepath = do let proj = contextProj context
+                                     alreadyLoaded = projectAlreadyLoaded proj
+                                 if filepath `elem` alreadyLoaded
+                                   then do --liftIO (putStrLn ("Ignoring reload for already loaded file '" ++ filepath ++ "'"))
+                                           return context
+                                   else do --liftIO (putStrLn ("Reloading '" ++ filepath ++ "'"))
+                                           contents <- readFile filepath
+                                           let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
+                                           executeString False (context { contextProj = proj' }) contents filepath
      newCtx <- liftIO (foldM f ctx paths)
      put newCtx
      return dynamicNil

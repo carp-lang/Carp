@@ -403,6 +403,7 @@ data Project = Project { projectTitle :: String
                        , projectCFlags :: [FilePath]
                        , projectLibFlags :: [FilePath]
                        , projectFiles :: [FilePath]
+                       , projectAlreadyLoaded :: [FilePath]
                        , projectEchoC :: Bool
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
@@ -425,6 +426,7 @@ instance Show Project where
         cFlags
         libFlags
         srcFiles
+        alreadyLoaded
         echoC
         carpDir
         outDir
@@ -442,6 +444,7 @@ instance Show Project where
             , "Cflags:\n    " ++ joinWith "\n    " cFlags
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
             , "Carp source files:\n    " ++ joinWith "\n    " srcFiles
+            , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
             , "Echo C: " ++ if echoC then "true" else "false"
             , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
             , "Output directory: " ++ outDir

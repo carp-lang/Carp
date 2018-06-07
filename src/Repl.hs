@@ -85,7 +85,12 @@ repl context readSoFar =
         Just i -> do
           let concat = readSoFar ++ i ++ "\n"
           case balance concat of
-            0 -> do let input' = if concat == "\n" then contextLastInput context else concat
-                    context' <- liftIO $ executeString True context input' "REPL"
+            0 -> do let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
+                    context' <- liftIO $ executeString True (resetAlreadyLoadedFiles context) input' "REPL"
                     repl (context' { contextLastInput = input' }) ""
             _ -> repl context concat
+
+resetAlreadyLoadedFiles context =
+  let proj = contextProj context
+      proj' = proj { projectAlreadyLoaded = [] }
+  in  context { contextProj = proj' }

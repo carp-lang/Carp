@@ -21,6 +21,7 @@ defaultProject =
           , projectCFlags = [""]
           , projectLibFlags = [""]
           , projectFiles = []
+          , projectAlreadyLoaded = []
           , projectEchoC = False
           , projectCarpDir = "./"
           , projectOutDir = "./out/"
