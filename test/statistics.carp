@@ -82,10 +82,6 @@
                   (iqr &[0.0 2.5 5.0 7.5 10.0])
                   "iqr works as expected")
     (assert-equal test
-                  10.0
-                  (sum &[2.5 5.0 2.0 0.5])
-                  "sum works as expected")
-    (assert-equal test
                   40.0
                   (stdev-pct &[1.0 1.0 9.0 9.0])
                   "stdev-pct works as expected")
