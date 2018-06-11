@@ -1,5 +1,3 @@
-(use Array)
-
 (definterface hash (Fn [(Ref a)] Int))
 
 (defmodule String
@@ -50,25 +48,25 @@
     (Bucket.init []))
 
   (defn grow [b e]
-    (set-entries @b (push-back @(entries b) e)))
+    (set-entries @b (Array.push-back @(entries b) e)))
 
   (defn get [b k]
     (let-do [e &(zero)
-             l (length (Bucket.entries b))
+             l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
-        (when (= (Entry.key (nth es i)) k)
+        (when (= (Entry.key (Array.nth es i)) k)
           (do
-            (set! e (Entry.value (nth es i)))
+            (set! e (Entry.value (Array.nth es i)))
             (break))))
        @e))
 
   (defn contains? [b k]
     (let-do [e false
-             l (length (Bucket.entries b))
+             l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
-        (when (= (Entry.key (nth es i)) k)
+        (when (= (Entry.key (Array.nth es i)) k)
           (do
             (set! e true)
             (break))))
@@ -76,10 +74,10 @@
 
   (defn remove [entries k]
     (let-do [nentries (the (Array (Entry a b)) [])]
-      (for [i 0 (length entries)]
-        (let [e (nth entries i)]
+      (for [i 0 (Array.length entries)]
+        (let [e (Array.nth entries i)]
           (unless (= (Entry.key e) k)
-             (set! nentries (push-back nentries @e)))))
+             (set! nentries (Array.push-back nentries @e)))))
       nentries))
 
   (defn shrink [b k]
@@ -94,26 +92,26 @@
   (def dflt-len 256)
 
   (defn create []
-    (init dflt-len (repeat dflt-len Bucket.empty)))
+    (init dflt-len (Array.repeat dflt-len Bucket.empty)))
 
   (defn create-with-len [len]
-    (init len (repeat len Bucket.empty)))
+    (init len (Array.repeat len Bucket.empty)))
 
   (defn put [m k v]
     (let [idx (Int.mod (hash k) @(n-buckets &m))
           b (buckets &m)]
-      (set-buckets m (aset @b
-                           idx
-                           (Bucket.grow (nth b idx) (Entry.init @k @v))))))
+      (set-buckets m (Array.aset @b
+                                 idx
+                                 (Bucket.grow (Array.nth b idx) (Entry.init @k @v))))))
 
   (defn get [m k]
     (let [idx (Int.mod (hash k) @(n-buckets m))]
-      (Bucket.get (nth (buckets m) idx) k)))
+      (Bucket.get (Array.nth (buckets m) idx) k)))
 
   (defn length [m]
     (let-do [c 0]
       (for [i 0 @(n-buckets m)]
-        (set! c (+ c (Array.length (Bucket.entries (nth (buckets m) i))))))
+        (set! c (+ c (Array.length (Bucket.entries (Array.nth (buckets m) i))))))
       c))
 
   (defn empty? [m]
@@ -121,28 +119,28 @@
 
   (defn contains? [m k]
     (let [idx (Int.mod (hash k) @(n-buckets m))]
-      (Bucket.contains? (nth (buckets m) idx) k)))
+      (Bucket.contains? (Array.nth (buckets m) idx) k)))
 
   (defn remove [m k]
     (let [idx (Int.mod (hash k) @(n-buckets &m))
           b (buckets &m)]
-      (set-buckets m (aset @b
-                           idx
-                           (Bucket.shrink (nth b idx) k)))))
+      (set-buckets m (Array.aset @b
+                                 idx
+                                 (Bucket.shrink (Array.nth b idx) k)))))
 
   (defn for-each [m f]
     (for [i 0 @(n-buckets m)]
-      (let [bucket (nth (buckets m) i)
-            len (length (Bucket.entries bucket))
+      (let [bucket (Array.nth (buckets m) i)
+            len (Array.length (Bucket.entries bucket))
             entries (Bucket.entries bucket)]
         (for [j 0 len]
-          (let [e (nth entries j)]
+          (let [e (Array.nth entries j)]
             (f (Entry.key e) (Entry.value e)))))))
 
   (defn from-array [a]
     (let-do [m (create)]
-      (for [i 0 (length a)]
-        (let [e (nth a i)
+      (for [i 0 (Array.length a)]
+        (let [e (Array.nth a i)
               k (Pair.a e)
               v (Pair.b e)]
           (set! m (put m k v))))
@@ -155,22 +153,22 @@
   (def dflt-len 256)
 
   (defn create []
-    (init dflt-len (repeat dflt-len Bucket.empty)))
+    (init dflt-len (Array.repeat dflt-len Bucket.empty)))
 
   (defn create-with-len [len]
-    (init len (repeat len Bucket.empty)))
+    (init len (Array.repeat len Bucket.empty)))
 
   (defn put [m k]
     (let [idx (Int.mod (hash k) @(n-buckets &m))
           b (buckets &m)]
-      (set-buckets m (aset @b
-                           idx
-                           (Bucket.grow (nth b idx) (Entry.init @k true))))))
+      (set-buckets m (Array.aset @b
+                                 idx
+                                 (Bucket.grow (Array.nth b idx) (Entry.init @k true))))))
 
   (defn length [m]
     (let-do [c 0]
       (for [i 0 @(n-buckets m)]
-        (set! c (+ c (Array.length (Bucket.entries (nth (buckets m) i))))))
+        (set! c (+ c (Array.length (Bucket.entries (Array.nth (buckets m) i))))))
       c))
 
   (defn empty? [m]
@@ -178,29 +176,29 @@
 
   (defn contains? [m k]
     (let [idx (Int.mod (hash k) @(n-buckets m))]
-      (Bucket.contains? (nth (buckets m) idx) k)))
+      (Bucket.contains? (Array.nth (buckets m) idx) k)))
 
   (defn remove [m k]
     (let [idx (Int.mod (hash k) @(n-buckets &m))
           b (buckets &m)]
-      (set-buckets m (aset @b
-                           idx
-                           (Bucket.shrink (nth b idx) k)))))
+      (set-buckets m (Array.aset @b
+                                 idx
+                                 (Bucket.shrink (Array.nth b idx) k)))))
 
 
   (defn for-each [m f]
     (for [i 0 @(n-buckets m)]
-      (let [bucket (nth (buckets m) i)
-            len (length (Bucket.entries bucket))
+      (let [bucket (Array.nth (buckets m) i)
+            len (Array.length (Bucket.entries bucket))
             entries (Bucket.entries bucket)]
         (for [j 0 len]
-          (let [e (nth entries j)]
+          (let [e (Array.nth entries j)]
             (f (Entry.key e)))))))
 
   (defn from-array [a]
     (let-do [m (create)]
-      (for [i 0 (length a)]
-        (let [e (nth a i)]
+      (for [i 0 (Array.length a)]
+        (let [e (Array.nth a i)]
           (set! m (put m e))))
       m))
 )
