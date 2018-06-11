@@ -1,0 +1,13 @@
+;; This is a regression test, the code should be rejected by the compiler.
+
+(definterface some-interface (Fn [a] Bool))
+
+;; A module implements it, accepting Int:s
+(defmodule A (defn some-interface [x] (Int.= x 1)))
+
+;; The function 'f' uses the interface, should still have a generic type though.
+(defn f [x] (some-interface x))
+(type f)
+
+;; Calling f with some type except Int shouldn't be possible.
+(defn g [] (f 10.0f))

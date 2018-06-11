@@ -1,0 +1,5 @@
+[37mf : (λ [a] Bool)
+[37m[31mCan't find matching lookup for symbol 'some-interface' of type (λ [Float] Bool) at line 9, column 14 in '/Users/erik/Projects/Carp/examples/no_matching_instance.carp'
+None of the possibilities have the correct signature:
+    A.some-interface : (λ [Int] Bool)
+[37m

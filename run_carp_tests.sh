@@ -23,6 +23,7 @@ stack install;
 ./test/check.sh ./examples/generic_structs.carp
 ./test/check.sh ./examples/setting_variables.carp
 ./test/check.sh ./examples/function_members.carp
+./test/check.sh ./examples/no_matching_instance.carp
 
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do
