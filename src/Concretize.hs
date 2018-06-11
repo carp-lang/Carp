@@ -53,8 +53,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
-                          then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
-                          else return [defn, nameSymbol, args, okBody]
+                            then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
+                            else return [defn, nameSymbol, args, okBody]
 
     visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
