@@ -17,3 +17,4 @@
 (load "Debug.carp")
 (load "Format.carp")
 (load "Random.carp")
+(load "Map.carp")
