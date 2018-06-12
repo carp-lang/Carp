@@ -327,7 +327,14 @@ dictionary = do i <- createInfo
                 incColumn 1
                 let objs' = if even (length objs) then objs else init objs -- Drop last if uneven nr of forms.
                 -- TODO! Signal error here!
-                return (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
+                --return (XObj (Dict (Map.fromList (pairwise objs'))) i Nothing)
+                    pairInit = XObj (Sym (SymPath ["Pair"] "init") LookupGlobal) i Nothing
+                    pairs = map (\(k,v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
+                    arrayLiteral = XObj (Arr pairs) i Nothing
+                    reffedArrayLiteral = XObj (Lst [(XObj Ref i Nothing), arrayLiteral]) i Nothing
+                    fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") LookupGlobal) i Nothing
+                    fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
+                return fromArraySexp
 
 
 ref :: Parsec.Parsec String ParseState XObj

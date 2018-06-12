@@ -1,0 +1,11 @@
+(defn main []
+  (let [ages1 {@"Alice" 31
+               @"Bob" 40
+               @"Charlie" 23
+               @"Dave" 56
+               @"Emily" 42}
+        ages2 (Map.put ages1 "Dave" &57)]
+    (do
+      (println* "Charlie is " (Map.get &ages2 "Charlie") " years old.")
+      (println* "Dave is " (Map.get &ages2 "Dave") " years old.")
+      (println* "Maria is " (Map.get &ages2 "Maria") " years old."))))
