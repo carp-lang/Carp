@@ -13,6 +13,7 @@ module Types ( TypeMappings
              , typesCopyFunctionType
              , isFullyGenericType
              , consPath
+             , doesTypeContainTyVarWithName
              ) where
 
 import qualified Data.Map as Map
@@ -110,6 +111,14 @@ isTypeGeneric (StructTy _ tyArgs) = any isTypeGeneric tyArgs
 isTypeGeneric (PointerTy p) = isTypeGeneric p
 isTypeGeneric (RefTy r) = isTypeGeneric r
 isTypeGeneric _ = False
+
+doesTypeContainTyVarWithName :: String -> Ty -> Bool
+doesTypeContainTyVarWithName name (VarTy n) = name == n
+doesTypeContainTyVarWithName name (FuncTy argTys retTy) = any (doesTypeContainTyVarWithName name) argTys || (doesTypeContainTyVarWithName name) retTy
+doesTypeContainTyVarWithName name (StructTy _ tyArgs) = any (doesTypeContainTyVarWithName name) tyArgs
+doesTypeContainTyVarWithName name (PointerTy p) = doesTypeContainTyVarWithName name p
+doesTypeContainTyVarWithName name (RefTy r) = doesTypeContainTyVarWithName name r
+doesTypeContainTyVarWithName _ _ = False
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
 type TypeMappings = Map.Map String Ty

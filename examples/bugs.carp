@@ -45,7 +45,9 @@
 ;;       (set! r &xs))
 ;;     (println* r)))
 
-(defn f [] (the t0 123))
+;; Local name in 'let' shadows other symbols
+(defn shadow [] 123)
 
-(defn main []
-  (f))
+(defn f []
+  (let [shadow (shadow)]
+    ()))

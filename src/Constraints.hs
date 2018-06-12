@@ -16,6 +16,10 @@ import Obj
 import Types
 
 data ConstraintOrder = OrdNo
+                     | OrdFunc
+                     | OrdStruct
+                     | OrdPtr
+                     | OrdRef
                      | OrdFuncAppRet
                      | OrdArrHead
                      | OrdArg
@@ -98,7 +102,7 @@ debugSolveOne mappings constraint = let m' = solveOneInternal mappings constrain
 
 solveOneInternal :: TypeMappings -> Constraint -> Either UnificationFailure TypeMappings
 solveOneInternal mappings constraint =
-  case constraint of
+  case constraint of --trace ("SOLVE " ++ show constraint) constraint of
     -- Two type variables
     Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ _ ->
       if aTy == bTy
@@ -142,51 +146,55 @@ solveOneInternal mappings constraint =
       then Right mappings
       else Left (UnificationFailure constraint mappings)
 
-mkConstraint :: XObj -> XObj -> Ty -> Ty -> Constraint
-mkConstraint xobj1 xobj2 t1 t2 = Constraint t1 t2 xobj1 xobj2 OrdNo
+mkConstraint :: ConstraintOrder -> XObj -> XObj -> Ty -> Ty -> Constraint
+mkConstraint order xobj1 xobj2 t1 t2 = Constraint t1 t2 xobj1 xobj2 order
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
 checkForConflict mappings constraint name otherTy =
   let (Constraint _ _ xobj1 xobj2 _) = constraint
+      found = recursiveLookup mappings name
   in
-  case recursiveLookup mappings name of
-    Just (VarTy _) -> ok
-    Just (StructTy structName structTyVars) ->
-      case otherTy of
-        StructTy otherStructName otherTyVars | structName == otherStructName ->
-                                               foldM solveOneInternal mappings (zipWith (mkConstraint xobj1 xobj2) structTyVars otherTyVars)
-        VarTy _ -> Right mappings
-        _ -> Left (UnificationFailure constraint mappings)
-    Just (FuncTy argTys retTy) ->
-      case otherTy of
-        FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint xobj1 xobj2) argTys otherArgTys)
-                                            solveOneInternal m (mkConstraint xobj1 xobj2 retTy otherRetTy)
-        VarTy _ -> Right mappings
-        _ -> Left (UnificationFailure constraint mappings)
-    Just (PointerTy innerTy) ->
-      case otherTy of
-        PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint xobj1 xobj2 innerTy otherInnerTy)
-        VarTy _ -> Right mappings
-        _ -> Left (UnificationFailure constraint mappings)
-    Just (RefTy innerTy) ->
-      case otherTy of
-        RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint xobj1 xobj2 innerTy otherInnerTy)
-        VarTy _ -> Right mappings
-        _ -> Left (UnificationFailure constraint mappings)
-    Just foundNonVar -> case otherTy of
-                          (VarTy v) -> case recursiveLookup mappings v of
-                                         Just (VarTy _) -> Right mappings
-                                         Just otherNonVar -> if foundNonVar == otherNonVar
-                                                             then Right mappings
-                                                             else Left (UnificationFailure constraint mappings)
-                                         Nothing -> Right mappings
-                          _ -> if otherTy == foundNonVar
-                               then ok
-                               else Left (UnificationFailure constraint mappings)
-    -- Not found, no risk for conflict:
-    Nothing -> ok
-  where
-    ok = Right (Map.insert name otherTy mappings)
+    if doesTypeContainTyVarWithName name otherTy
+    then Left (UnificationFailure constraint mappings)
+    else
+      case found of --trace ("CHECK CONFLICT " ++ show constraint ++ " with name " ++ name ++ ", otherTy: " ++ show otherTy ++ ", found: " ++ show found) found of
+        Just (VarTy _) -> ok
+        Just (StructTy structName structTyVars) ->
+          case otherTy of
+            StructTy otherStructName otherTyVars | structName == otherStructName ->
+                                                   foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2) structTyVars otherTyVars)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
+        Just (FuncTy argTys retTy) ->
+          case otherTy of
+            FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2) argTys otherArgTys)
+                                                solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 retTy otherRetTy)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
+        Just (PointerTy innerTy) ->
+          case otherTy of
+            PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 innerTy otherInnerTy)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
+        Just (RefTy innerTy) ->
+          case otherTy of
+            RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 innerTy otherInnerTy)
+            VarTy _ -> Right mappings
+            _ -> Left (UnificationFailure constraint mappings)
+        Just foundNonVar -> case otherTy of
+                              (VarTy v) -> case recursiveLookup mappings v of
+                                             Just (VarTy _) -> Right mappings
+                                             Just otherNonVar -> if foundNonVar == otherNonVar
+                                                                 then Right mappings
+                                                                 else Left (UnificationFailure constraint mappings)
+                                             Nothing -> Right mappings
+                              _ -> if otherTy == foundNonVar
+                                   then ok
+                                   else Left (UnificationFailure constraint mappings)
+        -- Not found, no risk for conflict:
+        Nothing -> ok
+      where
+        ok = Right (Map.insert name otherTy mappings)
 
 debugResolveFully :: TypeMappings -> String -> Either UnificationFailure TypeMappings
 debugResolveFully mappings var = trace ("Mappings: " ++ show mappings ++ ", will resolve " ++ show var) (resolveFully mappings var)
