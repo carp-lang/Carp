@@ -17,17 +17,8 @@
     iqr Double
   ])
 
-  (defn sum [data]
-    (if (= 0 (Array.length data))
-      0.0
-      (let [total @(Array.nth data 0)]
-        (do
-          (for [i 1 (Array.length data)]
-            (set! total (+ total @(Array.nth data i))))
-          total))))
-
   (defn mean [data]
-    (/ (Statistics.sum data) (from-int (Array.length data))))
+    (/ (Array.sum data) (from-int (Array.length data))))
 
   (defn _pp [a mean]
     (let [sum 0.0]
@@ -164,7 +155,7 @@
 
   (defn summary [samples]
     (Summary.init
-      (Statistics.sum samples)
+      (Array.sum samples)
       (Array.minimum samples)
       (Array.maximum samples)
       (mean samples)
