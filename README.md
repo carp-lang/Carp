@@ -4,9 +4,9 @@
 
 <img src="https://github.com/carp-lang/Carp/blob/master/img/carp_logo_300_c.png" alt="Logo" align="right" />
 
-<i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important!</i>
+<i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>Update (June 26, 2017): The total rewrite is now live; if you want to look at the old version, it's under the branch named "c" in this repository.</i>
+<i>Update (June 12, 2018): We're currently working towards version 0.3.0 of the language. The goal of this version is to be a stable but somewhat limited version of the language (lacking lambdas and union types).</i>
 
 ## About
 
