@@ -23,7 +23,8 @@ stack install;
 ./test/check.sh ./examples/generic_structs.carp
 ./test/check.sh ./examples/setting_variables.carp
 ./test/check.sh ./examples/function_members.carp
-./test/check.sh ./examples/no_matching_instance.carp
+./test/check.sh ./examples/map.carp
+# ./test/check.sh ./examples/no_matching_instance.carp # Doesn't work because test output contains a specific path. How to solve?!
 
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do

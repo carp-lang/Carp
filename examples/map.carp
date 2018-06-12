@@ -1,3 +1,5 @@
+(Project.no-echo)
+
 (defn simple []
   (let [ages1 {@"Alice" 31
                @"Bob" 40
