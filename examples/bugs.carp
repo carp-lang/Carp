@@ -44,12 +44,3 @@
 ;;     (let [xs [4 5 6]]
 ;;       (set! r &xs))
 ;;     (println* r)))
-
-;; Local name in 'let' shadows other symbols
-;;(defn shadow [] 123)
-
-(use String)
-
-(defn main []
-  (let [chars (chars "erik")]
-    (println* &chars)))
