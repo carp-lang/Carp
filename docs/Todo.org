@@ -6,27 +6,21 @@
 * Unsorted Todo:s
 * Critical Bugs
 ** 0.3
+*** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...). Infinite loop now!
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
-*** Can set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
-*** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
+    Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 *** Can't define '=' in terms of '=' on generic members of type, see Pair.=
 * Big Language Features
-** 0.4
 ** 1.0
-*** Stack allocated Array with an explicit size.
-*** Good hashmap implementation with support for "{}" syntax.
-*** Tagged unions (also known as "sum types" or "enums")
 *** Lambdas (anonymous functions) that compile on Windows and don't leak memory!
-
+*** Tagged unions (also known as "sum types" or "enums")
+*** Stack allocated Array with an explicit size.
 * Smaller Language Features ("niceties")
 ** 0.4
-*** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.
-*** Defining a local variable messes up unqualified lookup of function with the same name, e.g. (let [words (words &s)] ...)
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
-*** Array.init-empty-with-capacity function. What's a better name?
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
 *** A way of telling Carp if an external type is primitive (and thus freely copy:able) or not and must be borrowed.
 *** Macros for generating 'read' functions to read objects back into memory from string representation.
@@ -43,6 +37,8 @@
 
 * Tooling
 ** 0.4
+*** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
+*** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.
 *** Flycheck hangs and eats all resources sometimes.
 
 ** 1.0
