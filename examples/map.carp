@@ -1,4 +1,4 @@
-(defn main []
+(defn simple []
   (let [ages1 {@"Alice" 31
                @"Bob" 40
                @"Charlie" 23
@@ -9,3 +9,20 @@
       (println* "Charlie is " (Map.get &ages2 "Charlie") " years old.")
       (println* "Dave is " (Map.get &ages2 "Dave") " years old.")
       (println* "Maria is " (Map.get &ages2 "Maria") " years old."))))
+
+(defn start-with-empty []
+  (let [a {}
+        b (Map.put a "aha" &123)]
+    (println* (Map.get &b "aha"))))
+
+(defn checking []
+  (let [char-map {\a @"Aha"
+                  \b @"Boo"}]
+    (do
+      (println* (Map.contains? &char-map &\b))
+      (println* (Map.contains? &char-map &\c)))))
+
+(defn main []
+  (do (simple)
+      (start-with-empty)
+      (checking)))
