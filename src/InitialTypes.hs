@@ -2,6 +2,7 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
+import Debug.Trace
 
 import Types
 import Obj
@@ -303,7 +304,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                               , envUseModules = []
                               , envMode = InternalEnv
                               }
-      -- Need to fold (rather than map) to make the previous bindings accesible to the later ones, i.e. (let [a 100 b a] ...)
+      -- Need to fold (rather than map) to make the previous bindings accessible to the later ones, i.e. (let [a 100 b a] ...)
       in  foldM createBinderForLetPair (Right emptyInnerEnv) pairs
       where
         createBinderForLetPair :: Either TypeError Env -> (XObj, XObj) -> State Integer (Either TypeError Env)
@@ -315,7 +316,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 (Sym (SymPath _ name) _) -> do visited <- visit env' expr
                                                return $ do okVisited <- visited
                                                            return (envAddBinding env' name (Binder emptyMeta okVisited))
-                _ -> error ("Can't create let-binder for non-symbol: " ++ show sym)
+                _ -> error ("Can't create let-binder for non-symbol: " ++ show sym) -- TODO: Use proper error mechanism
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
     extendEnvWithParamList env xobjs =

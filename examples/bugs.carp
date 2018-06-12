@@ -46,8 +46,10 @@
 ;;     (println* r)))
 
 ;; Local name in 'let' shadows other symbols
-(defn shadow [] 123)
+;;(defn shadow [] 123)
 
-(defn f []
-  (let [shadow (shadow)]
-    ()))
+(use String)
+
+(defn main []
+  (let [chars (chars "erik")]
+    (println* &chars)))
