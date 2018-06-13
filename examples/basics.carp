@@ -194,6 +194,10 @@
     (do (set! r &s2)
         (IO.println r))))
 
+(defn resolve-correctly []
+  (let [words (words "a bb ccc dddd eeeee")]
+    (println* (nth &words 2))))
+
 (defn main []
   ; here we always use the same seed for determinism, for simple random
   ; numbers that change you can for instance use (System.time)
@@ -229,4 +233,5 @@
       (multiple-stringification-of-arrays)
       (two-lengths-in-same-func)
       (changing-target-of-ref)
+      (resolve-correctly)
       ))

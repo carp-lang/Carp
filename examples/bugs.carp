@@ -44,3 +44,9 @@
 ;;     (let [xs [4 5 6]]
 ;;       (set! r &xs))
 ;;     (println* r)))
+
+;; Resolves to wrong thing
+(deftype (Foo t) [x t])
+(defmodule Foo
+  (defn = [a b]
+    (= (Foo.x a) (Foo.x b))))
