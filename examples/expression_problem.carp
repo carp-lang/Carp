@@ -1,0 +1,29 @@
+;; Initial type
+(deftype A [])
+
+;; Initial function
+(definterface f (λ [x] String))
+(defmodule A
+  (defn f [x]
+    (str* "It's an A: " &(A.str x))))
+
+;; Add a new function
+(definterface g (λ [x] String))
+(defmodule A
+  (defn g [x]
+    (str* "It's also an A: " &(A.str x))))
+
+;; Add a new type
+(deftype B [])
+(defmodule B
+  (defn f [x]
+    (str* "It's a B: " &(B.str x)))
+  (defn g [x]
+    (str* "It's also a B: " &(B.str x))))
+
+;; Run
+(defn-do main []
+  (println* &(f &(A.init)))
+  (println* &(g &(A.init)))
+  (println* &(f &(B.init)))
+  (println* &(g &(B.init))))
