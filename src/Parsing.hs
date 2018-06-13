@@ -217,10 +217,10 @@ symbol = do i <- createInfo
             case last segments of
               "defn" -> return (XObj Defn i Nothing)
               "def" -> return (XObj Def i Nothing)
-              -- What about the other def- forms?
+              -- TODO: What about the other def- forms?
               "do" -> return (XObj Do i Nothing)
               "while" -> return (XObj While i Nothing)
-              -- "fn" -> return (XObj Fn i Nothing)
+              "fn" -> return (XObj Fn i Nothing)
               "let" -> return (XObj Let i Nothing)
               "break" -> return (XObj Break i Nothing)
               "if" -> return (XObj If i Nothing)

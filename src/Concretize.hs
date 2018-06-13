@@ -483,6 +483,23 @@ manageMemory typeEnv globalEnv root =
                               do okBody <- visitedBody
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
+            -- TODO: Too much duplication from Defn
+            [defn@(XObj Fn _ _), args@(XObj (Arr argList) _ _), body] ->
+              let Just funcTy@(FuncTy _ defnReturnType) = t
+              in case defnReturnType of
+                   RefTy _ ->
+                     return (Left (FunctionsCantReturnRefTy xobj funcTy))
+                   _ ->
+                     do mapM_ manage argList
+                        visitedBody <- visit body
+                        result <- unmanage body
+                        return $
+                          case result of
+                            Left e -> Left e
+                            Right _ ->
+                              do okBody <- visitedBody
+                                 return (XObj (Lst [defn, args, okBody]) i t)
+
             [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
               do visitedExpr <- visit expr
                  result <- unmanage expr

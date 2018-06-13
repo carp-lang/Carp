@@ -27,6 +27,17 @@ genConstraints root = fmap sort (gen root)
                                     argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj OrdArg) (map forceTy args) argTys args
                                 return (bodyConstr : argConstrs ++ insideBodyConstraints)
 
+                           -- Fn
+                           -- TODO: Too much duplication from Defn...
+                           [XObj Fn _ _, XObj (Arr args) _ _, body] ->
+                             do insideBodyConstraints <- gen body
+                                xobjType <- toEither (ty xobj) (DefnMissingType xobj)
+                                bodyType <- toEither (ty body) (ExpressionMissingType xobj)
+                                let (FuncTy argTys retTy) = xobjType
+                                    bodyConstr = Constraint retTy bodyType xobj body OrdDefnBody
+                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj OrdArg) (map forceTy args) argTys args
+                                return (bodyConstr : argConstrs ++ insideBodyConstraints)
+
                            -- Def
                            [XObj Def _ _, _, expr] ->
                              do insideExprConstraints <- gen expr

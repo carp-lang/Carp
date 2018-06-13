@@ -77,9 +77,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
                        Defn               -> return (Left (InvalidObj Defn xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
+                       Fn                 -> return (Left (InvalidObj Fn xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
-                       And                 -> return (Left (InvalidObj And xobj))
+                       And                -> return (Left (InvalidObj And xobj))
                        Or                 -> return (Left (InvalidObj Or xobj))
                        While              -> return (Left (InvalidObj While xobj))
                        Do                 -> return (Left (InvalidObj Do xobj))
@@ -166,6 +167,22 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
         [XObj Defn _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
         XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
+
+        -- Fn
+        [fn@(XObj Fn _ _), XObj (Arr argList) argsi argst, body] ->
+          do argTypes <- genVarTys (length argList)
+             returnType <- genVarTy
+             funcScopeEnv <- extendEnvWithParamList env argList
+             let funcTy = Just (FuncTy argTypes returnType)
+             visitedBody <- visit funcScopeEnv body
+             visitedArgs <- mapM (visit funcScopeEnv) argList
+             return $ do okBody <- visitedBody
+                         okArgs <- sequence visitedArgs
+                         let final = (XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
+                         return final --(trace ("FINAL: " ++ show final) final)
+
+        [XObj Fn _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
+        XObj Fn _ _ : _  -> return (Left (InvalidObj Fn xobj))
 
         -- Def
         [def@(XObj Def _ _), nameSymbol, expression]->
