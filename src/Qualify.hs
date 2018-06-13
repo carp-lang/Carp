@@ -29,10 +29,13 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
                                                  body])
                                       i t) =
   -- For self-recursion, there must be a binding to the function in the inner env.
-  -- Note: This inner env is ephemeral since it is not stored in a module or global scope.
-  let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
-      envWithSelf = extendEnv functionEnv functionName sym
-      envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) envWithSelf argsArr
+  -- It is marked as external to not mess up lookup.
+  -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
+  -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
+  let recursionEnv = Env Map.empty (Just env) Nothing [] ExternalEnv
+      envWithSelf = extendEnv recursionEnv functionName sym
+      functionEnv = Env Map.empty (Just recursionEnv) Nothing [] InternalEnv
+      envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
   let value' = setFullyQualifiedSymbols typeEnv globalEnv env value

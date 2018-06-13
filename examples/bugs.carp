@@ -45,8 +45,12 @@
 ;;       (set! r &xs))
 ;;     (println* r)))
 
-;; Resolves to wrong thing
+;; '=' resolves to wrong thing
 (deftype (Foo t) [x t])
 (defmodule Foo
   (defn = [a b]
     (= (Foo.x a) (Foo.x b))))
+
+(defn main []
+  (do (println* (= &(Foo.init 123) &(Foo.init 666)))
+      (println* (= &(Foo.init 123) &(Foo.init 123)))))

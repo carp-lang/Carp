@@ -61,3 +61,8 @@
 
 ;; (defn main []
 ;;   (f))
+
+(defn-do main []
+  (println* "eq? " (= &(Pair.init 5 true) &(Pair.init 6 false)))
+  (println* "eq? " (= &(Pair.init 5 true) &(Pair.init 5 true)))
+  )

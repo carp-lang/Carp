@@ -7,8 +7,6 @@
 (defn construct-from-ref [r]
   (Trivial.init @r))
 
-(deftype (Pair a b) [x a y b])
-
 ;; Simplified dictionary:
 (deftype (Entry a b) [key a value b])
 (deftype (Bucket a b) [entries (Array (Entry a b))])
@@ -40,8 +38,8 @@
     (IO.println &(str &(Pair.init 10 @"hello")))
     (IO.println &(str &(Pair.init true 3.2)))
     (IO.println &(str &(Pair.init [1 2 3] [true false true false])))
-    (IO.println &(str &(Pair.update-x (Pair.init 100 100) Int.inc)))
-    (IO.println &(str &(Pair.set-y (Pair.init 100 100) 200)))
-    (IO.println &(str @(Pair.x &(Pair.init 100 100))))
+    (IO.println &(str &(Pair.update-a (Pair.init 100 100) Int.inc)))
+    (IO.println &(str &(Pair.set-b (Pair.init 100 100) 200)))
+    (IO.println &(str @(Pair.a &(Pair.init 100 100))))
     (try-dictionary)
     ))

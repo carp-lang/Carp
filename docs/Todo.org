@@ -8,7 +8,6 @@
 ** 0.3
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
-*** Can't define '=' in terms of '=' on generic members of type, see Pair.=
 * Big Language Features
 ** 1.0
 *** Lambdas (anonymous functions) that compile on Windows and don't leak memory!

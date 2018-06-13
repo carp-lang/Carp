@@ -4,9 +4,8 @@
   (defn init-from-refs [r1 r2]
     (Pair.init @r1 @r2))
 
-  ;; BUG: Can't define this function because = resolves to Pair.= in the body.
-  ;; (defn = [p1 p2]
-  ;;   (and (= (Pair.a p1) (Pair.a p2))
-  ;;        (= (Pair.b p1) (Pair.b p2))))
+  (defn = [p1 p2]
+    (and (= (Pair.a p1) (Pair.a p2))
+         (= (Pair.b p1) (Pair.b p2))))
 
   )
