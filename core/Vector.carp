@@ -48,53 +48,66 @@
   (defn /= [a b]
     (not (= a b)))
 
+  (doc approx "Check whether the vectors a and b are approximately equal.")
   (defn approx [a b]
     (and (Double.approx @(V2.x a) @(V2.x b))
          (Double.approx @(V2.y a) @(V2.y b))))
 
+  (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
     (let [x @(V2.x o)
           y @(V2.y o)]
       (+ (* x x) (* y y))))
 
+  (doc mag "Get the magnitude of a vector.")
   (defn mag [o]
     (Double.sqrt (mag-sq o)))
 
+  (doc normalize "Normalize a vector.")
   (defn normalize [o]
     (let [m (mag o)]
       (if (= m 0.0)
         (V2.copy o)
         (div o m))))
 
+  (doc dist "Get the distance between the vectors a and b.")
   (defn dist [a b]
     (let [s (sub b a)]
       (mag &s)))
 
+  (doc heading "Get the heading of the vector a.")
   (defn heading [a]
     (Double.atan2 @(V2.y a) @(V2.x a)))
 
+  (doc rotate "Rotate the vector a by the radians n.")
   (defn rotate [a n]
     (let [h (+ (heading a) n)
           m (mag a)]
       (V2.init (* (Double.cos h) m) (* (Double.sin h) m))))
 
+  (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
     (+ (* @(V2.x x) @(V2.x y))
        (* @(V2.y x) @(V2.y y))))
 
+  (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]
     (let [dmm (/ (dot a b) (* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
 
+  (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
     (= (angle-between a b) Double.pi))
 
+  (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
     (= (angle-between a b) 0.0))
 
+  (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
     (= (angle-between a b) (/ Double.pi 2.0)))
 
+  (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
     (init (* (- @(V2.x b) @(V2.x a)) amnt)
           (* (- @(V2.y b) @(V2.y a)) amnt)))
