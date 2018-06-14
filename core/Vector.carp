@@ -48,53 +48,66 @@
   (defn /= [a b]
     (not (= a b)))
 
+  (doc approx "Check whether the vectors a and b are approximately equal.")
   (defn approx [a b]
     (and (Double.approx @(V2.x a) @(V2.x b))
          (Double.approx @(V2.y a) @(V2.y b))))
 
+  (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
     (let [x @(V2.x o)
           y @(V2.y o)]
       (+ (* x x) (* y y))))
 
+  (doc mag "Get the magnitude of a vector.")
   (defn mag [o]
     (Double.sqrt (mag-sq o)))
 
+  (doc normalize "Normalize a vector.")
   (defn normalize [o]
     (let [m (mag o)]
       (if (= m 0.0)
         (V2.copy o)
         (div o m))))
 
+  (doc dist "Get the distance between the vectors a and b.")
   (defn dist [a b]
     (let [s (sub b a)]
       (mag &s)))
 
+  (doc heading "Get the heading of the vector a.")
   (defn heading [a]
     (Double.atan2 @(V2.y a) @(V2.x a)))
 
+  (doc rotate "Rotate the vector a by the radians n.")
   (defn rotate [a n]
     (let [h (+ (heading a) n)
           m (mag a)]
       (V2.init (* (Double.cos h) m) (* (Double.sin h) m))))
 
+  (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
     (+ (* @(V2.x x) @(V2.x y))
        (* @(V2.y x) @(V2.y y))))
 
+  (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]
     (let [dmm (/ (dot a b) (* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
 
+  (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
     (= (angle-between a b) Double.pi))
 
+  (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
     (= (angle-between a b) 0.0))
 
+  (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
     (= (angle-between a b) (/ Double.pi 2.0)))
 
+  (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
     (init (* (- @(V2.x b) @(V2.x a)) amnt)
           (* (- @(V2.y b) @(V2.y a)) amnt)))
@@ -144,21 +157,25 @@
              (/ @(V3.y a) n)
              (/ @(V3.z a) n)))
 
+  (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
     (let [x @(V3.x o)
           y @(V3.y o)
           z @(V3.z o)]
       (+ (* x x) (+ (* y y) (* z z)))))
 
+  (doc mag "Get the magnitude of a vector.")
   (defn mag [o]
     (Double.sqrt (mag-sq o)))
 
+  (doc normalize "Normalize a vector.")
   (defn normalize [o]
     (let [m (mag o)]
       (if (= m 0.0)
         (V3.copy o)
         (div o m))))
 
+  (doc cross "Compute the cross product of the two vectors x and y.")
   (defn cross [x y]
     (V3.init
       (- (* @(V3.y x) @(V3.z y))
@@ -168,24 +185,30 @@
       (- (* @(V3.x x) @(V3.y y))
          (* @(V3.y x) @(V3.x y)))))
 
+  (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
     (+ (* @(V3.x x) @(V3.x y))
        (+ (* @(V3.y x) @(V3.y y))
           (* @(V3.z x) @(V3.z y)))))
 
+  (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]
     (let [dmm (/ (dot a b) (* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
 
+  (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
     (= (angle-between a b) Double.pi))
 
+  (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
     (= (angle-between a b) 0.0))
 
+  (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
     (= (angle-between a b) (/ Double.pi 2.0)))
 
+  (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
     (init (* (- @(V3.x b) @(V3.x a)) amnt)
           (* (- @(V3.y b) @(V3.y a)) amnt)
@@ -252,38 +275,48 @@
   (defn add- [x y]
     (+ @x @y))
 
+  (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
     (Array.reduce add- 0.0 &(Array.copy-map square- (VN.v o))))
 
+  (doc mag "Get the magnitude of a vector.")
   (defn mag [o]
     (Double.sqrt (mag-sq o)))
 
+  (doc dist "Get the distance between the vectors a and b.")
   (defn dist [a b]
     (let [s (sub b a)]
       (mag &s)))
 
+  (doc normalize "Normalize a vector.")
   (defn normalize [o]
     (let [m (mag o)]
       (if (= m 0.0)
         (VN.copy o)
         (div o m))))
 
+  (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
     (Array.reduce add- 0.0 (VN.v &(zip * x y))))
 
+  (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]
     (let [dmm (/ (dot a b) (* (mag a) (mag b)))]
       (Double.acos (Double.clamp -1.0 1.0 dmm))))
 
+  (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
     (= (angle-between a b) Double.pi))
 
+  (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
     (= (angle-between a b) 0.0))
 
+  (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
     (= (angle-between a b) (/ Double.pi 2.0)))
 
+  (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
     (init @(VN.n a) @(VN.v &(zip- * &(Array.replicate @(VN.n a) &amnt)
                                    (VN.v &(zip - b a))))))
