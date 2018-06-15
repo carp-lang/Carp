@@ -1,0 +1,14 @@
+;;(defn f [s] (str* s "!"))
+
+(defn example1 [suffix]
+  (Array.copy-map (fn [s] (str* s suffix)) ;; Can use 'suffix' (of type &String) as long as we're in the example1-scope
+                  &[@"a" @"b" @"c"]))
+
+;; (defn example2 []
+;;   (let [x @"hello"
+;;         f (fn [] x)] ; Lambda takes ownership of the string
+;;     f))
+
+(defn-do main []
+  (Debug.assert-balanced
+   (println* &(example1 "!"))))
