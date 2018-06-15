@@ -51,15 +51,15 @@
     (if (op expected actual)
       (do
         (IO.color "green")
-        (IO.println &(string-join @"Test '" @descr @"' passed"))
+        (IO.println &(str* @"Test '" @descr @"' passed"))
         (IO.color "reset")
         (State.update-passed (State.copy state) Int.inc))
       (do
         (IO.color "red")
-        (IO.println &(string-join @"Test '" @descr @"' failed:"))
-        (IO.print &(string-join @"\tExpected " @what @": '"))
+        (IO.println &(str* @"Test '" @descr @"' failed:"))
+        (IO.print &(str* @"\tExpected " @what @": '"))
         (IO.print &(str expected))
-        (IO.println &(string-join @"', actual value: '" (str actual) @"'"))
+        (IO.println &(str* @"', actual value: '" (str actual) @"'"))
         (IO.color "reset")
         (State.update-failed (State.copy state) Int.inc))))
 

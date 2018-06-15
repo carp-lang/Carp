@@ -18,7 +18,7 @@
 
 (defn main []
   (do
-    (print &(string-join @"P4\n" (str w) @" " (str h) @"\n"))
+    (print &(str* @"P4\n" (str w) @" " (str h) @"\n"))
     (let [iter 50
           limit 2.0
           byte_acc 0

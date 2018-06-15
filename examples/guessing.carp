@@ -34,7 +34,7 @@
           (exit!)))))
 
 (defn guess-again [low-or-high]
-  (do (println &(string-join @"Too " @low-or-high @"."))
+  (do (println &(str* @"Too " @low-or-high @"."))
       (print "\nPlease guess again: ")))
 
 (defn main []
