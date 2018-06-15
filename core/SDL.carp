@@ -94,7 +94,9 @@
   (register flip-vertical SDL_RendererFlip "SDL_FLIP_VERTICAL")
 
   (defmodule Keycode
-    (register = (Fn [SDL_Keycode SDL_Keycode] Bool))
+    (defn = [a b]
+      (Int.= (enum-to-int (the SDL_Keycode a))
+             (enum-to-int (the SDL_Keycode b))))
     (register copy (Fn [(Ref SDL_Keycode)] SDL_Keycode))
     (register str (Fn [SDL_Keycode] String))
     (defn prn [x]
