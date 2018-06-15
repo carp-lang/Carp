@@ -51,6 +51,8 @@
   (defn = [a b]
     (= (Foo.x a) (Foo.x b))))
 
+(deftype (Foo t) [x t]) ;; <- this is the bug!
+
 (defn main []
   (do (println* (= &(Foo.init 123) &(Foo.init 666)))
       (println* (= &(Foo.init 123) &(Foo.init 123)))))

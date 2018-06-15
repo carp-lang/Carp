@@ -278,7 +278,7 @@ typeFromPath env p =
     Just (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
-    Nothing -> error ("Couldn't find " ++ show p ++ " in env " ++ safeEnvModuleName env)
+    Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
 
 -- | Given a definition (def, defn, template, external) and
 --   a concrete type (a type without any type variables)

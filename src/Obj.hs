@@ -382,6 +382,21 @@ prettyEnvironmentIndented indent env =
                       then []
                       else ("\n" ++ replicate indent ' ' ++ "Used modules:") : map (showImportIndented indent) modules
 
+-- | For debugging nested environments
+prettyEnvironmentChain :: Env -> String
+prettyEnvironmentChain env =
+  let bs = envBindings env
+      name = case envModuleName env of
+               Just n -> n
+               Nothing -> "nothing"
+  in  (if length bs < 20
+       then name ++ ":\n" ++ (joinWith "\n" $ filter (/= "") (map (showBinderIndented 4) (Map.toList (envBindings env))))
+       else name ++ ":\n    Too big to show bindings.")
+      ++
+      (case envParent env of
+          Just parent -> "\nWITH PARENT ENV " ++ prettyEnvironmentChain parent
+          Nothing -> "")
+
 pathToEnv :: Env -> [String]
 pathToEnv rootEnv = visit rootEnv
   where

@@ -6,7 +6,7 @@
 * Unsorted Todo:s
 * Critical Bugs
 ** 0.3
-*** Broke "(reload)" / ":r" when fixing resolution of self-reffering interfaces.
+*** Broke "(reload)" / ":r" when fixing resolution of self-refering interfaces.
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * Big Language Features
@@ -81,3 +81,4 @@
 ** Defining a function like 'add-ref' (see the numeric modules), refering to '+' does not resolve to '+' inside the module, which gives the function an overly generic type.
 * Notes
 ** Should depsForCopyFunc and depsForDeleteFunc really be needed in Array templates, they *should* instantiate automatically when used?
+** Hard to test '(reload)' since it will ignore currently loaded files
