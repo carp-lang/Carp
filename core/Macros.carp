@@ -242,7 +242,7 @@
 (defmacro case [name :rest forms]
   (case-internal name forms))
 
-(defdynamic build-vararg [fn forms]
+(defdynamic build-vararg [func forms]
   (if (= (length forms) 0)
     (macro-error "vararg macro needs at least one argument")
     (if (= (length forms) 1)
