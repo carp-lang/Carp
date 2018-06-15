@@ -223,7 +223,7 @@ startingGlobalEnv noArray =
       }
   where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
-                                  , register "enum-to-int" (FuncTy [(VarTy "a")] IntTy)
+                                  , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Pointer",  Binder (XObj (Mod pointerModule) Nothing Nothing))]
