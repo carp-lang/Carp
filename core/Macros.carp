@@ -247,7 +247,7 @@
     (macro-error "vararg macro needs at least one argument")
     (if (= (length forms) 1)
       (car forms)
-      (list fn (car forms) (build-vararg fn (cdr forms))))))
+      (list func (car forms) (build-vararg func (cdr forms))))))
 
 (defmacro and* [:rest forms]
   (build-vararg 'and forms))
