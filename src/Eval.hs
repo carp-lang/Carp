@@ -571,12 +571,15 @@ specialCommandRegisterType typeName rest =
          path = SymPath pathStrings typeName
          typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
          i = Nothing
+         preExistingModule = case lookupInEnv (SymPath pathStrings typeName) globalEnv of
+                               Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
+                               _ -> Nothing
      case rest of
        [] ->
          do put (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition) })
             return dynamicNil
        members ->
-         case bindingsForRegisteredType typeEnv globalEnv pathStrings typeName members i of
+         case bindingsForRegisteredType typeEnv globalEnv pathStrings typeName members i preExistingModule of
            Left errorMessage ->
              return (Left (EvalError (show errorMessage)))
            Right (typeModuleName, typeModuleXObj, deps) ->
@@ -600,9 +603,12 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          typeVariables = sequence (map xobjToTy typeVariableXObjs)
+         preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
+                               Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
+                               _ -> Nothing
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
-         case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i of
+         case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
            Right (typeModuleName, typeModuleXObj, deps) ->
              let structTy = (StructTy typeName okTypeVariables)
                  typeDefinition =

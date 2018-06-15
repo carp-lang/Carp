@@ -17,9 +17,11 @@
     iqr Double
   ])
 
+  (doc mean "Compute the mean of the samples data.")
   (defn mean [data]
     (/ (Array.sum data) (from-int (Array.length data))))
 
+  (hidden _pp)
   (defn _pp [a mean]
     (let [sum 0.0]
       (do
@@ -28,6 +30,7 @@
             (set! sum (Double.* tmp tmp))))
         sum)))
 
+  (hidden _xx)
   (defn _xx [a mean]
     (let [sum 0.0]
       (do
@@ -35,6 +38,7 @@
           (set! sum (Double.- (Double.copy (Array.nth a i)) mean)))
         sum)))
 
+  (hidden _ss)
   (defn _ss [data]
     (let [m (mean data)
           tmp (_xx data m)]
@@ -42,6 +46,7 @@
                 (Double./ (Double.* tmp tmp)
                           (Double.from-int (Array.length data))))))
 
+  (doc median "Compute the median of the samples data.")
   (defn median [data]
     (let [n (Array.length data)
           sorted (Array.sort @data)]
@@ -52,6 +57,7 @@
                     @(Array.nth data mid))
                   2.0)))))
 
+  (doc low-median "Compute the low median of the samples data.")
   (defn low-median [data]
     (let [n (Array.length data)
           sorted (Array.sort @data)]
@@ -59,6 +65,7 @@
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             @(Array.nth data (dec (/ n 2)))))) ; else
 
+  (doc high-median "Compute the high median of the samples data.")
   (defn high-median [data]
     (let [n (Array.length data)
           sorted (Array.sort @data)]
@@ -66,6 +73,7 @@
         0.0
         @(Array.nth data (/ n 2)))))
 
+  (doc grouped-median "Compute the grouped median of the samples data.")
   (defn grouped-median [data interval]
     (let [n (Array.length data)
           sorted (Array.sort @data)]
@@ -78,25 +86,31 @@
               (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
                       (from-int f)))))))
 
+  (doc variance "Compute the variance of the samples data.")
   (defn variance [data]
     (let [n (Array.length data)
           ss (_ss data)]
       (/ ss (from-int (dec n)))))
 
+  (doc pvariance "Compute the population variance of the samples data.")
   (defn pvariance [data]
     (let [n (Array.length data)
           ss (_ss data)]
       (/ ss (from-int n))))
 
+  (doc stdev "Compute the standard deviation of the samples data.")
   (defn stdev [data]
     (Double.sqrt (variance data)))
 
+  (doc pstdev "Compute the population standard deviation of the samples data.")
   (defn pstdev [data]
     (Double.sqrt (pvariance data)))
 
+  (doc pstdev-pct "Compute the standard deviation of the samples data as a percentile.")
   (defn stdev-pct [data]
     (* (/ (stdev data) (mean data)) 100.0))
 
+  (hidden median-abs-dev)
   (defn median-abs-dev [data]
     (let [med (median data)
           zero 0.0
@@ -107,9 +121,11 @@
           (Array.aset! &abs-devs i (abs (- med @(Array.nth data i)))))
         (* (median &abs-devs) n))))
 
+  (hidden median-abs-dev-pct)
   (defn median-abs-dev-pct [data]
     (* (/ (median-abs-dev data) (median data)) 100.0))
 
+  (hidden percentile-of-sorted)
   (defn percentile-of-sorted [sorted pct]
     (cond
       (Int.= 0 (Array.length sorted)) -1.0 ; should abort here
@@ -126,6 +142,7 @@
             hi @(Array.nth sorted (Int.inc n))]
         (Double.+ lo (Double.* d (Double.- hi lo))))))
 
+  (doc quartiles "Compute the quartiles of the samples data.")
   (defn quartiles [data]
     (let [tmp (Array.sort @data)
           first 25.0
@@ -136,10 +153,12 @@
           c (percentile-of-sorted &tmp third)]
       [a b c]))
 
+  (doc iqr "Compute the interquartile range.")
   (defn iqr [data]
     (let [s &(quartiles data)]
       (the Double (- @(Array.nth s 2) @(Array.nth s 0)))))
 
+  (hidden winsorize)
   (defn winsorize [samples pct]
     (let [tmp &(Array.sort @samples)
           lo (Statistics.percentile-of-sorted tmp pct)
@@ -153,6 +172,7 @@
               ())))
         (Array.copy tmp))))
 
+  (doc summary "Compute a variety of statistical values from a list of samples.")
   (defn summary [samples]
     (Summary.init
       (Array.sum samples)
@@ -167,5 +187,4 @@
       (median-abs-dev-pct samples)
       (quartiles samples)
       (iqr samples)))
-
 )

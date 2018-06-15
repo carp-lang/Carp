@@ -1,4 +1,5 @@
 (defmodule IO
+  (hidden color-table)
   (def color-table
     [[@"black" @"30"]
      [@"red" @"31"]
@@ -24,8 +25,10 @@
      [@"bg-cyan" @"46"]
      [@"bg-white" @"47"]])
 
+  (hidden len-color-table)
   (def len-color-table (Array.length &color-table))
 
+  (hidden color-name-to-ansi)
   (defn color-name-to-ansi [cname]
     (let [res @""]
       (do
@@ -35,7 +38,7 @@
              ()))
         (StringCopy.append @"\x1b[" (StringCopy.append res @"m")))))
 
-
+  (hidden color)
   (defn color [cname]
     (print &(color-name-to-ansi cname)))
   )
@@ -43,6 +46,7 @@
 (defmodule Test
   (deftype State [passed Int, failed Int])
 
+  (hidden handler)
   (defn handler [state expected actual descr what op]
     (if (op expected actual)
       (do
@@ -59,24 +63,31 @@
         (IO.color "reset")
         (State.update-failed (State.copy state) Int.inc))))
 
+  (doc assert-op "Assert that op returns true when given x and y.")
   (defn assert-op [state x y descr op]
     (handler state x y descr "value" op))
 
+  (doc assert-equal "Assert that x and y are equal. Equality needs to be implemented for their type.")
   (defn assert-equal [state x y descr]
     (handler state x y descr "value" =))
 
+  (doc assert-not-equal "Assert that x and y are not equal. Equality needs to be implemented for their type.")
   (defn assert-not-equal [state x y descr]
     (handler state x y descr "not value" /=))
 
+  (doc assert-true "Assert that x is true.")
   (defn assert-true [state x descr]
     (assert-equal state true x descr))
 
+  (doc assert-false "Assert that x is false.")
   (defn assert-false [state x descr]
     (assert-equal state false x descr))
 
+  (doc reset "Reset test state.")
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
 
+  (hidden run-child)
   (defn run-child [x]
     (let [pid (System.fork)
           status 0]
@@ -88,8 +99,10 @@
           (ignore (System.wait (address status)))
           (System.get-exit-status status)))))
 
+  (hidden handle-signal)
   (defn handle-signal [x] (System.exit x))
 
+  (hidden run-child-signals)
   (defn run-child-signals [x]
     (let [pid (System.fork)
           status 0]
@@ -106,12 +119,15 @@
           (ignore (System.wait (address status)))
           (System.get-exit-status status)))))
 
-  (defn assert-exit [state exit-code x descr]
-    (assert-equal state exit-code (run-child x) descr))
+  (doc assert-exit "Assert that function f exits with exit code exit-code.")
+  (defn assert-exit [state exit-code f descr]
+    (assert-equal state exit-code (run-child f) descr))
 
+  (doc assert-exit "Assert that function f aborts with OS signal signal.")
   (defn assert-signal [state signal x descr]
     (assert-equal state signal (run-child-signals x) descr))
 
+  (doc print-test-results "Print test results.")
   (defn print-test-results [state]
     (let [passed @(State.passed state)
           failed @(State.failed state)]
