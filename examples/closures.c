@@ -12,8 +12,9 @@ typedef struct Env_main_0 {
 } Env_main_0;
 
 // Deleter
-void delete_Env_main_0(Env_main_0 env) {
-    // nothing to free in this case
+void delete_Env_main_0(Env_main_0 *env) {
+    // no managed members to free in this case
+    free(env);
 }
 
 typedef struct Closure {
