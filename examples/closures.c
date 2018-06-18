@@ -17,14 +17,12 @@ typedef struct Closure__Unit_Int {
     void *env;
 } Closure__Unit_Int;
 
+// The body of the lambda, but lifted to its own function. Takes the environment as a first argument.
 int lifted_lambda_main_0(Env_main_0 *env) {
-    return 1 + env->x;
+    return 1 + env->x; // simplified for readability
 }
 
-int CALL_CLOSURE__Unit_Int__Int(Closure__Unit_Int *closure) {
-    return closure->callback(closure->env);
-}
-
+// Deleter for this particular closure
 void delete_Closure__Unit_Int__Int(Closure__Unit_Int closure) {
     free(closure.env);
 }
@@ -40,7 +38,7 @@ int main() {
         .env = env_0
     };
     // call f
-    int _1 = CALL_CLOSURE__Unit_Int__Int(&f);
+    int _1 = f->callback(f->env);
     // delete f
     delete_Closure__Unit_Int__Int(f);
     return _1;

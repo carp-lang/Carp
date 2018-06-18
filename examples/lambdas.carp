@@ -9,6 +9,47 @@
 ;;         f (fn [] x)] ; Lambda takes ownership of the string
 ;;     f))
 
+
+;; g : (λ [a] Int)
+(defn g [f]
+  (f 5))
+
+(defn h1 []
+  (g inc))
+
+(defn h2 [y]
+  (g (fn [x] (+ x y))))
+
+
 (defn-do main []
   (Debug.assert-balanced
    (println* &(example1 "!"))))
+
+
+(defn blaha [f]
+  (Int.+ 1 (f 5)))
+
+(defn main [x]
+  (map blaha [inc dec (fn [_] x)]))
+
+;; /* void blaha(void *f) { */
+;; /*   int _0; */
+;; /*   if is_closure(f) { */
+;; /*      _0 = call(f, 5); */
+;; /*      f.delete(f); */
+;; /*   } else { */
+;; /*      _0 = f(5); */
+;; /*   } */
+;; /*   return (1 + _0); */
+;; /* } */
+
+
+(defn call-on-me [f]
+  (f))
+
+(def a (fn [] 123))
+(defn b [] 666)
+
+(defn-do main []
+  (a)
+  (b))
