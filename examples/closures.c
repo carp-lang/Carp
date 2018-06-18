@@ -5,7 +5,7 @@
 //   (let-do [x 123
 //           f (fn [y] (+ x y))
 //           g square]
-//      (f 1)
+//      (f 210)
 //      (g 3))
 
 // Environment for this particular lambda
@@ -30,8 +30,8 @@ typedef int (*Fn_CallClosure__Int_Int)(void*, int);
 typedef int (*Fn_Int_Int)(int);
 
 // The body of the lambda, but lifted to its own function. Takes the environment as a first argument.
-int lifted_lambda_main_0(Env_main_0 *env) {
-    return 1 + env->x; // simplified for readability
+int lifted_lambda_main_0(Env_main_0 *env, int y) {
+    return env->x + y; // simplified for readability
 }
 
 int square(int x) {
@@ -56,7 +56,7 @@ int main() {
         .delete = NULL
     };
     // call f
-    int _1 = f.env == NULL ? ((Fn_Int_Int)f.callback)(1) : ((Fn_CallClosure__Int_Int)f.callback)(f.env, 1);
+    int _1 = f.env == NULL ? ((Fn_Int_Int)f.callback)(210) : ((Fn_CallClosure__Int_Int)f.callback)(f.env, 210);
     // delete f
     if(f.delete) { f.delete(f.env); }
     // call g
