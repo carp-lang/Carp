@@ -38,7 +38,7 @@ int main() {
         .env = env_0
     };
     // call f
-    int _1 = f->callback(f->env);
+    int _1 = f.callback(f.env);
     // delete f
     delete_Closure__Unit_Int__Int(f);
     return _1;
