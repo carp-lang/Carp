@@ -391,7 +391,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             func : args ->
               do funcToCall <- visit indent func
                  argListAsC <- createArgList indent args
-                 let Just (FuncTy _ retTy) = ty func
+                 let retTy = case ty func of
+                               Just (FuncTy _ retTy) -> retTy
+                               _ -> error ("No type on func " ++ show func)
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            return ""
