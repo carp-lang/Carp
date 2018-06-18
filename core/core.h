@@ -15,6 +15,15 @@ typedef struct {
     void *data;
 } Array;
 
+// Lambdas
+typedef struct {
+    void *callback;
+    void *env;
+    void (*delete)(void*);
+} Lambda;
+
+typedef void* LambdaEnv
+
 bool not(bool b) {
     return !b;
 }

@@ -2,6 +2,7 @@ module Types ( TypeMappings
              , Ty(..)
              , showMaybeTy
              , tyToC
+             , tyToCLambdaFix
              , isTypeGeneric
              , SymPath(..)
              , unifySignatures
@@ -82,6 +83,10 @@ showMaybeTy Nothing  = "(missing-type)"
 
 tyToC :: Ty -> String
 tyToC = tyToCManglePtr False
+
+tyToCLambdaFix :: Ty -> String
+tyToCLambdaFix t@(FuncTy _ _) = "Lambda"
+tyToCLambdaFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
 tyToCManglePtr _ IntTy                 = "int"
