@@ -133,6 +133,24 @@ toTokTy s =
                       Nothing -> error ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
     Right xobjs -> error ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
 
+-- | The code needed to correctly call a lambda from C.
+templateCodeForCallingLambda :: String -> Ty -> [String] -> String
+templateCodeForCallingLambda functionName t args =
+  let FuncTy argTys retTy = t
+      castToFnWithEnv = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy)
+      castToFn = tyToCast t
+  in
+    functionName ++ ".env ? " ++
+    "((" ++ castToFnWithEnv ++ ")" ++ functionName ++ ".callback)(" ++ functionName ++ ".env" ++ (if null args then "" else ", ") ++ joinWithComma args ++ ")" ++
+    " : " ++
+    "((" ++ castToFn ++ ")" ++ functionName ++ ".callback)(" ++  joinWithComma args ++ ")"
+
+-- | Must cast a lambda:s .callback member to the correct type to be able to call it.
+tyToCast :: Ty -> String
+tyToCast t =
+  let FuncTy argTys retTy = t
+  in  "$(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")"
+
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES
 

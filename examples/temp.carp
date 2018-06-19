@@ -69,6 +69,6 @@
 
 (defn f [] 123)
 
-(defn g []
+(defn main []
   (let [ff f]
     (ff)))

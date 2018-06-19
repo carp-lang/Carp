@@ -19,20 +19,21 @@ templateEMap =
   let fTy = FuncTy [VarTy "a"] (VarTy "a")
       aTy = StructTy "Array" [VarTy "a"]
       bTy = StructTy "Array" [VarTy "a"]
+      elem = "((($a*)a.data)[i])"
   in  defineTemplate
       (SymPath ["Array"] "endo-map")
       (FuncTy [fTy, aTy] bTy)
-      (toTemplate "Array $NAME($(Fn [a] a) f, Array a)")
+      (toTemplate "Array $NAME(Lambda f, Array a)") -- Lambda used to be $(Fn [a] a)
       (toTemplate $ unlines
         ["$DECL { "
         ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($a*)a.data)[i] = f((($a*)a.data)[i]); "
+        ,"        (($a*)a.data)[i] = " ++ (templateCodeForCallingLambda "f" fTy [elem]) ++ ";"
         ,"    }"
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy [t, arrayType] _) ->
-         [defineFunctionTypeAlias t])
+      (\(FuncTy [t@(FuncTy fArgTys fRetTy), arrayType] _) ->
+         [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])
 
 templateFilter :: (String, Binder)
 templateFilter = defineTypeParameterizedTemplate templateCreator path t
@@ -41,18 +42,19 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
     aTy = StructTy "Array" [VarTy "a"]
     path = SymPath ["Array"] "filter"
     t = FuncTy [fTy, aTy] aTy
+    elem = "&((($a*)a.data)[i])"
     templateCreator = TemplateCreator $
       \typeEnv env ->
         Template
         t
-        (const (toTemplate "Array $NAME($(Fn [(Ref a)] Bool) predicate, Array a)"))
+        (const (toTemplate "Array $NAME(Lambda predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
         (\(FuncTy [FuncTy [RefTy insideTy] BoolTy, _] _) ->
            (toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        if(predicate(&((($a*)a.data)[i]))) {"
+               , "        if(" ++ (templateCodeForCallingLambda "predicate" fTy [elem]) ++ ") {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
                , "        " ++ deleter "i"
@@ -63,8 +65,8 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "    return a;"
                , "}"
                ]))
-        (\(FuncTy [ft@(FuncTy [RefTy insideType] BoolTy), arrayType] _) ->
-           [defineFunctionTypeAlias ft] ++
+        (\(FuncTy [ft@(FuncTy fArgTys@[RefTy insideType] BoolTy), arrayType] _) ->
+           [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy)] ++
             depsForDeleteFunc typeEnv env insideType)
 
 templatePushBack :: (String, Binder)
@@ -155,9 +157,9 @@ templateSort = defineTypeParameterizedTemplate templateCreator path t
           \typeEnv env ->
             Template
             t
-            (const (toTemplate "Array $NAME (Array a, $(Fn [(Ref t), (Ref t)] Int) f)"))
+            (const (toTemplate "Array $NAME (Array a, Lambda f)")) -- Lambda used to be $(Fn [(Ref t), (Ref t)] Int)
             (const (toTemplate $ unlines ["$DECL {"
-                                         ,"    qsort(a.data, a.len, sizeof($t), (int(*)(const void*, const void*))f);"
+                                         ,"    qsort(a.data, a.len, sizeof($t), (int(*)(const void*, const void*))(f.callback));"
                                          ,"    return a;"
                                          ,"}"]))
             (\(FuncTy [arrayType, sortType] _) ->

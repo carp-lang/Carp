@@ -15,6 +15,7 @@ module Types ( TypeMappings
              , isFullyGenericType
              , consPath
              , doesTypeContainTyVarWithName
+             , lambdaEnvTy
              ) where
 
 import qualified Data.Map as Map
@@ -230,3 +231,7 @@ typesDeleterFunctionType memberType = FuncTy [memberType] UnitTy
 
 isFullyGenericType (VarTy _) = True
 isFullyGenericType _ = False
+
+-- | The type of environments sent to Lambdas (used in emitted C code)
+lambdaEnvTy :: Ty
+lambdaEnvTy = StructTy "LambdaEnv" []

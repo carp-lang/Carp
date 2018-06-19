@@ -161,17 +161,15 @@ templateUpdater :: String -> Template
 templateUpdater member =
   Template
     (FuncTy [VarTy "p", FuncTy [VarTy "t"] (VarTy "t")] (VarTy "p"))
-    (const (toTemplate "$p $NAME($p p, $(Fn [t] t) updater)"))
+    (const (toTemplate "$p $NAME($p p, Lambda updater)")) -- "Lambda" used to be: $(Fn [t] t)
     (const (toTemplate (unlines ["$DECL {"
-                                ,"    p." ++ member ++ " = updater(p." ++ member ++ ");"
+                                ,"    p." ++ member ++ " = " ++ (templateCodeForCallingLambda "updater" (FuncTy [VarTy "t"] (VarTy "t")) ["p." ++ member]) ++ ";"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\(FuncTy [_, t@(FuncTy [_] fRetTy)] _) ->
+    (\(FuncTy [_, t@(FuncTy fArgTys fRetTy)] _) ->
        if isTypeGeneric fRetTy
        then []
-       else [defineFunctionTypeAlias t])
-
-
+       else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])
 
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Either String (String, Binder)
