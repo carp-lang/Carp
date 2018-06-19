@@ -58,7 +58,7 @@ concretizeTypesInToken mappings cName decl token =
   case token of
     TokDecl -> concatMap (concretizeTypesInToken mappings cName (error "Nope.")) decl
     TokName -> [TokC cName]
-    TokTy t -> [TokTy (replaceTyVars mappings t)]
+    TokTy t mode -> [TokTy (replaceTyVars mappings t) mode]
     _ -> [token]
 
 -- | High-level helper function for creating templates from strings of C code.
@@ -73,6 +73,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     parseTok = Parsec.try parseTokDecl <|>      --- $DECL
                Parsec.try parseTokName <|>      --- $NAME
                Parsec.try parseTokTyGrouped <|> --- i.e. $(Fn [Int] t)
+               Parsec.try parseTokTyRawGrouped <|>
                Parsec.try parseTokTy <|>        --- i.e. $t
                parseTokC                        --- Anything else...
 
@@ -93,7 +94,7 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
     parseTokTy :: Parsec.Parsec String Int Token
     parseTokTy = do _ <- Parsec.char '$'
                     s <- Parsec.many1 Parsec.letter
-                    return (toTokTy s)
+                    return (toTokTy Normal s)
 
     parseTokTyGrouped :: Parsec.Parsec String Int Token
     parseTokTyGrouped = do _ <- Parsec.char '$'
@@ -101,7 +102,15 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
                            Parsec.putState 1 -- One paren to close.
                            s <- fmap ('(' :) (Parsec.many parseCharBalanced)
                            -- Note: The closing paren is read by parseCharBalanced.
-                           return (toTokTy s)
+                           return (toTokTy Normal s)
+
+    parseTokTyRawGrouped :: Parsec.Parsec String Int Token
+    parseTokTyRawGrouped = do _ <- Parsec.char '§'
+                              _ <- Parsec.char '('
+                              Parsec.putState 1 -- One paren to close.
+                              s <- fmap ('(' :) (Parsec.many parseCharBalanced)
+                              -- Note: The closing paren is read by parseCharBalanced.
+                              return (toTokTy Raw s)
 
     parseCharBalanced :: Parsec.Parsec String Int Char
     parseCharBalanced = do balanceState <- Parsec.getState
@@ -123,13 +132,13 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
 
 -- | Converts a string containing a type to a template token ('TokTy').
 -- | i.e. the string "(Array Int)" becomes (TokTy (StructTy "Array" IntTy)).
-toTokTy :: String -> Token
-toTokTy s =
+toTokTy :: TokTyMode -> String -> Token
+toTokTy mode s =
   case parse s "" of
     Left err -> error (show err)
     Right [] -> error ("toTokTy got [] when parsing: '" ++ s ++ "'")
     Right [xobj] -> case xobjToTy xobj of
-                      Just ok -> TokTy ok
+                      Just ok -> TokTy ok mode
                       Nothing -> error ("toTokTy failed to convert this s-expression to a type: " ++ pretty xobj)
     Right xobjs -> error ("toTokTy parsed too many s-expressions: " ++ joinWithSpace (map pretty xobjs))
 
@@ -149,7 +158,7 @@ templateCodeForCallingLambda functionName t args =
 tyToCast :: Ty -> String
 tyToCast t =
   let FuncTy argTys retTy = t
-  in  "$(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")"
+  in  "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
 
 ----------------------------------------------------------------------------------------------------------
 -- ACTUAL TEMPLATES

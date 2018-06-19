@@ -575,17 +575,20 @@ instance Show Template where
 instance Eq Template where
   a == b = templateSignature a == templateSignature b
 
+data TokTyMode = Normal | Raw deriving (Eq, Ord)
+
 -- | Tokens are used for emitting C code from templates.
-data Token = TokTy Ty        -- | Some kind of type, will be looked up if it's a type variable.
-           | TokC String     -- | Plain C code.
-           | TokDecl         -- | Will emit the declaration (i.e. "foo(int x)"), this is useful
-                             --   for avoiding repetition in the definition part of the template.
-           | TokName         -- | Will emit the name of the instantiated function/variable.
+data Token = TokTy Ty TokTyMode -- | Some kind of type, will be looked up if it's a type variable.
+           | TokC String        -- | Plain C code.
+           | TokDecl            -- | Will emit the declaration (i.e. "foo(int x)"), this is useful
+                                --   for avoiding repetition in the definition part of the template.
+           | TokName            -- | Will emit the name of the instantiated function/variable.
            deriving (Eq, Ord)
 
 instance Show Token where
   show (TokC s) = s
-  show (TokTy t) = tyToC t
+  show (TokTy t Normal) = tyToCLambdaFix t -- Any function type will be emitted as 'Lambda'
+  show (TokTy t Raw) = tyToC t -- Function types will be emitted in typedef:able form
   show TokName = "<name>"
   show TokDecl = "<declaration>"
 

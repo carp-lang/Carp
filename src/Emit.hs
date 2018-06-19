@@ -511,8 +511,8 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
-    (FuncTy argTys retTy) -> "typedef " ++ tyToC retTy ++ "(*" ++ pathToC path ++ ")(" ++
-                             intercalate ", " (map tyToC argTys) ++ ");\n"
+    (FuncTy argTys retTy) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
+                             intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
 toDeclaration :: XObj -> String
