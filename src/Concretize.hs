@@ -153,7 +153,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
                                                    suffixed = suffixTyVars ("_x" ++ show (infoIdentifier i')) replaced -- Make sure it gets unique type variables. TODO: Is there a better way?
-                                                   normalSymbol = XObj (Sym singlePath LookupGlobal) i (Just suffixed)
+                                                   normalSymbol = XObj (Sym singlePath (LookupGlobal CarpLand)) i (Just suffixed)
                                                in visitSymbol allowAmbig env $ --(trace ("Disambiguated " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show suffixed ++ ", used to be " ++ show t' ++ ", theType = " ++ show theType ++ ", mappings = " ++ show mappings))
                                                               normalSymbol
                                              Left failure@(UnificationFailure _ _) ->
@@ -194,7 +194,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                       [(theType, singlePath)] -> replace theType singlePath -- Found an exact match, will ignore any "half matched" functions that might have slipped in.
                       _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
-                      let normalSymbol = XObj (Sym singlePath LookupGlobal) i t
+                      let normalSymbol = XObj (Sym singlePath (LookupGlobal CarpLand)) i t
                       in visitSymbol allowAmbig env $ -- trace ("Replacing symbol " ++ pretty xobj ++ " with type " ++ show theType ++ " to single path " ++ show singlePath)
                                              normalSymbol
 
@@ -550,7 +550,7 @@ manageMemory typeEnv globalEnv root =
                      do MemState preDeleters _ <- get
                         ownsTheVarBefore <- case createDeleter okCorrectVariable of
                                               Nothing -> return (Right ())
-                                              Just d -> if Set.member d preDeleters || okMode == LookupGlobal
+                                              Just d -> if Set.member d preDeleters || isLookupGlobal okMode
                                                         then return (Right ())
                                                         else return (Left (UsingUnownedValue variable))
 
@@ -568,7 +568,7 @@ manageMemory typeEnv globalEnv root =
                                   if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
                                   then variable { info = setDeletersOnInfo varInfo deleters }
                                   else variable -- don't add the new info = no deleter
-                                LookupGlobal ->
+                                LookupGlobal _ ->
                                   variable { info = setDeletersOnInfo varInfo deleters }
 
                             traceDeps = trace ("SET!-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++
@@ -579,7 +579,7 @@ manageMemory typeEnv globalEnv root =
                         case okMode of
                           Symbol -> error "Should only be be a global/local lookup symbol."
                           LookupLocal -> manage okCorrectVariable
-                          LookupGlobal -> return ()
+                          LookupGlobal _ -> return ()
 
                         return $ do okValue <- visitedValue
                                     okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
@@ -779,7 +779,7 @@ manageMemory typeEnv globalEnv root =
           let Just i = info xobj
               Just t = ty xobj
               isGlobalVariable = case xobj of
-                                   XObj (Sym _ LookupGlobal) _ _ -> True
+                                   XObj (Sym _ (LookupGlobal _)) _ _ -> True
                                    _ -> False
           in if not isGlobalVariable && isManaged typeEnv t && not (isExternalType typeEnv t)
              then do MemState deleters deps <- get

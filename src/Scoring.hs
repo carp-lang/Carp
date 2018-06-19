@@ -97,7 +97,7 @@ scoreBody globalEnv visited root = visit root
           visitList xobj
         (Arr _) ->
           visitArray xobj
-        (Sym path LookupGlobal) ->
+        (Sym path (LookupGlobal _)) ->
           if Set.member path visited
           then 0
           else case lookupInEnv path globalEnv of

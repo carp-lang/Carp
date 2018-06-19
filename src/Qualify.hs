@@ -101,7 +101,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder _ foundOne)] ->
             if envIsExternal e
-            then XObj (Sym (getPath foundOne) LookupGlobal) i t
+            then XObj (Sym (getPath foundOne) (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
             else XObj (Sym (getPath foundOne) LookupLocal) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
@@ -115,8 +115,12 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                     XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
                   pathWithQualifiers ->
                     -- The symbol IS qualified but can't be found, should produce an error later during compilation.
-                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers LookupGlobal) i t)
+                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers (LookupGlobal CarpLand)) i t)
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t
 setFullyQualifiedSymbols _ _ _ xobj = xobj
+
+isExternalFunction :: XObj -> Bool
+isExternalFunction (XObj (Lst (XObj (External _) _ _ : _)) _ _) = True
+isExternalFunction _ = False

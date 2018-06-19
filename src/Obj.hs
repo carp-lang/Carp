@@ -10,11 +10,22 @@ import Types
 import Util
 import Debug.Trace
 
+-- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
+data GlobalMode = CarpLand
+                | ExternalCode
+                deriving (Eq, Show, Ord)
+
+-- | A symbol knows a bit about what it refers to - is it a local scope or a global one? (the latter include modules).
+-- | A symbol that is not used for looking up things will use the 'Symbol' case.
 data SymbolMode = Symbol
                 | LookupLocal
-                | LookupGlobal
+                | LookupGlobal GlobalMode
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
                 deriving (Eq, Show, Ord)
+
+isLookupGlobal :: SymbolMode -> Bool
+isLookupGlobal (LookupGlobal _) = True
+isLookupGlobal _ = False
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
@@ -203,7 +214,7 @@ pretty = visit 0
             Str str -> show str
             Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
-            Sym path _ -> show path
+            Sym path lookup -> show path ++ " " ++ show lookup
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name
             Bol b -> if b then "true" else "false"

@@ -401,6 +401,21 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               return ""
 
             -- Function application
+            -- func@(XObj (Sym _ (LookupGlobal ExternalCode)) _ _) : args ->
+            --   do funcToCall <- visit indent func
+            --      argListAsC <- createArgList indent args
+            --      let funcTy = case ty func of
+            --                    Just actualType -> actualType
+            --                    _ -> error ("No type on func " ++ show func)
+            --          FuncTy argTys retTy = funcTy
+            --          callFunction = funcToCall ++ "(" ++ argListAsC ++ ");\n"
+            --      if retTy == UnitTy
+            --        then do appendToSrc (addIndent indent ++ callFunction)
+            --                return ""
+            --        else do let varName = freshVar i
+            --                appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
+            --                return varName
+
             func : args ->
               do funcToCall <- visit indent func
                  argListAsC <- createArgList indent args
@@ -410,7 +425,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      FuncTy argTys retTy = funcTy
                      castToFn = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
                      castToFnWithEnv = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ "); // " ++ show funcTy ++ "\n"
+                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ "); // Return type of call: " ++ show funcTy ++ "\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
