@@ -99,7 +99,7 @@ templateGetter member memberTy =
     (const $
      let fixForVoidStarMembers =
            if isFunctionType memberTy && (not (isTypeGeneric memberTy))
-           then "(" ++ tyToC (RefTy memberTy) ++ ")"
+           then "(" ++ tyToCLambdaFix (RefTy memberTy) ++ ")"
            else ""
      in  (toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ member ++ ")); }\n")))
     (const [])
@@ -234,7 +234,7 @@ tokensForInit allocationMode typeName membersXObjs =
 -- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
 memberArg (memberName, memberTy) =
-  tyToC (templitizeTy memberTy) ++ " " ++ memberName
+  tyToCLambdaFix (templitizeTy memberTy) ++ " " ++ memberName
 
 -- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
 templitizeTy :: Ty -> Ty
@@ -259,7 +259,7 @@ concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
 concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOrPrn =
   Template
     (FuncTy [RefTy concreteStructTy] StringTy)
-    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "String $NAME(" ++ tyToC structTy ++ " *p)"))
+    (\(FuncTy [RefTy structTy] StringTy) -> (toTemplate $ "String $NAME(" ++ tyToCLambdaFix structTy ++ " *p)"))
     (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
         (tokensForStr typeEnv env typeName memberPairs concreteStructTy))
     (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
@@ -279,7 +279,7 @@ genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs 
             Template
             t
             (\(FuncTy [RefTy concreteStructTy] StringTy) ->
-               (toTemplate $ "String $NAME(" ++ tyToC concreteStructTy ++ " *p)"))
+               (toTemplate $ "String $NAME(" ++ tyToCLambdaFix concreteStructTy ++ " *p)"))
             (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs

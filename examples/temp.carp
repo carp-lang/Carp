@@ -67,8 +67,15 @@
 ;;   (println* "eq? " (= &(Pair.init 5 true) &(Pair.init 5 true)))
 ;;   )
 
-(defn f [] 123)
+;; (defn f [] 123)
+
+;; (defn main []
+;;   (let [ff f]
+;;     (ff)))
+
+(deftype Wrap [f (Fn [Int] Int)])
 
 (defn main []
-  (let [ff f]
-    (ff)))
+  (let [w (Wrap.init Int.inc)
+        g @(Wrap.f &w)]
+    (println* (g 5))))

@@ -139,14 +139,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         visitSymbol :: Int -> XObj -> State EmitterState String
         visitSymbol _ xobj@(XObj (Sym _ (LookupGlobalOverride overrideWithName)) _ t) =
           return overrideWithName
-        visitSymbol indent xobj@(XObj (Sym path lookupMode) (Just i) t) =
+        visitSymbol indent xobj@(XObj sym@(Sym path lookupMode) (Just i) t) =
           let Just t' = t
           in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
              else if isFunctionType t' && lookupMode /= LookupLocal
                   then do let var = freshVar i
-                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show lookupMode ++ "\n")
+                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show sym ++ "\n")
                           return var
                   else return (pathToC path)
 
@@ -410,7 +410,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      FuncTy argTys retTy = funcTy
                      castToFn = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
                      castToFnWithEnv = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
+                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ "); // " ++ show funcTy ++ "\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
@@ -495,7 +495,7 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
           -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-          Just (FuncTy _ _) -> appendToSrc (addIndent indent' ++ "void* " ++ mangle (getName memberName) ++ ";\n")
+          Just (FuncTy _ _) -> appendToSrc (addIndent indent' ++ "Lambda " ++ mangle (getName memberName) ++ ";\n") -- TODO: Can remove this case now and rely on tyToCLambdaFix instead?
           Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
           Nothing -> error ("Invalid memberType: " ++ show memberType)
 
