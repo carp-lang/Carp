@@ -22,7 +22,7 @@ typedef struct {
     void (*delete)(void*);
 } Lambda;
 
-typedef void* LambdaEnv
+typedef void* LambdaEnv;
 
 bool not(bool b) {
     return !b;

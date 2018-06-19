@@ -144,7 +144,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
           in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
-             else if isFunctionType t' -- && lookupMode == LookupLocal
+             else if isFunctionType t' && lookupMode /= LookupLocal
                   then do let var = freshVar i
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show lookupMode ++ "\n")
                           return var
@@ -338,7 +338,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do var <- visit indent value
                  let Just t' = t
                      fresh = mangle (freshVar i)
-                 appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
+                 appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = " ++ var ++ "; // From the 'the' function.\n")
                  return fresh
 
             -- Ref
@@ -349,9 +349,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                  if isNumericLiteral value
                    then do let literal = freshVar i ++ "_lit";
                                Just literalTy = ty value
-                           appendToSrc (addIndent indent ++ "static " ++ tyToC literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
-                           appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
-                   else appendToSrc (addIndent indent ++ tyToC t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
+                           appendToSrc (addIndent indent ++ "static " ++ tyToCLambdaFix literalTy ++ " " ++ literal ++ " = " ++ var ++ ";\n")
+                           appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
+                   else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
 
             -- Deftype
@@ -408,14 +408,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy = funcTy
-                     castToFn = tyToC retTy ++ "(*)(" ++ joinWithComma (map tyToC argTys) ++ ")"
-                     castToFnWithEnv = tyToC retTy ++ "(*)(" ++ joinWithComma (map tyToC (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                     castToFn = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
+                     castToFnWithEnv = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
                      callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""
                    else do let varName = freshVar i
-                           appendToSrc (addIndent indent ++ tyToC retTy ++ " " ++ varName ++ " = " ++ callLambda)
+                           appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callLambda)
                            return varName
 
             -- Empty list
