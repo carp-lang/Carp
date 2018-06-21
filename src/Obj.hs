@@ -618,7 +618,7 @@ forceTy :: XObj -> Ty
 forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun | Check deriving (Show, Eq)
+data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env

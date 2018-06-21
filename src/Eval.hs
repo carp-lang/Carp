@@ -447,6 +447,7 @@ catcher ctx exception =
           case contextExecMode ctx of
             Repl -> return ctx
             Build -> exitWith (ExitFailure returnCode)
+            Install _ -> exitWith (ExitFailure returnCode)
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitWith ExitSuccess
 

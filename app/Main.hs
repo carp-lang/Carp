@@ -81,6 +81,11 @@ main = do args <- SystemEnvironment.getArgs
                        runInputT settings (repl finalContext "")
             Build -> do _ <- executeString True finalContext ":b" "Compiler (Build)"
                         return ()
+            Install thing ->
+              do _ <- executeString True finalContext
+                      ("(install \"" ++ thing ++ "\")")
+                      "Installation"
+                 return ()
             BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
@@ -103,6 +108,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
           case arg of
             "-b" -> parseArgsInternal filesToLoad Build otherOptions restArgs
             "-x" -> parseArgsInternal filesToLoad BuildAndRun otherOptions restArgs
+            "-i" -> parseArgsInternal filesToLoad (Install (head restArgs)) otherOptions (tail restArgs)
             "--check" -> parseArgsInternal filesToLoad Check otherOptions restArgs
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
