@@ -159,6 +159,13 @@
       (for [i 0 n] (aset-uninitialized! &a i @e))
       a))
 
+  (doc copy "Produce a deep copy of the array.")
+  (defn copy [a]
+    (let-do [na (allocate (length a))]
+      (for [i 0 (length a)]
+        (aset-uninitialized! &na i (copy (nth a i))))
+      na))
+
   (doc copy-map "Map over array a using function f (copies the array).")
   (defn copy-map [f a]
     (let-do [na (allocate (length a))]
