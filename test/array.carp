@@ -106,6 +106,10 @@
                     &(sort (range 9 1 -1))
                     "sort works as expected")
       (assert-equal test
+                    &[@"Hello", @"World"]
+                    &(copy &[@"Hello", @"World"])
+                    "copy works as expected")
+      (assert-equal test
                     &[@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     &(copy-map excl-ref &b)
                     "copy-map works as expected")
