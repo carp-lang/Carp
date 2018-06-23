@@ -1,0 +1,165 @@
+(use Heap)
+
+(load "Test.carp")
+(use Test)
+
+(defn main []
+  (with-test test
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 6 4]]
+            (MinHeap.heapify! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MinHeap.heapify! works"))
+
+    (let-do [arr [1 1 2 3 6 4]
+             exp [1 1 2 3 6 4 4]]
+            (MinHeap.push! &arr 4)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MinHeap.push! works I"))
+
+    (let-do [arr [1 1 2 3 6 4]
+             exp [0 1 2 1 6 4 3]]
+            (MinHeap.push! &arr 0)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MinHeap.push! works II"))
+
+    (let-do [arr [1 1 2 3 6 4]
+             exp []
+             one   (MinHeap.pop! &arr)
+             one2  (MinHeap.pop! &arr)
+             two   (MinHeap.pop! &arr)
+             three (MinHeap.pop! &arr)
+             four  (MinHeap.pop! &arr)
+             six   (MinHeap.pop! &arr)]
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MinHeap.pop! works as expected"))
+
+    (let-do [arr [1 3 4 2 6 1]
+             exp [6 4 3 2 1 1]]
+            (MaxHeap.heapify! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MaxHeap.heapify! works"))
+
+    ; check that push-down-until! ignored the trailing elements (100, 200, 300)
+    ; and considers both children (right child max)
+    (let-do [arr [3 4 6 2 1 1 100 200 300]
+             exp [6 4 3 2 1 1 100 200 300]]
+            (MaxHeap.push-down-until! &arr 0 5)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MaxHeap.push-down-until! works I (right)"))
+
+    ; check that push-down-until! ignored the trailing elements (100, 200, 300)
+    ; and considers both children (left child max)
+    (let-do [arr [3 6 4 2 1 1 100 200 300]
+             exp [6 3 4 2 1 1 100 200 300]]
+            (MaxHeap.push-down-until! &arr 0 5)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MaxHeap.push-down-until! works II (left)"))
+
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 4 6]]
+            (HeapSort.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "HeapSort.sort! works"))
+
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 4 6]
+             res (HeapSort.sort &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "HeapSort.sort works"))
+
+    ; Check that HeapSort.sort does not modify input array
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 4 6]
+             _ (HeapSort.sort &arr)]
+            (assert-equal test
+                          &arr
+                          &[1 3 4 2 6 1]
+                          "HeapSort.sort does not modify array"))
+
+    ; walk through HeapSort.sort! step by step
+    (let-do [arr [1 3 4 2 6 1]
+             exp [6 4 3 2 1 1]]
+            (MaxHeap.heapify! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "MinHeap.heapify! works"))
+
+    (let-do [arr [6 4 3 2 1 1]
+             exp [1 4 3 2 1 6]]
+            (Array.swap! &arr 0 (- (Array.length &arr) 1))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "swap works"))
+
+    (let-do [arr [1 4 3 2 1 6]
+             exp [4 2 3 1 1 6]]
+            (MaxHeap.push-down-until! &arr 0 (- (Array.length &arr) 1))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "push down until works"))
+
+    (let-do [arr [4 2 3 1 1 6]
+             exp [1 2 3 1 4 6]]
+            (Array.swap! &arr 0 (- (Array.length &arr) 2))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "swap 2 works"))
+
+    (let-do [arr [1 2 3 1 4 6]
+             exp [3 2 1 1 4 6]]
+            (MaxHeap.push-down-until! &arr 0 (- (Array.length &arr) 2))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "push down until 2 works"))
+
+    (let-do [arr [3 2 1 1 4 6]
+             exp [1 2 1 3 4 6]]
+            (Array.swap! &arr 0 (- (Array.length &arr) 3))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "swap 3 works"))
+
+    (let-do [arr [1 2 1 3 4 6]
+             exp [2 1 1 3 4 6]]
+            (MaxHeap.push-down-until! &arr 0 (- (Array.length &arr) 3))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "push down 3 works"))
+
+    (let-do [arr [2 1 1 3 4 6]
+             exp [1 1 2 3 4 6]]
+            (Array.swap! &arr 0 (- (Array.length &arr) 4))
+            (assert-equal test
+                          &exp
+                          &arr
+                          "swap 4 works"))
+
+
+    (print-test-results test)))
+

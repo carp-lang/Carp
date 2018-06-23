@@ -1,0 +1,172 @@
+
+; Abstract heap with user-supplied ordering function
+; an ordering function is a binary relation
+; `<` will create a MinHeap, `>` will create a MaxHeap
+;
+; for any two items `a` and `b`,
+;   `a` will be higher in the Heap then `b` if `(ord a b)`
+(defmodule Heap
+    (hidden lchild)
+    (defn lchild [i]
+        (+ 1 (* 2 i)))
+
+    (hidden rchild)
+    (defn rchild [i]
+        (+ 2 (* 2 i)))
+
+    (hidden parent)
+    (defn parent [i]
+        (/ i 2))
+
+    (hidden max-of-three-until)
+    (doc max-of-three-until! "Get the index for the largest (by ord) of an element and its two children.")
+    (defn max-of-three-until! [heap i len ord]
+        (let-do [lchild-i (lchild i)
+                 rchild-i (rchild i)]
+                 (when (and (< lchild-i len) (ord (Array.nth heap lchild-i) (Array.nth heap i)))
+                       (set! i lchild-i))
+                 (when (and (< rchild-i len) (ord (Array.nth heap rchild-i) (Array.nth heap i)))
+                       (set! i rchild-i))
+                 i))
+
+    ; push-down-until!, push-down!, and push-up! are intended for use only by
+    ; those performing internal mutation to the heap who want to restore order.
+
+    (defn push-down-until! [heap i len ord]
+        (while true
+               (let [challenger (max-of-three-until! heap i len ord)]
+                    (if (= challenger i)
+                        (break)
+                        (do
+                            (Array.swap! heap i challenger)
+                            (set! i challenger))))))
+
+    (defn push-down! [heap i ord]
+        (push-down-until! heap i (Array.length heap) ord))
+
+    (defn push-up! [heap i ord]
+        (while (/= i 0)
+            (let [elem (Array.nth heap i)
+                  parent-i (Heap.parent i)
+                  parent-elem (Array.nth heap parent-i)]
+                 (if (not (ord elem parent-elem))
+                     (break)
+                     (do (Array.swap! heap i parent-i)
+                         (set! i parent-i))))))
+
+    (doc peek "Returns first item on heap.")
+    (defn peek [heap]
+        (Array.first heap))
+
+    (doc heapify! "Convert array to a heap in place")
+    (defn heapify! [arr ord]
+        (let [len (Array.length arr)]
+            (for [i 1 len]
+                (push-up! arr i ord))))
+
+    (doc push! "Insert a new item onto the heap.")
+    (defn push! [heap item ord]
+        (do
+            (Array.push-back! heap item)
+            (push-up! heap (- (Array.length heap) 1) ord)))
+
+    (doc pop! "Remove and return the first item in the heap.")
+    (defn pop! [heap ord]
+        (do
+            ; swap 0 with tail
+            (Array.swap! heap 0 (- (Array.length heap) 1))
+            ; restore heap excluding tail
+            (push-down-until! heap 0 (- (Array.length heap) 1) ord)
+            ; pop off tail, returning it
+            (Array.pop-back! heap)))
+)
+
+(defmodule MinHeap
+    (hidden ord)
+    (defn ord [a b]
+        (< a b))
+
+    (defn push-down! [heap i]
+        (Heap.push-down! heap i ord))
+
+    (defn push-down-until! [heap i len]
+        (Heap.push-down-until! heap i len ord))
+
+    (defn push-up! [heap i]
+        (Heap.push-up! heap i ord))
+
+    (doc peek "Returns minimum item on min-heap.")
+    (defn peek [heap]
+        (Array.first heap))
+
+    (doc heapify! "Convert array to a min-heap in place")
+    (defn heapify! [arr]
+        (Heap.heapify! arr ord))
+
+    (doc push! "Insert a new element onto the min-heap.")
+    (defn push! [heap item]
+        (Heap.push! heap item ord))
+
+    (doc pop! "Remove and return the first item in the min-heap.")
+    (defn pop! [heap]
+        (Heap.pop! heap ord))
+)
+
+(defmodule MaxHeap
+    (hidden ord)
+    (defn ord [a b]
+        (> a b))
+
+    (defn push-down! [heap i]
+        (Heap.push-down! heap i ord))
+
+    (defn push-down-until! [heap i len]
+        (Heap.push-down-until! heap i len ord))
+
+    (defn push-up! [heap i]
+        (Heap.push-up! heap i ord))
+
+    (doc peek "Returns maximum first item on max-heap.")
+    (defn peek [heap]
+        (Array.first heap))
+
+    (doc heapify! "Convert array to a max-heap in place")
+    (defn heapify! [arr]
+        (Heap.heapify! arr ord))
+
+    (doc push! "Insert a new element onto the max-heap.")
+    (defn push! [heap item]
+        (Heap.push! heap item ord))
+
+    (doc pop! "Remove and return the first item in the max-heap.")
+    (defn pop! [heap]
+        (Heap.pop! heap ord))
+)
+
+(defmodule HeapSort
+    (doc sort! "Perform an in-place heapsort of a given array.")
+    (defn sort! [arr]
+        (do
+            (MaxHeap.heapify! arr)
+            ; now we walk through the array, at all times 0..tail is a max heap
+            ; and tail..len is the sorted output
+            ; we slowly grow the tail while shrinking the head
+            ; once tail == 0, then we have finished sorting
+            (let [tail (- (Array.length arr) 1)]
+                 (while (> tail 0)
+                        (do
+                            ; swap values of [0] and [tail]
+                            ; this makes our heap temporarily invalid
+                            (Array.swap! arr 0 tail)
+                            ; keep pushing down 0 until heap property is satisfied
+                            (MaxHeap.push-down-until! arr 0 tail)
+                            ; grow our tail, shrinking our head
+                            (set! tail (- tail 1)))))))
+
+    (doc sort "Perform a heapsort in a new copy of given array.")
+    (defn sort [arr]
+        (let-do [narr (Array.copy arr)]
+                (sort! &narr)
+                narr))
+)
+
