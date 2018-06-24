@@ -148,6 +148,28 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                depsForCopyFunc typeEnv env insideTy
             )
 
+templatePopBackBang :: (String, Binder)
+templatePopBackBang =
+  let aTy = RefTy (StructTy "Array" [VarTy "a"])
+      valTy = VarTy "a"
+  in  defineTemplate
+      (SymPath ["Array"] "pop-back!")
+      (FuncTy [aTy] (VarTy "a"))
+      (toTemplate "$a $NAME(Array *aRef)")
+      (toTemplate $ unlines
+        ["$DECL { "
+         ,"  $a ret;"
+         ,"  #ifndef OPTIMIZE"
+         ,"  assert(aRef->len > 0);"
+         ,"  #endif"
+         ,"  ret = (($a*)aRef->data)[aRef->len - 1];"
+         ,"  aRef->len--;"
+         ,"  return ret;"
+         ,"}"
+        ])
+      (\(FuncTy [arrayType] _) -> [])
+
+
 templateNth :: (String, Binder)
 templateNth =
   let t = VarTy "t"

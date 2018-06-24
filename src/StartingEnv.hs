@@ -31,6 +31,7 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templatePushBack
                                 , templatePushBackBang
                                 , templatePopBack
+                                , templatePopBackBang
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
