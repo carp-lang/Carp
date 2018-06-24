@@ -157,4 +157,24 @@
                             &exp
                             &arr
                             "Array.push-back! works as expected"))
+      (let-do [a [1 2 3 4 5 6]
+               b (Array.pop-back a)
+               c (Array.pop-back b)
+               d (Array.pop-back c)
+               exp [1 2 3]]
+              (assert-equal test
+                            &exp
+                            &d
+                           "Array.pop-back works as expected"))
+      (let-do [arr [1 2 3 4 5 6]
+               exp [1 2 3]
+               six  (Array.pop-back! &arr)
+               five (Array.pop-back! &arr)
+               four (Array.pop-back! &arr)]
+              (assert-true test
+                           (and* (= &exp &arr)
+                                 (= six  6)
+                                 (= five 5)
+                                 (= four 4))
+                           "Array.pop-back! works as expected"))
       (print-test-results test))))
