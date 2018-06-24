@@ -133,4 +133,28 @@
                     "[(Pair 0 @\"a\") (Pair 1 @\"b\") (Pair 2 @\"c\")]"
                     &(str &(Array.enumerated &[@"a" @"b" @"c"]))
                     "enumerated works as expected")
+      (let-do [arr [1 2 3 4 5 6]
+               exp [1 2 3 4 5 6 7]
+               new (Array.push-back arr 7)]
+              (assert-equal test
+                            &exp
+                            &new
+                            "Array.push-back works as expected"))
+      (let-do [arr [1 2 3]
+               exp [1 2 3 4 5 6 7 8 9 10 11 12 13 14]]
+              (Array.push-back! &arr 4)
+              (Array.push-back! &arr 5)
+              (Array.push-back! &arr 6)
+              (Array.push-back! &arr 7)
+              (Array.push-back! &arr 8)
+              (Array.push-back! &arr 9)
+              (Array.push-back! &arr 10)
+              (Array.push-back! &arr 11)
+              (Array.push-back! &arr 12)
+              (Array.push-back! &arr 13)
+              (Array.push-back! &arr 14)
+              (assert-equal test
+                            &exp
+                            &arr
+                            "Array.push-back! works as expected"))
       (print-test-results test))))

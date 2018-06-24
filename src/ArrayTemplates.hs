@@ -93,6 +93,26 @@ templatePushBack =
         ])
       (\(FuncTy [arrayType, _] _) -> [])
 
+templatePushBackBang :: (String, Binder)
+templatePushBackBang =
+  let aTy = RefTy (StructTy "Array" [VarTy "a"])
+      valTy = VarTy "a"
+  in  defineTemplate
+      (SymPath ["Array"] "push-back!")
+      (FuncTy [aTy, valTy] UnitTy)
+      (toTemplate "void $NAME(Array *aRef, $a value)")
+      (toTemplate $ unlines
+        ["$DECL { "
+        ,"    aRef->len++;"
+        ,"    if(aRef->len > aRef->capacity) {"
+        ,"        aRef->capacity = aRef->len * 2;"
+        ,"        aRef->data = realloc(aRef->data, sizeof($a) * aRef->capacity);"
+        ,"    }"
+        ,"    (($a*)aRef->data)[aRef->len - 1] = value;"
+        ,"}"
+        ])
+      (\(FuncTy [arrayType, _] _) -> [])
+
 templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "pop-back"
