@@ -1,0 +1,12 @@
+(use Heap)
+
+(defmodule Sort
+    (doc sort! "Perform an in-place heapsort of a given array.")
+    (defn sort! [arr]
+        (HeapSort.sort! arr))
+
+    (doc sort "Perform a heapsort in a new copy of given array.")
+    (defn sort [arr]
+        (HeapSort.sort arr))
+)
+
