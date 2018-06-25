@@ -989,7 +989,12 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
             ExitSuccess ->
               let fName = last (splitOn "/" path)
                   fileToLoad = path ++ "/" ++ toCheckout ++ "/" ++ fName
-              in commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+                  mainToLoad = path ++ "/" ++ toCheckout ++ "/main.carp"
+              in do
+                res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+                case res of
+                  ret@(Right _) -> return ret
+                  Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
             ExitFailure _ -> do
                 return $ invalidPath ctx path
 
