@@ -661,6 +661,8 @@ commandMinus [a, b] =
 commandDiv :: CommandCallback
 commandDiv [a, b] =
   return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy))
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty))
