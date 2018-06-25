@@ -2,13 +2,14 @@ module Eval where
 
 import qualified Data.Map as Map
 import Data.List (foldl', null)
-import Data.List.Split (splitWhen)
+import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesPathExist, canonicalizePath)
+import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, setCurrentDirectory)
+import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -926,14 +927,9 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
            map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
            [carpDir ++ "/core/" ++ path]
             -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
-     existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
+     existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
      case existingPaths of
-       [] ->
-         return $ Left $ EvalError $ case contextExecMode ctx of
-                                       Check ->
-                                         (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
-                                       _ ->
-                                         "Invalid path: '" ++ path ++ "'"
+       [] -> tryInstall path
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             let alreadyLoaded = projectAlreadyLoaded proj
@@ -952,6 +948,46 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                       newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
                       put newCtx
             return dynamicNil
+  where
+    tryInstall path =
+      let split = splitOn "@" path
+      in if length split > 1
+          then tryInstallWithCheckout (joinWith "@" (init split)) (last split)
+          else tryInstallWithCheckout (joinWith "@" split) "master"
+    tryInstallWithCheckout path toCheckout = do
+      ctx <- get
+      let proj = contextProj ctx
+      let carpDir = projectCarpDir proj
+      let fpath = carpDir ++ "/core/" ++ path ++ "/" ++ toCheckout
+      cur <- liftIO $ getCurrentDirectory
+      _ <- liftIO $ createDirectoryIfMissing True fpath
+      _ <- liftIO $ setCurrentDirectory fpath
+      _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
+      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", "git@" ++ path ++ ".git"] ""
+      (x0, _, _) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
+      case x0 of
+        ExitFailure _ -> do
+          _ <- liftIO $ setCurrentDirectory cur
+          return $ Left $ EvalError $ case contextExecMode ctx of
+                                     Check ->
+                                       (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+                                     _ -> "Invalid path: '" ++ path ++ "'"
+        ExitSuccess -> do
+          _ <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
+          _ <- liftIO $ setCurrentDirectory cur
+          (x1, _, _) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
+          case x1 of
+            ExitSuccess ->
+              let fName = last (splitOn "/" path)
+                  fileToLoad = path ++ "/" ++ toCheckout ++ "/" ++ fName
+              in commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+            ExitFailure _ -> do
+                return $ Left $ EvalError $ case contextExecMode ctx of
+                                           Check ->
+                                             (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+                                           _ ->
+                                             "Invalid path: '" ++ path ++ "'"
+
 
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context

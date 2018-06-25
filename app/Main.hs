@@ -83,7 +83,7 @@ main = do args <- SystemEnvironment.getArgs
                         return ()
             Install thing ->
               do _ <- executeString True finalContext
-                      ("(install \"" ++ thing ++ "\")")
+                      ("(load \"" ++ thing ++ "\")")
                       "Installation"
                  return ()
             BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"

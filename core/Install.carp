@@ -1,8 +1,0 @@
-(defn install [file]
-  (let [split (String.split-by file &[\@])]
-    (if (= (Array.length &split) 1)
-      (System.system &(fmt "git clone %s" file))
-      (do
-        (System.system &(fmt "git clone %s" file))
-        (comment TODO: check out tag)
-      ))))

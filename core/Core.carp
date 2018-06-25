@@ -20,4 +20,3 @@
 (load "Map.carp")
 (load "Heap.carp")
 (load "Sort.carp")
-(load "Install.carp")
