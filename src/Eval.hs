@@ -974,8 +974,8 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                                      _ -> "Invalid path: '" ++ path ++ "'"
         ExitSuccess -> do
           _ <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
+          (x1, s1, s2) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
           _ <- liftIO $ setCurrentDirectory cur
-          (x1, _, _) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
           case x1 of
             ExitSuccess ->
               let fName = last (splitOn "/" path)
