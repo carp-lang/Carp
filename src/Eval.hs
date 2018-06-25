@@ -933,7 +933,9 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
      existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
      case existingPaths of
        [] ->
-        if elem '@' path then tryInstall path else return $ invalidPath ctx path
+        if elem '@' path
+          then tryInstall path
+          else return $ invalidPath ctx path
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             let alreadyLoaded = projectAlreadyLoaded proj
@@ -955,10 +957,11 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
   where
     invalidPath ctx path =
       Left $ EvalError $
-        case contextExecMode ctx of
+        (case contextExecMode ctx of
           Check ->
             (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
-          _ -> "Invalid path: '" ++ path ++ "'"
+          _ -> "Invalid path: '" ++ path ++ "'") ++
+        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)."
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
