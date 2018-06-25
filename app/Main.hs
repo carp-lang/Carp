@@ -23,6 +23,7 @@ defaultProject =
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
+          , projectLibDir = ".carp/libs/"
           , projectCarpDir = "./"
           , projectOutDir = "./out/"
           , projectDocsDir = "./docs/"

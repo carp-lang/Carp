@@ -8,7 +8,7 @@ import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, setCurrentDirectory)
+import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, getHomeDirectory, setCurrentDirectory)
 import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
@@ -919,17 +919,21 @@ specialCommandMetaGet path key =
 commandLoad :: CommandCallback
 commandLoad [xobj@(XObj (Str path) _ _)] =
   do ctx <- get
+     home <- liftIO $ getHomeDirectory
      let proj = contextProj ctx
+         libDir = home ++ "/" ++ projectLibDir proj
          carpDir = projectCarpDir proj
          fullSearchPaths =
            path :
            ("./" ++ path) :                                      -- the path from the current directory
            map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
-           [carpDir ++ "/core/" ++ path]
+           [carpDir ++ "/core/" ++ path] ++
+           [libDir ++ "/" ++ path]
             -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
      existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
      case existingPaths of
-       [] -> tryInstall path
+       [] ->
+        if elem '@' path then tryInstall path else return $ invalidPath ctx path
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             let alreadyLoaded = projectAlreadyLoaded proj
@@ -949,16 +953,21 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                       put newCtx
             return dynamicNil
   where
+    invalidPath ctx path =
+      Left $ EvalError $
+        case contextExecMode ctx of
+          Check ->
+            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+          _ -> "Invalid path: '" ++ path ++ "'"
     tryInstall path =
       let split = splitOn "@" path
-      in if length split > 1
-          then tryInstallWithCheckout (joinWith "@" (init split)) (last split)
-          else tryInstallWithCheckout (joinWith "@" split) "master"
+      in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
     tryInstallWithCheckout path toCheckout = do
       ctx <- get
+      home <- liftIO $ getHomeDirectory
       let proj = contextProj ctx
-      let carpDir = projectCarpDir proj
-      let fpath = carpDir ++ "/core/" ++ path ++ "/" ++ toCheckout
+      let libDir = home ++ "/" ++ projectLibDir proj
+      let fpath = libDir ++ "/" ++ path ++ "/" ++ toCheckout
       cur <- liftIO $ getCurrentDirectory
       _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
@@ -968,10 +977,7 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
       case x0 of
         ExitFailure _ -> do
           _ <- liftIO $ setCurrentDirectory cur
-          return $ Left $ EvalError $ case contextExecMode ctx of
-                                     Check ->
-                                       (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
-                                     _ -> "Invalid path: '" ++ path ++ "'"
+          return $ invalidPath ctx path
         ExitSuccess -> do
           _ <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
           (x1, s1, s2) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
@@ -982,11 +988,7 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                   fileToLoad = path ++ "/" ++ toCheckout ++ "/" ++ fName
               in commandLoad [XObj (Str fileToLoad) Nothing Nothing]
             ExitFailure _ -> do
-                return $ Left $ EvalError $ case contextExecMode ctx of
-                                           Check ->
-                                             (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
-                                           _ ->
-                                             "Invalid path: '" ++ path ++ "'"
+                return $ invalidPath ctx path
 
 
 -- | Load several files in order.
