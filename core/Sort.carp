@@ -1,5 +1,3 @@
-(use Heap)
-
 (defmodule Sort
     (doc sort! "Perform an in-place heapsort of a given array.")
     (defn sort! [arr]
