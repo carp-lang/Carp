@@ -962,6 +962,13 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
             (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
           _ -> "Invalid path: '" ++ path ++ "'") ++
         "\n\nIf you tried loading an external package, try appending a version string (like `@master`)."
+    invalidPathWith ctx path stderr =
+      Left $ EvalError $
+        (case contextExecMode ctx of
+          Check ->
+            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+          _ -> "Invalid path: '" ++ path ++ "'") ++
+        "\n\nTried interpreting statement as git import, but got: " ++ stderr
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
@@ -976,14 +983,14 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
       _ <- liftIO $ setCurrentDirectory fpath
       _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
       _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", "git@" ++ path ++ ".git"] ""
-      (x0, _, _) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
+      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
       case x0 of
         ExitFailure _ -> do
           _ <- liftIO $ setCurrentDirectory cur
-          return $ invalidPath ctx path
+          return $ invalidPathWith ctx path stderr0
         ExitSuccess -> do
           _ <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
-          (x1, s1, s2) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
+          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
           _ <- liftIO $ setCurrentDirectory cur
           case x1 of
             ExitSuccess ->
@@ -996,7 +1003,7 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                   ret@(Right _) -> return ret
                   Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
             ExitFailure _ -> do
-                return $ invalidPath ctx path
+                return $ invalidPathWith ctx path stderr1
 
 
 -- | Load several files in order.
