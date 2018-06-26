@@ -1,0 +1,34 @@
+(use Char)
+
+(load "Test.carp")
+(use Test)
+
+(defn main []
+  (with-test test
+    (assert-true test
+                  (= \a \a)
+                  "char = works as expected I")
+    (assert-true test
+                  (= &\a &\a)
+                  "char = works as expected II")
+    (assert-true test
+                  (/= \a \b)
+                  "char /= works as expected I")
+    (assert-true test
+                  (/= &\a &\b)
+                  "char /= works as expected II")
+    (assert-true test
+                  (< \a \b)
+                  "char < works as expected I")
+    (assert-true test
+                  (< &\a &\b)
+                  "char < works as expected II")
+    (assert-true test
+                  (> \b \a)
+                  "char > works as expected I")
+    (assert-true test
+                  (> &\b &\a)
+                  "char > works as expected II")
+    (print-test-results test)
+  )
+)
