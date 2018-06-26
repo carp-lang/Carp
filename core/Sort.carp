@@ -1,4 +1,4 @@
-(defmodule Sort
+(defmodule Array
     (doc sort! "Perform an in-place heapsort of a given array.")
     (defn sort! [arr]
         (HeapSort.sort! arr))
@@ -10,18 +10,4 @@
     (doc sort "Perform an in-place heapsort of a given owned array.")
     (defn sort [arr]
         (HeapSort.sort arr))
-)
-
-(defmodule Array
-    (doc sort! "Perform an in-place heapsort of a given array.")
-    (defn sort! [arr]
-        (Sort.sort! arr))
-
-    (doc sorted "Perform a heapsort in a new copy of given array.")
-    (defn sorted [arr]
-        (Sort.sorted arr))
-
-    (doc sort "Perform an in-place heapsort of a given owned array.")
-    (defn sort [arr]
-        (Sort.sort arr))
 )
