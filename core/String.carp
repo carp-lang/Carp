@@ -3,6 +3,8 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
+  (register >          (Fn [&String &String] Bool))
+  (register <          (Fn [&String &String] Bool))
   (register append     (Fn [&String &String] String))
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))

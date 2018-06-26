@@ -88,6 +88,14 @@ bool String__EQ_(String *a, String *b) {
     return strcmp(*a, *b) == 0;
 }
 
+bool String__GT_(String *a, String *b) {
+    return strcmp(*a, *b) > 0;
+}
+
+bool String__LT_(String *a, String *b) {
+    return strcmp(*a, *b) < 0;
+}
+
 String String_append(String *a, String *b) {
     int la = strlen(*a);
     int lb = strlen(*b);
