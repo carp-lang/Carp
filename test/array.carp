@@ -22,13 +22,19 @@
     (with-test test
       (assert-true test
                    (= &[1 2 3] &[1 2 3])
-                   "= works as expected")
+                   "= works as expected I")
       (assert-false test
                     (= &[1 2 3] &[1 2 3 4])
-                    "= works as expected")
+                    "= works as expected II")
       (assert-false test
                     (= &[1 2 3] &[1 2 34])
-                    "= works as expected")
+                    "= works as expected III")
+      (assert-true test
+                   (/= &[1 2 3] &[1 2 3 4])
+                   "/= works as expected I")
+      (assert-true test
+                   (/= &[1 2 4] &[1 2 3])
+                   "/= works as expected II")
       (assert-equal test
                     &[0 0 0 0]
                     &(replicate 4 &0)
