@@ -74,5 +74,28 @@
                           &res
                           "Sort.sort works with strings"))
 
+    (let-do [arr [\d \a \c \b]
+             exp [\a \b \c \d]]
+            (Sort.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Sort.sort! works with chars"))
+
+    (let-do [arr [\d \a \c \b]
+             exp [\a \b \c \d]
+             res (Sort.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Sort.sorted works with chars"))
+
+    (let-do [res (Sort.sort [\d \a \c \b])
+             exp [\a \b \c \d]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Sort.sort works with chars"))
+
     (print-test-results test)))
 
