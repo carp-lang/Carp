@@ -3,7 +3,11 @@
     (defn sort! [arr]
         (HeapSort.sort! arr))
 
-    (doc sort "Perform a heapsort in a new copy of given array.")
+    (doc sorted "Perform a heapsort in a new copy of given array.")
+    (defn sorted [arr]
+        (HeapSort.sorted arr))
+
+    (doc sort "Perform an in-place heapsort of a given owned array.")
     (defn sort [arr]
         (HeapSort.sort arr))
 )
