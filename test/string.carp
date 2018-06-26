@@ -17,6 +17,18 @@
     (assert-true test
                   (/= "hello world" "bob")
                   "string /= works as expected II")
+    (assert-true test
+                  (< @"aaaa" @"aaab")
+                  "string < works as expected I")
+    (assert-true test
+                  (< "aaaa" "aaab")
+                  "string < works as expected II")
+    (assert-true test
+                  (> @"aaab" @"aaaa")
+                  "string > works as expected I")
+    (assert-true test
+                  (> "aaab" "aaaa")
+                  "string > works as expected II")
     (assert-equal test
                   "true"
                   &(str true)
