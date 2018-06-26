@@ -28,6 +28,9 @@
               (break))))
         eq)))
 
+  (defn /= [a b]
+    (not (= a b)))
+
   (doc maximum "Get the maximum in an array (elements must support <).")
   (defn maximum [xs]
     (let [result (first xs)
