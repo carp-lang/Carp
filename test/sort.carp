@@ -28,6 +28,29 @@
                           &res
                           "Sort.sort works with integers"))
 
+    (let-do [arr [1.0 0.8 12.4 3.2]
+             exp [0.8 1.0 3.2 12.4]]
+            (Sort.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Sort.sort! works with floats"))
+
+    (let-do [arr [1.0 0.8 12.4 3.2]
+             exp [0.8 1.0 3.2 12.4]
+             res (Sort.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Sort.sorted works with floats"))
+
+    (let-do [res (Sort.sort [1.0 0.8 12.4 3.2])
+             exp [0.8 1.0 3.2 12.4]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Sort.sort works with floats"))
+
     (let-do [arr [@"aaac" @"aaaa" @"aaab" @"aaad"]
              exp [@"aaaa" @"aaab" @"aaac" @"aaad"]]
             (Sort.sort! &arr)
