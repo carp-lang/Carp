@@ -2,6 +2,8 @@
 
 (defmodule Char
   (register = (Fn [Char Char] Bool))
+  (register < (Fn [Char Char] Bool))
+  (register > (Fn [Char Char] Bool))
   (register to-int (Fn [Char] Int))
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
@@ -27,7 +29,14 @@
 
 (defmodule CharRef
   (defn = [a b]
-    (Char.= @a @b)))
+    (Char.= @a @b))
+  (defn /= [a b]
+    (Char./= @a @b))
+  (defn < [a b]
+    (Char.< @a @b))
+  (defn > [a b]
+    (Char.> @a @b))
+)
 
 (defmodule PtrChar
   (register str (Fn [(Ptr Char)] String)))

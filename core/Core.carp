@@ -18,3 +18,5 @@
 (load "Format.carp")
 (load "Random.carp")
 (load "Map.carp")
+(load "Heap.carp")
+(load "Sort.carp")

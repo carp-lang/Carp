@@ -102,10 +102,6 @@
                     &(range 10 1 -2)
                     "range backwards works as expected if we dont exactly hit")
       (assert-equal test
-                    &[1 2 3 4 5 6 7 8 9]
-                    &(sort (range 9 1 -1))
-                    "sort works as expected")
-      (assert-equal test
                     &[@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     &(copy-map excl-ref &b)
                     "copy-map works as expected")
@@ -133,4 +129,63 @@
                     "[(Pair 0 @\"a\") (Pair 1 @\"b\") (Pair 2 @\"c\")]"
                     &(str &(Array.enumerated &[@"a" @"b" @"c"]))
                     "enumerated works as expected")
+      (let-do [arr [1 2 3 4 5 6]
+               exp [1 2 3 4 5 6 7]
+               new (Array.push-back arr 7)]
+              (assert-equal test
+                            &exp
+                            &new
+                            "Array.push-back works as expected"))
+      (let-do [arr [1 2 3]
+               exp [1 2 3 4 5 6 7 8 9 10 11 12 13 14]]
+              (Array.push-back! &arr 4)
+              (Array.push-back! &arr 5)
+              (Array.push-back! &arr 6)
+              (Array.push-back! &arr 7)
+              (Array.push-back! &arr 8)
+              (Array.push-back! &arr 9)
+              (Array.push-back! &arr 10)
+              (Array.push-back! &arr 11)
+              (Array.push-back! &arr 12)
+              (Array.push-back! &arr 13)
+              (Array.push-back! &arr 14)
+              (assert-equal test
+                            &exp
+                            &arr
+                            "Array.push-back! works as expected"))
+      (let-do [a [1 2 3 4 5 6]
+               b (Array.pop-back a)
+               c (Array.pop-back b)
+               d (Array.pop-back c)
+               exp [1 2 3]]
+              (assert-equal test
+                            &exp
+                            &d
+                           "Array.pop-back works as expected"))
+      (let-do [arr [1 2 3 4 5 6]
+               exp [1 2 3]
+               six  (Array.pop-back! &arr)
+               five (Array.pop-back! &arr)
+               four (Array.pop-back! &arr)]
+              (assert-true test
+                           (and* (= &exp &arr)
+                                 (= six  6)
+                                 (= five 5)
+                                 (= four 4))
+                           "Array.pop-back! works as expected"))
+      (assert-equal test
+                    &[1 2 3 4 5 6 7 8 9]
+                    &(sort (range 9 1 -1))
+                    "sort works as expected")
+      (let-do [arr [3 2 5]
+               exp [2 3 5]]
+              (sort! &arr)
+              (assert-equal test
+                            &exp
+                            &arr
+                            "sort! works as expected"))
+      (assert-equal test
+                    &[1 2 3 4 5 6 7 8 9]
+                    &(sorted &[9 2 1 3 7 8 6 5 4])
+                    "sorted works as expected")
       (print-test-results test))))
