@@ -7,6 +7,7 @@
 (use Array)
 (use System)
 (use Char)
+(use Sort)
 (use Test)
 
 (Debug.sanitize-addresses)
@@ -286,12 +287,12 @@
 ;;            (Array.length b))))
 ;; (defn array-sort-1 []
 ;;   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
-;;         ys (Array.sort xs)]
+;;         ys (Sort.sort xs)]
 ;;     (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
 
 (defn array-sort-2 []
   (let [xs [5 2 4 3 1]
-        ys (Array.sort xs)]
+        ys (Sort.sort xs)]
     (assert (= &[1 2 3 4 5] &ys))))
 
 (defn f [] @"Hello")

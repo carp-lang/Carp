@@ -102,10 +102,6 @@
                     &(range 10 1 -2)
                     "range backwards works as expected if we dont exactly hit")
       (assert-equal test
-                    &[1 2 3 4 5 6 7 8 9]
-                    &(sort (range 9 1 -1))
-                    "sort works as expected")
-      (assert-equal test
                     &[@"Hi!" @"Hi!" @"Hi!" @"Hi!" @"Hi!"]
                     &(copy-map excl-ref &b)
                     "copy-map works as expected")

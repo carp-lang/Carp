@@ -1,5 +1,6 @@
 (use Int)
 (use Double)
+(use Sort)
 
 (defmodule Statistics
   (deftype Summary [
@@ -49,7 +50,7 @@
   (doc median "Compute the median of the samples data.")
   (defn median [data]
     (let [n (Array.length data)
-          sorted (Array.sort @data)]
+          sorted (Sort.sorted data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             (let [mid (/ n 2)] ; else
@@ -60,7 +61,7 @@
   (doc low-median "Compute the low median of the samples data.")
   (defn low-median [data]
     (let [n (Array.length data)
-          sorted (Array.sort @data)]
+          sorted (Sort.sorted data)]
       (cond (= n 0) 0.0
             (= (mod n 2) 1) @(Array.nth data (/ n 2))
             @(Array.nth data (dec (/ n 2)))))) ; else
@@ -68,7 +69,7 @@
   (doc high-median "Compute the high median of the samples data.")
   (defn high-median [data]
     (let [n (Array.length data)
-          sorted (Array.sort @data)]
+          sorted (Sort.sorted data)]
       (if (= n 0)
         0.0
         @(Array.nth data (/ n 2)))))
@@ -76,7 +77,7 @@
   (doc grouped-median "Compute the grouped median of the samples data.")
   (defn grouped-median [data interval]
     (let [n (Array.length data)
-          sorted (Array.sort @data)]
+          sorted (Sort.sorted data)]
       (cond (= n 0) 0.0
             (= n 1) @(Array.nth data 0)
             (let [x @(Array.nth data (/ n 2)) ; else
@@ -144,7 +145,7 @@
 
   (doc quartiles "Compute the quartiles of the samples data.")
   (defn quartiles [data]
-    (let [tmp (Array.sort @data)
+    (let [tmp (Sort.sorted data)
           first 25.0
           second 50.0
           third 75.0
@@ -160,7 +161,7 @@
 
   (hidden winsorize)
   (defn winsorize [samples pct]
-    (let [tmp &(Array.sort @samples)
+    (let [tmp &(Sort.sorted samples)
           lo (Statistics.percentile-of-sorted tmp pct)
           hi (Statistics.percentile-of-sorted tmp (Double.- 100.0 pct))]
       (do

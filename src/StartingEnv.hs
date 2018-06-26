@@ -35,7 +35,6 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
-                                , templateSort
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
