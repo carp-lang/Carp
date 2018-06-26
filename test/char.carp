@@ -29,6 +29,14 @@
     (assert-true test
                   (> &\b &\a)
                   "char > works as expected II")
+    (assert-equal test
+                  0
+                  (meaning &\0)
+                  "meaning works as expected 0")
+    (assert-equal test
+                  9
+                  (meaning &\9)
+                  "meaning works as expected 9")
     (print-test-results test)
   )
 )
