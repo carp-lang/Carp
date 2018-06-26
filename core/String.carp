@@ -158,6 +158,12 @@
 
   (defn /= [a b]
     (String./= &a &b))
+
+  (defn < [a b]
+    (String.< &a &b))
+
+  (defn > [a b]
+    (String.> &a &b))
 )
 
 (defmodule Bool
