@@ -972,14 +972,14 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
-    fromURL :: String -> String
     fromURL url =
       let split = splitOn "/" url
-      in if elem (split !! 0) ["https:", "http:"]
+          fst = split !! 0
+      in if elem fst ["https:", "http:"]
         then joinWith "/" (tail split)
         else
-          if elem '@' (split !! 0)
-            then joinWith "/" (joinWith "@" (tail (splitOn "@" (split !! 0))) : tail split)
+          if elem '@' fst
+            then joinWith "/" (joinWith "@" (tail (splitOn "@" fst)) : tail split)
             else url
     tryInstallWithCheckout path toCheckout = do
       ctx <- get
