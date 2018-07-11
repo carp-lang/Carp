@@ -1,7 +1,7 @@
 module Eval where
 
 import qualified Data.Map as Map
-import Data.List (foldl', null)
+import Data.List (foldl', null, isSuffixOf)
 import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad.State
@@ -972,17 +972,26 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
+    fromURL :: String -> String
+    fromURL url =
+      let split = splitOn "/" url
+      in if elem (split !! 0) ["https:", "http:"]
+        then joinWith "/" (tail split)
+        else
+          if elem '@' (split !! 0)
+            then joinWith "/" (joinWith "@" (tail (splitOn "@" (split !! 0))) : tail split)
+            else url
     tryInstallWithCheckout path toCheckout = do
       ctx <- get
       home <- liftIO $ getHomeDirectory
       let proj = contextProj ctx
       let libDir = home ++ "/" ++ projectLibDir proj
-      let fpath = libDir ++ "/" ++ path ++ "/" ++ toCheckout
+      let fpath = libDir ++ "/" ++ fromURL path ++ "/" ++ toCheckout
       cur <- liftIO $ getCurrentDirectory
       _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
       _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
-      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", "git@" ++ path ++ ".git"] ""
+      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
       (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
       case x0 of
         ExitFailure _ -> do
@@ -995,8 +1004,11 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
           case x1 of
             ExitSuccess ->
               let fName = last (splitOn "/" path)
-                  fileToLoad = path ++ "/" ++ toCheckout ++ "/" ++ fName
-                  mainToLoad = path ++ "/" ++ toCheckout ++ "/main.carp"
+                  realName = if isSuffixOf ".git" fName
+                              then take (length fName - 4) fName
+                              else fName
+                  fileToLoad = fpath ++ "/" ++ realName
+                  mainToLoad = fpath ++ "/main.carp"
               in do
                 res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
                 case res of
