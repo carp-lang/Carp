@@ -84,7 +84,8 @@ moduleLink name =
 
 binderToHtml :: Binder -> Html ()
 binderToHtml (Binder meta xobj) =
-  let SymPath _ name = getPath xobj
+  let name = getSimpleName xobj
+      nameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
       typeSignature = case ty xobj of
                  Just t -> show t
@@ -96,7 +97,7 @@ binderToHtml (Binder meta xobj) =
                     Nothing -> ""
   in  do div_ [class_ "binder"] $
            do a_ [class_ "anchor", href_ (Text.pack ("#" ++ name))] $
-                do h3_ [id_ (Text.pack name)] (toHtml name)
+                do h3_ [id_ (Text.pack name)] (toHtml nameAndArgs)
               div_ [class_ "description"] (toHtml description)
               p_ [class_ "sig"] (toHtml typeSignature)
               p_ [class_ "doc"] (toHtml docString)
