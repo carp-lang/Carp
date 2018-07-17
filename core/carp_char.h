@@ -13,7 +13,7 @@ bool Char__GT_(char a, char b) {
 }
 
 int Char_to_MINUS_int(char c) {
-  return (int)c;
+  return (int)(unsigned char)c;
 }
 
 char Char_from_MINUS_int(int i) {
