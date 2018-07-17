@@ -998,8 +998,7 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
           _ <- liftIO $ setCurrentDirectory cur
           return $ invalidPathWith ctx path stderr0
         ExitSuccess -> do
-          _ <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
-          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["pull"] ""
+          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
           _ <- liftIO $ setCurrentDirectory cur
           case x1 of
             ExitSuccess ->
