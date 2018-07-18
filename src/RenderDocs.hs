@@ -2,7 +2,10 @@
 
 module RenderDocs where
 
-import Lucid
+import Text.Blaze.Html5 as H
+import Text.Blaze.Html5.Attributes as A
+import Text.Blaze.Html.Renderer.Pretty (renderHtml)
+import Text.Blaze.Internal (stringValue)
 import Data.Text.Lazy as T
 import Data.Text.Lazy.Encoding as E
 import Data.Text as Text
@@ -14,6 +17,8 @@ import Obj
 import Types
 import Util
 
+import Debug.Trace
+
 saveDocsForEnvs :: FilePath -> String -> [(SymPath, Env)] -> IO ()
 saveDocsForEnvs dirPath projectTitle envs =
   let allEnvNames = (fmap (getModuleName . snd) envs)
@@ -23,22 +28,23 @@ saveDocsForEnvs dirPath projectTitle envs =
 
 projectIndexPage :: String -> [String] -> String
 projectIndexPage projectTitle moduleNames =
-  let html = renderText $ do headOfPage
-                             body_ $
-                               do div_ [class_ "content"] $
-                                    do a_ [href_ "http://github.com/carp-lang/Carp"] $
-                                         do div_ [class_ "logo"] $
-                                              do img_ [src_ "logo.png"]
+  let html = renderHtml $ docTypeHtml $
+                          do headOfPage
+                             H.body $
+                               do H.div ! A.class_ "content" $
+                                    do H.a ! A.href "http://github.com/carp-lang/Carp" $
+                                         do H.div ! A.class_ "logo" $
+                                              do H.img ! A.src "logo.png" ! A.alt "Logo"
                                                  moduleIndex moduleNames
-                                            h1_ [class_ "huge"] (toHtml projectTitle)
-  in  T.unpack html
+                                            H.h1 ! A.class_ "huge" $ toHtml projectTitle
+  in html
 
-headOfPage :: Html ()
+headOfPage :: H.Html
 headOfPage =
-  head_ $
-    do meta_ [charset_ "UTF-8"]
-       meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"]
-       link_ [rel_ "stylesheet", href_ "carp_style.css"]
+  H.head $
+    do H.meta ! A.charset "UTF-8"
+       H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+       H.link ! A.rel "stylesheet" ! A.href "carp_style.css"
 
 getModuleName :: Env -> String
 getModuleName env =
@@ -48,41 +54,42 @@ getModuleName env =
 
 saveDocsForEnv :: FilePath -> String -> [String] -> (SymPath, Env) -> IO ()
 saveDocsForEnv dirPath projectTitle moduleNames (pathToEnv, env) =
-  do let string = T.unpack text
-         SymPath _ moduleName = pathToEnv
+  do let SymPath _ moduleName = pathToEnv
          fullPath = dirPath ++ "/" ++ moduleName ++ ".html"
-         text = renderText (envToHtml env projectTitle (show pathToEnv) moduleNames)
+         string = renderHtml (envToHtml env projectTitle (show pathToEnv) moduleNames)
      createDirectoryIfMissing False dirPath
      writeFile fullPath string
 
-envToHtml :: Env -> String -> String -> [String] -> Html ()
+envToHtml :: Env -> String -> String -> [String] -> H.Html
 envToHtml env projectTitle moduleName moduleNames =
-   html_ $ do headOfPage
-              body_ $
-                do div_ [class_ "content"] $
-                     do div_ [class_ "logo"] $
-                          do a_ [href_ "http://github.com/carp-lang/Carp"] $
-                               do img_ [src_ "logo.png"]
+   H.docTypeHtml $
+           do headOfPage
+              H.body $
+                do H.div ! A.class_ "content" $
+                     do H.div ! A.class_ "logo" $
+                          do H.a ! A.href "http://github.com/carp-lang/Carp" $
+                               do H.img ! A.src "logo.png"
                              --span_ "CARP DOCS FOR"
-                             div_ [class_ "title"] (toHtml projectTitle)
+                             H.div  ! A.class_ "title" $ (toHtml projectTitle)
                              moduleIndex moduleNames
-                        h1_ (toHtml moduleName)
+                        H.h1 (toHtml moduleName)
                         mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool
 shouldEmitDocsForBinder (name, Binder meta xobj) =
   not (metaIsTrue meta "hidden")
 
-moduleIndex :: [String] -> Html ()
+moduleIndex :: [String] -> H.Html
 moduleIndex moduleNames =
-  do div_ [class_ "index"] $
-       ul_ $ do mapM_ moduleLink moduleNames
+  do H.div ! A.class_ "index" $
+       H.ul $ do mapM_ moduleLink moduleNames
 
-moduleLink :: String -> Html ()
+moduleLink :: String -> H.Html
 moduleLink name =
-  li_ $ a_ [href_ (Text.pack (name ++ ".html"))] (toHtml name)
+  H.li $ H.a ! A.href (stringValue (name ++ ".html")) $ (toHtml name)
 
-binderToHtml :: Binder -> Html ()
+
+binderToHtml :: Binder -> H.Html
 binderToHtml (Binder meta xobj) =
   let name = getSimpleName xobj
       maybeNameAndArgs = getSimpleNameWithArgs xobj
@@ -95,13 +102,13 @@ binderToHtml (Binder meta xobj) =
                     Just (XObj (Str s) _ _) -> s
                     Just found -> pretty found
                     Nothing -> ""
-  in  do div_ [class_ "binder"] $
-           do a_ [class_ "anchor", href_ (Text.pack ("#" ++ name))] $
-                do h3_ [id_ (Text.pack name)] (toHtml name)
-              div_ [class_ "description"] (toHtml description)
-              p_ [class_ "sig"] (toHtml typeSignature)
+  in  do H.div ! A.class_ "binder" $
+           do H.a ! A.class_ "anchor" ! A.href (stringValue ("#" ++ name)) $
+                do H.h3 ! A.id (stringValue name) $ (toHtml name)
+              H.div ! A.class_ "description" $ (toHtml description)
+              H.p  ! A.class_ "sig" $ (toHtml typeSignature)
               case maybeNameAndArgs of
-                Just nameAndArgs -> pre_ [class_ "args"] (toHtml nameAndArgs)
-                Nothing -> span_ [] (toHtml (""::String))
-              p_ [class_ "doc"] (toHtml docString)
+                Just nameAndArgs -> H.pre ! A.class_ "args" $ toHtml (trace nameAndArgs nameAndArgs)
+                Nothing -> H.span $ toHtml (""::String)
+              H.p ! A.class_ "doc" $ (toHtml docString)
               --p_ (toHtml (description))

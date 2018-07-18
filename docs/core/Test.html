@@ -1,1 +1,338 @@
-<html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><link href="carp_style.css" rel="stylesheet"></head><body><div class="content"><div class="logo"><a href="http://github.com/carp-lang/Carp"><img src="logo.png"></a><div class="title">core</div><div class="index"><ul><li><a href="Dynamic.html">Dynamic</a></li><li><a href="Int.html">Int</a></li><li><a href="Long.html">Long</a></li><li><a href="Bool.html">Bool</a></li><li><a href="Float.html">Float</a></li><li><a href="Double.html">Double</a></li><li><a href="Vector2.html">Vector2</a></li><li><a href="V2.html">V2</a></li><li><a href="Vector3.html">Vector3</a></li><li><a href="V3.html">V3</a></li><li><a href="VectorN.html">VectorN</a></li><li><a href="VN.html">VN</a></li><li><a href="Geometry.html">Geometry</a></li><li><a href="Statistics.html">Statistics</a></li><li><a href="String.html">String</a></li><li><a href="Char.html">Char</a></li><li><a href="Pattern.html">Pattern</a></li><li><a href="Array.html">Array</a></li><li><a href="IO.html">IO</a></li><li><a href="System.html">System</a></li><li><a href="Debug.html">Debug</a></li><li><a href="Test.html">Test</a></li><li><a href="Bench.html">Bench</a></li><li><a href="Map.html">Map</a></li></ul></div></div><h1>Test</h1><div class="binder"><a href="#State" class="anchor"><h3 id="State">State</h3></a><div class="description">module</div><p class="sig">Module</p><span></span><p class="doc"></p></div><div class="binder"><a href="#assert-equal" class="anchor"><h3 id="assert-equal">assert-equal</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), a, a, &amp;b] State)</p><pre class="args">(assert-equal state x y descr)</pre><p class="doc">Assert that x and y are equal. Equality needs to be implemented for their type.</p></div><div class="binder"><a href="#assert-exit" class="anchor"><h3 id="assert-exit">assert-exit</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), Int, (λ [] ()), &amp;a] State)</p><pre class="args">(assert-exit state exit-code f descr)</pre><p class="doc">Assert that function f aborts with OS signal signal.</p></div><div class="binder"><a href="#assert-false" class="anchor"><h3 id="assert-false">assert-false</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), Bool, &amp;a] State)</p><pre class="args">(assert-false state x descr)</pre><p class="doc">Assert that x is false.</p></div><div class="binder"><a href="#assert-not-equal" class="anchor"><h3 id="assert-not-equal">assert-not-equal</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), a, a, &amp;b] State)</p><pre class="args">(assert-not-equal state x y descr)</pre><p class="doc">Assert that x and y are not equal. Equality needs to be implemented for their type.</p></div><div class="binder"><a href="#assert-op" class="anchor"><h3 id="assert-op">assert-op</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), a, b, &amp;c, (λ [a, b] Bool)] State)</p><pre class="args">(assert-op state x y descr op)</pre><p class="doc">Assert that op returns true when given x and y.</p></div><div class="binder"><a href="#assert-signal" class="anchor"><h3 id="assert-signal">assert-signal</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), Int, (λ [] ()), &amp;a] State)</p><pre class="args">(assert-signal state signal x descr)</pre><p class="doc"></p></div><div class="binder"><a href="#assert-true" class="anchor"><h3 id="assert-true">assert-true</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State), Bool, &amp;a] State)</p><pre class="args">(assert-true state x descr)</pre><p class="doc">Assert that x is true.</p></div><div class="binder"><a href="#print-test-results" class="anchor"><h3 id="print-test-results">print-test-results</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref State)] State)</p><pre class="args">(print-test-results state)</pre><p class="doc">Print test results.</p></div><div class="binder"><a href="#reset" class="anchor"><h3 id="reset">reset</h3></a><div class="description">defn</div><p class="sig">(λ [State] State)</p><pre class="args">(reset state)</pre><p class="doc">Reset test state.</p></div></div></body></html>
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="carp_style.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="logo">
+                <a href="http://github.com/carp-lang/Carp">
+                    <img src="logo.png">
+                </a>
+                <div class="title">
+                    core
+                </div>
+                <div class="index">
+                    <ul>
+                        <li>
+                            <a href="Dynamic.html">
+                                Dynamic
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Int.html">
+                                Int
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Long.html">
+                                Long
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bool.html">
+                                Bool
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Float.html">
+                                Float
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Double.html">
+                                Double
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector2.html">
+                                Vector2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V2.html">
+                                V2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector3.html">
+                                Vector3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V3.html">
+                                V3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VectorN.html">
+                                VectorN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VN.html">
+                                VN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Geometry.html">
+                                Geometry
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Statistics.html">
+                                Statistics
+                            </a>
+                        </li>
+                        <li>
+                            <a href="String.html">
+                                String
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Char.html">
+                                Char
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pattern.html">
+                                Pattern
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Array.html">
+                                Array
+                            </a>
+                        </li>
+                        <li>
+                            <a href="IO.html">
+                                IO
+                            </a>
+                        </li>
+                        <li>
+                            <a href="System.html">
+                                System
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Debug.html">
+                                Debug
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Test.html">
+                                Test
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bench.html">
+                                Bench
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Map.html">
+                                Map
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h1>
+                Test
+            </h1>
+            <div class="binder">
+                <a class="anchor" href="#State">
+                    <h3 id="State">
+                        State
+                    </h3>
+                </a>
+                <div class="description">
+                    module
+                </div>
+                <p class="sig">
+                    Module
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-equal">
+                    <h3 id="assert-equal">
+                        assert-equal
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), a, a, &amp;b] State)
+                </p>
+                <pre class="args">
+                    (assert-equal state x y descr)
+                </pre>
+                <p class="doc">
+                    Assert that x and y are equal. Equality needs to be implemented for their type.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-exit">
+                    <h3 id="assert-exit">
+                        assert-exit
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), Int, (λ [] ()), &amp;a] State)
+                </p>
+                <pre class="args">
+                    (assert-exit state exit-code f descr)
+                </pre>
+                <p class="doc">
+                    Assert that function f aborts with OS signal signal.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-false">
+                    <h3 id="assert-false">
+                        assert-false
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), Bool, &amp;a] State)
+                </p>
+                <pre class="args">
+                    (assert-false state x descr)
+                </pre>
+                <p class="doc">
+                    Assert that x is false.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-not-equal">
+                    <h3 id="assert-not-equal">
+                        assert-not-equal
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), a, a, &amp;b] State)
+                </p>
+                <pre class="args">
+                    (assert-not-equal state x y descr)
+                </pre>
+                <p class="doc">
+                    Assert that x and y are not equal. Equality needs to be implemented for their type.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-op">
+                    <h3 id="assert-op">
+                        assert-op
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), a, b, &amp;c, (λ [a, b] Bool)] State)
+                </p>
+                <pre class="args">
+                    (assert-op state x y descr op)
+                </pre>
+                <p class="doc">
+                    Assert that op returns true when given x and y.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-signal">
+                    <h3 id="assert-signal">
+                        assert-signal
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), Int, (λ [] ()), &amp;a] State)
+                </p>
+                <pre class="args">
+                    (assert-signal state signal x descr)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-true">
+                    <h3 id="assert-true">
+                        assert-true
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State), Bool, &amp;a] State)
+                </p>
+                <pre class="args">
+                    (assert-true state x descr)
+                </pre>
+                <p class="doc">
+                    Assert that x is true.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#print-test-results">
+                    <h3 id="print-test-results">
+                        print-test-results
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State)] State)
+                </p>
+                <pre class="args">
+                    (print-test-results state)
+                </pre>
+                <p class="doc">
+                    Print test results.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reset">
+                    <h3 id="reset">
+                        reset
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [State] State)
+                </p>
+                <pre class="args">
+                    (reset state)
+                </pre>
+                <p class="doc">
+                    Reset test state.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

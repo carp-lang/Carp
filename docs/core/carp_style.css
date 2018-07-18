@@ -24,6 +24,7 @@ a {
   display: inline-block;
   margin-top: 0.3em;
   margin-bottom: 0.3em;
+  white-space: normal;
 }
 
 ul {
