@@ -1,3 +1,19 @@
+(load "Test.carp")
+(use Test)
+
+(defdynamic _make-exe-path [pth]
+  (String.join (array (Project.get-config "output-directory") pth)))
+
+(defmacro make-exe-path [pth]
+  (_make-exe-path pth))
+
 (defn main []
-  (for [i 0 (System.get-args-len)]
-    (IO.println (System.get-arg i))))
+  (with-test test
+    (assert-equal test
+                 1
+                 (System.get-args-len)
+                 "System.get-args-len works as expected")
+    (assert-equal test
+                  (make-exe-path "/Untitled")
+                  (System.get-arg 0)
+                  "System.get-arg works as expected")))
