@@ -1,47 +1,4 @@
-(defmodule IO
-  (hidden color-table)
-  (def color-table
-    [[@"black" @"30"]
-     [@"red" @"31"]
-     [@"green" @"32"]
-     [@"yellow" @"33"]
-     [@"blue" @"34"]
-     [@"magenta" @"35"]
-     [@"cyan" @"36"]
-     [@"white" @"37"]
-     [@"reset" @"0"]
-     [@"none" @"0"]
-     [@"bold" @"1"]
-     [@"italic" @"3"]
-     [@"underline" @"4"]
-     [@"blink-slow" @"5"]
-     [@"blink-rapid" @"6"]
-     [@"bg-black" @"40"]
-     [@"bg-red" @"41"]
-     [@"bg-green" @"42"]
-     [@"bg-yellow" @"43"]
-     [@"bg-blue" @"44"]
-     [@"bg-magenta" @"45"]
-     [@"bg-cyan" @"46"]
-     [@"bg-white" @"47"]])
-
-  (hidden len-color-table)
-  (def len-color-table (Array.length &color-table))
-
-  (hidden color-name-to-ansi)
-  (defn color-name-to-ansi [cname]
-    (let [res @""]
-      (do
-        (for [i 0 len-color-table]
-          (if (String.= cname (Array.nth (Array.nth &color-table i) 0))
-             (set! res @(Array.nth (Array.nth &color-table i) 1))
-             ()))
-        (StringCopy.append @"\x1b[" (StringCopy.append res @"m")))))
-
-  (hidden color)
-  (defn color [cname]
-    (print &(color-name-to-ansi cname)))
-  )
+(load "Color.carp")
 
 (defmodule Test
   (deftype State [passed Int, failed Int])
@@ -50,9 +7,7 @@
   (defn handler [state expected actual descr what op]
     (if (op expected actual)
       (do
-        (IO.color "green")
-        (IO.println &(str* @"Test '" @descr @"' passed"))
-        (IO.color "reset")
+        (IO.colorize "green" &(str* @"Test '" @descr @"' passed\n"))
         (State.update-passed (State.copy state) Int.inc))
       (do
         (IO.color "red")
