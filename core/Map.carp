@@ -102,13 +102,13 @@
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))
-          b (buckets &m)]
-      (set-buckets m (Array.aset @b
-                                 idx
-                                 (Bucket.grow (Array.nth b idx) (Entry.init @k @v))))))
+    (let [idx (Int.mod (hash k) @(n-buckets m))
+          b (buckets m)]
+      (set-buckets @m (Array.aset @b
+                                  idx
+                                  (Bucket.grow (Array.nth b idx) (Entry.init @k @v))))))
 
-  (doc put "Get the value for the key k from map m. If it isn’t found, a zero element is returned.")
+  (doc get "Get the value for the key k from map m. If it isn’t found, a zero element is returned.")
   (defn get [m k]
     (let [idx (Int.mod (hash k) @(n-buckets m))]
       (Bucket.get (Array.nth (buckets m) idx) k)))
@@ -154,8 +154,19 @@
         (let [e (Array.nth a i)
               k (Pair.a e)
               v (Pair.b e)]
-          (set! m (put m k v))))
+          (set! m (put &m k v))))
       m))
+
+  (defn str [m]
+    (let-do [res @"{"]
+      (for [i 0 @(n-buckets m)]
+        (let [bucket (Array.nth (buckets m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (set! res (String.join @"" &[res @" " (str @(Entry.key e)) @" " (str (Entry.value e))]))))))
+      (String.append &res " }")))
 )
 
 (deftype (Set a) [n-buckets Int buckets (Array (Bucket a Bool))])

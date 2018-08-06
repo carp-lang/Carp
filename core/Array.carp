@@ -181,6 +181,9 @@
         (set! sum (+ sum (Array.length (Array.nth xs i)))))
       sum))
 
+  (doc zero "Returns the empty array.")
+  (defn zero [] [])
+
   (doc concat "Returns a new Array which is the concatenation of the provided `xs`.")
   (defn concat [xs]
     ;; This is using a StringBuilder pattern to only perform one allocation and
