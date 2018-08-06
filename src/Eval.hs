@@ -1003,9 +1003,12 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
           case x1 of
             ExitSuccess ->
               let fName = last (splitOn "/" path)
-                  realName = if isSuffixOf ".git" fName
-                              then take (length fName - 4) fName
-                              else fName
+                  realName' = if isSuffixOf ".git" fName
+                               then take (length fName - 4) fName
+                               else fName
+                  realName = if isSuffixOf ".carp" realName'
+                              then realName'
+                              else realName' ++ ".carp"
                   fileToLoad = fpath ++ "/" ++ realName
                   mainToLoad = fpath ++ "/main.carp"
               in do
