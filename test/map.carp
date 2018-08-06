@@ -52,6 +52,11 @@
                   "creating a map from an array works"
     )
     (assert-equal test
+                  "{ hi bye }"
+                  &(str &(Map.from-array &[(Pair.init @"hi" @"bye")]))
+                  "stringification works"
+    )
+    (assert-equal test
                   1
                   (Set.length &(Set.put &(Set.create) "1"))
                   "length works"
@@ -85,5 +90,10 @@
                   true
                   (Set.empty? &(Set.remove (Set.put &(Set.create) "1") "1"))
                   "remove works"
+    )
+    (assert-equal test
+                  "{ hi bye }"
+                  &(str &(Set.from-array &[@"hi" @"bye"]))
+                  "stringification works"
     )
     (print-test-results test)))
