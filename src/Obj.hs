@@ -420,6 +420,7 @@ data Project = Project { projectTitle :: String
                        , projectFiles :: [FilePath]
                        , projectAlreadyLoaded :: [FilePath]
                        , projectEchoC :: Bool
+                       , projectLibDir :: FilePath
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
                        , projectDocsDir :: FilePath
@@ -444,6 +445,7 @@ instance Show Project where
         srcFiles
         alreadyLoaded
         echoC
+        libDir
         carpDir
         outDir
         docsDir
@@ -467,6 +469,7 @@ instance Show Project where
             , "Can execute: " ++ if canExecute then "true" else "false"
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
+            , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
             , "Using Core: " ++ show core
@@ -618,7 +621,7 @@ forceTy :: XObj -> Ty
 forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun | Check deriving (Show, Eq)
+data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env
