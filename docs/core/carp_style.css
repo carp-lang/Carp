@@ -18,6 +18,14 @@ a {
     margin-bottom: 1em;
 }
 
+.args {
+  background-color: #eee;
+  padding: 3px;
+  display: inline-block;
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+
 ul {
     list-style-type: none;
     font-family: "Hasklig", "Lucida Console", monospace;

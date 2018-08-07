@@ -158,6 +158,24 @@ getBinderDescription b = error ("Unhandled binder: " ++ show b)
 getName :: XObj -> String
 getName xobj = show (getPath xobj)
 
+getSimpleName :: XObj -> String
+getSimpleName xobj = let SymPath _ name = (getPath xobj) in name
+
+getSimpleNameWithArgs :: XObj -> Maybe String
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Macro _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj = Nothing
+
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
 getPath (XObj (Lst (XObj Defn _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
