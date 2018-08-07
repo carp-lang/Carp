@@ -31,3 +31,11 @@ GLFWAPI void glfwPollEvents(void);
 #define K_BLAH 12345
 #define K_BLAX 0x123
 #define K_GLAH 12345
+
+// C function-like macros
+
+#define X(a, b) a + b
+#define Y(a, b) {\\
+  foo(a, b);\\
+}
+#define Z(a, b) "hi"

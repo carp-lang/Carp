@@ -53,7 +53,7 @@ parseHeaderFile path src prefix kebab =
                     name <- Parsec.many1 identifierChar
                     argList <- Parsec.optionMaybe argList
                     Parsec.many spaceOrTab
-                    number <- Parsec.many1 identifierChar
+                    _ <- defineBody
                     Parsec.many spaceOrTab
                     -- OBS! Never kebab
                     case argList of
@@ -75,6 +75,17 @@ parseHeaderFile path src prefix kebab =
                     return args
                   genTypes 0 = []
                   genTypes n = (("a" ++ show n), 0) : genTypes (n - 1)
+
+        defineBody :: Parsec.Parsec String () ()
+        defineBody = do s <- Parsec.many (Parsec.noneOf "\\\n")
+                        ending <- Parsec.optionMaybe (Parsec.string "\\\\\n")
+                        case ending of
+                          Nothing ->
+                            do c <- Parsec.optionMaybe (Parsec.noneOf "\n")
+                               case c of
+                                 Just _  -> defineBody
+                                 Nothing -> return ()
+                          Just _ -> defineBody
 
         prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
         prefixedFunctionPrototype = do Parsec.many spaceOrTab
