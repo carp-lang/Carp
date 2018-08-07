@@ -52,9 +52,14 @@
                   "creating a map from an array works"
     )
     (assert-equal test
-                  "{ hi bye }"
+                  "{ 1 2 }"
+                  &(str &(Map.from-array &[(Pair.init 1 2)]))
+                  "stringification works I"
+    )
+    (assert-equal test
+                  "{ @\"hi\" @\"bye\" }"
                   &(str &(Map.from-array &[(Pair.init @"hi" @"bye")]))
-                  "stringification works"
+                  "stringification works II"
     )
     (assert-equal test
                   1
@@ -92,7 +97,7 @@
                   "remove works"
     )
     (assert-equal test
-                  "{ hi bye }"
+                  "{ @\"hi\" @\"bye\" }"
                   &(str &(Set.from-array &[@"hi" @"bye"]))
                   "stringification works"
     )

@@ -165,7 +165,7 @@
               entries (Bucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (str @(Entry.key e)) @" " (str (Entry.value e))]))))))
+              (set! res (String.join @"" &[res @" " (prn @(Entry.key e)) @" " (prn @(Entry.value e))]))))))
       (String.append &res " }")))
 )
 
@@ -241,6 +241,6 @@
               entries (Bucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (str @(Entry.key e))]))))))
+              (set! res (String.join @"" &[res @" " (prn @(Entry.key e))]))))))
       (String.append &res " }")))
 )
