@@ -164,6 +164,12 @@
 
   (defn > [a b]
     (String.> &a &b))
+
+  (defn prn [s]
+    (prn &(the String s)))
+
+  (defn str [s]
+    (str &(the String s)))
 )
 
 (defmodule Bool
