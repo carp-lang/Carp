@@ -1,0 +1,8 @@
+;; This shouldn't resolve!
+;; Unfortunately we can't test this yet because output is dependent on directory structure (it will print the error location on your machine).
+;; (definterface blurgh (Fn [a] Bool))
+;; (defmodule A (defn blurgh [x] (Int.= x 1)))
+;; (defmodule B (defn blurgh [x] (Float.= x 1.0f)))
+;; (defn f [x] (blurgh x))
+;; (defn g [] (f "hello"))
+(defn main [] 0)
