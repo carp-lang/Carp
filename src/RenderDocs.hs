@@ -17,8 +17,6 @@ import Obj
 import Types
 import Util
 
-import Debug.Trace
-
 saveDocsForEnvs :: FilePath -> String -> [(SymPath, Env)] -> IO ()
 saveDocsForEnvs dirPath projectTitle envs =
   let allEnvNames = (fmap (getModuleName . snd) envs)
@@ -108,7 +106,7 @@ binderToHtml (Binder meta xobj) =
               H.div ! A.class_ "description" $ (toHtml description)
               H.p  ! A.class_ "sig" $ (toHtml typeSignature)
               case maybeNameAndArgs of
-                Just nameAndArgs -> H.pre ! A.class_ "args" $ toHtml (trace nameAndArgs nameAndArgs)
+                Just nameAndArgs -> H.pre ! A.class_ "args" $ toHtml nameAndArgs
                 Nothing -> H.span $ toHtml (""::String)
               H.p ! A.class_ "doc" $ (toHtml docString)
               --p_ (toHtml (description))
