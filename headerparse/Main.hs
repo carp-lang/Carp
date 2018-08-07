@@ -11,6 +11,8 @@ import Util
 import Types
 import Obj
 
+import Debug.Trace
+
 data Args = Args { sourcePath :: String
                  , prefixToRemove :: String
                  , kebabCase :: Bool
@@ -49,13 +51,30 @@ parseHeaderFile path src prefix kebab =
                     Parsec.string "#define"
                     Parsec.many spaceOrTab
                     name <- Parsec.many1 identifierChar
+                    argList <- Parsec.optionMaybe argList
                     Parsec.many spaceOrTab
                     number <- Parsec.many1 identifierChar
                     Parsec.many spaceOrTab
-                    let tyXObj =
-                          --toTypeXObj ("a", 0)
-                          XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
-                    return (createRegisterForm name tyXObj prefix False) -- OBS! Never kebab
+                    -- OBS! Never kebab
+                    case argList of
+                      Nothing ->
+                        let tyXObj =
+                              XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+                        in return (createRegisterForm name tyXObj prefix False)
+                      Just args ->
+                        let argsTy = genTypes (length args)
+                            tyXObj = toFnTypeXObj argsTy ("a", 0)
+                        in return (createRegisterForm name tyXObj prefix False)
+            where argList = do
+                    _ <- Parsec.char '('
+                    args <- Parsec.sepBy
+                              (Parsec.many spaceOrTab >>
+                               Parsec.many1 identifierChar)
+                              (Parsec.char ',')
+                    _ <- Parsec.char ')'
+                    return args
+                  genTypes 0 = []
+                  genTypes n = (("a" ++ show n), 0) : genTypes (n - 1)
 
         prefixedFunctionPrototype :: Parsec.Parsec String () [XObj]
         prefixedFunctionPrototype = do Parsec.many spaceOrTab
