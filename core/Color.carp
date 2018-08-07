@@ -1,44 +1,34 @@
 (defmodule Color
   (hidden table)
   (def table
-    [[@"black" @"30"]
-     [@"red" @"31"]
-     [@"green" @"32"]
-     [@"yellow" @"33"]
-     [@"blue" @"34"]
-     [@"magenta" @"35"]
-     [@"cyan" @"36"]
-     [@"white" @"37"]
-     [@"reset" @"0"]
-     [@"none" @"0"]
-     [@"bold" @"1"]
-     [@"italic" @"3"]
-     [@"underline" @"4"]
-     [@"blink-slow" @"5"]
-     [@"blink-rapid" @"6"]
-     [@"bg-black" @"40"]
-     [@"bg-red" @"41"]
-     [@"bg-green" @"42"]
-     [@"bg-yellow" @"43"]
-     [@"bg-blue" @"44"]
-     [@"bg-magenta" @"45"]
-     [@"bg-cyan" @"46"]
-     [@"bg-white" @"47"]])
-
-  (hidden len-table)
-  (def len-table (Array.length &table))
+    {@"black" @"30"
+     @"red" @"31"
+     @"green" @"32"
+     @"yellow" @"33"
+     @"blue" @"34"
+     @"magenta" @"35"
+     @"cyan" @"36"
+     @"white" @"37"
+     @"reset" @"0"
+     @"none" @"0"
+     @"bold" @"1"
+     @"italic" @"3"
+     @"underline" @"4"
+     @"blink-slow" @"5"
+     @"blink-rapid" @"6"
+     @"bg-black" @"40"
+     @"bg-red" @"41"
+     @"bg-green" @"42"
+     @"bg-yellow" @"43"
+     @"bg-blue" @"44"
+     @"bg-magenta" @"45"
+     @"bg-cyan" @"46"
+     @"bg-white" @"47"})
 
   (doc color "Generates ANSI coloration.")
   (defn color [cname]
-    (let [res ""]
-      (do
-        (for [i 0 len-table]
-          (if (String.= cname (Array.nth (Array.nth &table i) 0))
-             (do
-              (set! res (Array.nth (Array.nth &table i) 1))
-              (break))
-             ()))
-        (String.append "\x1b[" &(String.append res "m")))))
+    (let [n (Map.get &table cname)]
+      (String.append "\x1b[" &(String.append &n "m"))))
 
   (doc colorize "Wraps a string in ANSI coloration and prints it.")
   (defn colorize [cname s]
