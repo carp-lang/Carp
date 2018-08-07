@@ -29,7 +29,7 @@
         eq)))
 
   (defn /= [a b]
-    (not (= a b)))
+    (not (= (the (Ref (Array a)) a) b)))
 
   (doc maximum "Get the maximum in an array (elements must support <).")
   (defn maximum [xs]
