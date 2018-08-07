@@ -29,11 +29,12 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateAsetUninitializedBang
                                 , templateLength
                                 , templatePushBack
+                                , templatePushBackBang
                                 , templatePopBack
+                                , templatePopBackBang
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
-                                , templateSort
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.

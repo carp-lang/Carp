@@ -1,0 +1,101 @@
+(use Array)
+
+(load "Test.carp")
+(use Test)
+
+(defn main []
+  (with-test test
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 4 6]]
+            (Array.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Array.sort! works with integers"))
+
+    (let-do [arr [1 3 4 2 6 1]
+             exp [1 1 2 3 4 6]
+             res (Array.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sorted works with integers"))
+
+    (let-do [res (Array.sort [1 3 4 2 6 1])
+             exp [1 1 2 3 4 6]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sort works with integers"))
+
+    (let-do [arr [1.0 0.8 12.4 3.2]
+             exp [0.8 1.0 3.2 12.4]]
+            (Array.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Array.sort! works with floats"))
+
+    (let-do [arr [1.0 0.8 12.4 3.2]
+             exp [0.8 1.0 3.2 12.4]
+             res (Array.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sorted works with floats"))
+
+    (let-do [res (Array.sort [1.0 0.8 12.4 3.2])
+             exp [0.8 1.0 3.2 12.4]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sort works with floats"))
+
+    (let-do [arr [@"aaac" @"aaaa" @"aaab" @"aaad"]
+             exp [@"aaaa" @"aaab" @"aaac" @"aaad"]]
+            (Array.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Array.sort! works with strings"))
+
+    (let-do [arr [@"aaac" @"aaaa" @"aaab" @"aaad"]
+             exp [@"aaaa" @"aaab" @"aaac" @"aaad"]
+             res (Array.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sorted works with strings"))
+
+    (let-do [res (Array.sort [@"aaac" @"aaaa" @"aaab" @"aaad"])
+             exp [@"aaaa" @"aaab" @"aaac" @"aaad"]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sort works with strings"))
+
+    (let-do [arr [\d \a \c \b]
+             exp [\a \b \c \d]]
+            (Array.sort! &arr)
+            (assert-equal test
+                          &exp
+                          &arr
+                          "Array.sort! works with chars"))
+
+    (let-do [arr [\d \a \c \b]
+             exp [\a \b \c \d]
+             res (Array.sorted &arr)]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sorted works with chars"))
+
+    (let-do [res (Array.sort [\d \a \c \b])
+             exp [\a \b \c \d]]
+            (assert-equal test
+                          &exp
+                          &res
+                          "Array.sort works with chars"))
+
+    (print-test-results test)))
+

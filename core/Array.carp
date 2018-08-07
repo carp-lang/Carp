@@ -28,6 +28,9 @@
               (break))))
         eq)))
 
+  (defn /= [a b]
+    (not (= a b)))
+
   (doc maximum "Get the maximum in an array (elements must support <).")
   (defn maximum [xs]
     (let [result (first xs)
@@ -136,10 +139,6 @@
           (set! i (Int.inc i))
           (set! e (+ e step))))
       x))
-
-  (doc sort "Sort an array (the elements must support cmp).")
-  (defn sort [a]
-    (sort-with a cmp))
 
   (doc repeat "Repeat function f n times and store the results in an array.")
   (defn repeat [n f]

@@ -72,7 +72,7 @@ readlineSettings = do
   home <- getHomeDirectory
   return $ Settings {
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] completeKeywords,
-    historyFile = Just $ home ++ "/.carp_history",
+    historyFile = Just $ home ++ "/.carp/history",
     autoAddHistory = True
   }
 
