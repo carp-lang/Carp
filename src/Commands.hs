@@ -684,7 +684,10 @@ commandStr :: CommandCallback
 commandStr xs =
   return (Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
   where f (XObj (Str s) _ _) = s
-        f x = pretty x
+        f x = escape $ pretty x
+        escape [] = []
+        escape ('\\':y) = "\\\\" ++ escape y
+        escape (x:y) = x : escape y
 
 commandNot :: CommandCallback
 commandNot [x] =
