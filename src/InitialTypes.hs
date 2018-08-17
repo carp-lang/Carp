@@ -99,6 +99,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        With               -> return (Left (InvalidObj With xobj))
 
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
+    visitSymbol _ xobj@(XObj (Sym _ LookupRecursive) _ _) _ =
+      -- Recursive lookups are left untouched (this avoids problems with looking up the thing they're referring to)
+      do freshTy <- genVarTy
+         return (Right xobj { ty = Just freshTy })
     visitSymbol env xobj symPath =
       case symPath of
         -- Symbols with leading ? are 'holes'.
@@ -156,7 +160,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              funcScopeEnv <- extendEnvWithParamList env argList
              let funcTy = Just (FuncTy argTypes returnType)
                  typedNameSymbol = nameSymbol { ty = funcTy }
-                 -- This environment binding is for self-recursion, allows lookup of the symbol:
+                 -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
                  envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
              visitedBody <- visit envWithSelf body
              visitedArgs <- mapM (visit envWithSelf) argList

@@ -12,6 +12,7 @@ import Debug.Trace
 
 data SymbolMode = Symbol
                 | LookupLocal
+                | LookupRecursive
                 | LookupGlobal
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
                 deriving (Eq, Show, Ord)
@@ -363,7 +364,7 @@ register name t = (name, Binder emptyMeta
                                 XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
                       (Just dummyInfo) (Just t)))
 
-data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
+data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
 
 -- | Environment
 data Env = Env { envBindings :: Map.Map String Binder
