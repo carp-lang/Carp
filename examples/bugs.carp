@@ -70,10 +70,10 @@
 (use Double)
 
 (defmodule A
-  (defn flurb [x y]
-    (if (< x y)
+  (defn flurb [x]
+    (if (< x 0)
       x
-      (flurb (- x y) y))))
+      (flurb (- x 1)))))
 
-(defn blah []
-  (A.flurb 5.0 1.0))
+;; (defn blah []
+;;   (A.flurb 5))

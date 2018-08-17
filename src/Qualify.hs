@@ -32,9 +32,9 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
   -- It is marked as external to not mess up lookup.
   -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
   -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
-  let recursionEnv = Env Map.empty (Just env) Nothing [] ExternalEnv
+  let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) [] ExternalEnv
       envWithSelf = extendEnv recursionEnv functionName sym
-      functionEnv = Env Map.empty (Just recursionEnv) Nothing [] InternalEnv
+      functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
@@ -88,7 +88,8 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
       XObj (InterfaceSym name) i t
     doesNotBelongToAnInterface :: Bool -> Env -> XObj
     doesNotBelongToAnInterface finalRecurse theEnv =
-      case multiLookupQualified path theEnv of
+      let results = multiLookupQualified path theEnv in
+      case results of
           [] -> case envParent theEnv of
                   Just p ->
                     doesNotBelongToAnInterface False p
