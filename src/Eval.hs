@@ -1,14 +1,15 @@
 module Eval where
 
 import qualified Data.Map as Map
-import Data.List (foldl', null)
-import Data.List.Split (splitWhen)
+import Data.List (foldl', null, isSuffixOf)
+import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, mapMaybe, isJust)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesPathExist, canonicalizePath)
+import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, getHomeDirectory, setCurrentDirectory)
+import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust, mapMaybe, isJust)
@@ -447,6 +448,7 @@ catcher ctx exception =
           case contextExecMode ctx of
             Repl -> return ctx
             Build -> exitWith (ExitFailure returnCode)
+            Install _ -> exitWith (ExitFailure returnCode)
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitWith ExitSuccess
 
@@ -917,22 +919,23 @@ specialCommandMetaGet path key =
 commandLoad :: CommandCallback
 commandLoad [xobj@(XObj (Str path) _ _)] =
   do ctx <- get
+     home <- liftIO $ getHomeDirectory
      let proj = contextProj ctx
+         libDir = home ++ "/" ++ projectLibDir proj
          carpDir = projectCarpDir proj
          fullSearchPaths =
            path :
            ("./" ++ path) :                                      -- the path from the current directory
            map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
-           [carpDir ++ "/core/" ++ path]
+           [carpDir ++ "/core/" ++ path] ++
+           [libDir ++ "/" ++ path]
             -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
-     existingPaths <- liftIO (filterM doesPathExist fullSearchPaths)
+     existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
      case existingPaths of
        [] ->
-         return $ Left $ EvalError $ case contextExecMode ctx of
-                                       Check ->
-                                         (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
-                                       _ ->
-                                         "Invalid path: '" ++ path ++ "'"
+        if elem '@' path
+          then tryInstall path
+          else return $ invalidPath ctx path
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             let alreadyLoaded = projectAlreadyLoaded proj
@@ -951,6 +954,71 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                       newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
                       put newCtx
             return dynamicNil
+  where
+    invalidPath ctx path =
+      Left $ EvalError $
+        (case contextExecMode ctx of
+          Check ->
+            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+          _ -> "Invalid path: '" ++ path ++ "'") ++
+        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)."
+    invalidPathWith ctx path stderr =
+      Left $ EvalError $
+        (case contextExecMode ctx of
+          Check ->
+            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+          _ -> "Invalid path: '" ++ path ++ "'") ++
+        "\n\nTried interpreting statement as git import, but got: " ++ stderr
+    tryInstall path =
+      let split = splitOn "@" path
+      in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
+    fromURL url =
+      let split = splitOn "/" url
+          fst = split !! 0
+      in if elem fst ["https:", "http:"]
+        then joinWith "/" (tail split)
+        else
+          if elem '@' fst
+            then joinWith "/" (joinWith "@" (tail (splitOn "@" fst)) : tail split)
+            else url
+    tryInstallWithCheckout path toCheckout = do
+      ctx <- get
+      home <- liftIO $ getHomeDirectory
+      let proj = contextProj ctx
+      let libDir = home ++ "/" ++ projectLibDir proj
+      let fpath = libDir ++ "/" ++ fromURL path ++ "/" ++ toCheckout
+      cur <- liftIO $ getCurrentDirectory
+      _ <- liftIO $ createDirectoryIfMissing True fpath
+      _ <- liftIO $ setCurrentDirectory fpath
+      _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
+      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
+      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
+      case x0 of
+        ExitFailure _ -> do
+          _ <- liftIO $ setCurrentDirectory cur
+          return $ invalidPathWith ctx path stderr0
+        ExitSuccess -> do
+          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
+          _ <- liftIO $ setCurrentDirectory cur
+          case x1 of
+            ExitSuccess ->
+              let fName = last (splitOn "/" path)
+                  realName' = if isSuffixOf ".git" fName
+                               then take (length fName - 4) fName
+                               else fName
+                  realName = if isSuffixOf ".carp" realName'
+                              then realName'
+                              else realName' ++ ".carp"
+                  fileToLoad = fpath ++ "/" ++ realName
+                  mainToLoad = fpath ++ "/main.carp"
+              in do
+                res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+                case res of
+                  ret@(Right _) -> return ret
+                  Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
+            ExitFailure _ -> do
+                return $ invalidPathWith ctx path stderr1
+
 
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context

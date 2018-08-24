@@ -19,6 +19,7 @@ data GlobalMode = CarpLand
 -- | A symbol that is not used for looking up things will use the 'Symbol' case.
 data SymbolMode = Symbol
                 | LookupLocal
+                | LookupRecursive
                 | LookupGlobal GlobalMode
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
                 deriving (Eq, Show, Ord)
@@ -169,6 +170,24 @@ getBinderDescription b = error ("Unhandled binder: " ++ show b)
 
 getName :: XObj -> String
 getName xobj = show (getPath xobj)
+
+getSimpleName :: XObj -> String
+getSimpleName xobj = let SymPath _ name = (getPath xobj) in name
+
+getSimpleNameWithArgs :: XObj -> Maybe String
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Macro _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+  Just $
+    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    unwords (map getSimpleName args) ++ ")"
+getSimpleNameWithArgs xobj = Nothing
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
@@ -358,7 +377,7 @@ register name t = (name, Binder emptyMeta
                                 XObj (Sym (SymPath [] name) Symbol) Nothing Nothing])
                       (Just dummyInfo) (Just t)))
 
-data EnvMode = ExternalEnv | InternalEnv deriving (Show, Eq)
+data EnvMode = ExternalEnv | InternalEnv | RecursionEnv deriving (Show, Eq)
 
 -- | Environment
 data Env = Env { envBindings :: Map.Map String Binder
@@ -433,6 +452,7 @@ data Project = Project { projectTitle :: String
                        , projectFiles :: [FilePath]
                        , projectAlreadyLoaded :: [FilePath]
                        , projectEchoC :: Bool
+                       , projectLibDir :: FilePath
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
                        , projectDocsDir :: FilePath
@@ -457,6 +477,7 @@ instance Show Project where
         srcFiles
         alreadyLoaded
         echoC
+        libDir
         carpDir
         outDir
         docsDir
@@ -480,6 +501,7 @@ instance Show Project where
             , "Can execute: " ++ if canExecute then "true" else "false"
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
+            , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
             , "Using Core: " ++ show core
@@ -634,7 +656,7 @@ forceTy :: XObj -> Ty
 forceTy xobj = fromMaybe (error ("No type in " ++ show xobj)) (ty xobj)
 
 -- | How should the compiler be run? Interactively or just build / build & run and then quit?
-data ExecutionMode = Repl | Build | BuildAndRun | Check deriving (Show, Eq)
+data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check deriving (Show, Eq)
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env

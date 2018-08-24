@@ -8,6 +8,7 @@
 ** 0.3
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
+*** Recursive functions inside modules are broken.
 * Big Language Features
 ** 1.0
 *** Lambdas (anonymous functions) that compile on Windows and don't leak memory!
@@ -19,6 +20,7 @@
 ** 0.4
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
+*** Remove StringCopy.append, use String.append in all those cases.
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
@@ -38,8 +40,8 @@
 ** 0.4
 *** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
 *** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.
-*** Flycheck hangs and eats all resources sometimes.
-
+*** Flycheck hangs and eats all resources sometimes. One ugly solution would be to have a timer that kills the process after a certain time when running with --check
+*** Can't test things like 'examples/resolve.carp' because test output (= the error message) is dependent on local folder structure.
 ** 1.0
 *** Show "call stack" when getting an error during concretization.
 *** Make the flags sent to the compiler be saved into different groups depending on actual compiler.

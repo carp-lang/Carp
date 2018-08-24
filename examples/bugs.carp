@@ -45,19 +45,40 @@
 ;;       (set! r &xs))
 ;;     (println* r)))
 
-;; '=' resolves to wrong thing
+
+;; ;; '=' resolves to wrong thing
 ;;(deftype (Foo t) [x t])
-(register-type Foo [x Int])
-(defmodule Foo
-  (defn = [a b]
-    (= (Foo.x a) (Foo.x b))))
+;; (register-type Foo [x Int])
+;; (defmodule Foo
+;;   (defn = [a b]
+;;     (= (Foo.x a) (Foo.x b))))
 
-(info Foo)
+;; (info Foo)
 
-(register-type Foo [x Int]) ;;(deftype (Foo t) [x t]) ;; <- this is the bug!
+;; (register-type Foo [x Int]) ;;(deftype (Foo t) [x t]) ;; <- this is the bug!
 
-(info Foo)
+;; (info Foo)
+
+;; (defn main []
+;;   (do (println* (= &(Foo.init 123) &(Foo.init 666)))
+;;       (println* (= &(Foo.init 123) &(Foo.init 123)))))
+
+
+;; Problems with recursive calls again, fails to qualify at call site
+
+(use Float)
+(use Double)
+
+(defmodule A
+  (defn flurb [x y]
+    (if (< x y)
+      x
+      (do
+        (println* x)
+        (flurb (- x y) y)))))
+
+(defn blah []
+  (A.flurb 5.5 1.0))
 
 (defn main []
-  (do (println* (= &(Foo.init 123) &(Foo.init 666)))
-      (println* (= &(Foo.init 123) &(Foo.init 123)))))
+  (println* (blah)))

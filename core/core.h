@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 typedef char* String;
 typedef char* Pattern;

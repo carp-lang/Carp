@@ -28,6 +28,9 @@
               (break))))
         eq)))
 
+  (defn /= [a b]
+    (not (= (the (Ref (Array a)) a) b)))
+
   (doc maximum "Get the maximum in an array (elements must support <).")
   (defn maximum [xs]
     (let [result (first xs)
@@ -106,17 +109,17 @@
     (let [new-value (f (nth &a i))]
       (aset a i new-value)))
 
-  (doc aupdate "Transmute the element at index i of array a using function f in place.")
+  (doc aupdate! "Transmute the element at index i of array a using function f in place.")
   (defn aupdate! [a i f]
     (aset! a i (f (nth a i))))
 
-  (doc aupdate "Swap indices i and j of array a.")
+  (doc swap "Swap indices i and j of array a.")
   (defn swap [a i j]
     (let [x @(nth &a i)
           y @(nth &a j)]
       (aset (aset a i y) j x)))
 
-  (doc aupdate "Swap indices i and j of array a in place.")
+  (doc swap! "Swap indices i and j of array a in place.")
   (defn swap! [a i j]
     (let-do [x @(nth a i)
              y @(nth a j)]
@@ -136,10 +139,6 @@
           (set! i (Int.inc i))
           (set! e (+ e step))))
       x))
-
-  (doc sort "Sort an array (the elements must support cmp).")
-  (defn sort [a]
-    (sort-with a cmp))
 
   (doc repeat "Repeat function f n times and store the results in an array.")
   (defn repeat [n f]
@@ -181,6 +180,9 @@
       (for [i 0 lxs]
         (set! sum (+ sum (Array.length (Array.nth xs i)))))
       sum))
+
+  (doc zero "Returns the empty array.")
+  (defn zero [] [])
 
   (doc concat "Returns a new Array which is the concatenation of the provided `xs`.")
   (defn concat [xs]

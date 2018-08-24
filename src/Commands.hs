@@ -661,6 +661,8 @@ commandMinus [a, b] =
 commandDiv :: CommandCallback
 commandDiv [a, b] =
   return $ case (a, b) of
+    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
+      Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy))
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty))
@@ -682,7 +684,10 @@ commandStr :: CommandCallback
 commandStr xs =
   return (Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
   where f (XObj (Str s) _ _) = s
-        f x = pretty x
+        f x = escape $ pretty x
+        escape [] = []
+        escape ('\\':y) = "\\\\" ++ escape y
+        escape (x:y) = x : escape y
 
 commandNot :: CommandCallback
 commandNot [x] =

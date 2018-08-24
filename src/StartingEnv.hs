@@ -29,11 +29,12 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
                                 , templateAsetUninitializedBang
                                 , templateLength
                                 , templatePushBack
+                                , templatePushBackBang
                                 , templatePopBack
+                                , templatePopBackBang
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
-                                , templateSort
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
@@ -196,6 +197,17 @@ dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envMod
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
+-- | A hack-ish function for converting any enum to an int.
+templateEnumToInt :: (String, Binder)
+templateEnumToInt = defineTemplate
+  (SymPath [] "enum-to-int")
+  (FuncTy [(VarTy "a")] IntTy)
+  (toTemplate "int $NAME ($a e)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return (int)e;"
+                        ,"}"])
+  (const [])
+
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -207,6 +219,7 @@ startingGlobalEnv noArray =
       }
   where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
+                                  , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
                    ++ [("Pointer",  Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]

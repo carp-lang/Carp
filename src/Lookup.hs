@@ -169,6 +169,7 @@ envIsExternal env =
   case envMode env of
     ExternalEnv -> True
     InternalEnv -> False
+    RecursionEnv -> True
 
 -- | Find out if a type is "external", meaning it is not defined by the user
 --   in this program but instead imported from another C library or similar.

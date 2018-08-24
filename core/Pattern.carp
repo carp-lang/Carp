@@ -24,7 +24,7 @@
 
   (doc from-chars "Creates a pattern that matches a group of characters from a list of those characters.")
   (defn from-chars [chars]
-    (Pattern.init &(string-join @"[" (String.from-chars chars) @"]")))
+    (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 )
 
 (defmodule String

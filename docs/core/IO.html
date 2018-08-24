@@ -1,1 +1,414 @@
-<html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><link href="carp_style.css" rel="stylesheet"></head><body><div class="content"><div class="logo"><a href="http://github.com/carp-lang/Carp"><img src="logo.png"></a><div class="title">core</div><div class="index"><ul><li><a href="Dynamic.html">Dynamic</a></li><li><a href="Int.html">Int</a></li><li><a href="Long.html">Long</a></li><li><a href="Bool.html">Bool</a></li><li><a href="Float.html">Float</a></li><li><a href="Double.html">Double</a></li><li><a href="Vector2.html">Vector2</a></li><li><a href="V2.html">V2</a></li><li><a href="Vector3.html">Vector3</a></li><li><a href="V3.html">V3</a></li><li><a href="VectorN.html">VectorN</a></li><li><a href="VN.html">VN</a></li><li><a href="Geometry.html">Geometry</a></li><li><a href="Statistics.html">Statistics</a></li><li><a href="String.html">String</a></li><li><a href="Char.html">Char</a></li><li><a href="Pattern.html">Pattern</a></li><li><a href="Array.html">Array</a></li><li><a href="IO.html">IO</a></li><li><a href="System.html">System</a></li><li><a href="Debug.html">Debug</a></li><li><a href="Test.html">Test</a></li><li><a href="Bench.html">Bench</a></li><li><a href="Map.html">Map</a></li></ul></div></div><h1>IO</h1><div class="binder"><a href="#EOF" class="anchor"><h3 id="EOF">EOF</h3></a><div class="description">external</div><p class="sig">Char</p><p class="doc">the End-Of-File character as a literal.</p></div><div class="binder"><a href="#exit" class="anchor"><h3 id="exit">exit</h3></a><div class="description">external</div><p class="sig">(λ [Int] a)</p><p class="doc">exit the current program with a return code.</p></div><div class="binder"><a href="#fclose" class="anchor"><h3 id="fclose">fclose</h3></a><div class="description">external</div><p class="sig">(λ [(Ptr FILE)] ())</p><p class="doc">closes a file pointer.</p></div><div class="binder"><a href="#fgetc" class="anchor"><h3 id="fgetc">fgetc</h3></a><div class="description">external</div><p class="sig">(λ [(Ptr FILE)] Char)</p><p class="doc">gets a character from a file pointer.</p></div><div class="binder"><a href="#fopen" class="anchor"><h3 id="fopen">fopen</h3></a><div class="description">external</div><p class="sig">(λ [&amp;String, &amp;String] (Ptr FILE))</p><p class="doc">opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.</p></div><div class="binder"><a href="#fwrite" class="anchor"><h3 id="fwrite">fwrite</h3></a><div class="description">external</div><p class="sig">(λ [a, Int, Int, (Ptr FILE)] ())</p><p class="doc">writes to a file pointer.</p></div><div class="binder"><a href="#get-char" class="anchor"><h3 id="get-char">get-char</h3></a><div class="description">external</div><p class="sig">(λ [] Char)</p><p class="doc">gets a character from stdin.</p></div><div class="binder"><a href="#get-line" class="anchor"><h3 id="get-line">get-line</h3></a><div class="description">external</div><p class="sig">(λ [] String)</p><p class="doc">gets a line from stdin.</p></div><div class="binder"><a href="#print" class="anchor"><h3 id="print">print</h3></a><div class="description">external</div><p class="sig">(λ [&amp;String] ())</p><p class="doc">prints a string ref to stdout, does not append a newline.</p></div><div class="binder"><a href="#println" class="anchor"><h3 id="println">println</h3></a><div class="description">external</div><p class="sig">(λ [&amp;String] ())</p><p class="doc">prints a string ref to stdout, appends a newline.</p></div><div class="binder"><a href="#read-&gt;EOF" class="anchor"><h3 id="read-&gt;EOF">read-&gt;EOF</h3></a><div class="description">defn</div><p class="sig">(λ [&amp;String] String)</p><p class="doc">reads a file given by name until the End-Of-File character is reached.</p></div><div class="binder"><a href="#read-file" class="anchor"><h3 id="read-file">read-file</h3></a><div class="description">external</div><p class="sig">(λ [&amp;String] String)</p><p class="doc">returns the contents of a file passed as argument as a string.</p></div></div></body></html>
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="carp_style.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="logo">
+                <a href="http://github.com/carp-lang/Carp">
+                    <img src="logo.png">
+                </a>
+                <div class="title">
+                    core
+                </div>
+                <div class="index">
+                    <ul>
+                        <li>
+                            <a href="Dynamic.html">
+                                Dynamic
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Int.html">
+                                Int
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Long.html">
+                                Long
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bool.html">
+                                Bool
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Float.html">
+                                Float
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Double.html">
+                                Double
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector2.html">
+                                Vector2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V2.html">
+                                V2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector3.html">
+                                Vector3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V3.html">
+                                V3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VectorN.html">
+                                VectorN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VN.html">
+                                VN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Geometry.html">
+                                Geometry
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Statistics.html">
+                                Statistics
+                            </a>
+                        </li>
+                        <li>
+                            <a href="String.html">
+                                String
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Char.html">
+                                Char
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pattern.html">
+                                Pattern
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Array.html">
+                                Array
+                            </a>
+                        </li>
+                        <li>
+                            <a href="IO.html">
+                                IO
+                            </a>
+                        </li>
+                        <li>
+                            <a href="System.html">
+                                System
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Debug.html">
+                                Debug
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Test.html">
+                                Test
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bench.html">
+                                Bench
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Map.html">
+                                Map
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h1>
+                IO
+            </h1>
+            <div class="binder">
+                <a class="anchor" href="#EOF">
+                    <h3 id="EOF">
+                        EOF
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Char
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    the End-Of-File character as a literal.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#color">
+                    <h3 id="color">
+                        color
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] ())
+                </p>
+                <pre class="args">
+                    (color cname)
+                </pre>
+                <p class="doc">
+                    Sets the output color using ANSI.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#colorize">
+                    <h3 id="colorize">
+                        colorize
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;String, &amp;String] ())
+                </p>
+                <pre class="args">
+                    (colorize cname s)
+                </pre>
+                <p class="doc">
+                    Wraps a string in ANSI coloration and prints it.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#exit">
+                    <h3 id="exit">
+                        exit
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Int] a)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    exit the current program with a return code.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fclose">
+                    <h3 id="fclose">
+                        fclose
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    closes a file pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fgetc">
+                    <h3 id="fgetc">
+                        fgetc
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE)] Char)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    gets a character from a file pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fopen">
+                    <h3 id="fopen">
+                        fopen
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String, &amp;String] (Ptr FILE))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fwrite">
+                    <h3 id="fwrite">
+                        fwrite
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [a, Int, Int, (Ptr FILE)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    writes to a file pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-char">
+                    <h3 id="get-char">
+                        get-char
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] Char)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    gets a character from stdin.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-line">
+                    <h3 id="get-line">
+                        get-line
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    gets a line from stdin.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#print">
+                    <h3 id="print">
+                        print
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    prints a string ref to stdout, does not append a newline.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#println">
+                    <h3 id="println">
+                        println
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    prints a string ref to stdout, appends a newline.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#read-&gt;EOF">
+                    <h3 id="read-&gt;EOF">
+                        read-&gt;EOF
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] String)
+                </p>
+                <pre class="args">
+                    (read-&gt;EOF filename)
+                </pre>
+                <p class="doc">
+                    reads a file given by name until the End-Of-File character is reached.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#read-file">
+                    <h3 id="read-file">
+                        read-file
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    returns the contents of a file passed as argument as a string.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

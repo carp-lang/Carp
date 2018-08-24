@@ -1,1 +1,642 @@
-<html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><link href="carp_style.css" rel="stylesheet"></head><body><div class="content"><div class="logo"><a href="http://github.com/carp-lang/Carp"><img src="logo.png"></a><div class="title">core</div><div class="index"><ul><li><a href="Dynamic.html">Dynamic</a></li><li><a href="Int.html">Int</a></li><li><a href="Long.html">Long</a></li><li><a href="Bool.html">Bool</a></li><li><a href="Float.html">Float</a></li><li><a href="Double.html">Double</a></li><li><a href="Vector2.html">Vector2</a></li><li><a href="V2.html">V2</a></li><li><a href="Vector3.html">Vector3</a></li><li><a href="V3.html">V3</a></li><li><a href="VectorN.html">VectorN</a></li><li><a href="VN.html">VN</a></li><li><a href="Geometry.html">Geometry</a></li><li><a href="Statistics.html">Statistics</a></li><li><a href="String.html">String</a></li><li><a href="Char.html">Char</a></li><li><a href="Pattern.html">Pattern</a></li><li><a href="Array.html">Array</a></li><li><a href="IO.html">IO</a></li><li><a href="System.html">System</a></li><li><a href="Debug.html">Debug</a></li><li><a href="Test.html">Test</a></li><li><a href="Bench.html">Bench</a></li><li><a href="Map.html">Map</a></li></ul></div></div><h1>VectorN</h1><div class="binder"><a href="#/=" class="anchor"><h3 id="/=">/=</h3></a><div class="description">defn</div><p class="sig">(λ [a, a] Bool)</p><p class="doc"></p></div><div class="binder"><a href="#=" class="anchor"><h3 id="=">=</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Bool)</p><p class="doc"></p></div><div class="binder"><a href="#VN" class="anchor"><h3 id="VN">VN</h3></a><div class="description">module</div><p class="sig">Module</p><p class="doc"></p></div><div class="binder"><a href="#add" class="anchor"><h3 id="add">add</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] VN)</p><p class="doc"></p></div><div class="binder"><a href="#add-" class="anchor"><h3 id="add-">add-</h3></a><div class="description">defn</div><p class="sig">(λ [&amp;a, &amp;a] a)</p><p class="doc"></p></div><div class="binder"><a href="#angle-between" class="anchor"><h3 id="angle-between">angle-between</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Double)</p><p class="doc">Get the angle between to vectors a and b.</p></div><div class="binder"><a href="#anti-parallel?" class="anchor"><h3 id="anti-parallel?">anti-parallel?</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Bool)</p><p class="doc">Check whether the two vectors a and b are anti-parallel.</p></div><div class="binder"><a href="#dist" class="anchor"><h3 id="dist">dist</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Double)</p><p class="doc">Get the distance between the vectors a and b.</p></div><div class="binder"><a href="#div" class="anchor"><h3 id="div">div</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), Double] VN)</p><p class="doc"></p></div><div class="binder"><a href="#dot" class="anchor"><h3 id="dot">dot</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Double)</p><p class="doc">Get the dot product of the two vectors x and y.</p></div><div class="binder"><a href="#init" class="anchor"><h3 id="init">init</h3></a><div class="description">defn</div><p class="sig">(λ [Int, (Array Double)] VN)</p><p class="doc"></p></div><div class="binder"><a href="#lerp" class="anchor"><h3 id="lerp">lerp</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN), Double] VN)</p><p class="doc">Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).</p></div><div class="binder"><a href="#mag" class="anchor"><h3 id="mag">mag</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN)] Double)</p><p class="doc">Get the magnitude of a vector.</p></div><div class="binder"><a href="#mag-sq" class="anchor"><h3 id="mag-sq">mag-sq</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN)] Double)</p><p class="doc">Get the squared magnitude of a vector.</p></div><div class="binder"><a href="#mul" class="anchor"><h3 id="mul">mul</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), Double] VN)</p><p class="doc"></p></div><div class="binder"><a href="#normalize" class="anchor"><h3 id="normalize">normalize</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN)] VN)</p><p class="doc">Normalize a vector.</p></div><div class="binder"><a href="#parallel?" class="anchor"><h3 id="parallel?">parallel?</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Bool)</p><p class="doc">Check whether the two vectors a and b are parallel.</p></div><div class="binder"><a href="#perpendicular?" class="anchor"><h3 id="perpendicular?">perpendicular?</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] Bool)</p><p class="doc">Check whether the two vectors a and b are perpendicular.</p></div><div class="binder"><a href="#random-sized" class="anchor"><h3 id="random-sized">random-sized</h3></a><div class="description">defn</div><p class="sig">(λ [Int] VN)</p><p class="doc"></p></div><div class="binder"><a href="#square-" class="anchor"><h3 id="square-">square-</h3></a><div class="description">defn</div><p class="sig">(λ [&amp;a] a)</p><p class="doc"></p></div><div class="binder"><a href="#sub" class="anchor"><h3 id="sub">sub</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN), (Ref VN)] VN)</p><p class="doc"></p></div><div class="binder"><a href="#to-string" class="anchor"><h3 id="to-string">to-string</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref VN)] String)</p><p class="doc"></p></div><div class="binder"><a href="#unit-random" class="anchor"><h3 id="unit-random">unit-random</h3></a><div class="description">defn</div><p class="sig">(λ [] Double)</p><p class="doc"></p></div><div class="binder"><a href="#zero-sized" class="anchor"><h3 id="zero-sized">zero-sized</h3></a><div class="description">defn</div><p class="sig">(λ [Int] VN)</p><p class="doc"></p></div><div class="binder"><a href="#zip" class="anchor"><h3 id="zip">zip</h3></a><div class="description">defn</div><p class="sig">(λ [(λ [Double, Double] Double), (Ref VN), (Ref VN)] VN)</p><p class="doc"></p></div><div class="binder"><a href="#zip-" class="anchor"><h3 id="zip-">zip-</h3></a><div class="description">defn</div><p class="sig">(λ [(λ [a, b] Double), (Ref (Array a)), (Ref (Array b))] VN)</p><p class="doc"></p></div></div></body></html>
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="carp_style.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="logo">
+                <a href="http://github.com/carp-lang/Carp">
+                    <img src="logo.png">
+                </a>
+                <div class="title">
+                    core
+                </div>
+                <div class="index">
+                    <ul>
+                        <li>
+                            <a href="Dynamic.html">
+                                Dynamic
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Int.html">
+                                Int
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Long.html">
+                                Long
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bool.html">
+                                Bool
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Float.html">
+                                Float
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Double.html">
+                                Double
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector2.html">
+                                Vector2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V2.html">
+                                V2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector3.html">
+                                Vector3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V3.html">
+                                V3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VectorN.html">
+                                VectorN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VN.html">
+                                VN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Geometry.html">
+                                Geometry
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Statistics.html">
+                                Statistics
+                            </a>
+                        </li>
+                        <li>
+                            <a href="String.html">
+                                String
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Char.html">
+                                Char
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pattern.html">
+                                Pattern
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Array.html">
+                                Array
+                            </a>
+                        </li>
+                        <li>
+                            <a href="IO.html">
+                                IO
+                            </a>
+                        </li>
+                        <li>
+                            <a href="System.html">
+                                System
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Debug.html">
+                                Debug
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Test.html">
+                                Test
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bench.html">
+                                Bench
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Map.html">
+                                Map
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h1>
+                VectorN
+            </h1>
+            <div class="binder">
+                <a class="anchor" href="#/=">
+                    <h3 id="/=">
+                        /=
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [a, a] Bool)
+                </p>
+                <pre class="args">
+                    (/= a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#=">
+                    <h3 id="=">
+                        =
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Bool)
+                </p>
+                <pre class="args">
+                    (= a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#VN">
+                    <h3 id="VN">
+                        VN
+                    </h3>
+                </a>
+                <div class="description">
+                    module
+                </div>
+                <p class="sig">
+                    Module
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#add">
+                    <h3 id="add">
+                        add
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] VN)
+                </p>
+                <pre class="args">
+                    (add a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#add-">
+                    <h3 id="add-">
+                        add-
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;a, &amp;a] a)
+                </p>
+                <pre class="args">
+                    (add- x y)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#angle-between">
+                    <h3 id="angle-between">
+                        angle-between
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Double)
+                </p>
+                <pre class="args">
+                    (angle-between a b)
+                </pre>
+                <p class="doc">
+                    Get the angle between to vectors a and b.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#anti-parallel?">
+                    <h3 id="anti-parallel?">
+                        anti-parallel?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Bool)
+                </p>
+                <pre class="args">
+                    (anti-parallel? a b)
+                </pre>
+                <p class="doc">
+                    Check whether the two vectors a and b are anti-parallel.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#dist">
+                    <h3 id="dist">
+                        dist
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Double)
+                </p>
+                <pre class="args">
+                    (dist a b)
+                </pre>
+                <p class="doc">
+                    Get the distance between the vectors a and b.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#div">
+                    <h3 id="div">
+                        div
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), Double] VN)
+                </p>
+                <pre class="args">
+                    (div a n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#dot">
+                    <h3 id="dot">
+                        dot
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Double)
+                </p>
+                <pre class="args">
+                    (dot x y)
+                </pre>
+                <p class="doc">
+                    Get the dot product of the two vectors x and y.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#init">
+                    <h3 id="init">
+                        init
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, (Array Double)] VN)
+                </p>
+                <pre class="args">
+                    (init n v)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#lerp">
+                    <h3 id="lerp">
+                        lerp
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN), Double] VN)
+                </p>
+                <pre class="args">
+                    (lerp a b amnt)
+                </pre>
+                <p class="doc">
+                    Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mag">
+                    <h3 id="mag">
+                        mag
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN)] Double)
+                </p>
+                <pre class="args">
+                    (mag o)
+                </pre>
+                <p class="doc">
+                    Get the magnitude of a vector.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mag-sq">
+                    <h3 id="mag-sq">
+                        mag-sq
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN)] Double)
+                </p>
+                <pre class="args">
+                    (mag-sq o)
+                </pre>
+                <p class="doc">
+                    Get the squared magnitude of a vector.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mul">
+                    <h3 id="mul">
+                        mul
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), Double] VN)
+                </p>
+                <pre class="args">
+                    (mul a n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#normalize">
+                    <h3 id="normalize">
+                        normalize
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN)] VN)
+                </p>
+                <pre class="args">
+                    (normalize o)
+                </pre>
+                <p class="doc">
+                    Normalize a vector.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#parallel?">
+                    <h3 id="parallel?">
+                        parallel?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Bool)
+                </p>
+                <pre class="args">
+                    (parallel? a b)
+                </pre>
+                <p class="doc">
+                    Check whether the two vectors a and b are parallel.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#perpendicular?">
+                    <h3 id="perpendicular?">
+                        perpendicular?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] Bool)
+                </p>
+                <pre class="args">
+                    (perpendicular? a b)
+                </pre>
+                <p class="doc">
+                    Check whether the two vectors a and b are perpendicular.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#random-sized">
+                    <h3 id="random-sized">
+                        random-sized
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int] VN)
+                </p>
+                <pre class="args">
+                    (random-sized n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#square-">
+                    <h3 id="square-">
+                        square-
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;a] a)
+                </p>
+                <pre class="args">
+                    (square- n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sub">
+                    <h3 id="sub">
+                        sub
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN), (Ref VN)] VN)
+                </p>
+                <pre class="args">
+                    (sub a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#to-string">
+                    <h3 id="to-string">
+                        to-string
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref VN)] String)
+                </p>
+                <pre class="args">
+                    (to-string o)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unit-random">
+                    <h3 id="unit-random">
+                        unit-random
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [] Double)
+                </p>
+                <pre class="args">
+                    (unit-random)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zero-sized">
+                    <h3 id="zero-sized">
+                        zero-sized
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int] VN)
+                </p>
+                <pre class="args">
+                    (zero-sized n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip">
+                    <h3 id="zip">
+                        zip
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [Double, Double] Double), (Ref VN), (Ref VN)] VN)
+                </p>
+                <pre class="args">
+                    (zip f a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip-">
+                    <h3 id="zip-">
+                        zip-
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [a, b] Double), (Ref (Array a)), (Ref (Array b))] VN)
+                </p>
+                <pre class="args">
+                    (zip- f a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

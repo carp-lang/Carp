@@ -1,1 +1,300 @@
-<html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><link href="carp_style.css" rel="stylesheet"></head><body><div class="content"><div class="logo"><a href="http://github.com/carp-lang/Carp"><img src="logo.png"></a><div class="title">core</div><div class="index"><ul><li><a href="Dynamic.html">Dynamic</a></li><li><a href="Int.html">Int</a></li><li><a href="Long.html">Long</a></li><li><a href="Bool.html">Bool</a></li><li><a href="Float.html">Float</a></li><li><a href="Double.html">Double</a></li><li><a href="Vector2.html">Vector2</a></li><li><a href="V2.html">V2</a></li><li><a href="Vector3.html">Vector3</a></li><li><a href="V3.html">V3</a></li><li><a href="VectorN.html">VectorN</a></li><li><a href="VN.html">VN</a></li><li><a href="Geometry.html">Geometry</a></li><li><a href="Statistics.html">Statistics</a></li><li><a href="String.html">String</a></li><li><a href="Char.html">Char</a></li><li><a href="Pattern.html">Pattern</a></li><li><a href="Array.html">Array</a></li><li><a href="IO.html">IO</a></li><li><a href="System.html">System</a></li><li><a href="Debug.html">Debug</a></li><li><a href="Test.html">Test</a></li><li><a href="Bench.html">Bench</a></li><li><a href="Map.html">Map</a></li></ul></div></div><h1>Debug</h1><div class="binder"><a href="#assert-balanced" class="anchor"><h3 id="assert-balanced">assert-balanced</h3></a><div class="description">macro</div><p class="sig">Macro</p><p class="doc">Raises an error if the memory balance (numberr of alloc:s - number of free:s) isn&#39;t 0. Requires compiling with --log-memory.</p></div><div class="binder"><a href="#leak-array" class="anchor"><h3 id="leak-array">leak-array</h3></a><div class="description">external</div><p class="sig">(λ [a] ())</p><p class="doc">Leak some memory. Useful for testing tools that detect leaks.</p></div><div class="binder"><a href="#log-memory-balance!" class="anchor"><h3 id="log-memory-balance!">log-memory-balance!</h3></a><div class="description">external</div><p class="sig">(λ [Bool] ())</p><p class="doc"></p></div><div class="binder"><a href="#memory-balance" class="anchor"><h3 id="memory-balance">memory-balance</h3></a><div class="description">external</div><p class="sig">(λ [] Long)</p><p class="doc"></p></div><div class="binder"><a href="#memory-logged" class="anchor"><h3 id="memory-logged">memory-logged</h3></a><div class="description">macro</div><p class="sig">Macro</p><p class="doc">Log all calls to memory allocation within te form. Requires compiling with --log-memory.</p></div><div class="binder"><a href="#reset-memory-balance!" class="anchor"><h3 id="reset-memory-balance!">reset-memory-balance!</h3></a><div class="description">external</div><p class="sig">(λ [] ())</p><p class="doc"></p></div><div class="binder"><a href="#sanitize-addresses" class="anchor"><h3 id="sanitize-addresses">sanitize-addresses</h3></a><div class="description">dynamic</div><p class="sig">Dynamic</p><p class="doc">Instruct the compiler to sanitize addresses.</p></div><div class="binder"><a href="#trace" class="anchor"><h3 id="trace">trace</h3></a><div class="description">defn</div><p class="sig">(λ [a] a)</p><p class="doc">Print the value of an expression to stdout, then return its value.</p></div></div></body></html>
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="carp_style.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="logo">
+                <a href="http://github.com/carp-lang/Carp">
+                    <img src="logo.png">
+                </a>
+                <div class="title">
+                    core
+                </div>
+                <div class="index">
+                    <ul>
+                        <li>
+                            <a href="Dynamic.html">
+                                Dynamic
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Int.html">
+                                Int
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Long.html">
+                                Long
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bool.html">
+                                Bool
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Float.html">
+                                Float
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Double.html">
+                                Double
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector2.html">
+                                Vector2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V2.html">
+                                V2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector3.html">
+                                Vector3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V3.html">
+                                V3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VectorN.html">
+                                VectorN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VN.html">
+                                VN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Geometry.html">
+                                Geometry
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Statistics.html">
+                                Statistics
+                            </a>
+                        </li>
+                        <li>
+                            <a href="String.html">
+                                String
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Char.html">
+                                Char
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pattern.html">
+                                Pattern
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Array.html">
+                                Array
+                            </a>
+                        </li>
+                        <li>
+                            <a href="IO.html">
+                                IO
+                            </a>
+                        </li>
+                        <li>
+                            <a href="System.html">
+                                System
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Debug.html">
+                                Debug
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Test.html">
+                                Test
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bench.html">
+                                Bench
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Map.html">
+                                Map
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h1>
+                Debug
+            </h1>
+            <div class="binder">
+                <a class="anchor" href="#assert-balanced">
+                    <h3 id="assert-balanced">
+                        assert-balanced
+                    </h3>
+                </a>
+                <div class="description">
+                    macro
+                </div>
+                <p class="sig">
+                    Macro
+                </p>
+                <pre class="args">
+                    (assert-balanced form)
+                </pre>
+                <p class="doc">
+                    Raises an error if the memory balance (numberr of alloc:s - number of free:s) isn&#39;t 0. Requires compiling with --log-memory.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#leak-array">
+                    <h3 id="leak-array">
+                        leak-array
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [a] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    Leak some memory. Useful for testing tools that detect leaks.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#log-memory-balance!">
+                    <h3 id="log-memory-balance!">
+                        log-memory-balance!
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Bool] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#memory-balance">
+                    <h3 id="memory-balance">
+                        memory-balance
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] Long)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#memory-logged">
+                    <h3 id="memory-logged">
+                        memory-logged
+                    </h3>
+                </a>
+                <div class="description">
+                    macro
+                </div>
+                <p class="sig">
+                    Macro
+                </p>
+                <pre class="args">
+                    (memory-logged form)
+                </pre>
+                <p class="doc">
+                    Log all calls to memory allocation within te form. Requires compiling with --log-memory.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reset-memory-balance!">
+                    <h3 id="reset-memory-balance!">
+                        reset-memory-balance!
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sanitize-addresses">
+                    <h3 id="sanitize-addresses">
+                        sanitize-addresses
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (sanitize-addresses)
+                </pre>
+                <p class="doc">
+                    Instruct the compiler to sanitize addresses.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#trace">
+                    <h3 id="trace">
+                        trace
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [a] a)
+                </p>
+                <pre class="args">
+                    (trace x)
+                </pre>
+                <p class="doc">
+                    Print the value of an expression to stdout, then return its value.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

@@ -95,6 +95,26 @@ templatePushBack =
         ])
       (\(FuncTy [arrayType, _] _) -> [])
 
+templatePushBackBang :: (String, Binder)
+templatePushBackBang =
+  let aTy = RefTy (StructTy "Array" [VarTy "a"])
+      valTy = VarTy "a"
+  in  defineTemplate
+      (SymPath ["Array"] "push-back!")
+      (FuncTy [aTy, valTy] UnitTy)
+      (toTemplate "void $NAME(Array *aRef, $a value)")
+      (toTemplate $ unlines
+        ["$DECL { "
+        ,"    aRef->len++;"
+        ,"    if(aRef->len > aRef->capacity) {"
+        ,"        aRef->capacity = aRef->len * 2;"
+        ,"        aRef->data = realloc(aRef->data, sizeof($a) * aRef->capacity);"
+        ,"    }"
+        ,"    (($a*)aRef->data)[aRef->len - 1] = value;"
+        ,"}"
+        ])
+      (\(FuncTy [arrayType, _] _) -> [])
+
 templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "pop-back"
@@ -130,6 +150,28 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                depsForCopyFunc typeEnv env insideTy
             )
 
+templatePopBackBang :: (String, Binder)
+templatePopBackBang =
+  let aTy = RefTy (StructTy "Array" [VarTy "a"])
+      valTy = VarTy "a"
+  in  defineTemplate
+      (SymPath ["Array"] "pop-back!")
+      (FuncTy [aTy] (VarTy "a"))
+      (toTemplate "$a $NAME(Array *aRef)")
+      (toTemplate $ unlines
+        ["$DECL { "
+         ,"  $a ret;"
+         ,"  #ifndef OPTIMIZE"
+         ,"  assert(aRef->len > 0);"
+         ,"  #endif"
+         ,"  ret = (($a*)aRef->data)[aRef->len - 1];"
+         ,"  aRef->len--;"
+         ,"  return ret;"
+         ,"}"
+        ])
+      (\(FuncTy [arrayType] _) -> [])
+
+
 templateNth :: (String, Binder)
 templateNth =
   let t = VarTy "t"
@@ -147,24 +189,6 @@ templateNth =
                         ,"}"])
   (\(FuncTy [(RefTy arrayType), _] _) ->
      [])
-
-templateSort :: (String, Binder)
-templateSort = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "sort-with")
-        vt = VarTy "t"
-        t = (FuncTy [StructTy "Array" [vt], FuncTy [RefTy vt, RefTy vt] IntTy] (StructTy "Array" [vt]))
-        templateCreator = TemplateCreator $
-          \typeEnv env ->
-            Template
-            t
-            (const (toTemplate "Array $NAME (Array a, Lambda f)")) -- Lambda used to be $(Fn [(Ref t), (Ref t)] Int)
-            (const (toTemplate $ unlines ["$DECL {"
-                                         ,"    qsort(a.data, a.len, sizeof($t), (int(*)(const void*, const void*))(f.callback));"
-                                         ,"    return a;"
-                                         ,"}"]))
-            (\(FuncTy [arrayType, sortType] _) ->
-               defineFunctionTypeAlias sortType :
-               depsForDeleteFunc typeEnv env arrayType)
 
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate

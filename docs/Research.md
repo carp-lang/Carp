@@ -19,6 +19,9 @@ https://news.ycombinator.com/item?id=12039268
 
 # OWNERSHIP & BORROWING
 
+- http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/
+- http://smallcultfollowing.com/babysteps/blog/2016/05/04/non-lexical-lifetimes-based-on-liveness/
+- http://smallcultfollowing.com/babysteps/blog/2016/05/09/non-lexical-lifetimes-adding-the-outlives-relation/
 - http://blog.piston.rs/2016/01/23/dynamo/
 - http://evincarofautumn.blogspot.se/2016/01/thoughts-on-using-fractional-types-to.html
 - http://andrewbrinker.github.io/blog/2016/03/27/string-types-in-rust/

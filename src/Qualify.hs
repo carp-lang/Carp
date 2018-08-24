@@ -29,12 +29,12 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
                                                  body])
                                       i t) =
   -- For self-recursion, there must be a binding to the function in the inner env.
-  -- It is marked as external to not mess up lookup.
+  -- It is marked as RecursionEnv basically is the same thing as external to not mess up lookup.
   -- Inside the recursion env is the function env that contains bindings for the arguments of the function.
   -- Note: These inner envs is ephemeral since they are not stored in a module or global scope.
-  let recursionEnv = Env Map.empty (Just env) Nothing [] ExternalEnv
+  let recursionEnv = Env Map.empty (Just env) (Just (functionName ++ "-recurse-env")) [] RecursionEnv
       envWithSelf = extendEnv recursionEnv functionName sym
-      functionEnv = Env Map.empty (Just recursionEnv) Nothing [] InternalEnv
+      functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
@@ -88,7 +88,8 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
       XObj (InterfaceSym name) i t
     doesNotBelongToAnInterface :: Bool -> Env -> XObj
     doesNotBelongToAnInterface finalRecurse theEnv =
-      case multiLookupQualified path theEnv of
+      let results = multiLookupQualified path theEnv in
+      case results of
           [] -> case envParent theEnv of
                   Just p ->
                     doesNotBelongToAnInterface False p
@@ -100,9 +101,10 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
           [(_, Binder _ foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder _ foundOne)] ->
-            if envIsExternal e
-            then XObj (Sym (getPath foundOne) (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
-            else XObj (Sym (getPath foundOne) LookupLocal) i t
+            case envMode e of
+              ExternalEnv -> XObj (Sym (getPath foundOne) (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
+              RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
+              _ -> XObj (Sym (getPath foundOne) LookupLocal) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:

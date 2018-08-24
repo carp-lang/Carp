@@ -3,6 +3,8 @@
 (defmodule String
 
   (register =          (Fn [&String &String] Bool))
+  (register >          (Fn [&String &String] Bool))
+  (register <          (Fn [&String &String] Bool))
   (register append     (Fn [&String &String] String))
   (register delete     (Fn [String] ()))
   (register copy       (Fn [&String] String))
@@ -36,10 +38,12 @@
           (set! str (append &str inpt)))
         str)))
 
+  (doc pad-left "Pads the left of a string with len bytes using the padding pad.")
   (defn pad-left [len pad s]
     (let [x (Int.max 0 (- len (length s)))]
       (append &(from-chars &(Array.replicate x &pad)) s)))
 
+  (doc pad-right "Pads the right of a string with len bytes using the padding pad.")
   (defn pad-right [len pad s]
     (let [x (Int.max 0 (- len (length s)))]
       (append s &(from-chars &(Array.replicate x &pad)))))
@@ -75,7 +79,7 @@
   (defn starts-with? [s sub]
     (= sub &(prefix-string s (length sub))))
 
-  (doc starts-with? "Check if the string `s` ends with the string `sub`.")
+  (doc ends-with? "Check if the string `s` ends with the string `sub`.")
   (defn ends-with? [s sub]
     (= sub &(suffix-string s (- (length s) (length sub)))))
 
@@ -147,21 +151,26 @@
 (defmodule StringCopy
   (register append     (Fn [String String] String))
 
+  (defn str [s] (the String s))
+
   (defn = [a b]
     (String.= &a &b))
 
   (defn /= [a b]
     (String./= &a &b))
+
+  (defn < [a b]
+    (String.< &a &b))
+
+  (defn > [a b]
+    (String.> &a &b))
+
+  (defn prn [s]
+    (prn &(the String s)))
+
+  (defn str [s]
+    (str &(the String s)))
 )
-
-(defdynamic string-join- [strs]
-  (if (= (length strs) 0)
-    '(String.copy "")
-    (list 'StringCopy.append (car strs) (string-join- (cdr strs)))))
-
-;; TODO: Remove this function and replace uses with 'str*'
-(defmacro string-join [:rest strs]
-  (string-join- strs))
 
 (defmodule Bool
   (register str (Fn [Bool] String))

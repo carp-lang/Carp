@@ -1,1 +1,1060 @@
-<html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><link href="carp_style.css" rel="stylesheet"></head><body><div class="content"><div class="logo"><a href="http://github.com/carp-lang/Carp"><img src="logo.png"></a><div class="title">core</div><div class="index"><ul><li><a href="Dynamic.html">Dynamic</a></li><li><a href="Int.html">Int</a></li><li><a href="Long.html">Long</a></li><li><a href="Bool.html">Bool</a></li><li><a href="Float.html">Float</a></li><li><a href="Double.html">Double</a></li><li><a href="Vector2.html">Vector2</a></li><li><a href="V2.html">V2</a></li><li><a href="Vector3.html">Vector3</a></li><li><a href="V3.html">V3</a></li><li><a href="VectorN.html">VectorN</a></li><li><a href="VN.html">VN</a></li><li><a href="Geometry.html">Geometry</a></li><li><a href="Statistics.html">Statistics</a></li><li><a href="String.html">String</a></li><li><a href="Char.html">Char</a></li><li><a href="Pattern.html">Pattern</a></li><li><a href="Array.html">Array</a></li><li><a href="IO.html">IO</a></li><li><a href="System.html">System</a></li><li><a href="Debug.html">Debug</a></li><li><a href="Test.html">Test</a></li><li><a href="Bench.html">Bench</a></li><li><a href="Map.html">Map</a></li></ul></div></div><h1>Array</h1><div class="binder"><a href="#=" class="anchor"><h3 id="=">=</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), (Ref (Array a))] Bool)</p><p class="doc">Compare two arrays.</p></div><div class="binder"><a href="#allocate" class="anchor"><h3 id="allocate">allocate</h3></a><div class="description">template</div><p class="sig">(λ [Int] (Array t))</p><p class="doc"></p></div><div class="binder"><a href="#aset" class="anchor"><h3 id="aset">aset</h3></a><div class="description">template</div><p class="sig">(λ [(Array t), Int, t] (Array t))</p><p class="doc"></p></div><div class="binder"><a href="#aset!" class="anchor"><h3 id="aset!">aset!</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array t)), Int, t] ())</p><p class="doc"></p></div><div class="binder"><a href="#aset-uninitialized!" class="anchor"><h3 id="aset-uninitialized!">aset-uninitialized!</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array t)), Int, t] ())</p><p class="doc"></p></div><div class="binder"><a href="#aupdate" class="anchor"><h3 id="aupdate">aupdate</h3></a><div class="description">defn</div><p class="sig">(λ [(Array a), Int, (λ [&amp;a] a)] (Array a))</p><p class="doc">Swap indices i and j of array a in place.</p></div><div class="binder"><a href="#aupdate!" class="anchor"><h3 id="aupdate!">aupdate!</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), Int, (λ [&amp;a] a)] ())</p><p class="doc"></p></div><div class="binder"><a href="#concat" class="anchor"><h3 id="concat">concat</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array (Array a)))] (Array a))</p><p class="doc">Returns a new Array which is the concatenation of the provided `xs`.</p></div><div class="binder"><a href="#copy" class="anchor"><h3 id="copy">copy</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array a))] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#copy-map" class="anchor"><h3 id="copy-map">copy-map</h3></a><div class="description">defn</div><p class="sig">(λ [(λ [&amp;a] b), (Ref (Array a))] (Array b))</p><p class="doc">Map over array a using function f (copies the array).</p></div><div class="binder"><a href="#delete" class="anchor"><h3 id="delete">delete</h3></a><div class="description">template</div><p class="sig">(λ [(Array a)] ())</p><p class="doc"></p></div><div class="binder"><a href="#element-count" class="anchor"><h3 id="element-count">element-count</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), &amp;a] Int)</p><p class="doc">Count occurrences of element e in an array.</p></div><div class="binder"><a href="#endo-map" class="anchor"><h3 id="endo-map">endo-map</h3></a><div class="description">template</div><p class="sig">(λ [(λ [a] a), (Array a)] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#enumerated" class="anchor"><h3 id="enumerated">enumerated</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] (Array (Pair Int a)))</p><p class="doc">Create a new array of Pair:s where the first position is the index and the second position is the element from the original array.</p></div><div class="binder"><a href="#filter" class="anchor"><h3 id="filter">filter</h3></a><div class="description">template</div><p class="sig">(λ [(λ [&amp;a] Bool), (Array a)] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#first" class="anchor"><h3 id="first">first</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] a)</p><p class="doc">Take the first element of an array.</p></div><div class="binder"><a href="#index-of" class="anchor"><h3 id="index-of">index-of</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), a] Int)</p><p class="doc">Get the index of element e in an array.</p></div><div class="binder"><a href="#last" class="anchor"><h3 id="last">last</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] a)</p><p class="doc">Take the last element of an array.</p></div><div class="binder"><a href="#length" class="anchor"><h3 id="length">length</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array t))] Int)</p><p class="doc"></p></div><div class="binder"><a href="#maximum" class="anchor"><h3 id="maximum">maximum</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] a)</p><p class="doc">Get the maximum in an array (elements must support &lt;).</p></div><div class="binder"><a href="#minimum" class="anchor"><h3 id="minimum">minimum</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] a)</p><p class="doc">Sum an array (elements must support + and zero).</p></div><div class="binder"><a href="#nth" class="anchor"><h3 id="nth">nth</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array t)), Int] &amp;t)</p><p class="doc"></p></div><div class="binder"><a href="#pop-back" class="anchor"><h3 id="pop-back">pop-back</h3></a><div class="description">template</div><p class="sig">(λ [(Array a)] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#prefix-array" class="anchor"><h3 id="prefix-array">prefix-array</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), Int] (Array a))</p><p class="doc">Get prefix-array to end-index.</p></div><div class="binder"><a href="#prn" class="anchor"><h3 id="prn">prn</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] String)</p><p class="doc"></p></div><div class="binder"><a href="#push-back" class="anchor"><h3 id="push-back">push-back</h3></a><div class="description">template</div><p class="sig">(λ [(Array a), a] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#range" class="anchor"><h3 id="range">range</h3></a><div class="description">defn</div><p class="sig">(λ [Int, Int, Int] (Array Int))</p><p class="doc">Create an array from start to end with step between them (the elements must support &lt;, &lt;=, and &gt;=).</p></div><div class="binder"><a href="#raw" class="anchor"><h3 id="raw">raw</h3></a><div class="description">template</div><p class="sig">(λ [(Array t)] (Ptr t))</p><p class="doc"></p></div><div class="binder"><a href="#reduce" class="anchor"><h3 id="reduce">reduce</h3></a><div class="description">defn</div><p class="sig">(λ [(λ [&amp;a, &amp;b] a), a, (Ref (Array b))] a)</p><p class="doc">Reduce an array, using the function f.</p></div><div class="binder"><a href="#repeat" class="anchor"><h3 id="repeat">repeat</h3></a><div class="description">defn</div><p class="sig">(λ [Int, (λ [] a)] (Array a))</p><p class="doc">Repeat function f n times and store the results in an array.</p></div><div class="binder"><a href="#repeat-indexed" class="anchor"><h3 id="repeat-indexed">repeat-indexed</h3></a><div class="description">defn</div><p class="sig">(λ [Int, (λ [Int] a)] (Array a))</p><p class="doc">Repeat function f n times and store the results in an array (will be supplied with the index).</p></div><div class="binder"><a href="#replicate" class="anchor"><h3 id="replicate">replicate</h3></a><div class="description">defn</div><p class="sig">(λ [Int, &amp;a] (Array a))</p><p class="doc">Repeat element e n times and store the results in an array.</p></div><div class="binder"><a href="#reverse" class="anchor"><h3 id="reverse">reverse</h3></a><div class="description">defn</div><p class="sig">(λ [(Array a)] (Array a))</p><p class="doc">Reverse an array.</p></div><div class="binder"><a href="#sort" class="anchor"><h3 id="sort">sort</h3></a><div class="description">defn</div><p class="sig">(λ [(Array a)] (Array a))</p><p class="doc">Sort an array (the elements must support cmp).</p></div><div class="binder"><a href="#sort-with" class="anchor"><h3 id="sort-with">sort-with</h3></a><div class="description">template</div><p class="sig">(λ [(Array t), (λ [&amp;t, &amp;t] Int)] (Array t))</p><p class="doc"></p></div><div class="binder"><a href="#str" class="anchor"><h3 id="str">str</h3></a><div class="description">template</div><p class="sig">(λ [(Ref (Array a))] String)</p><p class="doc"></p></div><div class="binder"><a href="#subarray" class="anchor"><h3 id="subarray">subarray</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), Int, Int] (Array a))</p><p class="doc">Get subarray from start-index to end-index.</p></div><div class="binder"><a href="#suffix-array" class="anchor"><h3 id="suffix-array">suffix-array</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), Int] (Array a))</p><p class="doc">Get subarray from start-index.</p></div><div class="binder"><a href="#sum" class="anchor"><h3 id="sum">sum</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a))] a)</p><p class="doc"></p></div><div class="binder"><a href="#sum-length" class="anchor"><h3 id="sum-length">sum-length</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array (Array a)))] Int)</p><p class="doc">Returns the sum of lengths from an Array of Arrays.</p></div><div class="binder"><a href="#swap" class="anchor"><h3 id="swap">swap</h3></a><div class="description">defn</div><p class="sig">(λ [(Array a), Int, Int] (Array a))</p><p class="doc"></p></div><div class="binder"><a href="#swap!" class="anchor"><h3 id="swap!">swap!</h3></a><div class="description">defn</div><p class="sig">(λ [(Ref (Array a)), Int, Int] ())</p><p class="doc"></p></div><div class="binder"><a href="#zip" class="anchor"><h3 id="zip">zip</h3></a><div class="description">defn</div><p class="sig">(λ [(λ [&amp;a, &amp;b] c), (Ref (Array a)), (Ref (Array b))] (Array c))</p><p class="doc">Map over two arrays using a function that takes two arguments. Produces a new array with the length of the shorter input.</p></div></div></body></html>
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <link rel="stylesheet" href="carp_style.css">
+    </head>
+    <body>
+        <div class="content">
+            <div class="logo">
+                <a href="http://github.com/carp-lang/Carp">
+                    <img src="logo.png">
+                </a>
+                <div class="title">
+                    core
+                </div>
+                <div class="index">
+                    <ul>
+                        <li>
+                            <a href="Dynamic.html">
+                                Dynamic
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Int.html">
+                                Int
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Long.html">
+                                Long
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bool.html">
+                                Bool
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Float.html">
+                                Float
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Double.html">
+                                Double
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector2.html">
+                                Vector2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V2.html">
+                                V2
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Vector3.html">
+                                Vector3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="V3.html">
+                                V3
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VectorN.html">
+                                VectorN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="VN.html">
+                                VN
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Geometry.html">
+                                Geometry
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Statistics.html">
+                                Statistics
+                            </a>
+                        </li>
+                        <li>
+                            <a href="String.html">
+                                String
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Char.html">
+                                Char
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pattern.html">
+                                Pattern
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Array.html">
+                                Array
+                            </a>
+                        </li>
+                        <li>
+                            <a href="IO.html">
+                                IO
+                            </a>
+                        </li>
+                        <li>
+                            <a href="System.html">
+                                System
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Debug.html">
+                                Debug
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Test.html">
+                                Test
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Bench.html">
+                                Bench
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Map.html">
+                                Map
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <h1>
+                Array
+            </h1>
+            <div class="binder">
+                <a class="anchor" href="#/=">
+                    <h3 id="/=">
+                        /=
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (Array a))] Bool)
+                </p>
+                <pre class="args">
+                    (/= a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#=">
+                    <h3 id="=">
+                        =
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (Array a))] Bool)
+                </p>
+                <pre class="args">
+                    (= a b)
+                </pre>
+                <p class="doc">
+                    Compare two arrays.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#allocate">
+                    <h3 id="allocate">
+                        allocate
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [Int] (Array t))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#aset">
+                    <h3 id="aset">
+                        aset
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Array t), Int, t] (Array t))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#aset!">
+                    <h3 id="aset!">
+                        aset!
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array t)), Int, t] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#aset-uninitialized!">
+                    <h3 id="aset-uninitialized!">
+                        aset-uninitialized!
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array t)), Int, t] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#aupdate">
+                    <h3 id="aupdate">
+                        aupdate
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a), Int, (λ [&amp;a] a)] (Array a))
+                </p>
+                <pre class="args">
+                    (aupdate a i f)
+                </pre>
+                <p class="doc">
+                    Transmute the element at index i of array a using function f.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#aupdate!">
+                    <h3 id="aupdate!">
+                        aupdate!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), Int, (λ [&amp;a] a)] ())
+                </p>
+                <pre class="args">
+                    (aupdate! a i f)
+                </pre>
+                <p class="doc">
+                    Transmute the element at index i of array a using function f in place.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#concat">
+                    <h3 id="concat">
+                        concat
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array (Array a)))] (Array a))
+                </p>
+                <pre class="args">
+                    (concat xs)
+                </pre>
+                <p class="doc">
+                    Returns a new Array which is the concatenation of the provided `xs`.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#copy">
+                    <h3 id="copy">
+                        copy
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] (Array a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#copy-map">
+                    <h3 id="copy-map">
+                        copy-map
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [&amp;a] b), (Ref (Array a))] (Array b))
+                </p>
+                <pre class="args">
+                    (copy-map f a)
+                </pre>
+                <p class="doc">
+                    Map over array a using function f (copies the array).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Array a)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#element-count">
+                    <h3 id="element-count">
+                        element-count
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), &amp;a] Int)
+                </p>
+                <pre class="args">
+                    (element-count a e)
+                </pre>
+                <p class="doc">
+                    Count occurrences of element e in an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#endo-map">
+                    <h3 id="endo-map">
+                        endo-map
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(λ [a] a), (Array a)] (Array a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#enumerated">
+                    <h3 id="enumerated">
+                        enumerated
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] (Array (Pair Int a)))
+                </p>
+                <pre class="args">
+                    (enumerated xs)
+                </pre>
+                <p class="doc">
+                    Create a new array of Pair:s where the first position is the index and the second position is the element from the original array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#filter">
+                    <h3 id="filter">
+                        filter
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(λ [&amp;a] Bool), (Array a)] (Array a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#first">
+                    <h3 id="first">
+                        first
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (first a)
+                </pre>
+                <p class="doc">
+                    Take the first element of an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#index-of">
+                    <h3 id="index-of">
+                        index-of
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), a] Int)
+                </p>
+                <pre class="args">
+                    (index-of a e)
+                </pre>
+                <p class="doc">
+                    Get the index of element e in an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#last">
+                    <h3 id="last">
+                        last
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (last a)
+                </pre>
+                <p class="doc">
+                    Take the last element of an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#length">
+                    <h3 id="length">
+                        length
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array t))] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#maximum">
+                    <h3 id="maximum">
+                        maximum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (maximum xs)
+                </pre>
+                <p class="doc">
+                    Get the maximum in an array (elements must support &lt;).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#minimum">
+                    <h3 id="minimum">
+                        minimum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (minimum xs)
+                </pre>
+                <p class="doc">
+                    Sum an array (elements must support + and zero).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#nth">
+                    <h3 id="nth">
+                        nth
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array t)), Int] &amp;t)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#pop-back">
+                    <h3 id="pop-back">
+                        pop-back
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Array a)] (Array a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#pop-back!">
+                    <h3 id="pop-back!">
+                        pop-back!
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#prefix-array">
+                    <h3 id="prefix-array">
+                        prefix-array
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), Int] (Array a))
+                </p>
+                <pre class="args">
+                    (prefix-array xs end-index)
+                </pre>
+                <p class="doc">
+                    Get prefix-array to end-index.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#prn">
+                    <h3 id="prn">
+                        prn
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] String)
+                </p>
+                <pre class="args">
+                    (prn x)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#push-back">
+                    <h3 id="push-back">
+                        push-back
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Array a), a] (Array a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#push-back!">
+                    <h3 id="push-back!">
+                        push-back!
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), a] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#range">
+                    <h3 id="range">
+                        range
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, Int, Int] (Array Int))
+                </p>
+                <pre class="args">
+                    (range start end step)
+                </pre>
+                <p class="doc">
+                    Create an array from start to end with step between them (the elements must support &lt;, &lt;=, and &gt;=).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#raw">
+                    <h3 id="raw">
+                        raw
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Array t)] (Ptr t))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reduce">
+                    <h3 id="reduce">
+                        reduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [&amp;a, &amp;b] a), a, (Ref (Array b))] a)
+                </p>
+                <pre class="args">
+                    (reduce f x xs)
+                </pre>
+                <p class="doc">
+                    Reduce an array, using the function f.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#repeat">
+                    <h3 id="repeat">
+                        repeat
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, (λ [] a)] (Array a))
+                </p>
+                <pre class="args">
+                    (repeat n f)
+                </pre>
+                <p class="doc">
+                    Repeat function f n times and store the results in an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#repeat-indexed">
+                    <h3 id="repeat-indexed">
+                        repeat-indexed
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, (λ [Int] a)] (Array a))
+                </p>
+                <pre class="args">
+                    (repeat-indexed n f)
+                </pre>
+                <p class="doc">
+                    Repeat function f n times and store the results in an array (will be supplied with the index).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#replicate">
+                    <h3 id="replicate">
+                        replicate
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, &amp;a] (Array a))
+                </p>
+                <pre class="args">
+                    (replicate n e)
+                </pre>
+                <p class="doc">
+                    Repeat element e n times and store the results in an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reverse">
+                    <h3 id="reverse">
+                        reverse
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a)] (Array a))
+                </p>
+                <pre class="args">
+                    (reverse a)
+                </pre>
+                <p class="doc">
+                    Reverse an array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sort">
+                    <h3 id="sort">
+                        sort
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a)] (Array a))
+                </p>
+                <pre class="args">
+                    (sort arr)
+                </pre>
+                <p class="doc">
+                    Perform an in-place heapsort of a given owned array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sort!">
+                    <h3 id="sort!">
+                        sort!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] ())
+                </p>
+                <pre class="args">
+                    (sort! arr)
+                </pre>
+                <p class="doc">
+                    Perform an in-place heapsort of a given array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sorted">
+                    <h3 id="sorted">
+                        sorted
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] (Array a))
+                </p>
+                <pre class="args">
+                    (sorted arr)
+                </pre>
+                <p class="doc">
+                    Perform a heapsort in a new copy of given array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#str">
+                    <h3 id="str">
+                        str
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#subarray">
+                    <h3 id="subarray">
+                        subarray
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), Int, Int] (Array a))
+                </p>
+                <pre class="args">
+                    (subarray xs start-index end-index)
+                </pre>
+                <p class="doc">
+                    Get subarray from start-index to end-index.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#suffix-array">
+                    <h3 id="suffix-array">
+                        suffix-array
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), Int] (Array a))
+                </p>
+                <pre class="args">
+                    (suffix-array xs start-index)
+                </pre>
+                <p class="doc">
+                    Get subarray from start-index.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sum">
+                    <h3 id="sum">
+                        sum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (sum xs)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sum-length">
+                    <h3 id="sum-length">
+                        sum-length
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array (Array a)))] Int)
+                </p>
+                <pre class="args">
+                    (sum-length xs)
+                </pre>
+                <p class="doc">
+                    Returns the sum of lengths from an Array of Arrays.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#swap">
+                    <h3 id="swap">
+                        swap
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a), Int, Int] (Array a))
+                </p>
+                <pre class="args">
+                    (swap a i j)
+                </pre>
+                <p class="doc">
+                    Swap indices i and j of array a.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#swap!">
+                    <h3 id="swap!">
+                        swap!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), Int, Int] ())
+                </p>
+                <pre class="args">
+                    (swap! a i j)
+                </pre>
+                <p class="doc">
+                    Swap indices i and j of array a in place.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zero">
+                    <h3 id="zero">
+                        zero
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [] (Array a))
+                </p>
+                <pre class="args">
+                    (zero)
+                </pre>
+                <p class="doc">
+                    Returns the empty array.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip">
+                    <h3 id="zip">
+                        zip
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [&amp;a, &amp;b] c), (Ref (Array a)), (Ref (Array b))] (Array c))
+                </p>
+                <pre class="args">
+                    (zip f a b)
+                </pre>
+                <p class="doc">
+                    Map over two arrays using a function that takes two arguments. Produces a new array with the length of the shorter input.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
