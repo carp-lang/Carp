@@ -400,25 +400,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               appendToSrc (addIndent indent ++ "break;\n")
               return ""
 
-            -- Function application
-
-            -- func@(XObj (Sym _ (LookupGlobal ExternalCode)) _ _) : args ->
-            --   do funcToCall <- visit indent func
-            --      argListAsC <- createArgList indent args
-            --      let funcTy = case ty func of
-            --                    Just actualType -> actualType
-            --                    _ -> error ("No type on func " ++ show func)
-            --          FuncTy argTys retTy = funcTy
-            --          callFunction = funcToCall ++ "(" ++ argListAsC ++ ");\n"
-            --      if retTy == UnitTy
-            --        then do appendToSrc (addIndent indent ++ callFunction)
-            --                return ""
-            --        else do let varName = freshVar i
-            --                appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
-            --                return varName
-
+            -- Function application (functions with overridden names)
             func@(XObj (Sym _ (LookupGlobalOverride overriddenName)) _ _) : args ->
-              do argListAsC <- createArgList indent args
+              do argListAsC <- createArgList indent True args -- The 'True' means "unwrap lambdas" which is always the case for functions with overriden names (they are external)
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
@@ -431,15 +415,25 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
                            return varName
 
+            -- Function application (normal)
             func : args ->
               do funcToCall <- visit indent func
-                 argListAsC <- createArgList indent args
+                 let unwrapLambdas = case func of
+                                       XObj (Sym _ (LookupGlobal ExternalCode)) _ _ -> True
+                                       _ -> False
+                 argListAsC <- createArgList indent unwrapLambdas args
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
                      FuncTy argTys retTy = funcTy
-                     castToFn = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
-                     castToFnWithEnv = tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                     castToFn =
+                       if unwrapLambdas
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
+                     castToFnWithEnv =
+                       if unwrapLambdas
+                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
                      callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ "); // Return type of call: " ++ show funcTy ++ "\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
@@ -456,9 +450,19 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         visitList _ xobj@(XObj (Lst _) Nothing (Just _)) = error ("List is missing info! " ++ show xobj)
         visitList _ xobj = error ("Must visit list! " ++ show xobj)
 
-        createArgList :: Int -> [XObj] -> State EmitterState String
-        createArgList indent args = do argStrings <- mapM (visit indent) args
-                                       return (intercalate ", " argStrings)
+        createArgList :: Int -> Bool -> [XObj] -> State EmitterState String
+        createArgList indent unwrapLambdas args =
+          do argStrings <- mapM (visit indent) args
+             let argTypes = map forceTy args
+             return $ intercalate ", " $ if unwrapLambdas
+                                         then zipWith unwrapLambda argStrings argTypes
+                                         else argStrings
+
+        unwrapLambda :: String -> Ty -> String
+        unwrapLambda variableName ty =
+          if isFunctionType ty
+          then variableName ++ ".callback"
+          else variableName
 
         visitArray :: Int -> XObj -> State EmitterState String
         visitArray indent (XObj (Arr xobjs) (Just i) t) =

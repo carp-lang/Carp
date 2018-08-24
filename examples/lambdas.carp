@@ -30,7 +30,7 @@
   (Int.+ 1 (f 5)))
 
 (defn main [x]
-  (map blaha [inc dec (fn [_] x)]))
+  (Array.endo-map blaha [inc dec (fn [_] x)]))
 
 ;; /* void blaha(void *f) { */
 ;; /*   int _0; */

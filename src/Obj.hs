@@ -233,7 +233,7 @@ pretty = visit 0
             Str str -> show str
             Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
-            Sym path lookup -> show path ++ " " ++ show lookup
+            Sym path _ -> show path
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name
             Bol b -> if b then "true" else "false"

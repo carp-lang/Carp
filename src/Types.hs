@@ -3,6 +3,7 @@ module Types ( TypeMappings
              , showMaybeTy
              , tyToC
              , tyToCLambdaFix
+             , tyToCRawFunctionPtrFix
              , isTypeGeneric
              , SymPath(..)
              , unifySignatures
@@ -88,6 +89,10 @@ tyToC = tyToCManglePtr False
 tyToCLambdaFix :: Ty -> String
 tyToCLambdaFix t@(FuncTy _ _) = "Lambda"
 tyToCLambdaFix t = tyToCManglePtr False t
+
+tyToCRawFunctionPtrFix :: Ty -> String
+tyToCRawFunctionPtrFix t@(FuncTy _ _) = "void*"
+tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
 tyToCManglePtr _ IntTy                 = "int"

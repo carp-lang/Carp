@@ -83,7 +83,11 @@
 (defn on-abort [x]
   (println* "Abort!"))
 
+(defmodule System
+  (register signal2 (Fn [Int (Fn [Int] ())] ())))
+
 (defn main []
   (do
-    (System.signal System.signal-abort on-abort)
+    ;;(System.signal System.signal-abort on-abort)
+    (System.signal2 System.signal-abort on-abort)
     0))
