@@ -73,9 +73,17 @@
 ;;   (let [ff f]
 ;;     (ff)))
 
-(deftype Wrap [f (Fn [Int] Int)])
+;; (deftype Wrap [f (Fn [Int] Int)])
+
+;; (defn main []
+;;   (let [w (Wrap.init Int.inc)
+;;         g @(Wrap.f &w)]
+;;     (println* (g 5))))
+
+(defn on-abort [x]
+  (println* "Abort!"))
 
 (defn main []
-  (let [w (Wrap.init Int.inc)
-        g @(Wrap.f &w)]
-    (println* (g 5))))
+  (do
+    (System.signal System.signal-abort on-abort)
+    0))

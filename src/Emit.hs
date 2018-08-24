@@ -401,6 +401,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               return ""
 
             -- Function application
+
             -- func@(XObj (Sym _ (LookupGlobal ExternalCode)) _ _) : args ->
             --   do funcToCall <- visit indent func
             --      argListAsC <- createArgList indent args
@@ -415,6 +416,20 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             --        else do let varName = freshVar i
             --                appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
             --                return varName
+
+            func@(XObj (Sym _ (LookupGlobalOverride overriddenName)) _ _) : args ->
+              do argListAsC <- createArgList indent args
+                 let funcTy = case ty func of
+                               Just actualType -> actualType
+                               _ -> error ("No type on func " ++ show func)
+                     FuncTy argTys retTy = funcTy
+                     callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
+                 if retTy == UnitTy
+                   then do appendToSrc (addIndent indent ++ callFunction)
+                           return ""
+                   else do let varName = freshVar i
+                           appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
+                           return varName
 
             func : args ->
               do funcToCall <- visit indent func
