@@ -91,11 +91,11 @@
   (hidden dflt-len)
   (def dflt-len 256)
 
-  (doc create "Create an empty hashmap.")
+  (doc create "Create an empty map.")
   (defn create []
     (init dflt-len (Array.repeat dflt-len Bucket.empty)))
 
-  (doc create-with-len "Create an empty hashmap with a given minimum size.")
+  (doc create-with-len "Create an empty map with a given number of buckets. High numbers reduce the possibility of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
     (init len (Array.repeat len Bucket.empty)))
 
@@ -107,7 +107,7 @@
                                   idx
                                   (Bucket.grow (Array.nth b idx) (Pair.init @k @v))))))
 
-  (doc get "Get the value for the key k from map m. If it isn’t found, a zero element is returned.")
+  (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
     (let [idx (Int.mod (hash k) @(n-buckets m))]
       (Bucket.get (Array.nth (buckets m) idx) k)))
@@ -119,7 +119,7 @@
         (set! c (+ c (Array.length (Bucket.entries (Array.nth (buckets m) i))))))
       c))
 
-  (doc length "Check whether the map m is empty.")
+  (doc empty "Check whether the map m is empty.")
   (defn empty? [m]
     (= (length m) 0))
 
@@ -136,7 +136,7 @@
                                  idx
                                  (Bucket.shrink (Array.nth b idx) k)))))
 
-  (doc for-each "Execute the binary function f for all keys and value in map m.")
+  (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
     (for [i 0 @(n-buckets m)]
       (let [bucket (Array.nth (buckets m) i)
@@ -205,53 +205,54 @@
 (deftype (Set a) [n-buckets Int buckets (Array (SetBucket a))])
 
 (defmodule Set
+  (hidden dflt-len)
   (def dflt-len 256)
 
-  (doc create "Create an empty hashset.")
+  (doc create "Create an empty set.")
   (defn create []
     (init dflt-len (Array.repeat dflt-len SetBucket.empty)))
 
-  (doc create-with-len "Create an empty hashset with a given minimum size.")
+  (doc create-with-len "Create an empty set with a given number of buckets. Higher numbers decrease the probability of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
     (init len (Array.repeat len SetBucket.empty)))
 
-  (doc put "Put a a key kinto set m.")
-  (defn put [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))
-          b (buckets m)]
-      (set-buckets @m (Array.aset @b
+  (doc put "Put a a key k into the set s.")
+  (defn put [s k]
+    (let [idx (Int.mod (hash k) @(n-buckets s))
+          b (buckets s)]
+      (set-buckets @s (Array.aset @b
                                   idx
                                   (SetBucket.grow (Array.nth b idx) @k)))))
 
-  (doc length "Get the length of set m.")
-  (defn length [m]
+  (doc length "Get the length of set s.")
+  (defn length [s]
     (let-do [c 0]
-      (for [i 0 @(n-buckets m)]
-        (set! c (+ c (Array.length (SetBucket.entries (Array.nth (buckets m) i))))))
+      (for [i 0 @(n-buckets s)]
+        (set! c (+ c (Array.length (SetBucket.entries (Array.nth (buckets s) i))))))
       c))
 
-  (doc empty? "Check whether the set m is empty.")
-  (defn empty? [m]
-    (= (length m) 0))
+  (doc empty? "Check whether the set s is empty.")
+  (defn empty? [s]
+    (= (length s) 0))
 
-  (doc contains? "Check whether the set m contains the key k.")
-  (defn contains? [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))]
-      (SetBucket.contains? (Array.nth (buckets m) idx) k)))
+  (doc contains? "Check whether the set s contains the key k.")
+  (defn contains? [s k]
+    (let [idx (Int.mod (hash k) @(n-buckets s))]
+      (SetBucket.contains? (Array.nth (buckets s) idx) k)))
 
-  (doc remove "Remove the key k from set m.")
-  (defn remove [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))
-          b (buckets &m)]
-      (set-buckets m (Array.aset @b
+  (doc remove "Remove the key k from the set s.")
+  (defn remove [s k]
+    (let [idx (Int.mod (hash k) @(n-buckets &s))
+          b (buckets &s)]
+      (set-buckets s (Array.aset @b
                                  idx
                                  (SetBucket.shrink (Array.nth b idx) k)))))
 
 
-  (doc for-each "Execute the unary function f for each element in set m.")
-  (defn for-each [m f]
-    (for [i 0 @(n-buckets m)]
-      (let [bucket (Array.nth (buckets m) i)
+  (doc for-each "Execute the unary function f for each element in the set s.")
+  (defn for-each [s f]
+    (for [i 0 @(n-buckets s)]
+      (let [bucket (Array.nth (buckets s) i)
             len (Array.length (SetBucket.entries bucket))
             entries (SetBucket.entries bucket)]
         (for [j 0 len]
@@ -260,16 +261,16 @@
 
   (doc from-array "Create a set from the values in array a.")
   (defn from-array [a]
-    (let-do [m (create)]
+    (let-do [s (create)]
       (for [i 0 (Array.length a)]
         (let [e (Array.nth a i)]
-          (set! m (put &m e))))
-      m))
+          (set! s (put &s e))))
+      s))
 
-  (defn str [m]
+  (defn str [s]
     (let-do [res @"{"]
-      (for [i 0 @(n-buckets m)]
-        (let [bucket (Array.nth (buckets m) i)
+      (for [i 0 @(n-buckets s)]
+        (let [bucket (Array.nth (buckets s) i)
               len (Array.length (SetBucket.entries bucket))
               entries (SetBucket.entries bucket)]
           (for [j 0 len]

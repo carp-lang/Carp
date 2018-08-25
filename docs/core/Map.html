@@ -216,7 +216,7 @@
                     (create)
                 </pre>
                 <p class="doc">
-                    Create an empty hashmap.
+                    Create an empty map.
                 </p>
             </div>
             <div class="binder">
@@ -235,7 +235,7 @@
                     (create-with-len len)
                 </pre>
                 <p class="doc">
-                    Create an empty hashmap with a given minimum size.
+                    Create an empty map with a given number of buckets. High numbers reduce the possibility of hash collisions while increasing the memory footprint.
                 </p>
             </div>
             <div class="binder">
@@ -255,6 +255,25 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#empty">
+                    <h3 id="empty">
+                        empty
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    a
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    Check whether the map m is empty.
                 </p>
             </div>
             <div class="binder">
@@ -292,7 +311,7 @@
                     (for-each m f)
                 </pre>
                 <p class="doc">
-                    Execute the binary function f for all keys and value in map m.
+                    Execute the binary function f for all keys and values in the map m.
                 </p>
             </div>
             <div class="binder">
@@ -330,7 +349,7 @@
                     (get m k)
                 </pre>
                 <p class="doc">
-                    Get the value for the key k from map m. If it isn’t found, a zero element is returned.
+                    Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.
                 </p>
             </div>
             <div class="binder">
@@ -368,7 +387,7 @@
                     (length m)
                 </pre>
                 <p class="doc">
-                    Check whether the map m is empty.
+                    Get the length of the map m.
                 </p>
             </div>
             <div class="binder">
