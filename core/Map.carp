@@ -40,8 +40,7 @@
   (defn hash [k] (Long.to-int (to-bytes @k)))
 )
 
-(deftype (Entry a b) [key a value b])
-(deftype (Bucket a b) [entries (Array (Entry a b))])
+(deftype (Bucket a b) [entries (Array (Pair a b))])
 
 (defmodule Bucket
   (defn empty []
@@ -55,9 +54,9 @@
              l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
-        (when (= (Entry.key (Array.nth es i)) k)
+        (when (= (Pair.a (Array.nth es i)) k)
           (do
-            (set! e (Entry.value (Array.nth es i)))
+            (set! e (Pair.b (Array.nth es i)))
             (break))))
        @e))
 
@@ -66,17 +65,17 @@
              l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
-        (when (= (Entry.key (Array.nth es i)) k)
+        (when (= (Pair.a (Array.nth es i)) k)
           (do
             (set! e true)
             (break))))
        e))
 
   (defn remove [entries k]
-    (let-do [nentries (the (Array (Entry a b)) [])]
+    (let-do [nentries (the (Array (Pair a b)) [])]
       (for [i 0 (Array.length entries)]
         (let [e (Array.nth entries i)]
-          (unless (= (Entry.key e) k)
+          (unless (= (Pair.a e) k)
              (set! nentries (Array.push-back nentries @e)))))
       nentries))
 
@@ -106,7 +105,7 @@
           b (buckets m)]
       (set-buckets @m (Array.aset @b
                                   idx
-                                  (Bucket.grow (Array.nth b idx) (Entry.init @k @v))))))
+                                  (Bucket.grow (Array.nth b idx) (Pair.init @k @v))))))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element is returned.")
   (defn get [m k]
@@ -145,7 +144,7 @@
             entries (Bucket.entries bucket)]
         (for [j 0 len]
           (let [e (Array.nth entries j)]
-            (f (Entry.key e) (Entry.value e)))))))
+            (f (Pair.a e) (Pair.b e)))))))
 
   (doc from-array "Create a map from the array a containing key-value pairs.")
   (defn from-array [a]
@@ -165,7 +164,7 @@
               entries (Bucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (prn @(Entry.key e)) @" " (prn @(Entry.value e))]))))))
+              (set! res (String.join @"" &[res @" " (prn @(Pair.a e)) @" " (prn @(Pair.b e))]))))))
       (String.append &res " }")))
 )
 
@@ -188,7 +187,7 @@
           b (buckets m)]
       (set-buckets @m (Array.aset @b
                                   idx
-                                  (Bucket.grow (Array.nth b idx) (Entry.init @k true))))))
+                                  (Bucket.grow (Array.nth b idx) (Pair.init @k true))))))
 
   (doc length "Get the length of set m.")
   (defn length [m]
@@ -223,7 +222,7 @@
             entries (Bucket.entries bucket)]
         (for [j 0 len]
           (let [e (Array.nth entries j)]
-            (f (Entry.key e)))))))
+            (f (Pair.a e)))))))
 
   (doc from-array "Create a set from the values in array a.")
   (defn from-array [a]
@@ -241,6 +240,6 @@
               entries (Bucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (prn @(Entry.key e))]))))))
+              (set! res (String.join @"" &[res @" " (prn @(Pair.a e))]))))))
       (String.append &res " }")))
 )
