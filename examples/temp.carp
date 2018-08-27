@@ -1,9 +1,12 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
+(defn hello []
+  1000)
+
 (defn f []
-  369)
+  hello)
 
 (defn main []
   (let [g f]
-    (println* (g))))
+    (println* (Int.str ((g))))))
