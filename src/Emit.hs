@@ -415,7 +415,19 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
                            return varName
 
-            -- Function application (normal)
+            -- Function application (global symbols)
+            func@(XObj (Sym path (LookupGlobal mode)) _ _) : args ->
+              do argListAsC <- (createArgList indent (mode == ExternalCode)) args
+                 let Just (FuncTy _ retTy) = ty func
+                     funcToCall = pathToC path
+                 if retTy == UnitTy
+                   then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                           return ""
+                   else do let varName = freshVar i
+                           appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                           return varName
+
+            -- Function application (local symbols)
             func : args ->
               do funcToCall <- visit indent func
                  let unwrapLambdas = case func of
@@ -497,7 +509,7 @@ defnToDeclaration :: SymPath -> [XObj] -> Ty -> String
 defnToDeclaration path@(SymPath _ name) argList retTy =
   if name == "main"
     then "int main(int argc, char** argv)"
-    else let retTyAsC = tyToC retTy
+    else let retTyAsC = tyToCLambdaFix retTy
              paramsAsC = paramListToC argList
          in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
 
