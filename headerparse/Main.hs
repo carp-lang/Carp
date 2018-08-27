@@ -11,8 +11,6 @@ import Util
 import Types
 import Obj
 
-import Debug.Trace
-
 data Args = Args { sourcePath :: String
                  , prefixToRemove :: String
                  , kebabCase :: Bool
