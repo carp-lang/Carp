@@ -15,7 +15,10 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
   case x of
     Defalias aliasedType ->
       let selfName = ""
-      in  (depthOfType typeEnv selfName aliasedType, b)
+      -- we add 1 here because deftypes generate aliases that
+      -- will at least have the same score as the type, but
+      -- need to come after. the increment represents this dependency
+      in  (depthOfType typeEnv selfName aliasedType + 1, b)
     Typ (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
         Just (_, Binder _ typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys), b)
