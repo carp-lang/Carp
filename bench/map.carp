@@ -1,0 +1,103 @@
+(load "Bench.carp")
+(use-all Bench IO)
+
+(defn insert []
+  (let [m {}]
+    (for [i 0 100]
+      (set! m (Map.put &m &i &1)))))
+
+(defn insert-collisions []
+  (let [m (Map.create-with-len 1)]
+    (for [i 0 100]
+      (set! m (Map.put &m &1 &1)))))
+
+(def m (the (Map Int Int) {}))
+
+(defn single-insert []
+  (set! m (Map.put &m &1 &1)))
+
+(defn setup-big-map []
+  (for [i 0 10000]
+    (set! m (Map.put &m &i &1))))
+
+(defn retrieve []
+  (Map.get &m &10))
+
+(defn setup-big-map-collisions []
+  (do
+    (set! m (Map.create-with-len 1))
+    (setup-big-map)))
+
+(defn map-tests []
+  (do
+    (println "Testing single map insert:")
+    (bench single-insert)
+    (println "")
+    (println "Testing 100 map inserts:")
+    (bench insert)
+    (println "")
+    (println "Testing 100 map inserts with maximum collisions:")
+    (bench insert-collisions)
+    (println "")
+    (setup-big-map)
+    (println "Testing map retrieval:")
+    (bench retrieve)
+    (println "")
+    (setup-big-map-collisions)
+    (println "Testing map retrieval with maximum collisions:")
+    (bench retrieve)
+    (println "")))
+
+
+(defn insert-set []
+  (let [m (Set.create)]
+    (for [i 0 100]
+      (set! m (Set.put &m &i)))))
+
+(defn insert-set-collisions []
+  (let [m (Set.create-with-len 1)]
+    (for [i 0 100]
+      (set! m (Set.put &m &i)))))
+
+(def s (the (Set Int) (Set.create)))
+
+(defn single-insert-set []
+  (set! s (Set.put &s &1)))
+
+(defn setup-big-set []
+  (for [i 0 10000]
+    (set! s (Set.put &s &i))))
+
+(defn contains-set []
+  (Set.contains? &s &10))
+
+(defn setup-big-set-collisions []
+  (do
+    (set! s (Set.create-with-len 1))
+    (setup-big-set)))
+
+(defn set-tests []
+  (do
+    (println "Testing single set insert:")
+    (bench single-insert-set)
+    (println "")
+    (println "Testing 100 set inserts:")
+    (bench insert-set)
+    (println "")
+    (println "Testing 100 set inserts with maximum collisions:")
+    (bench insert-set-collisions)
+    (println "")
+    (setup-big-set)
+    (println "Testing set contains:")
+    (bench contains-set)
+    (println "")
+    (setup-big-set-collisions)
+    (println "Testing set contains with maximum collisions:")
+    (bench contains-set)
+    (println "")))
+
+(defn main []
+  (do
+    (map-tests)
+    (println "")
+    (set-tests)))
