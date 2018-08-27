@@ -69,7 +69,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [defn, nameSymbol, args, okBody]
 
     -- | Fn / λ
-    visitList allowAmbig env (XObj (Lst [fn@(XObj Fn _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
+    visitList allowAmbig env (XObj (Lst [fn@(XObj (Fn _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
@@ -511,7 +511,7 @@ manageMemory typeEnv globalEnv root =
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
             -- TODO: Too much duplication from Defn
-            [defn@(XObj Fn _ _), args@(XObj (Arr argList) _ _), body] ->
+            [fn@(XObj (Fn _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
                    RefTy _ ->
@@ -525,7 +525,7 @@ manageMemory typeEnv globalEnv root =
                             Left e -> Left e
                             Right _ ->
                               do okBody <- visitedBody
-                                 return (XObj (Lst [defn, args, okBody]) i t)
+                                 return (XObj (Lst [fn, args, okBody]) i t)
 
             [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
               do visitedExpr <- visit expr

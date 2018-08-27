@@ -29,7 +29,7 @@ genConstraints root = fmap sort (gen root)
 
                            -- Fn
                            -- TODO: Too much duplication from Defn...
-                           [XObj Fn _ _, XObj (Arr args) _ _, body] ->
+                           [XObj (Fn _) _ _, XObj (Arr args) _ _, body] ->
                              do insideBodyConstraints <- gen body
                                 xobjType <- toEither (ty xobj) (DefnMissingType xobj)
                                 bodyType <- toEither (ty body) (ExpressionMissingType xobj)

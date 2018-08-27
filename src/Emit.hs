@@ -178,7 +178,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      return ""
 
             -- Fn / λ
-            [XObj Fn _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn capturedVars) _ _, XObj (Arr argList) _ _, body] ->
               do let Just tt@(FuncTy _ retTy) = t
                      retVar = freshVar i
                      name = lambdaName tt i

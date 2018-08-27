@@ -42,7 +42,7 @@ data Obj = Sym SymPath SymbolMode
          | Dict (Map.Map XObj XObj)
          | Defn
          | Def
-         | Fn
+         | Fn (Set.Set XObj) -- the set of variables it captures
          | Do
          | Let
          | While
@@ -239,7 +239,7 @@ pretty = visit 0
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
-            Fn -> "fn"
+            Fn _ -> "fn"
             If -> "if"
             And -> "and"
             Or -> "or"
