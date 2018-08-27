@@ -178,10 +178,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      return ""
 
             -- Fn / λ
-            [XObj (Fn capturedVars) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn set) _ _, XObj (Arr argList) _ _, body] ->
               do let Just tt@(FuncTy _ retTy) = t
                      retVar = freshVar i
                      name = lambdaName tt i
+                     capturedVars = Set.toList set
+                 appendToSrc (addIndent indent ++ "// This lambda captures " ++
+                              show (length capturedVars) ++ " variables: " ++
+                              joinWithComma (map getName capturedVars) ++ "\n")
                  appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = { .callback = " ++ name ++ ", .env = NULL, .delete = NULL };\n")
                  return retVar
 
