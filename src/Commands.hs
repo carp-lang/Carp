@@ -683,7 +683,9 @@ commandMul [a, b] =
 commandStr :: CommandCallback
 commandStr xs =
   return (Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
+  -- | TODO: Is there a better function to call here than some exceptions + 'pretty'?
   where f (XObj (Str s) _ _) = s
+        f (XObj (Sym path mode) _ _) = show path
         f x = escape $ pretty x
         escape [] = []
         escape ('\\':y) = "\\\\" ++ escape y
