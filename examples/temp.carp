@@ -1,12 +1,6 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
-(defn hello []
-  1000)
-
-(defn f []
-  hello)
-
 (defn main []
-  (let [g f]
-    (println* (Int.str ((g))))))
+  (let [lam (fn [x] (* 10 x))]
+    (println* (+ (lam 3) (lam 4)))))

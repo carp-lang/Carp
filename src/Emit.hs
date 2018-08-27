@@ -177,11 +177,12 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      appendToSrc "}\n\n"
                      return ""
 
-            -- Defn
+            -- Fn / λ
             [XObj Fn _ _, XObj (Arr argList) _ _, body] ->
-              do let Just (FuncTy _ retTy) = t
+              do let Just tt@(FuncTy _ retTy) = t
                      retVar = freshVar i
-                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = { };\n")
+                     name = lambdaName tt i
+                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = { .callback = " ++ name ++ ", .env = NULL, .delete = NULL };\n")
                  return retVar
 
             -- Def

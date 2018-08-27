@@ -68,6 +68,33 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
+    -- | Fn / λ
+    visitList allowAmbig env (XObj (Lst [fn@(XObj Fn _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
+      -- The basic idea of this function is to first visit the body of the lambda ("in place"),
+      -- then take the resulting body and put into a separate function 'defn' with a new name
+      -- in the global scope. That function definition will be set as the lambdas '.callback' in
+      -- the C code.
+      do let Just ii = i
+             Just funcTy = t
+              -- | TODO: This code is a copy of the one above in Defn, remove duplication:
+             functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
+             envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
+                                     extendEnv e argSymName arg)
+                                  functionEnv argsArr
+         visitedBody <- visit allowAmbig envWithArgs body
+         case visitedBody of
+           Right (okBody) ->
+             let nameSymbol = XObj (Sym (SymPath [] (lambdaName funcTy ii)) Symbol) (Just dummyInfo) Nothing
+                 liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, nameSymbol, args, okBody]) i t
+             in case concretizeDefinition allowAmbig typeEnv env visitedDefinitions liftedLambda funcTy of
+                  Left err -> return (Left err)
+                  Right (concreteLiftedLambda, deps) ->
+                    do modify (concreteLiftedLambda :)
+                       modify (deps ++)
+                       return (Right [fn, args, okBody])
+           _ ->
+             error "Visited body isn't a defn."
+
     visitList _ env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
       do let Just defTy = t
              allowAmbig = isTypeGeneric defTy

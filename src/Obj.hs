@@ -686,3 +686,7 @@ unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromX
 unwrapSymPathXObj :: XObj -> Either String SymPath
 unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
 unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")
+
+-- | The name for a lambda
+lambdaName :: Ty -> Info -> String
+lambdaName t i = "_CarpLambda_" ++ show (infoIdentifier i) ++ "_" ++ tyToC t
