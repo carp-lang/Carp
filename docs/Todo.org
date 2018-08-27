@@ -11,7 +11,8 @@
 *** Recursive functions inside modules are broken.
 * Big Language Features
 ** 1.0
-*** Lambdas (anonymous functions) that compile on Windows and don't leak memory!
+*** Lambdas
+**** Give each lifted function a unique name based on the function it originated from
 *** Tagged unions (also known as "sum types" or "enums")
 *** Stack allocated Array with an explicit size.
 * Tests to write
