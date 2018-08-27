@@ -9,7 +9,7 @@ float Float__DIV_(float x, float y) { return x / y; }
 bool Float__LT_(float x, float y) { return x < y; }
 bool Float__GT_(float x, float y) { return x > y; }
 bool Float__EQ_(float x, float y) { return x == y; }
-double Float_neg(float x) { return -x; }
+float Float_neg(float x) { return -x; }
 
 float Float_copy(float *x) { return *x; }
 
