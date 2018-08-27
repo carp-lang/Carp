@@ -33,8 +33,4 @@ bool not(bool b) {
 bool and(bool x, bool y) { return x && y; }
 bool or(bool x, bool y) { return x || y; }
 
-void System_signal2(void *f) {
-
-}
-
 #endif
