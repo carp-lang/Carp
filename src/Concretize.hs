@@ -28,6 +28,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     (Left err, _) -> Left err
     (Right xobj, deps) -> Right (xobj, deps)
   where
+    rootDefinitionName :: String
+    rootDefinitionName = getName root
+
     visit :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visit allowAmbig env xobj@(XObj (Sym _ _) _ _) = visitSymbol allowAmbig env xobj
     visit allowAmbig env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym allowAmbig env xobj
@@ -69,7 +72,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [defn, nameSymbol, args, okBody]
 
     -- | Fn / λ
-    visitList allowAmbig env (XObj (Lst [fn@(XObj (Fn _) _ _), args@(XObj (Arr argsArr) _ _), body]) i t) =
+    visitList allowAmbig env (XObj (Lst [(XObj (Fn _ captures) fni fnt), args@(XObj (Arr argsArr) _ _), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
@@ -84,14 +87,17 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          visitedBody <- visit allowAmbig envWithArgs body
          case visitedBody of
            Right (okBody) ->
-             let nameSymbol = XObj (Sym (SymPath [] (lambdaName funcTy ii)) Symbol) (Just dummyInfo) Nothing
+             let Just ii = i
+                 Just tt = t
+                 name = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii) ++ "_" ++ tyToC tt
+                 nameSymbol = XObj (Sym (SymPath [] name) Symbol) (Just dummyInfo) Nothing
                  liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, nameSymbol, args, okBody]) i t
              in case concretizeDefinition allowAmbig typeEnv env visitedDefinitions liftedLambda funcTy of
                   Left err -> return (Left err)
                   Right (concreteLiftedLambda, deps) ->
                     do modify (concreteLiftedLambda :)
                        modify (deps ++)
-                       return (Right [fn, args, okBody])
+                       return (Right [XObj (Fn (Just name) captures) fni fnt, args, okBody])
            _ ->
              error "Visited body isn't a defn."
 
@@ -511,7 +517,7 @@ manageMemory typeEnv globalEnv root =
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
             -- TODO: Too much duplication from Defn
-            [fn@(XObj (Fn _) _ _), args@(XObj (Arr argList) _ _), body] ->
+            [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
                    RefTy _ ->

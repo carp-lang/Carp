@@ -42,7 +42,7 @@ data Obj = Sym SymPath SymbolMode
          | Dict (Map.Map XObj XObj)
          | Defn
          | Def
-         | Fn (Set.Set XObj) -- the set of variables it captures
+         | Fn (Maybe String) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
          | Let
          | While
@@ -239,7 +239,7 @@ pretty = visit 0
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
-            Fn _ -> "fn"
+            Fn _ _ -> "fn"
             If -> "if"
             And -> "and"
             Or -> "or"
@@ -686,7 +686,3 @@ unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromX
 unwrapSymPathXObj :: XObj -> Either String SymPath
 unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
 unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")
-
--- | The name of a lifted lambda
-lambdaName :: Ty -> Info -> String
-lambdaName t i = "_CarpLambda_" ++ show (infoIdentifier i) ++ "_" ++ tyToC t

@@ -220,7 +220,7 @@ symbol = do i <- createInfo
               -- TODO: What about the other def- forms?
               "do" -> return (XObj Do i Nothing)
               "while" -> return (XObj While i Nothing)
-              "fn" -> return (XObj (Fn Set.empty) i Nothing)
+              "fn" -> return (XObj (Fn Nothing Set.empty) i Nothing)
               "let" -> return (XObj Let i Nothing)
               "break" -> return (XObj Break i Nothing)
               "if" -> return (XObj If i Nothing)
