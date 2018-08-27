@@ -434,7 +434,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        if unwrapLambdas
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
                        else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ "); // Return type of call: " ++ show funcTy ++ "\n"
+                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callLambda)
                            return ""

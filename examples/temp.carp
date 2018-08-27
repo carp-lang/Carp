@@ -1,93 +1,9 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
-;; (doc f "This function will return 123.")
-;; (sig f (Fn [] Int))
-;; (defn f [] 123)
-
-;; (defmodule Foo
-;;   (doc f "This is an evil function.")
-;;   (defn f [] 666)
-;;   (hidden h)
-;;   (defn h [] @"trash")
-;;   (defn g [] 10000))
-
-;; (doc Foo.g "The 10000 dollar function, annotated from afar.")
-
-;; (Project.config "docs-directory" "./out/")
-;; (Project.config "title" "Temp")
-
-;; (save-docs Foo)
-
-
-;;; Hide docs for deps
-;; (defmodule Abc
-
-;;   (defn a [] 123)
-;;   (hidden b)
-;;   (defn b [] 123.0)
-;;   (defn c [x] x)
-;;   (defn d []
-;;     (c 123))
-;;   (defn e []
-;;     (c @"hej"))
-
-;;   )
-
-;; (Project.config "docs-directory" "./out/")
-;; (Project.config "title" "ABC")
-;; (save-docs Abc)
-
-;; (sig foo String)
-;; (def foo 123)
-
-
-;; PRIVATE
-;; (load "Macros.carp")
-;; ;; (load "Int.carp")
-;; ;; (load "Char.carp")
-;; ;; (load "IO.carp")
-
-;; (defmodule A
-;;   (private f)
-;;   (defn f [] 127)
-;;   ;;(defn g [] (f))
-;;   )
-
-;; (defn amam []
-;;   (A.f))
-
-;; (use A)
-
-;; (defn main []
-;;   (f))
-
-;; (defn-do main []
-;;   (println* "eq? " (= &(Pair.init 5 true) &(Pair.init 6 false)))
-;;   (println* "eq? " (= &(Pair.init 5 true) &(Pair.init 5 true)))
-;;   )
-
-;; (defn f [] 123)
-
-;; (defn main []
-;;   (let [ff f]
-;;     (ff)))
-
-;; (deftype Wrap [f (Fn [Int] Int)])
-
-;; (defn main []
-;;   (let [w (Wrap.init Int.inc)
-;;         g @(Wrap.f &w)]
-;;     (println* (g 5))))
-
-(defn on-abort [x]
-  (println* "Abort!"))
-
-(defmodule System
-  (register signal2 (Fn [Int (Fn [Int] ())] ())))
+(defn f []
+  369)
 
 (defn main []
-  (do
-    ;;(System.signal System.signal-abort on-abort)
-    (System.signal2 System.signal-abort on-abort)
-    0))
+  (let [g f]
+    (println* (g))))
