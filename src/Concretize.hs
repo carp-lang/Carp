@@ -89,7 +89,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
            Right (okBody) ->
              let Just ii = i
                  Just tt = t
-                 name = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii) ++ "_" ++ tyToC tt
+                 name = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii) -- ++ "_" ++ tyToC tt -- Type not needed?
                  nameSymbol = XObj (Sym (SymPath [] name) Symbol) (Just dummyInfo) Nothing
                  liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, nameSymbol, args, okBody]) i t
              in case concretizeDefinition allowAmbig typeEnv env visitedDefinitions liftedLambda funcTy of
