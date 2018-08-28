@@ -9,14 +9,14 @@
 ;; (defn f [y]
 ;;   (fn [x] (Int.+ x y)))
 
-(def glob 300)
+(def global-variable 10000)
 
-(defn f [x]
-  (let [a 1]
-    (fn [y]
-      (let [b 2]
-        (+ (+ (+ (+ glob y) x) a) b)))))
+(defn f [capture-me]
+  (let [and-me 1000]
+    (fn [not-me]
+      (let [nor-me 100]
+        (+ (+ (+ (+ global-variable capture-me) and-me) not-me) nor-me)))))
 
 (defn-do main []
-  (let [g (f 5)]
-    (println* (g 3))))
+  (let [g (f 10)]
+    (println* (g 1))))

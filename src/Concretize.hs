@@ -99,7 +99,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                      -- If the lambda captures anything it need an extra arg for its env:
                                 else XObj (Arr (XObj (Sym (SymPath [] "_env") Symbol)
                                                 (Just dummyInfo)
-                                                (Just (StructTy environmentTypeName [])) :
+                                                (Just (PointerTy (StructTy environmentTypeName []))) :
                                                 argsArr)) ai at
                  lambdaCallback = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 

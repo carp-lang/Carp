@@ -148,7 +148,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   then do let var = freshVar i
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show sym ++ "\n")
                           return var
-                  else return (pathToC path)
+                  else case lookupMode of
+                         LookupLocal Capture -> return ("_env->" ++ pathToC path)
+                         _ -> return (pathToC path)
 
         visitSymbol _ xobj@(XObj (Sym path _) Nothing _) = error ("Symbol missing info: " ++ show xobj)
         visitSymbol _ _ = error "Not a symbol."
