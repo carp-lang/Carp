@@ -145,7 +145,7 @@ eval env xobj =
                                               return $ do okX <- x'
                                                           (Right [n, okX]))
                                (pairwise bindings)
-                  let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
+                  let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
                   let okBindings = sequence bind
                   case okBindings of
                     (Left err) -> return (Left err)
@@ -295,7 +295,7 @@ checkMatchingNrOfArgs xobj params args =
 -- | Apply a function to some arguments. The other half of 'eval'.
 apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
 apply env body params args =
-  let insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv
+  let insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
       allParams = map getName params
       [properParams, restParams] = case splitWhen isRestArgSeparator allParams of
                                      [a, b] -> [a, b]
@@ -726,7 +726,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
                    return (Left (EvalError ("Can't redefine '" ++ moduleName ++ "' as module.")))
                  Nothing ->
                    do let parentEnv = getEnv env pathStrings
-                          innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv
+                          innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
                           newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
                           globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder emptyMeta newModule)
                           ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode -- TODO: also change

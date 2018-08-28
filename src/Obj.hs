@@ -394,6 +394,7 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envModuleName :: Maybe String
                , envUseModules :: [SymPath]
                , envMode :: EnvMode
+               , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
 
 newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
@@ -430,9 +431,11 @@ prettyEnvironmentChain env =
       name = case envModuleName env of
                Just n -> n
                Nothing -> "<env has no name>"
+      otherInfo = "(" ++ show (envMode env) ++ ", lvl " ++ show (envFunctionNestingLevel env) ++ ")"
   in  (if length bs < 20
-       then "'" ++ name ++ "':\n" ++ (joinWith "\n" $ filter (/= "") (map (showBinderIndented 4) (Map.toList (envBindings env))))
-       else "'" ++ name ++ "':\n    Too big to show bindings.")
+       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ (joinWith "\n" $ filter (/= "")
+                                                 (map (showBinderIndented 4) (Map.toList (envBindings env))))
+       else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings.")
       ++
       (case envParent env of
           Just parent -> "\nWITH PARENT ENV " ++ prettyEnvironmentChain parent

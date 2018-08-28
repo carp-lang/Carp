@@ -324,6 +324,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                               , envModuleName = Nothing
                               , envUseModules = []
                               , envMode = InternalEnv
+                              , envFunctionNestingLevel = envFunctionNestingLevel env
                               }
       -- Need to fold (rather than map) to make the previous bindings accessible to the later ones, i.e. (let [a 100 b a] ...)
       in  foldM createBinderForLetPair (Right emptyInnerEnv) pairs
@@ -347,6 +348,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                     , envModuleName = Nothing
                     , envUseModules = []
                     , envMode = InternalEnv
+                    , envFunctionNestingLevel = envFunctionNestingLevel env
                     }
       where
         createBinderForParam :: XObj -> State Integer (String, Binder)

@@ -27,7 +27,7 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i existingE
   let typeModuleName = typeName
       typeModuleEnv = case existingEnv of
                              Just env -> env
-                             Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv
+                             Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0
       -- The variable 'insidePath' is the path used for all member functions inside the 'typeModule'.
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeModuleName]
@@ -54,7 +54,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
   let typeModuleName = typeName
       typeModuleEnv = case existingEnv of
                              Just env -> env
-                             Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv
+                             Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0
       insidePath = pathStrings ++ [typeModuleName]
   in do validateMemberCases typeEnv [] rest
         let structTy = StructTy typeName []

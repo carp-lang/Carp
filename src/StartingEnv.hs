@@ -18,7 +18,12 @@ coreModules carpDir = [carpDir ++ "/core/Core.carp"]
 
 -- | The array module contains functions for working with the Array type.
 arrayModule :: Env
-arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Array", envUseModules = [], envMode = ExternalEnv }
+arrayModule = Env { envBindings = bindings
+                  , envParent = Nothing
+                  , envModuleName = Just "Array"
+                  , envUseModules = []
+                  , envMode = ExternalEnv
+                  , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templateNth
                                 , templateAllocate
                                 , templateEMap
@@ -39,7 +44,12 @@ arrayModule = Env { envBindings = bindings, envParent = Nothing, envModuleName =
 
 -- | The Pointer module contains functions for dealing with pointers.
 pointerModule :: Env
-pointerModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Pointer", envUseModules = [], envMode = ExternalEnv }
+pointerModule = Env { envBindings = bindings
+                    , envParent = Nothing
+                    , envModuleName = Just "Pointer"
+                    , envUseModules = []
+                    , envMode = ExternalEnv
+                    , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templatePointerCopy, templatePointerEqual ]
 
 -- | A template function for copying (= deref:ing) any pointer.
@@ -65,7 +75,12 @@ templatePointerEqual = defineTemplate
 
 -- | The System module contains functions for various OS related things like timing and process control.
 systemModule :: Env
-systemModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "System", envUseModules = [], envMode = ExternalEnv }
+systemModule = Env { envBindings = bindings
+                   , envParent = Nothing
+                   , envModuleName = Just "System"
+                   , envUseModules = []
+                   , envMode = ExternalEnv
+                   , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templateExit ]
 
 -- | A template function for exiting.
@@ -84,7 +99,12 @@ maxArity = 9
 
 -- | The Function module contains functions for dealing with functions.
 functionModule :: Env
-functionModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Function", envUseModules = [], envMode = ExternalEnv }
+functionModule = Env { envBindings = bindings
+                     , envParent = Nothing
+                     , envModuleName = Just "Function"
+                     , envUseModules = []
+                     , envMode = ExternalEnv
+                     , envFunctionNestingLevel = 0 }
   where
     bindEnv env = let Just name = envModuleName env
                   in  (name, Binder emptyMeta (XObj (Mod env) Nothing Nothing))
@@ -98,6 +118,7 @@ generateInnerFunctionModule arity =
       , envModuleName = Just ("Arity" ++ show arity)
       , envUseModules = []
       , envMode = ExternalEnv
+      , envFunctionNestingLevel = 0
       }
   where
     alphabet = ['d'..'y']
@@ -134,7 +155,12 @@ generateTemplateFuncStrOrPrn name funcTy = defineTemplate
 
 -- | The dynamic module contains dynamic functions only available in the repl and during compilation.
 dynamicModule :: Env
-dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Dynamic", envUseModules = [], envMode = ExternalEnv }
+dynamicModule = Env { envBindings = bindings
+                    , envParent = Nothing
+                    , envModuleName = Just "Dynamic"
+                    , envUseModules = []
+                    , envMode = ExternalEnv
+                    , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList $
                     [ addCommand "list?" 1 commandIsList
                     , addCommand "array?" 1 commandIsArray
@@ -182,7 +208,12 @@ dynamicModule = Env { envBindings = bindings, envParent = Nothing, envModuleName
 
 -- | A submodule of the Dynamic module. Contains functions for working with strings in the repl or during compilation.
 dynamicStringModule :: Env
-dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "String", envUseModules = [], envMode = ExternalEnv }
+dynamicStringModule = Env { envBindings = bindings
+                          , envParent = Nothing
+                          , envModuleName = Just "String"
+                          , envUseModules = []
+                          , envMode = ExternalEnv
+                          , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "substring" 3 commandSubstring
@@ -193,7 +224,12 @@ dynamicStringModule = Env { envBindings = bindings, envParent = Nothing, envModu
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
 dynamicProjectModule :: Env
-dynamicProjectModule = Env { envBindings = bindings, envParent = Nothing, envModuleName = Just "Project", envUseModules = [], envMode = ExternalEnv }
+dynamicProjectModule = Env { envBindings = bindings
+                           , envParent = Nothing
+                           , envModuleName = Just "Project"
+                           , envUseModules = []
+                           , envMode = ExternalEnv
+                           , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
                                 ]
 
@@ -211,11 +247,12 @@ templateEnumToInt = defineTemplate
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
-  Env { envBindings = bindings,
-        envParent = Nothing,
-        envModuleName = Nothing,
-        envUseModules = [SymPath [] "String"],
-        envMode = ExternalEnv
+  Env { envBindings = bindings
+      , envParent = Nothing
+      , envModuleName = Nothing
+      , envUseModules = [SymPath [] "String"]
+      , envMode = ExternalEnv
+      , envFunctionNestingLevel = 0
       }
   where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
                                   , register "NULL" (VarTy "a")
@@ -234,6 +271,7 @@ startingTypeEnv = Env { envBindings = bindings
                       , envModuleName = Nothing
                       , envUseModules = []
                       , envMode = ExternalEnv
+                      , envFunctionNestingLevel = 0
                       }
   where bindings = Map.fromList
           $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a"))
