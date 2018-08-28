@@ -9,5 +9,5 @@
 ;; (defn f [y]
 ;;   (fn [x] (Int.+ x y)))
 
-(defn f []
-  (fn [] 123))
+(defn f [x]
+  (fn [] (the Int x)))

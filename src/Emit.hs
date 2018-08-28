@@ -182,10 +182,23 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name
+                     needEnv = not (null capturedVars)
+                     lambdaEnvTypeName = callback ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
+                     lambdaEnvName = freshVar i ++ "_env"
                  appendToSrc (addIndent indent ++ "// This lambda captures " ++
                               show (length capturedVars) ++ " variables: " ++
                               joinWithComma (map getName capturedVars) ++ "\n")
-                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = { .callback = " ++ callback ++ ", .env = NULL, .delete = NULL };\n")
+                 when needEnv $
+                   do appendToSrc (addIndent indent ++ lambdaEnvTypeName ++ " *" ++ lambdaEnvName ++
+                                   " = CARP_MALLOC(sizeof(" ++ lambdaEnvTypeName ++ "));\n")
+                      mapM_ (\(XObj (Sym path _) _ _) ->
+                               appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
+                                            pathToC path ++ " = " ++ pathToC path ++ ";\n"))
+                        capturedVars
+                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++
+                              " = { .callback = " ++ callback ++
+                              ", .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++
+                              ", .delete = NULL };\n")
                  return retVar
 
             -- Def
