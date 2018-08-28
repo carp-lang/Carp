@@ -186,19 +186,20 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      Just callback = name
                      needEnv = not (null capturedVars)
                      lambdaEnvTypeName = callback ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
+                     lambdaEnvType = StructTy lambdaEnvTypeName []
                      lambdaEnvName = freshVar i ++ "_env"
                  appendToSrc (addIndent indent ++ "// This lambda captures " ++
                               show (length capturedVars) ++ " variables: " ++
                               joinWithComma (map getName capturedVars) ++ "\n")
                  when needEnv $
-                   do appendToSrc (addIndent indent ++ lambdaEnvTypeName ++ " *" ++ lambdaEnvName ++
-                                   " = CARP_MALLOC(sizeof(" ++ lambdaEnvTypeName ++ "));\n")
+                   do appendToSrc (addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName ++
+                                   " = CARP_MALLOC(sizeof(" ++ tyToC lambdaEnvType ++ "));\n")
                       mapM_ (\(XObj (Sym path _) _ _) ->
                                appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
                                             pathToC path ++ " = " ++ pathToC path ++ ";\n"))
                         capturedVars
                  appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++
-                              " = { .callback = " ++ callback ++
+                              " = { .callback = " ++ pathToC (SymPath [] callback) ++
                               ", .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++
                               ", .delete = NULL };\n")
                  return retVar

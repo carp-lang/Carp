@@ -9,14 +9,24 @@
 ;; (defn f [y]
 ;;   (fn [x] (Int.+ x y)))
 
-(def global-variable 10000)
 
-(defn f [capture-me]
-  (let [and-me 1000]
-    (fn [not-me]
-      (let [nor-me 100]
-        (+ (+ (+ (+ global-variable capture-me) and-me) not-me) nor-me)))))
 
-(defn-do main []
-  (let [g (f 10)]
-    (println* (g 1))))
+;; (def global-variable 10000)
+
+;; (defn f [capture-me]
+;;   (let [and-me 1000]
+;;     (fn [not-me]
+;;       (let [nor-me 100]
+;;         (+ (+ (+ (+ global-variable capture-me) and-me) not-me) nor-me)))))
+
+;; (defn-do main []
+;;   (let [g (f 10)]
+;;     (println* (g 1))))
+
+(use Array)
+
+(defn pow-to [exponent]
+  (endo-map (fn [x] (Int.pow x exponent)) (range 0 10 1)))
+
+(defn main []
+  (println* (ref (pow-to 3))))
