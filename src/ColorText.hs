@@ -5,9 +5,9 @@ import Util
 data TextColor = Blue | Red | Yellow | Green | White
 
 strWithColor :: TextColor -> String -> String
-strWithColor color str = 
-    if useColors 
-    then "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[37m"
+strWithColor color str =
+    if useColors
+    then "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[0m"
     else str
   where useColors = platform /= Windows
         col = case color of
