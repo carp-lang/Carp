@@ -11,3 +11,7 @@
 
 (defn f [x]
   (fn [] (the Int x)))
+
+(defn-do main []
+  (let [g (f 5)]
+    (println* (g))))

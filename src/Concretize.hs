@@ -72,7 +72,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [defn, nameSymbol, args, okBody]
 
     -- | Fn / λ
-    visitList allowAmbig env (XObj (Lst [(XObj (Fn _ _) fni fnt), args@(XObj (Arr argsArr) _ _), body]) i t) =
+    visitList allowAmbig env (XObj (Lst [(XObj (Fn _ _) fni fnt), args@(XObj (Arr argsArr) ai at), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
@@ -94,19 +94,30 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
                  lambdaName = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii)
                  lambdaNameSymbol = XObj (Sym (SymPath [] lambdaName) Symbol) (Just dummyInfo) Nothing
-                 liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, args, okBody]) i t
+                 extendedArgs = if null capturedVars
+                                then args
+                                     -- If the lambda captures anything it need an extra arg for its env:
+                                else XObj (Arr (XObj (Sym (SymPath [] "_env") Symbol)
+                                                (Just dummyInfo)
+                                                (Just (StructTy environmentTypeName [])) :
+                                                argsArr)) ai at
+                 lambdaCallback = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 
-                 typeName = lambdaName ++ "_env"
-                 environmentStructTy = StructTy typeName []
+                 environmentTypeName = lambdaName ++ "_env"
+                 environmentStructTy = StructTy environmentTypeName []
                  environmentStruct = XObj (Lst (XObj (Typ environmentStructTy) Nothing Nothing :
-                                                XObj (Sym (SymPath [] typeName) Symbol) Nothing Nothing :
+                                                XObj (Sym (SymPath [] environmentTypeName) Symbol) Nothing Nothing :
                                                 XObj (Arr structMemberPairs) Nothing Nothing :
                                                 [])) i (Just TypeTy)
-             in case concretizeDefinition allowAmbig typeEnv env visitedDefinitions liftedLambda funcTy of
+
+                 -- The type env has to contain the lambdas environment struct for 'concretizeDefinition' to work:
+                 extendedTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) environmentTypeName environmentStruct)
+
+             in case concretizeDefinition allowAmbig extendedTypeEnv env visitedDefinitions lambdaCallback funcTy of
                   Left err -> return (Left err)
                   Right (concreteLiftedLambda, deps) ->
-                    do modify (concreteLiftedLambda :)
-                       modify (environmentStruct :)
+                    do modify (environmentStruct :)
+                       modify (concreteLiftedLambda :)
                        modify (deps ++)
                        return (Right [XObj (Fn (Just lambdaName) (Set.fromList capturedVars)) fni fnt, args, okBody])
            _ ->
