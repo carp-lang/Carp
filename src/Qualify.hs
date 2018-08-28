@@ -97,6 +97,10 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
     createInterfaceSym name =
       XObj (InterfaceSym name) i t
 
+    captureOrNot foundEnv = if envFunctionNestingLevel foundEnv < envFunctionNestingLevel localEnv
+                            then Capture
+                            else NoCapture
+
     doesNotBelongToAnInterface :: Bool -> Env -> XObj
     doesNotBelongToAnInterface finalRecurse theEnv =
       let results = multiLookupQualified path theEnv in
@@ -117,11 +121,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                                    (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
               RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
               _ -> --trace ("\nLOCAL variable " ++ show (getPath foundOne) ++ ":\n" ++ prettyEnvironmentChain e) $
-                   XObj (Sym (getPath foundOne) (LookupLocal NoCapture)) i t
+                   XObj (Sym (getPath foundOne) (LookupLocal (captureOrNot e))) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:
-              (_, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal NoCapture)) i t
+              (e, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal (captureOrNot e))) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
                 case path of
