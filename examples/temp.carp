@@ -1,6 +1,13 @@
 ;; (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
-(defn main []
-  (let [lam (fn [x] (* 10 x))]
-    (println* (+ (lam 3) (lam 4)))))
+;; (defn main []
+;;   (let [lam (fn [x] (let [gah (fn [] 3.3f)]
+;;                       (* 10 x)))]
+;;     (println* (+ (lam 3) (lam 4)))))
+
+;; (defn f [y]
+;;   (fn [x] (Int.+ x y)))
+
+(defn f []
+  (fn [] 123))

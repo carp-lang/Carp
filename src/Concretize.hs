@@ -87,17 +87,26 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          visitedBody <- visit allowAmbig envWithArgs body
          case visitedBody of
            Right (okBody) ->
-             let Just ii = i
-                 Just tt = t
-                 name = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii) -- ++ "_" ++ tyToC tt -- Type not needed?
-                 nameSymbol = XObj (Sym (SymPath [] name) Symbol) (Just dummyInfo) Nothing
-                 liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, nameSymbol, args, okBody]) i t
+             let capturedVars = collectCapturedVars okBody
+
+                 lambdaName = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii) -- ++ "_" ++ tyToC tt -- Type not needed?
+                 lambdaNameSymbol = XObj (Sym (SymPath [] lambdaName) Symbol) (Just dummyInfo) Nothing
+                 liftedLambda = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, args, okBody]) i t
+
+                 typeName = lambdaName ++ "_env"
+                 environmentStructTy = StructTy typeName []
+                 environmentStruct = XObj (Lst (XObj (Typ environmentStructTy) Nothing Nothing :
+                                                XObj (Sym (SymPath [] typeName) Symbol) Nothing Nothing :
+                                                XObj (Arr capturedVars) Nothing Nothing :
+                                                capturedVars)
+                                          ) i (Just TypeTy)
              in case concretizeDefinition allowAmbig typeEnv env visitedDefinitions liftedLambda funcTy of
                   Left err -> return (Left err)
                   Right (concreteLiftedLambda, deps) ->
                     do modify (concreteLiftedLambda :)
+                       modify (environmentStruct :)
                        modify (deps ++)
-                       return (Right [XObj (Fn (Just name) captures) fni fnt, args, okBody])
+                       return (Right [XObj (Fn (Just lambdaName) captures) fni fnt, args, okBody])
            _ ->
              error "Visited body isn't a defn."
 
@@ -233,6 +242,26 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
         Nothing ->
           error ("No interface named '" ++ name ++ "' found.")
+
+-- | Find all lookups in a lambda body that should be captured by its environment
+collectCapturedVars :: XObj -> [XObj]
+collectCapturedVars root = visit root
+  where
+    visit xobj =
+      case obj xobj of
+        (Lst _) -> visitList xobj
+        (Arr _) -> visitArray xobj
+        _ -> _
+
+    visitList :: XObj -> [XObj]
+    visitList (XObj (Lst xobjs) _ _) =
+      concatMap visit xobjs
+    visitList _ = error "The function 'visitList' only accepts XObjs with lists in them."
+
+    visitArray :: XObj -> [XObj]
+    visitArray (XObj (Arr xobjs) _ _) =
+      concatMap visit xobjs
+    visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
 
 -- | Do the signatures match?
 matchingSignature :: Ty -> (Ty, SymPath) -> Bool
