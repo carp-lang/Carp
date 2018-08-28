@@ -37,6 +37,13 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
       functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _),
+                                                 args@(XObj (Arr argsArr) _ _),
+                                                 body])
+                                      i t) =
+  let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv
+      envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
+  in  XObj (Lst [fn, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), typeXObj, value]) i t) =
   let value' = setFullyQualifiedSymbols typeEnv globalEnv env value
   in  XObj (Lst [the, typeXObj, value']) i t
@@ -45,7 +52,8 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), s
   in  XObj (Lst [def, sym, expr']) i t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
   if even (length bindings)
-  then let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv
+  then let Just ii = i
+           innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv
            (innerEnv', bindings') =
              foldl' (\(e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) ->
                        let qualified = setFullyQualifiedSymbols typeEnv globalEnv e o
@@ -86,6 +94,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
   where
     createInterfaceSym name =
       XObj (InterfaceSym name) i t
+
     doesNotBelongToAnInterface :: Bool -> Env -> XObj
     doesNotBelongToAnInterface finalRecurse theEnv =
       let results = multiLookupQualified path theEnv in
@@ -102,9 +111,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder _ foundOne)] ->
             case envMode e of
-              ExternalEnv -> XObj (Sym (getPath foundOne) (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
+              ExternalEnv -> XObj (Sym (getPath foundOne)
+                                   (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
               RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
-              _ -> XObj (Sym (getPath foundOne) (LookupLocal NoCapture)) i t
+              _ -> --trace ("\nLOCAL variable " ++ show (getPath foundOne) ++ ":\n" ++ prettyEnvironmentChain e) $
+                   XObj (Sym (getPath foundOne) (LookupLocal NoCapture)) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:

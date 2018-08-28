@@ -429,10 +429,10 @@ prettyEnvironmentChain env =
   let bs = envBindings env
       name = case envModuleName env of
                Just n -> n
-               Nothing -> "nothing"
+               Nothing -> "<env has no name>"
   in  (if length bs < 20
-       then name ++ ":\n" ++ (joinWith "\n" $ filter (/= "") (map (showBinderIndented 4) (Map.toList (envBindings env))))
-       else name ++ ":\n    Too big to show bindings.")
+       then "'" ++ name ++ "':\n" ++ (joinWith "\n" $ filter (/= "") (map (showBinderIndented 4) (Map.toList (envBindings env))))
+       else "'" ++ name ++ "':\n    Too big to show bindings.")
       ++
       (case envParent env of
           Just parent -> "\nWITH PARENT ENV " ++ prettyEnvironmentChain parent
