@@ -104,11 +104,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             case envMode e of
               ExternalEnv -> XObj (Sym (getPath foundOne) (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
               RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
-              _ -> XObj (Sym (getPath foundOne) LookupLocal) i t
+              _ -> XObj (Sym (getPath foundOne) (LookupLocal NoCapture)) i t
           multiple ->
             case filter (not . envIsExternal . fst) multiple of
             -- There is at least one local binding, use the path of that one:
-              (_, Binder _ local) : _ -> XObj (Sym (getPath local) LookupLocal) i t
+              (_, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal NoCapture)) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
                 case path of

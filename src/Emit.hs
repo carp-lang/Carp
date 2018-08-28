@@ -144,7 +144,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
           in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
-             else if isFunctionType t' && lookupMode /= LookupLocal
+             else if isFunctionType t' && not (isLookupLocal lookupMode)
                   then do let var = freshVar i
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show sym ++ "\n")
                           return var

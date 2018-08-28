@@ -264,7 +264,7 @@ collectCapturedVars root = visit root
       case obj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
-        (Sym path LookupLocal) -> [xobj]
+        (Sym path (LookupLocal Capture)) -> [xobj]
         _ -> []
 
     visitList :: XObj -> [XObj]
@@ -640,7 +640,7 @@ manageMemory typeEnv globalEnv root =
                             newVariable =
                               case okMode of
                                 Symbol -> error "How to handle this?"
-                                LookupLocal ->
+                                LookupLocal captureMode ->
                                   if Set.size (Set.intersection managed deleters) == 1 -- The variable is still alive
                                   then variable { info = setDeletersOnInfo varInfo deleters }
                                   else variable -- don't add the new info = no deleter
@@ -654,7 +654,7 @@ manageMemory typeEnv globalEnv root =
 
                         case okMode of
                           Symbol -> error "Should only be be a global/local lookup symbol."
-                          LookupLocal -> manage okCorrectVariable
+                          LookupLocal _ -> manage okCorrectVariable
                           LookupGlobal _ -> return ()
 
                         return $ do okValue <- visitedValue

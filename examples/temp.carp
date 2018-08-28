@@ -9,9 +9,14 @@
 ;; (defn f [y]
 ;;   (fn [x] (Int.+ x y)))
 
+(def glob 300)
+
 (defn f [x]
-  (fn [] (the Int x)))
+  (let [a 1]
+    (fn [y]
+      (let [b 2]
+        (+ (+ (+ (+ glob y) x) a) b)))))
 
 (defn-do main []
   (let [g (f 5)]
-    (println* (g))))
+    (println* (g 3))))

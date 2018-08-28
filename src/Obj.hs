@@ -15,10 +15,15 @@ data GlobalMode = CarpLand
                 | ExternalCode
                 deriving (Eq, Show, Ord)
 
+-- | For local lookups, does the variable live in the current function or is it captured from outside it's body?
+data CaptureMode = NoCapture
+                 | Capture
+                 deriving (Eq, Show, Ord)
+
 -- | A symbol knows a bit about what it refers to - is it a local scope or a global one? (the latter include modules).
 -- | A symbol that is not used for looking up things will use the 'Symbol' case.
 data SymbolMode = Symbol
-                | LookupLocal
+                | LookupLocal CaptureMode
                 | LookupRecursive
                 | LookupGlobal GlobalMode
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
@@ -27,6 +32,10 @@ data SymbolMode = Symbol
 isLookupGlobal :: SymbolMode -> Bool
 isLookupGlobal (LookupGlobal _) = True
 isLookupGlobal _ = False
+
+isLookupLocal :: SymbolMode -> Bool
+isLookupLocal (LookupLocal _) = True
+isLookupLocal _ = False
 
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
