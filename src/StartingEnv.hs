@@ -138,7 +138,16 @@ generateTemplateFuncCopy funcTy = defineTemplate
   (FuncTy [RefTy funcTy] (VarTy "a"))
   (toTemplate "$a $NAME ($a* ref)")
   (toTemplate $ unlines ["$DECL {"
-                        ,"    return *ref;"
+                        ,"    if(ref->env) {"
+                        ,"        $a f_copy;"
+                        ,"        f_copy.callback = ref->callback;"
+                        ,"        f_copy.delete = ref->delete;"
+                        ,"        f_copy.copy = ref->copy;"
+                        ,"        f_copy.env = ref->copy(ref->env);"
+                        ,"        return f_copy;"
+                        ,"    } else {"
+                        ,"        return *ref;"
+                        ,"    }"
                         ,"}"])
   (const [])
 
@@ -149,8 +158,8 @@ generateTemplateFuncDelete funcTy = defineTemplate
   (FuncTy [funcTy] UnitTy)
   (toTemplate "void $NAME (Lambda f)")
   (toTemplate $ unlines ["$DECL {"
-                        ,"  if(f.env) {"
-                        ,"    /* delete env */ "
+                        ,"  if(f.delete) {"
+                        ,"      f.delete(f.env);"
                         ,"  }"
                         ,"}"])
   (const [])

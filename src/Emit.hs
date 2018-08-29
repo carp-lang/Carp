@@ -146,7 +146,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
              else if isFunctionType t' && not (isLookupLocal lookupMode)
                   then do let var = freshVar i
-                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL }; //" ++ show sym ++ "\n")
+                          appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
                           return var
                   else case lookupMode of
                          LookupLocal Capture -> return ("_env->" ++ pathToC path)
@@ -201,7 +201,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                  appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++
                               " = { .callback = " ++ pathToC (SymPath [] callback) ++
                               ", .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++
-                              ", .delete = NULL };\n")
+                              ", .delete = NULL" ++
+                              ", .copy = NULL }" ++
+                              ";\n")
                  return retVar
 
             -- Def

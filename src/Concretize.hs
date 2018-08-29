@@ -575,6 +575,7 @@ manageMemory typeEnv globalEnv root =
                      do mapM_ manage argList
                         visitedBody <- visit body
                         result <- unmanage body
+                        manage xobj
                         return $
                           case result of
                             Left e -> Left e

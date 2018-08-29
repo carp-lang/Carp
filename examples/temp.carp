@@ -23,19 +23,29 @@
 ;;   (let [g (f 10)]
 ;;     (println* (g 1))))
 
-;; (use Array)
 
-;; (defn pow-to [exponent]
-;;   (endo-map (fn [x] (Int.pow x exponent)) (range 0 10 1)))
 
-;; (defn main []
-;;   (println* (ref (pow-to 3))))
+(use Array)
 
-(deftype Blah [function (Fn [] ())])
+(defn pow-to [exponent to]
+  (let [fff (fn [] ())
+        ff2 @&fff
+        to-copy @to
+        upper (to-copy)]
+    (endo-map (fn [x] (Int.pow x exponent)) (range 0 upper 1))))
 
-(defn hej [] (println* "hej"))
+(defn twenty [] 20)
 
 (defn main []
-  (let [b (Blah.init hej)
-        f @(Blah.function &b)]
-    (f)))
+  (println* (ref (pow-to 3 &twenty))))
+
+
+
+;; (deftype Blah [function (Fn [] ())])
+
+;; (defn hej [] (println* "hej"))
+
+;; (defn main []
+;;   (let [b (Blah.init hej)
+;;         f @(Blah.function &b)]
+;;     (f)))
