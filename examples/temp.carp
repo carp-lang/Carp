@@ -66,7 +66,8 @@
 
 
 
-(defn main []
-  (let [counter 3
-        lambda (fn [] (+ counter counter))]
-    (do (println* (lambda)))))
+(defn-do main []
+  (Debug.log-memory-balance! true)
+  (let [s @"hello"
+        f (fn [] s)]
+    (println* (f))))
