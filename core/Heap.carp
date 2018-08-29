@@ -1,4 +1,3 @@
-
 ; Abstract heap with user-supplied ordering function
 ; an ordering function is a binary relation
 ; `<` will create a MinHeap, `>` will create a MaxHeap
@@ -34,7 +33,7 @@
 
     (defn push-down-until! [heap i len ord]
         (while true
-               (let [challenger (max-of-three-until! heap i len ord)]
+               (let [challenger (max-of-three-until! heap i len @&ord)] ;; TODO: Added a "ref + copy" to silence borrow checker for 'ord', should not be needed..?!
                     (if (= challenger i)
                         (break)
                         (do
@@ -62,7 +61,7 @@
     (defn heapify! [arr ord]
         (let [len (Array.length arr)]
             (for [i 1 len]
-                (push-up! arr i ord))))
+                (push-up! arr i @&ord)))) ;; TODO: Added a "ref + copy" to silence borrow checker for 'ord', should not be needed..?!
 
     (doc push! "Insert a new item onto the heap.")
     (defn push! [heap item ord]
@@ -175,4 +174,3 @@
             (sort! &arr)
             arr))
 )
-

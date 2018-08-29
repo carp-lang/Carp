@@ -845,7 +845,7 @@ manageMemory typeEnv globalEnv root =
         unmanage xobj =
           let Just t = ty xobj
               Just i = info xobj
-          in if isManaged typeEnv t && not (isExternalType typeEnv t)
+          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
              then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> return (Left (UsingUnownedValue xobj))
@@ -863,7 +863,7 @@ manageMemory typeEnv globalEnv root =
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _)) _ _ -> True
                                    _ -> False
-          in if not isGlobalVariable && isManaged typeEnv t && not (isExternalType typeEnv t)
+          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t)
              then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
@@ -896,3 +896,12 @@ suffixTyVars suffix t =
     (PointerTy x) -> PointerTy (suffixTyVars suffix x)
     (RefTy x) -> RefTy (suffixTyVars suffix x)
     _ -> t
+
+isGlobalFunc :: XObj -> Bool
+isGlobalFunc xobj =
+  case xobj of
+    XObj (InterfaceSym _) _ (Just (FuncTy _ _)) -> True
+    XObj (MultiSym _ _) _ (Just (FuncTy _ _)) -> True
+    XObj (Sym _ (LookupGlobal _)) _ (Just (FuncTy _ _)) -> True
+    XObj (Sym _ (LookupGlobalOverride _)) _ (Just (FuncTy _ _)) -> True
+    _ -> False

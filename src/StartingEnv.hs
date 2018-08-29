@@ -124,16 +124,17 @@ generateInnerFunctionModule arity =
     alphabet = ['d'..'y']
     charToTyName c = [c]
     funcTy = FuncTy (take arity (map (VarTy . charToTyName) alphabet)) (VarTy "z")
-    bindings = Map.fromList [generateTemplateFuncCopy funcTy
-                            ,generateTemplateFuncStrOrPrn "str" funcTy
-                            ,generateTemplateFuncStrOrPrn "prn" funcTy
+    bindings = Map.fromList [ generateTemplateFuncCopy funcTy
+                            , generateTemplateFuncDelete funcTy
+                            , generateTemplateFuncStrOrPrn "str" funcTy
+                            , generateTemplateFuncStrOrPrn "prn" funcTy
                             ]
 
 
 -- | A template function for generating 'copy' functions for function pointers.
 generateTemplateFuncCopy :: Ty -> (String, Binder)
 generateTemplateFuncCopy funcTy = defineTemplate
-  (SymPath [] "copy")
+  (SymPath ["Function"] "copy")
   (FuncTy [RefTy funcTy] (VarTy "a"))
   (toTemplate "$a $NAME ($a* ref)")
   (toTemplate $ unlines ["$DECL {"
@@ -141,12 +142,25 @@ generateTemplateFuncCopy funcTy = defineTemplate
                         ,"}"])
   (const [])
 
+-- | A template function for generating 'deleter' functions for function pointers.
+generateTemplateFuncDelete :: Ty -> (String, Binder)
+generateTemplateFuncDelete funcTy = defineTemplate
+  (SymPath ["Function"] "delete")
+  (FuncTy [funcTy] UnitTy)
+  (toTemplate "void $NAME (Lambda f)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"  if(f.env) {"
+                        ,"    /* delete env */ "
+                        ,"  }"
+                        ,"}"])
+  (const [])
+
 -- | A template function for generating 'str' or 'prn' functions for function pointers.
 generateTemplateFuncStrOrPrn :: String -> Ty -> (String, Binder)
 generateTemplateFuncStrOrPrn name funcTy = defineTemplate
-  (SymPath [] name)
-  (FuncTy [funcTy] StringTy)
-  (toTemplate "String $NAME (Lambda f)")
+  (SymPath ["Function"] name)
+  (FuncTy [(RefTy funcTy)] StringTy)
+  (toTemplate "String $NAME (Lambda *f)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    static String lambda = \"λ\";"
                         ,"    return String_copy(&lambda);"

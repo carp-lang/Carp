@@ -196,6 +196,7 @@ isManaged typeEnv (StructTy name _) =
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
+isManaged _ (FuncTy _ _) = True
 isManaged _ _ = False
 
 -- | Is this type a function type?
