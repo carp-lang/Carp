@@ -87,11 +87,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          visitedBody <- visit allowAmbig envWithArgs body
          case visitedBody of
            Right (okBody) ->
-             let capturedVars = collectCapturedVars okBody
-                 structMemberPairs = concatMap (\(XObj (Sym path _) _ (Just symTy)) ->
-                                                  [XObj (Sym path Symbol) Nothing Nothing, tyToXObj symTy])
-                                     capturedVars
+             let -- Analyse the body of the lambda to find what variables it captures
+                 capturedVars = collectCapturedVars okBody
 
+                 -- Create a new (top-level) function that will be used when the lambda is called.
+                 -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
+                 -- plus the identifier of the particular s-expression that defines the lambda.
                  lambdaName = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii)
                  lambdaNameSymbol = XObj (Sym (SymPath [] lambdaName) Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
@@ -103,6 +104,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                 argsArr)) ai at
                  lambdaCallback = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 
+                 -- The lambda will also carry with it a special made struct containing the variables it captures
+                 -- (if it captures at least one variable)
+                 structMemberPairs = concatMap (\(XObj (Sym path _) _ (Just symTy)) ->
+                                                  [XObj (Sym path Symbol) Nothing Nothing, tyToXObj symTy])
+                                     capturedVars
                  environmentTypeName = lambdaName ++ "_env"
                  environmentStructTy = StructTy environmentTypeName []
                  environmentStruct = XObj (Lst (XObj (Typ environmentStructTy) Nothing Nothing :
