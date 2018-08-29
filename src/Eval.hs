@@ -33,6 +33,7 @@ import Expand
 import Lookup
 import Qualify
 import TypeError
+import Concretize
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)

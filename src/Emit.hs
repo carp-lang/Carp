@@ -22,6 +22,7 @@ import Util
 import Template
 import Scoring
 import Lookup
+import Concretize
 
 addIndent :: Int -> String
 addIndent n = replicate n ' '
@@ -198,12 +199,12 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
                                             pathToC path ++ " = " ++ pathToC path ++ ";\n"))
                         capturedVars
-                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++
-                              " = { .callback = " ++ pathToC (SymPath [] callback) ++
-                              ", .env = " ++ (if needEnv then lambdaEnvName else "NULL") ++
-                              ", .delete = NULL" ++
-                              ", .copy = NULL }" ++
-                              ";\n")
+                      appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
+                      appendToSrc (addIndent indent ++ "  .callback = " ++ pathToC (SymPath [] callback))
+                      appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL"))
+                      appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL"))
+                      appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL"))
+                      appendToSrc (addIndent indent ++ "};\n")
                  return retVar
 
             -- Def

@@ -25,19 +25,19 @@
 
 
 
-(use Array)
+;; (use Array)
 
-(defn pow-to [exponent to]
-  (let [fff (fn [] ())
-        ff2 @&fff
-        to-copy @to
-        upper (to-copy)]
-    (endo-map (fn [x] (Int.pow x exponent)) (range 0 upper 1))))
+;; (defn pow-to [exponent to]
+;;   (let [fff (fn [] ())
+;;         ff2 @&fff
+;;         to-copy @to
+;;         upper (to-copy)]
+;;     (endo-map (fn [x] (Int.pow x exponent)) (range 0 upper 1))))
 
-(defn twenty [] 20)
+;; (defn twenty [] 20)
 
-(defn main []
-  (println* (ref (pow-to 3 &twenty))))
+;; (defn main []
+;;   (println* (ref (pow-to 3 &twenty))))
 
 
 
@@ -49,3 +49,17 @@
 ;;   (let [b (Blah.init hej)
 ;;         f @(Blah.function &b)]
 ;;     (f)))
+
+
+
+(defn main []
+  (let [x 100
+        y 23
+        f (fn [] (+ x y))
+        ignore-me (fn [] ())]
+    (f)))
+
+
+;; (defn main []
+;;   (let [strings [@"a" @"bb" @"ccc"]]
+;;     (println* &(Array.copy-map String.length &strings))))

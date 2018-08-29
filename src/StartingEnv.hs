@@ -11,6 +11,7 @@ import ArrayTemplates
 import Commands
 import Parsing
 import Eval
+import Concretize
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -143,7 +144,7 @@ generateTemplateFuncCopy funcTy = defineTemplate
                         ,"        f_copy.callback = ref->callback;"
                         ,"        f_copy.delete = ref->delete;"
                         ,"        f_copy.copy = ref->copy;"
-                        ,"        f_copy.env = ref->copy(ref->env);"
+                        ,"        f_copy.env = ((void*(*)(void*))ref->copy)(ref->env);"
                         ,"        return f_copy;"
                         ,"    } else {"
                         ,"        return *ref;"
@@ -159,7 +160,7 @@ generateTemplateFuncDelete funcTy = defineTemplate
   (toTemplate "void $NAME (Lambda f)")
   (toTemplate $ unlines ["$DECL {"
                         ,"  if(f.delete) {"
-                        ,"      f.delete(f.env);"
+                        ,"      ((void(*)(void*))f.delete)(f.env);"
                         ,"  }"
                         ,"}"])
   (const [])

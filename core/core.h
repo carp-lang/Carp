@@ -21,8 +21,8 @@ typedef struct {
 typedef struct {
     void *callback;
     void *env;
-    void (*delete)(void*);
-    void *(*copy)(void*);
+    void *delete;
+    void *copy;
 } Lambda;
 
 typedef void* LambdaEnv;
