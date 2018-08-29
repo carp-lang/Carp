@@ -285,8 +285,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
 -- | Find all lookups in a lambda body that should be captured by its environment
 collectCapturedVars :: XObj -> [XObj]
-collectCapturedVars root = visit root
+collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
   where
+    removeDuplicates :: Ord a => [a] -> [a]
+    removeDuplicates = Set.toList . Set.fromList
+
+    toGeneralSymbol :: XObj -> XObj
+    toGeneralSymbol (XObj (Sym path _) _ t) = XObj (Sym path Symbol) (Just dummyInfo) t
+    toGeneralSymbol x = error ("Can't convert this to a general symbol: " ++ show x)
+
     visit xobj =
       case obj xobj of
         (Lst _) -> visitList xobj

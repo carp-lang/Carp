@@ -200,10 +200,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                             pathToC path ++ " = " ++ pathToC path ++ ";\n"))
                         capturedVars
                       appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
-                      appendToSrc (addIndent indent ++ "  .callback = " ++ pathToC (SymPath [] callback))
-                      appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL"))
-                      appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL"))
-                      appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL"))
+                      appendToSrc (addIndent indent ++ "  .callback = " ++ pathToC (SymPath [] callback) ++ ",\n")
+                      appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL")  ++ ",\n")
+                      appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
+                      appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
                       appendToSrc (addIndent indent ++ "};\n")
                  return retVar
 

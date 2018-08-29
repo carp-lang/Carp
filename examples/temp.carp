@@ -52,14 +52,21 @@
 
 
 
-(defn main []
-  (let [x 100
-        y 23
-        f (fn [] (+ x y))
-        ignore-me (fn [] ())]
-    (f)))
+;; (defn main []
+;;   (let [x 100
+;;         y 23
+;;         f (fn [] (+ x y))
+;;         ignore-me (fn [] ())]
+;;     (f)))
 
 
 ;; (defn main []
 ;;   (let [strings [@"a" @"bb" @"ccc"]]
 ;;     (println* &(Array.copy-map String.length &strings))))
+
+
+
+(defn main []
+  (let [counter 3
+        lambda (fn [] (+ counter counter))]
+    (do (println* (lambda)))))
