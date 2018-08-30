@@ -65,10 +65,12 @@
 ;;     (println* &(Array.copy-map String.length &strings))))
 
 
+(defn blah-1 []
+  (let [s @"hello"
+        f (fn [] s)]
+    (println* (f))))
 
 (defn-do main []
   (Debug.log-memory-balance! true)
   (Debug.assert-balanced
-   (let [s @"hello"
-         f (fn [] s)]
-     (println* (f)))))
+   (blah-1)))

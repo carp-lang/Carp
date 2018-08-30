@@ -330,6 +330,11 @@
        (let [result (StringCopy.append @a @b)]
             (assert (StringCopy.= result @"abcdefghijklmnopqrstuvwxyz")))))
 
+(defn lambda-1 []
+  (let [s @"X"
+        f (fn [] s)]
+    (assert (= @"X" (f)))))
+
 (defn main []
   (let []
     (with-test test
@@ -385,4 +390,5 @@
       (assert-no-leak test array-copy-map-2 "array-copy-map-2 does not leak")
       (assert-no-leak test string-append-leak-test "String.append does not leak")
       (assert-no-leak test stringcopy-append-leak-test "StringCopy.append does not leak")
+      (assert-no-leak test lambda-1 "lambda-1 does not leak")
       (print-test-results test))))

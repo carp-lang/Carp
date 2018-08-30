@@ -185,8 +185,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name
+                     callbackMangled = pathToC (SymPath [] callback)
                      needEnv = not (null capturedVars)
-                     lambdaEnvTypeName = callback ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
+                     lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
                      lambdaEnvType = StructTy lambdaEnvTypeName []
                      lambdaEnvName = freshVar i ++ "_env"
                  appendToSrc (addIndent indent ++ "// This lambda captures " ++
@@ -200,7 +201,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                             pathToC path ++ " = " ++ pathToC path ++ ";\n"))
                         capturedVars
                       appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
-                      appendToSrc (addIndent indent ++ "  .callback = " ++ pathToC (SymPath [] callback) ++ ",\n")
+                      appendToSrc (addIndent indent ++ "  .callback = " ++ callbackMangled ++ ",\n")
                       appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL")  ++ ",\n")
                       appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
                       appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
