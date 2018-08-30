@@ -335,6 +335,18 @@
         f (fn [] s)]
     (assert (= @"X" (f)))))
 
+(defn lambda-2 []
+  (let [xs [10 20 30]
+        f (fn [ys] (Array.concat &[xs ys]))]
+    (assert (= &[10 20 30 40 50] &(f [40 50])))))
+
+;; (defn lambda-3 []
+;;   (let-do [stuff [100 200 300]
+;;         f (fn [n] (copy (nth &stuff n)))]
+;;     (assert (= 100 (f 0)))
+;;     (assert (= 200 (f 1)))
+;;     (assert (= 300 (f 2)))))
+
 (defn main []
   (let []
     (with-test test
@@ -391,4 +403,5 @@
       (assert-no-leak test string-append-leak-test "String.append does not leak")
       (assert-no-leak test stringcopy-append-leak-test "StringCopy.append does not leak")
       (assert-no-leak test lambda-1 "lambda-1 does not leak")
+      (assert-no-leak test lambda-2 "lambda-2 does not leak")
       (print-test-results test))))
