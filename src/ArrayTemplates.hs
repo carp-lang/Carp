@@ -9,6 +9,7 @@ import Types
 import Obj
 import Parsing
 import Template
+import ToTemplate
 import Polymorphism
 import Concretize
 import Lookup

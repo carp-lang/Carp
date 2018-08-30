@@ -7,6 +7,7 @@ import ColorText
 import Obj
 import Types
 import Template
+import ToTemplate
 import ArrayTemplates
 import Commands
 import Parsing

@@ -24,6 +24,7 @@ library
                        Deftype,
                        Commands,
                        Template,
+                       ToTemplate,
                        Types,
                        Util,
                        Eval,
