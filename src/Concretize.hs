@@ -544,7 +544,7 @@ data MemState = MemState
 -- | the code emitter can access them and insert calls to destructors.
 manageMemory :: TypeEnv -> Env -> XObj -> Either TypeError (XObj, [XObj])
 manageMemory typeEnv globalEnv root =
-  let (finalObj, finalState) = runState (visit root) (MemState (Set.fromList []) [])
+  let (finalObj, finalState) = runState (visit 0 root) (MemState (Set.fromList []) [])
       deleteThese = memStateDeleters finalState
       deps = memStateDeps finalState
   in  -- (trace ("Delete these: " ++ joinWithComma (map show (Set.toList deleteThese)))) $
@@ -553,29 +553,29 @@ manageMemory typeEnv globalEnv root =
         Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
                     in  Right $ (ok { info = newInfo }, deps)
 
-  where visit :: XObj -> State MemState (Either TypeError XObj)
-        visit xobj =
+  where visit :: Int -> XObj -> State MemState (Either TypeError XObj)
+        visit lambdaNesting xobj =
           case obj xobj of
-            Lst _ -> visitList xobj
-            Arr _ -> visitArray xobj
-            Str _ -> do manage xobj
+            Lst _ -> visitList lambdaNesting xobj
+            Arr _ -> visitArray lambdaNesting xobj
+            Str _ -> do manage lambdaNesting xobj
                         return (Right xobj)
             _ -> return (Right xobj)
 
-        visitArray :: XObj -> State MemState (Either TypeError XObj)
-        visitArray xobj@(XObj (Arr arr) _ _) =
-          do mapM_ visit arr
-             results <- mapM unmanage arr
+        visitArray :: Int -> XObj -> State MemState (Either TypeError XObj)
+        visitArray lambdaNesting xobj@(XObj (Arr arr) _ _) =
+          do mapM_ (visit lambdaNesting) arr
+             results <- mapM (unmanage lambdaNesting) arr
              case sequence results of
                Left e -> return (Left e)
                Right _ ->
-                 do _ <- manage xobj -- TODO: result is discarded here, is that OK?
+                 do _ <- manage lambdaNesting xobj -- TODO: result is discarded here, is that OK?
                     return (Right xobj)
 
-        visitArray _ = error "Must visit array."
+        visitArray _ _ = error "Must visit array."
 
-        visitList :: XObj -> State MemState (Either TypeError XObj)
-        visitList xobj@(XObj (Lst lst) i t) =
+        visitList :: Int -> XObj -> State MemState (Either TypeError XObj)
+        visitList lambdaNesting xobj@(XObj (Lst lst) i t) =
           case lst of
             [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
@@ -583,9 +583,9 @@ manageMemory typeEnv globalEnv root =
                    RefTy _ ->
                      return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
-                     do mapM_ manage argList
-                        visitedBody <- visit body
-                        result <- unmanage body
+                     do mapM_ (manage lambdaNesting) argList
+                        visitedBody <- visit lambdaNesting body
+                        result <- unmanage lambdaNesting body
                         return $
                           case result of
                             Left e -> Left e
@@ -593,27 +593,26 @@ manageMemory typeEnv globalEnv root =
                               do okBody <- visitedBody
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
-            -- TODO: Too much duplication from Defn
-            [fn@(XObj (Fn _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
-              let Just funcTy@(FuncTy _ defnReturnType) = t
-              in case defnReturnType of
-                   RefTy _ ->
-                     return (Left (FunctionsCantReturnRefTy xobj funcTy))
-                   _ ->
-                     do mapM_ manage argList
-                        visitedBody <- visit body
-                        result <- unmanage body
-                        manage xobj
-                        return $
-                          case result of
-                            Left e -> Left e
-                            Right _ ->
-                              do okBody <- visitedBody
-                                 return (XObj (Lst [fn, args, okBody]) i t)
+            -- Fn / λ
+            [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr argList) _ _), body] ->
+              let Just funcTy@(FuncTy _ fnReturnType) = t
+              in  if lambdaNesting == 0
+                  then case fnReturnType of
+                         RefTy _ ->
+                           return (Left (FunctionsCantReturnRefTy xobj funcTy))
+                         _ ->
+                           do visitedBody <- visit (lambdaNesting + 1) body
+                              mapM_ (unmanage lambdaNesting) captures
+                              manage lambdaNesting xobj -- manage the actual lambda
+                              return $ do okBody <- visitedBody
+                                          return (XObj (Lst [fn, args, okBody]) i t)
+                       -- TODO! This isn't completely correct but at least it does something:
+                  else do manage lambdaNesting xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
+                          return (Right (XObj (Lst [fn, args, body]) i t))
 
             [def@(XObj Def _ _), nameSymbol@(XObj (Sym _ _) _ _), expr] ->
-              do visitedExpr <- visit expr
-                 result <- unmanage expr
+              do visitedExpr <- visit lambdaNesting expr
+                 result <- unmanage lambdaNesting expr
                  return $
                    case result of
                      Left e -> Left e
@@ -628,9 +627,9 @@ manageMemory typeEnv globalEnv root =
                   return (Left (LetCantReturnRefTy xobj letReturnType))
                 _ ->
                   do MemState preDeleters _ <- get
-                     visitedBindings <- mapM visitLetBinding (pairwise bindings)
-                     visitedBody <- visit body
-                     result <- unmanage body
+                     visitedBindings <- mapM (visitLetBinding lambdaNesting) (pairwise bindings)
+                     visitedBody <- visit lambdaNesting body
+                     result <- unmanage lambdaNesting body
                      case result of
                        Left e -> return (Left e)
                        Right _ ->
@@ -640,7 +639,7 @@ manageMemory typeEnv globalEnv root =
                                 survivors = postDeleters Set.\\ diff -- Same as just pre deleters, right?!
                             put (MemState survivors deps)
                             --trace ("LET Pre: " ++ show preDeleters ++ "\nPost: " ++ show postDeleters ++ "\nDiff: " ++ show diff ++ "\nSurvivors: " ++ show survivors)
-                            manage xobj
+                            manage lambdaNesting xobj
                             return $ do okBody <- visitedBody
                                         okBindings <- fmap (concatMap (\(n,x) -> [n, x])) (sequence visitedBindings)
                                         return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) newInfo t)
@@ -665,8 +664,8 @@ manageMemory typeEnv globalEnv root =
                                                         then return (Right ())
                                                         else return (Left (UsingUnownedValue variable))
 
-                        visitedValue <- visit value
-                        unmanage value -- The assigned value can't be used anymore
+                        visitedValue <- visit lambdaNesting value
+                        unmanage lambdaNesting value -- The assigned value can't be used anymore
                         MemState managed deps <- get
                         -- Delete the value previously stored in the variable, if it's still alive
                         let deleters = case createDeleter okCorrectVariable of
@@ -689,7 +688,7 @@ manageMemory typeEnv globalEnv root =
 
                         case okMode of
                           Symbol -> error "Should only be be a global/local lookup symbol."
-                          LookupLocal _ -> manage okCorrectVariable
+                          LookupLocal _ -> manage lambdaNesting okCorrectVariable
                           LookupGlobal _ -> return ()
 
                         return $ do okValue <- visitedValue
@@ -697,20 +696,20 @@ manageMemory typeEnv globalEnv root =
                                     return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
 
             [addressExpr@(XObj Address _ _), value] ->
-              do visitedValue <- visit value
+              do visitedValue <- visit lambdaNesting value
                  return $ do okValue <- visitedValue
                              return (XObj (Lst [addressExpr, okValue]) i t)
 
             [theExpr@(XObj The _ _), typeXObj, value] ->
-              do visitedValue <- visit value
-                 result <- transferOwnership value xobj
+              do visitedValue <- visit lambdaNesting value
+                 result <- transferOwnership lambdaNesting value xobj
                  return $ case result of
                             Left e -> Left e
                             Right _ -> do okValue <- visitedValue
                                           return (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
             [refExpr@(XObj Ref _ _), value] ->
-              do visitedValue <- visit value
+              do visitedValue <- visit lambdaNesting value
                  case visitedValue of
                    Left e -> return (Left e)
                    Right visitedValue ->
@@ -720,8 +719,8 @@ manageMemory typeEnv globalEnv root =
                           Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
 
             doExpr@(XObj Do _ _) : expressions ->
-              do visitedExpressions <- mapM visit expressions
-                 result <- transferOwnership (last expressions) xobj
+              do visitedExpressions <- mapM (visit lambdaNesting) expressions
+                 result <- transferOwnership lambdaNesting (last expressions) xobj
                  return $ case result of
                             Left e -> Left e
                             Right _ -> do okExpressions <- sequence visitedExpressions
@@ -729,14 +728,14 @@ manageMemory typeEnv globalEnv root =
 
             [whileExpr@(XObj While _ _), expr, body] ->
               do MemState preDeleters _ <- get
-                 visitedExpr <- visit expr
+                 visitedExpr <- visit lambdaNesting expr
                  MemState afterExprDeleters _ <- get
-                 visitedBody <- visit body
-                 manage body
+                 visitedBody <- visit lambdaNesting body
+                 manage lambdaNesting body
                  MemState postDeleters deps <- get
                  -- Visit an extra time to simulate repeated use
-                 visitedExpr2 <- visit expr
-                 visitedBody2 <- visit body
+                 visitedExpr2 <- visit lambdaNesting expr
+                 visitedBody2 <- visit lambdaNesting body
                  let diff = postDeleters \\ preDeleters
                  put (MemState (postDeleters \\ diff) deps) -- Same as just pre deleters, right?!
                  return $ do okExpr <- visitedExpr
@@ -751,19 +750,19 @@ manageMemory typeEnv globalEnv root =
                              return (XObj (Lst [whileExpr, newExpr, okBody]) newInfo t)
 
             [ifExpr@(XObj If _ _), expr, ifTrue, ifFalse] ->
-              do visitedExpr <- visit expr
+              do visitedExpr <- visit lambdaNesting expr
                  MemState preDeleters deps <- get
 
-                 let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit ifTrue;
-                                                                      result <- transferOwnership ifTrue xobj;
+                 let (visitedTrue,  stillAliveTrue)  = runState (do { v <- visit lambdaNesting ifTrue;
+                                                                      result <- transferOwnership lambdaNesting ifTrue xobj;
                                                                       return $ case result of
                                                                                  Left e -> error (show e) -- Left e
                                                                                  Right () -> v
                                                                     })
                                                        (MemState preDeleters deps)
 
-                     (visitedFalse, stillAliveFalse) = runState (do { v <- visit ifFalse;
-                                                                      result <- transferOwnership ifFalse xobj;
+                     (visitedFalse, stillAliveFalse) = runState (do { v <- visit lambdaNesting ifFalse;
+                                                                      result <- transferOwnership  lambdaNesting ifFalse xobj;
                                                                       return $ case result of
                                                                                  Left e -> error (show e) -- Left e
                                                                                  Right () -> v
@@ -802,43 +801,43 @@ manageMemory typeEnv globalEnv root =
                                        )
 
                  put (MemState stillAliveAfter deps)
-                 manage xobj
+                 manage lambdaNesting xobj
 
                  return $ do okExpr  <- visitedExpr
                              okTrue  <- visitedTrue
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
             f : args ->
-              do visitedF <- visit f
-                 visitedArgs <- sequence <$> mapM visitArg args
-                 manage xobj
+              do visitedF <- visit lambdaNesting f
+                 visitedArgs <- sequence <$> mapM (visitArg lambdaNesting) args
+                 manage lambdaNesting xobj
                  return $ do okF <- visitedF
                              okArgs <- visitedArgs
                              Right (XObj (Lst (okF : okArgs)) i t)
 
             [] -> return (Right xobj)
-        visitList _ = error "Must visit list."
+        visitList _ _ = error "Must visit list."
 
-        visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
-        visitLetBinding (name, expr) =
-          do visitedExpr <- visit expr
-             result <- transferOwnership expr name
+        visitLetBinding :: Int -> (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
+        visitLetBinding lambdaNesting (name, expr) =
+          do visitedExpr <- visit lambdaNesting expr
+             result <- transferOwnership lambdaNesting expr name
              return $ case result of
                         Left e -> Left e
                         Right _ -> do okExpr <- visitedExpr
                                       return (name, okExpr)
 
-        visitArg :: XObj -> State MemState (Either TypeError XObj)
-        visitArg xobj@(XObj _ _ (Just t)) =
+        visitArg :: Int -> XObj -> State MemState (Either TypeError XObj)
+        visitArg lambdaNesting xobj@(XObj _ _ (Just t)) =
           if isManaged typeEnv t
-          then do visitedXObj <- visit xobj
-                  result <- unmanage xobj
+          then do visitedXObj <- visit lambdaNesting xobj
+                  result <- unmanage lambdaNesting xobj
                   case result of
                     Left e  -> return (Left e)
                     Right _ -> return visitedXObj
-          else visit xobj
-        visitArg xobj@XObj{} =
-          visit xobj
+          else visit lambdaNesting xobj
+        visitArg lambdaNesting xobj@XObj{} =
+          visit lambdaNesting xobj
 
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
@@ -852,15 +851,17 @@ manageMemory typeEnv globalEnv root =
                           else Nothing
             Nothing -> error ("No type, can't manage " ++ show xobj)
 
-        manage :: XObj -> State MemState ()
-        manage xobj =
-          case createDeleter xobj of
-            Just deleter -> do MemState deleters deps <- get
-                               let newDeleters = Set.insert deleter deleters
-                                   Just t = ty xobj
-                                   newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
-                               put (MemState newDeleters newDeps)
-            Nothing -> return ()
+        manage :: Int -> XObj -> State MemState ()
+        manage lambdaNesting xobj =
+          if isSymbolThatCaptures xobj && lambdaNesting > 0 -- When visiting lambdas in the body of a function, don't manage symbols that capture.
+          then return ()
+          else case createDeleter xobj of
+                 Just deleter -> do MemState deleters deps <- get
+                                    let newDeleters = Set.insert deleter deleters
+                                        Just t = ty xobj
+                                        newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+                                    put (MemState newDeleters newDeps)
+                 Nothing -> return ()
 
         deletersMatchingXObj :: XObj -> Set.Set Deleter -> [Deleter]
         deletersMatchingXObj xobj deleters =
@@ -870,11 +871,18 @@ manageMemory typeEnv globalEnv root =
                                                FakeDeleter   { deleterVariable = dv } -> dv == var)
                                       deleters
 
-        unmanage :: XObj -> State MemState (Either TypeError ())
-        unmanage xobj =
+        isSymbolThatCaptures :: XObj -> Bool
+        isSymbolThatCaptures xobj =
+          case xobj of
+            XObj (Sym _ (LookupLocal Capture)) _ _ -> True
+            _ -> False
+
+        unmanage :: Int -> XObj -> State MemState (Either TypeError ())
+        unmanage lambdaNesting xobj =
           let Just t = ty xobj
               Just i = info xobj
-          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
+              capturesInRootScope = isSymbolThatCaptures xobj && lambdaNesting == 0 -- Nesting will be 0 in the lifted lambda function.
+          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t) && not capturesInRootScope
              then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] -> return (Left (UsingUnownedValue xobj))
@@ -900,12 +908,12 @@ manageMemory typeEnv globalEnv root =
                        _ -> error "Too many variables with the same name in set."
              else return (return ())
 
-        transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())
-        transferOwnership from to =
-          do result <- unmanage from
+        transferOwnership :: Int -> XObj -> XObj -> State MemState (Either TypeError ())
+        transferOwnership lambdaNesting from to =
+          do result <- unmanage lambdaNesting from
              case result of
                Left e -> return (Left e)
-               Right _ -> do manage to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
+               Right _ -> do manage lambdaNesting to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
                              return (Right ())
 
         varOfXObj :: XObj -> String

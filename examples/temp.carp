@@ -68,6 +68,7 @@
 
 (defn-do main []
   (Debug.log-memory-balance! true)
-  (let [s @"hello"
-        f (fn [] s)]
-    (println* (f))))
+  (Debug.assert-balanced
+   (let [s @"hello"
+         f (fn [] s)]
+     (println* (f)))))
