@@ -145,7 +145,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
           in if isTypeGeneric t'
              then error ("Can't emit symbol of generic type: " ++
                          show path ++ " : " ++ show t' ++ " at " ++ prettyInfoFromXObj xobj)
-             else if isFunctionType t' && not (isLookupLocal lookupMode)
+             else if isFunctionType t' && not (isLookupLocal lookupMode) && not (isGlobalVariableLookup lookupMode)
                   then do let var = freshVar i
                           appendToSrc (addIndent indent ++ "Lambda " ++ var ++ " = { .callback = " ++ pathToC path ++ ", .env = NULL, .delete = NULL, .copy = NULL }; //" ++ show sym ++ "\n")
                           return var
@@ -190,9 +190,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
                      lambdaEnvType = StructTy lambdaEnvTypeName []
                      lambdaEnvName = freshVar i ++ "_env"
-                 appendToSrc (addIndent indent ++ "// This lambda captures " ++
-                              show (length capturedVars) ++ " variables: " ++
-                              joinWithComma (map getName capturedVars) ++ "\n")
+                 -- appendToSrc (addIndent indent ++ "// This lambda captures " ++
+                 --              show (length capturedVars) ++ " variables: " ++
+                 --              joinWithComma (map getName capturedVars) ++ "\n")
                  when needEnv $
                    do appendToSrc (addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName ++
                                    " = CARP_MALLOC(sizeof(" ++ tyToC lambdaEnvType ++ "));\n")
@@ -200,12 +200,12 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                appendToSrc (addIndent indent ++ lambdaEnvName ++ "->" ++
                                             pathToC path ++ " = " ++ pathToC path ++ ";\n"))
                         capturedVars
-                      appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
-                      appendToSrc (addIndent indent ++ "  .callback = " ++ callbackMangled ++ ",\n")
-                      appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL")  ++ ",\n")
-                      appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
-                      appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
-                      appendToSrc (addIndent indent ++ "};\n")
+                 appendToSrc (addIndent indent ++ "Lambda " ++ retVar ++ " = {\n")
+                 appendToSrc (addIndent indent ++ "  .callback = " ++ callbackMangled ++ ",\n")
+                 appendToSrc (addIndent indent ++ "  .env = " ++ (if needEnv then lambdaEnvName else "NULL")  ++ ",\n")
+                 appendToSrc (addIndent indent ++ "  .delete = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_delete" else "NULL")  ++ ",\n")
+                 appendToSrc (addIndent indent ++ "  .copy = " ++ (if needEnv then "" ++ lambdaEnvTypeName ++ "_copy" else "NULL")  ++ "\n")
+                 appendToSrc (addIndent indent ++ "};\n")
                  return retVar
 
             -- Def
@@ -439,8 +439,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callFunction)
                            return varName
 
-            -- Function application (global symbols)
-            func@(XObj (Sym path (LookupGlobal mode)) _ _) : args ->
+            -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
+            func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
               do argListAsC <- (createArgList indent (mode == ExternalCode)) args
                  let Just (FuncTy _ retTy) = ty func
                      funcToCall = pathToC path
@@ -451,11 +451,11 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                            appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
                            return varName
 
-            -- Function application (local symbols)
+            -- Function application (on local symbols and global defs containing lambdas)
             func : args ->
               do funcToCall <- visit indent func
                  let unwrapLambdas = case func of
-                                       XObj (Sym _ (LookupGlobal ExternalCode)) _ _ -> True
+                                       XObj (Sym _ (LookupGlobal ExternalCode _)) _ _ -> True
                                        _ -> False
                  argListAsC <- createArgList indent unwrapLambdas args
                  let funcTy = case ty func of
@@ -593,7 +593,7 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       in  defnToDeclaration path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
-      in "" ++ tyToC t' ++ " " ++ pathToC path ++ ";\n"
+      in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
     XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
       deftypeToDeclaration t path rest
     XObj (Deftemplate _) _ _ : _ ->

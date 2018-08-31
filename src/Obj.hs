@@ -15,6 +15,11 @@ data GlobalMode = CarpLand
                 | ExternalCode
                 deriving (Eq, Show, Ord)
 
+-- | Will the lookup look at a global variable
+data DefinitionMode = AVariable
+                    | AFunction
+                    deriving (Eq, Show, Ord)
+
 -- | For local lookups, does the variable live in the current function or is it captured from outside it's body?
 data CaptureMode = NoCapture
                  | Capture
@@ -25,12 +30,12 @@ data CaptureMode = NoCapture
 data SymbolMode = Symbol
                 | LookupLocal CaptureMode
                 | LookupRecursive
-                | LookupGlobal GlobalMode
+                | LookupGlobal GlobalMode DefinitionMode
                 | LookupGlobalOverride String -- Used to emit another name than the one used in the Carp program.
                 deriving (Eq, Show, Ord)
 
 isLookupGlobal :: SymbolMode -> Bool
-isLookupGlobal (LookupGlobal _) = True
+isLookupGlobal (LookupGlobal _ _) = True
 isLookupGlobal _ = False
 
 isLookupLocal :: SymbolMode -> Bool
@@ -698,3 +703,12 @@ unwrapBoolXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromX
 unwrapSymPathXObj :: XObj -> Either String SymPath
 unwrapSymPathXObj (XObj (Sym p _) _ _) = Right p
 unwrapSymPathXObj x = Left ("The value '" ++ pretty x ++ "' at " ++ prettyInfoFromXObj x ++ " is not a Symbol.")
+
+-- | Given a form, what definition mode will it generate?
+definitionMode :: XObj -> DefinitionMode
+definitionMode (XObj (Lst (XObj Def _ _ : _)) _ _)  = AVariable
+definitionMode _ = AFunction
+
+isGlobalVariableLookup :: SymbolMode -> Bool
+isGlobalVariableLookup (LookupGlobal _ AVariable) = True
+isGlobalVariableLookup _ = False

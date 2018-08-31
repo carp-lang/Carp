@@ -118,7 +118,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
           [(e, Binder _ foundOne)] ->
             case envMode e of
               ExternalEnv -> XObj (Sym (getPath foundOne)
-                                   (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand))) i t
+                                   (LookupGlobal (if isExternalFunction foundOne then ExternalCode else CarpLand) (definitionMode foundOne))) i t
               RecursionEnv -> XObj (Sym (getPath foundOne) LookupRecursive) i t
               _ -> --trace ("\nLOCAL variable " ++ show (getPath foundOne) ++ ":\n" ++ prettyEnvironmentChain e) $
                    XObj (Sym (getPath foundOne) (LookupLocal (captureOrNot e))) i t
@@ -134,7 +134,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                     XObj (MultiSym name (map (getPath . binderXObj . snd) multiple)) i t
                   pathWithQualifiers ->
                     -- The symbol IS qualified but can't be found, should produce an error later during compilation.
-                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers (LookupGlobal CarpLand)) i t)
+                    trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers (LookupGlobal CarpLand AFunction)) i t)
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t

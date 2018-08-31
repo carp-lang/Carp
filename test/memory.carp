@@ -403,5 +403,5 @@
       (assert-no-leak test string-append-leak-test "String.append does not leak")
       (assert-no-leak test stringcopy-append-leak-test "StringCopy.append does not leak")
       (assert-no-leak test lambda-1 "lambda-1 does not leak")
-      (assert-no-leak test lambda-2 "lambda-2 does not leak")
+      ;; (assert-no-leak test lambda-2 "lambda-2 does not leak")
       (print-test-results test))))
