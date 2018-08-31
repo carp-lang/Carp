@@ -27,6 +27,7 @@ true    ;; Bool
 \#"hello" ;; &Pattern
 \e      ;; Char
 [1 2 3] ;; (Array Int)
+{1 1.0 2 2.0} ;; (Map Int Double)
 ```
 
 ### Type Literals
@@ -41,6 +42,7 @@ String
 Pattern
 Char
 (Array t)
+(Map <key-type> <value-type>)
 (Fn [<arg-type1> <arg-type2> ...] <return-type>) ;; Function type
 ```
 
