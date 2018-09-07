@@ -103,8 +103,10 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
 
     doesNotBelongToAnInterface :: Bool -> Env -> XObj
     doesNotBelongToAnInterface finalRecurse theEnv =
-      let results = multiLookupQualified path theEnv in
-      case results of
+      let results = multiLookupQualified path theEnv
+          results' = removeThoseShadowedByRecursiveSymbol results
+      in
+      case results' of
           [] -> case envParent theEnv of
                   Just p ->
                     doesNotBelongToAnInterface False p
@@ -127,7 +129,8 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
             -- There is at least one local binding, use the path of that one:
               (e, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal (captureOrNot e))) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
-              _ -> --(trace $ "Turned " ++ name ++ " into multisym: " ++ joinWithComma (map (show .getPath . binderXObj . snd) multiple))
+              [] ->
+                --(trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
                 case path of
                   (SymPath [] name) ->
                      -- Create a MultiSym!
@@ -135,6 +138,17 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                   pathWithQualifiers ->
                     -- The symbol IS qualified but can't be found, should produce an error later during compilation.
                     trace ("PROBLEMATIC: " ++ show path) (XObj (Sym pathWithQualifiers (LookupGlobal CarpLand AFunction)) i t)
+
+    removeThoseShadowedByRecursiveSymbol :: [(Env, Binder)] -> [(Env, Binder)]
+    removeThoseShadowedByRecursiveSymbol allBinders = visit allBinders allBinders
+      where visit [] result = result
+            visit (b:bs) result =
+              visit bs $ case b of
+                           (Env { envMode = RecursionEnv }, Binder _ xobj) ->
+                             remove (\(_, Binder _ x) -> xobj /= x && getName xobj == getName x) result
+                           _ -> result
+
+
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t

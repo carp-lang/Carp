@@ -65,20 +65,33 @@
 
 
 ;; Problems with recursive calls again, fails to qualify at call site
+;; (use Float)
+;; (use Double)
 
-(use Float)
-(use Double)
+;; (defmodule A
+;;   (defn flurb [x y]
+;;     (if (< x y)
+;;       x
+;;       (do
+;;         (println* x)
+;;         (flurb (- x y) y)))))
 
-(defmodule A
-  (defn flurb [x y]
-    (if (< x y)
-      x
-      (do
-        (println* x)
-        (flurb (- x y) y)))))
+;; (defn blah []
+;;   (A.flurb 5.5 1.0))
 
-(defn blah []
-  (A.flurb 5.5 1.0))
+;; (defn main []
+;;   (println* (blah)))
+
+
+
+
+;; Even more recursive problems, this time if the file containing this is loaded twice:
+(defn recursive [x]
+  (if (<= x 0)
+    x
+    (do
+      (println* x)
+      (recursive (- x 1)))))
 
 (defn main []
-  (println* (blah)))
+  (recursive 10))
