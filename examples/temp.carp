@@ -1,4 +1,4 @@
-;; (Debug.sanitize-addresses)
+(Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
 
 ;; (defn main []
@@ -75,9 +75,31 @@
 ;;   (Debug.assert-balanced
 ;;    (blah-1)))
 
-(def glob 100)
 
-(def f (fn [x] (+ glob x)))
+
+
+(defn g []
+  (let [s @"X"
+        f (fn [] @&s)]
+    f))
+
+(defn lambda-2 []
+  (let [xs [10 20 30]
+        f (fn [ys] (Array.concat &[@&xs ys]))]
+    (assert (= &[10 20 30 40 50] &(f [40 50])))))
 
 (defn main []
-  (println* (f 23)))
+  (lambda-2))
+
+
+;; (use Array)
+;; (defn lambda-3 []
+;;   (let-do [stuff [100 200 300]
+;;         f (fn [n] (copy (nth stuff n)))]
+;;     (assert (= 100 (f 0)))
+;;     (assert (= 200 (f 1)))
+;;     (assert (= 300 (f 2)))
+;;     f))
+
+;; (defn main []
+;;   (lambda-3))
