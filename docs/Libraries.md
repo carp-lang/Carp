@@ -49,6 +49,7 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 
 ### Collections
 * [Array ⦁](http://carp-lang.github.io/Carp/core/Array.html)
+* [Map ⦁](http://carp-lang.github.io/Carp/core/Map.html)
 
 ### System
 * [IO ⦁](http://carp-lang.github.io/Carp/core/IO.html)
