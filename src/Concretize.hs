@@ -868,10 +868,12 @@ manageMemory typeEnv globalEnv root =
         unmanage xobj =
           let Just t = ty xobj
               Just i = info xobj
-          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj)
+          in if isManaged typeEnv t && not (isGlobalFunc xobj) && not (isExternalType typeEnv t)
              then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
-                       [] -> return (Left (UsingUnownedValue xobj))
+                       [] -> if isSymbolThatCaptures xobj
+                             then return (Left (UsingCapturedValue xobj))
+                             else return (Left (UsingUnownedValue xobj))
                        [one] -> let newDeleters = Set.delete one deleters
                                 in  do put (MemState newDeleters deps)
                                        return (Right ())
@@ -886,7 +888,7 @@ manageMemory typeEnv globalEnv root =
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
                                    _ -> False
-          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t)
+          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj)
              then do MemState deleters deps <- get
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
