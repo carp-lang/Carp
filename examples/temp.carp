@@ -75,21 +75,18 @@
 ;;   (Debug.assert-balanced
 ;;    (blah-1)))
 
+(use Array)
 
+(defn lambda-3 []
+  (let-do [stuff [100 200 300]
+        f (fn [n] (copy (nth &stuff n)))]
+    (assert (= 100 (f 0)))
+    (assert (= 200 (f 1)))
+    (assert (= 300 (f 2)))))
 
-
-;; (defn g []
-;;   (let [s @"X"
-;;         f (fn [] @&s)]
-;;     f))
-
-;; (defn lambda-2 []
-;;   (let [xs [10 20 30]
-;;         f (fn [ys] (Array.concat &[@&xs ys]))]
-;;     (assert (= &[10 20 30 40 50] &(f [40 50])))))
-
-;; (defn main []
-;;   (lambda-2))
+(defn main []
+  (Debug.assert-balanced
+   (lambda-3)))
 
 
 ;; (use Array)
@@ -103,19 +100,3 @@
 
 ;; (defn main []
 ;;   (lambda-3))
-
-(defn lambda-1 []
-  (let [s @"X"
-        f (fn [] @&s)] ;; each call needs to produce a new copy of the string
-    (do
-      ;;(assert (= @"X" (f)))
-      ;;(assert (= @"X" (f)))
-      ;;(assert (= @"X" (f)))
-      ()
-      )))
-
-(defn main []
-  (do (Debug.log-memory-balance! true)
-      (lambda-1)
-      (println* (Debug.memory-balance))
-      ))
