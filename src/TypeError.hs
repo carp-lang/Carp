@@ -32,6 +32,7 @@ data TypeError = SymbolMissingType XObj Env
                | LetCantReturnRefTy XObj Ty
                | GettingReferenceToUnownedValue XObj
                | UsingUnownedValue XObj
+               | UsingCapturedValue XObj
                | ArraysCannotContainRefs XObj
                | MainCanOnlyReturnUnitOrInt XObj Ty
                | MainCannotHaveArguments XObj Int
@@ -108,6 +109,8 @@ instance Show TypeError where
     prettyInfoFromXObj xobj ++ "\n" ++ show xobj
   show (UsingUnownedValue xobj) =
     "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (UsingCapturedValue xobj) =
+    "Using a captured value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (ArraysCannotContainRefs xobj) =
     "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (MainCanOnlyReturnUnitOrInt xobj t) =
@@ -199,6 +202,8 @@ machineReadableErrorStrings err =
       [machineReadableInfoFromXObj xobj ++ " Referencing a given-away value '" ++ pretty xobj ++ "'."]
     (UsingUnownedValue xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
+    (UsingCapturedValue xobj) ->
+      [machineReadableInfoFromXObj xobj ++ " Using a captured value '" ++ pretty xobj ++ "'."]
     (ArraysCannotContainRefs xobj) ->
       [machineReadableInfoFromXObj xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
 
