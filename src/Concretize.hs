@@ -120,8 +120,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                 XObj (Arr structMemberPairs) Nothing Nothing :
                                                 [])) i (Just TypeTy)
 
-                 deleteFnTy = typesDeleterFunctionType environmentStructTy
-                 deleteFnTemplate = concreteDelete typeEnv env (memberXObjsToPairs structMemberPairs)
+                 deleteFnTy = typesDeleterFunctionType (PointerTy environmentStructTy)
+                 deleteFnTemplate = concreteDeleteTakePtr typeEnv env (memberXObjsToPairs structMemberPairs)
                  (deleteFn, deleterDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_delete")) deleteFnTy deleteFnTemplate
 
                  copyFnTy = typesCopyFunctionType environmentStructTy
@@ -951,14 +951,28 @@ concreteDelete typeEnv env members =
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
                     (filter (isManaged typeEnv) (map snd members)))
 
+-- | The template for the 'delete' function of a concrete deftype BUT it takes a pointer.
+concreteDeleteTakePtr :: TypeEnv -> Env -> [(String, Ty)] -> Template
+concreteDeleteTakePtr typeEnv env members =
+  Template
+   (FuncTy [(PointerTy (VarTy "p"))] UnitTy)
+   (const (toTemplate "void $NAME($p* p)"))
+   (const (toTemplate $ unlines [ "$DECL {"
+                                , joinWith "\n" (map (memberDeletionGeneral "->" typeEnv env) members)
+                                , "}"]))
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
+                    (filter (isManaged typeEnv) (map snd members)))
+
 -- | Generate the C code for deleting a single member of the deftype.
 -- | TODO: Should return an Either since this can fail!
-memberDeletion :: TypeEnv -> Env -> (String, Ty) -> String
-memberDeletion typeEnv env (memberName, memberType) =
+memberDeletionGeneral :: String -> TypeEnv -> Env -> (String, Ty) -> String
+memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
-    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p." ++ memberName ++ ");"
+    FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+
+memberDeletion = memberDeletionGeneral "."
 
 -- | The template for the 'copy' function of a concrete deftype.
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template

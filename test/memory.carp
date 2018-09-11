@@ -340,7 +340,7 @@
 
 (defn lambda-2 []
   (let [xs [10 20 30]
-        f (fn [ys] (Array.concat &[xs ys]))]
+        f (fn [ys] (Array.concat &[@&xs ys]))]
     (assert (= &[10 20 30 40 50] &(f [40 50])))))
 
 ;; (defn lambda-3 []

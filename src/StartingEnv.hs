@@ -162,6 +162,7 @@ generateTemplateFuncDelete funcTy = defineTemplate
   (toTemplate $ unlines ["$DECL {"
                         ,"  if(f.delete) {"
                         ,"      ((void(*)(void*))f.delete)(f.env);"
+                        ,"      CARP_FREE(f.env);"
                         ,"  }"
                         ,"}"])
   (const [])
