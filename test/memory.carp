@@ -332,8 +332,11 @@
 
 (defn lambda-1 []
   (let [s @"X"
-        f (fn [] s)]
-    (assert (= @"X" (f)))))
+        f (fn [] @&s)] ;; each call needs to produce a new copy of the string
+    (do
+      (assert (= @"X" (f)))
+      (assert (= @"X" (f)))
+      (assert (= @"X" (f))))))
 
 (defn lambda-2 []
   (let [xs [10 20 30]
