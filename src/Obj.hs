@@ -247,7 +247,7 @@ pretty = visit 0
             Str str -> show str
             Pattern str -> '#' : show str
             Chr c -> '\\' : c : ""
-            Sym path mode -> show path ++ " <" ++ show mode ++ ">"
+            Sym path mode -> show path -- ++ " <" ++ show mode ++ ">"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name ++ " <interface>"
             Bol b -> if b then "true" else "false"
