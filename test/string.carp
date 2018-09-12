@@ -287,6 +287,5 @@
                   5
                   (index-of-from "abcabc" \c 2)
                   "index-of-from works correctly IV")
-    (print-test-results test)
   )
 )

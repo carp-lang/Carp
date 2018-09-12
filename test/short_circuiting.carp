@@ -67,5 +67,4 @@
                   3
                   (vararg-or)
                   "'or*' works")
-    (print-test-results test)
     ))

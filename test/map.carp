@@ -100,5 +100,4 @@
                   "{ @\"hi\" @\"bye\" }"
                   &(str &(Set.from-array &[@"hi" @"bye"]))
                   "stringification works"
-    )
-    (print-test-results test)))
+    )))

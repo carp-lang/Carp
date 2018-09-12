@@ -55,5 +55,4 @@
     (assert-equal test
                   2l
                   (neg -2l)
-                  "neg works as expected II")
-    (print-test-results test)))
+                  "neg works as expected II")))

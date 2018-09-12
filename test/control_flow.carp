@@ -72,5 +72,4 @@
     (assert-equal test
                   5
                   (unless-test-false)
-                  "unless works as expected when false")
-    (print-test-results test)))
+                  "unless works as expected when false")))

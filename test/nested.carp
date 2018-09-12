@@ -32,5 +32,4 @@
     (assert-equal test
                   false
                   (f)
-                  "interfaces get resolved correctly")
-    (print-test-results test)))
+                  "interfaces get resolved correctly")))

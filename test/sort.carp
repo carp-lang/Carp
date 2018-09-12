@@ -96,6 +96,5 @@
                           &exp
                           &res
                           "Array.sort works with chars"))
-
-    (print-test-results test)))
+    ))
 

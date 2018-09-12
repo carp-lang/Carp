@@ -98,5 +98,4 @@
     (assert-equal test
                   2.0
                   @(Summary.median &(summary &[1.0 2.0 3.0]))
-                  "summary works as expected")
-    (print-test-results test)))
+                  "summary works as expected")))

@@ -108,5 +108,4 @@
                   0
                   (to-bytes 0.0f)
                   "to-bytes works as expected II"
-    )
-    (print-test-results test)))
+    )))
