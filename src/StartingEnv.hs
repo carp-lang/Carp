@@ -52,7 +52,7 @@ pointerModule = Env { envBindings = bindings
                     , envUseModules = []
                     , envMode = ExternalEnv
                     , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templatePointerCopy, templatePointerEqual ]
+  where bindings = Map.fromList [ templatePointerCopy, templatePointerEqual, templatePointerToRef ]
 
 -- | A template function for copying (= deref:ing) any pointer.
 templatePointerCopy :: (String, Binder)
@@ -74,6 +74,15 @@ templatePointerEqual = defineTemplate
                         ,"}"])
   (const [])
 
+-- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
+templatePointerToRef = defineTemplate
+  (SymPath ["Pointer"] "to-ref")
+  (FuncTy [(PointerTy (VarTy "p"))] (RefTy (VarTy "p")))
+  (toTemplate "$p* $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p;"
+                        ,"}"])
+  (const [])
 
 -- | The System module contains functions for various OS related things like timing and process control.
 systemModule :: Env
