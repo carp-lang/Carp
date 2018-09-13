@@ -134,6 +134,34 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
 commandProjectConfig [faultyKey, _] =
   do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 
+-- | Command for changing various project settings.
+commandProjectGetConfig :: CommandCallback
+commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
+  do ctx <- get
+     let proj = contextProj ctx
+         env = contextGlobalEnv ctx
+     case getVal proj of
+      Right val -> return $ Right $ XObj (Str val) (Just dummyInfo) (Just StringTy)
+      Left err -> return $ Left err
+  where getVal :: Project -> Either EvalError String
+        getVal proj = case key of
+          "cflag" -> Right $ show $ projectCFlags proj
+          "libflag" -> Right $ show $ projectLibFlags proj
+          "prompt" -> Right $ projectPrompt proj
+          "search-path" -> Right $ show $ projectCarpSearchPaths proj
+          "print-ast" -> Right $ show $ projectPrintTypedAST proj
+          "echo-c" -> Right $ show $ projectEchoC proj
+          "echo-compiler-cmd" -> Right $ show $ projectEchoCompilationCommand proj
+          "compiler" -> Right $ projectCompiler proj
+          "title" -> Right $ show $ projectTitle proj
+          "output-directory" -> Right $ projectOutDir proj
+          "docs-directory" -> Right $ projectDocsDir proj
+          _ ->
+            Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++
+                               key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
+commandProjectGetConfig [faultyKey] =
+  do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
+
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
 commandQuit args =
