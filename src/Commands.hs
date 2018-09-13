@@ -141,21 +141,20 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
      let proj = contextProj ctx
          env = contextGlobalEnv ctx
      case getVal proj of
-      Right val -> return $ Right $ XObj (Str val) (Just dummyInfo) (Just StringTy)
+      Right val -> return $ Right $ XObj val (Just dummyInfo) (Just StringTy)
       Left err -> return $ Left err
-  where getVal :: Project -> Either EvalError String
-        getVal proj = case key of
-          "cflag" -> Right $ show $ projectCFlags proj
-          "libflag" -> Right $ show $ projectLibFlags proj
-          "prompt" -> Right $ projectPrompt proj
-          "search-path" -> Right $ show $ projectCarpSearchPaths proj
-          "print-ast" -> Right $ show $ projectPrintTypedAST proj
-          "echo-c" -> Right $ show $ projectEchoC proj
-          "echo-compiler-cmd" -> Right $ show $ projectEchoCompilationCommand proj
-          "compiler" -> Right $ projectCompiler proj
-          "title" -> Right $ show $ projectTitle proj
-          "output-directory" -> Right $ projectOutDir proj
-          "docs-directory" -> Right $ projectDocsDir proj
+  where getVal proj = case key of
+          "cflag" -> Right $ Str $ show $ projectCFlags proj
+          "libflag" -> Right $ Str $ show $ projectLibFlags proj
+          "prompt" -> Right $ Str $ projectPrompt proj
+          "search-path" -> Right $ Str $ show $ projectCarpSearchPaths proj
+          "print-ast" -> Right $ Bol $ projectPrintTypedAST proj
+          "echo-c" -> Right $ Bol $ projectEchoC proj
+          "echo-compiler-cmd" -> Right $ Bol $ projectEchoCompilationCommand proj
+          "compiler" -> Right $ Str $ projectCompiler proj
+          "title" -> Right $ Str $ projectTitle proj
+          "output-directory" -> Right $ Str $ projectOutDir proj
+          "docs-directory" -> Right $ Str $ projectDocsDir proj
           _ ->
             Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++
                                key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
