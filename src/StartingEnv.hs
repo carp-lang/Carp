@@ -266,6 +266,7 @@ dynamicProjectModule = Env { envBindings = bindings
                            , envMode = ExternalEnv
                            , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
+                                , addCommand "get-config" 1 commandProjectGetConfig
                                 ]
 
 -- | A hack-ish function for converting any enum to an int.
