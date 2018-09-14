@@ -28,6 +28,9 @@
 (defmacro test-> [a b] (> a b))
 (defmacro test-= [a b] (= a b))
 
+(defdynamic gc- [key] (Project.get-config key))
+(defmacro gc [key] (gc- key))
+
 (defn main []
   (with-test test
     (assert-true test
@@ -166,4 +169,12 @@
     (assert-equal test
                   "1 thing 2 things"
                   &(str* 1 " thing " 2 " things")
-                  "str* macro works as expected")))
+                  "str* macro works as expected")
+    (assert-equal test
+                  false
+                  (gc "echo-c")
+                  "Project.get-config works as expected I")
+    (assert-equal test
+                  "Untitled"
+                  (gc "title")
+                  "Project.get-config works as expected II")))
