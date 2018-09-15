@@ -165,7 +165,5 @@
                           &exp
                           &arr
                           "swap 4 works"))
-
-
-    (print-test-results test)))
+    ))
 

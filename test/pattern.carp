@@ -76,5 +76,4 @@
     (assert-equal test
                   "sub sub sub"
                   &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" -1)
-                  "substitute works as expected if all should be replaces")
-    (print-test-results test)))
+                  "substitute works as expected if all should be replaces")))

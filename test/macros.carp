@@ -177,5 +177,4 @@
     (assert-equal test
                   "Untitled"
                   (gc "title")
-                  "Project.get-config works as expected II")
-    (print-test-results test)))
+                  "Project.get-config works as expected II")))

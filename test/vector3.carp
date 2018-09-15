@@ -67,5 +67,4 @@
                   &(init 2.5 5.0 0.75)
                   &(lerp &(init 0.0 0.0 0.5) &(init 5.0 10.0 2.0) 0.5)
                   "lerp works")
-    (print-test-results test)
 ))

@@ -104,9 +104,7 @@
         (IO.color "red")
         (IO.print "\tFailed: ")
         (IO.println &(Int.str failed))
-        (IO.color "reset")
-        (State.copy state))))
-)
+        (IO.color "reset")))))
 
 (defdynamic with-test-internal [name forms]
   (if (= (length forms) 1)
@@ -119,7 +117,10 @@
   (list 'let [name '&(Test.State.init 0 0)]
     (cons-last
       (list 'Int.copy (list 'Test.State.failed name))
-      (cons 'do (with-test-internal name forms)))))
+      (cons-last
+        (list 'Test.print-test-results name)
+        (cons 'do (with-test-internal name forms))))
+    ))
 
 (defmacro deftest [name state-name :rest forms]
   (list 'defn name []

@@ -37,6 +37,5 @@
                   9
                   (meaning &\9)
                   "meaning works as expected 9")
-    (print-test-results test)
   )
 )

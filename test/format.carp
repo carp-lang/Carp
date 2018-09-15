@@ -34,5 +34,4 @@
     (assert-equal test
                   "10 % 12.0 yay"
                   &(fmt "%d %% %.1f %s" 10 12.0 "yay")
-                  "fmt macro works")
-    (print-test-results test)))
+                  "fmt macro works")))

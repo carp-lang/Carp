@@ -93,5 +93,4 @@
     (assert-equal test
                   true
                   (safe-mul 9000000000000000000l 2000000000000000000l &l)
-                  "safe-mul is true with overflow")
-    (print-test-results test)))
+                  "safe-mul is true with overflow")))

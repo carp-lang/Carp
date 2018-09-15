@@ -13,5 +13,4 @@
                0.536041
                (do (Random.seed 33333.0) (Random.random))
                "deterministic randomization with seed works as expected"
-               Double.approx)
-    (print-test-results test)))
+               Double.approx)))
