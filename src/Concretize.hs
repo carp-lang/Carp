@@ -216,22 +216,24 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitMultiSym allowAmbig env xobj@(XObj (MultiSym originalSymbolName paths) i t) =
       let Just actualType = t
           tys = map (typeFromPath env) paths
+          modes = map (modeFromPath env) paths
           tysToPathsDict = zip tys paths
-      in  case filter (matchingSignature actualType) tysToPathsDict of
+          tysPathsModes = zip3 tys paths modes
+      in  case filter (matchingSignature3 actualType) tysPathsModes of
             [] ->
               --if allowAmbiguity
               --then return (Right xobj)
               --else
               return (Left (NoMatchingSignature xobj originalSymbolName actualType tysToPathsDict))
-            [(theType, singlePath)] -> let Just t' = t
-                                           fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
-                                           fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
-                                           Just i' = i
+            [(theType, singlePath, mode)] -> let Just t' = t
+                                                 fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
+                                                 fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
+                                                 Just i' = i
                                        in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
                                                    suffixed = suffixTyVars ("_x" ++ show (infoIdentifier i')) replaced -- Make sure it gets unique type variables. TODO: Is there a better way?
-                                                   normalSymbol = XObj (Sym singlePath (LookupGlobal CarpLand AFunction)) i (Just suffixed)
+                                                   normalSymbol = XObj (Sym singlePath mode) i (Just suffixed)
                                                in visitSymbol allowAmbig env $ --(trace ("Disambiguated " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " to " ++ show singlePath ++ " : " ++ show suffixed ++ ", used to be " ++ show t' ++ ", theType = " ++ show theType ++ ", mappings = " ++ show mappings))
                                                               normalSymbol
                                              Left failure@(UnificationFailure _ _) ->
@@ -311,6 +313,10 @@ collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
 matchingSignature :: Ty -> (Ty, SymPath) -> Bool
 matchingSignature tA (tB, _) = areUnifiable tA tB
 
+-- | Do the signatures match (tuple arity 3 version)?
+matchingSignature3 :: Ty -> (Ty, SymPath, SymbolMode) -> Bool
+matchingSignature3 tA (tB, _, _) = areUnifiable tA tB
+
 -- | Does the type of an XObj require additional concretization of generic types or some typedefs for function types, etc?
 -- | If so, perform the concretization and append the results to the list of dependencies.
 concretizeTypeOfXObj :: TypeEnv -> XObj -> State [XObj] (Either TypeError ())
@@ -384,6 +390,23 @@ typeFromPath env p =
     Just (e, Binder _ found)
       | envIsExternal e -> forceTy found
       | otherwise -> error "Local bindings shouldn't be ambiguous."
+    Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
+
+-- | Get the mode of a symbol at a given path.
+modeFromPath :: Env -> SymPath -> SymbolMode
+modeFromPath env p =
+  case lookupInEnv p env of
+    Just (_, Binder _ (XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _)) ->
+      LookupGlobalOverride overrideWithName
+    Just (_, Binder _ found@(XObj (Lst ((XObj (External _) _ _) : _)) _ _)) ->
+      LookupGlobal ExternalCode (definitionMode found)
+    Just (e, Binder _ found) ->
+      case envMode e of
+        ExternalEnv ->
+          LookupGlobal CarpLand (definitionMode found)
+        RecursionEnv -> LookupRecursive
+        -- TODO: how to find out whether we need to capture or not
+        _ -> LookupLocal Capture
     Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
 
 -- | Given a definition (def, defn, template, external) and
