@@ -8,14 +8,13 @@
 ** 0.3
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
-*** Recursive functions inside modules are broken.
 * Big Language Features
 ** 1.0
 *** Lambdas
 *** Tagged unions (also known as "sum types" or "enums")
 *** Stack allocated Array with an explicit size.
 * Tests to write
-** Tests that make sure all the various type errors are triggered.
+** Tests that make sure all the various type errors are triggered. Requires host specific info to be purged from error messages.
 * Smaller Language Features ("niceties")
 ** 0.4
 *** Prevent usage of 'private' functions from outside their module.
@@ -61,6 +60,7 @@
 ** Threading
 ** Game development libraries with switchable backends
 * Documentation
+** Generate documentation pages for files like Macros.carp that does not put their functions in a module but dump them in global scope
 ** Document all core functions
 ** Write a guide to how the compiler internals work
 ** Improve the Memory.md docs
