@@ -393,6 +393,9 @@ typeFromPath env p =
     Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
 
 -- | Get the mode of a symbol at a given path.
+-- |
+-- | TODO: this duplicates a bunch of functionality from  Qualify.hs, namely
+-- | parts of doesNotBelongToAnInterface.
 modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
   case lookupInEnv p env of
