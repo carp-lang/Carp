@@ -405,8 +405,10 @@ modeFromPath env p =
         ExternalEnv ->
           LookupGlobal CarpLand (definitionMode found)
         RecursionEnv -> LookupRecursive
-        -- TODO: how to find out whether we need to capture or not
-        _ -> LookupLocal Capture
+        _ ->  LookupLocal
+                (if envFunctionNestingLevel e < envFunctionNestingLevel env
+                            then Capture
+                            else NoCapture)
     Nothing -> error ("Couldn't find " ++ show p ++ " in env:\n" ++ prettyEnvironmentChain env)
 
 -- | Given a definition (def, defn, template, external) and
