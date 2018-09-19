@@ -277,7 +277,7 @@
 ;; Allows inclusion of C headers relative to the Carp file in which this macro is called.
 (defmacro relative-include [file]
   (list 'local-include
-        (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'source-path))
+        (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'file))
                                     "/"
                                     file])))
 
