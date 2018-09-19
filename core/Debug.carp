@@ -30,10 +30,11 @@
                 ())))
 
   (doc trace "Print the value of an expression to stdout, then return its value.")
-  (defn trace [x]
-    (do
-      (IO.println &(str &x))
-      x))
+  (defmacro trace [x]
+    (list 'let-do (array 'tmp x)
+      (list 'IO.println (list 'ref (list 'fmt "%s:%d:%d: %s" (file x) (line x) (column x) '&(str tmp))))
+      'tmp)
+  )
 
   (doc leak-array "Leak some memory. Useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")

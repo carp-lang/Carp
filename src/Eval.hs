@@ -55,14 +55,43 @@ eval env xobj =
         [XObj (Sym (SymPath [] "quote") _) _ _, target] ->
           return (Right target)
 
-        [XObj (Sym (SymPath [] "source-location") _) _ _] ->
-          return (Right (XObj (Str (prettyInfoFromXObj listXObj)) i t))
+        [XObj (Sym (SymPath [] "file") _) _ _] ->
+          case i of
+            Just info -> return (Right (XObj (Str (infoFile info)) i t))
+            Nothing -> return (Left (EvalError ("No information about object " ++ pretty xobj)))
 
-        [XObj (Sym (SymPath [] "source-path") _) _ _] ->
-          let file = case info listXObj of
-                       Just info -> infoFile info
-                       Nothing -> "no info"
-          in  return (Right (XObj (Str (file)) i t))
+        [XObj (Sym (SymPath [] "line") _) _ _] ->
+          case i of
+            Just info ->
+              return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
+            Nothing ->
+              return (Left (EvalError ("No information about object " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "column") _) _ _] ->
+          case i of
+            Just info ->
+              return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
+            Nothing ->
+              return (Left (EvalError ("No information about object " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "file") _) _ _, XObj _ infoToCheck _] ->
+          case infoToCheck of
+            Just info -> return (Right (XObj (Str (infoFile info)) i t))
+            Nothing -> return (Left (EvalError ("No information about object " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "line") _) _ _, XObj _ infoToCheck _] ->
+          case infoToCheck of
+            Just info ->
+              return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
+            Nothing ->
+              return (Left (EvalError ("No information about object " ++ pretty xobj)))
+
+        [XObj (Sym (SymPath [] "column") _) _ _, XObj _ infoToCheck _] ->
+          case infoToCheck of
+            Just info ->
+              return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
+            Nothing ->
+              return (Left (EvalError ("No information about object " ++ pretty xobj)))
 
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
