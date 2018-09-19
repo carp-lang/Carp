@@ -30,25 +30,21 @@
                 ())))
 
   (doc trace "Print the value of an expression to stdout, then return its value.")
-  (defn trace [x]
-    (do
-      (IO.println &(str &x))
-      x))
+  (defmacro trace [x]
+    (list 'let-do (array 'tmp x)
+      (list 'IO.println (list 'ref (list 'fmt "%s:%d:%d: %s" (file x) (line x) (column x) '&(str tmp))))
+      'tmp)
+  )
 
   (doc leak-array "Leak some memory. Useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
 )
 
-;; HACK! This silences compiler errors about 'source-location' and 'source-path' being undefined.
-;; Actual calls to these special forms will be handled directly in the dynamic evaluator, see 'Eval.hs'.
-(defdynamic source-location [] "")
-(defdynamic source-path [] "")
-
 ;; Crash the program with an error message unless the expression evaluates to 'true'.
 (defmacro assert [expr]
   (list 'if (list '= true expr)
         ()
         (list 'do
-              (list 'println* "Assertion '" (str expr) "' failed at " (list 'source-location))
+              (list 'println* (list 'fmt "Assertion '%s' failed at line %d, column %d in file %s" (str expr) (line) (column) (file)))
               '(System.exit 1))))
