@@ -1,0 +1,20 @@
+(local-include "../test/fixture_foo.h")
+(load "Test.carp")
+(load "Vector.carp")
+
+; this is a test-only module to test module resolution (see #288)
+(defmodule Foo
+  (register init (Fn [] Int) "fooInit")
+)
+
+(use-all Test Vector2 Foo)
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                   1
+                   (init)
+                   "test that the right module gets resolved"
+    )
+  )
+)
