@@ -760,3 +760,25 @@ saveDocs pathsAndEnvs =
          title = projectTitle proj
      liftIO (saveDocsForEnvs docsDir title pathsAndEnvs)
      return dynamicNil
+
+commandFile :: CommandCallback
+commandFile [XObj _ (Just info) _] =
+  return $ Right $ XObj (Str $ infoFile info) (Just dummyInfo) (Just StringTy)
+commandFile [obj] =
+  return (Left (EvalError ("No information about object " ++ pretty obj)))
+
+commandLine :: CommandCallback
+commandLine [XObj _ (Just info) _] =
+  return $ Right $ XObj (Num IntTy (fromIntegral (infoLine info)))
+                        (Just dummyInfo)
+                        (Just IntTy)
+commandLine [obj] =
+  return (Left (EvalError ("No information about object " ++ pretty obj)))
+
+commandColumn :: CommandCallback
+commandColumn [XObj _ (Just info) _] =
+  return $ Right $ XObj (Num IntTy (fromIntegral (infoColumn info)))
+                        (Just dummyInfo)
+                        (Just IntTy)
+commandColumn [obj] =
+  return (Left (EvalError ("No information about object " ++ pretty obj)))
