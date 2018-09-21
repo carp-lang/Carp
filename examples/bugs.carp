@@ -44,21 +44,3 @@
 ;;     (let [xs [4 5 6]]
 ;;       (set! r &xs))
 ;;     (println* r)))
-
-
-;; ;; '=' resolves to wrong thing
-;;(deftype (Foo t) [x t])
-;; (register-type Foo [x Int])
-;; (defmodule Foo
-;;   (defn = [a b]
-;;     (= (Foo.x a) (Foo.x b))))
-
-;; (info Foo)
-
-;; (register-type Foo [x Int]) ;;(deftype (Foo t) [x t]) ;; <- this is the bug!
-
-;; (info Foo)
-
-;; (defn main []
-;;   (do (println* (= &(Foo.init 123) &(Foo.init 666)))
-;;       (println* (= &(Foo.init 123) &(Foo.init 123)))))

@@ -1,0 +1,21 @@
+;; Sometimes code breaks when it is reloaded
+(load-and-use Test)
+
+(deftype (Foo t) [x t])
+
+(defmodule Foo
+  (defn = [a b]
+    (= (Foo.x a) (Foo.x b))))
+
+(deftype (Foo t) [x t]) ;; <- this was the bug, simulate a reload of deftype
+
+(defn test-deftype-bug []
+  (and (= &(Foo.init 123) &(Foo.init 666))
+       (= &(Foo.init 123) &(Foo.init 123))))
+
+(defn main []
+  (with-test test
+    ;; (assert-true test
+    ;;              (test-deftype-bug)
+    ;;              "Ensure that bug with redefining type doesn't come back.")
+    ))
