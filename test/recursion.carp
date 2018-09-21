@@ -1,0 +1,34 @@
+(load-and-use Test)
+
+(defn recursive [x]
+  (if (= x 1)
+    x
+    (* x (recursive (- x 1)))))
+
+(defn recursion-test-1 []
+  (recursive 5))
+
+;; Problems with recursive calls again, fails to qualify at call site
+(use Float)
+(use Double)
+
+(defmodule A
+  (defn flurb [x y]
+    (if (< x y)
+      x
+      (+ x (flurb (- x 1) y)))))
+
+(defn recursion-test-2 []
+  (A.flurb 9 6))
+
+(defn main []
+  (with-test test
+    (assert-equal test
+                  120
+                  (recursion-test-1)
+                  "Ensure that basic recursion works.")
+    (assert-equal test
+                  35
+                  (recursion-test-2)
+                  "Ensure that problem with recursion in modules is resolved.")
+    ))
