@@ -7,7 +7,6 @@
 * Critical Bugs
 ** 0.3
 *** Memory management inside 'and' & 'or' seems to be wrong.
-*** Calling function returned from other function doesn't work without first binding it to a local variable.
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * Big Language Features

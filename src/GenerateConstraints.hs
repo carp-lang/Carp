@@ -166,7 +166,8 @@ genConstraints root = fmap sort (gen root)
 
                            -- Function application
                            func : args ->
-                             do insideArgsConstraints <- fmap join (mapM gen args)
+                             do funcConstraints <- gen func
+                                insideArgsConstraints <- fmap join (mapM gen args)
                                 funcTy <- toEither (ty func) (ExpressionMissingType func)
                                 case funcTy of
                                   (FuncTy argTys retTy) ->
@@ -183,12 +184,12 @@ genConstraints root = fmap sort (gen root)
                                                                     [0..]
                                           Just xobjTy = ty xobj
                                           retConstraint = Constraint xobjTy retTy xobj func OrdFuncAppRet
-                                      in  return (retConstraint : argConstraints ++ insideArgsConstraints)
+                                      in  return (retConstraint : funcConstraints ++ argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
                                         expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected OrdFuncAppVarTy
-                                    in  return (wholeTypeConstraint : insideArgsConstraints)
+                                    in  return (wholeTypeConstraint : funcConstraints ++ insideArgsConstraints)
                                   _ -> Left (NotAFunction func)
 
                            -- Empty list

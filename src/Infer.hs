@@ -53,8 +53,8 @@ annotateUntilDone typeEnv globalEnv xobj deps limiter =
 annotateOne :: TypeEnv -> Env -> XObj -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj allowAmbiguity = do
   constraints <- genConstraints xobj
-  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints -- (trace (getName xobj ++ "CONSTRAINTS:\n" ++ joinWith "\n" (map show constraints)) constraints)
-  typed <- assignTypes mappings xobj
+  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints -- (trace ("Constraints for '" ++ getName xobj ++ "':\n" ++ joinWith "\n" (map show constraints)) constraints)
+  typed <- assignTypes mappings xobj -- (trace ("Mappings for '" ++ getName xobj ++ ": " ++ show mappings) mappings) xobj
   concretizeXObj allowAmbiguity typeEnv env [] typed
 
 -- | Convert from the type 'UnificationFailure' to 'TypeError' (enables monadic chaining of Either).

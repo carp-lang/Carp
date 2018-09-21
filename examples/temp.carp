@@ -1,2 +1,11 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
+
+(defn foo []
+  123)
+
+(defn get-foo []
+  foo)
+
+(defn main []
+  ((get-foo)))
