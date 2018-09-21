@@ -1,55 +1,77 @@
-;;(defn f [s] (str* s "!"))
+(use Array)
 
-(defn example1 [suffix]
-  (Array.copy-map (fn [s] (str* s suffix)) ;; Can use 'suffix' (of type &String) as long as we're in the example1-scope
-                  &[@"a" @"b" @"c"]))
+;; Example 1, copy-map a lambda over an array of strings
+;; (defn example-1 [suffix]
+;;   (println*
+;;    &(Array.copy-map (fn [s] (str* s suffix)) ;; Can use 'suffix' (of type &String) as long as we're in the example-1:s scope
+;;                     &[@"a" @"b" @"c"])))
 
-;; (defn example2 []
-;;   (let [x @"hello"
-;;         f (fn [] x)] ; Lambda takes ownership of the string
-;;     f))
+(defn create-function []
+  (let [x @"hello"
+        f (fn [] @&x)] ; Lambda takes ownership of the string, needs to copy it each time it returns it.
+    f))
 
+;; Example 2, returning a function
+(defn example-2 []
+  (let [f (create-function)]
+    (println* (f))))
 
-;; g : (λ [a] Int)
-(defn g [f]
-  (f 5))
+;; (defn example-3 []
+;;   (let [lam (fn [x] (let [gah (fn [] 3.3f)]
+;;                       (* 10 x)))]
+;;     (println* (+ (lam 3) (lam 4)))))
 
-(defn h1 []
-  (g inc))
+;; Example 4, capturing of correct variables
+(def global-variable 10000)
 
-(defn h2 [y]
-  (g (fn [x] (+ x y))))
+(defn cap [capture-me]
+  (let [and-me 1000]
+    (fn [not-me]
+      (let [nor-me 100]
+        (+ (+ (+ (+ global-variable capture-me) and-me) not-me) nor-me)))))
 
+(defn example-4 []
+  (let [f (cap 10)]
+    (println* (f 1))))
+
+;; Example 5, map value over functions
+;; (defn example-5 [x]
+;;   (Array.endo-map ??? [inc dec (fn [_] x)]))
+
+;; Example 6, handle various kinds of functions together
+(defn pow-to [exponent to]
+  (let [ff1 (fn [] ())
+        ff2 @&ff1
+        to-copy @to
+        upper (to-copy)]
+    (endo-map (fn [x] (Int.pow x exponent)) (range 0 upper 1))))
+
+(defn twenty [] 20)
+
+(defn example-6 []
+  (println* (ref (pow-to 3 &twenty))))
+
+;; Example 7, functions as members in structs
+(deftype Blah [function (Fn [] ())])
+
+(defn hello-hello [] (println* "Hello, hello!"))
+
+(defn example-7 []
+  (let [b (Blah.init hello-hello)
+        f @(Blah.function &b)]
+    (f)))
+
+;; Example 8, mapping normal (non-lambda) function over a list of strings
+(defn example-8 []
+  (let [strings [@"a" @"bb" @"ccc"]]
+    (println* &(Array.copy-map String.length &strings))))
 
 (defn-do main []
-  (Debug.assert-balanced
-   (println* &(example1 "!"))))
-
-
-(defn blaha [f]
-  (Int.+ 1 (f 5)))
-
-(defn main [x]
-  (Array.endo-map blaha [inc dec (fn [_] x)]))
-
-;; /* void blaha(void *f) { */
-;; /*   int _0; */
-;; /*   if is_closure(f) { */
-;; /*      _0 = call(f, 5); */
-;; /*      f.delete(f); */
-;; /*   } else { */
-;; /*      _0 = f(5); */
-;; /*   } */
-;; /*   return (1 + _0); */
-;; /* } */
-
-
-(defn call-on-me [f]
-  (f))
-
-(def a (fn [] 123))
-(defn b [] 666)
-
-(defn-do main []
-  (a)
-  (b))
+  ;;(example-1 "!")
+  (example-2)
+  ;;(example-3)
+  (example-4)
+  ;;(example-5)
+  (example-6)
+  (example-7)
+  (example-8))
