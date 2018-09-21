@@ -5,21 +5,22 @@
 
 (load-and-use Test)
 
-;; (deftype (Foo t) [x t])
+(deftype (Foo t) [x t])
 
-;; (defmodule Foo
-;;   (defn = [a b]
-;;     (= (Foo.x a) (Foo.x b))))
+(defmodule Foo
+  (defn = [a b]
+    (= (Foo.x a) (Foo.x b))))
 
-;; (deftype (Foo t) [x t]) ;; <- this was the bug, simulate a reload of deftype
+;;(deftype (Foo t) [x t]) ;; <- this was the bug, simulate a reload of deftype
 
-;; (defn test-deftype-bug []
-;;   (and (= &(Foo.init 123) &(Foo.init 666))
-;;        (= &(Foo.init 123) &(Foo.init 123))))
+(defn test-deftype-bug []
+  (let [a (= &(Foo.init 123) &(Foo.init 666))
+        b (= &(Foo.init 123) &(Foo.init 123))]
+    (and (not a) b)))
 
-;; (defn main []
-;;   (with-test test
-;;     (assert-true test
-;;                  (test-deftype-bug)
-;;                  "Ensure that bug with redefining type doesn't come back.")
-;;     ))
+(defn main []
+  (with-test test
+    (assert-true test
+                 (test-deftype-bug)
+                 "Ensure that bug with redefining type doesn't come back.")
+    ))
