@@ -1,0 +1,4 @@
+trick_resolution.carp:7:14 Can't find matching lookup for symbol 'blurgh' of type (λ [&String] Bool)
+None of the possibilities have the correct signature:
+    A.blurgh : (λ [Int] Bool)
+    B.blurgh : (λ [Float] Bool)
