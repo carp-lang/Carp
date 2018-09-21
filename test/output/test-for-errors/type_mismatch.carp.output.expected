@@ -1,0 +1,2 @@
+type_mismatch.carp:4:13 20.0f : Float, can't unify with Int.
+type_mismatch.carp:4:4 Expected second argument to 'Int.+' : Int, can't unify with Float.

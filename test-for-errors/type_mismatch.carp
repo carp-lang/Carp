@@ -1,0 +1,4 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f []
+  (Int.+ 10 20.0f))
