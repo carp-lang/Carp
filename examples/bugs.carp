@@ -44,3 +44,17 @@
 ;;     (let [xs [4 5 6]]
 ;;       (set! r &xs))
 ;;     (println* r)))
+
+;; Weird problem with memory management inside 'and':
+(deftype Blah [])
+
+(defmodule Blah
+  (defn = [a b]
+    true))
+
+(defn bug []
+  (and (= &(Blah.init) &(Blah.init))
+       (= &(Blah.init) &(Blah.init))))
+
+(defn main []
+  (assert (bug)))
