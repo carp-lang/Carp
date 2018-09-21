@@ -38,6 +38,7 @@ defaultProject =
           , projectCore = True
           , projectEchoCompilationCommand = False
           , projectCanExecute = False
+          , projectFilePathPrintLength = FullPath
           }
 
 -- | Starting point of the application.

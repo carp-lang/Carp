@@ -354,9 +354,10 @@ found binder =
 -- | Print error message for binder that wasn't found.
 notFound :: ExecutionMode -> XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 notFound execMode xobj path =
-  return $ Left $ EvalError $ case execMode of
-                                Check -> machineReadableInfoFromXObj xobj ++ (" Can't find '" ++ show path ++ "'")
-                                _ -> "Can't find '" ++ show path ++ "'"
+  do fppl <- fmap (projectFilePathPrintLength . contextProj) get
+     return $ Left $ EvalError $ case execMode of
+                                   Check -> machineReadableInfoFromXObj fppl xobj ++ (" Can't find '" ++ show path ++ "'")
+                                   _ -> "Can't find '" ++ show path ++ "'"
 
 -- | A command at the REPL
 -- | TODO: Is it possible to remove the error cases?
@@ -418,8 +419,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
        -- TODO: This is a weird case:
        ReplParseError e xobj ->
          do let msg =  ("[PARSE ERROR] " ++ e)
+                fppl = projectFilePathPrintLength (contextProj ctx)
             case contextExecMode ctx of
-              Check -> putStrLn ((machineReadableInfoFromXObj xobj) ++ " " ++ msg)
+              Check -> putStrLn ((machineReadableInfoFromXObj fppl xobj) ++ " " ++ msg)
               _ -> putStrLnWithColor Red msg
             throw CancelEvaluationException
        ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
@@ -527,7 +529,8 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
             case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
               Left err ->
                 do case contextExecMode ctx of
-                     Check -> putStrLn ((machineReadableInfoFromXObj annXObj) ++ " " ++ err)
+                     Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                              in  putStrLn ((machineReadableInfoFromXObj fppl annXObj) ++ " " ++ err)
                      _ -> putStrLnWithColor Red err
                    return ctx
               Right ctx' ->
@@ -584,7 +587,8 @@ specialCommandDefine xobj =
               Left err ->
                 case contextExecMode ctx of
                   Check ->
-                    return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings err))))
+                    let fppl = projectFilePathPrintLength (contextProj ctx)
+                    in  return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings fppl err))))
                   _ ->
                     return (Left (EvalError (show err)))
               Right (annXObj, annDeps) ->
@@ -683,7 +687,8 @@ specialCommandRegister name typeXObj overrideName =
                      in  case registerInInterfaceIfNeeded ctx path t of
                            Left err ->
                              let prefix = case contextExecMode ctx of
-                                            Check -> machineReadableInfoFromXObj typeXObj ++ " "
+                                            Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                                                     in  machineReadableInfoFromXObj fppl typeXObj ++ " "
                                             _ -> ""
                              in  return (Left (EvalError (prefix ++ err)))
                            Right ctx' ->
@@ -791,7 +796,8 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
                         do when itIsAnErrorNotToFindIt $
                              putStrLn $
                                case execMode of
-                                 Check -> machineReadableInfoFromXObj target ++ (" Can't find '" ++ show path ++ "'")
+                                 Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
+                                          in  machineReadableInfoFromXObj fppl target ++ (" Can't find '" ++ show path ++ "'")
                                  _ -> strWithColor Red ("Can't find '" ++ show path ++ "'")
                            return ()
                       binders ->
@@ -985,18 +991,20 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                       put newCtx
             return dynamicNil
   where
+    fppl ctx =
+      projectFilePathPrintLength (contextProj ctx)
     invalidPath ctx path =
       Left $ EvalError $
         (case contextExecMode ctx of
           Check ->
-            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
           _ -> "Invalid path: '" ++ path ++ "'") ++
         "\n\nIf you tried loading an external package, try appending a version string (like `@master`)."
     invalidPathWith ctx path stderr =
       Left $ EvalError $
         (case contextExecMode ctx of
           Check ->
-            (machineReadableInfoFromXObj xobj) ++ " Invalid path: '" ++ path ++ "'"
+            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
           _ -> "Invalid path: '" ++ path ++ "'") ++
         "\n\nTried interpreting statement as git import, but got: " ++ stderr
     tryInstall path =

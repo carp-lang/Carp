@@ -126,6 +126,11 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                               return (proj { projectOutDir = outDir })
                      "docs-directory" -> do docsDir <- unwrapStringXObj value
                                             return (proj { projectDocsDir = docsDir })
+                     "file-path-print-length" -> do length <- unwrapStringXObj value
+                                                    case length of
+                                                      "short" -> return (proj { projectFilePathPrintLength = ShortPath })
+                                                      "full" -> return (proj { projectFilePathPrintLength = ShortPath })
+                                                      _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
                      _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
      case newProj of
        Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
@@ -155,6 +160,7 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "title" -> Right $ Str $ projectTitle proj
           "output-directory" -> Right $ Str $ projectOutDir proj
           "docs-directory" -> Right $ Str $ projectDocsDir proj
+          "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
           _ ->
             Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++
                                key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")

@@ -1,5 +1,6 @@
 module Obj where
 
+import System.FilePath (takeFileName)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (intercalate, foldl')
@@ -144,17 +145,28 @@ prettyInfoFromXObj xobj = case info xobj of
                             Just i -> prettyInfo i
                             Nothing -> "no info"
 
-machineReadableInfo :: Info -> String
-machineReadableInfo i =
+data FilePathPrintLength = FullPath
+                         | ShortPath
+
+instance Show FilePathPrintLength where
+  show FullPath = "full"
+  show ShortPath = "short"
+
+machineReadableInfo :: FilePathPrintLength -> Info -> String
+machineReadableInfo filePathPrintLength i =
   let line = infoLine i
       column = infoColumn i
       file = infoFile i
-  in  file ++ ":" ++ show line ++ ":" ++ show column
+      file' = case filePathPrintLength of
+                FullPath -> file
+                ShortPath -> takeFileName file
+  in  file' ++ ":" ++ show line ++ ":" ++ show column
 
-machineReadableInfoFromXObj :: XObj -> String
-machineReadableInfoFromXObj xobj = case info xobj of
-                                     Just i -> machineReadableInfo i
-                                     Nothing -> ""
+machineReadableInfoFromXObj :: FilePathPrintLength -> XObj -> String
+machineReadableInfoFromXObj fppl xobj =
+  case info xobj of
+    Just i -> machineReadableInfo fppl i
+    Nothing -> ""
 
 -- TODO: change name of this function
 freshVar :: Info -> String
@@ -249,11 +261,11 @@ pretty = visit 0
             Chr c -> '\\' : c : ""
             Sym path mode -> show path -- ++ " <" ++ show mode ++ ">"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
-            InterfaceSym name -> name ++ " <interface>"
+            InterfaceSym name -> name
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
-            Fn _ captures -> "fn <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+            Fn _ captures -> "fn" -- ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
             And -> "and"
             Or -> "or"
@@ -480,6 +492,7 @@ data Project = Project { projectTitle :: String
                        , projectCore :: Bool
                        , projectEchoCompilationCommand :: Bool
                        , projectCanExecute :: Bool
+                       , projectFilePathPrintLength :: FilePathPrintLength
                        }
 
 projectFlags :: Project -> String
@@ -505,6 +518,7 @@ instance Show Project where
         core
         echoCompilationCommand
         canExecute
+        filePathPrintLength
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
@@ -524,6 +538,7 @@ instance Show Project where
             , "Using Core: " ++ show core
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
             , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
+            , "File path print length (when using --check): " ++ show filePathPrintLength
             ]
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"

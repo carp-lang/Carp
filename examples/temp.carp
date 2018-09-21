@@ -1,5 +1,6 @@
 (Debug.sanitize-addresses)
 ;; (Project.config "print-ast" true)
+;; (Project.config "file-path-print-length" "full")
 
 ;; (defn main []
 ;;   (let [lam (fn [x] (let [gah (fn [] 3.3f)]
@@ -75,18 +76,18 @@
 ;;   (Debug.assert-balanced
 ;;    (blah-1)))
 
-(use Array)
+;; (use Array)
 
-(defn lambda-3 []
-  (let-do [stuff [100 200 300]
-        f (fn [n] (copy (nth &stuff n)))]
-    (assert (= 100 (f 0)))
-    (assert (= 200 (f 1)))
-    (assert (= 300 (f 2)))))
+;; (defn lambda-3 []
+;;   (let-do [stuff [100 200 300]
+;;         f (fn [n] (copy (nth &stuff n)))]
+;;     (assert (= 100 (f 0)))
+;;     (assert (= 200 (f 1)))
+;;     (assert (= 300 (f 2)))))
 
-(defn main []
-  (Debug.assert-balanced
-   (lambda-3)))
+;; (defn main []
+;;   (Debug.assert-balanced
+;;    (lambda-3)))
 
 
 ;; (use Array)
@@ -100,3 +101,8 @@
 
 ;; (defn main []
 ;;   (lambda-3))
+
+(Project.config "file-path-print-length" "short")
+
+(defn main []
+  (+ 3 "hej"))

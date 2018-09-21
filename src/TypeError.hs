@@ -130,101 +130,101 @@ instance Show TypeError where
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
     "Definition at " ++ prettyInfoFromXObj xobj ++ " does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)
 
-machineReadableErrorStrings :: TypeError -> [String]
-machineReadableErrorStrings err =
+machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
+machineReadableErrorStrings fppl err =
   case err of
     (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) ->
-      [machineReadableInfoFromXObj aObj ++ " " ++ pretty aObj ++ " : " ++
+      [machineReadableInfoFromXObj fppl aObj ++ " " ++ pretty aObj ++ " : " ++
        showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
-      ,machineReadableInfoFromXObj bObj ++ " " ++ pretty bObj ++ " : " ++
+      ,machineReadableInfoFromXObj fppl bObj ++ " " ++ pretty bObj ++ " : " ++
        showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
     (DefnMissingType xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Function definition '" ++ getName xobj ++ "' missing type."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Function definition '" ++ getName xobj ++ "' missing type."]
     (DefMissingType xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Variable definition '" ++ getName xobj ++ "' missing type."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Variable definition '" ++ getName xobj ++ "' missing type."]
     (ExpressionMissingType xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Expression '" ++ pretty xobj ++ "' missing type."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Expression '" ++ pretty xobj ++ "' missing type."]
     (SymbolNotDefined symPath xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
     (SymbolMissingType xobj env) ->
-      [machineReadableInfoFromXObj xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
     (InvalidObj Defn xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Invalid function definition."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Invalid function definition."]
     (InvalidObj If xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Invalid if-statement."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Invalid if-statement."]
     (InvalidObj o xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Invalid obj '" ++ show o ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Invalid obj '" ++ show o ++ "'."]
     (WrongArgCount xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
     (NotAFunction xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Trying to call non-function '" ++ getName xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Trying to call non-function '" ++ getName xobj ++ "'."]
     (NoStatementsInDo xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " The do-statement has no expressions inside of it."]
+      [machineReadableInfoFromXObj fppl xobj ++ " The do-statement has no expressions inside of it."]
     (TooManyFormsInBody xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Too many expressions in body position."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Too many expressions in body position."]
     (NoFormsInBody xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " No expressions in body position."]
+      [machineReadableInfoFromXObj fppl xobj ++ " No expressions in body position."]
 
     (CantDisambiguate xobj originalName theType options) ->
-      [machineReadableInfoFromXObj xobj ++ " Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++
        "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
     (CantDisambiguateInterfaceLookup xobj name theType options) ->
-      [machineReadableInfoFromXObj xobj ++ " Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++
        "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
     (SeveralExactMatches xobj name theType options) ->
-      [machineReadableInfoFromXObj xobj ++ " Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
+      [machineReadableInfoFromXObj fppl xobj ++ " Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
     (NoMatchingSignature xobj originalName theType options) ->
-      [machineReadableInfoFromXObj xobj ++ " Can't find matching lookup for symbol '" ++ originalName ++ "' of type " ++ show theType ++
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't find matching lookup for symbol '" ++ originalName ++ "' of type " ++ show theType ++
        "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
        "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)]
 
     (LeadingColon xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Symbol '" ++ pretty xobj ++ "' starting with a colon (reserved for REPL shortcuts)."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ pretty xobj ++ "' starting with a colon (reserved for REPL shortcuts)."]
 
     -- (HolesFound holes) ->
-    --   (map (\(name, t) -> machineReadableInfoFromXObj xobj ++ " " ++ name ++ " : " ++ show t) holes)
+    --   (map (\(name, t) -> machineReadableInfoFromXObj fppl xobj ++ " " ++ name ++ " : " ++ show t) holes)
 
     (FailedToExpand xobj (EvalError errorMessage)) ->
-      [machineReadableInfoFromXObj xobj ++ "Failed to expand: " ++ errorMessage]
+      [machineReadableInfoFromXObj fppl xobj ++ "Failed to expand: " ++ errorMessage]
 
     -- TODO: Remove overlapping errors:
     (NotAValidType xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Not a valid type: " ++ pretty xobj ++ "."]
     (NotAType xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Can't understand the type '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't understand the type '" ++ pretty xobj ++ "'."]
 
     (FunctionsCantReturnRefTy xobj t) ->
-      [machineReadableInfoFromXObj xobj ++ " Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ "."]
     (LetCantReturnRefTy xobj t) ->
-      [machineReadableInfoFromXObj xobj ++ " Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ "."]
     (GettingReferenceToUnownedValue xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Referencing a given-away value '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Referencing a given-away value '" ++ pretty xobj ++ "'."]
     (UsingUnownedValue xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Using a given-away value '" ++ pretty xobj ++ "'."]
     (UsingCapturedValue xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Using a captured value '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Using a captured value '" ++ pretty xobj ++ "'."]
     (ArraysCannotContainRefs xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Arrays can't contain references: '" ++ pretty xobj ++ "'."]
 
     (MainCanOnlyReturnUnitOrInt xobj t) ->
-      [machineReadableInfoFromXObj xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Main function can only return Int or (), got " ++ show t ++ "."]
     (MainCannotHaveArguments xobj c) ->
-      [machineReadableInfoFromXObj xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Main function can not have arguments, got " ++ show c ++ "."]
 
     (TooManyAnnotateCalls xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "'."]
 
   --    (InvalidMemberType msg) ->
  -- --   msg
 
     (CannotSet xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
     (CannotConcretize xobj) ->
-      [machineReadableInfoFromXObj xobj ++ " Unable to concretize '" ++ pretty xobj ++ "'."]
+      [machineReadableInfoFromXObj fppl xobj ++ " Unable to concretize '" ++ pretty xobj ++ "'."]
 
     (DoesNotMatchSignatureAnnotation xobj sigTy) ->
-      [machineReadableInfoFromXObj xobj ++ "Definition does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)]
+      [machineReadableInfoFromXObj fppl xobj ++ "Definition does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)]
 
     _ ->
       [show err]
