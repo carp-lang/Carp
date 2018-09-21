@@ -15,7 +15,7 @@ strWithColor color str =
                 Green -> "32"
                 Yellow -> "33"
                 Blue -> "34"
-                White -> "37"
+                White -> "37" -- TODO: Use 0 instead?
 
 putStrWithColor :: TextColor -> String -> IO ()
 putStrWithColor color str = putStr (strWithColor color str)

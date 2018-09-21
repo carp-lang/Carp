@@ -1,4 +1,5 @@
-;; This is a regression test, the code should be rejected by the compiler.
+;; This code should be rejected by the compiler.
+(Project.config "file-path-print-length" "short")
 
 (definterface some-interface (Fn [a] Bool))
 
@@ -7,7 +8,6 @@
 
 ;; The function 'f' uses the interface, should still have a generic type though.
 (defn f [x] (some-interface x))
-(type f)
 
 ;; Calling f with some type except Int shouldn't be possible.
 (defn g [] (f 10.0f))

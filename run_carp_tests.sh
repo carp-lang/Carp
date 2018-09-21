@@ -14,22 +14,28 @@ stack build;
 stack install;
 
 # Build and run some examples
-./test/check.sh ./examples/basics.carp
-./test/check.sh ./examples/functor.carp
-./test/check.sh ./examples/external_struct.carp
-./test/check.sh ./examples/updating.carp
-./test/check.sh ./examples/sorting.carp
-./test/check.sh ./examples/globals.carp
-./test/check.sh ./examples/generic_structs.carp
-./test/check.sh ./examples/setting_variables.carp
-./test/check.sh ./examples/function_members.carp
-./test/check.sh ./examples/map.carp
-# ./test/check.sh ./examples/no_matching_instance.carp # Doesn't work because test output contains a specific path. How to solve?!
+./test/execute.sh ./examples/basics.carp
+./test/execute.sh ./examples/functor.carp
+./test/execute.sh ./examples/external_struct.carp
+./test/execute.sh ./examples/updating.carp
+./test/execute.sh ./examples/sorting.carp
+./test/execute.sh ./examples/globals.carp
+./test/execute.sh ./examples/generic_structs.carp
+./test/execute.sh ./examples/setting_variables.carp
+./test/execute.sh ./examples/function_members.carp
+./test/execute.sh ./examples/map.carp
 
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do
     echo $f
     stack exec carp -- -x --log-memory $f
+    echo
+done
+
+# Test for correct error messages when doing "carp --check" on the source.
+for f in ./test-for-errors/*.carp; do
+    echo $f
+    ./test/check.sh $f
     echo
 done
 
