@@ -1,3 +1,5 @@
+(load "Macros.carp")
+
 ;; The 'copy' and 'str' interfaces are defined internally:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))

@@ -80,8 +80,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
-                       And                -> return (Left (InvalidObj And xobj))
-                       Or                 -> return (Left (InvalidObj Or xobj))
                        While              -> return (Left (InvalidObj While xobj))
                        Do                 -> return (Left (InvalidObj Do xobj))
                        (Mod _)            -> return (Left (InvalidObj If xobj))
@@ -285,22 +283,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
                          return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
-
-        -- And
-        [andExpr@(XObj And _ _), expr1, expr2] ->
-          do visitedExpr1 <- visit env expr1
-             visitedExpr2 <- visit env expr2
-             return $ do okExpr1 <- visitedExpr1
-                         okExpr2 <- visitedExpr2
-                         return (XObj (Lst [andExpr, okExpr1, okExpr2]) i (Just BoolTy))
-
-        -- Or
-        [orExpr@(XObj Or _ _), expr1, expr2] ->
-          do visitedExpr1 <- visit env expr1
-             visitedExpr2 <- visit env expr2
-             return $ do okExpr1 <- visitedExpr1
-                         okExpr2 <- visitedExpr2
-                         return (XObj (Lst [orExpr, okExpr1, okExpr2]) i (Just BoolTy))
 
         -- Function application
         func : args ->

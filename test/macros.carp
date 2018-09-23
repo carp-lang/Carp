@@ -21,8 +21,8 @@
     1 true
     false))
 
-(defmacro test-and [a b] (and a b))
-(defmacro test-or [a b] (or a b))
+(defmacro test-and [a b] (mand a b))
+(defmacro test-or [a b] (mor a b))
 (defmacro test-not [a] (not a))
 (defmacro test-< [a b] (< a b))
 (defmacro test-> [a b] (> a b))
