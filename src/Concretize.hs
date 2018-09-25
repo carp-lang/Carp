@@ -352,6 +352,10 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
       error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
+concretizeType env (RefTy rt) =
+  concretizeType env rt
+concretizeType env (PointerTy pt) =
+  concretizeType env pt
 concretizeType _ t =
     Right [] -- ignore all other types
 
