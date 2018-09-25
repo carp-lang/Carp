@@ -147,7 +147,8 @@ instance Show SymPath where
     else joinWithPeriod modulePath ++ "." ++ symName
 
 pathToC :: SymPath -> String
-pathToC (SymPath modulePath name) = concatMap ((++ "_") . mangle) modulePath ++ mangle name
+pathToC (SymPath modulePath name) =
+  concatMap ((++ "_") . mangle) modulePath ++ mangle name
 
 -- | Add qualifying strings to beginning of a path.
 consPath :: [String] -> SymPath -> SymPath
@@ -164,6 +165,7 @@ mangle = replaceChars (Map.fromList [('+', "_PLUS_")
                                     ,('>', "_GT_")
                                     ,('?', "_QMARK_")
                                     ,('!', "_BANG_")
+                                    ,('.', "_")
                                     ,('=', "_EQ_")])
 
 -- | From two types, one with type variables and one without (e.g. (Fn ["t0"] "t1") and (Fn [Int] Bool))

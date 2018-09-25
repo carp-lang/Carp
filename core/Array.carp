@@ -57,7 +57,7 @@
 
   (doc minimum "Sum an array (elements must support + and zero).")
   (defn sum [xs]
-    (Array.reduce add-ref (zero) xs))
+    (Array.reduce (fn [x y] (+ @x @y)) (zero) xs))
 
   (doc subarray "Get subarray from start-index to end-index.")
   (defn subarray [xs start-index end-index]
