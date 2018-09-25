@@ -25,6 +25,14 @@
 
   (defn /= [a b]
     (not (= (the Char a) b)))
+
+  (doc lower-case? "Tests whether a character is lower case.")
+  (defn lower-case? [c]
+    (and (<= \a c) (<= c \z)))
+
+  (doc upper-case? "Tests whether a character is upper case.")
+  (defn upper-case? [c]
+    (and (<= \A c) (<= c \Z)))
 )
 
 (defmodule CharRef
