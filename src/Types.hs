@@ -165,7 +165,6 @@ mangle = replaceChars (Map.fromList [('+', "_PLUS_")
                                     ,('>', "_GT_")
                                     ,('?', "_QMARK_")
                                     ,('!', "_BANG_")
-                                    ,('.', "_")
                                     ,('=', "_EQ_")])
 
 -- | From two types, one with type variables and one without (e.g. (Fn ["t0"] "t1") and (Fn [Int] Bool))
