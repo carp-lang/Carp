@@ -351,7 +351,7 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
     Just (_, Binder _ x) ->
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
-      error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
+      Right [] -- error ("Can't find type " ++ show genericStructTy ++ " with name '" ++ name ++ "' in type env.")
 concretizeType env (RefTy rt) =
   concretizeType env rt
 concretizeType env (PointerTy pt) =
