@@ -57,7 +57,7 @@ data Obj = Sym SymPath SymbolMode
          | Dict (Map.Map XObj XObj)
          | Defn
          | Def
-         | Fn (Maybe String) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
+         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
          | Let
          | While

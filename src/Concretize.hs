@@ -32,8 +32,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     (Left err, _) -> Left err
     (Right xobj, deps) -> Right (xobj, deps)
   where
-    rootDefinitionName :: String
-    rootDefinitionName = getName root
+    rootDefinitionPath :: SymPath
+    rootDefinitionPath = getPath root
 
     visit :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visit allowAmbig env xobj@(XObj (Sym _ _) _ _) = visitSymbol allowAmbig env xobj
@@ -97,8 +97,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
-                 lambdaName = "_Lambda_" ++ rootDefinitionName ++ "_" ++ show (infoIdentifier ii)
-                 lambdaNameSymbol = XObj (Sym (SymPath [] lambdaName) Symbol) (Just dummyInfo) Nothing
+                 SymPath path name = rootDefinitionPath
+                 lambdaPath = SymPath path ("_Lambda_" ++ name ++ "_" ++ show (infoIdentifier ii))
+                 lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args
                                      -- If the lambda captures anything it need an extra arg for its env:
@@ -113,7 +114,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  structMemberPairs = concatMap (\(XObj (Sym path _) _ (Just symTy)) ->
                                                   [XObj (Sym path Symbol) Nothing Nothing, tyToXObj symTy])
                                      capturedVars
-                 environmentTypeName = lambdaName ++ "_env"
+                 environmentTypeName = pathToC lambdaPath ++ "_env"
                  environmentStructTy = StructTy environmentTypeName []
                  environmentStruct = XObj (Lst (XObj (Typ environmentStructTy) Nothing Nothing :
                                                 XObj (Sym (SymPath [] environmentTypeName) Symbol) Nothing Nothing :
@@ -142,7 +143,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                             modify (copyDeps ++)
                        modify (concreteLiftedLambda :)
                        modify (deps ++)
-                       return (Right [XObj (Fn (Just lambdaName) (Set.fromList capturedVars)) fni fnt, args, okBody])
+                       return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
            _ ->
              error "Visited body isn't a defn."
 

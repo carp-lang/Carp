@@ -1,4 +1,5 @@
 (use Array)
+(Project.no-echo)
 
 ;; Example 1, copy-map a lambda over an array of strings
 ;; (defn example-1 [suffix]
