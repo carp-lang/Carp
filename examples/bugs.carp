@@ -46,15 +46,21 @@
 ;;     (println* r)))
 
 ;; Weird problem with memory management inside 'and':
-(deftype Blah [])
+;; (deftype Blah [])
 
-(defmodule Blah
-  (defn = [a b]
-    true))
+;; (defmodule Blah
+;;   (defn = [a b]
+;;     true))
 
-(defn bug []
-  (and (= &(Blah.init) &(Blah.init))
-       (= &(Blah.init) &(Blah.init))))
+;; (defn bug []
+;;   (and (= &(Blah.init) &(Blah.init))
+;;        (= &(Blah.init) &(Blah.init))))
 
-(defn main []
-  (assert (bug)))
+;; (defn main []
+;;   (assert (bug)))
+
+;; Closures do not generate type definitions, issue #299
+(defmodule Example
+  (defn parallel [resistances]
+    (Array.reduce (fn [x y] (+ @x (/ 1.0 @y))) 0.0 resistances))
+  )
