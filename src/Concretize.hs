@@ -76,12 +76,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [defn, nameSymbol, args, okBody]
 
     -- | Fn / λ
-    visitList allowAmbig env (XObj (Lst [(XObj (Fn _ _) fni fnt), args@(XObj (Arr argsArr) ai at), body]) i t) =
+    visitList allowAmbig env fn@(XObj (Lst [(XObj (Fn _ _) fni fnt), args@(XObj (Arr argsArr) ai at), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
       -- the C code.
-      do let Just ii = i
+      do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
+         concretizeTypeOfXObj typeEnv fn
+         let Just ii = i
              Just funcTy = t
               -- | TODO: This code is a copy of the one above in Defn, remove duplication:
              functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env + 1)
