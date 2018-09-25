@@ -38,22 +38,22 @@
                   (meaning &\9)
                   "meaning works as expected 9")
     (assert-true  test
-                  (upper-case \A)
-                  "upper-case works as expected I")
+                  (upper-case? \A)
+                  "upper-case? works as expected I")
     (assert-false test
-                  (upper-case \a)
-                  "upper-case works as expected II")
+                  (upper-case? \a)
+                  "upper-case? works as expected II")
     (assert-false test
-                  (upper-case \#)
-                  "upper-case works as expected III")
+                  (upper-case? \#)
+                  "upper-case? works as expected III")
     (assert-true  test
-                  (lower-case \a)
-                  "lower-case works as expected I")
+                  (lower-case? \a)
+                  "lower-case? works as expected I")
     (assert-false test
-                  (lower-case \A)
-                  "lower-case works as expected II")
+                  (lower-case? \A)
+                  "lower-case? works as expected II")
     (assert-false test
-                  (lower-case \#)
-                  "lower-case works as expected III")
+                  (lower-case? \#)
+                  "lower-case? works as expected III")
   )
 )
