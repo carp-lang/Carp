@@ -122,12 +122,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                 XObj (Arr structMemberPairs) Nothing Nothing :
                                                 [])) i (Just TypeTy)
 
+                 pairs = memberXObjsToPairs structMemberPairs
+
                  deleteFnTy = typesDeleterFunctionType (PointerTy environmentStructTy)
-                 deleteFnTemplate = concreteDeleteTakePtr typeEnv env (memberXObjsToPairs structMemberPairs)
+                 deleteFnTemplate = concreteDeleteTakePtr typeEnv env pairs
                  (deleteFn, deleterDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_delete")) deleteFnTy deleteFnTemplate
 
                  copyFnTy = typesCopyFunctionType environmentStructTy
-                 copyFnTemplate = concreteCopy typeEnv env (memberXObjsToPairs structMemberPairs)
+                 copyFnTemplate = concreteCopy typeEnv env pairs
                  (copyFn, copyDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_copy")) copyFnTy copyFnTemplate
 
                  -- The type env has to contain the lambdas environment struct for 'concretizeDefinition' to work:
@@ -136,14 +138,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              in case concretizeDefinition allowAmbig extendedTypeEnv env visitedDefinitions lambdaCallback funcTy of
                   Left err -> return (Left err)
                   Right (concreteLiftedLambda, deps) ->
-                    do when (not (null capturedVars)) $
-                         do modify (environmentStruct :)
-                            modify (deleteFn :)
-                            modify (deleterDeps ++)
-                            modify (copyFn :)
-                            modify (copyDeps ++)
-                       modify (concreteLiftedLambda :)
-                       modify (deps ++)
+                    do when (not (or (map (isTypeGeneric . snd) pairs))) $
+                         do modify (concreteLiftedLambda :)
+                            modify (deps ++)
+                            when (not (null capturedVars)) $
+                              do modify (environmentStruct :)
+                                 modify (deleteFn :)
+                                 modify (deleterDeps ++)
+                                 modify (copyFn :)
+                                 modify (copyDeps ++)
                        return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
            _ ->
              error "Visited body isn't a defn."

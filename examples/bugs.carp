@@ -60,7 +60,11 @@
 ;;   (assert (bug)))
 
 ;; Closures do not generate type definitions, issue #299
-(defmodule Example
-  (defn parallel [resistances]
-    (Array.reduce (fn [x y] (+ @x (/ 1.0 @y))) 0.0 resistances))
-  )
+;; (defmodule Example
+;;   (defn parallel [resistances]
+;;     (Array.reduce (fn [x y] (+ @x (/ 1.0 @y))) 0.0 resistances))
+;;   )
+
+(defn compose [f g] (fn [x] (f (g x))))
+
+(defn main [] (IO.println &(str ((compose Int.inc Array.first) &[10]))))
