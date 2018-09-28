@@ -113,7 +113,7 @@ eval env xobj =
                          Right (XObj (Arr okEvaledArray) i t)
 
         -- 'and' and 'or' are defined here because they are expected to short circuit
-        [XObj (Sym (SymPath [] "mand") _) _ _, a, b] ->
+        [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
@@ -130,7 +130,7 @@ eval env xobj =
                            _ ->
                              Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA))
 
-        [XObj (Sym (SymPath [] "mor") _) _ _, a, b] ->
+        [XObj (Sym (SymPath ["Dynamic"] "or") _) _ _, a, b] ->
           do evaledA <- eval env a
              evaledB <- eval env b
              return $ do okA <- evaledA
