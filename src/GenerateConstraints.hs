@@ -126,36 +126,6 @@ genConstraints root = fmap sort (gen root)
                                 let theTheConstraint = Constraint xobjType valueType xobj value OrdThe
                                 return (theTheConstraint : insideValueConstraints)
 
-                           -- And
-                           [XObj And _ _, expr1, expr2] ->
-                             do insideExpr1 <- gen expr1
-                                insideExpr2 <- gen expr2
-                                expr1Type <- toEither (ty expr1) (DefMissingType expr1)
-                                expr2Type <- toEither (ty expr2) (DefMissingType expr2)
-                                xobjType <- toEither (ty xobj) (DefMissingType xobj)
-                                let must1 = XObj (Sym (SymPath [] "Expression in 'and'") Symbol) (info expr1) (Just BoolTy)
-                                    must2 = XObj (Sym (SymPath [] "Expression in 'and'") Symbol) (info expr2) (Just BoolTy)
-                                    mustReturnBool = XObj (Sym (SymPath [] "Return value of 'and'") Symbol) (info xobj) (Just BoolTy)
-                                    andConstraint1 = Constraint expr1Type BoolTy expr1 must1          OrdAnd
-                                    andConstraint2 = Constraint expr2Type BoolTy expr2 must2          OrdAnd
-                                    retConstraint  = Constraint xobjType  BoolTy xobj  mustReturnBool OrdAnd
-                                return ([andConstraint1, andConstraint2, retConstraint] ++ insideExpr1 ++ insideExpr2)
-
-                           -- Or
-                           [XObj Or _ _, expr1, expr2] ->
-                             do insideExpr1 <- gen expr1
-                                insideExpr2 <- gen expr2
-                                expr1Type <- toEither (ty expr1) (DefMissingType expr1)
-                                expr2Type <- toEither (ty expr2) (DefMissingType expr2)
-                                xobjType <- toEither (ty xobj) (DefMissingType xobj)
-                                let must1 = XObj (Sym (SymPath [] "Expression in 'or'") Symbol) (info expr1) (Just BoolTy)
-                                    must2 = XObj (Sym (SymPath [] "Expression in 'or'") Symbol) (info expr2) (Just BoolTy)
-                                    mustReturnBool = XObj (Sym (SymPath [] "Return value of 'or'") Symbol) (info xobj) (Just BoolTy)
-                                    orConstraint1 = Constraint expr1Type BoolTy expr1 must1          OrdOr
-                                    orConstraint2 = Constraint expr2Type BoolTy expr2 must2          OrdOr
-                                    retConstraint  = Constraint xobjType  BoolTy xobj  mustReturnBool OrdOr
-                                return ([orConstraint1, orConstraint2, retConstraint] ++ insideExpr1 ++ insideExpr2)
-
                            -- Ref
                            [XObj Ref _ _, value] ->
                              gen value

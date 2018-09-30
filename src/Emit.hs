@@ -96,8 +96,6 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Def -> error (show (DontVisitObj Def))
             Let -> error (show (DontVisitObj Let))
             If -> error (show (DontVisitObj If))
-            And -> error (show (DontVisitObj And))
-            Or -> error (show (DontVisitObj Or))
             Break -> error (show (DontVisitObj Break))
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
@@ -268,34 +266,6 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        appendToSrc (addIndent indent' ++ ifRetVar ++ " = " ++ falseVar ++ ";\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      return ifRetVar
-
-            -- And
-            [XObj And _ _, expr1, expr2] ->
-              let indent' = indent + indentAmount
-                  retVar = freshVar i
-              in  do appendToSrc (addIndent indent ++ "bool " ++ retVar ++ " = false;\n")
-                     expr1Var <- visit indent expr1
-                     appendToSrc (addIndent indent ++ "if(" ++ expr1Var ++ ") {\n")
-                     expr2Var <- visit indent' expr2
-                     appendToSrc (addIndent indent' ++ retVar ++ " = " ++ expr2Var ++ ";\n")
-                     appendToSrc (addIndent indent ++ "} else {\n")
-                     appendToSrc (addIndent indent' ++ retVar ++ " = false;\n")
-                     appendToSrc (addIndent indent ++ "}\n")
-                     return retVar
-
-            -- Or
-            [XObj Or _ _, expr1, expr2] ->
-              let indent' = indent + indentAmount
-                  retVar = freshVar i
-              in  do appendToSrc (addIndent indent ++ "bool " ++ retVar ++ " = false;\n")
-                     expr1Var <- visit indent expr1
-                     appendToSrc (addIndent indent ++ "if(" ++ expr1Var ++ ") {\n")
-                     appendToSrc (addIndent indent' ++ retVar ++ " = true;\n")
-                     appendToSrc (addIndent indent ++ "} else {\n")
-                     expr2Var <- visit indent' expr2
-                     appendToSrc (addIndent indent' ++ retVar ++ " = " ++ expr2Var ++ ";\n")
-                     appendToSrc (addIndent indent ++ "}\n")
-                     return retVar
 
             -- While
             [XObj While _ _, expr, body] ->

@@ -63,8 +63,6 @@ data Obj = Sym SymPath SymbolMode
          | While
          | Break
          | If
-         | And
-         | Or
          | Mod Env
          | Typ Ty
          | With
@@ -267,8 +265,6 @@ pretty = visit 0
             Def -> "def"
             Fn _ captures -> "fn" -- ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
-            And -> "and"
-            Or -> "or"
             While -> "while"
             Do -> "do"
             Let -> "let"
