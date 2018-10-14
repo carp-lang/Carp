@@ -65,7 +65,7 @@ The current session in the repl is called a "project" and can be configured usin
 * ```"title"```              - Set the title of the current project, will affect the name of the binary produced.
 * ```"prompt"```             - Set the prompt in the repl.
 * ```"search-path"```        - Add a path where the Carp compiler will look for '*.carp' files.
-* ```"out-directory"```      - Where to put build artifacts.
+* ```"output-directory"```    - Where to put build artifacts.
 * ```"docs-directory"```      - Where to put generated docs.
 
 * ```"echo-c"```             - When a form is defined using 'def' or 'defn' its C code will be printed.
