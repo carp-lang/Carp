@@ -25,6 +25,12 @@
   (register fgetc (Fn [(Ptr FILE)] Char))
   (doc fwrite "writes to a file pointer.")
   (register fwrite (Fn [a Int Int (Ptr FILE)] ()) "fwrite")
+  (doc fread "reads from a file pointer into a pointer.")
+  (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
+  (doc fflush "flushes a file pointer (i.e. commits every write).")
+  (register fflush (Fn [(Ptr FILE)] ()) "fflush")
+  (doc rewind "rewinds a file pointer (i.e. puts input and output stream to beginning.")
+  (register rewind (Fn [(Ptr FILE)] ()) "rewind")
 
   (doc read->EOF "reads a file given by name until the End-Of-File character is reached.")
   (defn read->EOF [filename]
