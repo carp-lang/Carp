@@ -29,8 +29,18 @@
   (register fread (Fn [a Int Int (Ptr FILE)] Int) "fread")
   (doc fflush "flushes a file pointer (i.e. commits every write).")
   (register fflush (Fn [(Ptr FILE)] ()) "fflush")
-  (doc rewind "rewinds a file pointer (i.e. puts input and output stream to beginning.")
+  (doc rewind "rewinds a file pointer (i.e. puts input and output stream to beginning).")
   (register rewind (Fn [(Ptr FILE)] ()) "rewind")
+  (doc unlink "unlinks a file (i.e. deletes it).")
+  (register unlink (Fn [String] ()) "unlink")
+  (doc fseek "sets the position indicator of a file.")
+  (register fseek (Fn [(Ptr FILE) Int Int] ()) "fseek")
+  (doc ftell "gets the position indicator of a file.")
+  (register ftell (Fn [(Ptr FILE)] Int) "ftell")
+
+  (register SEEK-SET Int "SEEK_SET")
+  (register SEEK-CUR Int "SEEK_CUR")
+  (register SEEK-END Int "SEEK_END")
 
   (doc read->EOF "reads a file given by name until the End-Of-File character is reached.")
   (defn read->EOF [filename]
