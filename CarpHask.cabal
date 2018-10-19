@@ -55,6 +55,7 @@ library
                      , blaze-html
                      , blaze-markup
                      , text
+                     , unix
 
   default-language:    Haskell2010
 
