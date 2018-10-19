@@ -163,6 +163,63 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#SEEK-CUR">
+                    <h3 id="SEEK-CUR">
+                        SEEK-CUR
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#SEEK-END">
+                    <h3 id="SEEK-END">
+                        SEEK-END
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#SEEK-SET">
+                    <h3 id="SEEK-SET">
+                        SEEK-SET
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#color">
                     <h3 id="color">
                         color
@@ -239,6 +296,25 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#fflush">
+                    <h3 id="fflush">
+                        fflush
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    flushes a file pointer (i.e. commits every write).
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#fgetc">
                     <h3 id="fgetc">
                         fgetc
@@ -274,6 +350,63 @@
                 </span>
                 <p class="doc">
                     opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fread">
+                    <h3 id="fread">
+                        fread
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [a, Int, Int, (Ptr FILE)] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    reads from a file pointer into a pointer.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#fseek">
+                    <h3 id="fseek">
+                        fseek
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE), Int, Int] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    sets the position indicator of a file.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#ftell">
+                    <h3 id="ftell">
+                        ftell
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE)] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    gets the position indicator of a file.
                 </p>
             </div>
             <div class="binder">
@@ -407,6 +540,44 @@
                 </span>
                 <p class="doc">
                     returns the contents of a file passed as argument as a string.
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#rewind">
+                    <h3 id="rewind">
+                        rewind
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr FILE)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    rewinds a file pointer (i.e. puts input and output stream to beginning).
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unlink">
+                    <h3 id="unlink">
+                        unlink
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [String] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    unlinks a file (i.e. deletes it).
                 </p>
             </div>
         </div>

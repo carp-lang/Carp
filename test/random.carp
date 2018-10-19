@@ -11,6 +11,6 @@
                Double.approx)
     (assert-op test
                0.536041
-               (do (Random.seed 33333.0) (Random.random))
+               (do (Random.seed-from 33333.0) (Random.random))
                "deterministic randomization with seed works as expected"
                Double.approx)))

@@ -5,6 +5,8 @@
   (register free (Fn [t] ()))
   (doc time "Gets the current system time as an integer.")
   (register time (Fn [] Int))
+  (doc nanotime "Gets the current system time in nanoseconds as a long.")
+  (register nanotime (Fn [] Long))
   (doc sleep-seconds "Sleeps for a specified number of seconds.")
   (register sleep-seconds (Fn [Int] ()))
   (doc sleep-seconds "Sleeps for a specified number of microseconds.")

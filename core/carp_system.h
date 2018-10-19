@@ -24,6 +24,13 @@ void System_sleep_MINUS_micros(int t) {
 }
 #endif
 
+
+double System_nanotime() {
+  struct timespec tv;
+  clock_gettime(CLOCK_REALTIME, &tv);
+  return 1000000000 * tv.tv_sec + tv.tv_nsec;
+}
+
 void System_system(String *command) {
     system(*command);
 }
