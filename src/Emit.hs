@@ -90,6 +90,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Chr c -> return $ case c of
                                 '\t' -> "'\\t'"
                                 '\n' -> "'\\n'"
+                                '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
             Sym _ _ -> visitSymbol indent xobj
             Defn -> error (show (DontVisitObj Defn))
