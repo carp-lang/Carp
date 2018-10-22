@@ -2,6 +2,7 @@
 
 module RenderDocs where
 
+import CMark
 import Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Pretty (renderHtml)
@@ -100,6 +101,7 @@ binderToHtml (Binder meta xobj) =
                     Just (XObj (Str s) _ _) -> s
                     Just found -> pretty found
                     Nothing -> ""
+      htmlDoc = commonmarkToHtml [optSafe] $ Text.pack docString
   in  do H.div ! A.class_ "binder" $
            do H.a ! A.class_ "anchor" ! A.href (stringValue ("#" ++ name)) $
                 do H.h3 ! A.id (stringValue name) $ (toHtml name)
@@ -108,5 +110,5 @@ binderToHtml (Binder meta xobj) =
               case maybeNameAndArgs of
                 Just nameAndArgs -> H.pre ! A.class_ "args" $ toHtml nameAndArgs
                 Nothing -> H.span $ toHtml (""::String)
-              H.p ! A.class_ "doc" $ (toHtml docString)
+              H.p ! A.class_ "doc" $ (preEscapedToHtml htmlDoc)
               --p_ (toHtml (description))
