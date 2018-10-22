@@ -39,7 +39,7 @@
 
 (defn main []
   (do (println "Seeding random number generator...\n")
-      (Random.seed (Double.from-int (System.time)))
+      (Random.seed-from (Double.from-int (System.time)))
       (start-new-game!)
       (while guessing
         (let [user-input (get-line)

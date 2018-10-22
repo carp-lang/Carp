@@ -13,8 +13,12 @@
   (hidden s)
   (private s)
 
-  (doc seed "seed resets the seed of the random number generator to `new-seed`.")
-  (defn seed [new-seed]
+  (doc seed "seed resets the seed of the random number generator.")
+  (defn seed []
+    (set! s (Double.from-long (System.nanotime))))
+
+  (doc seed-from "seed-from resets the seed of the random number generator to `new-seed`.")
+  (defn seed-from [new-seed]
     (set! s new-seed))
 
   (doc random "random returns a float from 0 to 1.")
