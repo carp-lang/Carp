@@ -6,6 +6,9 @@
 void IO_println(String *s) { puts(*s); }
 void IO_print(String *s) { printf("%s", *s); }
 
+void IO_errorln(String *s) { fprintf(stderr, "%s\n", *s); }
+void IO_error(String *s) { fprintf(stderr, "%s", *s); }
+
 char IO_EOF = (char) EOF;
 
 #ifndef _WIN32
