@@ -65,6 +65,11 @@
 ;;     (Array.reduce (fn [x y] (+ @x (/ 1.0 @y))) 0.0 resistances))
 ;;   )
 
-(defn compose [f g] (fn [x] (f (g x))))
+(deftype Hi [])
 
-(defn main [] (IO.println &(str ((compose Int.inc Array.first) &[10]))))
+(defmodule Hi
+
+  (def GLOBALHI (Hi.init))
+
+  (defn set-hi [h]
+    (set! GLOBALHI h)))
