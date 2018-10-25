@@ -23,6 +23,14 @@ External librares can be loaded by using their relative or absolute location in 
 
 This line of configuration can be put into a `~/.carp/profile.carp` file to make it apply in all your projects.
 
+## Loading via git
+
+You can also load libraries via git in this way:
+
+`(load "https://github.com/hellerve/anima.carp@master")`
+
+This will download the [Anima](https://github.com/hellerve/anima) library to `~/.carp/libs/<library>/<tag>` and load the file `anima.carp` in it. To get a stable version of the library you should specify a git tag rather than `@master`.
+
 ## Core Modules
 
 ### Basics
