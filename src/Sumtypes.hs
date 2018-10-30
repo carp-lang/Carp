@@ -14,3 +14,7 @@ import Util
 --import Polymorphism
 --import ArrayTemplates
 --import Lookup
+
+moduleForSumtype :: TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either String (String, XObj, [XObj])
+moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingEnv =
+  error "Failed to create sumtype."

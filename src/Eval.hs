@@ -25,6 +25,7 @@ import Obj
 import Types
 import Infer
 import Deftype
+import Sumtypes
 import ColorText
 import Template
 import Util
@@ -642,9 +643,10 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
                                Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                                _ -> Nothing
+         creatorFunction = if length rest == 1 then moduleForDeftype else moduleForSumtype
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
-         case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
+         case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
            Right (typeModuleName, typeModuleXObj, deps) ->
              let structTy = (StructTy typeName okTypeVariables)
                  typeDefinition =
