@@ -524,21 +524,21 @@ templateToDeclaration template path actualTy =
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) e) declaration
   in  concatMap show tokens ++ ";\n"
 
+memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
+memberToDecl indent (memberName, memberType) =
+  case xobjToTy memberType of
+    -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
+    Just (FuncTy _ _) -> appendToSrc (addIndent indent ++ "Lambda " ++ mangle (getName memberName) ++ ";\n") -- TODO: Can remove this case now and rely on tyToCLambdaFix instead?
+    Just t  -> appendToSrc (addIndent indent ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Nothing -> error ("Invalid memberType: " ++ show memberType)
+
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
 defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
   let indent' = indentAmount
 
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM memberToDecl (pairwise members)
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent') (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
-
-      memberToDecl :: (XObj, XObj) -> State EmitterState ()
-      memberToDecl (memberName, memberType) =
-        case xobjToTy memberType of
-          -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-          Just (FuncTy _ _) -> appendToSrc (addIndent indent' ++ "Lambda " ++ mangle (getName memberName) ++ ";\n") -- TODO: Can remove this case now and rely on tyToCLambdaFix instead?
-          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
-          Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced
       visit = do appendToSrc "typedef struct {\n"
@@ -550,9 +550,23 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
      else emitterSrc (execState visit (EmitterState ""))
 
 defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
-  let visit = do appendToSrc "typedef struct {\n"
-                 -- _ <- mapM typedefCaseToMemberDecl rest
+  let indent = indentAmount
+
+      visit = do appendToSrc "typedef struct {\n"
+                 appendToSrc (addIndent indent ++ "union {\n")
+                 _ <- mapM (emitSumtypeCase (indent)) rest
+                 appendToSrc (addIndent indent ++ "};\n")
+                 appendToSrc (addIndent indent ++ "char _tag;\n")
                  appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+
+      emitSumtypeCase :: Int -> XObj -> State EmitterState ()
+      emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
+        do appendToSrc (addIndent indent ++ "struct {\n")
+           let members = zipWith (\n tyXObj -> ((XObj (Sym (SymPath [] ("member" ++ show n)) Symbol) Nothing Nothing), tyXObj)) [0..] memberTys
+           mapM (memberToDecl (indent + indentAmount)) members
+           appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
+
+
   in if isTypeGeneric sumTy
      then ""
      else emitterSrc (execState visit (EmitterState ""))
