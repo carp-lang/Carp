@@ -6,5 +6,13 @@
   (Just [a])
   (Nothing []))
 
+(deftype Cool (a [Int]) (b [Bool Bool]))
+
+(defmodule Cool
+  (defn f [] 123))
+
+;; (defn f []
+;;   ())
+
 ;; (deftype (Blah t)
 ;;     [x Int])

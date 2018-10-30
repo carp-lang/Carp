@@ -562,7 +562,7 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
-           let members = zipWith (\n tyXObj -> ((XObj (Sym (SymPath [] ("member" ++ show n)) Symbol) Nothing Nothing), tyXObj)) [0..] memberTys
+           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
            mapM (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
 

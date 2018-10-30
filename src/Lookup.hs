@@ -191,6 +191,7 @@ isManaged typeEnv (StructTy name _) =
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder _ (XObj (Lst (XObj (Typ _) _ _ : _)) _ _)) -> True
+         Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
          Nothing -> error ("Can't find " ++ name ++ " in type env.")
     )

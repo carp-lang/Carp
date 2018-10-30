@@ -189,6 +189,7 @@ getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
+getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
 getBinderDescription (XObj (Mod _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
@@ -271,6 +272,7 @@ pretty = visit 0
             Let -> "let"
             Mod env -> fromMaybe "module" (envModuleName env)
             Typ _ -> "deftype"
+            DefSumtype _ -> "deftype"
             Deftemplate _ -> "deftemplate"
             Instantiate _ -> "instantiate"
             External Nothing -> "external"
@@ -724,3 +726,9 @@ definitionMode _ = AFunction
 isGlobalVariableLookup :: SymbolMode -> Bool
 isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
+
+anonMemberNames :: [String]
+anonMemberNames = map (\i -> ("member" ++ show i)) [0..]
+
+anonMemberSymbols :: [XObj]
+anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 
-module Deftype (moduleForDeftype, bindingsForRegisteredType) where
+module Deftype (moduleForDeftype, bindingsForRegisteredType, memberArg) where
 
 import qualified Data.Map as Map
 import Data.Maybe
