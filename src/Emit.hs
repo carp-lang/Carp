@@ -524,8 +524,8 @@ templateToDeclaration template path actualTy =
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) e) declaration
   in  concatMap show tokens ++ ";\n"
 
-deftypeToDeclaration :: Ty -> SymPath -> [XObj] -> String
-deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
+defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
+defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
   let indent' = indentAmount
 
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
@@ -549,6 +549,14 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
      then "" -- ("// " ++ show structTy ++ "\n")
      else emitterSrc (execState visit (EmitterState ""))
 
+defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
+  let visit = do appendToSrc "typedef struct {\n"
+                 -- _ <- mapM typedefCaseToMemberDecl rest
+                 appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+  in if isTypeGeneric sumTy
+     then ""
+     else emitterSrc (execState visit (EmitterState ""))
+
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
@@ -566,7 +574,9 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       let Just t' = t
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
     XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
-      deftypeToDeclaration t path rest
+      defStructToDeclaration t path rest
+    XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
+      defSumtypeToDeclaration t path rest
     XObj (Deftemplate _) _ _ : _ ->
       ""
     XObj Macro _ _ : _ ->

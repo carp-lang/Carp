@@ -643,7 +643,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
                                Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                                _ -> Nothing
-         creatorFunction = if length rest == 1 then moduleForDeftype else moduleForSumtype
+         (creatorFunction, typeConstructor) = if length rest == 1 then (moduleForDeftype, Typ) else (moduleForSumtype, DefSumtype)
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
          case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
@@ -651,7 +651,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
              let structTy = (StructTy typeName okTypeVariables)
                  typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                   XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :
                               XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)

@@ -64,7 +64,8 @@ data Obj = Sym SymPath SymbolMode
          | Break
          | If
          | Mod Env
-         | Typ Ty
+         | Typ Ty -- TODO: Rename to Deftype!
+         | DefSumtype Ty
          | With
          | External (Maybe String)
          | ExternalType

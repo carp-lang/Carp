@@ -1,11 +1,10 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defn foo []
-  123)
+;; Syntax D
+(deftype (Maybe a)
+  (Just [a])
+  (Nothing []))
 
-(defn get-foo []
-  foo)
-
-(defn main []
-  ((get-foo)))
+;; (deftype (Blah t)
+;;     [x Int])
