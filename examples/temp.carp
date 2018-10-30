@@ -6,10 +6,13 @@
   (Just [a])
   (Nothing []))
 
-(deftype Cool (a [Int]) (b [Bool Bool]))
+(deftype Flip (A [Int]) (B [Bool]))
 
-(defmodule Cool
-  (defn f [] 123))
+(defn f []
+  (Flip.A 123))
+
+(defn g []
+  (Flip.B true))
 
 ;; (defn f []
 ;;   ())
