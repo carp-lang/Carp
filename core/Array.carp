@@ -5,7 +5,7 @@
     (let [total x]
       (do
         (for [i 0 (length xs)]
-          (set! total (f &total (nth xs i))))
+          (set! total (f total (nth xs i))))
         total)))
 
   (doc first "Take the first element of an array.")
@@ -57,7 +57,7 @@
 
   (doc minimum "Sum an array (elements must support + and zero).")
   (defn sum [xs]
-    (Array.reduce (fn [x y] (+ @x @y)) (zero) xs))
+    (Array.reduce (fn [x y] (+ x @y)) (zero) xs))
 
   (doc subarray "Get subarray from start-index to end-index.")
   (defn subarray [xs start-index end-index]

@@ -42,8 +42,13 @@
     )
     (assert-equal test
                   true
-                  (Map.empty? &(Map.remove (Map.put &(Map.create) "1" "2") "1"))
+                  (Map.empty? &(Map.remove &(Map.put! (Map.create) "1" "2") "1"))
                   "remove works"
+    )
+    (assert-equal test
+                  true
+                  (Map.empty? &(Map.remove! (Map.put! (Map.create) "1" "2") "1"))
+                  "remove! works"
     )
     (assert-equal test
                   2
@@ -93,8 +98,13 @@
     )
     (assert-equal test
                   true
-                  (Set.empty? &(Set.remove (Set.put &(Set.create) "1") "1"))
+                  (Set.empty? &(Set.remove &(Set.put! (Set.create) "1") "1"))
                   "remove works"
+    )
+    (assert-equal test
+                  true
+                  (Set.empty? &(Set.remove! (Set.put! (Set.create) "1") "1"))
+                  "remove! works"
     )
     (assert-equal test
                   "{ @\"hi\" @\"bye\" }"
