@@ -112,15 +112,15 @@
 (defn even? [x]
   (= (Int.mod @x 2) 0))
 
-(defn add-with-refs [x y]
-  (Int.+ @x @y))
+(defn add-with-ref [x y]
+  (Int.+ x @y))
 
 (defn square-reffed [x]
   (Int.* @x @x))
 
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce add-with-refs 0 &(copy-map square-reffed &(filter even? stuff)))]
+        after (reduce add-with-ref 0 &(copy-map square-reffed &(filter even? stuff)))]
     (do
       (print "ANSWER: ")
       (println (refstr after)))))

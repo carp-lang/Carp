@@ -6,7 +6,7 @@
                @"Charlie" 23
                @"Dave" 56
                @"Emily" 42}
-        ages2 (Map.put &ages1 "Dave" &57)]
+        ages2 (Map.put ages1 "Dave" &57)]
     (do
       (println* "Charlie is " (Map.get &ages2 "Charlie") " years old.")
       (println* "Dave is " (Map.get &ages2 "Dave") " years old.")
@@ -14,7 +14,7 @@
 
 (defn start-with-empty []
   (let [a {}
-        b (Map.put &a "aha" &123)]
+        b (Map.put a "aha" &123)]
     (println* (Map.get &b "aha"))))
 
 (defn checking []

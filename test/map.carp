@@ -7,12 +7,12 @@
   (with-test test
     (assert-equal test
                   "2"
-                  &(Map.get &(Map.put &(Map.create) "1" "2") "1")
+                  &(Map.get &(Map.put (Map.create) "1" "2") "1")
                   "basic put and get works"
     )
     (assert-equal test
                   1
-                  (Map.length &(Map.put &(Map.create) "1" "2"))
+                  (Map.length &(Map.put (Map.create) "1" "2"))
                   "length works"
     )
     (assert-equal test
@@ -27,7 +27,7 @@
     )
     (assert-equal test
                   true
-                  (Map.contains? &(Map.put &(Map.create) "1" "2") "1")
+                  (Map.contains? &(Map.put (Map.create) "1" "2") "1")
                   "contains? works"
     )
     (assert-equal test
@@ -37,12 +37,12 @@
     )
     (assert-equal test
                   false
-                  (Map.empty? &(Map.put &(Map.create) "1" "2"))
+                  (Map.empty? &(Map.put (Map.create) "1" "2"))
                   "empty? works"
     )
     (assert-equal test
                   true
-                  (Map.empty? &(Map.remove (Map.put &(Map.create) "1" "2") "1"))
+                  (Map.empty? &(Map.remove (Map.put (Map.create) "1" "2") "1"))
                   "remove works"
     )
     (assert-equal test
@@ -63,7 +63,7 @@
     )
     (assert-equal test
                   1
-                  (Set.length &(Set.put &(Set.create) "1"))
+                  (Set.length &(Set.put (Set.create) "1"))
                   "length works"
     )
     (assert-equal test
@@ -78,7 +78,7 @@
     )
     (assert-equal test
                   true
-                  (Set.contains? &(Set.put &(Set.create) "1") "1")
+                  (Set.contains? &(Set.put (Set.create) "1") "1")
                   "contains? works"
     )
     (assert-equal test
@@ -88,12 +88,12 @@
     )
     (assert-equal test
                   false
-                  (Set.empty? &(Set.put &(Set.create) "1"))
+                  (Set.empty? &(Set.put (Set.create) "1"))
                   "empty? works"
     )
     (assert-equal test
                   true
-                  (Set.empty? &(Set.remove (Set.put &(Set.create) "1") "1"))
+                  (Set.empty? &(Set.remove (Set.put (Set.create) "1") "1"))
                   "remove works"
     )
     (assert-equal test

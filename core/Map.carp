@@ -101,11 +101,10 @@
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
-    (let [idx (Int.mod (hash k) @(n-buckets m))
-          b (buckets m)]
-      (set-buckets @m (Array.aset @b
-                                  idx
-                                  (Bucket.grow (Array.nth b idx) (Pair.init @k @v))))))
+    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+      (update-buckets m (fn [b]
+        (let [n (Array.nth &b idx)]
+          (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
@@ -130,11 +129,10 @@
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))
-          b (buckets &m)]
-      (set-buckets m (Array.aset @b
-                                 idx
-                                 (Bucket.shrink (Array.nth b idx) k)))))
+    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+      (update-buckets m (fn [b]
+        (let [n (Array.nth &b idx)]
+          (Array.aset b idx (Bucket.shrink n k)))))))
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
@@ -153,7 +151,7 @@
         (let [e (Array.nth a i)
               k (Pair.a e)
               v (Pair.b e)]
-          (set! m (put &m k v))))
+          (set! m (put m k v))))
       m))
 
   (defn str [m]
@@ -218,11 +216,10 @@
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets s))
-          b (buckets s)]
-      (set-buckets @s (Array.aset @b
-                                  idx
-                                  (SetBucket.grow (Array.nth b idx) @k)))))
+    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+      (update-buckets s (fn [b]
+        (let [n (Array.nth &b idx)]
+          (Array.aset b idx (SetBucket.grow n @k)))))))
 
   (doc length "Get the length of set s.")
   (defn length [s]
@@ -242,12 +239,10 @@
 
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets &s))
-          b (buckets &s)]
-      (set-buckets s (Array.aset @b
-                                 idx
-                                 (SetBucket.shrink (Array.nth b idx) k)))))
-
+    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+      (update-buckets s (fn [b]
+        (let [n (Array.nth &b idx)]
+          (Array.aset b idx (SetBucket.shrink n k)))))))
 
   (doc for-each "Execute the unary function f for each element in the set s.")
   (defn for-each [s f]
@@ -264,7 +259,7 @@
     (let-do [s (create)]
       (for [i 0 (Array.length a)]
         (let [e (Array.nth a i)]
-          (set! s (put &s e))))
+          (set! s (put s e))))
       s))
 
   (defn str [s]

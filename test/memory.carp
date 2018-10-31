@@ -192,7 +192,7 @@
         (assert (= &[@"q" @"b" @"c"] &xs)))))
 
 (defn append-ref [a b]
-  (StringCopy.append @a @b))
+  (StringCopy.append a @b))
 
 (defn array-reduce []
   (let [xs [@"a" @"b" @"c"]
