@@ -33,6 +33,14 @@
                   (find #"\d" "   ")
                   "find works as expected if not found")
     (assert-equal test
+                  &[3 6]
+                  &(find-all #"\d\d" "   12 67")
+                  "find-all works as expected")
+    (assert-equal test
+                  &[]
+                  &(find-all #"\d\d" "   ")
+                  "find-all works as expected if not found")
+    (assert-equal test
                   &[@"12"]
                   &(match #"(\d+)" "   12")
                   "match works as expected")
