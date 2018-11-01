@@ -3,6 +3,8 @@
 (defmodule Pattern
   (doc find "Finds the index of a pattern in a string. Returns -1 otherwise.")
   (register find (Fn [&Pattern &String] Int))
+  (doc find-all "Finds all indices of a pattern in a string. Returns [] otherwise.")
+  (register find-all (Fn [&Pattern &String] (Array Int)))
   (doc match "Finds the match groups of the first match of a pattern in a string. Returns [] otherwise.")
   (register match (Fn [&Pattern &String] (Array String)))
   (doc match-str "Finds the first match of a pattern in a string. Returns [] otherwise.")
@@ -77,17 +79,20 @@
     (Pattern.substitute #"\s+" s " " -1))
 
   (doc split-by "Split a string by separators.")
-  (defn split-by [_s separators]
-    (let-do [s @_s
-             result (the (Array String) [])
-             pat (Pattern.from-chars separators)
-             idx (Pattern.find &pat &s)]
-      (while (Int./= idx -1)
-        (do
-          (set! result (Array.push-back result (prefix-string &s idx)))
-          (set! s (suffix-string &s (+ idx 1)))
-          (set! idx (Pattern.find &pat &s))))
-      (Array.push-back result s)))
+  (defn split-by [s separators]
+    (let-do [pat (Pattern.from-chars separators)
+             idx (Pattern.find-all &pat s)
+             lidx (Array.length &idx)
+             result (Array.allocate (Int.inc lidx))]
+      (Array.aset-uninitialized! &result 0
+        (substring s 0 (if (> lidx 0) @(Array.nth &idx 0) (length s))))
+      (for [i 0 (Int.dec (Array.length &idx))]
+        (Array.aset-uninitialized! &result (Int.inc i)
+          (substring s (Int.inc @(Array.nth &idx i)) @(Array.nth &idx (Int.inc i)))))
+      (when (> lidx 0)
+        (Array.aset-uninitialized! &result lidx
+          (suffix-string s (Int.inc @(Array.nth &idx (Int.dec lidx))))))
+      result))
 
   (doc words "Split a string into words.")
   (defn words [s]
