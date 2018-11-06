@@ -31,8 +31,6 @@ You can also load libraries via git in this way:
 
 This will download the [Anima](https://github.com/hellerve/anima) library to `~/.carp/libs/<library>/<tag>` and load the file `anima.carp` in it. To get a stable version of the library you should specify a git tag rather than `@master`.
 
-For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
-
 ## Core Modules
 
 ### Basics
@@ -85,3 +83,5 @@ For a growing list of Carp packages, see [Carpentry](https://github.com/carpentr
 * [NCurses](https://github.com/eriksvedang/carp-ncurses) ([https://www.gnu.org/software/ncurses/](https://www.gnu.org/software/ncurses/))
 * [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
 * [Curl](https://github.com/eriksvedang/carp-curl) (Simple bindings to the Curl library)
+
+For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
