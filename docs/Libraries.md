@@ -3,8 +3,6 @@
 Below is a list of 'core' modules that comes included with the Carp compiler.
 Modules marked with the symbol '⦁' are imported by default, other modules must be imported by loading their file. For example, to get access to the Bench module, do the following:
 
-For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
-
 ```clojure
 (load "Bench.carp")
 ```
@@ -32,6 +30,8 @@ You can also load libraries via git in this way:
 `(load "https://github.com/hellerve/anima.carp@master")`
 
 This will download the [Anima](https://github.com/hellerve/anima) library to `~/.carp/libs/<library>/<tag>` and load the file `anima.carp` in it. To get a stable version of the library you should specify a git tag rather than `@master`.
+
+For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
 
 ## Core Modules
 
