@@ -3,6 +3,8 @@
 Below is a list of 'core' modules that comes included with the Carp compiler.
 Modules marked with the symbol '⦁' are imported by default, other modules must be imported by loading their file. For example, to get access to the Bench module, do the following:
 
+For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).
+
 ```clojure
 (load "Bench.carp")
 ```
