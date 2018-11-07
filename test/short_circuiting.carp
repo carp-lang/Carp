@@ -41,30 +41,29 @@
       (ignore (or* (inc-false) (inc-false) (inc-true) (inc-false) (inc-false))) ;; 3 expressions will evaluate.
       g))
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  1
-                  (short-circuit-and)
-                  "'and' short circuits")
-    (assert-equal test
-                  1
-                  (short-circuit-or)
-                  "'or' short circuits")
-    (assert-equal test
-                  2
-                  (eval-both-expr-in-and)
-                  "'and' can evaluate second expr")
-    (assert-equal test
-                  2
-                  (eval-both-expr-in-or)
-                  "'or' can evaluate second expr")
-    (assert-equal test
-                  3
-                  (vararg-and)
-                  "'and*' works")
-    (assert-equal test
-                  3
-                  (vararg-or)
-                  "'or*' works")
-    ))
+(deftest test
+  (assert-equal test
+                1
+                (short-circuit-and)
+                "'and' short circuits")
+  (assert-equal test
+                1
+                (short-circuit-or)
+                "'or' short circuits")
+  (assert-equal test
+                2
+                (eval-both-expr-in-and)
+                "'and' can evaluate second expr")
+  (assert-equal test
+                2
+                (eval-both-expr-in-or)
+                "'or' can evaluate second expr")
+  (assert-equal test
+                3
+                (vararg-and)
+                "'and*' works")
+  (assert-equal test
+                3
+                (vararg-or)
+                "'or*' works")
+  )

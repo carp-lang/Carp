@@ -18,9 +18,9 @@
         b (= &(Foo.init 123) &(Foo.init 123))]
     (and (not a) b)))
 
-(defn main []
-  (with-test test
-    (assert-true test
-                 (test-deftype-bug)
-                 "Ensure that bug with redefining type doesn't come back.")
-    ))
+(deftest test
+  (assert-true test
+               (test-deftype-bug)
+               "Ensure that bug with redefining type doesn't come back."
+  )
+)

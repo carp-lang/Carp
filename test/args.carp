@@ -7,13 +7,12 @@
 (defmacro make-exe-path [pth]
   (_make-exe-path pth))
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                 1
-                 (System.get-args-len)
-                 "System.get-args-len works as expected")
-    (assert-equal test
-                  (make-exe-path "/Untitled")
-                  (System.get-arg 0)
-                  "System.get-arg works as expected")))
+(deftest test
+  (assert-equal test
+               1
+               (System.get-args-len)
+               "System.get-args-len works as expected")
+  (assert-equal test
+                (make-exe-path "/Untitled")
+                (System.get-arg 0)
+                "System.get-arg works as expected"))

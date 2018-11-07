@@ -1,37 +1,36 @@
 (load "Test.carp")
 (use Test)
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  "c"
-                  &(format "%c" \c)
-                  "format works on chars")
-    (assert-equal test
-                  "1"
-                  &(format "%d" true)
-                  "format works on bools")
-    (assert-equal test
-                  "10"
-                  &(format "%d" 10)
-                  "format works on ints")
-    (assert-equal test
-                  "10"
-                  &(format "%ld" 10)
-                  "format works on longs")
-    (assert-equal test
-                  "10.0"
-                  &(format "%.1f" 10.0f)
-                  "format works on floats")
-    (assert-equal test
-                  "10.050"
-                  &(format "%2.3f" 10.05)
-                  "format works on doubles")
-    (assert-equal test
-                  "outside string: inside string :outside string"
-                  &(format "outside string: %s :outside string" "inside string")
-                  "format works on strings")
-    (assert-equal test
-                  "10 % 12.0 yay"
-                  &(fmt "%d %% %.1f %s" 10 12.0 "yay")
-                  "fmt macro works")))
+(deftest test
+  (assert-equal test
+                "c"
+                &(format "%c" \c)
+                "format works on chars")
+  (assert-equal test
+                "1"
+                &(format "%d" true)
+                "format works on bools")
+  (assert-equal test
+                "10"
+                &(format "%d" 10)
+                "format works on ints")
+  (assert-equal test
+                "10"
+                &(format "%ld" 10)
+                "format works on longs")
+  (assert-equal test
+                "10.0"
+                &(format "%.1f" 10.0f)
+                "format works on floats")
+  (assert-equal test
+                "10.050"
+                &(format "%2.3f" 10.05)
+                "format works on doubles")
+  (assert-equal test
+                "outside string: inside string :outside string"
+                &(format "outside string: %s :outside string" "inside string")
+                "format works on strings")
+  (assert-equal test
+                "10 % 12.0 yay"
+                &(fmt "%d %% %.1f %s" 10 12.0 "yay")
+                "fmt macro works"))

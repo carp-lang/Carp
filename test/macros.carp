@@ -31,150 +31,149 @@
 (defdynamic gc- [key] (Project.get-config key))
 (defmacro gc [key] (gc- key))
 
-(defn main []
-  (with-test test
-    (assert-true test
-                 (test-do-let)
-                 "do-let works as expected")
-    (assert-true test
-                 (test-case-dflt)
-                 "case correctly selects default")
-    (assert-true test
-                 (test-case-select)
-                 "case correctly selects branch")
-    (assert-true test
-                 (test-comment)
-                 "comment ignores input")
-    (assert-true test
-                 (test-not false)
-                 "not macro works as expected")
-    (assert-false test
-                  (test-and false true)
-                  "and macro works as expected I")
-    (assert-true test
-                 (test-and true true)
-                 "and macro works as expected II")
-    (assert-false test
-                 (test-and false (macro-error "failed"))
-                 "and macro shortcircuits")
-    (assert-false test
-                 (test-or false false)
-                 "or macro works as expected I")
-    (assert-true test
-                 (test-or false true)
-                 "or macro works as expected II")
-    (assert-true test
-                 (test-or true (macro-error "failed"))
-                 "or macro shortcircuits")
-    (assert-true test
-                 (test-or true true)
-                 "or macro works as expected III")
-    (assert-true test
-                 (test-< 1 2)
-                 "< macro works as expected on ints I")
-    (assert-false test
-                  (test-< 2 2)
-                  "< macro works as expected on ints II")
-    (assert-true test
-                 (test-< 1l 2l)
-                 "< macro works as expected on longs I")
-    (assert-false test
-                  (test-< 2l 2l)
-                  "< macro works as expected on longs II")
-    (assert-true test
-                 (test-< 1.0 2.0)
-                 "< macro works as expected on doubles I")
-    (assert-false test
-                  (test-< 2.0 2.0)
-                  "< macro works as expected on doubles II")
-    (assert-true test
-                 (test-< 1.0f 2.0f)
-                 "< macro works as expected on floats I")
-    (assert-false test
-                  (test-< 2.0f 2.0f)
-                  "< macro works as expected on floats II")
-    (assert-true test
-                 (test-> 2 1)
-                 "> macro works as expected on ints I")
-    (assert-false test
-                  (test-> 2 2)
-                  "> macro works as expected on ints II")
-    (assert-true test
-                 (test-> 2l 1l)
-                 "> macro works as expected on longs I")
-    (assert-false test
-                  (test-> 2l 2l)
-                  "> macro works as expected on longs II")
-    (assert-true test
-                 (test-> 2.0 1.0)
-                 "> macro works as expected on doubles I")
-    (assert-false test
-                  (test-> 2.0 2.0)
-                  "> macro works as expected on doubles II")
-    (assert-true test
-                 (test-> 2.0f 1.0f)
-                 "> macro works as expected on floats I")
-    (assert-false test
-                  (test-> 2.0f 2.0f)
-                  "> macro works as expected on floats II")
+(deftest test
+  (assert-true test
+               (test-do-let)
+               "do-let works as expected")
+  (assert-true test
+               (test-case-dflt)
+               "case correctly selects default")
+  (assert-true test
+               (test-case-select)
+               "case correctly selects branch")
+  (assert-true test
+               (test-comment)
+               "comment ignores input")
+  (assert-true test
+               (test-not false)
+               "not macro works as expected")
+  (assert-false test
+                (test-and false true)
+                "and macro works as expected I")
+  (assert-true test
+               (test-and true true)
+               "and macro works as expected II")
+  (assert-false test
+               (test-and false (macro-error "failed"))
+               "and macro shortcircuits")
+  (assert-false test
+               (test-or false false)
+               "or macro works as expected I")
+  (assert-true test
+               (test-or false true)
+               "or macro works as expected II")
+  (assert-true test
+               (test-or true (macro-error "failed"))
+               "or macro shortcircuits")
+  (assert-true test
+               (test-or true true)
+               "or macro works as expected III")
+  (assert-true test
+               (test-< 1 2)
+               "< macro works as expected on ints I")
+  (assert-false test
+                (test-< 2 2)
+                "< macro works as expected on ints II")
+  (assert-true test
+               (test-< 1l 2l)
+               "< macro works as expected on longs I")
+  (assert-false test
+                (test-< 2l 2l)
+                "< macro works as expected on longs II")
+  (assert-true test
+               (test-< 1.0 2.0)
+               "< macro works as expected on doubles I")
+  (assert-false test
+                (test-< 2.0 2.0)
+                "< macro works as expected on doubles II")
+  (assert-true test
+               (test-< 1.0f 2.0f)
+               "< macro works as expected on floats I")
+  (assert-false test
+                (test-< 2.0f 2.0f)
+                "< macro works as expected on floats II")
+  (assert-true test
+               (test-> 2 1)
+               "> macro works as expected on ints I")
+  (assert-false test
+                (test-> 2 2)
+                "> macro works as expected on ints II")
+  (assert-true test
+               (test-> 2l 1l)
+               "> macro works as expected on longs I")
+  (assert-false test
+                (test-> 2l 2l)
+                "> macro works as expected on longs II")
+  (assert-true test
+               (test-> 2.0 1.0)
+               "> macro works as expected on doubles I")
+  (assert-false test
+                (test-> 2.0 2.0)
+                "> macro works as expected on doubles II")
+  (assert-true test
+               (test-> 2.0f 1.0f)
+               "> macro works as expected on floats I")
+  (assert-false test
+                (test-> 2.0f 2.0f)
+                "> macro works as expected on floats II")
 
-    (assert-true test
-                 (test-= 2 2)
-                 "= macro works as expected on ints I")
-    (assert-false test
-                  (test-= 2 1)
-                  "= macro works as expected on ints II")
-    (assert-true test
-                 (test-= 2l 2l)
-                 "= macro works as expected on longs I")
-    (assert-false test
-                  (test-= 2l 1l)
-                  "= macro works as expected on longs II")
-    (assert-true test
-                 (test-= 2.0 2.0)
-                 "= macro works as expected on doubles I")
-    (assert-false test
-                  (test-= 2.0 1.0)
-                  "= macro works as expected on doubles II")
-    (assert-true test
-                 (test-= 2.0f 2.0f)
-                 "= macro works as expected on floats I")
-    (assert-false test
-                  (test-= 2.0f 1.0f)
-                  "= macro works as expected on floats II")
-    (assert-true test
-                 (test-= "erik" "erik")
-                 "= macro works as expected on strings I")
-    (assert-false test
-                  (test-= "erik" "svedäng")
-                  "= macro works as expected on strings II")
-    (assert-true test
-                 (test-= veit veit)
-                 "= macro works as expected on symbols I")
-    (assert-false test
-                  (test-= veit heller)
-                  "= macro works as expected on symbols II")
-    (assert-false test
-                  (and* true true false)
-                  "and* macro works as expected I")
-    (assert-true test
-                 (and* true true true)
-                 "and* macro works as expected II")
-    (assert-false test
-                  (or* false false false)
-                  "or* macro works as expected I")
-    (assert-true test
-                 (or* true false true)
-                 "or* macro works as expected II")
-    (assert-equal test
-                  "1 thing 2 things"
-                  &(str* 1 " thing " 2 " things")
-                  "str* macro works as expected")
-    (assert-equal test
-                  false
-                  (gc "echo-c")
-                  "Project.get-config works as expected I")
-    (assert-equal test
-                  "Untitled"
-                  (gc "title")
-                  "Project.get-config works as expected II")))
+  (assert-true test
+               (test-= 2 2)
+               "= macro works as expected on ints I")
+  (assert-false test
+                (test-= 2 1)
+                "= macro works as expected on ints II")
+  (assert-true test
+               (test-= 2l 2l)
+               "= macro works as expected on longs I")
+  (assert-false test
+                (test-= 2l 1l)
+                "= macro works as expected on longs II")
+  (assert-true test
+               (test-= 2.0 2.0)
+               "= macro works as expected on doubles I")
+  (assert-false test
+                (test-= 2.0 1.0)
+                "= macro works as expected on doubles II")
+  (assert-true test
+               (test-= 2.0f 2.0f)
+               "= macro works as expected on floats I")
+  (assert-false test
+                (test-= 2.0f 1.0f)
+                "= macro works as expected on floats II")
+  (assert-true test
+               (test-= "erik" "erik")
+               "= macro works as expected on strings I")
+  (assert-false test
+                (test-= "erik" "svedäng")
+                "= macro works as expected on strings II")
+  (assert-true test
+               (test-= veit veit)
+               "= macro works as expected on symbols I")
+  (assert-false test
+                (test-= veit heller)
+                "= macro works as expected on symbols II")
+  (assert-false test
+                (and* true true false)
+                "and* macro works as expected I")
+  (assert-true test
+               (and* true true true)
+               "and* macro works as expected II")
+  (assert-false test
+                (or* false false false)
+                "or* macro works as expected I")
+  (assert-true test
+               (or* true false true)
+               "or* macro works as expected II")
+  (assert-equal test
+                "1 thing 2 things"
+                &(str* 1 " thing " 2 " things")
+                "str* macro works as expected")
+  (assert-equal test
+                false
+                (gc "echo-c")
+                "Project.get-config works as expected I")
+  (assert-equal test
+                "Untitled"
+                (gc "title")
+                "Project.get-config works as expected II"))
