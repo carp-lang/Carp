@@ -12,6 +12,24 @@
   (defn empty? [a]
     (= (Array.length a) 0))
 
+  (doc any? "Checks whether any of the elements in `a` match the function `f`.")
+  (defn any? [f a]
+    (< 0 (length &(filter f a))))
+
+  (doc all? "Checks whether all of the elements in `a` match the function `f`.")
+  (defn all? [f a]
+    (= (length &a) (length &(filter f a))))
+
+  (doc find "Finds an element in `a` that matches the function `f`.")
+  (defn find [f a]
+    (let-do [res (zero)]
+      (for [i 0 (length a)]
+        (when (f (nth a i))
+          (do
+            (set! res @(nth a i))
+            (break))))
+      res))
+
   (doc first "Take the first element of an array.")
   (defn first [a]
     @(Array.nth a 0))
