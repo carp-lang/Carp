@@ -8,6 +8,10 @@
           (set! total (f total (nth xs i))))
         total)))
 
+  (doc empty? "Checks whether the array is empty.")
+  (defn empty? [a]
+    (= (Array.length a) 0))
+
   (doc first "Take the first element of an array.")
   (defn first [a]
     @(Array.nth a 0))
