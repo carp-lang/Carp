@@ -14,11 +14,23 @@
 
   (doc any? "Checks whether any of the elements in `a` match the function `f`.")
   (defn any? [f a]
-    (< 0 (length &(filter f a))))
+    (let-do [res false]
+      (for [i 0 (length a)]
+        (when (f (nth a i))
+          (do
+            (set! res true)
+            (break))))
+      res))
 
   (doc all? "Checks whether all of the elements in `a` match the function `f`.")
   (defn all? [f a]
-    (= (length &a) (length &(filter f a))))
+    (let-do [res true]
+      (for [i 0 (length a)]
+        (when (not (f (nth a i)))
+          (do
+            (set! res false)
+            (break))))
+      res))
 
   (doc find "Finds an element in `a` that matches the function `f`.")
   (defn find [f a]

@@ -196,19 +196,27 @@
                 "sorted works as expected")
   (assert-equal test
                 true
-                (any? (fn [x] (= 0 @x)) (range 0 10 1))
+                (empty? &(the (Array ()) []))
+                "empty? works as expected I")
+  (assert-equal test
+                false
+                (empty? &[1])
+                "empty? works as expected II")
+  (assert-equal test
+                true
+                (any? (fn [x] (= 0 @x)) &(range 0 10 1))
                 "any? works as expected I")
   (assert-equal test
                 false
-                (any? (fn [x] (= 0 @x)) (range 1 10 1))
+                (any? (fn [x] (= 0 @x)) &(range 1 10 1))
                 "any? works as expected II")
   (assert-equal test
                 true
-                (all? (fn [x] (< 0 @x)) (range 1 10 1))
+                (all? (fn [x] (< 0 @x)) &(range 1 10 1))
                 "all? works as expected I")
   (assert-equal test
                 false
-                (all? (fn [x] (= 0 @x)) (range 10 1 -1))
+                (all? (fn [x] (= 0 @x)) &(range 10 1 -1))
                 "all? works as expected II")
   (assert-equal test
                 3
