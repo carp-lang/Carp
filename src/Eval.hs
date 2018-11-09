@@ -1056,6 +1056,8 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                   Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
             ExitFailure _ -> do
                 return $ invalidPathWith ctx path stderr1
+commandLoad [x] =
+  return $ Left (EvalError ("Invalid args to 'load' command: " ++ pretty x))
 
 
 -- | Load several files in order.
@@ -1095,8 +1097,6 @@ commandExpand [xobj] =
        Right expanded ->
          liftIO $ do putStrLnWithColor Yellow (pretty expanded)
                      return dynamicNil
-commandExpand args =
-  return (Left (EvalError ("Invalid args to 'expand' command: " ++ joinWithComma (map pretty args))))
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -1115,8 +1115,6 @@ commandC [xobj] =
              do liftIO (printC annXObj)
                 liftIO (mapM printC annDeps)
                 return dynamicNil
-commandC args =
-  return (Left (EvalError ("Invalid args to 'c': " ++ joinWithComma (map pretty args))))
 
 -- | Helper function for commandC
 printC :: XObj -> IO ()
