@@ -350,6 +350,14 @@
     (assert (= 200 (f 1)))
     (assert (= 300 (f 2)))))
 
+(defn lambda-4 []
+  (let-do [stuff [@"A" @"B" @"C"]]
+    (assert (= &[@"X" @"X" @"X"] &(copy-map (fn [c] @"X") &stuff)))))
+
+(defn lambda-5 []
+  (let-do [stuff [@"A" @"B" @"C"]]
+    (assert (= &[@"X" @"X" @"X"] &(endo-map (fn [c] @"X") stuff)))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -405,4 +413,6 @@
   (assert-no-leak test stringcopy-append-leak-test "StringCopy.append does not leak")
   (assert-no-leak test lambda-1 "lambda-1 does not leak")
   (assert-no-leak test lambda-2 "lambda-2 does not leak")
-  (assert-no-leak test lambda-3 "lambda-3 does not leak"))
+  (assert-no-leak test lambda-3 "lambda-3 does not leak")
+  (assert-no-leak test lambda-4 "lambda-4 does not leak")
+  (assert-no-leak test lambda-5 "lambda-5 does not leak"))
