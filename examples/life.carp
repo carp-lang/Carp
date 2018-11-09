@@ -4,8 +4,8 @@
 (use Double)
 (use Array)
 
-(load "core/sdl.carp")
-(load "core/sdl_image.carp")
+(load "core/SDL.carp")
+(load "core/SDL_image.carp")
 (use SDL)
 (use SDLApp)
 (use SDL.Event)
