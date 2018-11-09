@@ -2,15 +2,14 @@
 
 (use-all Random Test)
 
-(defn main []
-  (with-test test
-    (assert-op test
-               0.658908
-               (Random.random)
-               "deterministic randomization works as expected"
-               Double.approx)
-    (assert-op test
-               0.536041
-               (do (Random.seed-from 33333.0) (Random.random))
-               "deterministic randomization with seed works as expected"
-               Double.approx)))
+(deftest test
+  (assert-op test
+             0.658908
+             (Random.random)
+             "deterministic randomization works as expected"
+             Double.approx)
+  (assert-op test
+             0.536041
+             (do (Random.seed-from 33333.0) (Random.random))
+             "deterministic randomization with seed works as expected"
+             Double.approx))

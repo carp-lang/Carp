@@ -27,9 +27,8 @@
 (defn f []
   (Ur.compare &(Young.init 100) &(Young.init 200)))
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  false
-                  (f)
-                  "interfaces get resolved correctly")))
+(deftest test
+  (assert-equal test
+                false
+                (f)
+                "interfaces get resolved correctly"))
