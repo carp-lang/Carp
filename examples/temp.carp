@@ -1,11 +1,12 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defn foo []
-  123)
-
-(defn get-foo []
-  foo)
+(defn foo [s]
+  (println* &(Array.endo-map (fn [x] @s) [@"A" @"B" @"C"])))
 
 (defn main []
-  ((get-foo)))
+  (do
+    (Debug.reset-memory-balance!)
+    (foo "X")
+    (println* (Debug.memory-balance))
+    0))
