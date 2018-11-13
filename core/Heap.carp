@@ -33,7 +33,7 @@
 
     (defn push-down-until! [heap i len ord]
         (while true
-               (let [challenger (max-of-three-until! heap i len @&ord)] ;; TODO: Added a "ref + copy" to silence borrow checker for 'ord', should not be needed..?!
+               (let [challenger (max-of-three-until! heap i len @ord)]
                     (if (= challenger i)
                         (break)
                         (do
@@ -61,7 +61,7 @@
     (defn heapify! [arr ord]
         (let [len (Array.length arr)]
             (for [i 1 len]
-                (push-up! arr i @&ord)))) ;; TODO: Added a "ref + copy" to silence borrow checker for 'ord', should not be needed..?!
+                (push-up! arr i @ord))))
 
     (doc push! "Insert a new item onto the heap.")
     (defn push! [heap item ord]
@@ -86,10 +86,10 @@
         (< a b))
 
     (defn push-down! [heap i]
-        (Heap.push-down! heap i ord))
+        (Heap.push-down! heap i &ord))
 
     (defn push-down-until! [heap i len]
-        (Heap.push-down-until! heap i len ord))
+        (Heap.push-down-until! heap i len &ord))
 
     (defn push-up! [heap i]
         (Heap.push-up! heap i ord))
@@ -100,7 +100,7 @@
 
     (doc heapify! "Convert array to a min-heap in place")
     (defn heapify! [arr]
-        (Heap.heapify! arr ord))
+        (Heap.heapify! arr &ord))
 
     (doc push! "Insert a new element onto the min-heap.")
     (defn push! [heap item]
@@ -108,7 +108,7 @@
 
     (doc pop! "Remove and return the first item in the min-heap.")
     (defn pop! [heap]
-        (Heap.pop! heap ord))
+        (Heap.pop! heap &ord))
 )
 
 (defmodule MaxHeap
@@ -117,10 +117,10 @@
         (> a b))
 
     (defn push-down! [heap i]
-        (Heap.push-down! heap i ord))
+        (Heap.push-down! heap i &ord))
 
     (defn push-down-until! [heap i len]
-        (Heap.push-down-until! heap i len ord))
+        (Heap.push-down-until! heap i len &ord))
 
     (defn push-up! [heap i]
         (Heap.push-up! heap i ord))
@@ -131,7 +131,7 @@
 
     (doc heapify! "Convert array to a max-heap in place")
     (defn heapify! [arr]
-        (Heap.heapify! arr ord))
+        (Heap.heapify! arr &ord))
 
     (doc push! "Insert a new element onto the max-heap.")
     (defn push! [heap item]
@@ -139,14 +139,18 @@
 
     (doc pop! "Remove and return the first item in the max-heap.")
     (defn pop! [heap]
-        (Heap.pop! heap ord))
+        (Heap.pop! heap &ord))
 )
 
 (defmodule HeapSort
-    (doc sort! "Perform an in-place heapsort of a given array.")
-    (defn sort! [arr]
+    (hidden ord)
+    (defn ord [a b]
+        (> a b))
+
+    (doc sort-by! "Perform an in-place heapsort of a given array with a comparison function.")
+    (defn sort-by! [arr f]
         (do
-            (MaxHeap.heapify! arr)
+            (Heap.heapify! arr f)
             ; now we walk through the array, at all times 0..tail is a max heap
             ; and tail..len is the sorted output
             ; we slowly grow the tail while shrinking the head
@@ -158,19 +162,31 @@
                             ; this makes our heap temporarily invalid
                             (Array.swap! arr 0 tail)
                             ; keep pushing down 0 until heap property is satisfied
-                            (MaxHeap.push-down-until! arr 0 tail)
+                            (Heap.push-down-until! arr 0 tail f)
                             ; grow our tail, shrinking our head
                             (set! tail (- tail 1)))))))
 
+    (doc sorted-by "Perform a heapsort in a new copy of given array with comparison function.")
+    (defn sorted-by [arr f]
+        (let-do [narr (Array.copy arr)]
+                (sort-by! &narr f)
+                narr))
+
+    (doc sort-by "Perform an in-place heapsort of a given owned array with comparison function.")
+    (defn sort-by [arr f]
+        (do
+            (sort-by! &arr f)
+            arr))
+
+    (doc sort! "Perform an in-place heapsort of a given array.")
+    (defn sort! [arr]
+      (sort-by! arr &ord))
+
     (doc sorted "Perform a heapsort in a new copy of given array.")
     (defn sorted [arr]
-        (let-do [narr (Array.copy arr)]
-                (sort! &narr)
-                narr))
+      (sorted-by arr &ord))
 
     (doc sort "Perform an in-place heapsort of a given owned array.")
     (defn sort [arr]
-        (do
-            (sort! &arr)
-            arr))
+      (sort-by arr &ord))
 )
