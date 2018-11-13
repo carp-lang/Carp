@@ -130,6 +130,14 @@ genConstraints root = fmap sort (gen root)
                            [XObj Ref _ _, value] ->
                              gen value
 
+                           -- Deref
+                           [XObj Deref _ _, value] ->
+                             do insideValueConstraints <- gen value
+                                xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
+                                valueType <- toEither (ty value) (ExpressionMissingType value)
+                                let theTheConstraint = Constraint (RefTy xobjType) valueType xobj value OrdDeref
+                                return (theTheConstraint : insideValueConstraints)
+
                            -- Break
                            [XObj Break _ _] ->
                              return []

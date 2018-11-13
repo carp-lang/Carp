@@ -1,9 +1,7 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defn call-me [f]
-  (let []
-    ((deref f) @"hello")))
+(defn call-me [f] (~f @"hello"))
 
 (defn foo []
   (let [f (fn [s] (String.append &s "!"))]

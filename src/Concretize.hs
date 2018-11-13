@@ -728,6 +728,9 @@ manageMemory typeEnv globalEnv root =
                           Left e -> return (Left e)
                           Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
 
+            (XObj Deref _ _ : _) ->
+              error "Shouldn't end up here, deref only works when calling a function, i.e. ((deref f) 1 2 3)."
+
             doExpr@(XObj Do _ _) : expressions ->
               do visitedExpressions <- mapM (visit ) expressions
                  result <- transferOwnership  (last expressions) xobj
@@ -817,6 +820,14 @@ manageMemory typeEnv globalEnv root =
                              okTrue  <- visitedTrue
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
+
+            XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
+              do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
+                 visitedArgs <- sequence <$> mapM (visitArg ) args
+                 manage xobj
+                 return $ do okArgs <- visitedArgs
+                             Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
+
             f : args ->
               do visitedF <- visit  f
                  visitedArgs <- sequence <$> mapM (visitArg ) args

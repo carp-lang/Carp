@@ -52,11 +52,11 @@
   (let [s (id (f))]
     ()))
 
-(defn deref [x]
+(defn de-ref [x]
   @x)
 
 (defn call-4 []
-  (let [s (deref "")]
+  (let [s (de-ref "")]
     ()))
 
 (deftype A [s String])

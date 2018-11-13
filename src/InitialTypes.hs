@@ -95,6 +95,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        The                -> return (Left (InvalidObj The xobj))
                        Dynamic            -> return (Left (InvalidObj Dynamic xobj))
                        Ref                -> return (Left (InvalidObj Ref xobj))
+                       Deref              -> return (Left (InvalidObj Deref xobj))
                        With               -> return (Left (InvalidObj With xobj))
 
     visitSymbol :: Env -> XObj -> SymPath -> State Integer (Either TypeError XObj)
@@ -283,6 +284,17 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
                          return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
+
+        -- Function application with Deref
+        XObj (Lst [deref@(XObj Deref _ _), func]) xi xt : args ->
+          -- TODO: Remove code duplication (taken from function application below)
+          do t <- genVarTy
+             derefTy <- genVarTy
+             visitedFunc <- visit env func
+             visitedArgs <- fmap sequence (mapM (visit env) args)
+             return $ do okFunc <- visitedFunc
+                         okArgs <- visitedArgs
+                         return (XObj (Lst ((XObj (Lst [deref, okFunc]) xi (Just derefTy)) : okArgs)) i (Just t))
 
         -- Function application
         func : args ->
