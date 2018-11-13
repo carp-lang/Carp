@@ -1,12 +1,21 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defn foo [s]
-  (println* &(Array.endo-map (fn [x] @s) [@"A" @"B" @"C"])))
+(defn call-me [f]
+  (let []
+    ((deref f) @"hello")))
+
+(defn foo []
+  (let [f (fn [s] (String.append &s "!"))]
+    (for [i 0 3]
+      (println* (call-me &f)))))
+
+;; (defn foo [s]
+;;   (println* &(Array.endo-map (fn [x] @s) [@"A" @"B" @"C"])))
 
 (defn main []
   (do
     (Debug.reset-memory-balance!)
-    (foo "X")
+    (foo)
     (println* (Debug.memory-balance))
     0))
