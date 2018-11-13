@@ -10,4 +10,16 @@
     (doc sort "Perform an in-place heapsort of a given owned array.")
     (defn sort [arr]
         (HeapSort.sort arr))
+
+    (doc sort-by! "Perform an in-place heapsort of a given array by a comparison function.")
+    (defn sort-by! [arr f]
+        (HeapSort.sort-by! arr f))
+
+    (doc sorted-by "Perform a heapsort in a new copy of given array by a comparison function.")
+    (defn sorted-by [arr f]
+        (HeapSort.sorted-by arr f))
+
+    (doc sort-by "Perform an in-place heapsort of a given owned array by a comparison function.")
+    (defn sort-by [arr f]
+        (HeapSort.sort-by arr f))
 )

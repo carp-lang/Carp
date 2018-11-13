@@ -967,6 +967,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#sort-by">
+                    <h3 id="sort-by">
+                        sort-by
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                </p>
+                <pre class="args">
+                    (sort-by arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform an in-place heapsort of a given owned array by a comparison function.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sort-by!">
+                    <h3 id="sort-by!">
+                        sort-by!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] ())
+                </p>
+                <pre class="args">
+                    (sort-by! arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform an in-place heapsort of a given array by a comparison function.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#sorted">
                     <h3 id="sorted">
                         sorted
@@ -983,6 +1023,26 @@
                 </pre>
                 <p class="doc">
                     <p>Perform a heapsort in a new copy of given array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sorted-by">
+                    <h3 id="sorted-by">
+                        sorted-by
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                </p>
+                <pre class="args">
+                    (sorted-by arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform a heapsort in a new copy of given array by a comparison function.</p>
 
                 </p>
             </div>
