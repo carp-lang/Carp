@@ -229,7 +229,7 @@
     (random-between 0.0 1.0))
 
   (defn random-sized [n]
-    (VN.init n (Array.repeat n unit-random)))
+    (VN.init n (Array.repeat n &unit-random)))
 
 
   (defn to-string [o]
@@ -270,8 +270,8 @@
 
   (doc mag-sq "Get the squared magnitude of a vector.")
   (defn mag-sq [o]
-    (Array.reduce (fn [x y] (+ x @y)) 0.0
-                  &(Array.copy-map (fn [x] (* @x @x)) (VN.v o))))
+    (Array.reduce &(fn [x y] (+ x @y)) 0.0
+                  &(Array.copy-map &(fn [x] (* @x @x)) (VN.v o))))
 
   (doc mag "Get the magnitude of a vector.")
   (defn mag [o]
@@ -291,7 +291,7 @@
 
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
-    (Array.reduce (fn [x y] (+ x @y)) 0.0 (VN.v &(zip * x y))))
+    (Array.reduce &(fn [x y] (+ x @y)) 0.0 (VN.v &(zip * x y))))
 
   (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]

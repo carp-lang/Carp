@@ -93,11 +93,11 @@
 
   (doc create "Create an empty map.")
   (defn create []
-    (init dflt-len (Array.repeat dflt-len Bucket.empty)))
+    (init dflt-len (Array.repeat dflt-len &Bucket.empty)))
 
   (doc create-with-len "Create an empty map with a given number of buckets. High numbers reduce the possibility of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
-    (init len (Array.repeat len Bucket.empty)))
+    (init len (Array.repeat len &Bucket.empty)))
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
@@ -208,11 +208,11 @@
 
   (doc create "Create an empty set.")
   (defn create []
-    (init dflt-len (Array.repeat dflt-len SetBucket.empty)))
+    (init dflt-len (Array.repeat dflt-len &SetBucket.empty)))
 
   (doc create-with-len "Create an empty set with a given number of buckets. Higher numbers decrease the probability of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
-    (init len (Array.repeat len SetBucket.empty)))
+    (init len (Array.repeat len &SetBucket.empty)))
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]

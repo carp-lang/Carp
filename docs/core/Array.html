@@ -192,7 +192,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a] Bool), (Ref (Array a))] Bool)
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Bool)
                 </p>
                 <pre class="args">
                     (all? f a)
@@ -231,7 +231,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a] Bool), (Ref (Array a))] Bool)
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Bool)
                 </p>
                 <pre class="args">
                     (any? f a)
@@ -308,7 +308,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Array a), Int, (λ [&amp;a] a)] (Array a))
+                    (λ [(Array a), Int, (Ref (λ [&amp;a] a))] (Array a))
                 </p>
                 <pre class="args">
                     (aupdate a i f)
@@ -328,7 +328,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int, (λ [&amp;a] a)] ())
+                    (λ [(Ref (Array a)), Int, (Ref (λ [&amp;a] a))] ())
                 </p>
                 <pre class="args">
                     (aupdate! a i f)
@@ -387,7 +387,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a] b), (Ref (Array a))] (Array b))
+                    (λ [(Ref (λ [&amp;a] b)), (Ref (Array a))] (Array b))
                 </p>
                 <pre class="args">
                     (copy-map f a)
@@ -466,7 +466,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(λ [a] a), (Array a)] (Array a))
+                    (λ [(Ref (λ [a] a)), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -505,7 +505,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a] Bool), (Array a)] (Array a))
+                    (λ [(Ref (λ [&amp;a] Bool)), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -524,7 +524,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a] Bool), (Ref (Array a))] a)
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] a)
                 </p>
                 <pre class="args">
                     (find f a)
@@ -836,7 +836,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, &amp;b] a), a, (Ref (Array b))] a)
+                    (λ [(Ref (λ [a, &amp;b] a)), a, (Ref (Array b))] a)
                 </p>
                 <pre class="args">
                     (reduce f x xs)
@@ -856,7 +856,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, (λ [] a)] (Array a))
+                    (λ [Int, (Ref (λ [] a))] (Array a))
                 </p>
                 <pre class="args">
                     (repeat n f)
@@ -1154,7 +1154,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a, &amp;b] c), (Ref (Array a)), (Ref (Array b))] (Array c))
+                    (λ [(Ref (λ [&amp;a, &amp;b] c)), (Ref (Array a)), (Ref (Array b))] (Array c))
                 </p>
                 <pre class="args">
                     (zip f a b)
