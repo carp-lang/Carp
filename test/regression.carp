@@ -9,12 +9,10 @@
 
 (use-all Test Vector2 Foo)
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                   1
-                   (init)
-                   "test that the right module gets resolved"
-    )
+(deftest test
+  (assert-equal test
+                 1
+                 (init)
+                 "test that the right module gets resolved"
   )
 )

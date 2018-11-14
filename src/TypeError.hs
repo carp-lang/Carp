@@ -13,6 +13,7 @@ data TypeError = SymbolMissingType XObj Env
                | ExpressionMissingType XObj
                | SymbolNotDefined SymPath XObj
                | InvalidObj Obj XObj
+               | CantUseDerefOutsideFunctionApplication XObj
                | NotAType XObj
                | WrongArgCount XObj
                | NotAFunction XObj
@@ -55,6 +56,8 @@ instance Show TypeError where
     "Trying to refer to an undefined symbol '" ++ show symPath ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
   show (InvalidObj Defn xobj) =
     "Invalid function definition at " ++ prettyInfoFromXObj xobj ++ "."
+  show (CantUseDerefOutsideFunctionApplication xobj) =
+    "Can't use 'deref' / '~' outside function application at " ++ prettyInfoFromXObj xobj ++ "."
   show (InvalidObj If xobj) =
     "Invalid if-statement at " ++ prettyInfoFromXObj xobj ++ "."
   show (InvalidObj o xobj) =
@@ -155,6 +158,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid if-statement."]
     (InvalidObj o xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid obj '" ++ show o ++ "'."]
+    (CantUseDerefOutsideFunctionApplication xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't use 'deref' / '~' outside function application."]
     (WrongArgCount xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
     (NotAFunction xobj) ->

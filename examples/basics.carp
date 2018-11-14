@@ -91,7 +91,7 @@
 
 (defn updating []
   (let [p1 (Peep.init 9999 (String.copy "jaha") (A.init (String.copy "mmm")))
-        p2 (Peep.update-x p1 inc)]
+        p2 (Peep.update-x p1 &inc)]
     (println (ref (str @(Peep.x (ref p2)))))))
 
 (defn character []
@@ -106,21 +106,21 @@
 
 (defn endofunctor-mapping []
   (let [stuff [1 2 3 4 5]
-        after (endo-map square stuff)]
+        after (endo-map &square stuff)]
     (println (refstr &after))))
 
 (defn even? [x]
   (= (Int.mod @x 2) 0))
 
-(defn add-with-refs [x y]
-  (Int.+ @x @y))
+(defn add-with-ref [x y]
+  (Int.+ x @y))
 
 (defn square-reffed [x]
   (Int.* @x @x))
 
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce add-with-refs 0 &(copy-map square-reffed &(filter even? stuff)))]
+        after (reduce &add-with-ref 0 &(copy-map &square-reffed &(filter &even? stuff)))]
     (do
       (print "ANSWER: ")
       (println (refstr after)))))
@@ -155,7 +155,7 @@
 
 (defn print-random-floats []
   (do (Random.seed-from 0.2)
-      (let [rands (Array.repeat 10 random-float)]
+      (let [rands (Array.repeat 10 &random-float)]
         (println (ref (Array.str &rands))))))
 
 (deftype Age [x Int])
@@ -224,7 +224,7 @@
       (map-filter-reduce-stuff)
       (print-last-string)
       (let [stuff (replicate 3 "Yo")]
-        (println &(Array.str &(endo-map exclaim stuff))))
+        (println &(Array.str &(endo-map &exclaim stuff))))
       (print-structs)
       ;;(print-random-floats) <- BUGGY see github issue #227
       ;;(turn-any-array-into-string) <- BUGGY FOR NOW!

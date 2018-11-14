@@ -4,78 +4,77 @@
 
 (use-all Test Vector2 Geometry Double)
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  &(init 0.0 0.0) &(zero)
-                  "zero works")
-    (assert-equal test
-                  &(init 1.0 2.0) &(init 1.0 2.0)
-                  "= operator works")
-    (assert-op test
-               &(init 1.0 2.0) &(init 1.0 1.0)
-               "/= operator works"
-               Vector2./=)
-    (assert-equal test
-                  &(init 3.0 3.0)
-                  &(add &(init 2.0 1.0) &(init 1.0 2.0))
-                  "add operator works")
-    (assert-equal test
-                  &(init 1.0 -1.0)
-                  &(sub &(init 2.0 1.0) &(init 1.0 2.0))
-                  "sub operator works")
-    (assert-equal test
-                  &(init 4.0 2.0)
-                  &(mul &(init 2.0 1.0) 2.0)
-                  "mul operator works")
-    (assert-equal test
-                  &(init 1.0 0.5)
-                  &(div &(init 2.0 1.0) 2.0)
-                  "div operator works")
-    (assert-equal test
-                  5.0
-                  (mag &(init 3.0 4.0))
-                  "mag works")
-    (assert-equal test
-                  101.0
-                  (mag-sq &(init 10.0 1.0))
-                  "mag-sq works")
-    (assert-equal test
-                  &(init 0.6 0.8)
-                  &(normalize &(init 3.0 4.0))
-                  "normalize works")
-    (assert-equal test
-                  5.0
-                  (dist &(init 10.0 10.0) &(init 7.0 6.0))
-                  "dist works")
-    (assert-equal test
-                  0.0
-                  (heading &(init 1.0 0.0))
-                  "heading works")
-    (assert-op test
-               &(init -2.0 1.0)
-               &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
-               "rotate works"
-               approx)
-    (assert-equal test
-                  90.0
-                  (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
-                  "angle-between works")
-    (assert-true test
-                 (anti-parallel? &(init 1.0 0.0) &(init -1.0 0.0))
-                 "anti-parallel? works")
-    (assert-true test
-                 (parallel? &(init 1.0 0.0) &(init 1.0 0.0))
-                 "parallel? works")
-    (assert-true test
-                 (perpendicular? &(init 1.0 0.0) &(init 0.0 1.0))
-                 "perpendicular? works")
-    (assert-equal test
-                  44.0
-                  (dot &(init 10.0 2.0) &(init 2.0 12.0))
-                  "dot works")
-    (assert-equal test
-                  &(init 2.5 5.0)
-                  &(lerp &(init 0.0 0.0) &(init 5.0 10.0) 0.5)
-                  "lerp works")
-))
+(deftest test
+  (assert-equal test
+                &(init 0.0 0.0) &(zero)
+                "zero works")
+  (assert-equal test
+                &(init 1.0 2.0) &(init 1.0 2.0)
+                "= operator works")
+  (assert-op test
+             &(init 1.0 2.0) &(init 1.0 1.0)
+             "/= operator works"
+             Vector2./=)
+  (assert-equal test
+                &(init 3.0 3.0)
+                &(add &(init 2.0 1.0) &(init 1.0 2.0))
+                "add operator works")
+  (assert-equal test
+                &(init 1.0 -1.0)
+                &(sub &(init 2.0 1.0) &(init 1.0 2.0))
+                "sub operator works")
+  (assert-equal test
+                &(init 4.0 2.0)
+                &(mul &(init 2.0 1.0) 2.0)
+                "mul operator works")
+  (assert-equal test
+                &(init 1.0 0.5)
+                &(div &(init 2.0 1.0) 2.0)
+                "div operator works")
+  (assert-equal test
+                5.0
+                (mag &(init 3.0 4.0))
+                "mag works")
+  (assert-equal test
+                101.0
+                (mag-sq &(init 10.0 1.0))
+                "mag-sq works")
+  (assert-equal test
+                &(init 0.6 0.8)
+                &(normalize &(init 3.0 4.0))
+                "normalize works")
+  (assert-equal test
+                5.0
+                (dist &(init 10.0 10.0) &(init 7.0 6.0))
+                "dist works")
+  (assert-equal test
+                0.0
+                (heading &(init 1.0 0.0))
+                "heading works")
+  (assert-op test
+             &(init -2.0 1.0)
+             &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
+             "rotate works"
+             approx)
+  (assert-equal test
+                90.0
+                (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
+                "angle-between works")
+  (assert-true test
+               (anti-parallel? &(init 1.0 0.0) &(init -1.0 0.0))
+               "anti-parallel? works")
+  (assert-true test
+               (parallel? &(init 1.0 0.0) &(init 1.0 0.0))
+               "parallel? works")
+  (assert-true test
+               (perpendicular? &(init 1.0 0.0) &(init 0.0 1.0))
+               "perpendicular? works")
+  (assert-equal test
+                44.0
+                (dot &(init 10.0 2.0) &(init 2.0 12.0))
+                "dot works")
+  (assert-equal test
+                &(init 2.5 5.0)
+                &(lerp &(init 0.0 0.0) &(init 5.0 10.0) 0.5)
+                "lerp works")
+)

@@ -5,8 +5,42 @@
     (let [total x]
       (do
         (for [i 0 (length xs)]
-          (set! total (f &total (nth xs i))))
+          (set! total (~f total (nth xs i))))
         total)))
+
+  (doc empty? "Checks whether the array is empty.")
+  (defn empty? [a]
+    (= (Array.length a) 0))
+
+  (doc any? "Checks whether any of the elements in `a` match the function `f`.")
+  (defn any? [f a]
+    (let-do [res false]
+      (for [i 0 (length a)]
+        (when (~f (nth a i))
+          (do
+            (set! res true)
+            (break))))
+      res))
+
+  (doc all? "Checks whether all of the elements in `a` match the function `f`.")
+  (defn all? [f a]
+    (let-do [res true]
+      (for [i 0 (length a)]
+        (when (not (~f (nth a i)))
+          (do
+            (set! res false)
+            (break))))
+      res))
+
+  (doc find "Finds an element in `a` that matches the function `f`.")
+  (defn find [f a]
+    (let-do [res (zero)]
+      (for [i 0 (length a)]
+        (when (~f (nth a i))
+          (do
+            (set! res @(nth a i))
+            (break))))
+      res))
 
   (doc first "Take the first element of an array.")
   (defn first [a]
@@ -57,7 +91,7 @@
 
   (doc minimum "Sum an array (elements must support + and zero).")
   (defn sum [xs]
-    (Array.reduce (fn [x y] (+ @x @y)) (zero) xs))
+    (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
 
   (doc subarray "Get subarray from start-index to end-index.")
   (defn subarray [xs start-index end-index]
@@ -106,12 +140,12 @@
 
   (doc aupdate "Transmute the element at index i of array a using function f.")
   (defn aupdate [a i f]
-    (let [new-value (f (nth &a i))]
+    (let [new-value (~f (nth &a i))]
       (aset a i new-value)))
 
   (doc aupdate! "Transmute the element at index i of array a using function f in place.")
   (defn aupdate! [a i f]
-    (aset! a i (f (nth a i))))
+    (aset! a i (~f (nth a i))))
 
   (doc swap "Swap indices i and j of array a.")
   (defn swap [a i j]
@@ -143,7 +177,7 @@
   (doc repeat "Repeat function f n times and store the results in an array.")
   (defn repeat [n f]
     (let-do [a (allocate n)]
-      (for [i 0 n] (aset-uninitialized! &a i (f)))
+      (for [i 0 n] (aset-uninitialized! &a i (~f)))
       a))
 
   (doc repeat-indexed "Repeat function f n times and store the results in an array (will be supplied with the index).")
@@ -162,7 +196,7 @@
   (defn copy-map [f a]
     (let-do [na (allocate (length a))]
       (for [i 0 (length a)]
-        (aset-uninitialized! &na i (f (nth a i))))
+        (aset-uninitialized! &na i (~f (nth a i))))
       na))
 
   (doc zip "Map over two arrays using a function that takes two arguments. Produces a new array with the length of the shorter input.")
@@ -170,7 +204,7 @@
     (let-do [l (Int.min (length a) (length b))
              na (allocate l)]
       (for [i 0 l]
-        (aset-uninitialized! &na i (f (nth a i) (nth b i))))
+        (aset-uninitialized! &na i (~f (nth a i) (nth b i))))
       na))
 
   (doc sum-length "Returns the sum of lengths from an Array of Arrays.")
@@ -203,7 +237,7 @@
 
   (doc enumerated "Create a new array of Pair:s where the first position is the index and the second position is the element from the original array.")
   (defn enumerated [xs]
-    (zip Pair.init-from-refs
+    (zip &Pair.init-from-refs
          &(range 0 (length xs) 1) ;; Inefficient, creates a temporary array.
          xs))
 )

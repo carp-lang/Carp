@@ -51,25 +51,24 @@
             ()))
         eq))))
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  5
-                  (break-test)
-                  "break works as expected")
-    (assert-equal test
-                  5
-                  (when-test-true)
-                  "when works as expected when true")
-    (assert-equal test
-                  0
-                  (when-test-false)
-                  "when works as expected when false")
-    (assert-equal test
-                  0
-                  (unless-test-true)
-                  "unless works as expected when true")
-    (assert-equal test
-                  5
-                  (unless-test-false)
-                  "unless works as expected when false")))
+(deftest test
+  (assert-equal test
+                5
+                (break-test)
+                "break works as expected")
+  (assert-equal test
+                5
+                (when-test-true)
+                "when works as expected when true")
+  (assert-equal test
+                0
+                (when-test-false)
+                "when works as expected when false")
+  (assert-equal test
+                0
+                (unless-test-true)
+                "unless works as expected when true")
+  (assert-equal test
+                5
+                (unless-test-false)
+                "unless works as expected when false"))

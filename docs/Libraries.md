@@ -83,3 +83,5 @@ This will download the [Anima](https://github.com/hellerve/anima) library to `~/
 * [NCurses](https://github.com/eriksvedang/carp-ncurses) ([https://www.gnu.org/software/ncurses/](https://www.gnu.org/software/ncurses/))
 * [Anima](https://github.com/hellerve/anima) (A simple drawing and animation framework)
 * [Curl](https://github.com/eriksvedang/carp-curl) (Simple bindings to the Curl library)
+
+For a growing list of Carp packages, see [Carpentry](https://github.com/carpentry-org).

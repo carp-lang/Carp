@@ -230,6 +230,7 @@ symbol = do i <- createInfo
               "set!" -> return (XObj SetBang i Nothing)
               "the" -> return (XObj The i Nothing)
               "ref" -> return (XObj Ref i Nothing)
+              "deref" -> return (XObj Deref i Nothing)
               "with" -> return (XObj With i Nothing)
               name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
@@ -342,6 +343,13 @@ ref = do i <- createInfo
          expr <- sexpr
          return (XObj (Lst [XObj Ref Nothing Nothing, expr]) i Nothing)
 
+deref :: Parsec.Parsec String ParseState XObj
+deref = do i <- createInfo
+           _ <- Parsec.char '~'
+           incColumn 1
+           expr <- sexpr
+           return (XObj (Lst [XObj Deref Nothing Nothing, expr]) i Nothing)
+
 copy :: Parsec.Parsec String ParseState XObj
 copy = do i1 <- createInfo
           i2 <- createInfo
@@ -359,7 +367,7 @@ quote = do i1 <- createInfo
            return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
-sexpr = do x <- Parsec.choice [ref, copy, quote, list, array, dictionary, atom]
+sexpr = do x <- Parsec.choice [ref, deref, copy, quote, list, array, dictionary, atom]
            _ <- whitespaceOrNothing
            return x
 

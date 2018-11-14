@@ -62,7 +62,7 @@
 ;; Closures do not generate type definitions, issue #299
 ;; (defmodule Example
 ;;   (defn parallel [resistances]
-;;     (Array.reduce (fn [x y] (+ @x (/ 1.0 @y))) 0.0 resistances))
+;;     (Array.reduce (fn [x y] (+ x (/ 1.0 @y))) 0.0 resistances))
 ;;   )
 
 (deftype Hi [])

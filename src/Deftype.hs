@@ -86,7 +86,7 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
        else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy (p), t] UnitTy) (templateMutatingSetter typeEnv env (mangle memberName) t)
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
-                                                            (FuncTy [p, FuncTy [t] t] p)
+                                                            (FuncTy [p, RefTy (FuncTy [t] t)] p)
                                                             (templateUpdater (mangle memberName))]
 
 -- | The template for getters of a deftype.
@@ -159,13 +159,13 @@ templateMutatingSetter typeEnv env memberName memberTy =
 templateUpdater :: String -> Template
 templateUpdater member =
   Template
-    (FuncTy [VarTy "p", FuncTy [VarTy "t"] (VarTy "t")] (VarTy "p"))
-    (const (toTemplate "$p $NAME($p p, Lambda updater)")) -- "Lambda" used to be: $(Fn [t] t)
+    (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t"))] (VarTy "p"))
+    (const (toTemplate "$p $NAME($p p, Lambda *updater)")) -- "Lambda" used to be: $(Fn [t] t)
     (const (toTemplate (unlines ["$DECL {"
-                                ,"    p." ++ member ++ " = " ++ (templateCodeForCallingLambda "updater" (FuncTy [VarTy "t"] (VarTy "t")) ["p." ++ member]) ++ ";"
+                                ,"    p." ++ member ++ " = " ++ (templateCodeForCallingLambda "(*updater)" (FuncTy [VarTy "t"] (VarTy "t")) ["p." ++ member]) ++ ";"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\(FuncTy [_, t@(FuncTy fArgTys fRetTy)] _) ->
+    (\(FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy)] _) ->
        if isTypeGeneric fRetTy
        then []
        else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])

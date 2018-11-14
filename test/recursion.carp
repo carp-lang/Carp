@@ -21,14 +21,13 @@
 (defn recursion-test-2 []
   (A.flurb 9 6))
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  120
-                  (recursion-test-1)
-                  "Ensure that basic recursion works.")
-    (assert-equal test
-                  35
-                  (recursion-test-2)
-                  "Ensure that problem with recursion in modules is resolved.")
-    ))
+(deftest test
+  (assert-equal test
+                120
+                (recursion-test-1)
+                "Ensure that basic recursion works.")
+  (assert-equal test
+                35
+                (recursion-test-2)
+                "Ensure that problem with recursion in modules is resolved.")
+  )

@@ -3,101 +3,100 @@
 (load "Test.carp")
 (use Test)
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  "2"
-                  &(Map.get &(Map.put &(Map.create) "1" "2") "1")
-                  "basic put and get works"
-    )
-    (assert-equal test
-                  1
-                  (Map.length &(Map.put &(Map.create) "1" "2"))
-                  "length works"
-    )
-    (assert-equal test
-                  0
-                  (Map.length &(the (Map.Map Int Int) (Map.create)))
-                  "length works on empty map"
-    )
-    (assert-equal test
-                  false
-                  (Map.contains? &(the (Map.Map String Int) (Map.create)) "1")
-                  "contains? works on empty map"
-    )
-    (assert-equal test
-                  true
-                  (Map.contains? &(Map.put &(Map.create) "1" "2") "1")
-                  "contains? works"
-    )
-    (assert-equal test
-                  true
-                  (Map.empty? &(the (Map Int Int) (Map.create)))
-                  "empty? works on empty map"
-    )
-    (assert-equal test
-                  false
-                  (Map.empty? &(Map.put &(Map.create) "1" "2"))
-                  "empty? works"
-    )
-    (assert-equal test
-                  true
-                  (Map.empty? &(Map.remove (Map.put &(Map.create) "1" "2") "1"))
-                  "remove works"
-    )
-    (assert-equal test
-                  2
-                  (Map.length &(Map.from-array &[(Pair.init 1 2)
-                                                 (Pair.init 3 4)]))
-                  "creating a map from an array works"
-    )
-    (assert-equal test
-                  "{ 1 2 }"
-                  &(str &(Map.from-array &[(Pair.init 1 2)]))
-                  "stringification works I"
-    )
-    (assert-equal test
-                  "{ @\"hi\" @\"bye\" }"
-                  &(str &(Map.from-array &[(Pair.init @"hi" @"bye")]))
-                  "stringification works II"
-    )
-    (assert-equal test
-                  1
-                  (Set.length &(Set.put &(Set.create) "1"))
-                  "length works"
-    )
-    (assert-equal test
-                  0
-                  (Set.length &(the (Set.Set Int) (Set.create)))
-                  "length works on empty map"
-    )
-    (assert-equal test
-                  false
-                  (Set.contains? &(the (Set.Set String) (Set.create)) "1")
-                  "contains? works on empty map"
-    )
-    (assert-equal test
-                  true
-                  (Set.contains? &(Set.put &(Set.create) "1") "1")
-                  "contains? works"
-    )
-    (assert-equal test
-                  true
-                  (Set.empty? &(the (Set Int) (Set.create)))
-                  "empty? works on empty map"
-    )
-    (assert-equal test
-                  false
-                  (Set.empty? &(Set.put &(Set.create) "1"))
-                  "empty? works"
-    )
-    (assert-equal test
-                  true
-                  (Set.empty? &(Set.remove (Set.put &(Set.create) "1") "1"))
-                  "remove works"
-    )
-    (assert-equal test
-                  "{ @\"hi\" @\"bye\" }"
-                  &(str &(Set.from-array &[@"hi" @"bye"]))
-                  "stringification works"
-    )))
+(deftest test
+  (assert-equal test
+                "2"
+                &(Map.get &(Map.put (Map.create) "1" "2") "1")
+                "basic put and get works"
+  )
+  (assert-equal test
+                1
+                (Map.length &(Map.put (Map.create) "1" "2"))
+                "length works"
+  )
+  (assert-equal test
+                0
+                (Map.length &(the (Map.Map Int Int) (Map.create)))
+                "length works on empty map"
+  )
+  (assert-equal test
+                false
+                (Map.contains? &(the (Map.Map String Int) (Map.create)) "1")
+                "contains? works on empty map"
+  )
+  (assert-equal test
+                true
+                (Map.contains? &(Map.put (Map.create) "1" "2") "1")
+                "contains? works"
+  )
+  (assert-equal test
+                true
+                (Map.empty? &(the (Map Int Int) (Map.create)))
+                "empty? works on empty map"
+  )
+  (assert-equal test
+                false
+                (Map.empty? &(Map.put (Map.create) "1" "2"))
+                "empty? works"
+  )
+  (assert-equal test
+                true
+                (Map.empty? &(Map.remove (Map.put (Map.create) "1" "2") "1"))
+                "remove works"
+  )
+  (assert-equal test
+                2
+                (Map.length &(Map.from-array &[(Pair.init 1 2)
+                                               (Pair.init 3 4)]))
+                "creating a map from an array works"
+  )
+  (assert-equal test
+                "{ 1 2 }"
+                &(str &(Map.from-array &[(Pair.init 1 2)]))
+                "stringification works I"
+  )
+  (assert-equal test
+                "{ @\"hi\" @\"bye\" }"
+                &(str &(Map.from-array &[(Pair.init @"hi" @"bye")]))
+                "stringification works II"
+  )
+  (assert-equal test
+                1
+                (Set.length &(Set.put (Set.create) "1"))
+                "length works"
+  )
+  (assert-equal test
+                0
+                (Set.length &(the (Set.Set Int) (Set.create)))
+                "length works on empty map"
+  )
+  (assert-equal test
+                false
+                (Set.contains? &(the (Set.Set String) (Set.create)) "1")
+                "contains? works on empty map"
+  )
+  (assert-equal test
+                true
+                (Set.contains? &(Set.put (Set.create) "1") "1")
+                "contains? works"
+  )
+  (assert-equal test
+                true
+                (Set.empty? &(the (Set Int) (Set.create)))
+                "empty? works on empty map"
+  )
+  (assert-equal test
+                false
+                (Set.empty? &(Set.put (Set.create) "1"))
+                "empty? works"
+  )
+  (assert-equal test
+                true
+                (Set.empty? &(Set.remove (Set.put (Set.create) "1") "1"))
+                "remove works"
+  )
+  (assert-equal test
+                "{ @\"hi\" @\"bye\" }"
+                &(str &(Set.from-array &[@"hi" @"bye"]))
+                "stringification works"
+  ))

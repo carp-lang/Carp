@@ -2,110 +2,109 @@
 
 (use-all Float Test)
 
-(defn main []
-  (with-test test
-    (assert-equal test
-                  -1.0f
-                  (neg 1.0f)
-                  "neg works as expected")
-    (assert-equal test
-                  0.0f
-                  (acos 1.0f)
-                  "acos works as expected")
-    (assert-equal test
-                  0.0f
-                  (asin 0.0f)
-                  "asin works as expected")
-    (assert-equal test
-                  0.0f
-                  (atan 0.0f)
-                  "atan works as expected")
-    (assert-equal test
-                  0.0f
-                  (atan2 0.0f 0.0f)
-                  "atan2 works as expected")
-    (assert-equal test
-                  1.0f
-                  (cos 0.0f)
-                  "cos works as expected")
-    (assert-equal test
-                  1.0f
-                  (cosh 0.0f)
-                  "cosh works as expected")
-    (assert-equal test
-                  1.0f
-                  (cosh 0.0f)
-                  "cosh works as expected")
-    (assert-equal test
-                  0.0f
-                  (sin 0.0f)
-                  "sin works as expected")
-    (assert-equal test
-                  0.0f
-                  (sinh 0.0f)
-                  "sinh works as expected")
-    (assert-equal test
-                  0.0f
-                  (tanh 0.0f)
-                  "tanh works as expected")
-    (assert-op test
-               1.0f
-               (exp 0.0f)
-               "exp works as expected"
-               Float.approx)
-    (assert-equal test
-                  8.0f
-                  (ldexp 2.0f 2)
-                  "ldexp works as expected")
-    (assert-op test
-               1.0f
-               (log (Double.to-float Double.e))
-               "log works as expected"
-               Float.approx)
-    (assert-equal test
-                  1.0f
-                  (log10 10.0f)
-                  "log10 works as expected")
-    (assert-equal test
-                  256.0f
-                  (pow 2.0f 8.0f)
-                  "pow works as expected")
-    (assert-equal test
-                  3.0f
-                  (sqrt 9.0f)
-                  "sqrt works as expected")
-    (assert-equal test
-                  2.0f
-                  (ceil 1.3f)
-                  "ceil works as expected")
-    (assert-equal test
-                  2.0f
-                  (abs -2.0f)
-                  "abs works as expected")
-    (assert-equal test
-                  1.0f
-                  (floor 1.9f)
-                  "floor works as expected")
-    (assert-equal test
-                  1.0f
-                  (floor 1.9f)
-                  "floor works as expected")
-    (assert-equal test
-                  123.0f
-                  123f
-                  "float literals work as expected")
-    (assert-op test
-               0.3f
-               (mod 9.3f 3.0f)
-               "mod works as expected"
-               Float.approx)
-    (assert-equal test
-                  1065353216
-                  (to-bytes 1f)
-                  "to-bytes works as expected I"
-    )
-    (assert-equal test
-                  0
-                  (to-bytes 0.0f)
-                  "to-bytes works as expected II"
-    )))
+(deftest test
+  (assert-equal test
+                -1.0f
+                (neg 1.0f)
+                "neg works as expected")
+  (assert-equal test
+                0.0f
+                (acos 1.0f)
+                "acos works as expected")
+  (assert-equal test
+                0.0f
+                (asin 0.0f)
+                "asin works as expected")
+  (assert-equal test
+                0.0f
+                (atan 0.0f)
+                "atan works as expected")
+  (assert-equal test
+                0.0f
+                (atan2 0.0f 0.0f)
+                "atan2 works as expected")
+  (assert-equal test
+                1.0f
+                (cos 0.0f)
+                "cos works as expected")
+  (assert-equal test
+                1.0f
+                (cosh 0.0f)
+                "cosh works as expected")
+  (assert-equal test
+                1.0f
+                (cosh 0.0f)
+                "cosh works as expected")
+  (assert-equal test
+                0.0f
+                (sin 0.0f)
+                "sin works as expected")
+  (assert-equal test
+                0.0f
+                (sinh 0.0f)
+                "sinh works as expected")
+  (assert-equal test
+                0.0f
+                (tanh 0.0f)
+                "tanh works as expected")
+  (assert-op test
+             1.0f
+             (exp 0.0f)
+             "exp works as expected"
+             Float.approx)
+  (assert-equal test
+                8.0f
+                (ldexp 2.0f 2)
+                "ldexp works as expected")
+  (assert-op test
+             1.0f
+             (log (Double.to-float Double.e))
+             "log works as expected"
+             Float.approx)
+  (assert-equal test
+                1.0f
+                (log10 10.0f)
+                "log10 works as expected")
+  (assert-equal test
+                256.0f
+                (pow 2.0f 8.0f)
+                "pow works as expected")
+  (assert-equal test
+                3.0f
+                (sqrt 9.0f)
+                "sqrt works as expected")
+  (assert-equal test
+                2.0f
+                (ceil 1.3f)
+                "ceil works as expected")
+  (assert-equal test
+                2.0f
+                (abs -2.0f)
+                "abs works as expected")
+  (assert-equal test
+                1.0f
+                (floor 1.9f)
+                "floor works as expected")
+  (assert-equal test
+                1.0f
+                (floor 1.9f)
+                "floor works as expected")
+  (assert-equal test
+                123.0f
+                123f
+                "float literals work as expected")
+  (assert-op test
+             0.3f
+             (mod 9.3f 3.0f)
+             "mod works as expected"
+             Float.approx)
+  (assert-equal test
+                1065353216
+                (to-bytes 1f)
+                "to-bytes works as expected I"
+  )
+  (assert-equal test
+                0
+                (to-bytes 0.0f)
+                "to-bytes works as expected II"
+  ))

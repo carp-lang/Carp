@@ -23,17 +23,17 @@ templateEMap =
       elem = "((($a*)a.data)[i])"
   in  defineTemplate
       (SymPath ["Array"] "endo-map")
-      (FuncTy [fTy, aTy] bTy)
-      (toTemplate "Array $NAME(Lambda f, Array a)") -- Lambda used to be $(Fn [a] a)
+      (FuncTy [RefTy fTy, aTy] bTy)
+      (toTemplate "Array $NAME(Lambda *f, Array a)") -- Lambda used to be $(Fn [a] a)
       (toTemplate $ unlines
         ["$DECL { "
         ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($a*)a.data)[i] = " ++ (templateCodeForCallingLambda "f" fTy [elem]) ++ ";"
+        ,"        (($a*)a.data)[i] = " ++ (templateCodeForCallingLambda "(*f)" fTy [elem]) ++ ";"
         ,"    }"
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy [t@(FuncTy fArgTys fRetTy), arrayType] _) ->
+      (\(FuncTy [RefTy t@(FuncTy fArgTys fRetTy), arrayType] _) ->
          [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])
 
 templateFilter :: (String, Binder)
@@ -42,20 +42,20 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
     fTy = FuncTy [RefTy (VarTy "a")] BoolTy
     aTy = StructTy "Array" [VarTy "a"]
     path = SymPath ["Array"] "filter"
-    t = FuncTy [fTy, aTy] aTy
+    t = FuncTy [RefTy fTy, aTy] aTy
     elem = "&((($a*)a.data)[i])"
     templateCreator = TemplateCreator $
       \typeEnv env ->
         Template
         t
-        (const (toTemplate "Array $NAME(Lambda predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
-        (\(FuncTy [FuncTy [RefTy insideTy] BoolTy, _] _) ->
+        (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
+        (\(FuncTy [RefTy (FuncTy [RefTy insideTy] BoolTy), _] _) ->
            (toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        if(" ++ (templateCodeForCallingLambda "predicate" fTy [elem]) ++ ") {"
+               , "        if(" ++ (templateCodeForCallingLambda "(*predicate)" fTy [elem]) ++ ") {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
                , "        " ++ deleter "i"
@@ -66,7 +66,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "    return a;"
                , "}"
                ]))
-        (\(FuncTy [ft@(FuncTy fArgTys@[RefTy insideType] BoolTy), arrayType] _) ->
+        (\(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType] BoolTy), arrayType] _) ->
            [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy)] ++
             depsForDeleteFunc typeEnv env insideType)
 
