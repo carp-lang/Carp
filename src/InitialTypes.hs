@@ -285,6 +285,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          let Just valueTy = ty okValue
                          return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
 
+        -- Deref (error!)
+        [(XObj Deref _ _), value] ->
+          return (Left (CantUseDerefOutsideFunctionApplication xobj))
+
         -- Function application with Deref
         XObj (Lst [deref@(XObj Deref _ _), func]) xi xt : args ->
           -- TODO: Remove code duplication (taken from function application below)
