@@ -847,6 +847,10 @@ manageMemory typeEnv globalEnv root =
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
 
+            matchExpr@(XObj Match _ _) : expr : rest ->
+              --let pairs = pairwise rest
+              do return $ do return (XObj (Lst ([matchExpr, expr] ++ rest)) i t)
+
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
                  visitedArgs <- sequence <$> mapM (visitArg ) args
