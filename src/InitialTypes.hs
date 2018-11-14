@@ -233,6 +233,22 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
         XObj If _ _ : _ -> return (Left (InvalidObj If xobj))
 
+        -- Match
+        matchExpr@(XObj Match _ _) : expr : cases ->
+          do visitedExpr <- visit env expr
+             visitedCases <- fmap sequence $ mapM (\(tag, x) -> do visitedX <- visit env x
+                                                                   case visitedX of
+                                                                     Left e -> return (Left e)
+                                                                     Right okX -> return (Right (tag, okX)))
+                                                  (pairwise cases)
+             returnType <- genVarTy
+             return $ do okExpr <- visitedExpr
+                         okCases <- visitedCases
+                         return (XObj (Lst ([matchExpr, okExpr] ++ concatMap (\(a, b) -> [a, b]) okCases))
+                                  i (Just returnType))
+
+        XObj Match _ _ : _ -> return (Left (InvalidObj Match xobj))
+
         -- While (always return Unit)
         [whileExpr@(XObj While _ _), expr, body] ->
           do visitedExpr <- visit env expr

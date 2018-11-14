@@ -63,6 +63,7 @@ data Obj = Sym SymPath SymbolMode
          | While
          | Break
          | If
+         | Match
          | Mod Env
          | Typ Ty -- TODO: Rename to Deftype!
          | DefSumtype Ty
@@ -268,6 +269,7 @@ pretty = visit 0
             Def -> "def"
             Fn _ captures -> "fn" -- ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
+            Match -> "match"
             While -> "while"
             Do -> "do"
             Let -> "let"

@@ -77,6 +77,10 @@ genConstraints root = fmap sort (gen root)
                                         wholeStatementConstraint : insideConditionConstraints ++
                                         insideTrueConstraints ++ insideFalseConstraints)
 
+                           -- Match
+                           XObj Match _ _ : expr : cases ->
+                             return []
+
                            -- While
                            [XObj While _ _, expr, body] ->
                              do insideConditionConstraints <- gen expr

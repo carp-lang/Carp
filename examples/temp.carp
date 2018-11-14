@@ -14,14 +14,13 @@
 (defn g []
   (Flip.B true))
 
-;; (defn f []
-;;   ())
-
-;; (deftype (Blah t)
-;;     [x Int])
-
 (defn m []
   (Maybe.Just 123))
 
 (defn n []
   (the (Maybe Int) (Maybe.Nothing)))
+
+(defn main []
+  (match (Flip.A 100)
+    (A a) 1
+    (B b) 2))
