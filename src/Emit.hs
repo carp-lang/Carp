@@ -101,6 +101,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
             e@(Typ _) -> error (show (DontVisitObj e))
+            e@(DefSumtype _) -> error (show (DontVisitObj e))
             Mod _ -> error (show CannotEmitModKeyword)
             External _ -> error (show CannotEmitExternal)
             ExternalType -> error (show (DontVisitObj ExternalType))
@@ -357,6 +358,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
 
             -- Deftype
             XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->
+              return ""
+
+            -- DefSumtype
+            XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _ ->
               return ""
 
             -- Template

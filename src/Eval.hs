@@ -508,6 +508,8 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
+       XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
          do case Map.lookup "sig" (getMeta adjustedMeta) of
               Just foundSignature ->

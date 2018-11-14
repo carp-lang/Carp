@@ -1,4 +1,4 @@
-(Debug.sanitize-addresses)
+;;(Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
 ;; Syntax D
@@ -19,3 +19,9 @@
 
 ;; (deftype (Blah t)
 ;;     [x Int])
+
+(defn m []
+  (Maybe.Just 123))
+
+(defn n []
+  (the (Maybe Int) (Maybe.Nothing)))

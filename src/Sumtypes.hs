@@ -45,28 +45,48 @@ toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _
               }
 
 initers :: [String] -> Ty -> [SumtypeCase] -> Either String [(String, Binder)]
-initers insidePath structTy cases = sequence (map binderForCaseInit cases)
-  where
-    binderForCaseInit :: SumtypeCase -> Either String (String, Binder)
-    binderForCaseInit sumtypeCase =
-      Right $ instanceBinder (SymPath insidePath (caseName sumtypeCase)) -- "init"
-              (FuncTy (caseTys sumtypeCase) structTy)
-              (concreteCaseInit StackAlloc structTy sumtypeCase)
+initers insidePath structTy cases = sequence (map (binderForCaseInit insidePath structTy) cases)
 
-concreteCaseInit :: AllocationMode -> Ty -> SumtypeCase -> Template
-concreteCaseInit allocationMode originalStructTy@(StructTy typeName typeVariables) sumtypeCase =
-  Template
-    (FuncTy (caseTys sumtypeCase) (VarTy "p"))
-    (\(FuncTy _ concreteStructTy) ->
-     let mappings = unifySignatures originalStructTy concreteStructTy
-         --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
-         --memberPairs = memberXObjsToPairs correctedMembers
-     in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
-    (const (tokensForCaseInit allocationMode typeName sumtypeCase))
-    (\(FuncTy _ _) -> [])
+binderForCaseInit :: [String] -> Ty -> SumtypeCase -> Either String (String, Binder)
+binderForCaseInit insidePath structTy@(StructTy typeName _) sumtypeCase =
+  if isTypeGeneric structTy
+  then Right (genericCaseInit StackAlloc insidePath structTy sumtypeCase)
+  else Right (concreteCaseInit StackAlloc insidePath structTy sumtypeCase)
+
+concreteCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
+concreteCaseInit allocationMode insidePath structTy@(StructTy typeName _) sumtypeCase =
+  instanceBinder (SymPath insidePath (caseName sumtypeCase)) (FuncTy (caseTys sumtypeCase) structTy) template
+  where template =
+          Template
+          (FuncTy (caseTys sumtypeCase) (VarTy "p"))
+          (\(FuncTy _ concreteStructTy) ->
+             let mappings = unifySignatures structTy concreteStructTy
+                 --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
+                 --memberPairs = memberXObjsToPairs correctedMembers
+             in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
+          (const (tokensForCaseInit allocationMode typeName sumtypeCase))
+          (\(FuncTy _ _) -> [])
+
+genericCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
+genericCaseInit allocationMode pathStrings originalStructTy@(StructTy typeName typeVariables) sumtypeCase =
+  defineTypeParameterizedTemplate templateCreator path t
+  where path = SymPath pathStrings (caseName sumtypeCase)
+        t = FuncTy (caseTys sumtypeCase) originalStructTy
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            (FuncTy (caseTys sumtypeCase) (VarTy "p"))
+            (\(FuncTy _ concreteStructTy) ->
+               (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
+            (const (tokensForCaseInit allocationMode typeName sumtypeCase))
+            (\(FuncTy _ concreteStructTy) ->
+               case concretizeType typeEnv concreteStructTy of
+                 Left err -> error (err ++ ". This error should not crash the compiler - change return type to Either here.")
+                 Right ok -> ok)
+
 
 tokensForCaseInit :: AllocationMode -> String -> SumtypeCase -> [Token]
-tokensForCaseInit allocationMode typeName membersXObjs =
+tokensForCaseInit allocationMode typeName sumtypeCase =
   toTemplate $ unlines [ "$DECL {"
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"

@@ -335,6 +335,10 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       if isTypeGeneric originalStructTy
       then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
       else Right []
+    Just (_, Binder _ (XObj (Lst (XObj (DefSumtype originalStructTy) _ _ : _ : rest)) _ _)) ->
+      if isTypeGeneric originalStructTy
+      then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
+      else Right []
     Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
       Right []
     Just (_, Binder _ x) ->
@@ -377,6 +381,28 @@ f typeEnv (_, tyXObj) =
   case (xobjToTy tyXObj) of
     Just okTy -> concretizeType typeEnv okTy
     Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type.")
+
+-- | Given an generic sumtype and a concrete version of it, generate all dependencies needed to use the concrete one.
+instantiateGenericSumtype :: TypeEnv -> Ty -> Ty -> [XObj] -> Either String [XObj]
+instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy cases =
+  -- Turn (deftype (Maybe a) (Just a) (Nothing)) into (deftype (Maybe Int) (Just Int) (Nothing))
+  let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+      fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
+  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
+        Left e -> error (show e)
+        Right mappings ->
+          Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
+                              XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                              map (replaceGenericTypeSymbolsOnCase mappings) cases
+                             )
+                        ) (Just dummyInfo) (Just TypeTy)
+                  ]
+
+replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
+replaceGenericTypeSymbolsOnCase mappings singleCase@(XObj (Lst (caseName : caseMembers)) i t) =
+  XObj (Lst (caseName : map replacer caseMembers)) i t
+  where replacer memberXObj =
+          replaceGenericTypeSymbols mappings memberXObj
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
