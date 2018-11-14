@@ -90,13 +90,15 @@ tokensForCaseInit allocationMode typeName sumtypeCase =
   toTemplate $ unlines [ "$DECL {"
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"
-                       --     HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
-                       -- , joinWith "\n" (map (caseMemberAssignment allocationMode) (memberXObjsToPairs membersXObjs))
+                           HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
+                       , joinWith "\n" (map (caseMemberAssignment allocationMode (caseName sumtypeCase))
+                                        (zip anonMemberNames (caseTys sumtypeCase)))
                        , "    return instance;"
                        , "}"]
 
-caseMemberAssignment :: AllocationMode -> (String, Ty) -> String
-caseMemberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
+caseMemberAssignment :: AllocationMode -> String -> (String, Ty) -> String
+caseMemberAssignment allocationMode caseName (memberName, _) =
+  "    instance." ++ caseName ++ sep ++ memberName ++ " = " ++ memberName ++ ";"
   where sep = case allocationMode of
                 StackAlloc -> "."
                 HeapAlloc -> "->"
