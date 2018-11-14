@@ -84,7 +84,7 @@
 (defn struct-4 []
   (let [a (A.init @"")
         b (B.init a)
-        c (B.update-a b h)]
+        c (B.update-a b &h)]
     ()))
 
 (defn struct-5 []

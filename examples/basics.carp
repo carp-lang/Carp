@@ -91,7 +91,7 @@
 
 (defn updating []
   (let [p1 (Peep.init 9999 (String.copy "jaha") (A.init (String.copy "mmm")))
-        p2 (Peep.update-x p1 inc)]
+        p2 (Peep.update-x p1 &inc)]
     (println (ref (str @(Peep.x (ref p2)))))))
 
 (defn character []

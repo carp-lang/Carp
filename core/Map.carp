@@ -102,7 +102,7 @@
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
     (let [idx (Int.mod (hash k) @(n-buckets &m))]
-      (update-buckets m (fn [b]
+      (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
 
@@ -130,7 +130,7 @@
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
     (let [idx (Int.mod (hash k) @(n-buckets &m))]
-      (update-buckets m (fn [b]
+      (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.shrink n k)))))))
 
@@ -217,7 +217,7 @@
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
     (let [idx (Int.mod (hash k) @(n-buckets &s))]
-      (update-buckets s (fn [b]
+      (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.grow n @k)))))))
 
@@ -240,7 +240,7 @@
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
     (let [idx (Int.mod (hash k) @(n-buckets &s))]
-      (update-buckets s (fn [b]
+      (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 

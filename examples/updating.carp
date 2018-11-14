@@ -13,8 +13,8 @@
 (defmodule Pos
   (defn move [pos]
     (=> pos
-        (Pos.update-x incf)
-        (Pos.update-y incf))))
+        (Pos.update-x &incf)
+        (Pos.update-y &incf))))
 
 (deftype Monster
     [pos Pos
@@ -29,7 +29,7 @@
      100
      @name))
   (defn move [monster]
-    (Monster.update-pos monster Pos.move)))
+    (Monster.update-pos monster &Pos.move)))
 
 (defn main []
   (do

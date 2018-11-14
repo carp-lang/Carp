@@ -15,7 +15,7 @@
                          f (λ [SelfReferencer] SelfReferencer)])
 
 (defn change-self [self]
-  (SelfReferencer.update-hp self inc))
+  (SelfReferencer.update-hp self &inc))
 
 (deftype (GenericFuncMember a) [f (λ [a] a)])
 
