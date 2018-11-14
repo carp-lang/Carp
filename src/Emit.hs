@@ -270,6 +270,39 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      appendToSrc (addIndent indent ++ "}\n")
                      return ifRetVar
 
+            -- Match
+            XObj Match _ _ : expr@(XObj _ _ (Just exprTy)) : rest ->
+              let indent' = indent + indentAmount
+                  retVar = freshVar i
+                  isNotVoid = t /= Just UnitTy
+                  sumType = SymPath [] (show exprTy)
+
+                  tagInt :: XObj -> Int
+                  tagInt (XObj (Lst (XObj (Sym (SymPath _ tagName) _) _ _ : _)) _ _) =
+                    case lookupInEnv sumType (getTypeEnv typeEnv) of
+                      Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _ : rest)) _ _)) ->
+                        -- Need to find out what int the tag
+                      Just (_, x) -> error ("Not a sumtype: " ++ show x)
+                      Nothing -> error ("Couldn't find type " ++ show sumType ++ " in type env.")
+                  tagInt xobj = error ("Can't get tag int from: " ++ pretty xobj)
+
+                  emitCase :: (XObj, XObj) -> State EmitterState ()
+                  emitCase (tagXObj, caseExpr) =
+                    do appendToSrc (addIndent indent ++ "case " ++ show (tagInt tagXObj) ++ ":")
+                       appendToSrc (addIndent indent ++ "\n")
+
+              in  do exprVar <- visit indent expr
+                     when isNotVoid $
+                       let Just tt = t
+                       in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
+                     appendToSrc (addIndent indent ++ "switch (" ++ exprVar ++ "._tag) {\n")
+                     mapM emitCase (pairwise rest)
+                     appendToSrc (addIndent indent ++ "}\n")
+                     return retVar
+
+            XObj Match _ _ : _ ->
+              error "Fell through match."
+
             -- While
             [XObj While _ _, expr, body] ->
               let indent' = indent + indentAmount
