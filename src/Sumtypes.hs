@@ -93,6 +93,7 @@ tokensForCaseInit allocationMode typeName sumtypeCase =
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
                        , joinWith "\n" (map (caseMemberAssignment allocationMode (caseName sumtypeCase))
                                         (zip anonMemberNames (caseTys sumtypeCase)))
+                       , "    instance._tag = 0;"
                        , "    return instance;"
                        , "}"]
 

@@ -736,3 +736,8 @@ anonMemberNames = map (\i -> ("member" ++ show i)) [0..]
 
 anonMemberSymbols :: [XObj]
 anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames
+
+-- | Calculate the name of a Sumtype tag
+tagName :: Ty -> String -> String
+tagName sumTy caseName =
+  tyToC sumTy ++ "_" ++ mangle caseName ++ "_tag"

@@ -6,6 +6,11 @@
   (Just [a])
   (Nothing []))
 
+;; (defmodule Maybe
+;;   (defn str [x] @"Maybe")
+;;   (defn copy [x] (Maybe.Nothing))
+;;   )
+
 (deftype Flip (A [Int]) (B [Bool]))
 
 (defn f []
@@ -22,5 +27,5 @@
 
 (defn main []
   (match (Flip.A 100)
-    (A a) 1
-    (B b) 2))
+    (A a) 15
+    (B b) 37))

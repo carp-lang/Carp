@@ -275,22 +275,16 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
               let indent' = indent + indentAmount
                   retVar = freshVar i
                   isNotVoid = t /= Just UnitTy
-                  sumType = SymPath [] (show exprTy)
-
-                  tagInt :: XObj -> Int
-                  tagInt _ = 0
-                  -- tagInt (XObj (Lst (XObj (Sym (SymPath _ tagName) _) _ _ : _)) _ _) =
-                  --   case lookupInEnv sumType (getTypeEnv typeEnv) of
-                  --     Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _ : rest)) _ _)) ->
-                  --       -- Need to find out what int the tag
-                  --     Just (_, x) -> error ("Not a sumtype: " ++ show x)
-                  --     Nothing -> error ("Couldn't find type " ++ show sumType ++ " in type env.")
-                  -- tagInt xobj = error ("Can't get tag int from: " ++ pretty xobj)
+                  sumTypeAsPath = SymPath [] (show exprTy)
 
                   emitCase :: (XObj, XObj) -> State EmitterState ()
-                  emitCase (tagXObj, caseExpr) =
-                    do appendToSrc (addIndent indent ++ "case " ++ show (tagInt tagXObj) ++ ":")
+                  emitCase (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : _)) _ _), caseExpr) =
+                    do appendToSrc (addIndent indent ++ "case " ++ tagName exprTy caseName ++ ":")
                        appendToSrc (addIndent indent ++ "\n")
+                       caseExprRetVal <- visit indent' caseExpr
+                       when isNotVoid $
+                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
+                       appendToSrc (addIndent indent' ++ "break;\n")
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $
@@ -599,10 +593,11 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
 
       visit = do appendToSrc "typedef struct {\n"
                  appendToSrc (addIndent indent ++ "union {\n")
-                 _ <- mapM (emitSumtypeCase (indent)) rest
+                 mapM_ (emitSumtypeCase (indent)) rest
                  appendToSrc (addIndent indent ++ "};\n")
                  appendToSrc (addIndent indent ++ "char _tag;\n")
                  appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+                 mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
 
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
@@ -611,6 +606,9 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
            mapM (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
 
+      emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
+      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), _]) _ _)) =
+        appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
 
   in if isTypeGeneric sumTy
      then ""
