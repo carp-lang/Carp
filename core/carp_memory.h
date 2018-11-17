@@ -1,5 +1,5 @@
 #pragma once
-#include <stdbool.h>
+#include "carp_stdbool.h"
 #include <stdlib.h>
 
 #ifdef LOG_MEMORY

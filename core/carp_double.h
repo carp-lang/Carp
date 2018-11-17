@@ -1,6 +1,6 @@
 #include <limits.h>
 #include <math.h>
-#include <stdbool.h>
+#include "carp_stdbool.h"
 
 double Double__PLUS_(double x, double y) { return x + y; }
 double Double__MINUS_(double x, double y) { return x - y; }

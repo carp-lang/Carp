@@ -1,6 +1,6 @@
 #include <limits.h>
 #include <math.h>
-#include <stdbool.h>
+#include "carp_stdbool.h"
 
 float Float__PLUS_(float x, float y) { return x + y; }
 float Float__MINUS_(float x, float y) { return x - y; }

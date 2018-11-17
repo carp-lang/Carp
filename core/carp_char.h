@@ -1,4 +1,4 @@
-#include <stdbool.h>
+#include "carp_stdbool.h"
 
 bool Char__EQ_(char a, char b) {
   return a == b;

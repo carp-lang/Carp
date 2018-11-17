@@ -1,5 +1,5 @@
 #include <math.h>
-#include <stdbool.h>
+#include "carp_stdbool.h"
 
 int Int__PLUS_(int x, int y)   { return x + y; }
 int Int__MINUS_(int x, int y)  { return x - y; }

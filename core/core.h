@@ -2,7 +2,7 @@
 #define PRELUDE_H
 
 #include <assert.h>
-#include <stdbool.h>
+#include "carp_stdbool.h"
 #include <stddef.h>
 #include <sys/wait.h>
 #include <signal.h>
