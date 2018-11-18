@@ -1,4 +1,4 @@
-#include <stdbool.h>
+#include "carp_stdbool.h"
 
 // Bool
 bool Bool_copy(bool* b) {
