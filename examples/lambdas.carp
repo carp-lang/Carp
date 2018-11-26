@@ -45,7 +45,7 @@
         ff2 @&ff1
         to-copy @to
         upper (to-copy)]
-    (endo-map (fn [x] (Int.pow x exponent)) (range 0 upper 1))))
+    (endo-map &(fn [x] (Int.pow x exponent)) (range 0 upper 1))))
 
 (defn twenty [] 20)
 
@@ -65,7 +65,7 @@
 ;; Example 8, mapping normal (non-lambda) function over a list of strings
 (defn example-8 []
   (let [strings [@"a" @"bb" @"ccc"]]
-    (println* &(Array.copy-map String.length &strings))))
+    (println* &(Array.copy-map &String.length &strings))))
 
 (defn-do main []
   ;;(example-1 "!")

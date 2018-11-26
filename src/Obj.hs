@@ -78,6 +78,7 @@ data Obj = Sym SymPath SymbolMode
          | Command CommandFunctionType
          | The
          | Ref
+         | Deref
          | Interface Ty [SymPath]
          deriving (Show, Eq)
 
@@ -283,6 +284,7 @@ pretty = visit 0
             Command _ -> "command"
             The -> "the"
             Ref -> "ref"
+            Deref -> "deref"
             Break -> "break"
             Interface _ _ -> "interface"
             With -> "with"

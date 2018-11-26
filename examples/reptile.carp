@@ -108,7 +108,7 @@
   (+ i 2))
 
 (defn grow [snake]
-  (let [new-snake (Snake.update-freeze snake inc2)
+  (let [new-snake (Snake.update-freeze snake &inc2)
         b (Snake.body &new-snake)]
     (Snake.set-body new-snake (push-back @b (last b)))))
 

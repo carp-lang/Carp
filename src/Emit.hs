@@ -116,6 +116,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             Dynamic -> error (show (DontVisitObj Dynamic))
             The -> error (show (DontVisitObj The))
             Ref -> error (show (DontVisitObj Ref))
+            Deref -> error (show (DontVisitObj Deref))
             e@(Interface _ _) -> error (show (DontVisitObj e))
 
         visitStr' indent str i =
@@ -348,6 +349,11 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                            appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ literal ++ "; // ref\n")
                    else appendToSrc (addIndent indent ++ tyToCLambdaFix t' ++ " " ++ fresh ++ " = &" ++ var ++ "; // ref\n")
                  return fresh
+
+            -- Deref
+            [XObj Deref _ _, value] ->
+              do x <- visit indent value
+                 return ("(*" ++ x ++ ")")
 
             -- Deftype
             XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->

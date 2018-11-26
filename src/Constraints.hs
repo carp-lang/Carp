@@ -20,6 +20,7 @@ data ConstraintOrder = OrdNo
                      | OrdStruct
                      | OrdPtr
                      | OrdRef
+                     | OrdDeref
                      | OrdFuncAppRet
                      | OrdArrHead
                      | OrdArg

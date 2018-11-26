@@ -93,16 +93,16 @@
 
   (doc create "Create an empty map.")
   (defn create []
-    (init dflt-len (Array.repeat dflt-len Bucket.empty)))
+    (init dflt-len (Array.repeat dflt-len &Bucket.empty)))
 
   (doc create-with-len "Create an empty map with a given number of buckets. High numbers reduce the possibility of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
-    (init len (Array.repeat len Bucket.empty)))
+    (init len (Array.repeat len &Bucket.empty)))
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
     (let [idx (Int.mod (hash k) @(n-buckets &m))]
-      (update-buckets m (fn [b]
+      (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
 
@@ -130,7 +130,7 @@
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
     (let [idx (Int.mod (hash k) @(n-buckets &m))]
-      (update-buckets m (fn [b]
+      (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.shrink n k)))))))
 
@@ -208,16 +208,16 @@
 
   (doc create "Create an empty set.")
   (defn create []
-    (init dflt-len (Array.repeat dflt-len SetBucket.empty)))
+    (init dflt-len (Array.repeat dflt-len &SetBucket.empty)))
 
   (doc create-with-len "Create an empty set with a given number of buckets. Higher numbers decrease the probability of hash collisions while increasing the memory footprint.")
   (defn create-with-len [len]
-    (init len (Array.repeat len SetBucket.empty)))
+    (init len (Array.repeat len &SetBucket.empty)))
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
     (let [idx (Int.mod (hash k) @(n-buckets &s))]
-      (update-buckets s (fn [b]
+      (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.grow n @k)))))))
 
@@ -240,7 +240,7 @@
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
     (let [idx (Int.mod (hash k) @(n-buckets &s))]
-      (update-buckets s (fn [b]
+      (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 

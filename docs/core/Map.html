@@ -581,7 +581,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (λ [(Array (Bucket a b))] (Array (Bucket a b)))] (Map a b))
+                    (λ [(Map a b), (Ref (λ [(Array (Bucket a b))] (Array (Bucket a b))))] (Map a b))
                 </p>
                 <span>
                     
@@ -600,7 +600,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (λ [Int] Int)] (Map a b))
+                    (λ [(Map a b), (Ref (λ [Int] Int))] (Map a b))
                 </p>
                 <span>
                     

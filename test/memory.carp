@@ -52,11 +52,11 @@
   (let [s (id (f))]
     ()))
 
-(defn deref [x]
+(defn de-ref [x]
   @x)
 
 (defn call-4 []
-  (let [s (deref "")]
+  (let [s (de-ref "")]
     ()))
 
 (deftype A [s String])
@@ -84,7 +84,7 @@
 (defn struct-4 []
   (let [a (A.init @"")
         b (B.init a)
-        c (B.update-a b h)]
+        c (B.update-a b &h)]
     ()))
 
 (defn struct-5 []
@@ -196,8 +196,13 @@
 
 (defn array-reduce []
   (let [xs [@"a" @"b" @"c"]
-        result (Array.reduce append-ref @"" &xs)]
+        result (Array.reduce &append-ref @"" &xs)]
     (assert (= @"abc" result))))
+
+(defn array-filter []
+  (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
+        result (Array.filter &(fn [x] (= x "b")) xs)]
+    (assert (= &[@"b" @"b"] &result))))
 
 (defn array-first []
   (let [xs [@"a" @"b" @"c"]
@@ -253,13 +258,13 @@
 
 (defn array-aupdate []
   (let [xs [@"abc" @"xyz"]
-        ys (Array.aupdate xs 1 first-letter)]
+        ys (Array.aupdate xs 1 &first-letter)]
     (assert (= &[@"abc" @"x"] &ys))))
 
 (defn array-aupdate! []
   (let [xs [@"abc" @"xyz"]]
     (do
-      (Array.aupdate! &xs 1 first-letter)
+      (Array.aupdate! &xs 1 &first-letter)
       (assert (= &[@"abc" @"x"] &xs)))))
 
 (defn array-swap []
@@ -298,7 +303,7 @@
 (defn f [] @"Hello")
 
 (defn array-repeat []
-  (let [xs (Array.repeat 4 f)]
+  (let [xs (Array.repeat 4 &f)]
     (assert (= &[@"Hello" @"Hello" @"Hello" @"Hello"] &xs))))
 
 (defn array-replicate []
@@ -307,7 +312,7 @@
 
 (defn array-copy-map-1 []
   (let [xs [@"a" @"bb" @"ccc"]
-        ys (Array.copy-map String.length &xs)]
+        ys (Array.copy-map &String.length &xs)]
     (assert (= &[1 2 3] &ys))))
 
 (defn str-ref [r]
@@ -315,7 +320,7 @@
 
 (defn array-copy-map-2 []
   (let [xs [1 2 3 4]
-        ys (Array.copy-map str-ref &xs)]
+        ys (Array.copy-map &str-ref &xs)]
     (assert (= &[@"1" @"2" @"3" @"4"] &ys))))
 
 (defn string-append-leak-test []
@@ -352,11 +357,11 @@
 
 (defn lambda-4 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(copy-map (fn [c] @"X") &stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(copy-map &(fn [c] @"X") &stuff)))))
 
 (defn lambda-5 []
   (let-do [stuff [@"A" @"B" @"C"]]
-    (assert (= &[@"X" @"X" @"X"] &(endo-map (fn [c] @"X") stuff)))))
+    (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
 
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
@@ -387,6 +392,7 @@
   (assert-no-leak test string-substring "string-substring does not leak")
   (assert-no-leak test array-aset "array-aset does not leak")
   (assert-no-leak test array-reduce "array-reduce does not leak")
+  (assert-no-leak test array-filter "array-filter does not leak")
   (assert-no-leak test array-first "array-first does not leak")
   (assert-no-leak test array-last "array-last does not leak")
   (assert-no-leak test array-eq-1 "array-eq-1 does not leak")
