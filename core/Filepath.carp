@@ -7,6 +7,6 @@
     (let [segments (split-by path &[\/])
           n (dec (length &segments))
           without-last (prefix-array &segments n)]
-      (concat &(copy-map (fn [s] (str* s "/")) &without-last))))
+      (concat &(copy-map &(fn [s] (str* s "/")) &without-last))))
 
   )
