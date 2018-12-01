@@ -101,14 +101,14 @@
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
       (Bucket.get (Array.nth (buckets m) idx) k)))
 
   (doc length "Get the length of the map m.")
@@ -124,12 +124,12 @@
 
   (doc contains? "Check whether the map m contains the key k.")
   (defn contains? [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
       (Bucket.contains? (Array.nth (buckets m) idx) k)))
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.shrink n k)))))))
@@ -216,7 +216,7 @@
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.grow n @k)))))))
@@ -234,12 +234,12 @@
 
   (doc contains? "Check whether the set s contains the key k.")
   (defn contains? [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets s))]
       (SetBucket.contains? (Array.nth (buckets s) idx) k)))
 
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
