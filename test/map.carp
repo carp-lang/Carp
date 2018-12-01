@@ -10,6 +10,11 @@
                 "basic put and get works"
   )
   (assert-equal test
+                "2"
+                &(Map.get &(Map.put (Map.create) &-7 "2") &-7)
+                "basic put and get works with negative keys"
+  )
+  (assert-equal test
                 1
                 (Map.length &(Map.put (Map.create) "1" "2"))
                 "length works"
@@ -28,6 +33,16 @@
                 true
                 (Map.contains? &(Map.put (Map.create) "1" "2") "1")
                 "contains? works"
+  )
+  (assert-equal test
+                true
+                (Map.contains? &(Map.put (Map.create) &-7 "2") &-7)
+                "contains? works with negative keys"
+  )
+  (assert-equal test
+                false
+                (Map.contains? &(Map.put (Map.create) &1 "2") &-7)
+                "contains? works with negative keys"
   )
   (assert-equal test
                 true
@@ -79,6 +94,11 @@
                 true
                 (Set.contains? &(Set.put (Set.create) "1") "1")
                 "contains? works"
+  )
+  (assert-equal test
+                true
+                (Set.contains? &(Set.put (Set.create) &-7) &-7)
+                "contains? works with negative keys"
   )
   (assert-equal test
                 true

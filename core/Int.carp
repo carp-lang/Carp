@@ -53,6 +53,13 @@
           (set! y (/ y 2))
           (set! x (* x x))))
       r))
+
+  (doc positive-mod "Like mod but always returns a positive answer.")
+  (defn positive-mod [k n]
+    (let [r (Int.mod k n)]
+      (if (> 0 r)
+        (+ r n)
+        r)))
 )
 
 (defmodule IntRef
