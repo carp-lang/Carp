@@ -10,6 +10,11 @@
                 "basic put and get works"
   )
   (assert-equal test
+                "3"
+                &(Map.get &(Map.put (Map.put (Map.create) "1" "2") "1" "3") "1")
+                "put, update and get"
+  )
+  (assert-equal test
                 "2"
                 &(Map.get &(Map.put (Map.create) &-7 "2") &-7)
                 "basic put and get works with negative keys"
@@ -76,9 +81,14 @@
                 "stringification works II"
   )
   (assert-equal test
-                1
-                (Set.length &(Set.put (Set.create) "1"))
+                2
+                (Set.length &(Set.put (Set.put (Set.create) "1") "2"))
                 "length works"
+  )
+  (assert-equal test
+                1
+                (Set.length &(Set.put (Set.put (Set.create) "1") "1"))
+                "putting the same element twice doesn't increase size"
   )
   (assert-equal test
                 0
