@@ -46,9 +46,6 @@
   (defn empty []
     (Bucket.init []))
 
-  (defn grow [b e]
-    (set-entries @b (Array.push-back @(entries b) e)))
-
   (defn get [b k]
     (let-do [e &(zero)
              l (Array.length (Bucket.entries b))
@@ -69,7 +66,8 @@
             (when (= k (Pair.a (Array.nth &es i)))
               (do
                 (set! found true)
-                (Array.aset! &es i (Pair.init-from-refs k v)))))
+                (Array.aset! &es i (Pair.init-from-refs k v))
+                (break))))
           (unless found
             (Array.push-back! &es (Pair.init-from-refs k v)))
           es))))
