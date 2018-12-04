@@ -46,9 +46,6 @@
   (defn empty []
     (Bucket.init []))
 
-  (defn grow [b e]
-    (set-entries @b (Array.push-back @(entries b) e)))
-
   (defn get [b k]
     (let-do [e &(zero)
              l (Array.length (Bucket.entries b))
@@ -58,7 +55,22 @@
           (do
             (set! e (Pair.b (Array.nth es i)))
             (break))))
-       @e))
+      @e))
+
+  (defn put [b k v]
+    (update-entries
+     @b
+     &(fn [es]
+        (let-do [found false]
+          (for [i 0 (Array.length &es)]
+            (when (= k (Pair.a (Array.nth &es i)))
+              (do
+                (set! found true)
+                (Array.aset! &es i (Pair.init-from-refs k v))
+                (break))))
+          (unless found
+            (Array.push-back! &es (Pair.init-from-refs k v)))
+          es))))
 
   (defn contains? [b k]
     (let-do [e false
@@ -104,7 +116,7 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
+          (Array.aset b idx (Bucket.put n k v)))))))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
@@ -219,7 +231,9 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (SetBucket.grow n @k)))))))
+          (if (SetBucket.contains? n k)
+            b
+            (Array.aset b idx (SetBucket.grow n @k))))))))
 
   (doc length "Get the length of set s.")
   (defn length [s]
