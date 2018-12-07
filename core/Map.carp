@@ -123,6 +123,25 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
       (Bucket.get (Array.nth (buckets m) idx) k)))
 
+  (doc update "Update value at key k in map with function f, if it exists.")
+  (defn update [m k f]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+      (update-buckets m &(fn [b]
+        (let [n (Array.nth &b idx)]
+          (if (Bucket.contains? n k)
+            (Array.aset b idx (Bucket.put n k &(f (Bucket.get n k))))
+            b))))))
+
+  (doc update "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
+  (defn update-with-default [m k f v]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+      (update-buckets m &(fn [b]
+        (let [n (Array.nth &b idx)]
+          (let [old (if (Bucket.contains? n k)
+                      (Bucket.get n k)
+                      v)]
+            (Array.aset b idx (Bucket.put n k &(f old)))))))))
+
   (doc length "Get the length of the map m.")
   (defn length [m]
     (let-do [c 0]

@@ -20,6 +20,26 @@
                 "basic put and get works with negative keys"
   )
   (assert-equal test
+                true
+                (Map.empty? &(Map.update (Map.create) "x" Int.inc))
+                "update works with empty map"
+  )
+  (assert-equal test
+                2
+                (Map.get &(Map.update {@"x" 1} "x" Int.inc) "x")
+                "update works"
+  )
+  (assert-equal test
+                8
+                (Map.get &(Map.update-with-default (Map.create) "x" Int.inc 7) "x")
+                "update-with-default works with empty map"
+  )
+  (assert-equal test
+                2
+                (Map.get &(Map.update-with-default {@"x" 1} "x" Int.inc 7) "x")
+                "update-with-default works"
+  )
+  (assert-equal test
                 1
                 (Map.length &(Map.put (Map.create) "1" "2"))
                 "length works"
