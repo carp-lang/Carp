@@ -15,7 +15,7 @@
 
     (hidden parent)
     (defn parent [i]
-        (/ i 2))
+        (/ (- i 1) 2))
 
     (hidden max-of-three-until)
     (doc max-of-three-until! "Get the index for the largest (by ord) of an element and its two children.")
