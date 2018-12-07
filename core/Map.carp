@@ -46,42 +46,37 @@
   (defn empty []
     (Bucket.init []))
 
-  (defn get [b k]
-    (let-do [e &(zero)
+  (defn find [b k]
+    (let-do [ret -1
              l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
         (when (= (Pair.a (Array.nth es i)) k)
           (do
-            (set! e (Pair.b (Array.nth es i)))
+            (set! ret i)
             (break))))
+      ret))
+
+  (defn get [b k]
+    (let-do [e &(zero)
+             i (find b k)]
+      (when (<= 0 i)
+        (set! e (Pair.b (Array.nth (entries b) i))))
       @e))
 
   (defn put [b k v]
-    (update-entries
-     @b
-     &(fn [es]
-        (let-do [found false]
-          (for [i 0 (Array.length &es)]
-            (when (= k (Pair.a (Array.nth &es i)))
-              (do
-                (set! found true)
-                (Array.aset! &es i (Pair.init-from-refs k v))
-                (break))))
-          (unless found
-            (Array.push-back! &es (Pair.init-from-refs k v)))
-          es))))
+    (let [i (find b k)]
+      (update-entries
+       @b
+       &(fn [es]
+          (do
+            (if (<= 0 i)
+              (Array.aset! &es i (Pair.init-from-refs k v))
+              (Array.push-back! &es (Pair.init-from-refs k v)))
+            es)))))
 
   (defn contains? [b k]
-    (let-do [e false
-             l (Array.length (Bucket.entries b))
-             es (entries b)]
-      (for [i 0 l]
-        (when (= (Pair.a (Array.nth es i)) k)
-          (do
-            (set! e true)
-            (break))))
-       e))
+    (<= 0 (find b k)))
 
   (defn remove [entries k]
     (let-do [nentries (the (Array (Pair a b)) [])]
