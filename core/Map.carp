@@ -225,6 +225,12 @@
           (set! m (put m k v))))
       m))
 
+  (doc to-array "Convert Map to Array of Pairs")
+  (defn to-array [m]
+    (kv-reduce (fn [arr k v] (Array.push-back arr (Pair.init-from-refs k v)))
+               []
+               m))
+
   (defn str [m]
     (let [res (kv-reduce (fn [s k v]
                            (String.join @"" &[s @" " (prn @k) @" " (prn @v)]))
@@ -342,6 +348,10 @@
             (let [e (Array.nth entries j)]
               (set! init (f init e))))))
       init))
+
+  (doc to-array "Convert Set to Array of elements")
+  (defn to-array [s]
+    (reduce (fn [arr elt] (Array.push-back arr @elt)) [] s))
 
   (defn str [set]
     (let [res (reduce (fn [s e] (String.join @"" &[s @" " (prn e)]))

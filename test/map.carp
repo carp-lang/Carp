@@ -101,6 +101,17 @@
                 "stringification works II"
   )
   (assert-equal test
+                &[(Pair.init 1 2)]
+                &(Map.to-array &(Map.put (Map.create) &1 &2))
+                "Map.to-array works 1"
+  )
+  (assert-equal test
+                2
+                (Array.length &(Map.to-array &(Map.from-array &[(Pair.init 1 2)
+                                                                (Pair.init 3 4)])))
+                "Map.to-array works 2"
+  )
+  (assert-equal test
                 "{ 1 12 3 34 }"
                 &(str &(Map.endo-map (fn [k v] (+ @v (* 10 @k)))
                                      {1 2 3 4}))
@@ -122,6 +133,11 @@
                 &[1 1 2]
                 &(Map.vals &{1 1 2 1 3 2})
                 "vals works"
+  )
+  (assert-equal test
+                1
+                (Set.length &(Set.put (Set.create) "1"))
+                "length works"
   )
   (assert-equal test
                 2
@@ -179,4 +195,14 @@
                 "{ @\"hi\" @\"bye\" }"
                 &(str &(Set.from-array &[@"hi" @"bye"]))
                 "stringification works"
+  )
+  (assert-equal test
+                &[1]
+                &(Set.to-array &(Set.put (Set.create) &1))
+                "Set.to-array works 1"
+  )
+  (assert-equal test
+                2
+                (Array.length &(Set.to-array &(Set.from-array &[1 2])))
+                "Set.to-array works 2"
   ))
