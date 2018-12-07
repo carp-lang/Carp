@@ -128,20 +128,22 @@
   (defn update [m k f]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (if (Bucket.contains? n k)
-            (Array.aset b idx (Bucket.put @n k &(f (Bucket.get n k))))
+        (let [n (Array.nth &b idx)
+              i (Bucket.find n k)]
+          (if (<= 0 i)
+            ;; currently can't write a Bucket.update that takes f due to bug #347
+            (Array.aset b idx (Bucket.set-idx @n i &(f (Bucket.get-idx n i))))
             b))))))
 
   (doc update "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
   (defn update-with-default [m k f v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (let [old (if (Bucket.contains? n k)
-                      (Bucket.get n k)
-                      v)]
-            (Array.aset b idx (Bucket.put @n k &(f old)))))))))
+        (let [n (Array.nth &b idx)
+              i (Bucket.find n k)]
+          (if (<= 0 i)
+            (Array.aset b idx (Bucket.set-idx @n i &(f (Bucket.get-idx n i))))
+            (Array.aset b idx (Bucket.push-back @n k &(f v)))))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
