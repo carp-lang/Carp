@@ -57,23 +57,28 @@
             (break))))
       ret))
 
+  (defn get-idx [b i]
+    @(Pair.b (Array.nth (entries b) i)))
+
+  (defn set-idx [b i val]
+    (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b @p @val)))
+        b))
+
+  (defn push-back [b k v]
+    (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))
+        b))
+
   (defn get [b k]
-    (let-do [e &(zero)
-             i (find b k)]
-      (when (<= 0 i)
-        (set! e (Pair.b (Array.nth (entries b) i))))
-      @e))
+    (let [i (find b k)]
+      (if (<= 0 i)
+        (get-idx b i)
+        (zero))))
 
   (defn put [b k v]
-    (let [i (find b k)]
-      (update-entries
-       @b
-       &(fn [es]
-          (do
-            (if (<= 0 i)
-              (Array.aset! &es i (Pair.init-from-refs k v))
-              (Array.push-back! &es (Pair.init-from-refs k v)))
-            es)))))
+    (let [i (find &b k)]
+      (if (<= 0 i)
+        (set-idx b i v)
+        (push-back b k v))))
 
   (defn contains? [b k]
     (<= 0 (find b k)))
@@ -111,7 +116,7 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.put n k v)))))))
+          (Array.aset b idx (Bucket.put @n k v)))))))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
@@ -124,7 +129,7 @@
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
           (if (Bucket.contains? n k)
-            (Array.aset b idx (Bucket.put n k &(f (Bucket.get n k))))
+            (Array.aset b idx (Bucket.put @n k &(f (Bucket.get n k))))
             b))))))
 
   (doc update "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
@@ -135,7 +140,7 @@
           (let [old (if (Bucket.contains? n k)
                       (Bucket.get n k)
                       v)]
-            (Array.aset b idx (Bucket.put n k &(f old)))))))))
+            (Array.aset b idx (Bucket.put @n k &(f old)))))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
