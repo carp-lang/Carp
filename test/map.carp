@@ -81,6 +81,12 @@
                 "stringification works II"
   )
   (assert-equal test
+                "{ 1 12 3 34 }"
+                &(str &(Map.endo-map (fn [k v] (+ @v (* 10 @k)))
+                                     {1 2 3 4}))
+                "endo-map works"
+  )
+  (assert-equal test
                 641
                 (Map.kv-reduce (fn [sum k v] (+ sum (+ (* 100 @k) (* 10 @v))))
                                1

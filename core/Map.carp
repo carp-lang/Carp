@@ -156,6 +156,19 @@
           (let [e (Array.nth entries j)]
             (f (Pair.a e) (Pair.b e)))))))
 
+  (doc endo-map "Transform values of the given map in place. f gets two arguments, key and value, and should return new value")
+  (defn endo-map [f m]
+    (do
+      (for [i 0 @(n-buckets &m)]
+        (let [bucket (Array.nth (buckets &m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (Array.aset! entries j (Pair.init @(Pair.a e)
+                                                (f (Pair.a e) (Pair.b e))))))))
+      m))
+
   (doc kv-reduce "Reduce a map with a function of three arguments: state, key and value. Reduction order is not guaranteed.")
   (defn kv-reduce [f init m]
     (do
