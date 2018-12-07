@@ -296,14 +296,21 @@
           (set! s (put s e))))
       s))
 
-  (defn str [s]
-    (let-do [res @"{"]
+  (doc reduce "Reduce values of the set with function f. Order of reduction is not guaranteed")
+  (defn reduce [f init s]
+    (do
       (for [i 0 @(n-buckets s)]
         (let [bucket (Array.nth (buckets s) i)
               len (Array.length (SetBucket.entries bucket))
               entries (SetBucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (prn e)]))))))
+              (set! init (f init e))))))
+      init))
+
+  (defn str [set]
+    (let [res (reduce (fn [s e] (String.join @"" &[s @" " (prn e)]))
+                      @"{"
+                      set)]
       (String.append &res " }")))
 )
