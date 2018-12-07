@@ -92,9 +92,10 @@
       nentries))
 
   (defn shrink [b k]
-    (if (contains? b k)
-      (set-entries @b (remove (entries b) k))
-      @b))
+    (if (contains? &b k)
+      (let [nentries (remove (entries &b) k)]
+        (set-entries b nentries))
+      b))
 )
 
 (deftype (Map a b) [n-buckets Int buckets (Array (Bucket a b))])
@@ -163,7 +164,7 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.shrink n k)))))))
+          (Array.aset b idx (Bucket.shrink @n k)))))))
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
