@@ -246,8 +246,8 @@
     (filter &(fn [x] (not (= el x)))
             arr))
 
-  (doc remove-idx "Remove element at index idx from arr")
-  (defn remove-idx [i arr]
+  (doc remove-nth "Remove element at index idx from arr")
+  (defn remove-nth [i arr]
     (do
       ;;(assert (<= 0 i))
       ;;(assert (< i (Array.length &arr)))
