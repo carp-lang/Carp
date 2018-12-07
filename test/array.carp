@@ -233,4 +233,8 @@
   (assert-equal test
                 &[1 3]
                 &(remove &2 [1 3])
-                "remove works when element is not found"))
+                "remove works when element is not found")
+  (assert-equal test
+                &[1 3]
+                &(remove-idx 1 [1 2 3])
+                "remove-idx works"))

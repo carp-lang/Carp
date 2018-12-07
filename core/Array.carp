@@ -246,4 +246,12 @@
     (filter &(fn [x] (not (= el x)))
             arr))
 
-  )
+  (doc remove-idx "Remove element at index idx from arr")
+  (defn remove-idx [i arr]
+    (do
+      ;;(assert (<= 0 i))
+      ;;(assert (< i (Array.length &arr)))
+      (for [j i (Int.dec (Array.length &arr))]
+        (aset! &arr j @(nth &arr (inc j))))
+      (pop-back arr)))
+)
