@@ -65,11 +65,16 @@
 ;;     (Array.reduce (fn [x y] (+ x (/ 1.0 @y))) 0.0 resistances))
 ;;   )
 
-(deftype Hi [])
+;; (deftype Hi [])
 
-(defmodule Hi
+;; (defmodule Hi
 
-  (def GLOBALHI (Hi.init))
+;;   (def GLOBALHI (Hi.init))
 
-  (defn set-hi [h]
-    (set! GLOBALHI h)))
+;;   (defn set-hi [h]
+;;     (set! GLOBALHI h)))
+
+(defn main []
+  (let [f (fn [x]
+            ((fn [y] (+ x y)) 10))]
+    (IO.println &(str (f 20)))))
