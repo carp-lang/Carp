@@ -81,6 +81,13 @@
                 "stringification works II"
   )
   (assert-equal test
+                641
+                (Map.kv-reduce (fn [sum k v] (+ sum (+ (* 100 @k) (* 10 @v))))
+                               1
+                               &{1 1 2 1 3 2})
+                "kv-reduce works"
+  )
+  (assert-equal test
                 2
                 (Set.length &(Set.put (Set.put (Set.create) "1") "2"))
                 "length works"
