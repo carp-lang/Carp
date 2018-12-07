@@ -168,6 +168,18 @@
               (set! init (f init (Pair.a e) (Pair.b e)))))))
       init))
 
+  (doc vals "Return an array of the values of the map")
+  (defn vals [m]
+    (kv-reduce (fn [arr _ v] (Array.push-back arr @v))
+               []
+               m))
+
+  (doc keys "Return an array of the keys of the map")
+  (defn keys [m]
+    (kv-reduce (fn [arr k _] (Array.push-back arr @k))
+               []
+               m))
+
   (doc from-array "Create a map from the array a containing key-value pairs.")
   (defn from-array [a]
     (let-do [m (create)]

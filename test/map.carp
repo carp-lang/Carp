@@ -88,6 +88,16 @@
                 "kv-reduce works"
   )
   (assert-equal test
+                &[1 2 3]
+                &(Map.keys &{1 1 2 1 3 2})
+                "keys works"
+  )
+  (assert-equal test
+                &[1 1 2]
+                &(Map.vals &{1 1 2 1 3 2})
+                "vals works"
+  )
+  (assert-equal test
                 2
                 (Set.length &(Set.put (Set.put (Set.create) "1") "2"))
                 "length works"
