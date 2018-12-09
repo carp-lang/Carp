@@ -1,0 +1,24 @@
+(load "Tuples.carp")
+
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  (assert-true test
+               (< (Pair.init 1 2) (Pair.init 2 2))
+               "comparison works I")
+  (assert-true test
+               (< (Pair.init 2 1) (Pair.init 2 2))
+               "comparison works II")
+  (assert-true test
+               (< (Pair.init 1 100) (Pair.init 2 2))
+               "comparison works III")
+  (assert-false test
+                (< (Pair.init 1 100) (Pair.init 1 100))
+                "comparison works IV")
+  (assert-true test
+               (< &(Pair.init @"a" 2) &(Pair.init @"b" 1))
+               "comparison works with (Ref (Pair String Int)) I")
+  (assert-false test
+                (< &(Pair.init @"a" 2) &(Pair.init @"a" 1))
+                "comparison works with (Ref (Pair String Int)) II"))
