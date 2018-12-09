@@ -4,6 +4,10 @@
 
 (deftest test
   (assert-equal test
+                21474836470l
+                @&21474836470l
+                "copy works as expected")
+  (assert-equal test
                 1l
                 (min 1l 2l)
                 "min works as expected")
