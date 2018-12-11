@@ -40,6 +40,14 @@
   (defn hash [k] (Long.to-int (to-bytes @k)))
 )
 
+(defmodule Pair
+  (defn hash [pair]
+    (let-do [code 17]
+      (set! code (+ (* 31 code) (hash (Pair.a pair))))
+      (set! code (+ (* 31 code) (hash (Pair.b pair))))
+      code))
+)
+
 (deftype (Bucket a b) [entries (Array (Pair a b))])
 
 (defmodule Bucket

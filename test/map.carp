@@ -135,6 +135,11 @@
                 "vals works"
   )
   (assert-equal test
+                3
+                (Map.get &{(Pair.init 1 2) 3} &(Pair.init 1 2))
+                "Pairs work as keys"
+  )
+  (assert-equal test
                 1
                 (Set.length &(Set.put (Set.create) "1"))
                 "length works"
