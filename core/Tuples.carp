@@ -1,5 +1,21 @@
 (deftype (Pair a b) [a a b b])
 
+(defmodule PairRef
+  (defn = [p1 p2]
+    (and (= (Pair.a p1) (Pair.a p2))
+         (= (Pair.b p1) (Pair.b p2))))
+
+  (defn /= [p1 p2]
+    (not (PairRef.= p1 p2)))
+
+  (defn < [p1 p2]
+    (if (= (Pair.a p1) (Pair.a p2))
+      (< (Pair.b p1) (Pair.b p2))
+      (< (Pair.a p1) (Pair.a p2))))
+
+  (defn > [p1 p2]
+    (PairRef.< p2 p1)))
+
 (defmodule Pair
   (defn init-from-refs [r1 r2]
     (Pair.init @r1 @r2))
@@ -11,12 +27,10 @@
   (defn /= [p1 p2]
     (not (Pair.= p1 p2)))
 
+  (defn < [p1 p2]
+    (PairRef.< &p1 &p2))
+
+  (defn > [p1 p2]
+    (PairRef.> &p1 &p2))
+
   )
-
-(defmodule PairRef
-  (defn = [p1 p2]
-    (and (= (Pair.a p1) (Pair.a p2))
-         (= (Pair.b p1) (Pair.b p2))))
-
-  (defn /= [p1 p2]
-    (not (PairRef.= p1 p2))))
