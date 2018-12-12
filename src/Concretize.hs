@@ -152,8 +152,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                  modify (copyFn :)
                                  modify (copyDeps ++)
                        return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
-           _ ->
-             error "Visited body isn't a defn."
+           Left err ->
+             return (Left err)
 
     visitList _ env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
       do let Just defTy = t

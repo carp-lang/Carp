@@ -21,6 +21,7 @@
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
 *** Remove StringCopy.append, use String.append in all those cases.
+*** Unified signatures for struct updaters and aupdate
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
@@ -29,6 +30,7 @@
 *** Kind-checking for types (make sure the type variables match, etc).
 *** Allow unification of generic struct '(t a)' with concrete struct, i.e. (Array Int).
 *** Enable errors when instantiating deps. Requires that the deps function for templates should return an Either.
+*** A non-manual way to get both the ref-version and nonref-version of functions like =, <, >, etc. (Also don't expect non-ref:ed version in core, like Array.= does now).
 * Macro System
 ** 1.0
 *** Quasiquote
