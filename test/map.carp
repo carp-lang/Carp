@@ -202,6 +202,11 @@
                 "stringification works"
   )
   (assert-equal test
+                "{ 2 }"
+                &(str &(Set.from-array &[2]))
+                "stringification with ints"
+  )
+  (assert-equal test
                 &[1]
                 &(Set.to-array &(Set.put (Set.create) &1))
                 "Set.to-array works 1"
