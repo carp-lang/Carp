@@ -190,11 +190,56 @@
                 "remove works"
   )
   (assert-equal test
+                true
+                (Set.subset? &(Set.from-array &[1 2]) &(Set.from-array &[1 2 3]))
+                "subset? works"
+  )
+  (assert-equal test
+                false
+                (Set.subset? &(Set.from-array &[1 2 3]) &(Set.from-array &[1 2]))
+                "subset? works II"
+  )
+  (assert-equal test
+                true
+                (Set.= &(Set.from-array &[1 3 5]) &(Set.from-array &[1 3 5]))
+                "Set.= works"
+  )
+  (assert-equal test
+                false
+                (Set.= &(Set.from-array &[1 3]) &(Set.from-array &[1 3 5]))
+                "Set.= works II"
+  )
+  (assert-equal test
+                false
+                (Set.= &(Set.from-array &[1 3 5]) &(Set.from-array &[1 3]))
+                "Set.= works III"
+  )
+  (assert-equal test
+                false
+                (Set.= &(Set.from-array &[1 3 5]) &(Set.from-array &[1 4 5]))
+                "Set.= works IV"
+  )
+  (assert-equal test
                 61
                 (Set.reduce (fn [state i] (+ state (* 10 @i)))
                             1
                             &(Set.from-array &[1 2 3]))
                 "reduce works"
+  )
+  (assert-equal test
+                &(Set.from-array &[3 5])
+                &(Set.intersection &(Set.from-array &[1 3 5]) &(Set.from-array &[3 5 7]))
+                "intersection works"
+  )
+  (assert-equal test
+                &(Set.from-array &[1 3 5 7])
+                &(Set.union &(Set.from-array &[1 3 5]) &(Set.from-array &[3 5 7]))
+                "union works"
+  )
+  (assert-equal test
+                &(Set.from-array &[1])
+                &(Set.difference &(Set.from-array &[1 3 5]) &(Set.from-array &[3 5 7]))
+                "difference works"
   )
   (assert-equal test
                 "{ @\"hi\" @\"bye\" }"
