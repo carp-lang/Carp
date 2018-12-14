@@ -327,6 +327,21 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 
+  (doc subset? "Is set-a a subset of set-b?")
+  (defn subset? [set-a set-b]
+    (let-do [ret true]
+      (foreach [bucket (buckets set-a)]
+        (foreach [e (SetBucket.entries bucket)]
+          (unless (Set.contains? set-b e)
+            (do
+              (set! ret false)
+              (break)))))
+      ret))
+
+  (defn = [set-a set-b]
+    (and (= (Set.length set-a) (Set.length set-b))
+         (subset? set-a set-b)))
+
   (doc for-each "Execute the unary function f for each element in the set s.")
   (defn for-each [s f]
     (for [i 0 @(n-buckets s)]
@@ -356,6 +371,24 @@
             (let [e (Array.nth entries j)]
               (set! init (f init e))))))
       init))
+
+  (doc intersection "Set of elements that are in both set-a and set-b")
+  (defn intersection [set-a set-b]
+    (reduce (fn [s a] (if (Set.contains? set-b a) (Set.put s a) s))
+            (Set.create)
+            set-a))
+
+  (doc union "Set of elements that are in either set-a or set-b (or both)")
+  (defn union [set-a set-b]
+    (reduce Set.put
+            @set-a
+            set-b))
+
+  (doc difference "Set of elements that are in set-a but not set-b")
+  (defn difference [set-a set-b]
+    (reduce Set.remove
+            @set-a
+            set-b))
 
   (doc to-array "Convert Set to Array of elements")
   (defn to-array [s]
