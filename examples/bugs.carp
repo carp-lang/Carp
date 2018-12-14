@@ -74,7 +74,28 @@
 ;;   (defn set-hi [h]
 ;;     (set! GLOBALHI h)))
 
-(defn main []
-  (let [f (fn [x]
-            ((fn [y] (+ x y)) 10))]
-    (IO.println &(str (f 20)))))
+;; (defn main []
+;;   (let [f (fn [x]
+;;             (let [xx x]
+;;               (fn [y]
+;;                 (fn [z]
+;;                   (+ xx (+ y z))))))]
+;;     (println* (((f 4) 40) 400))))
+
+;; (defn mainold []
+;;   (let [f (fn [x]
+;;             ((fn [y] (+ x y)) 10))]
+;;     (IO.println &(str (f 20)))))
+
+;; (defn call-with-1 [f]
+;;   (~f 1))
+
+;; (defn wrapper [f]
+;;   (call-with-1 &(fn [x] (~f x))))
+
+;; (defn main []
+;;   (wrapper &Int.inc))
+
+(defn foo [f]
+  (let [g f]
+    (fn [] (Int.+ (g 1) 12345))))

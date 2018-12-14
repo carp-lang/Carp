@@ -264,7 +264,7 @@ pretty = visit 0
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
-            Fn _ captures -> "fn" -- ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+            Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
             While -> "while"
             Do -> "do"

@@ -190,9 +190,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
                      lambdaEnvType = StructTy lambdaEnvTypeName []
                      lambdaEnvName = freshVar i ++ "_env"
-                 -- appendToSrc (addIndent indent ++ "// This lambda captures " ++
-                 --              show (length capturedVars) ++ " variables: " ++
-                 --              joinWithComma (map getName capturedVars) ++ "\n")
+                 appendToSrc (addIndent indent ++ "// This lambda captures " ++
+                              show (length capturedVars) ++ " variables: " ++
+                              joinWithComma (map getName capturedVars) ++ "\n")
                  when needEnv $
                    do appendToSrc (addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName ++
                                    " = CARP_MALLOC(sizeof(" ++ tyToC lambdaEnvType ++ "));\n")
