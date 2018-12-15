@@ -67,6 +67,24 @@
   (let [strings [@"a" @"bb" @"ccc"]]
     (println* &(Array.copy-map &String.length &strings))))
 
+;; Example 9, capturing refs to other functions
+(defn call-with-1 [f]
+  (~f 1))
+
+(defn wrapper [f]
+  (call-with-1 &(fn [x] (~f x))))
+
+(defn example-9 []
+  (println* (wrapper &Int.inc)))
+
+;; Example 10, more realistic example of capturing ref to function
+(defn update-bs [arr f]
+  (Array.endo-map &(fn [p] (Pair.update-b p f)) arr))
+
+(defn example-10 []
+  (let [arr [(Pair.init 1 1)]]
+    (println* &(update-bs arr &Int.inc))))
+
 (defn-do main []
   ;;(example-1 "!")
   (example-2)
@@ -75,4 +93,6 @@
   ;;(example-5)
   (example-6)
   (example-7)
-  (example-8))
+  (example-8)
+  (example-9)
+  (example-10))
