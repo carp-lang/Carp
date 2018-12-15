@@ -90,12 +90,20 @@
 ;; (defn call-with-1 [f]
 ;;   (~f 1))
 
-;; (defn wrapper [f]
-;;   (call-with-1 &(fn [x] (~f x))))
+(defn call-me [f]
+  (Int.+ 2 (f 1)))
 
-;; (defn main []
-;;   (wrapper &Int.inc))
+(defn wrapper1 [f]
+  (fn [x] (f x)))
 
-(defn foo [f]
-  (let [g f]
-    (fn [] (Int.+ (g 1) 12345))))
+(defn wrapper2 [f]
+  (fn [x] (~f x)))
+
+(defn main []
+  (Int.+
+   ((wrapper1 Int.inc) 3)
+   ((wrapper2 &Int.inc) 3)))
+
+;; (defn foo [f]
+;;   (let [g f]
+;;     (fn [] (Int.+ (g 1) 12345))))
