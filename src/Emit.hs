@@ -542,8 +542,7 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       memberToDecl (memberName, memberType) =
         case xobjToTy memberType of
           -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-          Just (FuncTy _ _) -> appendToSrc (addIndent indent' ++ "Lambda " ++ mangle (getName memberName) ++ ";\n") -- TODO: Can remove this case now and rely on tyToCLambdaFix instead?
-          Just t  -> appendToSrc (addIndent indent' ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
+          Just t  -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
           Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced
