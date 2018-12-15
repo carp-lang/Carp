@@ -125,7 +125,7 @@
   (defn index-of [a e]
     (let-do [idx -1]
       (for [i 0 (length a)]
-        (when (= (nth a i) &e)
+        (when (= (nth a i) e)
           (do
             (set! idx i)
             (break))))
