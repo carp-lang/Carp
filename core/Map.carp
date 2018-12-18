@@ -327,16 +327,20 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 
-  (doc subset? "Is set-a a subset of set-b?")
-  (defn subset? [set-a set-b]
+  (doc all? "Does the predicate hold for all values in this set?")
+  (defn all? [pred set]
     (let-do [ret true]
-      (foreach [bucket (buckets set-a)]
+      (foreach [bucket (buckets set)]
         (foreach [e (SetBucket.entries bucket)]
-          (unless (Set.contains? set-b e)
+          (unless (~pred e)
             (do
               (set! ret false)
               (break)))))
       ret))
+
+  (doc subset? "Is set-a a subset of set-b?")
+  (defn subset? [set-a set-b]
+    (all? &(fn [e] (Set.contains? set-b e)) set-a))
 
   (defn = [set-a set-b]
     (and (= (Set.length set-a) (Set.length set-b))

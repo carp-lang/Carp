@@ -191,6 +191,21 @@
   )
   (assert-equal test
                 true
+                (Set.all? &(fn [i] (Int.even? @i)) &(Set.from-array &[2 4 6]))
+                "Set.all? works I"
+  )
+  (assert-equal test
+                false
+                (Set.all? &(fn [i] (Int.even? @i)) &(Set.from-array &[2 4 7]))
+                "Set.all? works II"
+  )
+  (assert-equal test
+                true
+                (Set.all? &(fn [i] false) &(the (Set Int) (Set.create)))
+                "Set.all? works on empty set"
+  )
+  (assert-equal test
+                true
                 (Set.subset? &(Set.from-array &[1 2]) &(Set.from-array &[1 2 3]))
                 "subset? works"
   )
