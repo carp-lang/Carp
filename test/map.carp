@@ -30,6 +30,16 @@
                 "update works"
   )
   (assert-equal test
+                \x ;; using char because it has no (zero) operation
+                (Map.get-with-default &{1 \x} &1 &\_)
+                "get-with-default works I"
+  )
+  (assert-equal test
+                \_
+                (Map.get-with-default &{1 \x} &2 &\_)
+                "get-with-default works II"
+  )
+  (assert-equal test
                 8
                 (Map.get &(Map.update-with-default (Map.create) "x" Int.inc 7) "x")
                 "update-with-default works with empty map"
