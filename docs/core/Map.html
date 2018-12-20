@@ -144,6 +144,45 @@
                 Map
             </h1>
             <div class="binder">
+                <a class="anchor" href="#=">
+                    <h3 id="=">
+                        =
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b)), (Ref (Map a b))] Bool)
+                </p>
+                <pre class="args">
+                    (= m1 m2)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#all?">
+                    <h3 id="all?">
+                        all?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [&amp;a, &amp;b] Bool)), (Ref (Map a b))] Bool)
+                </p>
+                <pre class="args">
+                    (all? pred m)
+                </pre>
+                <p class="doc">
+                    <p>Do all key-value pairs pass the given predicate (of two arguments)?</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#buckets">
                     <h3 id="buckets">
                         buckets
@@ -376,6 +415,26 @@
                 </pre>
                 <p class="doc">
                     <p>Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-with-default">
+                    <h3 id="get-with-default">
+                        get-with-default
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b)), &amp;a, &amp;b] b)
+                </p>
+                <pre class="args">
+                    (get-with-default m k default-value)
+                </pre>
+                <p class="doc">
+                    <p>Get the value for the key k from map m. If it isn’t found, the default is returned.</p>
 
                 </p>
             </div>
