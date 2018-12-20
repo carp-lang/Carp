@@ -42,6 +42,16 @@
             (break))))
       res))
 
+  (doc find-index "Finds the index of the first element in `a` that matches the function `f`, or -1.")
+  (defn find-index [f a]
+    (let-do [ret -1]
+      (for [i 0 (length a)]
+        (when (~f (nth a i))
+          (do
+            (set! ret i)
+            (break))))
+      ret))
+
   (doc first "Take the first element of an array.")
   (defn first [a]
     @(Array.nth a 0))
@@ -136,6 +146,14 @@
     (let-do [c 0]
       (for [i 0 (length a)]
         (when (= e (nth a i)) (set! c (Int.inc c))))
+      c))
+
+  (doc predicate-count "Count number of elements satisfying predicate in an array.")
+  (defn predicate-count [a pred]
+    (let-do [c 0]
+      (for [i 0 (length a)]
+        (when (~pred (nth a i))
+          (set! c (Int.inc c))))
       c))
 
   (doc aupdate "Transmute the element at index i of array a using function f.")
