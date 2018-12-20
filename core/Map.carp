@@ -180,6 +180,24 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.shrink @n k)))))))
 
+  (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
+  (defn all? [pred m]
+    (let-do [ret true]
+      (for [i 0 @(n-buckets m)]
+        (let [bucket (Array.nth (buckets m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (unless (~pred (Pair.a e) (Pair.b e))
+                (set! ret false))))))
+      ret))
+
+  (defn = [m1 m2]
+    (and (= (length m1) (length m2))
+         ;; we could use contains? and get-with-default here to avoid requiring a (zero) for the value type
+         (all? &(fn [k v] (= v &(get m2 k))) m1)))
+
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
     (for [i 0 @(n-buckets m)]
@@ -331,16 +349,20 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 
-  (doc subset? "Is set-a a subset of set-b?")
-  (defn subset? [set-a set-b]
+  (doc all? "Does the predicate hold for all values in this set?")
+  (defn all? [pred set]
     (let-do [ret true]
-      (foreach [bucket (buckets set-a)]
+      (foreach [bucket (buckets set)]
         (foreach [e (SetBucket.entries bucket)]
-          (unless (Set.contains? set-b e)
+          (unless (~pred e)
             (do
               (set! ret false)
               (break)))))
       ret))
+
+  (doc subset? "Is set-a a subset of set-b?")
+  (defn subset? [set-a set-b]
+    (all? &(fn [e] (Set.contains? set-b e)) set-a))
 
   (defn = [set-a set-b]
     (and (= (Set.length set-a) (Set.length set-b))
