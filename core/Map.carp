@@ -76,11 +76,11 @@
     (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))
         b))
 
-  (defn get [b k]
+  (defn get [b k default-value]
     (let [i (find b k)]
       (if (<= 0 i)
         (get-idx b i)
-        (zero))))
+        @default-value)))
 
   (defn put [b k v]
     (let [i (find &b k)]
@@ -127,10 +127,14 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.put @n k v)))))))
 
+  (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
+  (defn get-with-default [m k default-value]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+      (Bucket.get (Array.nth (buckets m) idx) k default-value)))
+
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
-      (Bucket.get (Array.nth (buckets m) idx) k)))
+    (get-with-default m k &(zero)))
 
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]
