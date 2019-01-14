@@ -1,4 +1,4 @@
-The pattern matching code in src/carp_regex.h comes from Lua and is licensed
+The pattern matching code in core/carp_pattern.h comes from Lua and is licensed
 under the terms of the MIT license below.
 
 Copyright © 1994–2017 Lua.org, PUC-Rio.
