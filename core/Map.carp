@@ -1,19 +1,16 @@
 (definterface hash (Fn [(Ref a)] Int))
 
 (defmodule String
-  (defn rehash [k l]
+  (defn hash [k]
     (let-do [a 31415
              b 27183
              vh 0]
       (for [x 0 (length k)]
         (do
-          (set! vh (+ (* a (* vh l)) (Char.to-int (char-at k x))))
+          (set! vh (+ (* a vh) (Char.to-int (char-at k x))))
           (set! a (* a b))
           (set! x (Int.inc x))))
       (Int.abs vh)))
-
-  (defn hash [k]
-    (rehash k 1))
 )
 
 (defmodule Int
