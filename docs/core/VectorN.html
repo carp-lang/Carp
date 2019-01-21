@@ -53,28 +53,13 @@
                             </a>
                         </li>
                         <li>
-                            <a href="V2.html">
-                                V2
-                            </a>
-                        </li>
-                        <li>
                             <a href="Vector3.html">
                                 Vector3
                             </a>
                         </li>
                         <li>
-                            <a href="V3.html">
-                                V3
-                            </a>
-                        </li>
-                        <li>
                             <a href="VectorN.html">
                                 VectorN
-                            </a>
-                        </li>
-                        <li>
-                            <a href="VN.html">
-                                VN
                             </a>
                         </li>
                         <li>
@@ -172,30 +157,11 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Bool)
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
                 </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#VN">
-                    <h3 id="VN">
-                        VN
-                    </h3>
-                </a>
-                <div class="description">
-                    module
-                </div>
-                <p class="sig">
-                    Module
-                </p>
-                <span>
-                    
-                </span>
                 <p class="doc">
                     
                 </p>
@@ -210,7 +176,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] VN)
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (VectorN a))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -229,7 +195,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -249,7 +215,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -257,6 +223,44 @@
                 <p class="doc">
                     <p>Check whether the two vectors a and b are anti-parallel.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#copy">
+                    <h3 id="copy">
+                        copy
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a))] (VectorN a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(VectorN a)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -269,7 +273,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -289,7 +293,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), Double] VN)
+                    (λ [(Ref (VectorN a)), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (div a n)
@@ -308,7 +312,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
                 </p>
                 <pre class="args">
                     (dot x y)
@@ -325,14 +329,14 @@
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    template
                 </div>
                 <p class="sig">
-                    (λ [Int, (Array Double)] VN)
+                    (λ [Int, (Array a)] (VectorN a))
                 </p>
-                <pre class="args">
-                    (init n v)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -347,7 +351,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN), Double] VN)
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a)), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (lerp a b amnt)
@@ -367,7 +371,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN)] Double)
+                    (λ [(Ref (VectorN Double))] Double)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -387,7 +391,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN)] Double)
+                    (λ [(Ref (VectorN Double))] Double)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -407,11 +411,30 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), Double] VN)
+                    (λ [(Ref (VectorN a)), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (mul a n)
                 </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#n">
+                    <h3 id="n">
+                        n
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a))] &amp;Int)
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -426,7 +449,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN)] VN)
+                    (λ [(Ref (VectorN Double))] (VectorN Double))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -446,7 +469,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -466,7 +489,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -474,6 +497,25 @@
                 <p class="doc">
                     <p>Check whether the two vectors a and b are perpendicular.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#prn">
+                    <h3 id="prn">
+                        prn
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a))] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -486,11 +528,106 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int] VN)
+                    (λ [Int] (VectorN Double))
                 </p>
                 <pre class="args">
                     (random-sized n)
                 </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-n">
+                    <h3 id="set-n">
+                        set-n
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(VectorN a), Int] (VectorN a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-n!">
+                    <h3 id="set-n!">
+                        set-n!
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a)), Int] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-v">
+                    <h3 id="set-v">
+                        set-v
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(VectorN a), (Array a)] (VectorN a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-v!">
+                    <h3 id="set-v!">
+                        set-v!
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a)), (Array a)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#str">
+                    <h3 id="str">
+                        str
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a))] String)
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -505,7 +642,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN), (Ref VN)] VN)
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (VectorN a))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -515,39 +652,58 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#to-string">
-                    <h3 id="to-string">
-                        to-string
+                <a class="anchor" href="#update-n">
+                    <h3 id="update-n">
+                        update-n
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref VN)] String)
+                    (λ [(VectorN a), (Ref (λ [Int] Int))] (VectorN a))
                 </p>
-                <pre class="args">
-                    (to-string o)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#unit-random">
-                    <h3 id="unit-random">
-                        unit-random
+                <a class="anchor" href="#update-v">
+                    <h3 id="update-v">
+                        update-v
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    instantiate
                 </div>
                 <p class="sig">
-                    (λ [] Double)
+                    (λ [(VectorN a), (Ref (λ [(Array a)] (Array a)))] (VectorN a))
                 </p>
-                <pre class="args">
-                    (unit-random)
-                </pre>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#v">
+                    <h3 id="v">
+                        v
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (VectorN a))] (Ref (Array a)))
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -562,7 +718,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int] VN)
+                    (λ [Int] (VectorN Double))
                 </p>
                 <pre class="args">
                     (zero-sized n)
@@ -581,7 +737,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [Double, Double] Double), (Ref VN), (Ref VN)] VN)
+                    (λ [(λ [a, b] a), (Ref (VectorN a)), (Ref (VectorN b))] (VectorN a))
                 </p>
                 <pre class="args">
                     (zip f a b)
@@ -600,7 +756,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] Double), (Ref (Array a)), (Ref (Array b))] VN)
+                    (λ [(λ [a, b] c), (Ref (Array a)), (Ref (Array b))] (VectorN c))
                 </p>
                 <pre class="args">
                     (zip- f a b)

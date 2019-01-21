@@ -15,11 +15,8 @@
            Float
            Double
            Vector2
-           Vector2.V2
            Vector3
-           Vector3.V3
            VectorN
-           VectorN.VN
            Geometry
            Statistics
            String
