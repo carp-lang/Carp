@@ -53,28 +53,13 @@
                             </a>
                         </li>
                         <li>
-                            <a href="V2.html">
-                                V2
-                            </a>
-                        </li>
-                        <li>
                             <a href="Vector3.html">
                                 Vector3
                             </a>
                         </li>
                         <li>
-                            <a href="V3.html">
-                                V3
-                            </a>
-                        </li>
-                        <li>
                             <a href="VectorN.html">
                                 VectorN
-                            </a>
-                        </li>
-                        <li>
-                            <a href="VN.html">
-                                VN
                             </a>
                         </li>
                         <li>
@@ -172,30 +157,11 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Bool)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
                 </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#V2">
-                    <h3 id="V2">
-                        V2
-                    </h3>
-                </a>
-                <div class="description">
-                    module
-                </div>
-                <p class="sig">
-                    Module
-                </p>
-                <span>
-                    
-                </span>
                 <p class="doc">
                     
                 </p>
@@ -210,7 +176,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] V2)
+                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -229,7 +195,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Double)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Double)
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -249,7 +215,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Bool)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Bool)
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -269,7 +235,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Bool)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Bool)
                 </p>
                 <pre class="args">
                     (approx a b)
@@ -277,6 +243,44 @@
                 <p class="doc">
                     <p>Check whether the vectors a and b are approximately equal.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#copy">
+                    <h3 id="copy">
+                        copy
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a))] (Vector2 a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Vector2 a)] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -289,7 +293,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Double)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Double)
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -309,7 +313,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), Double] V2)
+                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (div a n)
@@ -328,52 +332,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Double)
+                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
                 </p>
                 <pre class="args">
-                    (dot x y)
+                    (dot a b)
                 </pre>
                 <p class="doc">
                     <p>Get the dot product of the two vectors x and y.</p>
 
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#get-x">
-                    <h3 id="get-x">
-                        get-x
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref V2)] Double)
-                </p>
-                <pre class="args">
-                    (get-x o)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#get-y">
-                    <h3 id="get-y">
-                        get-y
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref V2)] Double)
-                </p>
-                <pre class="args">
-                    (get-y o)
-                </pre>
-                <p class="doc">
-                    
                 </p>
             </div>
             <div class="binder">
@@ -386,7 +352,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2)] Double)
+                    (λ [(Ref (Vector2 Double))] Double)
                 </p>
                 <pre class="args">
                     (heading a)
@@ -403,14 +369,14 @@
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    template
                 </div>
                 <p class="sig">
-                    (λ [Double, Double] V2)
+                    (λ [a, a] (Vector2 a))
                 </p>
-                <pre class="args">
-                    (init x y)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -425,7 +391,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2), Double] V2)
+                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a)), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (lerp a b amnt)
@@ -445,7 +411,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2)] Double)
+                    (λ [(Ref (Vector2 Double))] Double)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -465,7 +431,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2)] Double)
+                    (λ [(Ref (Vector2 a))] a)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -485,7 +451,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), Double] V2)
+                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (mul a n)
@@ -504,7 +470,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2)] V2)
+                    (λ [(Ref (Vector2 Double))] (Vector2 Double))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -524,7 +490,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Bool)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Bool)
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -544,7 +510,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] Bool)
+                    (λ [(Ref (Vector2 Double)), (Ref (Vector2 Double))] Bool)
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -552,6 +518,25 @@
                 <p class="doc">
                     <p>Check whether the two vectors a and b are perpendicular.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#prn">
+                    <h3 id="prn">
+                        prn
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a))] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -564,7 +549,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] V2)
+                    (λ [] (Vector2 Double))
                 </p>
                 <pre class="args">
                     (random)
@@ -583,7 +568,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), Double] V2)
+                    (λ [(Ref (Vector2 Double)), Double] (Vector2 Double))
                 </p>
                 <pre class="args">
                     (rotate a n)
@@ -600,14 +585,33 @@
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    template
                 </div>
                 <p class="sig">
-                    (λ [V2, Double] V2)
+                    (λ [(Vector2 a), a] (Vector2 a))
                 </p>
-                <pre class="args">
-                    (set-x o v)
-                </pre>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-x!">
+                    <h3 id="set-x!">
+                        set-x!
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a)), a] ())
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -619,14 +623,52 @@
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    template
                 </div>
                 <p class="sig">
-                    (λ [V2, Double] V2)
+                    (λ [(Vector2 a), a] (Vector2 a))
                 </p>
-                <pre class="args">
-                    (set-y o v)
-                </pre>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#set-y!">
+                    <h3 id="set-y!">
+                        set-y!
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a)), a] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#str">
+                    <h3 id="str">
+                        str
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a))] String)
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -641,7 +683,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2), (Ref V2)] V2)
+                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -651,20 +693,77 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#to-string">
-                    <h3 id="to-string">
-                        to-string
+                <a class="anchor" href="#update-x">
+                    <h3 id="update-x">
+                        update-x
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref V2)] String)
+                    (λ [(Vector2 a), (Ref (λ [a] a))] (Vector2 a))
                 </p>
-                <pre class="args">
-                    (to-string o)
-                </pre>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#update-y">
+                    <h3 id="update-y">
+                        update-y
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Vector2 a), (Ref (λ [a] a))] (Vector2 a))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#x">
+                    <h3 id="x">
+                        x
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a))] &amp;a)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#y">
+                    <h3 id="y">
+                        y
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector2 a))] &amp;a)
+                </p>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
@@ -679,7 +778,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] V2)
+                    (λ [] (Vector2 Double))
                 </p>
                 <pre class="args">
                     (zero)
