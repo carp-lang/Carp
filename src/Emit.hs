@@ -567,8 +567,7 @@ memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
 memberToDecl indent (memberName, memberType) =
   case xobjToTy memberType of
     -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-    Just (FuncTy _ _) -> appendToSrc (addIndent indent ++ "Lambda " ++ mangle (getName memberName) ++ ";\n") -- TODO: Can remove this case now and rely on tyToCLambdaFix instead?
-    Just t  -> appendToSrc (addIndent indent ++ tyToC t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Just t  -> appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
     Nothing -> error ("Invalid memberType: " ++ show memberType)
 
 defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
@@ -578,13 +577,6 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent') (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
-
-      memberToDecl :: (XObj, XObj) -> State EmitterState ()
-      memberToDecl (memberName, memberType) =
-        case xobjToTy memberType of
-          -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-          Just t  -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
-          Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced
       visit = do appendToSrc "typedef struct {\n"
