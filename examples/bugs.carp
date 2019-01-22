@@ -65,11 +65,45 @@
 ;;     (Array.reduce (fn [x y] (+ x (/ 1.0 @y))) 0.0 resistances))
 ;;   )
 
-(deftype Hi [])
+;; (deftype Hi [])
 
-(defmodule Hi
+;; (defmodule Hi
 
-  (def GLOBALHI (Hi.init))
+;;   (def GLOBALHI (Hi.init))
 
-  (defn set-hi [h]
-    (set! GLOBALHI h)))
+;;   (defn set-hi [h]
+;;     (set! GLOBALHI h)))
+
+;; (defn main []
+;;   (let [f (fn [x]
+;;             (let [xx x]
+;;               (fn [y]
+;;                 (fn [z]
+;;                   (+ xx (+ y z))))))]
+;;     (println* (((f 4) 40) 400))))
+
+;; (defn mainold []
+;;   (let [f (fn [x]
+;;             ((fn [y] (+ x y)) 10))]
+;;     (IO.println &(str (f 20)))))
+
+;; (defn call-with-1 [f]
+;;   (~f 1))
+
+(defn call-me [f]
+  (Int.+ 2 (f 1)))
+
+(defn wrapper1 [f]
+  (fn [x] (f x)))
+
+(defn wrapper2 [f]
+  (fn [x] (~f x)))
+
+(defn main []
+  (Int.+
+   ((wrapper1 Int.inc) 3)
+   ((wrapper2 &Int.inc) 3)))
+
+;; (defn foo [f]
+;;   (let [g f]
+;;     (fn [] (Int.+ (g 1) 12345))))

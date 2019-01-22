@@ -42,6 +42,16 @@
             (break))))
       res))
 
+  (doc find-index "Finds the index of the first element in `a` that matches the function `f`, or -1.")
+  (defn find-index [f a]
+    (let-do [ret -1]
+      (for [i 0 (length a)]
+        (when (~f (nth a i))
+          (do
+            (set! ret i)
+            (break))))
+      ret))
+
   (doc first "Take the first element of an array.")
   (defn first [a]
     @(Array.nth a 0))
@@ -125,7 +135,7 @@
   (defn index-of [a e]
     (let-do [idx -1]
       (for [i 0 (length a)]
-        (when (= (nth a i) &e)
+        (when (= (nth a i) e)
           (do
             (set! idx i)
             (break))))
@@ -136,6 +146,14 @@
     (let-do [c 0]
       (for [i 0 (length a)]
         (when (= e (nth a i)) (set! c (Int.inc c))))
+      c))
+
+  (doc predicate-count "Count number of elements satisfying predicate in an array.")
+  (defn predicate-count [a pred]
+    (let-do [c 0]
+      (for [i 0 (length a)]
+        (when (~pred (nth a i))
+          (set! c (Int.inc c))))
       c))
 
   (doc aupdate "Transmute the element at index i of array a using function f.")
@@ -240,4 +258,18 @@
     (zip &Pair.init-from-refs
          &(range 0 (length xs) 1) ;; Inefficient, creates a temporary array.
          xs))
+
+  (doc remove "Remove occurrences of element el in array arr, in-place")
+  (defn remove [el arr]
+    (filter &(fn [x] (not (= el x)))
+            arr))
+
+  (doc remove-nth "Remove element at index idx from arr")
+  (defn remove-nth [i arr]
+    (do
+      ;;(assert (<= 0 i))
+      ;;(assert (< i (Array.length &arr)))
+      (for [j i (Int.dec (Array.length &arr))]
+        (aset! &arr j @(nth &arr (inc j))))
+      (pop-back arr)))
 )

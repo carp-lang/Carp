@@ -1,19 +1,16 @@
 (definterface hash (Fn [(Ref a)] Int))
 
 (defmodule String
-  (defn rehash [k l]
+  (defn hash [k]
     (let-do [a 31415
              b 27183
              vh 0]
       (for [x 0 (length k)]
         (do
-          (set! vh (+ (* a (* vh l)) (Char.to-int (char-at k x))))
+          (set! vh (+ (* a vh) (Char.to-int (char-at k x))))
           (set! a (* a b))
           (set! x (Int.inc x))))
       (Int.abs vh)))
-
-  (defn hash [k]
-    (rehash k 1))
 )
 
 (defmodule Int
@@ -40,36 +37,56 @@
   (defn hash [k] (Long.to-int (to-bytes @k)))
 )
 
+(defmodule Pair
+  (defn hash [pair]
+    (let-do [code 17]
+      (set! code (+ (* 31 code) (hash (Pair.a pair))))
+      (set! code (+ (* 31 code) (hash (Pair.b pair))))
+      code))
+)
+
 (deftype (Bucket a b) [entries (Array (Pair a b))])
 
 (defmodule Bucket
   (defn empty []
     (Bucket.init []))
 
-  (defn grow [b e]
-    (set-entries @b (Array.push-back @(entries b) e)))
-
-  (defn get [b k]
-    (let-do [e &(zero)
+  (defn find [b k]
+    (let-do [ret -1
              l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
         (when (= (Pair.a (Array.nth es i)) k)
           (do
-            (set! e (Pair.b (Array.nth es i)))
+            (set! ret i)
             (break))))
-       @e))
+      ret))
+
+  (defn get-idx [b i]
+    @(Pair.b (Array.nth (entries b) i)))
+
+  (defn set-idx [b i val]
+    (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b @p @val)))
+        b))
+
+  (defn push-back [b k v]
+    (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))
+        b))
+
+  (defn get [b k default-value]
+    (let [i (find b k)]
+      (if (<= 0 i)
+        (get-idx b i)
+        @default-value)))
+
+  (defn put [b k v]
+    (let [i (find &b k)]
+      (if (<= 0 i)
+        (set-idx b i v)
+        (push-back b k v))))
 
   (defn contains? [b k]
-    (let-do [e false
-             l (Array.length (Bucket.entries b))
-             es (entries b)]
-      (for [i 0 l]
-        (when (= (Pair.a (Array.nth es i)) k)
-          (do
-            (set! e true)
-            (break))))
-       e))
+    (<= 0 (find b k)))
 
   (defn remove [entries k]
     (let-do [nentries (the (Array (Pair a b)) [])]
@@ -80,9 +97,10 @@
       nentries))
 
   (defn shrink [b k]
-    (if (contains? b k)
-      (set-entries @b (remove (entries b) k))
-      @b))
+    (if (contains? &b k)
+      (let [nentries (remove (entries &b) k)]
+        (set-entries b nentries))
+      b))
 )
 
 (deftype (Map a b) [n-buckets Int buckets (Array (Bucket a b))])
@@ -101,15 +119,40 @@
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.grow n (Pair.init @k @v))))))))
+          (Array.aset b idx (Bucket.put @n k v)))))))
+
+  (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
+  (defn get-with-default [m k default-value]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+      (Bucket.get (Array.nth (buckets m) idx) k default-value)))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))]
-      (Bucket.get (Array.nth (buckets m) idx) k)))
+    (get-with-default m k &(zero)))
+
+  (doc update "Update value at key k in map with function f, if it exists.")
+  (defn update [m k f]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+      (update-buckets m &(fn [b]
+        (let [n (Array.nth &b idx)
+              i (Bucket.find n k)]
+          (if (<= 0 i)
+            ;; currently can't write a Bucket.update that takes f due to bug #347
+            (Array.aset b idx (Bucket.set-idx @n i &(f (Bucket.get-idx n i))))
+            b))))))
+
+  (doc update "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
+  (defn update-with-default [m k f v]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+      (update-buckets m &(fn [b]
+        (let [n (Array.nth &b idx)
+              i (Bucket.find n k)]
+          (if (<= 0 i)
+            (Array.aset b idx (Bucket.set-idx @n i &(f (Bucket.get-idx n i))))
+            (Array.aset b idx (Bucket.push-back @n k &(f v)))))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
@@ -124,15 +167,33 @@
 
   (doc contains? "Check whether the map m contains the key k.")
   (defn contains? [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
       (Bucket.contains? (Array.nth (buckets m) idx) k)))
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (let [idx (Int.mod (hash k) @(n-buckets &m))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.shrink n k)))))))
+          (Array.aset b idx (Bucket.shrink @n k)))))))
+
+  (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
+  (defn all? [pred m]
+    (let-do [ret true]
+      (for [i 0 @(n-buckets m)]
+        (let [bucket (Array.nth (buckets m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (unless (~pred (Pair.a e) (Pair.b e))
+                (set! ret false))))))
+      ret))
+
+  (defn = [m1 m2]
+    (and (= (length m1) (length m2))
+         ;; we could use contains? and get-with-default here to avoid requiring a (zero) for the value type
+         (all? &(fn [k v] (= v &(get m2 k))) m1)))
 
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
@@ -144,6 +205,43 @@
           (let [e (Array.nth entries j)]
             (f (Pair.a e) (Pair.b e)))))))
 
+  (doc endo-map "Transform values of the given map in place. f gets two arguments, key and value, and should return new value")
+  (defn endo-map [f m]
+    (do
+      (for [i 0 @(n-buckets &m)]
+        (let [bucket (Array.nth (buckets &m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (Array.aset! entries j (Pair.init @(Pair.a e)
+                                                (f (Pair.a e) (Pair.b e))))))))
+      m))
+
+  (doc kv-reduce "Reduce a map with a function of three arguments: state, key and value. Reduction order is not guaranteed.")
+  (defn kv-reduce [f init m]
+    (do
+      (for [i 0 @(n-buckets m)]
+        (let [bucket (Array.nth (buckets m) i)
+              len (Array.length (Bucket.entries bucket))
+              entries (Bucket.entries bucket)]
+          (for [j 0 len]
+            (let [e (Array.nth entries j)]
+              (set! init (f init (Pair.a e) (Pair.b e)))))))
+      init))
+
+  (doc vals "Return an array of the values of the map. Order corresponds to order of (keys m)")
+  (defn vals [m]
+    (kv-reduce (fn [arr _ v] (Array.push-back arr @v))
+               []
+               m))
+
+  (doc keys "Return an array of the keys of the map. Order corresponds to order of (vals m)")
+  (defn keys [m]
+    (kv-reduce (fn [arr k _] (Array.push-back arr @k))
+               []
+               m))
+
   (doc from-array "Create a map from the array a containing key-value pairs.")
   (defn from-array [a]
     (let-do [m (create)]
@@ -154,15 +252,17 @@
           (set! m (put m k v))))
       m))
 
+  (doc to-array "Convert Map to Array of Pairs")
+  (defn to-array [m]
+    (kv-reduce (fn [arr k v] (Array.push-back arr (Pair.init-from-refs k v)))
+               []
+               m))
+
   (defn str [m]
-    (let-do [res @"{"]
-      (for [i 0 @(n-buckets m)]
-        (let [bucket (Array.nth (buckets m) i)
-              len (Array.length (Bucket.entries bucket))
-              entries (Bucket.entries bucket)]
-          (for [j 0 len]
-            (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (prn @(Pair.a e)) @" " (prn @(Pair.b e))]))))))
+    (let [res (kv-reduce (fn [s k v]
+                           (String.join @"" &[s @" " (prn @k) @" " (prn @v)]))
+                         @"{"
+                         m)]
       (String.append &res " }")))
 )
 
@@ -216,10 +316,12 @@
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
-          (Array.aset b idx (SetBucket.grow n @k)))))))
+          (if (SetBucket.contains? n k)
+            b
+            (Array.aset b idx (SetBucket.grow n @k))))))))
 
   (doc length "Get the length of set s.")
   (defn length [s]
@@ -234,15 +336,34 @@
 
   (doc contains? "Check whether the set s contains the key k.")
   (defn contains? [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets s))]
       (SetBucket.contains? (Array.nth (buckets s) idx) k)))
 
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
-    (let [idx (Int.mod (hash k) @(n-buckets &s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
+
+  (doc all? "Does the predicate hold for all values in this set?")
+  (defn all? [pred set]
+    (let-do [ret true]
+      (foreach [bucket (buckets set)]
+        (foreach [e (SetBucket.entries bucket)]
+          (unless (~pred e)
+            (do
+              (set! ret false)
+              (break)))))
+      ret))
+
+  (doc subset? "Is set-a a subset of set-b?")
+  (defn subset? [set-a set-b]
+    (all? &(fn [e] (Set.contains? set-b e)) set-a))
+
+  (defn = [set-a set-b]
+    (and (= (Set.length set-a) (Set.length set-b))
+         (subset? set-a set-b)))
 
   (doc for-each "Execute the unary function f for each element in the set s.")
   (defn for-each [s f]
@@ -262,14 +383,43 @@
           (set! s (put s e))))
       s))
 
-  (defn str [s]
-    (let-do [res @"{"]
+  (doc reduce "Reduce values of the set with function f. Order of reduction is not guaranteed")
+  (defn reduce [f init s]
+    (do
       (for [i 0 @(n-buckets s)]
         (let [bucket (Array.nth (buckets s) i)
               len (Array.length (SetBucket.entries bucket))
               entries (SetBucket.entries bucket)]
           (for [j 0 len]
             (let [e (Array.nth entries j)]
-              (set! res (String.join @"" &[res @" " (prn e)]))))))
+              (set! init (f init e))))))
+      init))
+
+  (doc intersection "Set of elements that are in both set-a and set-b")
+  (defn intersection [set-a set-b]
+    (reduce (fn [s a] (if (Set.contains? set-b a) (Set.put s a) s))
+            (Set.create)
+            set-a))
+
+  (doc union "Set of elements that are in either set-a or set-b (or both)")
+  (defn union [set-a set-b]
+    (reduce Set.put
+            @set-a
+            set-b))
+
+  (doc difference "Set of elements that are in set-a but not set-b")
+  (defn difference [set-a set-b]
+    (reduce Set.remove
+            @set-a
+            set-b))
+
+  (doc to-array "Convert Set to Array of elements")
+  (defn to-array [s]
+    (reduce (fn [arr elt] (Array.push-back arr @elt)) [] s))
+
+  (defn str [set]
+    (let [res (reduce (fn [s e] (String.join @"" &[s @" " (prn e)]))
+                      @"{"
+                      set)]
       (String.append &res " }")))
 )

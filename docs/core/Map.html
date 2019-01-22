@@ -53,28 +53,13 @@
                             </a>
                         </li>
                         <li>
-                            <a href="V2.html">
-                                V2
-                            </a>
-                        </li>
-                        <li>
                             <a href="Vector3.html">
                                 Vector3
                             </a>
                         </li>
                         <li>
-                            <a href="V3.html">
-                                V3
-                            </a>
-                        </li>
-                        <li>
                             <a href="VectorN.html">
                                 VectorN
-                            </a>
-                        </li>
-                        <li>
-                            <a href="VN.html">
-                                VN
                             </a>
                         </li>
                         <li>
@@ -143,6 +128,45 @@
             <h1>
                 Map
             </h1>
+            <div class="binder">
+                <a class="anchor" href="#=">
+                    <h3 id="=">
+                        =
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b)), (Ref (Map a b))] Bool)
+                </p>
+                <pre class="args">
+                    (= m1 m2)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#all?">
+                    <h3 id="all?">
+                        all?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [&amp;a, &amp;b] Bool)), (Ref (Map a b))] Bool)
+                </p>
+                <pre class="args">
+                    (all? pred m)
+                </pre>
+                <p class="doc">
+                    <p>Do all key-value pairs pass the given predicate (of two arguments)?</p>
+
+                </p>
+            </div>
             <div class="binder">
                 <a class="anchor" href="#buckets">
                     <h3 id="buckets">
@@ -300,6 +324,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#endo-map">
+                    <h3 id="endo-map">
+                        endo-map
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [&amp;a, &amp;b] b), (Map a b)] (Map a b))
+                </p>
+                <pre class="args">
+                    (endo-map f m)
+                </pre>
+                <p class="doc">
+                    <p>Transform values of the given map in place. f gets two arguments, key and value, and should return new value</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#for-each">
                     <h3 id="for-each">
                         for-each
@@ -360,6 +404,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#get-with-default">
+                    <h3 id="get-with-default">
+                        get-with-default
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b)), &amp;a, &amp;b] b)
+                </p>
+                <pre class="args">
+                    (get-with-default m k default-value)
+                </pre>
+                <p class="doc">
+                    <p>Get the value for the key k from map m. If it isn’t found, the default is returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#init">
                     <h3 id="init">
                         init
@@ -376,6 +440,46 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#keys">
+                    <h3 id="keys">
+                        keys
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b))] (Array a))
+                </p>
+                <pre class="args">
+                    (keys m)
+                </pre>
+                <p class="doc">
+                    <p>Return an array of the keys of the map. Order corresponds to order of (vals m)</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#kv-reduce">
+                    <h3 id="kv-reduce">
+                        kv-reduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [a, &amp;b, &amp;c] a), a, (Ref (Map b c))] a)
+                </p>
+                <pre class="args">
+                    (kv-reduce f init m)
+                </pre>
+                <p class="doc">
+                    <p>Reduce a map with a function of three arguments: state, key and value. Reduction order is not guaranteed.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -572,6 +676,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#to-array">
+                    <h3 id="to-array">
+                        to-array
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b))] (Array (Pair a b)))
+                </p>
+                <pre class="args">
+                    (to-array m)
+                </pre>
+                <p class="doc">
+                    <p>Convert Map to Array of Pairs</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#update">
+                    <h3 id="update">
+                        update
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Map a b), &amp;a, (λ [b] b)] (Map a b))
+                </p>
+                <pre class="args">
+                    (update m k f)
+                </pre>
+                <p class="doc">
+                    <p>Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#update-buckets">
                     <h3 id="update-buckets">
                         update-buckets
@@ -607,6 +751,45 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#update-with-default">
+                    <h3 id="update-with-default">
+                        update-with-default
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Map a b), &amp;a, (λ [b] b), b] (Map a b))
+                </p>
+                <pre class="args">
+                    (update-with-default m k f v)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#vals">
+                    <h3 id="vals">
+                        vals
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b))] (Array b))
+                </p>
+                <pre class="args">
+                    (vals m)
+                </pre>
+                <p class="doc">
+                    <p>Return an array of the values of the map. Order corresponds to order of (keys m)</p>
+
                 </p>
             </div>
         </div>

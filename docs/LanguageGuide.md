@@ -12,12 +12,12 @@ and any subsequent use will lead to a compiler error. To temporarily lend a valu
 To learn more about the details of memory management, check out [Memory.md](https://github.com/carp-lang/Carp/blob/master/docs/Memory.md)
 
 ### Comments
-```
+```clojure
 ;; Comments begin with a semicolon and continue until the end of the line.
 ```
 
 ### Data Literals
-```
+```clojure
 100     ;; Int
 1500l   ;; Long
 3.14f   ;; Float
@@ -31,7 +31,7 @@ true    ;; Bool
 ```
 
 ### Type Literals
-```
+```clojure
 t ;; Type variables begin with a lowercase letter
 Int
 Long
@@ -49,13 +49,13 @@ Char
 ### Dynamic-only Data Literals
 Right now the following data types are only available for manipulation in non-compiled code.
 
-```
+```clojure
 (1 2 3) ; list
 foo ; symbol
 ```
 
 ### Defining things
-```
+```clojure
 (defn function-name [<arg1> <arg2> ...] <body>) ;; Define a function (will be compiled, can't be called at the REPL)
 (definterface interface-name (Fn [<t1> <t2>] <return>)) ;; Define a generic function that can have multiple implementations
 (def variable-name value) ;; Define a global variable (only handles primitive constants for the moment)
@@ -68,7 +68,7 @@ foo ; symbol
 The following forms can be used in Carp source code and will be compiled to C after type checking
 and other static analysis. The first three of them are also available in dynamic functions.
 
-```
+```clojure
 (let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Create local bindings
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
@@ -80,7 +80,7 @@ and other static analysis. The first three of them are also available in dynamic
 ```
 
 ### Reader Macros
-```
+```clojure
 &x ;; same as (ref x)
 @x ;; same as (copy x)
 ```
@@ -90,12 +90,12 @@ When using a statically typed language like Carp it can sometimes be hard to kno
 be used at a specific point in your program. In such cases the concept of 'holes' can be useful. Just
 add a hole in your source code and reload (":r") to let the Carp compiler figure out what type goes there.
 
-```
+```clojure
 (StringCopy.append ?w00t @"!") ;; Will generate a type error telling you that the type of '?w00t' is String
 ```
 
 ### Special forms during evaluation of dynamic code
-```
+```clojure
 (quote <expression>) ;; Avoid further evaluation of the expression
 (and) (or) (not) ;; Logical operators
 ```
@@ -103,7 +103,7 @@ add a hole in your source code and reload (":r") to let the Carp compiler figure
 ### Dynamic functions
 These can only be used at the REPL and during macro evaluation. Here's a subset with some of the most commonly used ones:
 
-```
+```clojure
 (car <collection>) ;; Return the first element of a list or array
 (cdr <collection>) ;; Return all but the first element of a list or array
 (cons <expr> <list>) ;; Add the value of <expr> as the first element the <list>
@@ -120,7 +120,7 @@ you need to qualify it with the module name, like this: ```Float.cos```.
 
 *Using* a module makes it possible to access its members without qualifying them:
 
-```
+```clojure
 (use Float)
 
 (defn f []
@@ -132,7 +132,7 @@ out which one of the symbols you really mean (based on the types in your code). 
 For example, both the module ```String``` and ```Array``` contain a function named 'length'. In the following code it's
 possible to see that it's the array version that is needed, and that one will be called:
 
-```
+```clojure
 (use String)
 (use Array)
 
@@ -141,7 +141,7 @@ possible to see that it's the array version that is needed, and that one will be
 ```
 
 In the following example it's not possible to figure out which type is intended:
-```
+```clojure
 (use String)
 (use Array)
 
@@ -150,7 +150,7 @@ In the following example it's not possible to figure out which type is intended:
 ```
 
 Specifying the type solves this error:
-```
+```clojure
 (use String)
 (use Array)
 
@@ -159,7 +159,7 @@ Specifying the type solves this error:
 ```
 
 ### Structs
-```
+```clojure
 (deftype Vector2 [x Int, y Int])
 
 (let [my-pos (Vector2.init 10 20)]
@@ -172,7 +172,7 @@ Specifying the type solves this error:
 ```
 
 ### C Interop
-```
+```clojure
 (system-include "math.h") ;; compiles to #include <math.h>
 (local-include "math.h") ;; compiles to #include "math.h"
 
@@ -183,4 +183,51 @@ Specifying the type solves this error:
 
 (register-type Apple) ;; Register an opaque C type
 (register-type Banana [price Double, size Int]) ;; Register an external C-structs, this will generate getters, setters and updaters.
+```
+
+### Patterns
+
+Patterns are similar to, but not the same as, Regular Expressions. They were
+derived from [Lua](http://lua-users.org/wiki/PatternsTutorial), and are useful
+whenever you want to find something within or extract something from strings.
+
+They are simpler than Regular Expressions, as they do not provide alternation.
+Nonetheless, they are often very useful and, because they are simpler, also
+faster and more predictable.
+
+Here is a little overview of the API:
+
+```clojure
+; you can initialize a pattern with a literal or create one from a string
+#"[a-z]"
+(Pattern.init "[a-z]")
+
+; you can also get a string back from it
+(str #"[a-z]")
+(prn #"[a-z]")
+
+; you can find things in strings by index
+(Pattern.find #"[a-z]" "1234a") ; => 4
+(Pattern.find #"[a-z]" "1234")  ; => -1
+
+; also multiple things at once!
+(Pattern.find-all #"[a-z]" "1234a b") ; => [4 6]
+
+; matches? checks whether a string matches a pattern
+(Pattern.matches? #"(\d+) (\d+)" "  12 13") ; => true
+
+; match returns all match groups of the first match
+(Pattern.match #"(\d+) (\d+)" "  12 13") ; => ["12" "13"]
+
+; match-str returns the whole string of the first match
+(Pattern.match #"(\d+) (\d+)" "  12 13") ; => "12 13"
+
+; global-match gets all match groups of all matches
+(Pattern.global-match #"(\d+) (\d+)" "  12 13 14 15") ; => [["12" "13"] ["14" "15"]]
+
+; substitute helps you replace patterns in a string n times
+(Pattern.substitute #"sub-me" "sub-me sub-me sub-me" "replaced" 1) ; => "replaced sub-me sub-me"
+
+; if you want to replace every occurrence, use -1
+(Pattern.substitute #"sub-me" "sub-me sub-me sub-me" "replaced" -1) ; => "replaced replaced replaced"
 ```

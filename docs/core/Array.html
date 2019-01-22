@@ -53,28 +53,13 @@
                             </a>
                         </li>
                         <li>
-                            <a href="V2.html">
-                                V2
-                            </a>
-                        </li>
-                        <li>
                             <a href="Vector3.html">
                                 Vector3
                             </a>
                         </li>
                         <li>
-                            <a href="V3.html">
-                                V3
-                            </a>
-                        </li>
-                        <li>
                             <a href="VectorN.html">
                                 VectorN
-                            </a>
-                        </li>
-                        <li>
-                            <a href="VN.html">
-                                VN
                             </a>
                         </li>
                         <li>
@@ -535,6 +520,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#find-index">
+                    <h3 id="find-index">
+                        find-index
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Int)
+                </p>
+                <pre class="args">
+                    (find-index f a)
+                </pre>
+                <p class="doc">
+                    <p>Finds the index of the first element in <code>a</code> that matches the function <code>f</code>, or -1.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#first">
                     <h3 id="first">
                         first
@@ -564,7 +569,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), a] Int)
+                    (λ [(Ref (Array a)), &amp;a] Int)
                 </p>
                 <pre class="args">
                     (index-of a e)
@@ -711,6 +716,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#predicate-count">
+                    <h3 id="predicate-count">
+                        predicate-count
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (λ [&amp;a] Bool))] Int)
+                </p>
+                <pre class="args">
+                    (predicate-count a pred)
+                </pre>
+                <p class="doc">
+                    <p>Count number of elements satisfying predicate in an array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#prefix-array">
                     <h3 id="prefix-array">
                         prefix-array
@@ -847,6 +872,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#remove">
+                    <h3 id="remove">
+                        remove
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;a, (Array a)] (Array a))
+                </p>
+                <pre class="args">
+                    (remove el arr)
+                </pre>
+                <p class="doc">
+                    <p>Remove occurrences of element el in array arr, in-place</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#remove-nth">
+                    <h3 id="remove-nth">
+                        remove-nth
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Int, (Array a)] (Array a))
+                </p>
+                <pre class="args">
+                    (remove-nth i arr)
+                </pre>
+                <p class="doc">
+                    <p>Remove element at index idx from arr</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#repeat">
                     <h3 id="repeat">
                         repeat
@@ -967,6 +1032,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#sort-by">
+                    <h3 id="sort-by">
+                        sort-by
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Array a), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                </p>
+                <pre class="args">
+                    (sort-by arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform an in-place heapsort of a given owned array by a comparison function.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sort-by!">
+                    <h3 id="sort-by!">
+                        sort-by!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] ())
+                </p>
+                <pre class="args">
+                    (sort-by! arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform an in-place heapsort of a given array by a comparison function.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#sorted">
                     <h3 id="sorted">
                         sorted
@@ -983,6 +1088,26 @@
                 </pre>
                 <p class="doc">
                     <p>Perform a heapsort in a new copy of given array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sorted-by">
+                    <h3 id="sorted-by">
+                        sorted-by
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                </p>
+                <pre class="args">
+                    (sorted-by arr f)
+                </pre>
+                <p class="doc">
+                    <p>Perform a heapsort in a new copy of given array by a comparison function.</p>
 
                 </p>
             </div>

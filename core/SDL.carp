@@ -75,12 +75,18 @@
   (register render-draw-line (Fn [(Ptr SDL_Renderer) Int Int Int Int] ()) "SDL_RenderDrawLine") ;; x1 y1 x2 y2
   (register render-draw-lines (Fn [(Ptr SDL_Renderer) (Ptr SDL_Point) Int] ()) "SDL_RenderDrawLines")
   (register render-draw-point (Fn [(Ptr SDL_Renderer) Int Int] ()) "SDL_RenderDrawPoint")
+  (register render-read-pixels (Fn [(Ptr SDL_Renderer) (Ptr SDL_Rect) Int (Ptr ()) Int] Int) "SDL_RenderReadPixels")
   (register destroy-texture (Fn [(Ptr SDL_Texture)] ()) "SDL_DestroyTexture")
   (register set-render-draw-blend-mode (Fn [(Ptr SDL_Renderer) SDL_BlendMode] ()) "SDL_SetRenderDrawBlendMode")
+  (register create-rgb-surface (Fn [Int Int Int Int Int Int Int Int] (Ptr SDL_Surface)) "SDL_CreateRGBSurface")
   (register blit-surface (Fn [(Ptr SDL_Surface) (Ptr SDL_Rect) (Ptr SDL_Surface) (Ptr SDL_Rect)] ()) "SDL_BlitSurface") ;; src, srcrect, dst, dstrect
   (register query-texture (Fn [(Ptr SDL_Texture) (Ptr Int) (Ptr Int) (Ptr Int) (Ptr Int)] ()) "SDL_QueryTexture") ;; ? ? w h
   (register create-texture-from-surface (Fn [(Ptr SDL_Renderer) (Ptr SDL_Surface)] (Ptr SDL_Texture)) "SDL_CreateTextureFromSurface")
   (register free-surface (Fn [(Ptr SDL_Surface)] ()) "SDL_FreeSurface")
+  (register surface-pixels (Fn [(Ptr SDL_Surface)] (Ptr ())) "SDL_SurfacePixels")
+  (register surface-pitch (Fn [(Ptr SDL_Surface)] Int) "SDL_SurfacePitch")
+  (register get-window-pixel-format (Fn [(Ptr SDL_Window)] Int) "SDL_GetWindowPixelFormat")
+  (register save-bmp (Fn [(Ptr SDL_Surface) String] Int) "SDL_SaveBMP")
 
   ;; Blend modes
   (register blend-mode-none SDL_BlendMode "SDL_BLENDMODE_NONE")

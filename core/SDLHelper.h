@@ -87,3 +87,11 @@ int SDL_Color_b(SDL_Color *col) {
 int SDL_Color_a(SDL_Color *col) {
     return (int)(col->a);
 }
+
+void* SDL_SurfacePixels(SDL_Surface* s) {
+  return s->pixels;
+}
+
+int SDL_SurfacePitch(SDL_Surface* s) {
+  return s->pitch;
+}

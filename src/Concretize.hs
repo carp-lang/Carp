@@ -84,6 +84,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let Just ii = i
              Just funcTy = t
+             argObjs = map obj argsArr
               -- | TODO: This code is a copy of the one above in Defn, remove duplication:
              functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env + 1)
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -93,7 +94,10 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          case visitedBody of
            Right (okBody) ->
              let -- Analyse the body of the lambda to find what variables it captures
-                 capturedVars = collectCapturedVars okBody
+                 capturedVarsRaw = collectCapturedVars okBody
+                 -- and then remove the captures that are actually our arguments
+                 capturedVars = filter (\xobj -> not (obj xobj `elem` argObjs))
+                                capturedVarsRaw
 
                  -- Create a new (top-level) function that will be used when the lambda is called.
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
@@ -148,8 +152,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                  modify (copyFn :)
                                  modify (copyDeps ++)
                        return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
-           _ ->
-             error "Visited body isn't a defn."
+           Left err ->
+             return (Left err)
 
     visitList _ env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
       do let Just defTy = t
@@ -285,6 +289,8 @@ collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
 
     visit xobj =
       case obj xobj of
+        -- don't peek inside lambdas, trust their capture lists:
+        (Lst [(XObj (Fn _ captures) _ _), _, _]) -> Set.toList captures
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         (Sym path (LookupLocal Capture)) -> [xobj]
@@ -808,8 +814,7 @@ manageMemory typeEnv globalEnv root =
                                                                     })
                                                        (MemState preDeleters deps)
 
-                 let -- TODO! Handle deps from stillAliveTrue/stillAliveFalse
-                     deletedInTrue  = preDeleters \\ (memStateDeleters stillAliveTrue)
+                 let deletedInTrue  = preDeleters \\ (memStateDeleters stillAliveTrue)
                      deletedInFalse = preDeleters \\ (memStateDeleters stillAliveFalse)
                      deletedInBoth  = Set.intersection deletedInTrue deletedInFalse
                      createdInTrue  = (memStateDeleters stillAliveTrue)  \\ preDeleters
@@ -822,6 +827,8 @@ manageMemory typeEnv globalEnv root =
                      delsTrue  = Set.union (deletedInFalse \\ deletedInBoth) createdAndDeletedInTrue
                      delsFalse = Set.union (deletedInTrue  \\ deletedInBoth) createdAndDeletedInFalse
                      stillAliveAfter = preDeleters \\ (Set.union deletedInTrue deletedInFalse)
+
+                     depsAfter = memStateDeps stillAliveTrue ++ memStateDeps stillAliveFalse ++ deps -- Note: This merges all previous deps and the new ones, could be optimized..?!
 
                      traceDeps = trace ("IF-deleters for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " " ++ identifierStr xobj ++ ":\n" ++
                                         "preDeleters: " ++ show (preDeleters) ++ "\n" ++
@@ -836,10 +843,11 @@ manageMemory typeEnv globalEnv root =
                                         "deletedInBoth: " ++ show (deletedInBoth) ++ "\n" ++
                                         "delsTrue: " ++ show (delsTrue) ++ "\n" ++
                                         "delsFalse: " ++ show (delsFalse) ++ "\n" ++
-                                        "stillAlive: " ++ show (stillAliveAfter) ++ "\n"
+                                        "stillAlive: " ++ show (stillAliveAfter) ++ "\n" ++
+                                        "depsAfter: " ++ show (depsAfter) ++ "\n"
                                        )
 
-                 put (MemState stillAliveAfter deps)
+                 put (MemState stillAliveAfter depsAfter)
                  manage xobj
 
                  return $ do okExpr  <- visitedExpr

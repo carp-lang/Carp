@@ -206,6 +206,11 @@
 )
 
 (defmodule Int (defn prn [x] (Int.str x)))
+(defmodule IntRef
+  (defn prn [x] (Int.str @x))
+  (defn str [x] (Int.str @x))
+)
+
 (defmodule Long (defn prn [x] (Long.str x)))
 (defmodule Float (defn prn [x] (Float.str x)))
 (defmodule Double (defn prn [x] (Double.str x)))

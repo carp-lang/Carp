@@ -11,7 +11,7 @@
 (Project.config "title" "Reptile")
 
 (deftype Snake
-    [body (Array V2)
+    [body (Array (Vector2 Double))
      dir SDL_Keycode
      freeze Int
      ])
@@ -20,7 +20,7 @@
 
 (deftype World
     [snake Snake
-     human V2
+     human (Vector2 Double)
      dead Bool])
 
 (use World)
@@ -32,8 +32,8 @@
   (let [body-length (length (body snake))]
     (for [i 0 body-length]
       (let [part (nth (body snake) i)
-            x (* grid-size (to-int @(Vector2.V2.x part)))
-            y (* grid-size (to-int @(Vector2.V2.y part)))]
+            x (* grid-size (to-int @(Vector2.x part)))
+            y (* grid-size (to-int @(Vector2.y part)))]
         (if (= i 0)
           (do
             (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-length 10)) 255)
@@ -45,8 +45,8 @@
 (defn draw-human [rend human]
   (do
     (SDL.set-render-draw-color rend 100 100 250 255)
-    (let [x (* grid-size (to-int @(Vector2.V2.x human)))
-          y (* grid-size (to-int @(Vector2.V2.y human)))]
+    (let [x (* grid-size (to-int @(Vector2.x human)))
+          y (* grid-size (to-int @(Vector2.y human)))]
       (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))))
 
 (defn draw [rend world]
@@ -89,7 +89,7 @@
 
 (defn shift-body [body]
   (do
-     (let [i (- (Array.length body) 2)]
+     (let [i (- (length body) 2)]
        (while (> i -1)
          (do
            (aset! body (inc i) @(nth body i))
@@ -130,8 +130,8 @@
   (let [snake (World.snake world)
         b (Snake.body snake)
         head &(first b)
-        x @(Vector2.V2.x head)
-        y @(Vector2.V2.y head)]
+        x @(Vector2.x head)
+        y @(Vector2.y head)]
     (World.set-dead @world (or (< x 0.0)
                            (or (> x 26.0)
                            (or (< y 0.0) (> y 24.0)))))))

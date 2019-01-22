@@ -191,9 +191,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      lambdaEnvTypeName = callbackMangled ++ "_env" -- The name of the struct is the callback name with suffix '_env'.
                      lambdaEnvType = StructTy lambdaEnvTypeName []
                      lambdaEnvName = freshVar i ++ "_env"
-                 -- appendToSrc (addIndent indent ++ "// This lambda captures " ++
-                 --              show (length capturedVars) ++ " variables: " ++
-                 --              joinWithComma (map getName capturedVars) ++ "\n")
+                 appendToSrc (addIndent indent ++ "// This lambda captures " ++
+                              show (length capturedVars) ++ " variables: " ++
+                              joinWithComma (map getName capturedVars) ++ "\n")
                  when needEnv $
                    do appendToSrc (addIndent indent ++ tyToC lambdaEnvType ++ " *" ++ lambdaEnvName ++
                                    " = CARP_MALLOC(sizeof(" ++ tyToC lambdaEnvType ++ "));\n")
@@ -578,6 +578,13 @@ defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
       typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent') (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
+
+      memberToDecl :: (XObj, XObj) -> State EmitterState ()
+      memberToDecl (memberName, memberType) =
+        case xobjToTy memberType of
+          -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
+          Just t  -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+          Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced
       visit = do appendToSrc "typedef struct {\n"
