@@ -54,7 +54,7 @@ binderForCaseInit insidePath structTy@(StructTy typeName _) sumtypeCase =
   else Right (concreteCaseInit StackAlloc insidePath structTy sumtypeCase)
 
 concreteCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
-concreteCaseInit allocationMode insidePath structTy@(StructTy typeName _) sumtypeCase =
+concreteCaseInit allocationMode insidePath structTy sumtypeCase =
   instanceBinder (SymPath insidePath (caseName sumtypeCase)) (FuncTy (caseTys sumtypeCase) structTy) template
   where template =
           Template
@@ -64,11 +64,11 @@ concreteCaseInit allocationMode insidePath structTy@(StructTy typeName _) sumtyp
                  --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                  --memberPairs = memberXObjsToPairs correctedMembers
              in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
-          (const (tokensForCaseInit allocationMode typeName sumtypeCase))
+          (const (tokensForCaseInit allocationMode structTy sumtypeCase))
           (\(FuncTy _ _) -> [])
 
 genericCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
-genericCaseInit allocationMode pathStrings originalStructTy@(StructTy typeName typeVariables) sumtypeCase =
+genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
   defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath pathStrings (caseName sumtypeCase)
         t = FuncTy (caseTys sumtypeCase) originalStructTy
@@ -78,22 +78,23 @@ genericCaseInit allocationMode pathStrings originalStructTy@(StructTy typeName t
             (FuncTy (caseTys sumtypeCase) (VarTy "p"))
             (\(FuncTy _ concreteStructTy) ->
                (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
-            (const (tokensForCaseInit allocationMode typeName sumtypeCase))
+            (\(FuncTy _ concreteStructTy) ->
+               (tokensForCaseInit allocationMode concreteStructTy sumtypeCase))
             (\(FuncTy _ concreteStructTy) ->
                case concretizeType typeEnv concreteStructTy of
                  Left err -> error (err ++ ". This error should not crash the compiler - change return type to Either here.")
                  Right ok -> ok)
 
 
-tokensForCaseInit :: AllocationMode -> String -> SumtypeCase -> [Token]
-tokensForCaseInit allocationMode typeName sumtypeCase =
+tokensForCaseInit :: AllocationMode -> Ty -> SumtypeCase -> [Token]
+tokensForCaseInit allocationMode sumTy@(StructTy typeName typeVariables) sumtypeCase =
   toTemplate $ unlines [ "$DECL {"
                        , case allocationMode of
                            StackAlloc -> "    $p instance;"
                            HeapAlloc ->  "    $p instance = CARP_MALLOC(sizeof(" ++ typeName ++ "));"
                        , joinWith "\n" (map (caseMemberAssignment allocationMode (caseName sumtypeCase))
                                         (zip anonMemberNames (caseTys sumtypeCase)))
-                       , "    instance._tag = 0;"
+                       , "    instance._tag = " ++ tagName sumTy (caseName sumtypeCase) ++ ";"
                        , "    return instance;"
                        , "}"]
 

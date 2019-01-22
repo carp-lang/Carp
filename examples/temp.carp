@@ -26,6 +26,6 @@
   (the (Maybe Int) (Maybe.Nothing)))
 
 (defn main []
-  (match (Flip.A 100)
+  (match (Flip.B false)
     (A a) 15
     (B b) 37))
