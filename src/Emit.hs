@@ -277,22 +277,22 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   isNotVoid = t /= Just UnitTy
                   sumTypeAsPath = SymPath [] (show exprTy)
 
-                  emitCase :: (XObj, XObj) -> State EmitterState ()
-                  emitCase (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : _)) _ _), caseExpr) =
-                    do appendToSrc (addIndent indent ++ "case " ++ tagName exprTy caseName ++ ":")
+                  emitCase :: String -> (XObj, XObj) -> State EmitterState ()
+                  emitCase exprVar (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : _)) _ _), caseExpr) =
+                    do appendToSrc (addIndent indent ++ "if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {")
                        appendToSrc (addIndent indent ++ "\n")
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                       appendToSrc (addIndent indent' ++ "break;\n")
+                       appendToSrc (addIndent indent ++ "}\n")
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $
                        let Just tt = t
                        in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
-                     appendToSrc (addIndent indent ++ "switch (" ++ exprVar ++ "._tag) {\n")
-                     mapM emitCase (pairwise rest)
-                     appendToSrc (addIndent indent ++ "}\n")
+                     --appendToSrc (addIndent indent ++ "switch (" ++ exprVar ++ "._tag) {\n")
+                     mapM (emitCase exprVar) (pairwise rest)
+                     --appendToSrc (addIndent indent ++ "}\n")
                      return retVar
 
             XObj Match _ _ : _ ->

@@ -26,6 +26,10 @@
   (the (Maybe Int) (Maybe.Nothing)))
 
 (defn main []
-  (match (Flip.B false)
-    (A a) 15
-    (B b) 37))
+  (do
+    (println* &(Flip.A 100))
+    (println* "")
+    (match (Flip.A 123)
+      (A a) (println* "A")
+      (B b) (println* "B")
+      )))
