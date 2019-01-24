@@ -6,7 +6,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>Update (June 12, 2018): We're currently working towards version 0.3.0 of the language. The goal of this version is to be a stable but somewhat limited version of the language (lacking union types).</i>
+<i>Update (Jan 24, 2019): Union types are on their way! After that the language will be more or less feature complete.</i>
 
 <i>A conference talk about Carp was recorded and the video can be seen [here](https://youtu.be/BQeG6fXMk28).</i>
 
