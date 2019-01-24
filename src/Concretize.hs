@@ -1042,7 +1042,7 @@ memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
     FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
 memberDeletion = memberDeletionGeneral "."
 

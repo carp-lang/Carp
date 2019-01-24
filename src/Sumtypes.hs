@@ -29,9 +29,10 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         okIniters <- initers insidePath structTy cases
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
-        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn])
+        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy cases
+        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-            deps = strDeps -- ++
+            deps = strDeps ++ deleteDeps
         return (typeModuleName, typeModuleXObj, deps)
 
 data SumtypeCase = SumtypeCase { caseName :: String
@@ -203,5 +204,63 @@ strSizeCase typeEnv env concreteStructTy theCase =
      [ "  if(p->_tag == " ++ (tagName concreteStructTy name) ++ ") {"
      , "    size = snprintf(NULL, size, \"(%s \", \"" ++ name ++ "\");"
      , joinWith "\n" (map (memberPrnSize typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
+     , "  }"
+     ]
+
+-- | Helper function to create the binder for the 'delete' template.
+binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either String ((String, Binder), [XObj])
+binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) cases =
+  if isTypeGeneric structTy
+  then Right (genericSumtypeDelete insidePath structTy cases, [])
+  else Right (concreteSumtypeDelete insidePath typeEnv env structTy cases, [])
+
+  --then Right (genericStr insidePath structTy cases strOrPrn, [])
+ -- else Right (concreteStr typeEnv env insidePath structTy cases strOrPrn, [])
+
+-- | The template for the 'delete' function of a generic sumtype.
+genericSumtypeDelete :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
+genericSumtypeDelete pathStrings originalStructTy cases =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy)
+  where path = SymPath pathStrings "delete"
+        t = (FuncTy [VarTy "p"] UnitTy)
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "void $NAME($p p)"))
+            (\(FuncTy [concreteStructTy] UnitTy) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in  (toTemplate $ unlines [ "$DECL {"
+                                         , concatMap (deleteCase typeEnv env concreteStructTy) (zip correctedCases (True : repeat False))
+                                         , "}"]))
+            (\(FuncTy [concreteStructTy] UnitTy) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in  if isTypeGeneric concreteStructTy
+                   then []
+                   else concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
+                                  (filter (isManaged typeEnv) (concatMap caseTys correctedCases)))
+
+-- | The template for the 'delete' function of a concrete sumtype
+concreteSumtypeDelete :: [String] -> TypeEnv -> Env -> Ty -> [SumtypeCase] -> (String, Binder)
+concreteSumtypeDelete insidePath typeEnv env structTy cases =
+  instanceBinder (SymPath insidePath "delete") (FuncTy [structTy] UnitTy) template
+  where template = Template
+                    (FuncTy [VarTy "p"] UnitTy)
+                    (const (toTemplate "void $NAME($p p)"))
+                    (const (toTemplate $ unlines [ "$DECL {"
+                                                 , concatMap (deleteCase typeEnv env structTy) (zip cases (True : repeat False))
+                                                 , "}"]))
+                    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "delete" . typesDeleterFunctionType)
+                                     (filter (isManaged typeEnv) (concatMap caseTys cases)))
+
+deleteCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
+deleteCase typeEnv env concreteStructTy (theCase, isFirstCase) =
+  let name = caseName theCase
+      tys  = caseTys  theCase
+  in unlines $
+     [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ (tagName concreteStructTy name) ++ ") {"
+     , joinWith "\n" (map (memberDeletion typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
      , "  }"
      ]
