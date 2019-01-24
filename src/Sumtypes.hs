@@ -28,6 +28,7 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
             cases = toCases rest
         okIniters <- initers insidePath structTy cases
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
             deps = strDeps -- ++
@@ -46,6 +47,13 @@ toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _
               , caseTys = (map (fromJust . xobjToTy) tyXObjs)
               }
 
+replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
+replaceGenericTypesOnCases mappings cases =
+  map replaceOnCase cases
+  where replaceOnCase theCase =
+          let newTys = map (replaceTyVars mappings) (caseTys theCase)
+          in  theCase { caseTys = newTys }
+
 initers :: [String] -> Ty -> [SumtypeCase] -> Either String [(String, Binder)]
 initers insidePath structTy cases = sequence (map (binderForCaseInit insidePath structTy) cases)
 
@@ -63,9 +71,8 @@ concreteCaseInit allocationMode insidePath structTy sumtypeCase =
           (FuncTy (caseTys sumtypeCase) (VarTy "p"))
           (\(FuncTy _ concreteStructTy) ->
              let mappings = unifySignatures structTy concreteStructTy
-                 --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
-                 --memberPairs = memberXObjsToPairs correctedMembers
-             in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames (caseTys sumtypeCase))) ++ ")"))
+                 correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
+             in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg (zip anonMemberNames correctedTys)) ++ ")"))
           (const (tokensForCaseInit allocationMode structTy sumtypeCase))
           (\(FuncTy _ _) -> [])
 
@@ -125,10 +132,8 @@ concreteStr typeEnv env insidePath concreteStructTy@(StructTy typeName _) cases 
             (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
                 (tokensForStr typeEnv env typeName cases concreteStructTy))
             (\(ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy)) ->
-               -- concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
-               --           (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-               --            (map snd cases))
-               []
+               concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
+                          (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (concatMap caseTys cases))
             )
 
 -- | The template for the 'str' function for a generic deftype.
@@ -145,15 +150,15 @@ genericStr insidePath originalStructTy@(StructTy typeName varTys) cases strOrPrn
                (toTemplate $ "String $NAME(" ++ tyToCLambdaFix concreteStructTy ++ " *p)"))
             (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
-                   --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings cases
-               in (tokensForStr typeEnv env typeName cases concreteStructTy))
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in (tokensForStr typeEnv env typeName correctedCases concreteStructTy))
             (\(ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy)) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
-                   --correctedMembers = replaceGenericTypeSymbolsOnMembers mappings cases
-               in  --concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
-                   --(filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                   -- (map snd cases))
-                   -- ++
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
+                   (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
+                    (concatMap caseTys correctedCases))
+                   ++
                    (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
 
 tokensForStr :: TypeEnv -> Env -> String -> [SumtypeCase] -> Ty -> [Token]
