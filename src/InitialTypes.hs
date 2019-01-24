@@ -237,9 +237,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
              visitedCases <- fmap sequence $ mapM (\(tag, x) -> do visitedX <- visit env x
+                                                                   visitedTag <- visitMatchTag env tag
                                                                    case visitedX of
                                                                      Left e -> return (Left e)
-                                                                     Right okX -> return (Right (tag, okX)))
+                                                                     Right okX ->
+                                                                       case visitedTag of
+                                                                         Left e -> return (Left e)
+                                                                         Right okTag -> return (Right (okTag, okX)))
                                                   (pairwise cases)
              returnType <- genVarTy
              return $ do okExpr <- visitedExpr
@@ -329,6 +333,18 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         [] -> return (Right xobj { ty = Just UnitTy })
 
     visitList _ _ = error "Must match on list!"
+
+    -- | Visit the "left" part of a match case, i.e. (Just a)
+    visitMatchTag :: Env -> XObj -> State Integer (Either TypeError XObj)
+    visitMatchTag env (XObj (Lst (x:xs)) i t) =
+      do visitedTail <- fmap sequence (mapM visitMatchTagElement xs)
+         case visitedTail of
+           Left e -> return (Left e)
+           Right ok -> return (Right (XObj (Lst (x : ok)) i t))
+
+         where visitMatchTagElement xobj@(XObj (Sym path _) i t) =
+                 do t <- genVarTy
+                    return (Right (xobj { ty = Just t }))
 
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
     extendEnvWithLetBindings env xobjs =

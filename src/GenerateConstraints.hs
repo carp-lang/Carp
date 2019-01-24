@@ -85,10 +85,10 @@ genConstraints root = fmap sort (gen root)
                                 let mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- Wrong Ord!
                                     mkConstr _ = Nothing
                                     -- Each case should have the same return type as the whole match form:
-                                    casesConstraints = mapMaybe (\(tag, caseExpr) -> mkConstr caseExpr) (pairwise cases)
+                                    casesBodyConstraints = mapMaybe (\(tag, caseExpr) -> mkConstr caseExpr) (pairwise cases)
                                     -- TODO: The expr that the match matches on should have some constraint too?
                                     -- exprConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
-                                return (insideExprConstraints ++ insideCasesConstraints ++ casesConstraints)
+                                return (insideExprConstraints ++ insideCasesConstraints ++ casesBodyConstraints)
 
                            -- While
                            [XObj While _ _, expr, body] ->

@@ -1,5 +1,5 @@
 ;;(Debug.sanitize-addresses)
-;;(Project.config "print-ast" true)
+(Project.config "print-ast" true)
 
 (deftype (Maybe a)
   (Just [a])
@@ -21,7 +21,8 @@
 
 (defn main []
   (let-do [x (Maybe.Just 100)
-           y (the (Maybe Int) (Maybe.Nothing))]
+           ;;y (the (Maybe Int) (Maybe.Nothing))
+           ]
     (match x
       (Just a) (println* "a?")
       (Nothing) (println* "Nada!")
