@@ -1,17 +1,11 @@
 ;;(Debug.sanitize-addresses)
-(Project.config "print-ast" true)
+;;(Project.config "print-ast" true)
 
-;; Syntax D
 (deftype (Maybe a)
   (Just [a])
   (Nothing []))
 
-;; (defmodule Maybe
-;;   (defn str [x] @"Maybe")
-;;   (defn copy [x] (Maybe.Nothing))
-;;   )
-
-(deftype Flip (A [Int String]) (B [Bool Float]))
+;;(deftype Flip (A [String]) (B [Float]))
 
 ;; (defn f []
 ;;   (Flip.A 123))
@@ -26,12 +20,9 @@
 ;;   (the (Maybe Int) (Maybe.Nothing)))
 
 (defn main []
-  (let [x (Maybe.Just (Flip.B true 6.0f))
-        y @&x]
-    (do
-      (println* &y)
-      (println* "")
-      (match (Flip.A 123 @"Hello")
-        (A a) (println* "A")
-        (B b) (println* "B")
-        ))))
+  (let-do [x (Maybe.Just 100)
+           y (the (Maybe Int) (Maybe.Nothing))]
+    (match x
+      (Just a) (println* "a?")
+      (Nothing) (println* "Nada!")
+      )))
