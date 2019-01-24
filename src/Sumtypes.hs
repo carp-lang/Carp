@@ -36,19 +36,6 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
             deps = strDeps ++ deleteDeps ++ copyDeps
         return (typeModuleName, typeModuleXObj, deps)
 
-data SumtypeCase = SumtypeCase { caseName :: String
-                               , caseTys :: [Ty]
-                               } deriving (Show, Eq)
-
-toCases :: [XObj] -> [SumtypeCase]
-toCases = map toCase
-
-toCase :: XObj -> SumtypeCase
-toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
-  SumtypeCase { caseName = name
-              , caseTys = (map (fromJust . xobjToTy) tyXObjs)
-              }
-
 replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
 replaceGenericTypesOnCases mappings cases =
   map replaceOnCase cases

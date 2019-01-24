@@ -741,3 +741,16 @@ anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing)
 tagName :: Ty -> String -> String
 tagName sumTy caseName =
   tyToC sumTy ++ "_" ++ mangle caseName ++ "_tag"
+
+data SumtypeCase = SumtypeCase { caseName :: String
+                               , caseTys :: [Ty]
+                               } deriving (Show, Eq)
+
+toCases :: [XObj] -> [SumtypeCase]
+toCases = map toCase
+
+toCase :: XObj -> SumtypeCase
+toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
+  SumtypeCase { caseName = name
+              , caseTys = (map (fromJust . xobjToTy) tyXObjs)
+              }
