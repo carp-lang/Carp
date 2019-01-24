@@ -29,7 +29,7 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         okIniters <- initers insidePath structTy cases
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
-        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr])
+        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
             deps = strDeps -- ++
         return (typeModuleName, typeModuleXObj, deps)
@@ -155,9 +155,8 @@ genericStr insidePath originalStructTy@(StructTy typeName varTys) cases strOrPrn
             (\(ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy)) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedCases = replaceGenericTypesOnCases mappings cases
-               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
-                   (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
-                    (concatMap caseTys correctedCases))
+                   tys = (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t) (concatMap caseTys correctedCases))
+               in  concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv) tys
                    ++
                    (if isTypeGeneric concreteStructTy then [] else [defineFunctionTypeAlias ft]))
 

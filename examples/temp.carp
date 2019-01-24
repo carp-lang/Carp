@@ -13,17 +13,17 @@
 
 (deftype Flip (A [Int]) (B [Bool Float]))
 
-(defn f []
-  (Flip.A 123))
+;; (defn f []
+;;   (Flip.A 123))
 
-(defn g []
-  (Flip.B true 5.0f))
+;; (defn g []
+;;   (Flip.B true 5.0f))
 
-(defn m []
-  (Maybe.Just 123))
+;; (defn m []
+;;   (Maybe.Just 123))
 
-(defn n []
-  (the (Maybe Int) (Maybe.Nothing)))
+;; (defn n []
+;;   (the (Maybe Int) (Maybe.Nothing)))
 
 (defn main []
   (do
