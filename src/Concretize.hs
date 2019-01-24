@@ -1072,4 +1072,4 @@ memberCopy typeEnv env (memberName, memberType) =
     FunctionFound functionFullName ->
       "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
     FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"

@@ -30,9 +30,10 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy cases
-        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete])
+        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy cases
+        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-            deps = strDeps ++ deleteDeps
+            deps = strDeps ++ deleteDeps ++ copyDeps
         return (typeModuleName, typeModuleXObj, deps)
 
 data SumtypeCase = SumtypeCase { caseName :: String
@@ -214,9 +215,6 @@ binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) cases =
   then Right (genericSumtypeDelete insidePath structTy cases, [])
   else Right (concreteSumtypeDelete insidePath typeEnv env structTy cases, [])
 
-  --then Right (genericStr insidePath structTy cases strOrPrn, [])
- -- else Right (concreteStr typeEnv env insidePath structTy cases strOrPrn, [])
-
 -- | The template for the 'delete' function of a generic sumtype.
 genericSumtypeDelete :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
 genericSumtypeDelete pathStrings originalStructTy cases =
@@ -263,4 +261,63 @@ deleteCase typeEnv env concreteStructTy (theCase, isFirstCase) =
      [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ (tagName concreteStructTy name) ++ ") {"
      , joinWith "\n" (map (memberDeletion typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
      , "  }"
+     ]
+
+-- | Helper function to create the binder for the 'copy' template.
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either String ((String, Binder), [XObj])
+binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) cases =
+  if isTypeGeneric structTy
+  then Right (genericSumtypeCopy insidePath structTy cases, [])
+  else Right (concreteSumtypeCopy insidePath typeEnv env structTy cases, [])
+
+-- | The template for the 'copy' function of a generic sumtype.
+genericSumtypeCopy :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
+genericSumtypeCopy pathStrings originalStructTy cases =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy)] originalStructTy)
+  where path = SymPath pathStrings "copy"
+        t = (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "$p $NAME($p* pRef)"))
+            (\(FuncTy [RefTy concreteStructTy] _) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in  tokensForSumtypeCopy typeEnv env concreteStructTy correctedCases)
+            (\(FuncTy [RefTy concreteStructTy] _) ->
+               let mappings = unifySignatures originalStructTy concreteStructTy
+                   correctedCases = replaceGenericTypesOnCases mappings cases
+               in  if isTypeGeneric concreteStructTy
+                   then []
+                   else concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
+                                  (filter (isManaged typeEnv) (concatMap caseTys correctedCases)))
+
+-- | The template for the 'copy' function of a concrete sumtype
+concreteSumtypeCopy :: [String] -> TypeEnv -> Env -> Ty -> [SumtypeCase] -> (String, Binder)
+concreteSumtypeCopy insidePath typeEnv env structTy cases =
+  instanceBinder (SymPath insidePath "copy") (FuncTy [(RefTy structTy)] structTy) template
+  where template = Template
+                    (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+                    (const (toTemplate "$p $NAME($p* pRef)"))
+                    (const (tokensForSumtypeCopy typeEnv env structTy cases))
+                    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
+                                     (filter (isManaged typeEnv) (concatMap caseTys cases)))
+
+tokensForSumtypeCopy :: TypeEnv -> Env -> Ty -> [SumtypeCase] -> [Token]
+tokensForSumtypeCopy typeEnv env concreteStructTy cases =
+  (toTemplate $ unlines [ "$DECL {"
+                        , "    $p copy = *pRef;"
+                        , joinWith "\n" (map (copyCase typeEnv env concreteStructTy) (zip cases (True : repeat False)))
+                        , "    return copy;"
+                        , "}"])
+
+copyCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
+copyCase typeEnv env concreteStructTy (theCase, isFirstCase) =
+  let name = caseName theCase
+      tys  = caseTys  theCase
+  in unlines $
+     [ "    " ++ (if isFirstCase then "" else "else ") ++ "if(pRef->_tag == " ++ (tagName concreteStructTy name) ++ ") {"
+     , joinWith "\n" (map (memberCopy typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
+     , "    }"
      ]
