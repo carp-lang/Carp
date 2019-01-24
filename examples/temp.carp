@@ -19,11 +19,22 @@
 ;; (defn n []
 ;;   (the (Maybe Int) (Maybe.Nothing)))
 
+;; (defn main []
+;;   (let-do [x (Maybe.Just 100)
+;;            ;;y (the (Maybe Int) (Maybe.Nothing))
+;;            ]
+;;     (match x
+;;       ;;(Just a) (println* a)
+;;       (Maybe.Just a) (println* "a?")
+;;       (Maybe.Nothing) (println* "Nada!")
+;;       )))
+
+(deftype Switch
+  (Aha [Int])
+  (Boo [Bool])
+  )
+
 (defn main []
-  (let-do [x (Maybe.Just 100)
-           ;;y (the (Maybe Int) (Maybe.Nothing))
-           ]
-    (match x
-      (Just a) (println* "a?")
-      (Nothing) (println* "Nada!")
-      )))
+  (match (Switch.Aha 123)
+    (Switch.Aha x) 10
+    (Switch.Boo b) 20))

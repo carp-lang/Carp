@@ -237,7 +237,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
              visitedCases <- fmap sequence $ mapM (\(tag, x) -> do visitedX <- visit env x
-                                                                   visitedTag <- visitMatchTag env tag
+                                                                   visitedTag <- visitSingleMatch env tag
                                                                    case visitedX of
                                                                      Left e -> return (Left e)
                                                                      Right okX ->
@@ -335,16 +335,31 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitList _ _ = error "Must match on list!"
 
     -- | Visit the "left" part of a match case, i.e. (Just a)
-    visitMatchTag :: Env -> XObj -> State Integer (Either TypeError XObj)
-    visitMatchTag env (XObj (Lst (x:xs)) i t) =
-      do visitedTail <- fmap sequence (mapM visitMatchTagElement xs)
-         case visitedTail of
-           Left e -> return (Left e)
-           Right ok -> return (Right (XObj (Lst (x : ok)) i t))
+    visitSingleMatch :: Env -> XObj -> State Integer (Either TypeError XObj)
+    visitSingleMatch env (XObj (Lst (x@(XObj (Sym casePath _) _ _) : xs)) i t) =
+      case getCaseFromPath typeEnv casePath of
+        Nothing -> error ("Couldn't find case in type env: " ++ show casePath)
+        Just foundCase ->
+          do let visitedXs = zipWith visitMatchElement xs (caseTys foundCase)
+             return (Right (XObj (Lst (x : visitedXs)) i t))
 
-         where visitMatchTagElement xobj@(XObj (Sym path _) i t) =
-                 do t <- genVarTy
-                    return (Right (xobj { ty = Just t }))
+             where visitMatchElement xobj@(XObj (Sym path _) _ _) caseTy =
+                     xobj { ty = Just caseTy }
+                   visitMatchTagElement x =
+                     error ("Fell through in 'visitMatchTagElement': " ++ show x)
+
+    getCaseFromPath :: TypeEnv -> SymPath -> Maybe SumtypeCase
+    getCaseFromPath typeEnv (SymPath pathStrings caseName) =
+      let sumtypeName = (SymPath (init pathStrings) (last pathStrings))
+      in
+      case lookupInEnv sumtypeName (getTypeEnv typeEnv) of
+        Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _ : rest)) _ _)) ->
+          let cases = toCases rest
+          in  getCase cases caseName
+        Just (_, Binder _ x) ->
+          error ("A non-sumtype named '" ++ show sumtypeName ++ "' was found in the type environment: " ++ show x)
+        Nothing ->
+          error ("Failed to find a sumtype named '" ++ show sumtypeName ++ "' in the type environment.")
 
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
     extendEnvWithLetBindings env xobjs =

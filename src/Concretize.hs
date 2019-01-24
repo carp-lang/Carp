@@ -175,6 +175,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
+    visitList allowAmbig env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
+      return (Right ([matchExpr, expr] ++ rest)) -- | TODO! This part is NOT done... obviously!
+
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args
@@ -193,7 +196,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 Just theType = ty theXObj
                 typeOfVisited = case t of
                                   Just something -> something
-                                  Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)
+                                  Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
