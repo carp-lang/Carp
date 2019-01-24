@@ -11,13 +11,13 @@
 ;;   (defn copy [x] (Maybe.Nothing))
 ;;   )
 
-(deftype Flip (A [Int]) (B [Bool]))
+(deftype Flip (A [Int]) (B [Bool Float]))
 
 (defn f []
   (Flip.A 123))
 
 (defn g []
-  (Flip.B true))
+  (Flip.B true 5.0f))
 
 (defn m []
   (Maybe.Just 123))
@@ -27,7 +27,7 @@
 
 (defn main []
   (do
-    (println* &(Flip.A 100))
+    (println* &(Maybe.Just (Flip.B true 6.0f)))
     (println* "")
     (match (Flip.A 123)
       (A a) (println* "A")

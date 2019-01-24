@@ -314,6 +314,12 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
                         , "  return buffer;"
                         , "}"])
 
+-- | Figure out how big the string needed for the string representation of the struct has to be.
+calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
+calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
+  "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n" ++
+  unlines (map (memberPrnSize typeEnv env) members)
+
 -- | Generate C code for assigning to a member variable.
 -- | Needs to know if the instance is a pointer or stack variable.
 memberAssignment :: AllocationMode -> (String, Ty) -> String

@@ -163,23 +163,41 @@ tokensForStr typeEnv env typeName cases concreteStructTy  =
                         , "  String temp = NULL;"
                         , "  int tempsize = 0;"
                         , "  (void)tempsize; // that way we remove the occasional unused warning "
-                        --, calculateStructStrSize typeEnv env cases concreteStructTy
-                        , "  int size = 99999; // HACK!" -- | TEMPORARY HACK, FIX!
+                        , calculateStructStrSize typeEnv env cases concreteStructTy
                         , "  String buffer = CARP_MALLOC(size);"
                         , "  String bufferPtr = buffer;"
                         , ""
-                        , (concatMap (strCase typeEnv env) cases)
+                        , (concatMap (strCase typeEnv env concreteStructTy) cases)
                         , "  return buffer;"
                         , "}"])
 
-strCase :: TypeEnv -> Env -> SumtypeCase -> String
-strCase typeEnv env theCase =
+strCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
+strCase typeEnv env concreteStructTy theCase =
   let name = caseName theCase
       tys  = caseTys  theCase
   in unlines $
-     [ "  snprintf(bufferPtr, size, \"(%s \", \"" ++ name ++ "\");"
-     , "  bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n"
+     [ "  if(p->_tag == " ++ (tagName concreteStructTy name) ++ ") {"
+     , "    snprintf(bufferPtr, size, \"(%s \", \"" ++ name ++ "\");"
+     , "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n"
      , joinWith "\n" (map (memberPrn typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
-     , "  bufferPtr--;"
-     , "  snprintf(bufferPtr, size, \")\");"
+     , "    bufferPtr--;"
+     , "    snprintf(bufferPtr, size, \")\");"
+     , "  }"
+     ]
+
+-- | Figure out how big the string needed for the string representation of the struct has to be.
+calculateStructStrSize :: TypeEnv -> Env -> [SumtypeCase] -> Ty -> String
+calculateStructStrSize typeEnv env cases structTy@(StructTy name _) =
+  "  int size = 0;\n" ++
+  concatMap (strSizeCase typeEnv env structTy) cases
+
+strSizeCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
+strSizeCase typeEnv env concreteStructTy theCase =
+  let name = caseName theCase
+      tys  = caseTys  theCase
+  in unlines $
+     [ "  if(p->_tag == " ++ (tagName concreteStructTy name) ++ ") {"
+     , "    size = snprintf(NULL, size, \"(%s \", \"" ++ name ++ "\");"
+     , joinWith "\n" (map (memberPrnSize typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
+     , "  }"
      ]
