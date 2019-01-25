@@ -195,7 +195,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitMatchCase allowAmbig env (lhs, rhs) =
       do visitedRhs <- visit allowAmbig env rhs
          return $ do okVisitedRhs <- visitedRhs
-                     return [lhs, rhs]
+                     return [lhs, okVisitedRhs]
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =

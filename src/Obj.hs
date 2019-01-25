@@ -263,7 +263,7 @@ pretty = visit 0
             Chr c -> '\\' : c : ""
             Sym path mode -> show path -- ++ " <" ++ show mode ++ ">"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
-            InterfaceSym name -> name
+            InterfaceSym name -> name ++ "§"
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
