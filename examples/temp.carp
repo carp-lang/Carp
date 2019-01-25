@@ -36,8 +36,8 @@
 ;; - The easy case -
 (defn main []
   (match (Switch.Boo false)
-    (Switch.Aha x) (println* &(Int.str x))
-    (Switch.Boo b) (println* &(Bool.str b))))
+    (Switch.Aha x) (IO.println &(str x))
+    (Switch.Boo b) (IO.println &(str b))))
 
 ;; - More tricky -
 ;; (defn f [s]

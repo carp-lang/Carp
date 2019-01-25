@@ -94,7 +94,7 @@ expand eval env xobj =
         matchExpr@(XObj Match _ _) : expr : rest ->
           do expandedExpr <- expand eval env expr
              expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
-                                                 return [Right l, (trace ("expandedR: " ++ show (fmap pretty expandedR)) expandedR)])
+                                                 return [Right l, expandedR])
                                    (pairwise rest)
              let expandedRest = sequence (concat expandedPairs)
              return $ do okExpandedExpr <- expandedExpr
