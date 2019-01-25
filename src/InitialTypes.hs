@@ -236,14 +236,15 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Match
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
-             visitedCases <- fmap sequence $ mapM (\(tag, x) -> do visitedX <- visit env x
-                                                                   visitedTag <- visitSingleMatch env tag
-                                                                   case visitedX of
-                                                                     Left e -> return (Left e)
-                                                                     Right okX ->
-                                                                       case visitedTag of
-                                                                         Left e -> return (Left e)
-                                                                         Right okTag -> return (Right (okTag, okX)))
+             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do visitedLhs <- visitSingleMatch env lhs
+                                                                     case visitedLhs of
+                                                                       Left e -> return (Left e)
+                                                                       Right okLhs ->
+                                                                         do env' <- extendEnvWithCaseMatch env okLhs
+                                                                            visitedRhs <- visit env' rhs
+                                                                            case visitedRhs of
+                                                                              Left e -> return (Left e)
+                                                                              Right okRhs -> return (Right (okLhs, okRhs)))
                                                   (pairwise cases)
              returnType <- genVarTy
              return $ do okExpr <- visitedExpr
@@ -348,6 +349,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                    visitMatchTagElement x =
                      error ("Fell through in 'visitMatchTagElement': " ++ show x)
 
+    -- | Find the sumtype at a specific path and extract the case matching the final part of the path, i.e. the 'Just' in "Maybe.Just"
     getCaseFromPath :: TypeEnv -> SymPath -> Maybe SumtypeCase
     getCaseFromPath typeEnv (SymPath pathStrings caseName) =
       let sumtypeName = (SymPath (init pathStrings) (last pathStrings))
@@ -404,3 +406,21 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                  let xobjWithTy = xobj { ty = Just t }
                  return (name, Binder emptyMeta xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
+
+    extendEnvWithCaseMatch :: Env -> XObj -> State Integer Env
+    extendEnvWithCaseMatch env singleCaseList@(XObj (Lst (x:xs)) _ _) =
+      do binders <- mapM createBinderForCaseVariable xs
+         return Env { envBindings = Map.fromList binders
+                    , envParent = Just env
+                    , envModuleName = Nothing
+                    , envUseModules = []
+                    , envMode = InternalEnv
+                    , envFunctionNestingLevel = envFunctionNestingLevel env
+                    }
+      where
+        createBinderForCaseVariable :: XObj -> State Integer (String, Binder)
+        createBinderForCaseVariable xobj =
+          case obj xobj of
+            (Sym (SymPath _ name) _) ->
+              return (name, Binder emptyMeta xobj)
+            _ -> error "Can't create binder for non-symbol in 'case' variable match." -- | TODO: Should use proper error mechanism

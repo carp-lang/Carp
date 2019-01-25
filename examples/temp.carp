@@ -36,5 +36,5 @@
 
 (defn main []
   (match (Switch.Aha 123)
-    (Switch.Aha x) 10
+    (Switch.Aha x) x
     (Switch.Boo b) 20))
