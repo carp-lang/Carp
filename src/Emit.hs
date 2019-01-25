@@ -278,15 +278,21 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   sumTypeAsPath = SymPath [] (show exprTy)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
-                  emitCase exprVar isFirst (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : _)) _ _), caseExpr) =
+                  emitCase exprVar isFirst (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : caseMatchers)) _ _), caseExpr) =
                     do appendToSrc (addIndent indent)
                        when (not isFirst) (appendToSrc "else ")
                        appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {")
                        appendToSrc (addIndent indent ++ "\n")
+                       zipWithM emitCaseMatcher caseMatchers [0..]
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
                        appendToSrc (addIndent indent ++ "}\n")
+
+                         where emitCaseMatcher :: XObj -> Integer -> State EmitterState ()
+                               emitCaseMatcher (XObj (Sym path _) i t) index =
+                                 let Just tt = t in
+                                 appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = " ++ exprVar ++ "." ++ caseName ++ ".member" ++ show index ++ ";\n")
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $
