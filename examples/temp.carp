@@ -33,10 +33,17 @@
   (Aha [Int])
   (Boo [Bool]))
 
+;; - The easy case -
 (defn main []
-  (match (Switch.Aha true)
-    (Switch.Aha x) (IO.println "x")
-    (Switch.Boo b) (IO.println "b")))
+  (match (Switch.Boo false)
+    (Switch.Aha x) (println* &(Int.str x))
+    (Switch.Boo b) (println* &(Bool.str b))))
+
+;; - More tricky -
+;; (defn f [s]
+;;   (match s
+;;     (Switch.Aha x) (IO.println &(Int.str x))
+;;     (Switch.Boo b) (IO.println &(Bool.str b))))
 
 ;; (defn-do main []
 ;;   (println* &(f (Switch.Aha 123)))

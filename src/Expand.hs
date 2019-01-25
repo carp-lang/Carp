@@ -90,6 +90,17 @@ expand eval env xobj =
                               okBody <- expandedBody
                               Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
           else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
+
+        matchExpr@(XObj Match _ _) : expr : rest ->
+          do expandedExpr <- expand eval env expr
+             expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
+                                                 return [Right l, (trace ("expandedR: " ++ show (fmap pretty expandedR)) expandedR)])
+                                   (pairwise rest)
+             let expandedRest = sequence (concat expandedPairs)
+             return $ do okExpandedExpr <- expandedExpr
+                         okExpandedRest <- expandedRest
+                         return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
+
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand eval env) expressions
              return $ do okExpressions <- sequence expandedExpressions
