@@ -249,7 +249,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              returnType <- genVarTy
              return $ do okExpr <- visitedExpr
                          okCases <- visitedCases
-                         return (XObj (Lst ([matchExpr, okExpr] ++ concatMap (\(a, b) -> [a, b]) okCases))
+                         let okCasesConcatenated = concatMap (\(a, b) -> [a, b]) okCases
+                         return (XObj (Lst ([matchExpr, okExpr] ++ okCasesConcatenated))
                                   i (Just returnType))
 
         XObj Match _ _ : _ -> return (Left (InvalidObj Match xobj))

@@ -12,8 +12,8 @@ import Util
 import TypeError
 
 -- | Will create a list of type constraints for a form.
-genConstraints :: XObj -> Either TypeError [Constraint]
-genConstraints root = fmap sort (gen root)
+genConstraints :: TypeEnv -> XObj -> Either TypeError [Constraint]
+genConstraints typeEnv root = fmap sort (gen root)
   where gen xobj =
           case obj xobj of
             Lst lst -> case lst of
@@ -81,15 +81,20 @@ genConstraints root = fmap sort (gen root)
                            XObj Match _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
                                 insideCasesConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
-                                --exprType <- toEither (ty expr) (ExpressionMissingType expr)
+                                exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 let mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- Wrong Ord!
                                     mkConstr _ = Nothing
                                     -- Each case should have the same return type as the whole match form:
                                     casesBodyConstraints = mapMaybe (\(tag, caseExpr) -> mkConstr caseExpr) (pairwise cases)
-                                    -- expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol) (info expr) (Just ?)
-                                    -- exprConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
-                                return (insideExprConstraints ++ insideCasesConstraints ++ casesBodyConstraints)
+                                case guessExprType typeEnv cases of
+                                  Just guessedExprTy ->
+                                    let expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol)
+                                                        (info expr) (Just guessedExprTy)
+                                        exprConstraint = Constraint exprType guessedExprTy expr expected OrdIfCondition -- | TODO: Ord
+                                    in  return (exprConstraint : insideExprConstraints ++ insideCasesConstraints ++ casesBodyConstraints)
+                                  Nothing ->
+                                    error "Failed to guess type of expr in match."
 
                            -- While
                            [XObj While _ _, expr, body] ->
@@ -198,3 +203,12 @@ genConstraints root = fmap sort (gen root)
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
 
             _ -> Right []
+
+-- | Try to guess the type of X in (match X ...) based on the matching clauses
+guessExprType :: TypeEnv -> [XObj] -> Maybe Ty
+guessExprType typeEnv caseXObjs =
+  let (XObj (Lst (XObj (Sym (SymPath pathStrings tagName) _) _ _ : _)) _ _) = head caseXObjs -- | Temporary HACK to get something working
+      -- sumtypeName = SymPath (init pathStrings) (last pathStrings)
+      sumType = StructTy (last pathStrings) []
+      -- case lookupInEnv
+  in  Just sumType

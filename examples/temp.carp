@@ -34,18 +34,18 @@
   (Boo [Bool]))
 
 ;; - The easy case -
-(defn main []
-  (match (Switch.Aha 42)
-    (Switch.Aha x) (println* (* x 2))
-    (Switch.Boo b) (println* (if b "YES" "NO"))))
+;; (defn main []
+;;   (match (Switch.Aha 42)
+;;     (Switch.Aha x) (println* (* x 2))
+;;     (Switch.Boo b) (println* (if b "YES" "NO"))))
 
 ;; - More tricky -
-;; (defn f [s]
-;;   (match s
-;;     (Switch.Aha x) (IO.println &(Int.str x))
-;;     (Switch.Boo b) (IO.println &(Bool.str b))))
+(defn f [s]
+  (match s
+    (Switch.Aha x) (Int.str (* 2 x))
+    (Switch.Boo b) (if b @"YES" @"NO")))
 
-;; (defn-do main []
-;;   (println* &(f (Switch.Aha 123)))
-;;   (println* &(f (Switch.Boo true)))
-;;   (println* &(f (Switch.Boo false))))
+(defn-do main []
+  (println* &(f (Switch.Aha 123)))
+  (println* &(f (Switch.Boo true)))
+  (println* &(f (Switch.Boo false))))
