@@ -81,12 +81,13 @@ genConstraints root = fmap sort (gen root)
                            XObj Match _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
                                 insideCasesConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
+                                --exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 let mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- Wrong Ord!
                                     mkConstr _ = Nothing
                                     -- Each case should have the same return type as the whole match form:
                                     casesBodyConstraints = mapMaybe (\(tag, caseExpr) -> mkConstr caseExpr) (pairwise cases)
-                                    -- TODO: The expr that the match matches on should have some constraint too?
+                                    -- expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol) (info expr) (Just ?)
                                     -- exprConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
                                 return (insideExprConstraints ++ insideCasesConstraints ++ casesBodyConstraints)
 

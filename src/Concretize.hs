@@ -176,7 +176,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      return [theExpr, typeXObj, okVisitedValue]
 
     visitList allowAmbig env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
-      return (Right ([matchExpr, expr] ++ rest)) -- | TODO! This part is NOT done... obviously!
+      do visitedExpr <- visit allowAmbig env expr
+         visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig env) (pairwise rest))
+         return $ do okVisitedExpr <- visitedExpr
+                     okVisitedRest <- fmap concat visitedRest
+                     return ([matchExpr, okVisitedExpr] ++ okVisitedRest)
 
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
@@ -186,6 +190,12 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
+
+    visitMatchCase :: Bool -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
+    visitMatchCase allowAmbig env (lhs, rhs) =
+      do visitedRhs <- visit allowAmbig env (trace ("Visiting " ++ show rhs) rhs)
+         return $ do okVisitedRhs <- visitedRhs
+                     return [lhs, rhs]
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -860,7 +870,8 @@ manageMemory typeEnv globalEnv root =
 
             matchExpr@(XObj Match _ _) : expr : rest ->
               --let pairs = pairwise rest
-              do return $ do return (XObj (Lst ([matchExpr, expr] ++ rest)) i t)
+              do manage xobj
+                 return $ do return (XObj (Lst ([matchExpr, expr] ++ rest)) i t)
 
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
