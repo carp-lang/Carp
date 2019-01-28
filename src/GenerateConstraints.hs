@@ -85,6 +85,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 insideCasesConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
+                                -- | TODO: Only guess if there isn't already a type set on the expression!
                                 case guessExprType typeEnv cases of
                                   Just guessedExprTy ->
                                     let expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol)
@@ -246,6 +247,8 @@ getCaseFromPath typeEnv (SymPath pathStrings caseName) =
           error ("Failed to find a sumtype named '" ++ show sumtypeName ++ "' in the type environment.")
 
 -- | Generate the constraints for the left hand side of a 'match' case (e.g. "(Just x)")
+-- | TODO: A better plan here is to only use 'getCaseFromPath' if we have an absolute path and NO type on the match expression.
+-- | If we have a type on the match expression we can just use that one to find the cases!
 genLhsConstraintsInCase :: TypeEnv -> XObj -> [Constraint]
 genLhsConstraintsInCase typeEnv (XObj (Lst (x@(XObj (Sym casePath _) _ _) : xs)) _ _) =
   case getCaseFromPath typeEnv casePath of
