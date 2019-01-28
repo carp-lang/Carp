@@ -47,9 +47,17 @@
     (Switch.Boo blah) @"bleh"
     ))
 
+;; - Generic types -
 (defn g [s]
   (match s
     (Maybe.Nothing) -1
+    (Maybe.Just x)  x
+    ))
+
+;; - More general -
+(defn h [s d]
+  (match s
+    (Maybe.Nothing) d
     (Maybe.Just x)  x
     ))
 
