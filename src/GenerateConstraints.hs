@@ -104,7 +104,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                                 insideExprConstraints ++
                                                 insideCasesConstraints ++
                                                 casesBodyConstraints ++
-                                                (trace (show casesLhsConstraints) casesLhsConstraints))
+                                                casesLhsConstraints)
                                   Nothing ->
                                     error "Failed to guess type of expr in match." -- | TODO! Fail gracefully here, or not at all...
 
@@ -221,11 +221,16 @@ genConstraints typeEnv root = fmap sort (gen root)
 -- | Try to guess the type of X in (match X ...) based on the matching clauses
 guessExprType :: TypeEnv -> [XObj] -> Maybe Ty
 guessExprType typeEnv caseXObjs =
+  -- | TODO: Look through all cases for a guess and make sure they all converge on a single sumtype.
   let (XObj (Lst (XObj (Sym (SymPath pathStrings tagName) _) _ _ : _)) _ _) = head caseXObjs -- | Temporary HACK to get something working
-      -- sumtypeName = SymPath (init pathStrings) (last pathStrings)
-      sumType = StructTy (last pathStrings) []
-      -- case lookupInEnv
-  in  Just sumType
+      sumtypeNameGuess = SymPath (init pathStrings) (last pathStrings)
+  in  case lookupInEnv sumtypeNameGuess (getTypeEnv typeEnv) of
+        Just (_, foundBinder@(Binder meta (XObj (Lst (XObj (DefSumtype sumTy) _ _ : XObj (Sym _ _) _ _ : _)) _ _))) ->
+          Just sumTy
+        Just somethingElse ->
+          error ("Found non-sumtype: " ++ show somethingElse)
+        Nothing ->
+          Nothing
 
 -- | Find the sumtype at a specific path and extract the case matching the final part of the path, i.e. the 'Just' in "Maybe.Just"
 getCaseFromPath :: TypeEnv -> SymPath -> Maybe SumtypeCase
