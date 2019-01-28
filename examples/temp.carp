@@ -43,7 +43,9 @@
 (defn f [s]
   (match s
     (Switch.Aha x) (Int.str (* 2 x))
-    (Switch.Boo b) (if b @"YES" @"NO")))
+    (Switch.Boo b) (if b @"YES" @"NO")
+    (Switch.Boo blah) @"bleh"
+    ))
 
 (defn-do main []
   (println* &(f (Switch.Aha 123)))
