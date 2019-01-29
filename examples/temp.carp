@@ -79,6 +79,21 @@
     (People.Two b c) b ;; pick the first one, the second one should be deleted
     ))
 
+;; just a variation on the theme... all the variables a,b,c should be freed since they're not used
+(defn n [p]
+  (match p
+    (People.One a) 10
+    (People.Two b c) 20
+    ))
+
+;; Using match as an if-then-else
+(defn ifthen [p]
+  (let [mem @"memory"]
+    (match p
+      (People.One a)   mem
+      (People.Two b c) @"no-memory"
+      )))
+
 (defn-do main []
   (println* &(f (Switch.Aha 123)))
   (println* &(f (Switch.Boo true)))
