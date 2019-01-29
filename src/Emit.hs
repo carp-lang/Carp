@@ -278,7 +278,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   sumTypeAsPath = SymPath [] (show exprTy)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
-                  emitCase exprVar isFirst (tagXObj@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : caseMatchers)) _ _), caseExpr) =
+                  emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
                     do appendToSrc (addIndent indent)
                        when (not isFirst) (appendToSrc "else ")
                        appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {")
@@ -287,6 +287,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
+                       let Just caseLhsInfo' = caseLhsInfo
+                       delete indent' caseLhsInfo'
                        appendToSrc (addIndent indent ++ "}\n")
 
                          where emitCaseMatcher :: XObj -> Integer -> State EmitterState ()

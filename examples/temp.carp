@@ -42,7 +42,8 @@
 ;; - More tricky -
 (defn f [s]
   (match s
-    (Switch.Aha x) (Int.str (* 2 x))
+    (Switch.Aha x) (let [crap @"CRAP"]
+                     (Int.str (* 2 x)))
     (Switch.Boo b) (if b @"YES" @"NO")
     (Switch.Boo blah) @"bleh"
     ))
@@ -74,8 +75,8 @@
 
 (defn m [p]
   (match p
-    (People.One x) x
-    (People.Two x y) x ;; pick the first one, the second one should be deleted
+    (People.One a) a
+    (People.Two b c) b ;; pick the first one, the second one should be deleted
     ))
 
 (defn-do main []

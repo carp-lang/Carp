@@ -868,10 +868,17 @@ manageMemory typeEnv globalEnv root =
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
 
-            matchExpr@(XObj Match _ _) : expr : rest ->
-              --let pairs = pairwise rest
-              do manage xobj
-                 return $ do return (XObj (Lst ([matchExpr, expr] ++ rest)) i t)
+            matchExpr@(XObj Match _ _) : expr : cases ->
+              --MemState preDeleters deps <- get
+              do visitedExpr <- visit expr
+                 case visitedExpr of
+                   Left e -> return (Left e)
+                   Right okVisitedExpr ->
+                     do unmanage okVisitedExpr
+                        visitedCases <- mapM visitMatchCase (pairwise cases)
+                        manage xobj
+                        return $ do okVisitedCases <- sequence visitedCases
+                                    return (XObj (Lst ([matchExpr, okVisitedExpr] ++ concatMap (\(a, b) -> [a, b]) okVisitedCases)) i t)
 
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
@@ -891,10 +898,38 @@ manageMemory typeEnv globalEnv root =
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
 
+        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
+        visitMatchCase (lhs@(XObj _ lhsInfo _), rhs@(XObj _ _ _)) =
+          do MemState preDeleters deps <- get -- | TODO: Don't forget to handle deps!
+             _ <- visitCaseLhs lhs
+             visitedRhs <- visit rhs
+             unmanage rhs
+             MemState postDeleters deps <- get
+             let diff = postDeleters Set.\\ preDeleters
+                 Just lhsInfo' = lhsInfo
+                 newLhsInfo = setDeletersOnInfo lhsInfo diff
+             put (MemState preDeleters deps) -- Restore managed variables, TODO: Use a "local" state monad instead?
+             return $ do okVisitedRhs <- visitedRhs
+                         -- trace ("\n" ++ prettyInfo lhsInfo' ++
+                         --        "\npre: " ++ show preDeleters ++ "\npost: " ++ show postDeleters ++
+                         --        "\ndiff: " ++ show diff)
+                         --   $
+                         return (lhs { info = newLhsInfo }, okVisitedRhs) -- Putting the deleter info on the lhs, because the right one can collide with other expressions, e.g. a 'let'
+
+        visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
+        visitCaseLhs (XObj (Lst (tag@(XObj (Sym _ _) _ _):vars)) _ _) =
+          do results <- mapM (\var ->
+                               case var of
+                                 XObj (Sym path mode) _ _ -> do manage var
+                                                                return (Right ())
+                                 _ -> return (Right ()))
+                            vars
+             return (sequence results)
+
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
           do visitedExpr <- visit  expr
-             result <- transferOwnership  expr name
+             result <- transferOwnership expr name
              return $ case result of
                         Left e -> Left e
                         Right _ -> do okExpr <- visitedExpr
