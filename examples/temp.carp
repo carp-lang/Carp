@@ -61,10 +61,19 @@
     (Maybe.Just x)  x
     ))
 
+(defn incomplete [s]
+  (match s
+    (Maybe.Nothing) 0
+    ))
+
 (defn-do main []
   (println* &(f (Switch.Aha 123)))
   (println* &(f (Switch.Boo true)))
   (println* &(f (Switch.Boo false)))
+
   (println* &(g (Maybe.Just 666)))
   (println* &(g (Maybe.Nothing)))
+
+  (println* &(incomplete (the (Maybe Int) (Maybe.Nothing))))
+  (println* &(incomplete (Maybe.Just 12345)))
   )

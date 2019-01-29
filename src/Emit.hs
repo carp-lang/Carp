@@ -298,9 +298,11 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      when isNotVoid $
                        let Just tt = t
                        in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
-                     --appendToSrc (addIndent indent ++ "switch (" ++ exprVar ++ "._tag) {\n")
                      zipWithM (emitCase exprVar) (True : repeat False) (pairwise rest)
-                     --appendToSrc (addIndent indent ++ "}\n")
+                     appendToSrc (addIndent indent ++ "else {\n")
+                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ prettyInfo i ++ "\\n\");\n")
+                     appendToSrc (addIndent indent ++ "  exit(1);")
+                     appendToSrc (addIndent indent ++ "}\n")
                      return retVar
 
             XObj Match _ _ : _ ->
