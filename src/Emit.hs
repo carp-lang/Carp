@@ -300,8 +300,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
                      zipWithM (emitCase exprVar) (True : repeat False) (pairwise rest)
                      appendToSrc (addIndent indent ++ "else {\n")
+                     appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in match statements")
                      appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ prettyInfo i ++ "\\n\");\n")
-                     appendToSrc (addIndent indent ++ "  exit(1);")
+                     appendToSrc (addIndent indent ++ "  exit(1);\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      return retVar
 

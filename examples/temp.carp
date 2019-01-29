@@ -61,9 +61,21 @@
     (Maybe.Just x)  x
     ))
 
+;; - Fall through when passing Just
 (defn incomplete [s]
   (match s
     (Maybe.Nothing) 0
+    ))
+
+;; - Memory management, pt 1 -
+(deftype People
+  (One [String])
+  (Two [String String]))
+
+(defn m [p]
+  (match p
+    (People.One x) x
+    (People.Two x y) x ;; pick the first one, the second one should be deleted
     ))
 
 (defn-do main []
@@ -74,6 +86,9 @@
   (println* &(g (Maybe.Just 666)))
   (println* &(g (Maybe.Nothing)))
 
-  (println* &(incomplete (the (Maybe Int) (Maybe.Nothing))))
-  (println* &(incomplete (Maybe.Just 12345)))
+  ;;(println* &(incomplete (the (Maybe Int) (Maybe.Nothing))))
+  ;;(println* &(incomplete (Maybe.Just 12345)))
+
+  (println* &(m (People.One @"Adam")))
+  (println* &(m (People.Two @"Eve" @"Adam")))
   )
