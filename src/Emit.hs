@@ -292,7 +292,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                          where emitCaseMatcher :: XObj -> Integer -> State EmitterState ()
                                emitCaseMatcher (XObj (Sym path _) i t) index =
                                  let Just tt = t in
-                                 appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = " ++ exprVar ++ "." ++ caseName ++ ".member" ++ show index ++ ";\n")
+                                 appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = " ++ exprVar ++ "." ++ caseName ++ ".member" ++ show index ++ ";\n")
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $
@@ -300,7 +300,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
                      zipWithM (emitCase exprVar) (True : repeat False) (pairwise rest)
                      appendToSrc (addIndent indent ++ "else {\n")
-                     appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in match statements\n")
+                     appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in 'match' expressions:\n")
                      appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ prettyInfo i ++ "\\n\");\n")
                      appendToSrc (addIndent indent ++ "  exit(1);\n")
                      appendToSrc (addIndent indent ++ "}\n")
