@@ -94,6 +94,22 @@
       (People.Two b c) @"no-memory"
       )))
 
+;; Lets think this through...
+(deftype Q
+    (A [String])
+    (B [String String])
+    (C [String String String]))
+
+(defn memory-stuff [q]
+  (let [m1 @"m1"
+        m2 @"m2"
+        m3 @"m3"]
+    (match (the Q q)
+      (Q.A a1)       m1       ;; m2 and m3 needs to be deleted in this case
+      (Q.B b1 b2)    @"other" ;; m1,m2,m3 all needs to be deleted
+      (Q.C c1 c2 c3) (do (String.delete m1) (String.delete m3) m2) ;; nothing needs to be deleted now
+      )))
+
 (defn-do main []
   (println* &(f (Switch.Aha 123)))
   (println* &(f (Switch.Boo true)))
