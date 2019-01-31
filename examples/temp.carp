@@ -1,9 +1,9 @@
 ;;(Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(deftype (Maybe a)
-  (Just [a])
-  (Nothing []))
+;; (deftype (Maybe a)
+;;   (Just [a])
+;;   (Nothing []))
 
 ;;(deftype Flip (A [String]) (B [Float]))
 
@@ -29,9 +29,9 @@
 ;;       (Maybe.Nothing) (println* "Nada!")
 ;;       )))
 
-(deftype Switch
-  (Aha [Int])
-  (Boo [Bool]))
+;; (deftype Switch
+;;   (Aha [Int])
+;;   (Boo [Bool]))
 
 ;; - The easy case -
 ;; (defn main []
@@ -39,60 +39,60 @@
 ;;     (Switch.Aha x) (println* (* x 2))
 ;;     (Switch.Boo b) (println* (if b "YES" "NO"))))
 
-;; - More tricky -
-(defn f [s]
-  (match s
-    (Switch.Aha x) (let [crap @"CRAP"]
-                     (Int.str (* 2 x)))
-    (Switch.Boo b) (if b @"YES" @"NO")
-    (Switch.Boo blah) @"bleh"
-    ))
+;; ;; - More tricky -
+;; (defn f [s]
+;;   (match s
+;;     (Switch.Aha x) (let [crap @"CRAP"]
+;;                      (Int.str (* 2 x)))
+;;     (Switch.Boo b) (if b @"YES" @"NO")
+;;     (Switch.Boo blah) @"bleh"
+;;     ))
 
-;; - Generic types -
-(defn g [s]
-  (match s
-    (Maybe.Nothing) -1
-    (Maybe.Just x)  x
-    ))
+;; ;; - Generic types -
+;; (defn g [s]
+;;   (match s
+;;     (Maybe.Nothing) -1
+;;     (Maybe.Just x)  x
+;;     ))
 
-;; - More general -
-(defn h [s d]
-  (match s
-    (Maybe.Nothing) d
-    (Maybe.Just x)  x
-    ))
+;; ;; - More general -
+;; (defn h [s d]
+;;   (match s
+;;     (Maybe.Nothing) d
+;;     (Maybe.Just x)  x
+;;     ))
 
-;; - Fall through when passing Just
-(defn incomplete [s]
-  (match s
-    (Maybe.Nothing) 0
-    ))
+;; ;; - Fall through when passing Just
+;; (defn incomplete [s]
+;;   (match s
+;;     (Maybe.Nothing) 0
+;;     ))
 
-;; - Memory management, pt 1 -
-(deftype People
-  (One [String])
-  (Two [String String]))
+;; ;; - Memory management, pt 1 -
+;; (deftype People
+;;   (One [String])
+;;   (Two [String String]))
 
-(defn m [p]
-  (match p
-    (People.One a) a
-    (People.Two b c) b ;; pick the first one, the second one should be deleted
-    ))
+;; (defn m [p]
+;;   (match p
+;;     (People.One a) a
+;;     (People.Two b c) b ;; pick the first one, the second one should be deleted
+;;     ))
 
-;; just a variation on the theme... all the variables a,b,c should be freed since they're not used
-(defn n [p]
-  (match p
-    (People.One a) 10
-    (People.Two b c) 20
-    ))
+;; ;; just a variation on the theme... all the variables a,b,c should be freed since they're not used
+;; (defn n [p]
+;;   (match p
+;;     (People.One a) 10
+;;     (People.Two b c) 20
+;;     ))
 
-;; Using match as an if-then-else
-(defn ifthen [p]
-  (let [mem @"memory"]
-    (match p
-      (People.One a)   mem
-      (People.Two b c) @"no-memory"
-      )))
+;; ;; Using match as an if-then-else
+;; (defn ifthen [p]
+;;   (let [mem @"memory"]
+;;     (match p
+;;       (People.One a)   mem
+;;       (People.Two b c) @"no-memory"
+;;       )))
 
 ;; Lets think this through...
 (deftype Q
@@ -107,20 +107,20 @@
     (match (the Q q)
       (Q.A a1)       m1       ;; m2 and m3 needs to be deleted in this case
       (Q.B b1 b2)    @"other" ;; m1,m2,m3 all needs to be deleted
-      (Q.C c1 c2 c3) (do (String.delete m1) (String.delete m3) m2) ;; nothing needs to be deleted now
+      (Q.C c1 c2 c3) (do (String.delete m1) (String.delete m3) c1) ;; m2 needs to be deleted (automatically) now
       )))
 
-(defn-do main []
-  (println* &(f (Switch.Aha 123)))
-  (println* &(f (Switch.Boo true)))
-  (println* &(f (Switch.Boo false)))
+;; (defn-do main []
+;;   (println* &(f (Switch.Aha 123)))
+;;   (println* &(f (Switch.Boo true)))
+;;   (println* &(f (Switch.Boo false)))
 
-  (println* &(g (Maybe.Just 666)))
-  (println* &(g (Maybe.Nothing)))
+;;   (println* &(g (Maybe.Just 666)))
+;;   (println* &(g (Maybe.Nothing)))
 
-  ;;(println* &(incomplete (the (Maybe Int) (Maybe.Nothing))))
-  ;;(println* &(incomplete (Maybe.Just 12345)))
+;;   ;;(println* &(incomplete (the (Maybe Int) (Maybe.Nothing))))
+;;   ;;(println* &(incomplete (Maybe.Just 12345)))
 
-  (println* &(m (People.One @"Adam")))
-  (println* &(m (People.Two @"Eve" @"Adam")))
-  )
+;;   (println* &(m (People.One @"Adam")))
+;;   (println* &(m (People.Two @"Eve" @"Adam")))
+;;   )

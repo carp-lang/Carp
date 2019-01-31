@@ -869,16 +869,49 @@ manageMemory typeEnv globalEnv root =
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
 
             matchExpr@(XObj Match _ _) : expr : cases ->
-              --MemState preDeleters deps <- get
+              -- General idea of how to figure out what to delete in a 'match' statement:
+              -- 1. Visit each case and investigate which variables are deleted in each one of the cases
+              -- 2. Variables deleted in at least one case has to be deleted in all, so make a union U of all such vars
+              --    but remove the ones that were not present before the 'match'
+              -- 3. In each case - take the intersection of U and the vars deleted in that case and add this result to its deleters
               do visitedExpr <- visit expr
                  case visitedExpr of
                    Left e -> return (Left e)
                    Right okVisitedExpr ->
                      do unmanage okVisitedExpr
-                        visitedCases <- mapM visitMatchCase (pairwise cases)
-                        manage xobj
-                        return $ do okVisitedCases <- sequence visitedCases
-                                    return (XObj (Lst ([matchExpr, okVisitedExpr] ++ concatMap (\(a, b) -> [a, b]) okVisitedCases)) i t)
+                        MemState preDeleters deps <- get
+                        visitedCasesWithDeleters <- mapM visitMatchCase (pairwise cases)
+                        case figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters of
+                          Left e -> return (Left e)
+                          Right (finalXObj, postDeleters) ->
+                            do put (MemState postDeleters deps)
+                               manage xobj
+                               return (Right finalXObj)
+
+                   where figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters =
+                           do okVisitedCasesWithDeleters <- sequence visitedCasesWithDeleters
+                              let postDeleters = map fst okVisitedCasesWithDeleters
+                                  postDeletersUnion = unionOfSetsInList postDeleters
+                                  -- The "postDeletersUnionPreExisting" are the vars that existed before the match but needs to
+                                  -- be deleted after it has executed (because some branches delete them)
+                                  postDeletersUnionPreExisting = Set.intersection postDeletersUnion preDeleters
+                                  deletersForEachCase = map (Set.intersection postDeletersUnionPreExisting) postDeleters
+                                  okVisitedCases = map snd okVisitedCasesWithDeleters
+                                  okVisitedCasesWithAllDeleters =
+                                    zipWith (\(lhs, rhs) finalSetOfDeleters ->
+                                               -- Putting the deleter info on the lhs,
+                                               -- because the right one can collide with
+                                               -- the other expressions, e.g. a 'let'
+                                               let newLhsInfo = setDeletersOnInfo (info lhs) finalSetOfDeleters
+                                               in [lhs { info = newLhsInfo }, rhs]
+                                            )
+                                        okVisitedCases
+                                        deletersForEachCase
+                                    --trace ("post deleters: " ++ show postDeleters ++ "\npost deleters union: " ++ show postDeletersUnion)
+                                    --trace ("Post deleters union pre-existing: " ++ show postDeletersUnionPreExisting)
+                                    --trace ("Post deleters for each case: " ++ show postDeleters)
+                              return ((XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t)
+                                     , postDeletersUnionPreExisting)
 
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
@@ -898,7 +931,7 @@ manageMemory typeEnv globalEnv root =
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
 
-        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
+        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError (Set.Set Deleter, (XObj, XObj)))
         visitMatchCase (lhs@(XObj _ lhsInfo _), rhs@(XObj _ _ _)) =
           do MemState preDeleters deps <- get -- | TODO: Don't forget to handle deps!
              _ <- visitCaseLhs lhs
@@ -906,15 +939,13 @@ manageMemory typeEnv globalEnv root =
              unmanage rhs
              MemState postDeleters deps <- get
              let diff = postDeleters Set.\\ preDeleters
-                 Just lhsInfo' = lhsInfo
-                 newLhsInfo = setDeletersOnInfo lhsInfo diff
              put (MemState preDeleters deps) -- Restore managed variables, TODO: Use a "local" state monad instead?
              return $ do okVisitedRhs <- visitedRhs
                          -- trace ("\n" ++ prettyInfo lhsInfo' ++
                          --        "\npre: " ++ show preDeleters ++ "\npost: " ++ show postDeleters ++
                          --        "\ndiff: " ++ show diff)
                          --   $
-                         return (lhs { info = newLhsInfo }, okVisitedRhs) -- Putting the deleter info on the lhs, because the right one can collide with other expressions, e.g. a 'let'
+                         return (postDeleters, (lhs, okVisitedRhs))
 
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
         visitCaseLhs (XObj (Lst (tag@(XObj (Sym _ _) _ _):vars)) _ _) =
