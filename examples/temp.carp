@@ -1,10 +1,6 @@
 ;;(Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-;; (deftype (Maybe a)
-;;   (Just [a])
-;;   (Nothing []))
-
 ;;(deftype Flip (A [String]) (B [Float]))
 
 ;; (defn f []
