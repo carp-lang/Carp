@@ -1,0 +1,6 @@
+;; This is a bug right now because the 'x' variable:
+(defn confusion []
+  (let [x (Maybe.Some @"Yo")]
+    (match x
+          (Maybe.Some x) x
+          (Maybe.None) @"Nope")))
