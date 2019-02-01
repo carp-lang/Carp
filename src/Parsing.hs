@@ -87,10 +87,13 @@ number = Parsec.try float <|>
 string :: Parsec.Parsec String ParseState XObj
 string = do i <- createInfo
             _ <- Parsec.char '"'
-            str <- Parsec.many (Parsec.try escaped <|> Parsec.noneOf ['"'])
+            strL <- Parsec.many (Parsec.try escaped <|> simple)
+            let str = concat strL
             _ <- Parsec.char '"'
             incColumn (length str + 2)
             return (XObj (Str str) i Nothing)
+  where simple = do c <- Parsec.noneOf ['"']
+                    return [c]
 
 parseInternalPattern :: Parsec.Parsec String ParseState String
 parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
@@ -159,11 +162,13 @@ pattern = do i <- createInfo
         treat ('\\':r) = "\\\\" ++ treat r
         treat (x:r) = x : treat r
 
-escaped :: Parsec.Parsec String ParseState Char
+escaped :: Parsec.Parsec String ParseState [Char]
 escaped =  do
     _ <- Parsec.char '\\'
-    _ <- Parsec.char '\"'
-    return '\"'
+    c <- Parsec.oneOf ['\\', '\"']
+    case c of
+      '\\' -> return "\\\\"
+      '\"' -> return "\""
 
 escapedQuoteChar :: Parsec.Parsec String ParseState Char
 escapedQuoteChar = do c <- Parsec.string "\""
