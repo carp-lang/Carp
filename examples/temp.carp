@@ -1,39 +1,39 @@
 ;;(Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-;;(deftype Flip (A [String]) (B [Float]))
+;; ;;(deftype Flip (A [String]) (B [Float]))
 
-;; (defn f []
-;;   (Flip.A 123))
+;; ;; (defn f []
+;; ;;   (Flip.A 123))
 
-;; (defn g []
-;;   (Flip.B true 5.0f))
+;; ;; (defn g []
+;; ;;   (Flip.B true 5.0f))
 
-;; (defn m []
-;;   (Maybe.Just 123))
+;; ;; (defn m []
+;; ;;   (Maybe.Just 123))
 
-;; (defn n []
-;;   (the (Maybe Int) (Maybe.Nothing)))
+;; ;; (defn n []
+;; ;;   (the (Maybe Int) (Maybe.Nothing)))
 
-;; (defn main []
-;;   (let-do [x (Maybe.Just 100)
-;;            ;;y (the (Maybe Int) (Maybe.Nothing))
-;;            ]
-;;     (match x
-;;       ;;(Just a) (println* a)
-;;       (Maybe.Just a) (println* "a?")
-;;       (Maybe.Nothing) (println* "Nada!")
-;;       )))
+;; ;; (defn main []
+;; ;;   (let-do [x (Maybe.Just 100)
+;; ;;            ;;y (the (Maybe Int) (Maybe.Nothing))
+;; ;;            ]
+;; ;;     (match x
+;; ;;       ;;(Just a) (println* a)
+;; ;;       (Maybe.Just a) (println* "a?")
+;; ;;       (Maybe.Nothing) (println* "Nada!")
+;; ;;       )))
 
 ;; (deftype Switch
 ;;   (Aha [Int])
 ;;   (Boo [Bool]))
 
-;; - The easy case -
-;; (defn main []
-;;   (match (Switch.Aha 42)
-;;     (Switch.Aha x) (println* (* x 2))
-;;     (Switch.Boo b) (println* (if b "YES" "NO"))))
+;; ;; - The easy case -
+;; ;; (defn main []
+;; ;;   (match (Switch.Aha 42)
+;; ;;     (Switch.Aha x) (println* (* x 2))
+;; ;;     (Switch.Boo b) (println* (if b "YES" "NO"))))
 
 ;; ;; - More tricky -
 ;; (defn f [s]
@@ -58,11 +58,11 @@
 ;;     (Maybe.Just x)  x
 ;;     ))
 
-;; ;; - Fall through when passing Just
-;; (defn incomplete [s]
-;;   (match s
-;;     (Maybe.Nothing) 0
-;;     ))
+;; ;; ;; - Fall through when passing Just
+;; ;; (defn incomplete [s]
+;; ;;   (match s
+;; ;;     (Maybe.Nothing) 0
+;; ;;     ))
 
 ;; ;; - Memory management, pt 1 -
 ;; (deftype People
@@ -75,41 +75,41 @@
 ;;     (People.Two b c) b ;; pick the first one, the second one should be deleted
 ;;     ))
 
-;; ;; just a variation on the theme... all the variables a,b,c should be freed since they're not used
-;; (defn n [p]
-;;   (match p
-;;     (People.One a) 10
-;;     (People.Two b c) 20
-;;     ))
+;; ;; ;; just a variation on the theme... all the variables a,b,c should be freed since they're not used
+;; ;; (defn n [p]
+;; ;;   (match p
+;; ;;     (People.One a) 10
+;; ;;     (People.Two b c) 20
+;; ;;     ))
 
-;; ;; Using match as an if-then-else
-;; (defn ifthen [p]
-;;   (let [mem @"memory"]
-;;     (match p
-;;       (People.One a)   mem
-;;       (People.Two b c) @"no-memory"
-;;       )))
+;; ;; ;; Using match as an if-then-else
+;; ;; (defn ifthen [p]
+;; ;;   (let [mem @"memory"]
+;; ;;     (match p
+;; ;;       (People.One a)   mem
+;; ;;       (People.Two b c) @"no-memory"
+;; ;;       )))
 
-;; Lets think this through...
-(deftype Q
-    (A [String])
-    (B [String String])
-    (C [String String String]))
+;; ;; Lets think this through...
+;; ;; (deftype Q
+;; ;;     (A [String])
+;; ;;     (B [String String])
+;; ;;     (C [String String String]))
 
-(defn memory-stuff [q]
-  (let [m1 @"m1"
-        m2 @"m2"
-        m3 @"m3"]
-    (match (the Q q)
-      ;; m3 needs to be deleted in this case
-      (Q.A a1)       m1
-      ;; m1 and m3 all needs to be deleted
-      (Q.B b1 b2)    @"other"
-      ;; m2 needs to be deleted (automatically) now
-      (Q.C c1 c2 c3) (do (String.delete m1)
-                         (String.delete m3)
-                         c1)
-      )))
+;; ;; (defn memory-stuff [q]
+;; ;;   (let [m1 @"m1"
+;; ;;         m2 @"m2"
+;; ;;         m3 @"m3"]
+;; ;;     (match (the Q q)
+;; ;;       ;; m3 needs to be deleted in this case
+;; ;;       (Q.A a1)       m1
+;; ;;       ;; m1 and m3 all needs to be deleted
+;; ;;       (Q.B b1 b2)    @"other"
+;; ;;       ;; m2 needs to be deleted (automatically) now
+;; ;;       (Q.C c1 c2 c3) (do (String.delete m1)
+;; ;;                          (String.delete m3)
+;; ;;                          c1)
+;; ;;       )))
 
 ;; (defn-do main []
 ;;   (println* &(f (Switch.Aha 123)))
@@ -125,3 +125,7 @@
 ;;   (println* &(m (People.One @"Adam")))
 ;;   (println* &(m (People.Two @"Eve" @"Adam")))
 ;;   )
+
+(defn no-forms-in-match []
+  (match (Maybe.Just 1)
+    ))

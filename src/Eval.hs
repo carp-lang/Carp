@@ -187,7 +187,7 @@ eval env xobj =
                       evaledBody <- eval envWithBindings body
                       return $ do okBody <- evaledBody
                                   Right okBody
-          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
+          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj))) -- Unreachable?
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest

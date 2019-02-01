@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn no-forms-in-match []
+  (match (Maybe.Just 1)
+    ; <nothing here>
+    ))
