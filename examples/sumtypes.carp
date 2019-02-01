@@ -1,6 +1,6 @@
 (use Maybe)
 
-;; This is a bug right now because the 'x' variable:
+;; Variable shadowing inside match
 (defn confusion [x]
   (match x
     (Maybe.Just x) x
