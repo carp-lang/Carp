@@ -271,7 +271,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      return ifRetVar
 
             -- Match
-            XObj Match _ _ : expr@(XObj _ _ (Just exprTy)) : rest ->
+            XObj Match _ _ : expr@(XObj _ (Just exprInfo) (Just exprTy)) : rest ->
               let indent' = indent + indentAmount
                   retVar = freshVar i
                   isNotVoid = t /= Just UnitTy
@@ -281,8 +281,9 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym (SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
                     do appendToSrc (addIndent indent)
                        when (not isFirst) (appendToSrc "else ")
-                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {")
-                       appendToSrc (addIndent indent ++ "\n")
+                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        zipWithM emitCaseMatcher caseMatchers [0..]
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
@@ -291,10 +292,14 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        delete indent' caseLhsInfo'
                        appendToSrc (addIndent indent ++ "}\n")
 
-                         where emitCaseMatcher :: XObj -> Integer -> State EmitterState ()
+                         where tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
+
+                               emitCaseMatcher :: XObj -> Integer -> State EmitterState ()
                                emitCaseMatcher (XObj (Sym path _) i t) index =
                                  let Just tt = t in
-                                 appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = " ++ exprVar ++ "." ++ caseName ++ ".member" ++ show index ++ ";\n")
+                                 appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
+                                              pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ caseName ++
+                                              ".member" ++ show index ++ ";\n")
 
               in  do exprVar <- visit indent expr
                      when isNotVoid $

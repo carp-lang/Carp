@@ -1,6 +1,10 @@
+(use Maybe)
+
 ;; This is a bug right now because the 'x' variable:
-(defn confusion []
-  (let [x (Maybe.Just @"Yo")]
-    (match x
-      (Maybe.Just x) x
-      (Maybe.Nothing) @"Nope")))
+(defn confusion [x]
+  (match x
+    (Maybe.Just x) x
+    (Maybe.Nothing) @"Nope"))
+
+(defn main []
+  (println* (confusion (Just @"Yo"))))
