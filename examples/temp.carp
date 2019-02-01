@@ -105,9 +105,14 @@
         m2 @"m2"
         m3 @"m3"]
     (match (the Q q)
-      (Q.A a1)       m1       ;; m2 and m3 needs to be deleted in this case
-      (Q.B b1 b2)    @"other" ;; m1,m2,m3 all needs to be deleted
-      (Q.C c1 c2 c3) (do (String.delete m1) (String.delete m3) c1) ;; m2 needs to be deleted (automatically) now
+      ;; m3 needs to be deleted in this case
+      (Q.A a1)       m1
+      ;; m1 and m3 all needs to be deleted
+      (Q.B b1 b2)    @"other"
+      ;; m2 needs to be deleted (automatically) now
+      (Q.C c1 c2 c3) (do (String.delete m1)
+                         (String.delete m3)
+                         c1)
       )))
 
 ;; (defn-do main []

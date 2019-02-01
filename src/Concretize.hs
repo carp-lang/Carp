@@ -892,10 +892,14 @@ manageMemory typeEnv globalEnv root =
                            do okVisitedCasesWithDeleters <- sequence visitedCasesWithDeleters
                               let postDeleters = map fst okVisitedCasesWithDeleters
                                   postDeletersUnion = unionOfSetsInList postDeleters
+                                  postDeletersIntersection = intersectionOfSetsInList postDeleters
+                                  deletersAfterTheMatch = Set.intersection preDeleters postDeletersIntersection
                                   -- The "postDeletersUnionPreExisting" are the vars that existed before the match but needs to
                                   -- be deleted after it has executed (because some branches delete them)
                                   postDeletersUnionPreExisting = Set.intersection postDeletersUnion preDeleters
-                                  deletersForEachCase = map (Set.intersection postDeletersUnionPreExisting) postDeleters
+                                  deletersForEachCase = map (\dels -> dels \\ deletersAfterTheMatch) postDeleters
+                                  -- These are the surviving vars after the 'match' expression:
+
                                   okVisitedCases = map snd okVisitedCasesWithDeleters
                                   okVisitedCasesWithAllDeleters =
                                     zipWith (\(lhs, rhs) finalSetOfDeleters ->
@@ -907,11 +911,13 @@ manageMemory typeEnv globalEnv root =
                                             )
                                         okVisitedCases
                                         deletersForEachCase
-                                    --trace ("post deleters: " ++ show postDeleters ++ "\npost deleters union: " ++ show postDeletersUnion)
-                                    --trace ("Post deleters union pre-existing: " ++ show postDeletersUnionPreExisting)
-                                    --trace ("Post deleters for each case: " ++ show postDeleters)
+                              -- trace ("post deleters: " ++ show postDeleters)
+                              -- trace ("\npost deleters union: " ++ show postDeletersUnion)
+                              -- trace ("\npost deleters intersection: " ++ show postDeletersIntersection)
+                              -- trace ("Post deleters union pre-existing: " ++ show postDeletersUnionPreExisting)
+                              -- trace ("Post deleters for each case: " ++ show postDeleters)
                               return ((XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t)
-                                     , postDeletersUnionPreExisting)
+                                     , deletersAfterTheMatch)
 
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
@@ -938,14 +944,14 @@ manageMemory typeEnv globalEnv root =
              visitedRhs <- visit rhs
              unmanage rhs
              MemState postDeleters deps <- get
-             let diff = postDeleters Set.\\ preDeleters
+             let diff = postDeleters \\ preDeleters
              put (MemState preDeleters deps) -- Restore managed variables, TODO: Use a "local" state monad instead?
              return $ do okVisitedRhs <- visitedRhs
-                         -- trace ("\n" ++ prettyInfo lhsInfo' ++
-                         --        "\npre: " ++ show preDeleters ++ "\npost: " ++ show postDeleters ++
+                         -- trace ("\npre: " ++ show preDeleters ++
+                         --        "\npost: " ++ show postDeleters ++
                          --        "\ndiff: " ++ show diff)
                          --   $
-                         return (postDeleters, (lhs, okVisitedRhs))
+                         return (postDeleters, (lhs, okVisitedRhs)) -- TODO: Return deps too?
 
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
         visitCaseLhs (XObj (Lst (tag@(XObj (Sym _ _) _ _):vars)) _ _) =

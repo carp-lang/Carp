@@ -71,3 +71,8 @@ unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
 unionOfSetsInList [] =
   Set.empty
+
+intersectionOfSetsInList (x:xs) =
+  foldl' Set.intersection x xs
+intersectionOfSetsInList [] =
+  Set.empty
