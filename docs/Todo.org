@@ -4,6 +4,7 @@
 ** 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
 
 * Unsorted Todo:s
+** Could assert that functions sent to extern code doesn't have an environment (that'd mean that a Lambda is passed outside Carp-land where it most likely won't work)
 * Critical Bugs
 ** 0.3
 *** Memory management inside 'and' & 'or' seems to be wrong.
