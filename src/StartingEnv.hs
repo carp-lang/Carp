@@ -29,7 +29,7 @@ arrayModule = Env { envBindings = bindings
   where bindings = Map.fromList [ templateNth
                                 , templateAllocate
                                 , templateEMap
-                                , templateFilter
+                                , templateEFilter
                                 , templateRaw
                                 , templateAset
                                 , templateAsetBang

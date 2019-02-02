@@ -261,8 +261,8 @@
 
   (doc remove "Remove occurrences of element el in array arr, in-place")
   (defn remove [el arr]
-    (filter &(fn [x] (not (= el x)))
-            arr))
+    (endo-filter &(fn [x] (not (= el x)))
+                 arr))
 
   (doc remove-nth "Remove element at index idx from arr")
   (defn remove-nth [i arr]
@@ -272,4 +272,7 @@
       (for [j i (Int.dec (Array.length &arr))]
         (aset! &arr j @(nth &arr (inc j))))
       (pop-back arr)))
+
+   (doc copy-filter "Filter elements in an array, creates a copy.")
+   (defn copy-filter [f a] (endo-filter f @a))
 )

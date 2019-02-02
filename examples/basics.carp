@@ -120,7 +120,7 @@
 
 (defn map-filter-reduce-stuff []
   (let [stuff [3 5 8 9 10]
-        after (reduce &add-with-ref 0 &(copy-map &square-reffed &(filter &even? stuff)))]
+        after (reduce &add-with-ref 0 &(copy-map &square-reffed &(endo-filter &even? stuff)))]
     (do
       (print "ANSWER: ")
       (println (refstr after)))))
