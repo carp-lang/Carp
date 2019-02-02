@@ -205,9 +205,9 @@
     (assert (= &[@"b" @"b"] &result))))
 
 (defn array-copy-filter []
-  (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
+  (let [xs [@"a" @"b" @"c" @"a" @"c"]
         result (Array.copy-filter &(fn [x] (= x "b")) &xs)]
-    (assert (= &[@"b" @"b"] &result))))
+    (assert (= &[@"b"] &result))))
 
 (defn array-first []
   (let [xs [@"a" @"b" @"c"]
