@@ -15,4 +15,9 @@
                  (init)
                  "test that the right module gets resolved"
   )
+  (assert-equal test
+                 \\
+                 (String.char-at "\\" 0)
+                 "test that strings get escaped correctly"
+  )
 )
