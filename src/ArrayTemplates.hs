@@ -36,12 +36,21 @@ templateEMap =
       (\(FuncTy [RefTy t@(FuncTy fArgTys fRetTy), arrayType] _) ->
          [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])
 
-templateFilter :: (String, Binder)
-templateFilter = defineTypeParameterizedTemplate templateCreator path t
+templateShrinkCheck :: String -> String
+templateShrinkCheck var =
+  unlines [ "    if(a.len < (a.capacity / 4)) {"
+          ,"        a.capacity = a.len * 2;"
+          ,"        a.data = realloc(a.data, sizeof($a) * a.capacity);"
+          , "    }"
+          ]
+
+-- | Endofunctor filter, misnomer for consistency with flavors of map
+templateEFilter :: (String, Binder)
+templateEFilter = defineTypeParameterizedTemplate templateCreator path t
   where
     fTy = FuncTy [RefTy (VarTy "a")] BoolTy
     aTy = StructTy "Array" [VarTy "a"]
-    path = SymPath ["Array"] "filter"
+    path = SymPath ["Array"] "endo-filter"
     t = FuncTy [RefTy fTy, aTy] aTy
     elem = "&((($a*)a.data)[i])"
     templateCreator = TemplateCreator $
@@ -62,7 +71,7 @@ templateFilter = defineTypeParameterizedTemplate templateCreator path t
                , "        }"
                , "    }"
                , "    a.len = insertIndex;"
-               , "    // NOTE: the array isn't resized for now, it probably should be?"
+               , templateShrinkCheck "a"
                , "    return a;"
                , "}"
                ]))
@@ -135,14 +144,7 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t
                                ,"  #endif"
                                ,"  a.len--;"
                                ,"  " ++ deleteElement "a.len"
-                               ,"    if(a.len < (a.capacity / 4)) {"
-                               ,"        void *pre = a.data;"
-                               ,"        unsigned long s = sizeof($a) * a.len;"
-                               ,"        a.data = CARP_MALLOC(s);"
-                               ,"        memcpy(a.data, pre, s);"
-                               ,"        CARP_FREE(pre);"
-                               ,"        a.capacity = a.len;"
-                               ,"    }"
+                               , templateShrinkCheck "a"
                                ,"  return a;"
                                ,"}"
                                ]))
