@@ -18,32 +18,39 @@ import Obj
 import Types
 import Util
 
-saveDocsForEnvs :: FilePath -> String -> [(SymPath, Env)] -> IO ()
-saveDocsForEnvs dirPath projectTitle envs =
-  let allEnvNames = (fmap (getModuleName . snd) envs)
-  in  do mapM_ (saveDocsForEnv dirPath projectTitle allEnvNames) envs
-         writeFile (dirPath ++ "/" ++ projectTitle ++ "_index.html") (projectIndexPage projectTitle allEnvNames)
-         putStrLn ("Generated docs to '" ++ dirPath ++ "'")
+saveDocsForEnvs :: Project -> [(SymPath, Env)] -> IO ()
+saveDocsForEnvs ctx envs =
+  let dir = projectDocsDir ctx
+      title = projectTitle ctx
+      allEnvNames = (fmap (getModuleName . snd) envs)
+  in  do mapM_ (saveDocsForEnv ctx allEnvNames) envs
+         writeFile (dir ++ "/" ++ title ++ "_index.html") (projectIndexPage ctx allEnvNames)
+         putStrLn ("Generated docs to '" ++ title ++ "'")
 
-projectIndexPage :: String -> [String] -> String
-projectIndexPage projectTitle moduleNames =
-  let html = renderHtml $ docTypeHtml $
-                          do headOfPage
+
+projectIndexPage :: Project -> [String] -> String
+projectIndexPage ctx moduleNames =
+  let logo = projectDocsLogo ctx
+      url = projectDocsURL ctx
+      css = projectDocsStyling ctx
+      htmlDoc = commonmarkToHtml [optSafe] $ Text.pack $ projectDocsPrelude ctx
+      html = renderHtml $ docTypeHtml $
+                          do headOfPage css
                              H.body $
                                do H.div ! A.class_ "content" $
-                                    do H.a ! A.href "http://github.com/carp-lang/Carp" $
+                                    do H.a ! A.href (H.stringValue url) $
                                          do H.div ! A.class_ "logo" $
-                                              do H.img ! A.src "logo.png" ! A.alt "Logo"
+                                              do H.img ! A.src (H.stringValue logo) ! A.alt "Logo"
                                                  moduleIndex moduleNames
-                                            H.h1 ! A.class_ "huge" $ toHtml projectTitle
+                                            H.div (preEscapedToHtml htmlDoc)
   in html
 
-headOfPage :: H.Html
-headOfPage =
+headOfPage :: String -> H.Html
+headOfPage css =
   H.head $
     do H.meta ! A.charset "UTF-8"
        H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
-       H.link ! A.rel "stylesheet" ! A.href "carp_style.css"
+       H.link ! A.rel "stylesheet" ! A.href (H.stringValue css)
 
 getModuleName :: Env -> String
 getModuleName env =
@@ -51,25 +58,28 @@ getModuleName env =
     Just hasName -> hasName
     Nothing -> "Global"
 
-saveDocsForEnv :: FilePath -> String -> [String] -> (SymPath, Env) -> IO ()
-saveDocsForEnv dirPath projectTitle moduleNames (pathToEnv, env) =
+saveDocsForEnv :: Project -> [String] -> (SymPath, Env) -> IO ()
+saveDocsForEnv ctx moduleNames (pathToEnv, env) =
   do let SymPath _ moduleName = pathToEnv
-         fullPath = dirPath ++ "/" ++ moduleName ++ ".html"
-         string = renderHtml (envToHtml env projectTitle (show pathToEnv) moduleNames)
-     createDirectoryIfMissing False dirPath
+         dir = projectDocsDir ctx
+         fullPath = dir ++ "/" ++ moduleName ++ ".html"
+         string = renderHtml (envToHtml env ctx (show pathToEnv) moduleNames)
+     createDirectoryIfMissing False dir
      writeFile fullPath string
 
-envToHtml :: Env -> String -> String -> [String] -> H.Html
-envToHtml env projectTitle moduleName moduleNames =
-   H.docTypeHtml $
-           do headOfPage
+envToHtml :: Env -> Project -> String -> [String] -> H.Html
+envToHtml env ctx moduleName moduleNames =
+  let title = projectTitle ctx
+      css = projectDocsStyling ctx
+  in H.docTypeHtml $
+           do headOfPage css
               H.body $
                 do H.div ! A.class_ "content" $
                      do H.div ! A.class_ "logo" $
                           do H.a ! A.href "http://github.com/carp-lang/Carp" $
                                do H.img ! A.src "logo.png"
                              --span_ "CARP DOCS FOR"
-                             H.div  ! A.class_ "title" $ (toHtml projectTitle)
+                             H.div  ! A.class_ "title" $ (toHtml title)
                              moduleIndex moduleNames
                         H.h1 (toHtml moduleName)
                         mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))

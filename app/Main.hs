@@ -27,6 +27,10 @@ defaultProject =
           , projectCarpDir = "./"
           , projectOutDir = "./out/"
           , projectDocsDir = "./docs/"
+          , projectDocsLogo = ""
+          , projectDocsPrelude = ""
+          , projectDocsURL = ""
+          , projectDocsStyling = "carp_style.css"
           , projectPrompt = case platform of
                               MacOS -> "鲮 "
                               _     -> "> "
