@@ -38,9 +38,9 @@ templateEMap =
 
 templateShrinkCheck :: String -> String
 templateShrinkCheck var =
-  unlines [ "    if(a.len < (a.capacity / 4)) {"
-          ,"        a.capacity = a.len * 2;"
-          ,"        a.data = realloc(a.data, sizeof($a) * a.capacity);"
+  unlines [ "    if(" ++ var ++ ".len < (" ++ var ++ ".capacity / 4)) {"
+          ,"        " ++ var ++ ".capacity = " ++ var ++ ".len * 2;"
+          ,"        " ++ var ++ ".data = realloc(" ++ var ++ ".data, sizeof($a) * " ++ var ++ " .capacity);"
           , "    }"
           ]
 
