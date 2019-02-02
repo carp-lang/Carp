@@ -25,7 +25,7 @@ saveDocsForEnvs ctx envs =
       allEnvNames = (fmap (getModuleName . snd) envs)
   in  do mapM_ (saveDocsForEnv ctx allEnvNames) envs
          writeFile (dir ++ "/" ++ title ++ "_index.html") (projectIndexPage ctx allEnvNames)
-         putStrLn ("Generated docs to '" ++ title ++ "'")
+         putStrLn ("Generated docs to '" ++ dirPath ++ "'")
 
 
 projectIndexPage :: Project -> [String] -> String
