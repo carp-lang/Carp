@@ -2,6 +2,7 @@ module Scoring (scoreTypeBinder, scoreValueBinder) where
 
 import Debug.Trace
 import qualified Data.Set as Set
+import Data.Maybe (fromJust)
 
 import Types
 import Obj
@@ -25,6 +26,13 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
+    DefSumtype (StructTy structName varTys) ->
+      -- DUPLICATION FROM ABOVE:
+      case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
+        Just (_, Binder _ typedef) -> let depth = ((depthOfDeftype typeEnv typedef varTys), b)
+                                    in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
+                                        depth
+        Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     _ ->
       (500, b)
 scoreTypeBinder _ b@(Binder _ (XObj (Mod _) _ _)) =
@@ -37,12 +45,16 @@ depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : r
     [] -> 100
     xs -> (maximum xs) + 1
   where
+    depthsFromVarTys = map (depthOfType typeEnv selfName) varTys
+
     expandCase :: XObj -> [Int]
     expandCase (XObj (Arr arr) _ _) =
       let members = memberXObjsToPairs arr
           depthsFromMembers = map (depthOfType typeEnv selfName . snd) members
-          depthsFromVarTys = map (depthOfType typeEnv selfName) varTys
       in depthsFromMembers ++ depthsFromVarTys
+    expandCase (XObj (Lst [XObj _ _ _, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
+      let depthsFromCaseTys = map (depthOfType typeEnv selfName) (map (fromJust . xobjToTy) sumtypeCaseTys)
+      in depthsFromCaseTys ++ depthsFromVarTys
     expandCase _ = error "Malformed case in typedef."
 depthOfDeftype _ xobj _ =
   error ("Can't get dependency depth from " ++ show xobj)

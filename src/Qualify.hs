@@ -64,6 +64,31 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _
            newBody = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body
        in  XObj (Lst [letExpr, XObj (Arr bindings') bindi bindt, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) i t) =
+  if even (length rest)
+  then let newExpr = setFullyQualifiedSymbols typeEnv globalEnv env expr
+           Just ii = i
+           lvl = envFunctionNestingLevel env
+           innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
+           newRest =
+             map (\(l, r) ->
+                    case l of
+                      XObj (Lst (x:xs)) _ _ ->
+                        let innerEnv' = foldl' (\e v ->
+                                                  case v of
+                                                    XObj (Sym (SymPath _ binderName) _) _ _ ->
+                                                      extendEnv e binderName v
+                                                    x ->
+                                                      error ("Can't match variable with " ++ show x))
+                                               innerEnv
+                                               xs
+                            r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
+                        in  [l, r'])
+                 (pairwise rest)
+       in  XObj (Lst (matchExpr : newExpr : concat newRest)) i t
+  else XObj (Lst (matchExpr : expr : rest)) i t -- Leave it untouched for the compiler to find the error.
+
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }

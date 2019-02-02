@@ -41,11 +41,11 @@
                 "find-all works as expected if not found")
   (assert-equal test
                 &[@"12"]
-                &(match #"(\d+)" "   12")
+                &(match-groups #"(\d+)" "   12")
                 "match works as expected")
   (assert-equal test
                 &[]
-                &(match #"(\d+)" "   ")
+                &(match-groups #"(\d+)" "   ")
                 "match works as expected if not found")
   (assert-equal test
                 true

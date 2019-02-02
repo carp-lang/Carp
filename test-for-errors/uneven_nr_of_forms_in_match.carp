@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(defn wrong-nr-of-forms-in-match []
+  (match (Maybe.Just 1)
+    (Maybe.Nothing) 0
+    (Maybe.Just x) ; <should have expression here>
+    ))

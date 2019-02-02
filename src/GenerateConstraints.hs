@@ -4,16 +4,18 @@ import Data.List (foldl', sort, zipWith4)
 import Control.Arrow
 import Control.Monad.State
 import Data.Maybe (mapMaybe)
+import Debug.Trace (trace)
 
 import Types
 import Obj
 import Constraints
 import Util
 import TypeError
+import Lookup
 
 -- | Will create a list of type constraints for a form.
-genConstraints :: XObj -> Either TypeError [Constraint]
-genConstraints root = fmap sort (gen root)
+genConstraints :: TypeEnv -> XObj -> Either TypeError [Constraint]
+genConstraints typeEnv root = fmap sort (gen root)
   where gen xobj =
           case obj xobj of
             Lst lst -> case lst of
@@ -76,6 +78,36 @@ genConstraints root = fmap sort (gen root)
                                 return (conditionConstraint : sameReturnConstraint :
                                         wholeStatementConstraint : insideConditionConstraints ++
                                         insideTrueConstraints ++ insideFalseConstraints)
+
+                           -- Match
+                           XObj Match _ _ : expr : cases ->
+                             do insideExprConstraints <- gen expr
+                                insideCasesConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
+                                exprType <- toEither (ty expr) (ExpressionMissingType expr)
+                                xobjType <- toEither (ty xobj) (DefMissingType xobj)
+                                -- | TODO: Only guess if there isn't already a type set on the expression!
+                                case guessExprType typeEnv cases of
+                                  Just guessedExprTy ->
+                                    let expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol)
+                                                        (info expr) (Just guessedExprTy)
+                                        exprConstraint = Constraint exprType guessedExprTy expr expected OrdIfCondition -- | TODO: Ord
+
+                                        -- Each case should have the same return type as the whole match form:
+                                        mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- | TODO: Ord
+                                        mkConstr _ = Nothing
+                                        casesBodyConstraints = mapMaybe (\(tag, caseExpr) -> mkConstr caseExpr) (pairwise cases)
+
+                                        -- Constraints for the variables in the left side of each matching case,
+                                        -- like the 'r'/'g'/'b' in (match col (RGB r g b) ...) being constrained to Int.
+                                        casesLhsConstraints = concatMap (genLhsConstraintsInCase typeEnv) (map fst (pairwise cases))
+
+                                    in  return (exprConstraint :
+                                                insideExprConstraints ++
+                                                insideCasesConstraints ++
+                                                casesBodyConstraints ++
+                                                casesLhsConstraints)
+                                  Nothing ->
+                                    error "Failed to guess type of expr in match." -- | TODO! Fail gracefully here, or not at all...
 
                            -- While
                            [XObj While _ _, expr, body] ->
@@ -184,3 +216,50 @@ genConstraints root = fmap sort (gen root)
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
 
             _ -> Right []
+
+
+
+-- | Try to guess the type of X in (match X ...) based on the matching clauses
+guessExprType :: TypeEnv -> [XObj] -> Maybe Ty
+guessExprType typeEnv caseXObjs =
+  -- | TODO: Look through all cases for a guess and make sure they all converge on a single sumtype.
+  let (XObj (Lst (XObj (Sym (SymPath pathStrings tagName) _) _ _ : _)) _ _) = head caseXObjs -- | Temporary HACK to get something working
+      sumtypeNameGuess = SymPath (init pathStrings) (last pathStrings)
+  in  case lookupInEnv sumtypeNameGuess (getTypeEnv typeEnv) of
+        Just (_, foundBinder@(Binder meta (XObj (Lst (XObj (DefSumtype sumTy) _ _ : XObj (Sym _ _) _ _ : _)) _ _))) ->
+          Just sumTy
+        Just somethingElse ->
+          error ("Found non-sumtype: " ++ show somethingElse)
+        Nothing ->
+          Nothing
+
+-- | Find the sumtype at a specific path and extract the case matching the final part of the path, i.e. the 'Just' in "Maybe.Just"
+getCaseFromPath :: TypeEnv -> SymPath -> Maybe SumtypeCase
+getCaseFromPath typeEnv (SymPath pathStrings caseName) =
+  let sumtypeName = (SymPath (init pathStrings) (last pathStrings))
+  in  case lookupInEnv sumtypeName (getTypeEnv typeEnv) of
+        Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _ : rest)) _ _)) ->
+          let cases = toCases rest
+          in  getCase cases caseName
+        Just (_, Binder _ x) ->
+          error ("A non-sumtype named '" ++ show sumtypeName ++ "' was found in the type environment: " ++ show x)
+        Nothing ->
+          error ("Failed to find a sumtype named '" ++ show sumtypeName ++ "' in the type environment.")
+
+-- | Generate the constraints for the left hand side of a 'match' case (e.g. "(Just x)")
+-- | TODO: A better plan here is to only use 'getCaseFromPath' if we have an absolute path and NO type on the match expression.
+-- | If we have a type on the match expression we can just use that one to find the cases!
+genLhsConstraintsInCase :: TypeEnv -> XObj -> [Constraint]
+genLhsConstraintsInCase typeEnv (XObj (Lst (x@(XObj (Sym casePath _) _ _) : xs)) _ _) =
+  case getCaseFromPath typeEnv casePath of
+    Nothing ->
+      error ("Couldn't find case in type env: " ++ show casePath)
+    Just foundCase ->
+       zipWith visitMatchElement xs (caseTys foundCase)
+      where visitMatchElement :: XObj -> Ty -> Constraint
+            visitMatchElement variable@(XObj (Sym path _) variableInfo variableTy) caseTy =
+              let expected = XObj (Sym (SymPath [] "Variable in 'match' case") Symbol) variableInfo (Just caseTy)
+                  Just variableTy' = variableTy
+              in  Constraint variableTy' caseTy variable expected OrdIfCondition -- | TODO: Ord
+            visitMatchTagElement x =
+              error ("No matching case in 'visitMatchTagElement': " ++ show x)

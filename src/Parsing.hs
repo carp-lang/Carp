@@ -229,6 +229,7 @@ symbol = do i <- createInfo
               "let" -> return (XObj Let i Nothing)
               "break" -> return (XObj Break i Nothing)
               "if" -> return (XObj If i Nothing)
+              "match" -> return (XObj Match i Nothing)
               "true" -> return (XObj (Bol True) i Nothing)
               "false" -> return (XObj (Bol False) i Nothing)
               "address" -> return (XObj Address i Nothing)

@@ -25,6 +25,7 @@ import Obj
 import Types
 import Infer
 import Deftype
+import Sumtypes
 import ColorText
 import Template
 import Util
@@ -186,7 +187,7 @@ eval env xobj =
                       evaledBody <- eval envWithBindings body
                       return $ do okBody <- evaledBody
                                   Right okBody
-          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
+          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj))) -- Unreachable?
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
@@ -507,6 +508,8 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
+       XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
+         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
          do case Map.lookup "sig" (getMeta adjustedMeta) of
               Just foundSignature ->
@@ -642,14 +645,15 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
                                Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                                _ -> Nothing
+         (creatorFunction, typeConstructor) = if length rest == 1 then (moduleForDeftype, Typ) else (moduleForSumtype, DefSumtype)
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
-         case moduleForDeftype typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
+         case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
            Right (typeModuleName, typeModuleXObj, deps) ->
              let structTy = (StructTy typeName okTypeVariables)
                  typeDefinition =
                    -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                   XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :
                               XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)

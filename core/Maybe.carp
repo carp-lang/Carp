@@ -1,0 +1,3 @@
+(deftype (Maybe a)
+  (Just [a])
+  (Nothing []))

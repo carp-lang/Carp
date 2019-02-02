@@ -89,7 +89,26 @@ expand eval env xobj =
                   return $ do okBindings <- sequence bind
                               okBody <- expandedBody
                               Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
-          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj)))
+          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)))
+
+        matchExpr@(XObj Match _ _) : expr : rest ->
+          do ctx <- get
+             let fppl = projectFilePathPrintLength (contextProj ctx)
+             if null rest
+                then return (Left (EvalError ("No forms in match-expression: " ++
+                                               machineReadableInfoFromXObj fppl xobj)))
+                else if even (length rest)
+                     then do expandedExpr <- expand eval env expr
+                             expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
+                                                                 return [Right l, expandedR])
+                                                   (pairwise rest)
+                             let expandedRest = sequence (concat expandedPairs)
+                             return $ do okExpandedExpr <- expandedExpr
+                                         okExpandedRest <- expandedRest
+                                         return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
+                     else return (Left (EvalError ("Uneven number of forms in match-expression: " ++
+                                                    machineReadableInfoFromXObj fppl xobj)))
+
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand eval env) expressions
              return $ do okExpressions <- sequence expandedExpressions

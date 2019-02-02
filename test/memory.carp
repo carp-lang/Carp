@@ -363,6 +363,51 @@
   (let-do [stuff [@"A" @"B" @"C"]]
     (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
 
+(deftype StrangeThings
+  (Piff [String String])
+  (Puff [String String]))
+
+(defn sumtype-1 []
+  (let [thing (StrangeThings.Piff @"A" @"B")]
+    (assert
+     (= @"B"
+        (match thing
+          (StrangeThings.Piff a b) b
+          (StrangeThings.Puff c d) d)))))
+
+(defn sumtype-2 []
+  (let [thing (StrangeThings.Puff @"A" @"B")]
+    (assert
+     (= @"A"
+        (match thing
+          (StrangeThings.Piff a b) b
+          (StrangeThings.Puff a b) a)))))
+
+(defn sumtype-3 []
+  (let [thing (StrangeThings.Piff @"A" @"B")
+        another-thing @"blah"]
+    (assert
+     (= @"A"
+        (match thing
+          (StrangeThings.Piff a b) a
+          (StrangeThings.Puff c d) another-thing)))))
+
+(defn sumtype-4 []
+  (let [m (Maybe.Just @"Yo")]
+    (assert
+     (= @"Yo"
+        (match m
+          (Maybe.Just x) x
+          (Maybe.Nothing) @"Nope")))))
+
+(defn sumtype-5 []
+  (let [m (Maybe.Nothing)]
+    (assert
+     (= @"Nope"
+        (match m
+          (Maybe.Just x) x
+          (Maybe.Nothing) @"Nope")))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -421,4 +466,10 @@
   (assert-no-leak test lambda-2 "lambda-2 does not leak")
   (assert-no-leak test lambda-3 "lambda-3 does not leak")
   (assert-no-leak test lambda-4 "lambda-4 does not leak")
-  (assert-no-leak test lambda-5 "lambda-5 does not leak"))
+  (assert-no-leak test lambda-5 "lambda-5 does not leak")
+  (assert-no-leak test sumtype-1 "sumtype-1 does not leak")
+  (assert-no-leak test sumtype-2 "sumtype-2 does not leak")
+  (assert-no-leak test sumtype-3 "sumtype-3 does not leak")
+  (assert-no-leak test sumtype-4 "sumtype-4 does not leak")
+  (assert-no-leak test sumtype-5 "sumtype-5 does not leak")
+  )

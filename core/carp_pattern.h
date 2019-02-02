@@ -492,7 +492,7 @@ Array Pattern_find_MINUS_all(Pattern* p, String* s) {
 }
 
 
-Array Pattern_match(Pattern* p, String* s) {
+Array Pattern_match_MINUS_groups(Pattern* p, String* s) {
   String str = *s;
   Pattern pat = *p;
   int lstr = strlen(str);

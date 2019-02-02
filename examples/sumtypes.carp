@@ -1,0 +1,10 @@
+(use Maybe)
+
+;; Variable shadowing inside match
+(defn confusion [x]
+  (match x
+    (Maybe.Just x) x
+    (Maybe.Nothing) @"Nope"))
+
+(defn main []
+  (println* (confusion (Just @"Yo"))))

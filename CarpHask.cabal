@@ -22,6 +22,7 @@ library
                        ColorText,
                        Constraints,
                        Deftype,
+                       Sumtypes,
                        Commands,
                        Template,
                        ToTemplate,
@@ -41,7 +42,8 @@ library
                        Qualify,
                        Repl,
                        StartingEnv,
-                       RenderDocs
+                       RenderDocs,
+                       StructUtils
 
   build-depends:       base >= 4.7 && < 5
                      , parsec == 3.1.*
