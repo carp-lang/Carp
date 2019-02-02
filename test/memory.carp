@@ -199,9 +199,14 @@
         result (Array.reduce &append-ref @"" &xs)]
     (assert (= @"abc" result))))
 
-(defn array-filter []
+(defn array-endo-filter []
   (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
-        result (Array.filter &(fn [x] (= x "b")) xs)]
+        result (Array.endo-filter &(fn [x] (= x "b")) xs)]
+    (assert (= &[@"b" @"b"] &result))))
+
+(defn array-copy-filter []
+  (let [xs [@"a" @"b" @"c" @"b" @"a" @"c"]
+        result (Array.copy-filter &(fn [x] (= x "b")) &xs)]
     (assert (= &[@"b" @"b"] &result))))
 
 (defn array-first []
@@ -437,7 +442,8 @@
   (assert-no-leak test string-substring "string-substring does not leak")
   (assert-no-leak test array-aset "array-aset does not leak")
   (assert-no-leak test array-reduce "array-reduce does not leak")
-  (assert-no-leak test array-filter "array-filter does not leak")
+  (assert-no-leak test array-endo-filter "array-endo-filter does not leak")
+  (assert-no-leak test array-copy-filter "array-copy-filter does not leak")
   (assert-no-leak test array-first "array-first does not leak")
   (assert-no-leak test array-last "array-last does not leak")
   (assert-no-leak test array-eq-1 "array-eq-1 does not leak")
