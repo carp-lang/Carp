@@ -126,6 +126,6 @@
 ;;   (println* &(m (People.Two @"Eve" @"Adam")))
 ;;   )
 
-(defn no-forms-in-match []
+(defn match-nr []
   (match (Maybe.Just 1)
-    ))
+    Maybe.Nothing 0))

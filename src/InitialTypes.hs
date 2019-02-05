@@ -341,12 +341,16 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitSingleMatch env (XObj (Lst (x@(XObj (Sym casePath _) _ _) : xs)) i t) =
       do visitedXs <- mapM visitMatchElement xs
          return (Right (XObj (Lst (x : visitedXs)) i t))
-
       where visitMatchElement xobj@(XObj (Sym path _) _ _) =
               do t <- genVarTy
                  return (xobj { ty = Just t })
             visitMatchTagElement x =
               error ("Unhandled case in 'visitMatchTagElement': " ++ show x)
+    visitSingleMatch env xobj@(XObj (Sym _ _) i t) =
+      -- Rewrite single symbol to a list with the symbol as its one element (for convenience)
+      visitSingleMatch env (XObj (Lst [xobj]) i t)
+    visitSingleMatch env xobj@(XObj _ _ _) =
+      return (Left (CannotMatch xobj))
 
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
     extendEnvWithLetBindings env xobjs =

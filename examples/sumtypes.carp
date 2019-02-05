@@ -6,5 +6,12 @@
     (Maybe.Just x) x
     (Maybe.Nothing) @"Nope"))
 
+;; Recursive sumtype
+(deftype JSON
+  (Str [String])
+  (Num [Double])
+  (Arr [(Array JSON)])
+  (Obj [(Map String JSON)]))
+
 (defn main []
   (println* (confusion (Just @"Yo"))))

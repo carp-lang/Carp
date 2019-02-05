@@ -42,6 +42,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidMemberType String
                | CannotSet XObj
                | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
+               | CannotMatch XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -132,6 +133,8 @@ instance Show TypeError where
     "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
     "Definition at " ++ prettyInfoFromXObj xobj ++ " does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)
+  show (CannotMatch xobj) =
+    "Can't match '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -230,6 +233,9 @@ machineReadableErrorStrings fppl err =
 
     (DoesNotMatchSignatureAnnotation xobj sigTy) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Definition does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)]
+
+    (CannotMatch xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't match '" ++ pretty xobj ++ "'."]
 
     _ ->
       [show err]

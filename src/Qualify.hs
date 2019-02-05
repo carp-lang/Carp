@@ -65,13 +65,13 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _
        in  XObj (Lst [letExpr, XObj (Arr bindings') bindi bindt, newBody]) i t
   else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
 
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) i t) =
-  if even (length rest)
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : casesXObjs)) i t) =
+  if even (length casesXObjs)
   then let newExpr = setFullyQualifiedSymbols typeEnv globalEnv env expr
            Just ii = i
            lvl = envFunctionNestingLevel env
            innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
-           newRest =
+           newCasesXObjs =
              map (\(l, r) ->
                     case l of
                       XObj (Lst (x:xs)) _ _ ->
@@ -84,10 +84,12 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
                                                innerEnv
                                                xs
                             r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
-                        in  [l, r'])
-                 (pairwise rest)
-       in  XObj (Lst (matchExpr : newExpr : concat newRest)) i t
-  else XObj (Lst (matchExpr : expr : rest)) i t -- Leave it untouched for the compiler to find the error.
+                        in  [l, r']
+                      XObj _ _ _ ->
+                        [l, r] -- Leave untouched
+                 ) (pairwise casesXObjs)
+       in  XObj (Lst (matchExpr : newExpr : concat newCasesXObjs)) i t
+  else XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
 
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
