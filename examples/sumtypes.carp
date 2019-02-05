@@ -1,5 +1,14 @@
 (use Maybe)
 
+;; A more convenient syntax when doing C-style enums IN PROGRESS
+(deftype Grade (A []) (B []) (C []))
+
+(defn grade-value [g]
+  (match (the Grade g)
+    Grade.A 20
+    Grade.B 15
+    Grade.C 10))
+
 ;; Variable shadowing inside match
 (defn confusion [x]
   (match x
@@ -7,11 +16,13 @@
     (Maybe.Nothing) @"Nope"))
 
 ;; Recursive sumtype
-(deftype JSON
-  (Str [String])
-  (Num [Double])
-  (Arr [(Array JSON)])
-  (Obj [(Map String JSON)]))
+;; (deftype JSON
+;;   (Str [String])
+;;   (Num [Double])
+;;   (Arr [(Array JSON)])
+;;   (Obj [(Map String JSON)]))
 
 (defn main []
-  (println* (confusion (Just @"Yo"))))
+  (do
+    (println* "Grade.B has value " (grade-value (Grade.B)))
+    (println* (confusion (Just @"Yo")))))

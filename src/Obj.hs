@@ -754,6 +754,8 @@ toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _
   SumtypeCase { caseName = name
               , caseTys = (map (fromJust . xobjToTy) tyXObjs)
               }
+toCase x =
+  error ("Failed to convert this to a sumtype case: " ++ pretty x)
 
 getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
 getCase cases caseNameToFind =
