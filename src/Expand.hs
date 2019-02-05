@@ -96,7 +96,7 @@ expand eval env xobj =
              let fppl = projectFilePathPrintLength (contextProj ctx)
              if null rest
                 then return (Left (EvalError ("No forms in match-expression: " ++
-                                               machineReadableInfoFromXObj fppl xobj)))
+                                               machineReadableInfoFromXObj fppl xobj))) -- TODO: fppl shouldn't be decided here
                 else if even (length rest)
                      then do expandedExpr <- expand eval env expr
                              expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
