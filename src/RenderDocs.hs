@@ -33,6 +33,7 @@ projectIndexPage ctx moduleNames =
   let logo = projectDocsLogo ctx
       url = projectDocsURL ctx
       css = projectDocsStyling ctx
+      htmlHeader = toHtml $ projectTitle ctx
       htmlDoc = commonmarkToHtml [optSafe] $ Text.pack $ projectDocsPrelude ctx
       html = renderHtml $ docTypeHtml $
                           do headOfPage css
@@ -42,7 +43,9 @@ projectIndexPage ctx moduleNames =
                                          do H.div ! A.class_ "logo" $
                                               do H.img ! A.src (H.stringValue logo) ! A.alt "Logo"
                                                  moduleIndex moduleNames
-                                            H.div (preEscapedToHtml htmlDoc)
+                                            H.div $
+                                              do H.h1 htmlHeader
+                                                 (preEscapedToHtml htmlDoc)
   in html
 
 headOfPage :: String -> H.Html
