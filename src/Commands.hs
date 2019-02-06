@@ -126,6 +126,12 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                               return (proj { projectOutDir = outDir })
                      "docs-directory" -> do docsDir <- unwrapStringXObj value
                                             return (proj { projectDocsDir = docsDir })
+                     "docs-logo" -> do logo <- unwrapStringXObj value
+                                       return (proj { projectDocsLogo = logo })
+                     "docs-prelude" -> do prelude <- unwrapStringXObj value
+                                          return (proj { projectDocsPrelude = prelude })
+                     "docs-url" -> do url <- unwrapStringXObj value
+                                      return (proj { projectDocsURL = url })
                      "file-path-print-length" -> do length <- unwrapStringXObj value
                                                     case length of
                                                       "short" -> return (proj { projectFilePathPrintLength = ShortPath })
@@ -160,6 +166,10 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "title" -> Right $ Str $ projectTitle proj
           "output-directory" -> Right $ Str $ projectOutDir proj
           "docs-directory" -> Right $ Str $ projectDocsDir proj
+          "docs-logo" -> Right $ Str $ projectDocsLogo proj
+          "docs-prelude" -> Right $ Str $ projectDocsPrelude proj
+          "docs-url" -> Right $ Str $ projectDocsURL proj
+          "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
           _ ->
             Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++
@@ -388,6 +398,10 @@ commandHelp [XObj(Str "project") _ _] =
               putStrLn "'title'              - Set the title of the current project, will affect the name of the binary produced."
               putStrLn "'output-directory'   - Where to put compiler artifacts, etc."
               putStrLn "'docs-directory'     - Where to put generated documentation."
+              putStrLn "'docs-logo'          - Location of the documentation logo."
+              putStrLn "'docs-prelude'       - The documentation foreword."
+              putStrLn "'docs-url'           - A URL for the project (useful for generated documentation)."
+              putStrLn "'docs-styling'        - A URL to CSS for the project documentation."
               putStrLn "'prompt'             - Set the prompt in the repl."
               putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."
               putStrLn ""
@@ -761,8 +775,5 @@ commandSaveDocsInternal [modulePath] =
 saveDocs :: [(SymPath, Env)] -> StateT Context IO (Either EvalError XObj)
 saveDocs pathsAndEnvs =
   do ctx <- get
-     let proj = contextProj ctx
-         docsDir = projectDocsDir proj
-         title = projectTitle proj
-     liftIO (saveDocsForEnvs docsDir title pathsAndEnvs)
+     liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvs)
      return dynamicNil
