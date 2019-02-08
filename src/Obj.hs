@@ -488,6 +488,10 @@ data Project = Project { projectTitle :: String
                        , projectCarpDir :: FilePath
                        , projectOutDir :: FilePath
                        , projectDocsDir :: FilePath
+                       , projectDocsLogo :: FilePath
+                       , projectDocsPrelude :: String
+                       , projectDocsURL :: String
+                       , projectDocsStyling :: String
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
                        , projectPrintTypedAST :: Bool
@@ -514,6 +518,10 @@ instance Show Project where
         carpDir
         outDir
         docsDir
+        docsLogo
+        docsPrelude
+        docsURL
+        docsStyling
         prompt
         searchPaths
         printTypedAST
@@ -535,6 +543,10 @@ instance Show Project where
             , "Can execute: " ++ if canExecute then "true" else "false"
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
+            , "Docs logo: " ++ docsLogo
+            , "Docs prelude: " ++ docsPrelude
+            , "Docs Project URL: " ++ docsURL
+            , "Docs CSS URL: " ++ docsStyling
             , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
