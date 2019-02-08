@@ -1,13 +1,20 @@
 (use Maybe)
 
-;; A more convenient syntax when doing C-style enums IN PROGRESS
+;; ;; - Generic types -
+(defn generic-sumtypes [s]
+  (match s
+    (Maybe.Nothing) @"Nada"
+    (Maybe.Just x)  (str* "Something like " (str x))
+    ))
+
+;; A more convenient syntax when doing C-style enums
 (deftype Grade (A []) (B []) (C []))
 
 (defn grade-value [g]
   (match (the Grade g)
-    Grade.A 20
-    Grade.B 15
-    Grade.C 10))
+    A 20
+    B 15
+    C 10))
 
 ;; Variable shadowing inside match
 (defn confusion [x]
@@ -24,5 +31,7 @@
 
 (defn main []
   (do
+    (println* (generic-sumtypes (Maybe.Just 123)))
+    (println* (generic-sumtypes (the (Maybe Int) (Maybe.Nothing))))
     (println* "Grade.B has value " (grade-value (Grade.B)))
     (println* (confusion (Just @"Yo")))))
