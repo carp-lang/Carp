@@ -622,9 +622,13 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
            mapM (memberToDecl (indent + indentAmount)) members
            appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
+      emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
+        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
 
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
       emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), _]) _ _)) =
+        appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
+      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Sym (SymPath [] caseName) _) _ _)) =
         appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
 
   in if isTypeGeneric sumTy

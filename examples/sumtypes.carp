@@ -8,7 +8,7 @@
     ))
 
 ;; A more convenient syntax when doing C-style enums
-(deftype Grade (A []) (B []) (C []))
+(deftype Grade A B C)
 
 (defn grade-value [g]
   (match (the Grade g)

@@ -55,6 +55,8 @@ depthOfDeftype typeEnv (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : r
     expandCase (XObj (Lst [XObj _ _ _, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
       let depthsFromCaseTys = map (depthOfType typeEnv selfName) (map (fromJust . xobjToTy) sumtypeCaseTys)
       in depthsFromCaseTys ++ depthsFromVarTys
+    expandCase (XObj (Sym _ _) _ _) =
+      []
     expandCase _ = error "Malformed case in typedef."
 depthOfDeftype _ xobj _ =
   error ("Can't get dependency depth from " ++ show xobj)
