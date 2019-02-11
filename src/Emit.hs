@@ -283,7 +283,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   emitCaseMatcher caseName (XObj (Sym path _) i t) index =
                     let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
-                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ caseName ++
+                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ mangle caseName ++
                                      ".member" ++ show index ++ ";\n")
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()

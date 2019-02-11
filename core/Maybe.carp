@@ -18,20 +18,20 @@
       (Just x) x))
 
   (defn just? [a]
-    (match a
+    (match @a
       (Nothing) false
       (Just x) true))
 
   (defn nothing? [a]
-    (match a
+    (match @a
       (Nothing) true
       (Just x) false))
 
-  ;(defn = [a b]
-  ;  (match a
-  ;    (Nothing) (nothing? b)
-  ;    (Just x)
-  ;      (match b
-  ;        (Nothing) false
-  ;        (Just y) (= x y))))
+  (defn = [a b]
+    (match @a
+      (Nothing) (nothing? b)
+      (Just x)
+        (match @b
+          (Nothing) false
+          (Just y) (= x y))))
 )

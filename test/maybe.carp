@@ -3,7 +3,7 @@
 
 (deftest test
   (assert-true test
-               (nothing? (Nothing))
+               (nothing? (the (Maybe Int) (Nothing)))
                "nothing? works on Nothing")
   (assert-false test
                 (nothing? (Just 1))
@@ -12,7 +12,7 @@
                (just? (Just 1))
                "just? works on Just")
   (assert-false test
-                (just? (Nothing))
+                (just? (the (Maybe Int) (Nothing)))
                 "just? works on Nothing")
   (assert-equal test
                 1
@@ -20,7 +20,7 @@
                 "from works on Just")
   (assert-equal test
                 0
-                (from (Nothing) 0)
+                (from (the (Maybe Int) (Nothing)) 0)
                 "from works on Nothing")
   (assert-equal test
                 1
@@ -32,6 +32,6 @@
                 "apply works on Just")
   (assert-equal test
                 0
-                (from (apply (Nothing) Int.inc) 0)
+                (from (apply (the (Maybe Int) (Nothing)) Int.inc) 0)
                 "apply works on Nothing")
 )
