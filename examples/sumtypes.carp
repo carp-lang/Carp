@@ -19,6 +19,26 @@
     B 15
     C 10))
 
+;; Figure out which type to use when some cases have the same name
+(deftype Commands
+  StandGround
+  Fire
+  Retreat)
+
+(deftype Elements
+  Water
+  Fire ;; <- name clash!
+  Earth
+  Air)
+
+(use Commands)
+(use Elements)
+
+(defn figure-out-sumtype [x]
+  (match x
+    Fire (Water)
+    Air (Earth)))
+
 ;; Variable shadowing inside match
 (defn confusion [x]
   (match x
@@ -36,5 +56,6 @@
   (do
     (println* (generic-sumtypes (Maybe.Just 123)))
     (println* (generic-sumtypes (the (Maybe Int) (Maybe.Nothing))))
+    (println* &(figure-out-sumtype (Elements.Fire)))
     (println* "Grade.B has value " (grade-value (Grade.B)))
     (println* (confusion (Just @"Yo")))))
