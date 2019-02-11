@@ -6,6 +6,7 @@ import Data.Maybe (fromMaybe, fromJust)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import Data.List (foldl')
+import Data.Char (isUpper, isLower)
 import Debug.Trace
 
 import Obj
@@ -956,14 +957,26 @@ manageMemory typeEnv globalEnv root =
                          return (postDeleters, (lhs, okVisitedRhs)) -- TODO: Return deps too?
 
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
-        visitCaseLhs (XObj (Lst (tag@(XObj (Sym _ _) _ _):vars)) _ _) =
-          do results <- mapM (\var ->
-                               case var of
-                                 XObj (Sym path mode) _ _ -> do manage var
-                                                                return (Right ())
-                                 _ -> return (Right ()))
-                            vars
-             return (sequence results)
+        visitCaseLhs (XObj (Lst vars) _ _) =
+          case vars of
+            [xobj@(XObj (Sym (SymPath _ (firstLetter:_)) _) _ _)] | isUpper firstLetter ->
+                                                                      return (Right [])
+                                                                  | otherwise ->
+                                                                      do manage xobj
+                                                                         return (Right [])
+            _ -> visitVars
+            where visitVars =
+                    do results <- mapM (\var ->
+                                           case var of
+                                             XObj (Sym path mode) _ _ ->
+                                               do manage var
+                                                  return (Right ())
+                                             _ -> return (Right ()))
+                                       (tail vars) -- Don't do anything to the first one, it's a tag
+                       return (sequence results)
+        visitCaseLhs xobj@(XObj (Sym _ _) _ _) =
+          do manage xobj
+             return (Right [])
         visitCaseLhs _ =
           return (Right []) -- TODO: Handle nesting!!!
 
