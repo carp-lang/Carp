@@ -1,5 +1,8 @@
 (Project.config "title" "core")
 (Project.config "docs-directory" "./docs/core/")
+(Project.config "docs-logo" "logo.png")
+(Project.config "docs-prelude" "This website contains the documentation for the Carp standard library. You can download Carp [here](https://github.com/carp-lang/carp).")
+(Project.config "docs-url" "https://github.com/carp-lang/carp")
 
 (load "SafeInt.carp")
 (load "Vector.carp")
