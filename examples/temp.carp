@@ -126,6 +126,18 @@
 ;;   (println* &(m (People.Two @"Eve" @"Adam")))
 ;;   )
 
-(defn match-nr []
-  (match (Maybe.Just 1)
-    Maybe.Nothing 0))
+(deftype Commands
+  StandGround
+  Fire
+  Retreat)
+
+(deftype Elements
+  Water
+  Fire ;; <- name clash!
+  Earth
+  Air)
+
+(defn figure-out-sumtype [x]
+  (match x
+    Fire 20
+    Air 10))

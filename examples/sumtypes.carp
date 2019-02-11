@@ -1,6 +1,6 @@
 (use Maybe)
 
-;; ;; - Generic types -
+;; Generic types
 (defn generic-sumtypes [s]
   (match s
     (Maybe.Nothing) @"Nada"
