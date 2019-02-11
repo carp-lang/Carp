@@ -614,22 +614,27 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
                  appendToSrc (addIndent indent ++ "};\n")
                  appendToSrc (addIndent indent ++ "char _tag;\n")
                  appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+                 --appendToSrc ("// " ++ show typeVariables ++ "\n")
                  mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
+
+      -- Make the "tag" names match the sumtype initialiser function names (for generic types)
+      correctify name =
+        tyToCLambdaFix (StructTy name typeVariables)
 
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
            mapM (memberToDecl (indent + indentAmount)) members
-           appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
+           appendToSrc (addIndent indent ++ "} " ++ correctify caseName ++ ";\n")
       emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
-        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
+        appendToSrc (addIndent indent ++ "// " ++ correctify caseName ++ "\n")
 
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
       emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), _]) _ _)) =
-        appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
+        appendToSrc ("#define " ++ tagName sumTy (correctify caseName) ++ " " ++ show tagIndex ++ "\n")
       emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Sym (SymPath [] caseName) _) _ _)) =
-        appendToSrc ("#define " ++ tagName sumTy caseName ++ " " ++ show tagIndex ++ "\n")
+        appendToSrc ("#define " ++ tagName sumTy (correctify caseName) ++ " " ++ show tagIndex ++ "\n")
 
   in if isTypeGeneric sumTy
      then ""

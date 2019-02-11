@@ -778,3 +778,9 @@ getCase cases caseNameToFind =
   case filter (\c -> caseName c == caseNameToFind) cases of
     found : _ -> Just found
     [] -> Nothing
+
+wrapInParens :: XObj -> XObj
+wrapInParens xobj@(XObj (Lst _) _ _) =
+  xobj -- already in parens
+wrapInParens xobj@(XObj _ i t) =
+  XObj (Lst [xobj]) i t

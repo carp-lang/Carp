@@ -1,4 +1,5 @@
 (use Maybe)
+(Project.no-echo)
 
 ;; Generic types
 (defn generic-sumtypes [s]
@@ -9,6 +10,8 @@
 
 ;; A more convenient syntax when doing C-style enums
 (deftype Grade A B C)
+
+(use Grade)
 
 (defn grade-value [g]
   (match (the Grade g)

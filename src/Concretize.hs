@@ -193,9 +193,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
 
     visitMatchCase :: Bool -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
     visitMatchCase allowAmbig env (lhs, rhs) =
-      do visitedRhs <- visit allowAmbig env rhs
-         return $ do okVisitedRhs <- visitedRhs
-                     return [lhs, okVisitedRhs]
+      do visitedLhs <- visit allowAmbig env lhs
+         visitedRhs <- visit allowAmbig env rhs
+         return $ do okVisitedLhs <- visitedLhs
+                     okVisitedRhs <- visitedRhs
+                     return [okVisitedLhs, okVisitedRhs]
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -962,6 +964,8 @@ manageMemory typeEnv globalEnv root =
                                  _ -> return (Right ()))
                             vars
              return (sequence results)
+        visitCaseLhs _ =
+          return (Right []) -- TODO: Handle nesting!!!
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =

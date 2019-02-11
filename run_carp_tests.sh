@@ -25,6 +25,7 @@ stack install;
 ./test/execute.sh ./examples/function_members.carp
 ./test/execute.sh ./examples/map.carp
 ./test/execute.sh ./examples/lambdas.carp
+./test/execute.sh ./examples/sumtypes.carp
 
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do

@@ -137,7 +137,26 @@
   Earth
   Air)
 
+(use Commands)
+(use Elements)
+
+(defn f [] (Water))
+
 (defn figure-out-sumtype [x]
   (match x
-    Fire 20
-    Air 10))
+    Fire (Water)
+    Air (Earth)))
+
+(use Maybe)
+
+(defn g [x]
+  (match x
+    (Just a) a
+    (Nothing) -1))
+
+(defn main []
+  (do
+    (println* &(Just false))
+    (println* &@&(Maybe.Just @"hello"))
+    (println* &(figure-out-sumtype (Elements.Fire)))
+    (println* (g (Just 123)))))

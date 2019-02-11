@@ -75,7 +75,8 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
              map (\(l, r) ->
                     case l of
                       XObj (Lst (x:xs)) _ _ ->
-                        let innerEnv' = foldl' (\e v ->
+                        let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
+                            innerEnv' = foldl' (\e v ->
                                                   case v of
                                                     XObj (Sym (SymPath _ binderName) _) _ _ ->
                                                       extendEnv e binderName v
@@ -84,9 +85,11 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
                                                innerEnv
                                                xs
                             r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
-                        in  [l, r']
+                        in  [l', r']
                       XObj _ _ _ ->
-                        [l, r] -- Leave untouched
+                        let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
+                            r' = setFullyQualifiedSymbols typeEnv globalEnv env r
+                        in  [l', r']
                  ) (pairwise casesXObjs)
        in  XObj (Lst (matchExpr : newExpr : concat newCasesXObjs)) i t
   else XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.

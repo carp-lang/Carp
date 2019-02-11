@@ -236,15 +236,12 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Match
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
-             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do visitedLhs <- visitSingleMatch env lhs
-                                                                     case visitedLhs of
-                                                                       Left e -> return (Left e)
-                                                                       Right okLhs ->
-                                                                         do env' <- extendEnvWithCaseMatch env okLhs
-                                                                            visitedRhs <- visit env' rhs
-                                                                            case visitedRhs of
-                                                                              Left e -> return (Left e)
-                                                                              Right okRhs -> return (Right (okLhs, okRhs)))
+             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do env' <- extendEnvWithCaseMatch env lhs
+                                                                     visitedLhs <- visit env' (wrapInParens lhs) -- Add parens if missing
+                                                                     visitedRhs <- visit env' rhs
+                                                                     return $ do okLhs <- visitedLhs
+                                                                                 okRhs <- visitedRhs
+                                                                                 return (okLhs, okRhs))
                                                   (pairwise cases)
              returnType <- genVarTy
              return $ do okExpr <- visitedExpr
@@ -336,22 +333,6 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
     visitList _ _ = error "Must match on list!"
 
-    -- | Visit the "left" part of a match case, i.e. (Just a)
-    visitSingleMatch :: Env -> XObj -> State Integer (Either TypeError XObj)
-    visitSingleMatch env (XObj (Lst (x@(XObj (Sym casePath _) _ _) : xs)) i t) =
-      do visitedXs <- mapM visitMatchElement xs
-         return (Right (XObj (Lst (x : visitedXs)) i t))
-      where visitMatchElement xobj@(XObj (Sym path _) _ _) =
-              do t <- genVarTy
-                 return (xobj { ty = Just t })
-            visitMatchTagElement x =
-              error ("Unhandled case in 'visitMatchTagElement': " ++ show x)
-    visitSingleMatch env xobj@(XObj (Sym _ _) i t) =
-      -- Rewrite single symbol to a list with the symbol as its one element (for convenience)
-      visitSingleMatch env (XObj (Lst [xobj]) i t)
-    visitSingleMatch env xobj@(XObj _ _ _) =
-      return (Left (CannotMatch xobj))
-
     extendEnvWithLetBindings :: Env -> [XObj] -> State Integer (Either TypeError Env)
     extendEnvWithLetBindings env xobjs =
       let pairs = pairwise xobjs
@@ -411,5 +392,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBinderForCaseVariable xobj =
           case obj xobj of
             (Sym (SymPath _ name) _) ->
-              return (name, Binder emptyMeta xobj)
+              do freshTy <- genVarTy
+                 return (name, Binder emptyMeta xobj { ty = Just freshTy })
             _ -> error "Can't create binder for non-symbol in 'case' variable match." -- | TODO: Should use proper error mechanism
+
+    extendEnvWithCaseMatch env _ =
+      return env -- TODO: Handle nesting!!!
