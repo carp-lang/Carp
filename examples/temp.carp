@@ -126,37 +126,58 @@
 ;;   (println* &(m (People.Two @"Eve" @"Adam")))
 ;;   )
 
-(deftype Commands
-  StandGround
-  Fire
-  Retreat)
+;; (deftype Commands
+;;   StandGround
+;;   Fire
+;;   Retreat)
 
-(deftype Elements
-  Water
-  Fire ;; <- name clash!
-  Earth
-  Air)
+;; (deftype Elements
+;;   Water
+;;   Fire ;; <- name clash!
+;;   Earth
+;;   Air)
 
-(use Commands)
-(use Elements)
+;; (use Commands)
+;; (use Elements)
 
-(defn f [] (Water))
+;; (defn f [] (Water))
 
-(defn figure-out-sumtype [x]
-  (match x
-    Fire (Water)
-    Air (Earth)))
+;; (defn figure-out-sumtype [x]
+;;   (match x
+;;     Fire (Water)
+;;     Air (Earth)))
+
+;; (use Maybe)
+
+;; (defn g [x]
+;;   (match x
+;;     (Just a) a
+;;     (Nothing) -1))
+
+;; (defn main []
+;;   (do
+;;     (println* &(Just false))
+;;     (println* &@&(Maybe.Just @"hello"))
+;;     (println* &(figure-out-sumtype (Elements.Fire)))
+;;     (println* (g (Just 123)))))
 
 (use Maybe)
 
-(defn g [x]
-  (match x
-    (Just a) a
-    (Nothing) -1))
+(defmodule Maybe
+
+  (defn nothing? [x]
+    (match x
+      (Nothing) true
+      (Just x)  false))
+
+  (defn = [a b]
+    (match a
+      (Nothing) (nothing? b)
+      (Just x) (match b
+                 (Nothing) false
+                 (Just y) (= x y))))
+
+  )
 
 (defn main []
-  (do
-    (println* &(Just false))
-    (println* &@&(Maybe.Just @"hello"))
-    (println* &(figure-out-sumtype (Elements.Fire)))
-    (println* (g (Just 123)))))
+  (println* (= (Just 10) (Nothing))))
