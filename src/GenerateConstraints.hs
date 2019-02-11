@@ -264,17 +264,23 @@ getCaseFromPath typeEnv (SymPath pathStrings caseName) =
               error ("Failed to find a sumtype named '" ++ show fullPath ++ "' in the type environment.")
 
 -- | Generate the constraints for the left hand side of a 'match' case (e.g. "(Just x)" or "(Maybe.Just x)")
+-- | If we don't know which sumtype to use, return no constraints.
+-- | TODO: The logic in this functions is kind of a mess, clean it up!
 genLhsConstraintsInCase :: TypeEnv -> Ty -> XObj -> [Constraint]
-genLhsConstraintsInCase typeEnv exprTy (XObj (Lst (x@(XObj (Sym symPath _) _ _) : xs)) _ _) =
+genLhsConstraintsInCase typeEnv exprTy (XObj (Lst ((XObj (Sym symPath _) _ _) : xs)) _ _) =
   let fullPath =
         case symPath of
           SymPath [] name ->
             case exprTy of
-              StructTy structName _ -> SymPath [structName] name
-              _ -> symPath
+              StructTy structName _ -> Just (SymPath [structName] name)
+              _ -> Nothing
           SymPath (x:xs) name ->
-            symPath -- Looks like it's a qualified path, so don't use the known type of the expression
-  in  genLhsConstraintsInCaseInternal typeEnv fullPath xs
+            Just symPath -- Looks like it's a qualified path, so don't use the known type of the expression
+  in  case fullPath of
+        Just p ->
+          genLhsConstraintsInCaseInternal typeEnv p xs
+        Nothing ->
+          []
 
 genLhsConstraintsInCaseInternal :: TypeEnv -> SymPath -> [XObj] -> [Constraint]
 genLhsConstraintsInCaseInternal typeEnv fullCasePath xs =
