@@ -1,0 +1,37 @@
+(load "Test.carp")
+(use-all Maybe Test)
+
+(deftest test
+  (assert-true test
+               (nothing? (Nothing))
+               "nothing? works on Nothing")
+  (assert-false test
+                (nothing? (Just 1))
+                "nothing? works on Just")
+  (assert-true test
+               (just? (Just 1))
+               "just? works on Just")
+  (assert-false test
+                (just? (Nothing))
+                "just? works on Nothing")
+  (assert-equal test
+                1
+                (from (Just 1) 0)
+                "from works on Just")
+  (assert-equal test
+                0
+                (from (Nothing) 0)
+                "from works on Nothing")
+  (assert-equal test
+                1
+                (unsafe-from (Just 1))
+                "unsafe-from works on Just")
+  (assert-equal test
+                2
+                (from (apply (Just 1) Int.inc) 0)
+                "apply works on Just")
+  (assert-equal test
+                0
+                (from (apply (Nothing) Int.inc) 0)
+                "apply works on Nothing")
+)

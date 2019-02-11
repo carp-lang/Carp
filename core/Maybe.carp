@@ -1,3 +1,37 @@
 (deftype (Maybe a)
   (Just [a])
   (Nothing []))
+
+(defmodule Maybe
+  (defn apply [a f]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) (Just (f x))))
+
+  (defn unsafe-from [a]
+    (match a
+      (Just x) x))
+
+  (defn from [a dflt]
+    (match a
+      (Nothing) dflt
+      (Just x) x))
+
+  (defn just? [a]
+    (match a
+      (Nothing) false
+      (Just x) true))
+
+  (defn nothing? [a]
+    (match a
+      (Nothing) true
+      (Just x) false))
+
+  ;(defn = [a b]
+  ;  (match a
+  ;    (Nothing) (nothing? b)
+  ;    (Just x)
+  ;      (match b
+  ;        (Nothing) false
+  ;        (Just y) (= x y))))
+)

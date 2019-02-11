@@ -215,10 +215,8 @@
 
   (defn zip [f a b]
     (if (= @(n a) @(n b))
-      (zip- f (v a) (v b))
-      (do
-        (IO.println "Error: vectors are of wrong dimensionality")
-        @a)))
+      (Maybe.Just (zip- f (v a) (v b)))
+      (Maybe.Nothing)))
 
   (defn = [a b]
     (and (Int.= @(n a) @(n b))
@@ -250,8 +248,7 @@
 
   (doc dist "Get the distance between the vectors a and b.")
   (defn dist [a b]
-    (let [s (sub b a)]
-      (mag &s)))
+    (Maybe.apply (sub b a) (fn [s] (mag &s))))
 
   (doc normalize "Normalize a vector.")
   (defn normalize [o]
@@ -262,27 +259,31 @@
 
   (doc dot "Get the dot product of the two vectors x and y.")
   (defn dot [x y]
-    (Array.reduce &(fn [x y] (+ x @y)) 0.0 (v &(zip * x y))))
+    (Maybe.apply (zip * x y)
+                 (fn [x] (Array.reduce &(fn [x y] (+ x @y)) 0.0 (v &x)))))
 
   (doc angle-between "Get the angle between to vectors a and b.")
   (defn angle-between [a b]
-    (let [dmm (/ (dot a b) (* (mag a) (mag b)))]
-      (Double.acos (Double.clamp -1.0 1.0 dmm))))
+    (Maybe.apply (dot a b)
+                 (fn [x]
+                    (let [dmm (/ x (* (mag a) (mag b)))]
+                      (Double.acos (Double.clamp -1.0 1.0 dmm))))))
 
   (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
-    (= (angle-between a b) Double.pi))
+    (Maybe.apply (angle-between a b) (fn [x] (= x Double.pi))))
 
   (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
-    (= (angle-between a b) 0.0))
+    (Maybe.apply (angle-between a b) (fn [x] (= x 0.0))))
 
   (doc perpendicular? "Check whether the two vectors a and b are perpendicular.")
   (defn perpendicular? [a b]
-    (= (angle-between a b) (/ Double.pi 2.0)))
+    (Maybe.apply (angle-between a b) (fn [x] (= x (/ Double.pi 2.0)))))
 
   (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
-    (init @(n a) @(v &(zip- * &(Array.replicate @(n a) &amnt)
-                              (v &(zip - b a))))))
+    (Maybe.apply (zip - b a)
+      (fn [x] (init @(n a) @(v &(zip- * &(Array.replicate @(n a) &amnt)
+                           (v &x)))))))
 )
