@@ -784,3 +784,7 @@ wrapInParens xobj@(XObj (Lst _) _ _) =
   xobj -- already in parens
 wrapInParens xobj@(XObj _ i t) =
   XObj (Lst [xobj]) i t
+
+isVarName :: String -> Bool
+isVarName (firstLetter:_) =
+  not (isUpper firstLetter)

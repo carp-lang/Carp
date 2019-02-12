@@ -289,36 +289,18 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst ((XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _) : caseMatchers)) caseLhsInfo _), caseExpr) =
-                    if isUpper firstLetter
-                    then do appendToSrc (addIndent indent)
-                            when (not isFirst) (appendToSrc "else ")
-                            appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {\n")
-                            appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
-                                         tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                            zipWithM (emitCaseMatcher caseName) caseMatchers [0..]
-                            caseExprRetVal <- visit indent' caseExpr
-                            when isNotVoid $
-                              appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                            let Just caseLhsInfo' = caseLhsInfo
-                            delete indent' caseLhsInfo'
-                            appendToSrc (addIndent indent ++ "}\n")
-                    -- The following ALWAYS matches since it's a single variable
-                    -- i.e. (match x
-                    --         a 12345)
-                    -- TODO: Remove duplication
-                    else do appendToSrc (addIndent indent)
-                            appendToSrc ("if(true) {\n")
-                            appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
-                                         tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                            appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ pathToC firstPath ++ " = " ++ exprVar ++ ";\n") -- Store the whole expr in a variable
-                            zipWithM (emitCaseMatcher caseName) caseMatchers [1..]
-                            caseExprRetVal <- visit indent' caseExpr
-                            when isNotVoid $
-                              appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                            let Just caseLhsInfo' = caseLhsInfo
-                            delete indent' caseLhsInfo'
-                            appendToSrc (addIndent indent ++ "}\n")
-
+                    do appendToSrc (addIndent indent)
+                       when (not isFirst) (appendToSrc "else ")
+                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
+                       zipWithM (emitCaseMatcher caseName) caseMatchers [0..]
+                       caseExprRetVal <- visit indent' caseExpr
+                       when isNotVoid $
+                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
+                       let Just caseLhsInfo' = caseLhsInfo
+                       delete indent' caseLhsInfo'
+                       appendToSrc (addIndent indent ++ "}\n")
                   emitCase exprVar isFirst ((XObj (Sym firstPath@(SymPath _ caseName) _) caseLhsInfo _), caseExpr) =
                     do appendToSrc (addIndent indent)
                        appendToSrc ("if(true) {\n")

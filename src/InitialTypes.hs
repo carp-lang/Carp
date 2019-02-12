@@ -403,13 +403,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             x -> error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
 
         createBinderInternal :: XObj -> String -> State Integer (Maybe (String, Binder))
-        createBinderInternal xobj name@(firstLetter : _) =
-          if isUpper firstLetter
-          -- Uppercase names are tags for the sumtypes (at least they should be...) so they won't bind to anything
-          then return Nothing
-          -- It's a lowercase variable that will bind to something:
-          else do freshTy <- genVarTy
+        createBinderInternal xobj name =
+          if isVarName name
+          -- A variable that will bind to something:
+          then do freshTy <- genVarTy
                   return (Just (name, Binder emptyMeta xobj { ty = Just freshTy }))
+          -- Tags for the sumtypes won't bind to anything:
+          else return Nothing
     extendEnvWithCaseMatch env xobj@(XObj (Sym (SymPath _ name) _) _ _) =
       do freshTy <- genVarTy
          return Env { envBindings = Map.fromList [(name, Binder emptyMeta xobj { ty = Just freshTy })]
@@ -434,8 +434,8 @@ uniquifyWildcardNames x =
   x
 
 wrapInParensIfNotSingleVar :: XObj -> XObj
-wrapInParensIfNotSingleVar xobj@(XObj (Sym (SymPath _ (firstLetter:_)) _) _ _)
-  | isLower firstLetter = xobj -- DON'T WRAP!
+wrapInParensIfNotSingleVar xobj@(XObj (Sym (SymPath _ name) _) _ _)
+  | isVarName name = xobj -- DON'T WRAP!
   | otherwise = wrapInParens xobj
 wrapInParensIfNotSingleVar xobj =
   wrapInParens xobj
