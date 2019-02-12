@@ -161,23 +161,23 @@
 ;;     (println* &(figure-out-sumtype (Elements.Fire)))
 ;;     (println* (g (Just 123)))))
 
-(use Maybe)
+;; (use Maybe)
 
-(defmodule Maybe
+;; (defmodule Maybe
 
-  (defn nothing? [x]
-    (match x
-      (Nothing) true
-      (Just x)  false))
+;;   (defn nothing? [x]
+;;     (match x
+;;       (Nothing) true
+;;       (Just x)  false))
 
-  (defn = [a b]
-    (match a
-      (Nothing) (nothing? b)
-      (Just x) (match b
-                 (Nothing) false
-                 (Just y) (= x y))))
+;;   (defn = [a b]
+;;     (match a
+;;       (Nothing) (nothing? b)
+;;       (Just x) (match b
+;;                  (Nothing) false
+;;                  (Just y) (= x y))))
 
-  )
+;;   )
 
-(defn main []
-  (println* (= (Just 10) (Nothing))))
+;; (defn main []
+;;   (println* (= (Just 10) (Nothing))))

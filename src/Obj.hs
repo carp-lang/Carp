@@ -785,6 +785,7 @@ wrapInParens xobj@(XObj (Lst _) _ _) =
 wrapInParens xobj@(XObj _ i t) =
   XObj (Lst [xobj]) i t
 
+-- | Is this symbol name appropriate for a normal variable (i.e. NOT a type name or sumtype tag)
 isVarName :: String -> Bool
 isVarName (firstLetter:_) =
-  not (isUpper firstLetter)
+  not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars

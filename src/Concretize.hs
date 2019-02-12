@@ -6,7 +6,6 @@ import Data.Maybe (fromMaybe, fromJust)
 import qualified Data.Set as Set
 import Data.Set ((\\))
 import Data.List (foldl')
-import Data.Char (isUpper, isLower)
 import Debug.Trace
 
 import Obj

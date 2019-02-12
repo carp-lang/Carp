@@ -13,7 +13,6 @@ import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Char (isUpper)
 import Data.Maybe (fromMaybe)
 import Debug.Trace
 

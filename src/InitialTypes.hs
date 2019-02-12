@@ -2,7 +2,6 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.Char (isUpper, isLower)
 import Data.Maybe (catMaybes)
 import Debug.Trace
 
