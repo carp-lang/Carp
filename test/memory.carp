@@ -413,6 +413,25 @@
           (Maybe.Just x) x
           (Maybe.Nothing) @"Nope")))))
 
+(deftype Name
+  (Simple [String String])
+  (Fancy [String String String]))
+
+(defn sumtype-6 []
+  (let [m (Name.Simple @"Mrs" @"Robinson")]
+    (assert
+     (= 1
+        (match m
+          (Name.Simple _ _) 1
+          (Name.Fancy _ _ _) 2)))))
+
+(defn sumtype-7 []
+  (let [m (Name.Fancy @"Mr" @"von" @"Plutt")]
+    (assert
+     (= 1
+        (match m
+          _ 1)))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -478,4 +497,6 @@
   (assert-no-leak test sumtype-3 "sumtype-3 does not leak")
   (assert-no-leak test sumtype-4 "sumtype-4 does not leak")
   (assert-no-leak test sumtype-5 "sumtype-5 does not leak")
+  (assert-no-leak test sumtype-6 "sumtype-6 does not leak")
+  (assert-no-leak test sumtype-7 "sumtype-7 does not leak")
   )

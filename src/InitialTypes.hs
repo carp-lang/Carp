@@ -237,7 +237,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Match
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
-             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do let lhs' = (uniquifyWildcardNames (wrapInParensIfNotSingleVar lhs)) -- Add parens if missing
+             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do let lhs' = (uniquifyWildcardNames (helpWithParens lhs)) -- Add parens if missing
                                                                      env' <- extendEnvWithCaseMatch env lhs'
                                                                      visitedLhs <- visit env' lhs'
                                                                      visitedRhs <- visit env' rhs
@@ -432,9 +432,13 @@ uniquifyWildcardNames (XObj (Arr xobjs) i t) =
 uniquifyWildcardNames x =
   x
 
-wrapInParensIfNotSingleVar :: XObj -> XObj
-wrapInParensIfNotSingleVar xobj@(XObj (Sym (SymPath _ name) _) _ _)
-  | isVarName name = xobj -- DON'T WRAP!
+-- | Help our programmer friend using Carp to add/remove parens around the lhs of a match
+helpWithParens :: XObj -> XObj
+helpWithParens xobj@(XObj (Sym (SymPath _ name) _) _ _)
+  | isVarName name = xobj -- Don't wrap
   | otherwise = wrapInParens xobj
-wrapInParensIfNotSingleVar xobj =
+helpWithParens outer@(XObj (Lst [inner@(XObj (Sym (SymPath _ name) _) _ _)]) _ _)
+  | isVarName name = inner -- Unwrap
+  | otherwise = outer -- Keep wrapped
+helpWithParens xobj =
   wrapInParens xobj

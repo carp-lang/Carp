@@ -307,7 +307,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        appendToSrc ("if(true) {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ pathToC firstPath ++ " = " ++ exprVar ++ ";\n") -- Store the whole expr in a variable
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")

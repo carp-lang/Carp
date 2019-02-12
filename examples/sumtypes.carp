@@ -50,7 +50,7 @@
 (defn wildcard [x]
   (match x
     Nothing @"No"
-    _ @"Yes" ;; TODO: Allow underscore here!!!
+    _ @"Yes"
     ))
 
 (deftype Name
