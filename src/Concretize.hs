@@ -959,11 +959,11 @@ manageMemory typeEnv globalEnv root =
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
         visitCaseLhs (XObj (Lst vars) _ _) =
           case vars of
-            [xobj@(XObj (Sym (SymPath _ (firstLetter:_)) _) _ _)] | isVarName firstLetter ->
-                                                                      return (Right [])
-                                                                  | otherwise ->
-                                                                      do manage xobj
-                                                                         return (Right [])
+            [xobj@(XObj (Sym (SymPath _ name) _) _ _)] | isVarName name ->
+                                                           do manage xobj
+                                                              return (Right [])
+                                                       | otherwise ->
+                                                           return (Right [])
             _ -> visitVars
             where visitVars =
                     do results <- mapM (\var ->

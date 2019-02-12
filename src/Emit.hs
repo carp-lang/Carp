@@ -289,6 +289,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst ((XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _) : caseMatchers)) caseLhsInfo _), caseExpr) =
+                    -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        when (not isFirst) (appendToSrc "else ")
                        appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {\n")
@@ -302,6 +303,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                        delete indent' caseLhsInfo'
                        appendToSrc (addIndent indent ++ "}\n")
                   emitCase exprVar isFirst ((XObj (Sym firstPath@(SymPath _ caseName) _) caseLhsInfo _), caseExpr) =
+                    -- Single variable
                     do appendToSrc (addIndent indent)
                        appendToSrc ("if(true) {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
