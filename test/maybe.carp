@@ -3,16 +3,16 @@
 
 (deftest test
   (assert-true test
-               (nothing? (the (Maybe Int) (Nothing)))
+               (nothing? &(the (Maybe Int) (Nothing)))
                "nothing? works on Nothing")
   (assert-false test
-                (nothing? (Just 1))
+                (nothing? &(Just 1))
                 "nothing? works on Just")
   (assert-true test
-               (just? (Just 1))
+               (just? &(Just 1))
                "just? works on Just")
   (assert-false test
-                (just? (the (Maybe Int) (Nothing)))
+                (just? &(the (Maybe Int) (Nothing)))
                 "just? works on Nothing")
   (assert-equal test
                 1
