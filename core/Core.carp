@@ -1,6 +1,7 @@
 (load "Interfaces.carp")
 (load "Macros.carp")
 (load "Maybe.carp")
+(load "Result.carp")
 (load "Dynamic.carp")
 (load "Format.carp")
 (load "Int.carp")
