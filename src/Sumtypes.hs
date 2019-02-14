@@ -95,7 +95,7 @@ tokensForCaseInit allocationMode sumTy@(StructTy typeName typeVariables) sumtype
                        , "    instance._tag = " ++ tagName sumTy correctedName ++ ";"
                        , "    return instance;"
                        , "}"]
-  where correctedName = tyToCLambdaFix (StructTy (caseName sumtypeCase) typeVariables)
+  where correctedName = caseName sumtypeCase
 
 caseMemberAssignment :: AllocationMode -> String -> (String, Ty) -> String
 caseMemberAssignment allocationMode caseName (memberName, _) =
@@ -169,12 +169,12 @@ strCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
 strCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
   let name = caseName theCase
       tys  = caseTys  theCase
-      correctedTagName = tagName concreteStructTy (tyToCLambdaFix (StructTy name typeVariables))
+      correctedTagName = tagName concreteStructTy name
   in unlines $
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
      , "    snprintf(bufferPtr, size, \"(%s \", \"" ++ name ++ "\");"
      , "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n"
-     , joinWith "\n" (map (memberPrn typeEnv env) (zip (map (\anon -> tyToCLambdaFix (StructTy name typeVariables) ++ "." ++ anon)
+     , joinWith "\n" (map (memberPrn typeEnv env) (zip (map (\anon -> name ++ "." ++ anon)
                                                        anonMemberNames) tys))
      , "    bufferPtr--;"
      , "    snprintf(bufferPtr, size, \")\");"
@@ -191,13 +191,13 @@ strSizeCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
 strSizeCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
   let name = caseName theCase
       tys  = caseTys  theCase
-      correctedTagName = tagName concreteStructTy (tyToCLambdaFix (StructTy name typeVariables))
+      correctedTagName = tagName concreteStructTy name
   in unlines $
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
      , "    size = snprintf(NULL, size, \"(%s \", \"" ++ name ++ "\");"
      , joinWith "\n" (map
                       (memberPrnSize typeEnv env)
-                      (zip (map (\anon -> (tyToCLambdaFix (StructTy name typeVariables)) ++ "." ++ anon) anonMemberNames)
+                      (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames)
                            tys))
      , "  }"
      ]
@@ -251,10 +251,10 @@ deleteCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
 deleteCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isFirstCase) =
   let name = caseName theCase
       tys  = caseTys  theCase
-      correctedTagName = tagName concreteStructTy (tyToCLambdaFix (StructTy name typeVariables))
+      correctedTagName = tagName concreteStructTy name
   in unlines $
      [ "  " ++ (if isFirstCase then "" else "else ") ++ "if(p._tag == " ++ correctedTagName ++ ") {"
-     , joinWith "\n" (map (memberDeletion typeEnv env) (zip (map (\anon -> tyToCLambdaFix (StructTy name typeVariables) ++ "." ++ anon)
+     , joinWith "\n" (map (memberDeletion typeEnv env) (zip (map (\anon -> name ++ "." ++ anon)
                                                                  anonMemberNames) tys))
      , "  }"
      ]
@@ -312,9 +312,9 @@ copyCase :: TypeEnv -> Env -> Ty -> (SumtypeCase, Bool) -> String
 copyCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isFirstCase) =
   let name = caseName theCase
       tys  = caseTys  theCase
-      correctedTagName = tagName concreteStructTy (tyToCLambdaFix (StructTy name typeVariables))
+      correctedTagName = tagName concreteStructTy name
   in unlines $
      [ "    " ++ (if isFirstCase then "" else "else ") ++ "if(pRef->_tag == " ++ correctedTagName ++ ") {"
-     , joinWith "\n" (map (memberCopy typeEnv env) (zip (map (\anon -> tyToCLambdaFix (StructTy name typeVariables) ++ "." ++ anon) anonMemberNames) tys))
+     , joinWith "\n" (map (memberCopy typeEnv env) (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames) tys))
      , "    }"
      ]
