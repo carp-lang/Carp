@@ -291,17 +291,20 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        when (not isFirst) (appendToSrc "else ")
-                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy caseName ++ ") {\n")
+                       -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
+                       -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
+                       -- This requires a bunch of extra machinery though, so this will do for now...
+                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy (removeSuffix caseName) ++ ") {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       zipWithM (emitCaseMatcher caseName) caseMatchers [0..]
+                       zipWithM (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
                        let Just caseLhsInfo' = caseLhsInfo
                        delete indent' caseLhsInfo'
                        appendToSrc (addIndent indent ++ "}\n")
-                  emitCase exprVar isFirst ((XObj (Sym firstPath@(SymPath _ caseName) _) caseLhsInfo _), caseExpr) =
+                  emitCase exprVar isFirst ((XObj (Sym firstPath _) caseLhsInfo _), caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
                        appendToSrc ("if(true) {\n")
@@ -632,24 +635,20 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
                  --appendToSrc ("// " ++ show typeVariables ++ "\n")
                  mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
 
-      -- Make the "tag" names match the sumtype initialiser function names (for generic types)
-      correctify name =
-        tyToCLambdaFix (StructTy name typeVariables)
-
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
       emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
            mapM (memberToDecl (indent + indentAmount)) members
-           appendToSrc (addIndent indent ++ "} " ++ correctify caseName ++ ";\n")
+           appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
       emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
-        appendToSrc (addIndent indent ++ "// " ++ correctify caseName ++ "\n")
+        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
 
       emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
       emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), _]) _ _)) =
-        appendToSrc ("#define " ++ tagName sumTy (correctify caseName) ++ " " ++ show tagIndex ++ "\n")
+        appendToSrc ("#define " ++ tagName sumTy (caseName) ++ " " ++ show tagIndex ++ "\n")
       emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Sym (SymPath [] caseName) _) _ _)) =
-        appendToSrc ("#define " ++ tagName sumTy (correctify caseName) ++ " " ++ show tagIndex ++ "\n")
+        appendToSrc ("#define " ++ tagName sumTy (caseName) ++ " " ++ show tagIndex ++ "\n")
 
   in if isTypeGeneric sumTy
      then ""
@@ -815,3 +814,9 @@ isNumericLiteral (XObj (Num _ _) _ _) = True
 isNumericLiteral (XObj (Bol _) _ _) = True
 isNumericLiteral (XObj (Chr _) _ _) = True
 isNumericLiteral _ = False
+
+removeSuffix :: String -> String
+removeSuffix [] = []
+removeSuffix [c] = [c]
+removeSuffix ('_' : '_' : cs) = []
+removeSuffix (c:cs) = c : (removeSuffix cs)
