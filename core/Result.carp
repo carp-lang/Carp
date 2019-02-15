@@ -3,79 +3,93 @@
   (Error [b]))
 
 (defmodule Result
+  (doc apply "takes a `Result` `a` and applies functions to them, one in the case that it is an `Error`, one in the case that it is a `Success`.")
   (defn apply [a success-f error-f]
     (match a
-      (Success x) (success-f x)
-      (Error x) (error-f x)))
+      (Success x) (Success (success-f x))
+      (Error x) (Error (error-f x))))
 
+  (doc map "takes a `Result` and applies a function `f` to it if it is a `Success` type, and wraps it back up. In the case that it is an `Error`, it is returned as is.")
   (defn map [a f]
     (match a
       (Success x) (Success (f x))
       (Error x) (Error x)))
 
+  (doc and-then "takes a `Result` and applies a function `f` to it if it is a `Success` type. In the case that it is an `Error`, it is returned as is.
+
+It is thus quite similar to [`map`](#map), but it will unwrap the value.")
   (defn and-then [a f]
     (match a
       (Success x) (f x)
       (Error x) (Error x)))
 
+  (doc unwrap-or-zero "takes a `Result` and either unwraps it if it is a `Success`, or calls `zero`. `zero` must be defined on the `Success` type.")
   (defn unwrap-or-zero [a]
     (match a
       (Success x) x
       (Error _) (zero)))
 
-  ;(defn and [a b]
-  ;  (match a
-  ;    (Success _) b
-  ;    (Error x) (Error x)))
+  (doc or-else "takes a `Result` and applies a function `f` to it if it is an `Error` type. In the case that it is a `Success`, it is returned as is.
 
-  ;(defn or [a b]
-  ;  (match a
-  ;    (Success x) (Success x)
-  ;    (Error _) b))
-
+It is the inverse of [`and-then`](#and-then).")
   (defn or-else [a f]
     (match a
       (Success x) (Success x)
       (Error x) (f x)))
 
+  (doc unwrap-or-else "takes a `Result` and either unwraps it if it is a `Success`, or calls a function `f` on the value contained in the `Error`.")
   (defn unwrap-or-else [a f]
     (match a
       (Success x) x
       (Error x) (f x)))
 
+  (doc unsafe-from-success "is an unsafe unwrapper that will get the value from a `Success`. If `a` is an `Error`, a runtime error will be generated.")
   (defn unsafe-from-success [a]
     (match a
       (Success x) x))
 
+  (doc from-success "is an unwrapper that will get the value from a `Success`. If `a` is an `Error`, a default value will be returned.")
   (defn from-success [a dflt]
     (match a
       (Error _) dflt
       (Success x) x))
 
+  (doc unsafe-from-error "is an unsafe unwrapper that will get the value from an `Error`. If `a` is a `Success`, a runtime error will be generated.")
   (defn unsafe-from-error [a]
     (match a
       (Error x) x))
 
+  (doc from-error "is an unwrapper that will get the value from an `Error`. If `a` is a `Success`, a default value will be returned.")
   (defn from-error [a dflt]
     (match a
       (Success _) dflt
       (Error x) x))
 
+  (doc to-maybe "is a function that will convert a `Result` to a `Maybe`, where a `Success` becomes a `Just` and an `Error` becomes a `Nothing`.
+
+The error value is thrown away.")
   (defn to-maybe [a]
     (match a
       (Success x) (Maybe.Just x)
       (Error _) (Maybe.Nothing)))
 
+  (doc success? "checks whether the given value `a` is a `Success`.
+
+It is the inverse of [`error?`](#error?).")
   (defn success? [a]
     (match @a
       (Error _) false
       (Success _) true))
 
+  (doc success? "checks whether the given value `a` is an `Error`.
+
+It is the inverse of [`success?`](#success?).")
   (defn error? [a]
     (match @a
       (Error _) true
       (Success _) false))
 
+  (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Success 1)` and `(Success 1)` are the same, but `(Success 1)` and `(Success 2)` are not.")
   (defn = [a b]
     (match @a
       (Success x)
@@ -86,4 +100,14 @@
         (match @b
           (Success _) false
           (Error y) (= x y))))
+)
+
+(defmodule Maybe
+  (doc to-result "is a function that will convert a `Maybe` to a `Result`, where a `Just` becomes a `Success` and a `Nothing` becomes an `Error`.
+
+You’ll also nee to provide an error message `error` that is given to the `Error` constructor if necessary.")
+  (defn to-result [a error]
+    (match a
+      (Nothing) (Result.Error error)
+      (Just x) (Result.Success x)))
 )

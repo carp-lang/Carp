@@ -136,19 +136,39 @@
                 </div>
             </div>
             <h1>
-                System
+                Result
             </h1>
             <div class="binder">
-                <a class="anchor" href="#exit">
-                    <h3 id="exit">
-                        exit
+                <a class="anchor" href="#=">
+                    <h3 id="=">
+                        =
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Result a b)), (Ref (Result a b))] Bool)
+                </p>
+                <pre class="args">
+                    (= a b)
+                </pre>
+                <p class="doc">
+                    <p>equality is defined as the equality of both the constructor and the contained value, i.e. <code>(Success 1)</code> and <code>(Success 1)</code> are the same, but <code>(Success 1)</code> and <code>(Success 2)</code> are not.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#Error">
+                    <h3 id="Error">
+                        Error
                     </h3>
                 </a>
                 <div class="description">
                     template
                 </div>
                 <p class="sig">
-                    (λ [Int] a)
+                    (λ [b] (Result a b))
                 </p>
                 <span>
                     
@@ -158,16 +178,16 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#fork">
-                    <h3 id="fork">
-                        fork
+                <a class="anchor" href="#Success">
+                    <h3 id="Success">
+                        Success
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (λ [] Int)
+                    (λ [a] (Result a b))
                 </p>
                 <span>
                     
@@ -177,56 +197,57 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#free">
-                    <h3 id="free">
-                        free
+                <a class="anchor" href="#and-then">
+                    <h3 id="and-then">
+                        and-then
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [t] ())
+                    (λ [(Result a b), (λ [a] (Result c b))] (Result c b))
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (and-then a f)
+                </pre>
                 <p class="doc">
-                    <p>Frees an object. Should not be called except in direst circumstances.</p>
+                    <p>takes a <code>Result</code> and applies a function <code>f</code> to it if it is a <code>Success</code> type. In the case that it is an <code>Error</code>, it is returned as is.</p>
+<p>It is thus quite similar to <a href="#map"><code>map</code></a>, but it will unwrap the value.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#get-arg">
-                    <h3 id="get-arg">
-                        get-arg
+                <a class="anchor" href="#apply">
+                    <h3 id="apply">
+                        apply
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [Int] &amp;String)
+                    (λ [(Result a b), (λ [a] c), (λ [b] d)] (Result c d))
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (apply a success-f error-f)
+                </pre>
                 <p class="doc">
-                    <p>Gets the number of command line arguments.</p>
+                    <p>takes a <code>Result</code> <code>a</code> and applies functions to them, one in the case that it is an <code>Error</code>, one in the case that it is a <code>Success</code>.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#get-args-len">
-                    <h3 id="get-args-len">
-                        get-args-len
+                <a class="anchor" href="#copy">
+                    <h3 id="copy">
+                        copy
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (λ [] Int)
+                    (λ [(Ref (Result a b))] (Result a b))
                 </p>
                 <span>
                     
@@ -236,16 +257,16 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#get-exit-status">
-                    <h3 id="get-exit-status">
-                        get-exit-status
+                <a class="anchor" href="#delete">
+                    <h3 id="delete">
+                        delete
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (λ [Int] Int)
+                    (λ [(Result a b)] ())
                 </p>
                 <span>
                     
@@ -255,254 +276,263 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#nanotime">
-                    <h3 id="nanotime">
-                        nanotime
+                <a class="anchor" href="#error?">
+                    <h3 id="error?">
+                        error?
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [] Long)
+                    (λ [(Ref (Result a b))] Bool)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (error? a)
+                </pre>
                 <p class="doc">
-                    <p>Gets the current system time in nanoseconds as a long.</p>
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#from-error">
+                    <h3 id="from-error">
+                        from-error
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b), b] b)
+                </p>
+                <pre class="args">
+                    (from-error a dflt)
+                </pre>
+                <p class="doc">
+                    <p>is an unwrapper that will get the value from an <code>Error</code>. If <code>a</code> is a <code>Success</code>, a default value will be returned.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#signal">
-                    <h3 id="signal">
-                        signal
+                <a class="anchor" href="#from-success">
+                    <h3 id="from-success">
+                        from-success
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [Int, (λ [Int] ())] ())
+                    (λ [(Result a b), a] a)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (from-success a dflt)
+                </pre>
                 <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-abort">
-                    <h3 id="signal-abort">
-                        signal-abort
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-fpe">
-                    <h3 id="signal-fpe">
-                        signal-fpe
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-ill">
-                    <h3 id="signal-ill">
-                        signal-ill
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-int">
-                    <h3 id="signal-int">
-                        signal-int
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-segv">
-                    <h3 id="signal-segv">
-                        signal-segv
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#signal-term">
-                    <h3 id="signal-term">
-                        signal-term
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    Int
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#sleep-micros">
-                    <h3 id="sleep-micros">
-                        sleep-micros
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (λ [Int] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#sleep-seconds">
-                    <h3 id="sleep-seconds">
-                        sleep-seconds
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (λ [Int] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>Sleeps for a specified number of microseconds.</p>
+                    <p>is an unwrapper that will get the value from a <code>Success</code>. If <code>a</code> is an <code>Error</code>, a default value will be returned.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#system">
-                    <h3 id="system">
-                        system
+                <a class="anchor" href="#map">
+                    <h3 id="map">
+                        map
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Result a b), (λ [a] c)] (Result c b))
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (map a f)
+                </pre>
                 <p class="doc">
-                    <p>Performs a system command.</p>
+                    <p>takes a <code>Result</code> and applies a function <code>f</code> to it if it is a <code>Success</code> type, and wraps it back up. In the case that it is an <code>Error</code>, it is returned as is.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#time">
-                    <h3 id="time">
-                        time
+                <a class="anchor" href="#or-else">
+                    <h3 id="or-else">
+                        or-else
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [] Int)
+                    (λ [(Result a b), (λ [b] (Result a c))] (Result a c))
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (or-else a f)
+                </pre>
                 <p class="doc">
-                    <p>Gets the current system time as an integer.</p>
+                    <p>takes a <code>Result</code> and applies a function <code>f</code> to it if it is an <code>Error</code> type. In the case that it is a <code>Success</code>, it is returned as is.</p>
+<p>It is the inverse of <a href="#and-then"><code>and-then</code></a>.</p>
 
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#wait">
-                    <h3 id="wait">
-                        wait
+                <a class="anchor" href="#prn">
+                    <h3 id="prn">
+                        prn
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr Int)] Int)
+                    (λ [(Ref (Result a b))] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#str">
+                    <h3 id="str">
+                        str
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Result a b))] String)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#success?">
+                    <h3 id="success?">
+                        success?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Result a b))] Bool)
+                </p>
+                <pre class="args">
+                    (success? a)
+                </pre>
+                <p class="doc">
+                    <p>checks whether the given value <code>a</code> is an <code>Error</code>.</p>
+<p>It is the inverse of <a href="#success?"><code>success?</code></a>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#to-maybe">
+                    <h3 id="to-maybe">
+                        to-maybe
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (to-maybe a)
+                </pre>
+                <p class="doc">
+                    <p>is a function that will convert a <code>Result</code> to a <code>Maybe</code>, where a <code>Success</code> becomes a <code>Just</code> and an <code>Error</code> becomes a <code>Nothing</code>.</p>
+<p>The error value is thrown away.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-from-error">
+                    <h3 id="unsafe-from-error">
+                        unsafe-from-error
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b)] b)
+                </p>
+                <pre class="args">
+                    (unsafe-from-error a)
+                </pre>
+                <p class="doc">
+                    <p>is an unsafe unwrapper that will get the value from an <code>Error</code>. If <code>a</code> is a <code>Success</code>, a runtime error will be generated.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-from-success">
+                    <h3 id="unsafe-from-success">
+                        unsafe-from-success
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b)] a)
+                </p>
+                <pre class="args">
+                    (unsafe-from-success a)
+                </pre>
+                <p class="doc">
+                    <p>is an unsafe unwrapper that will get the value from a <code>Success</code>. If <code>a</code> is an <code>Error</code>, a runtime error will be generated.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unwrap-or-else">
+                    <h3 id="unwrap-or-else">
+                        unwrap-or-else
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b), (λ [b] a)] a)
+                </p>
+                <pre class="args">
+                    (unwrap-or-else a f)
+                </pre>
+                <p class="doc">
+                    <p>takes a <code>Result</code> and either unwraps it if it is a <code>Success</code>, or calls a function <code>f</code> on the value contained in the <code>Error</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unwrap-or-zero">
+                    <h3 id="unwrap-or-zero">
+                        unwrap-or-zero
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b)] a)
+                </p>
+                <pre class="args">
+                    (unwrap-or-zero a)
+                </pre>
+                <p class="doc">
+                    <p>takes a <code>Result</code> and either unwraps it if it is a <code>Success</code>, or calls <code>zero</code>. <code>zero</code> must be defined on the <code>Success</code> type.</p>
+
                 </p>
             </div>
         </div>

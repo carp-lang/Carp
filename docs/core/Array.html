@@ -122,6 +122,16 @@
                                 Map
                             </a>
                         </li>
+                        <li>
+                            <a href="Maybe.html">
+                                Maybe
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Result.html">
+                                Result
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -163,7 +173,7 @@
                     (= a b)
                 </pre>
                 <p class="doc">
-                    <p>Compare two arrays.</p>
+                    <p>compares two arrays and inverts the result.</p>
 
                 </p>
             </div>
@@ -183,7 +193,7 @@
                     (all? f a)
                 </pre>
                 <p class="doc">
-                    <p>Checks whether all of the elements in <code>a</code> match the function <code>f</code>.</p>
+                    <p>checks whether all of the elements in <code>a</code> match the function <code>f</code>.</p>
 
                 </p>
             </div>
@@ -222,7 +232,7 @@
                     (any? f a)
                 </pre>
                 <p class="doc">
-                    <p>Checks whether any of the elements in <code>a</code> match the function <code>f</code>.</p>
+                    <p>checks whether any of the elements in <code>a</code> match the function <code>f</code>.</p>
 
                 </p>
             </div>
@@ -299,7 +309,7 @@
                     (aupdate a i f)
                 </pre>
                 <p class="doc">
-                    <p>Transmute the element at index i of array a using function f.</p>
+                    <p>transmutes (i.e. updates) the element at index <code>i</code> of an array <code>a</code> using the function <code>f</code>.</p>
 
                 </p>
             </div>
@@ -319,7 +329,7 @@
                     (aupdate! a i f)
                 </pre>
                 <p class="doc">
-                    <p>Transmute the element at index i of array a using function f in place.</p>
+                    <p>transmutes (i.e. updates) the element at index <code>i</code> of an array <code>a</code> using the function <code>f</code> in place.</p>
 
                 </p>
             </div>
@@ -339,7 +349,7 @@
                     (concat xs)
                 </pre>
                 <p class="doc">
-                    <p>Returns a new Array which is the concatenation of the provided <code>xs</code>.</p>
+                    <p>returns a new array which is the concatenation of the provided nested array <code>xs</code>.</p>
 
                 </p>
             </div>
@@ -378,7 +388,8 @@
                     (copy-filter f a)
                 </pre>
                 <p class="doc">
-                    <p>Filter elements in an array, creates a copy.</p>
+                    <p>filters the elements in an array.</p>
+<p>It will create a copy. If you want to avoid that, consider using <a href="#endo-filter"><code>endo-filter</code></a> instead.</p>
 
                 </p>
             </div>
@@ -398,7 +409,8 @@
                     (copy-map f a)
                 </pre>
                 <p class="doc">
-                    <p>Map over array a using function f (copies the array).</p>
+                    <p>maps over an array <code>a</code> using the function <code>f</code>.</p>
+<p>This function copies the array. If you don’t want that, use <a href="#endo-map"><code>endo-map</code></a>.</p>
 
                 </p>
             </div>
@@ -437,7 +449,7 @@
                     (element-count a e)
                 </pre>
                 <p class="doc">
-                    <p>Count occurrences of element e in an array.</p>
+                    <p>counts the occurrences of element <code>e</code> in an array.</p>
 
                 </p>
             </div>
@@ -457,7 +469,7 @@
                     (empty? a)
                 </pre>
                 <p class="doc">
-                    <p>Checks whether the array is empty.</p>
+                    <p>checks whether the array <code>a</code> is empty.</p>
 
                 </p>
             </div>
@@ -515,7 +527,7 @@
                     (enumerated xs)
                 </pre>
                 <p class="doc">
-                    <p>Create a new array of Pair:s where the first position is the index and the second position is the element from the original array.</p>
+                    <p>creates a new array of <code>Pair</code>s where the first position is the index and the second position is the element from the original array <code>xs</code>.</p>
 
                 </p>
             </div>
@@ -535,7 +547,7 @@
                     (find f a)
                 </pre>
                 <p class="doc">
-                    <p>Finds an element in <code>a</code> that matches the function <code>f</code>.</p>
+                    <p>finds an element in <code>a</code> that matches the function <code>f</code>.</p>
 
                 </p>
             </div>
@@ -549,13 +561,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Int)
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] (Maybe Int))
                 </p>
                 <pre class="args">
                     (find-index f a)
                 </pre>
                 <p class="doc">
-                    <p>Finds the index of the first element in <code>a</code> that matches the function <code>f</code>, or -1.</p>
+                    <p>finds the index of the first element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an index, <code>Nothing</code> will be returned.</p>
 
                 </p>
             </div>
@@ -569,13 +582,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a))] (Maybe a))
                 </p>
                 <pre class="args">
                     (first a)
                 </pre>
                 <p class="doc">
-                    <p>Take the first element of an array.</p>
+                    <p>takes the first element of an array and returns a <code>Just</code>.</p>
+<p>Returns <code>Nothing</code> if the array is empty.</p>
 
                 </p>
             </div>
@@ -595,7 +609,7 @@
                     (index-of a e)
                 </pre>
                 <p class="doc">
-                    <p>Get the index of element e in an array.</p>
+                    <p>gets the index of element <code>e</code> in an array.</p>
 
                 </p>
             </div>
@@ -609,13 +623,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a))] (Maybe a))
                 </p>
                 <pre class="args">
                     (last a)
                 </pre>
                 <p class="doc">
-                    <p>Take the last element of an array.</p>
+                    <p>takes the last element of an array and returns a <code>Just</code>.</p>
+<p>Returns <code>Nothing</code> if the array is empty.</p>
 
                 </p>
             </div>
@@ -654,7 +669,7 @@
                     (maximum xs)
                 </pre>
                 <p class="doc">
-                    <p>Get the maximum in an array (elements must support &lt;).</p>
+                    <p>gets the maximum in an array (elements must support <code>&lt;</code>).</p>
 
                 </p>
             </div>
@@ -674,7 +689,7 @@
                     (minimum xs)
                 </pre>
                 <p class="doc">
-                    <p>Sum an array (elements must support + and zero).</p>
+                    <p>gets the maximum in an array (elements must support <code>&gt;</code>).</p>
 
                 </p>
             </div>
@@ -751,7 +766,7 @@
                     (predicate-count a pred)
                 </pre>
                 <p class="doc">
-                    <p>Count number of elements satisfying predicate in an array.</p>
+                    <p>counts the number of elements satisfying the predicate function <code>pred</code> in an array.</p>
 
                 </p>
             </div>
@@ -771,7 +786,7 @@
                     (prefix-array xs end-index)
                 </pre>
                 <p class="doc">
-                    <p>Get prefix-array to end-index.</p>
+                    <p>gets a prefix array to <code>end-index</code>.</p>
 
                 </p>
             </div>
@@ -848,7 +863,7 @@
                     (range start end step)
                 </pre>
                 <p class="doc">
-                    <p>Create an array from start to end with step between them (the elements must support &lt;, &lt;=, and &gt;=).</p>
+                    <p>creates an array from <code>start</code> to <code>end</code> with <code>step</code> between them (the elements must support <code>&lt;</code>, <code>&lt;=</code>, and <code>&gt;=</code>).</p>
 
                 </p>
             </div>
@@ -887,7 +902,12 @@
                     (reduce f x xs)
                 </pre>
                 <p class="doc">
-                    <p>Reduce an array, using the function f.</p>
+                    <p>will reduce an array <code>xs</code> into a single value using a function <code>f</code> that takes the reduction thus far and the next value. The initial reduction value is <code>x</code>.</p>
+<p>As an example, consider this definition of <code>sum</code> based on <code>reduce</code>:</p>
+<pre><code>(defn sum [x]
+  (reduce + 0 x))
+</code></pre>
+<p>It will sum the previous sum with each new value, starting at <code>0</code>.</p>
 
                 </p>
             </div>
@@ -907,7 +927,7 @@
                     (remove el arr)
                 </pre>
                 <p class="doc">
-                    <p>Remove occurrences of element el in array arr, in-place</p>
+                    <p>removes all occurrences of the element <code>el</code> in the array <code>arr</code>, in place.</p>
 
                 </p>
             </div>
@@ -927,7 +947,7 @@
                     (remove-nth i arr)
                 </pre>
                 <p class="doc">
-                    <p>Remove element at index idx from arr</p>
+                    <p>removes element at index <code>idx</code> from the array <code>arr</code>.</p>
 
                 </p>
             </div>
@@ -947,7 +967,7 @@
                     (repeat n f)
                 </pre>
                 <p class="doc">
-                    <p>Repeat function f n times and store the results in an array.</p>
+                    <p>repeats the function <code>f</code> <code>n</code> times and stores the results in an array.</p>
 
                 </p>
             </div>
@@ -967,7 +987,8 @@
                     (repeat-indexed n f)
                 </pre>
                 <p class="doc">
-                    <p>Repeat function f n times and store the results in an array (will be supplied with the index).</p>
+                    <p>repeats function <code>f</code> <code>n</code>times and stores the results in an array.</p>
+<p>This is similar to <a href="#repeat"><code>repeat</code></a>, but the function <code>f</code> will be supplied with the index of the element.</p>
 
                 </p>
             </div>
@@ -987,7 +1008,7 @@
                     (replicate n e)
                 </pre>
                 <p class="doc">
-                    <p>Repeat element e n times and store the results in an array.</p>
+                    <p>repeats element <code>e</code> <code>n</code> times and stores the results in an array.</p>
 
                 </p>
             </div>
@@ -1007,7 +1028,7 @@
                     (reverse a)
                 </pre>
                 <p class="doc">
-                    <p>Reverse an array.</p>
+                    <p>reverses an array.</p>
 
                 </p>
             </div>
@@ -1166,7 +1187,7 @@
                     (subarray xs start-index end-index)
                 </pre>
                 <p class="doc">
-                    <p>Get subarray from start-index to end-index.</p>
+                    <p>gets a subarray from <code>start-index</code> to <code>end-index</code>.</p>
 
                 </p>
             </div>
@@ -1186,7 +1207,7 @@
                     (suffix-array xs start-index)
                 </pre>
                 <p class="doc">
-                    <p>Get subarray from start-index.</p>
+                    <p>gets a suffix array from <code>start-index</code>.</p>
 
                 </p>
             </div>
@@ -1206,7 +1227,8 @@
                     (sum xs)
                 </pre>
                 <p class="doc">
-                    
+                    <p>ums an array (elements must support <code>+</code> and <code>zero</code>).</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -1225,7 +1247,7 @@
                     (sum-length xs)
                 </pre>
                 <p class="doc">
-                    <p>Returns the sum of lengths from an Array of Arrays.</p>
+                    <p>returns the sum of lengths from a nested array <code>xs</code>.</p>
 
                 </p>
             </div>
@@ -1245,7 +1267,7 @@
                     (swap a i j)
                 </pre>
                 <p class="doc">
-                    <p>Swap indices i and j of array a.</p>
+                    <p>swaps the indices <code>i</code> and <code>j</code> of an array <code>a</code>.</p>
 
                 </p>
             </div>
@@ -1265,7 +1287,49 @@
                     (swap! a i j)
                 </pre>
                 <p class="doc">
-                    <p>Swap indices i and j of array a in place.</p>
+                    <p>swaps the indices <code>i</code> and <code>j</code> of an array <code>a</code> in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-first">
+                    <h3 id="unsafe-first">
+                        unsafe-first
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (unsafe-first a)
+                </pre>
+                <p class="doc">
+                    <p>takes the first element of an array.</p>
+<p>Generates a runtime error if the array is empty.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-last">
+                    <h3 id="unsafe-last">
+                        unsafe-last
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a))] a)
+                </p>
+                <pre class="args">
+                    (unsafe-last a)
+                </pre>
+                <p class="doc">
+                    <p>takes the last element of an array.</p>
+<p>Generates a runtime error if the array is empty.</p>
 
                 </p>
             </div>
@@ -1285,7 +1349,7 @@
                     (zero)
                 </pre>
                 <p class="doc">
-                    <p>Returns the empty array.</p>
+                    <p>returns the empty array.</p>
 
                 </p>
             </div>
@@ -1305,7 +1369,8 @@
                     (zip f a b)
                 </pre>
                 <p class="doc">
-                    <p>Map over two arrays using a function that takes two arguments. Produces a new array with the length of the shorter input.</p>
+                    <p>maps over two arrays using a function <code>f</code> that takes two arguments. It will produces a new array with the length of the shorter input.</p>
+<p>The trailing elements of the longer array will be discarded.</p>
 
                 </p>
             </div>

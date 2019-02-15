@@ -3,14 +3,30 @@
 (use-all Test Result)
 
 (deftest test
+  (assert-true test
+               (success? &(the (Result Int (Ref String)) (Success 1)))
+               "success? works with Success"
+  )
+  (assert-false test
+                (success? &(the (Result Int (Ref String)) (Error "error")))
+                "success? works with Error"
+  )
+  (assert-true test
+               (error? &(the (Result Int (Ref String)) (Error "error")))
+               "error? works with Error"
+  )
+  (assert-false test
+                (error? &(the (Result Int (Ref String)) (Success 1)))
+                "error? works with Success"
+  )
   (assert-equal test
-                1
-                (apply (Success 0) Int.inc Int.dec)
+                &(Success 1)
+                &(apply (Success 0) Int.inc Int.dec)
                 "apply works with Success"
   )
   (assert-equal test
-                -1
-                (apply (Error 0) Int.inc Int.dec)
+                &(Error -1)
+                &(apply (Error 0) Int.inc Int.dec)
                 "apply works with Error"
   )
   (assert-true test
@@ -19,7 +35,7 @@
   )
   (assert-equal test
                 &(Success 2)
-                &(map (the (Result Int String) (Success 1)) Int.inc)
+                &(map (the (Result Int (Ref String)) (Success 1)) Int.inc)
                 "map works with Success"
   )
   (assert-true test
@@ -28,83 +44,81 @@
   )
   (assert-equal test
                 &(Success 2)
-                &(and-then (the (Result Int String) (Success 1))
+                &(and-then (the (Result Int (Ref String)) (Success 1))
                            (fn [x] (Success (Int.inc x))))
                 "and-then works with Success"
   )
+  (assert-equal test
+                2
+                (unwrap-or-zero (the (Result Int (Ref String)) (Success 2)))
+                "unwrap-or-zero works with Success"
+  )
+  (assert-equal test
+                0
+                (unwrap-or-zero (Error "error"))
+                "unwrap-or-zero works with Error"
+  )
+  (assert-equal test
+                &(Error 5)
+                &(or-else (the (Result Int (Ref String)) (Error "error"))
+                          (fn [x] (Error (String.length x))))
+                "or-else works with Error"
+  )
+  (assert-equal test
+                &(Success 1)
+                &(or-else (Success 1) (fn [x] (Error (String.length x))))
+                "or-else works with Success"
+  )
+  (assert-equal test
+                5
+                (unwrap-or-else (the (Result Int (Ref String)) (Error "error"))
+                                String.length)
+                "unwrap-or-else works with Error"
+  )
+  (assert-equal test
+                1
+                (unwrap-or-else (Success 1) String.length)
+                "unwrap-or-else works with Success"
+  )
+  (assert-equal test
+                1
+                (unsafe-from-success (the (Result Int (Ref String)) (Success 1)))
+                "unsafe-from-success works with Success"
+  )
+  (assert-equal test
+                1
+                (from-success (the (Result Int (Ref String)) (Success 1)) 0)
+                "from-success works with Success"
+  )
+  (assert-equal test
+                0
+                (from-success (Error "error") 0)
+                "from-success works with Error"
+  )
+  (assert-equal test
+                "error"
+                &(unsafe-from-error (the (Result Int String) (Error @"error")))
+                "unsafe-from-Error works with Error"
+  )
+  (assert-equal test
+                "error"
+                &(from-error (the (Result Int String) (Error @"error"))
+                             @"success")
+                "from-error works with Error"
+  )
+  (assert-equal test
+                "success"
+                &(from-error (Success 1) @"success")
+                "from-error works with Success"
+  )
+  (assert-equal test
+                &(Maybe.Just 1)
+                &(to-maybe (the (Result Int (Ref String)) (Success 1)))
+                "to-maybe works with Success"
+  )
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(to-maybe (the (Result Int (Ref String)) (Error "error")))
+                "to-maybe works with Error"
+  )
 )
-
-;  (defn and-then [a f]
-;    (match a
-;      (Success x) (f x)
-;      (Error x) (Error x)))
-;
-;  (defn unwrap-or-zero [a]
-;    (match a
-;      (Success x) x
-;      (Error _) (zero)))
-;
-;  (defn and [a b]
-;    (match a
-;      (Success _) b
-;      (Error x) (Error x)))
-;
-;  (defn or [a b]
-;    (match a
-;      (Success x) (Success x)
-;      (Error _) b))
-;
-;  (defn or-else [a f]
-;    (match a
-;      (Success x) (Success x)
-;      (Error x) (f x)))
-;
-;  (defn unwrap-or-else [a f]
-;    (match a
-;      (Success x) x
-;      (Error x) (f x)))
-;
-;  (defn unsafe-from-success [a]
-;    (match a
-;      (Success x) x))
-;
-;  (defn from-success [a dflt]
-;    (match a
-;      (Error _) dflt
-;      (Success x) x))
-;
-;  (defn unsafe-from-error [a]
-;    (match a
-;      (Error x) x))
-;
-;  (defn from-error [a dflt]
-;    (match a
-;      (Success _) dflt
-;      (Error x) x))
-;
-;  (defn to-maybe [a]
-;    (match a
-;      (Success x) (Maybe.Just x)
-;      (Error _) (Maybe.Nothing)))
-;
-;  (defn success? [a]
-;    (match @a
-;      (Error _) false
-;      (Success _) true))
-;
-;  (defn error? [a]
-;    (match @a
-;      (Error _) true
-;      (Success _) false))
-;
-;  (defn = [a b]
-;    (match @a
-;      (Success x)
-;        (match @b
-;          (Error _) false
-;          (Success y) (= x y))
-;      (Error x)
-;        (match @b
-;          (Success _) false
-;          (Error y) (= x y))))
-;)
