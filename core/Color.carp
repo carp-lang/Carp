@@ -25,22 +25,24 @@
      @"bg-cyan" @"46"
      @"bg-white" @"47"})
 
-  (doc color "Generates ANSI coloration.")
+  (doc color "generates ANSI coloration based on a color name `cname`.")
   (defn color [cname]
     (let [n (Map.get &table cname)]
       (String.append "\x1b[" &(String.append &n "m"))))
 
-  (doc colorize "Wraps a string in ANSI coloration and prints it.")
+  (doc colorize "wraps a string `s` in ANSI coloration based on a color name `cname` and prints it.
+
+It will reset the color afterwards.")
   (defn colorize [cname s]
     (String.append &(color cname) &(String.append s &(color "reset"))))
 )
 
 (defmodule IO
-  (doc color "Sets the output color using ANSI.")
+  (doc color "sets the output color using ANSI coloration based on a color name `cname`.")
   (defn color [cname]
     (print &(Color.color cname)))
 
-  (doc colorize "Wraps a string in ANSI coloration and prints it.")
+  (doc colorize "wraps a string in ANSI coloration based on a color name `cname` and prints it.")
   (defn colorize [cname s]
     (print &(Color.colorize cname s)))
 )

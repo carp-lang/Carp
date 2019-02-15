@@ -49,7 +49,9 @@
         min
         val)))
 
-  (doc approx "checks whether x and y are approximately (i.e. margin of error of 0.00001) equal")
+  (doc approx "checks whether `x` and `y` are approximately equal.
+
+The margin of error is `0.00001`.")
   (defn approx [x y]
     (if (> x y)
       (< (- x y) 0.00001)
@@ -58,6 +60,7 @@
   (defn /= [x y]
     (not (Double.= x y)))
 
+  (doc zero "returns the value `0.0`.")
   (defn zero []
     0.0)
 
