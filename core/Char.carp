@@ -8,7 +8,7 @@
   (register from-int (Fn [Int] Char))
   (register copy (Fn [&Char] Char))
 
-  (doc meaning "Convert a numerical char into the appropriate number.")
+  (doc meaning "converts a numerical char into the appropriate number (e.g. from `\1` to `1`).")
   (defn meaning [char-ref]
     (cond
       (= @char-ref \0) 0
@@ -26,11 +26,11 @@
   (defn /= [a b]
     (not (= (the Char a) b)))
 
-  (doc lower-case? "Tests whether a character is lower case.")
+  (doc lower-case? "tests whether a character is lower case.")
   (defn lower-case? [c]
     (and (<= \a c) (<= c \z)))
 
-  (doc upper-case? "Tests whether a character is upper case.")
+  (doc upper-case? "tests whether a character is upper case.")
   (defn upper-case? [c]
     (and (<= \A c) (<= c \Z)))
 )

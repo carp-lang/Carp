@@ -1,9 +1,9 @@
 (defmodule Geometry
-  (doc degree-to-radians "Converts degrees expressed as a double into radians.")
+  (doc degree-to-radians "converts degrees expressed as a double `n` into radians.")
   (defn degree-to-radians [n]
     (Double.* n (Double./ Double.pi 180.0)))
 
-  (doc radians-to-degree "Converts radians expressed as a double into degree.")
+  (doc radians-to-degree "converts radians expressed as a double `n` into degrees.")
   (defn radians-to-degree [n]
     (Double.* n (Double./ 180.0 Double.pi)))
 )

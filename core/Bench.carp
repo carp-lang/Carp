@@ -8,7 +8,9 @@
   (private min-runs)
   (hidden min-runs)
 
-  (doc set-min-runs! "Set the minimum number of runs. If your functions takes a large amount of time, experimenting with this might make sense.")
+  (doc set-min-runs! "sets the minimum number of runs to `n`.
+
+If your functions takes a large amount of time, experimenting with this might make sense. The default value is `50`, which means that your function runs at least `50` times before even hitting a timeout.")
   (defn set-min-runs! [n]
     ; / 2 because we run it twice per benchmarking run,
     ; but this is an implementation detail
@@ -36,7 +38,7 @@
   (defn ns-iter-inner [f n]
     (let [start (get-time-elapsed)]
       (do
-        (for [i 0 n] (ignore (f)))
+        (for [i 0 n] (ignore (~f)))
         (Double.- (get-time-elapsed) start))))
 
   (private print-bench-results)
@@ -55,7 +57,7 @@
           samples (Array.replicate min-runs &zero)]
       (do
         (for [i 0 min-runs]
-          (Array.aset! &samples i (Double./ (ns-iter-inner @&f (Double.to-int n)) n))) ;; TODO: Get rid of '@&' here.
+          (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
         (Statistics.summary &(Statistics.winsorize &samples 5.0)))))
 
   (private min-one)
@@ -65,9 +67,9 @@
 
   ; it is actually possible to make this run forever by supplying a _really_
   ; long-running function, where long-running is everything over 30ms.
-  (doc bench "Benchmark function f and print the results.")
+  (doc bench "benchmarks the function `f` and prints the results to `stdout`.")
   (defn bench [f]
-    (let [ns (ns-iter-inner @&f 1) ;; @& HACK, TODO: Should be able to pass the ref instead
+    (let [ns (ns-iter-inner &f 1)
           ns-target-total 1000000.0
           _n (Double./ ns-target-total (min-one ns))
           n (min-one _n)
@@ -77,8 +79,8 @@
       (do
         (while (and (Double.< total 3000000000.0) (not done))
           (let [loop-start (get-time-elapsed)
-                summ (get-samples @&f n)  ;; @& HACK, TODO: Should be able to pass the ref instead
-                summ5 (get-samples @&f n) ;; @& HACK, TODO: Should be able to pass the ref instead
+                summ (get-samples &f n)
+                summ5 (get-samples &f n)
                 loop-run (- (get-time-elapsed) loop-start)]
             (if (and
                   (Double.> loop-run 100000.0)

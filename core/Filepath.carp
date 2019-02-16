@@ -2,11 +2,17 @@
 
   (use Array)
 
-  (doc dir-from-path "Removes the file-name part of a path to a file.")
+  (doc dir-from-path "removes the file name part of a path to a file, similar to the `basename` utility in Shell scripting.")
   (defn dir-from-path [path]
     (let [segments (split-by path &[\/])
           n (dec (length &segments))
           without-last (prefix-array &segments n)]
       (concat &(copy-map &(fn [s] (str* s "/")) &without-last))))
 
+  (doc file-from-path "removes the base name part of a path to a file, similar to the `filename` utility in Shell scripting.")
+  (defn file-from-path [path]
+    (let [segments (split-by path &[\/])]
+      ; this is actually safe here, because split by will return an array of
+      ; length > 0
+      (unsafe-last &segments)))
   )
