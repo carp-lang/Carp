@@ -59,7 +59,7 @@ data Obj = Sym SymPath SymbolMode
          | Def
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
-         | Let
+             | Let
          | While
          | Break
          | If
@@ -753,31 +753,6 @@ anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing)
 tagName :: Ty -> String -> String
 tagName sumTy caseName =
   tyToC sumTy ++ "_" ++ mangle caseName ++ "_tag"
-
-data SumtypeCase = SumtypeCase { caseName :: String
-                               , caseTys :: [Ty]
-                               } deriving (Show, Eq)
-
-toCases :: [XObj] -> [SumtypeCase]
-toCases = map toCase
-
-toCase :: XObj -> SumtypeCase
-toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
-  SumtypeCase { caseName = name
-              , caseTys = (map (fromJust . xobjToTy) tyXObjs)
-              }
-toCase (XObj (Sym (SymPath [] name) Symbol) _ _) =
-  SumtypeCase { caseName = name
-              , caseTys = []
-              }
-toCase x =
-  error ("Failed to convert this to a sumtype case: " ++ pretty x)
-
-getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
-getCase cases caseNameToFind =
-  case filter (\c -> caseName c == caseNameToFind) cases of
-    found : _ -> Just found
-    [] -> Nothing
 
 wrapInParens :: XObj -> XObj
 wrapInParens xobj@(XObj (Lst _) _ _) =

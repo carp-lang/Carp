@@ -669,8 +669,8 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                      Left err -> liftIO (putStrLnWithColor Red err)
                      Right ok -> put ok
                    return dynamicNil
-           Left errorMessage ->
-             return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ errorMessage)))
+           Left err ->
+             return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ show err)))
        (_, Nothing) ->
          return (Left (EvalError ("Invalid type variables for type definition: " ++ pretty nameXObj)))
        _ ->
