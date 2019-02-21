@@ -1,4 +1,14 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(deftype X (Y) (Z))
+(deftype JSON
+  (Str [String])
+  (Num [Double])
+  (Arr [(Array JSON)])
+  (Obj [(Map String JSON)]))
+
+;; (deftype (Tree a)
+;;   (Root [(Tree a) (Tree a)])
+;;   (Leaf [a]))
+
+;;(defn main [] (println* &(Tree.Leaf 100)))

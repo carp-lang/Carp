@@ -388,7 +388,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
           in  case validateMembers typeEnv originalTyVars concretelyTypedMembers of
                 Left err -> Left err
                 Right () ->
-                  let deps = sequence (map (f typeEnv) (pairwise concretelyTypedMembers))
+                  let deps = sequence (map (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers))
                   in case deps of
                        Left err -> Left err
                        Right okDeps ->
@@ -398,11 +398,11 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
                                         ) (Just dummyInfo) (Just TypeTy)
                                  ] ++ concat okDeps
 
-f :: TypeEnv -> (XObj, XObj) -> Either TypeError [XObj]
-f typeEnv (_, tyXObj) =
+depsForStructMemberPair :: TypeEnv -> (XObj, XObj) -> Either TypeError [XObj]
+depsForStructMemberPair typeEnv (_, tyXObj) =
   case (xobjToTy tyXObj) of
     Just okTy -> concretizeType typeEnv okTy
-    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type.")
+    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ " to a type.")
 
 -- | Given an generic sumtype and a concrete version of it, generate all dependencies needed to use the concrete one.
 instantiateGenericSumtype :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
@@ -413,12 +413,25 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
   in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
         Left e -> error (show e)
         Right mappings ->
-          Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
-                              XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                              map (replaceGenericTypeSymbolsOnCase mappings) cases
-                             )
-                        ) (Just dummyInfo) (Just TypeTy)
-                  ]
+          let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
+              deps = sequence (map (depsForCase typeEnv) concretelyTypedCases)
+          in -- TODO: Validate?! (see struct types above)
+            case deps of
+              Right  okDeps -> Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
+                                                  XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                                  concretelyTypedCases
+                                                 )
+                                             ) (Just dummyInfo) (Just TypeTy)
+                                      ] ++ concat okDeps
+              Left err -> Left err
+
+depsForCase :: TypeEnv -> XObj -> Either TypeError [XObj]
+depsForCase typeEnv x@(XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
+  fmap concat $ sequence $
+  map (\m -> case xobjToTy m of
+               Just okTy -> concretizeType typeEnv okTy
+               Nothing -> error ("Failed to convert " ++ pretty m ++ " to a type: " ++ pretty x))
+    members
 
 replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
 replaceGenericTypeSymbolsOnCase mappings singleCase@(XObj (Lst (caseName : caseMembers)) i t) =
