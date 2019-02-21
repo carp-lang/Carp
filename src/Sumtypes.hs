@@ -55,10 +55,14 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy cases
         (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy cases
+        okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-            deps = strDeps ++ deleteDeps ++ copyDeps
+            deps = strDeps ++ deleteDeps ++ copyDeps ++ okMemberDeps
         return (typeModuleName, typeModuleXObj, deps)
+
+memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
+memberDeps typeEnv cases = fmap concat (sequence (map (concretizeType typeEnv) (concatMap caseTys cases)))
 
 replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
 replaceGenericTypesOnCases mappings cases =

@@ -204,3 +204,8 @@ isManaged _ _ = False
 isFunctionType :: Ty -> Bool
 isFunctionType (FuncTy _ _) = True
 isFunctionType _ = False
+
+-- | Is this type a struct type?
+isStructType :: Ty -> Bool
+isStructType (StructTy _ _) = True
+isStructType _ = False

@@ -139,9 +139,9 @@ instance Show TypeError where
   show (InvalidSumtypeCase xobj) =
     "Failed to convert '" ++ pretty xobj ++ "' to a sumtype case, at " ++ prettyInfoFromXObj xobj
   show (InvalidMemberType t xobj) =
-    "Can't use the type '" ++ show t ++ "' as a member type, at " ++ prettyInfoFromXObj xobj
+    "Can't use the type '" ++ show t ++ "' as a member type at " ++ prettyInfoFromXObj xobj
   show (NotAmongRegisteredTypes t xobj) =
-    "Can't find a definition for the type '" ++ show t ++ "', at " ++ prettyInfoFromXObj xobj
+    "Can't find a definition for the type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
   show (UnevenMembers xobjs) =
     "Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs) ++ " at " ++ prettyInfoFromXObj (head xobjs)
 

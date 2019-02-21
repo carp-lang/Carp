@@ -1,6 +1,8 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
+;;(deftype A [xs (Array Double)])
+
 (deftype JSON
   (Str [String])
   (Num [Double])
