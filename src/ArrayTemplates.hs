@@ -329,7 +329,7 @@ insideArrayDeletion :: TypeEnv -> Env -> Ty -> String -> String
 insideArrayDeletion typeEnv env t indexer =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType t) ("Inside array.", t) of
     FunctionFound functionFullName ->
-      "    " ++ functionFullName ++ "(((" ++ tyToC t ++ "*)a.data)[" ++ indexer ++ "]);\n"
+      "    " ++ functionFullName ++ "(((" ++ tyToCLambdaFix t ++ "*)a.data)[" ++ indexer ++ "]);\n"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed type inside Array: '" ++ show t ++ "' */\n"
 
