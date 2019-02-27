@@ -192,7 +192,7 @@ isManaged typeEnv (StructTy name _) =
          Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder _ (XObj (Lst (XObj (Typ _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
-         Nothing -> error ("Can't find " ++ name ++ " in type env.")
+         Nothing -> error ("Can't find " ++ name ++ " in type env.") -- TODO: Please don't crash here!
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True

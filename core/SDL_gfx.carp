@@ -3,5 +3,5 @@
 
 (defmodule GFX
   (doc thick-line-rgba "Draw a line from x1, y1 to x2, y2 with the width `width` and color r, g, b, a.")
-  (register thick-line-rgba (Fn [(Ptr SDL_Renderer) Int Int Int Int Int Int Int Int Int] _) "thickLineRGBA")
+  (register thick-line-rgba (Fn [(Ptr SDL_Renderer) Int Int Int Int Int Int Int Int Int] Int) "thickLineRGBA")
   )
