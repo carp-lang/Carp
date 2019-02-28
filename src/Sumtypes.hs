@@ -212,7 +212,7 @@ strCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
 -- | Figure out how big the string needed for the string representation of the struct has to be.
 calculateStructStrSize :: TypeEnv -> Env -> [SumtypeCase] -> Ty -> String
 calculateStructStrSize typeEnv env cases structTy@(StructTy name _) =
-  "  int size = 0;\n" ++
+  "  int size = 1;\n" ++
   concatMap (strSizeCase typeEnv env structTy) cases
 
 strSizeCase :: TypeEnv -> Env -> Ty -> SumtypeCase -> String
@@ -222,7 +222,7 @@ strSizeCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
       correctedTagName = tagName concreteStructTy name
   in unlines $
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
-     , "    size = snprintf(NULL, size, \"(%s \", \"" ++ name ++ "\");"
+     , "    size += snprintf(NULL, 0, \"(%s \", \"" ++ name ++ "\");"
      , joinWith "\n" (map
                       (memberPrnSize typeEnv env)
                       (zip (map (\anon -> name ++ "." ++ anon) anonMemberNames)
