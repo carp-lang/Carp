@@ -307,6 +307,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                   emitCase exprVar isFirst ((XObj (Sym firstPath _) caseLhsInfo _), caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
+                       when (not isFirst) (appendToSrc "else ")
                        appendToSrc ("if(true) {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
