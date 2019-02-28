@@ -290,13 +290,15 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t
             Template
             t
             (const (toTemplate "Array $NAME (int n)"))
-            (const (toTemplate $ unlines ["$DECL {"
+            (\(FuncTy [_] arrayType) ->
+               (toTemplate $ unlines (["$DECL {"
                                          ,"    Array a;"
                                          ,"    a.len = n;"
                                          ,"    a.capacity = n;"
-                                         ,"    a.data = CARP_MALLOC(n*sizeof($t));"
-                                         ,"    return a;"
-                                         ,"}"]))
+                                         ,"    a.data = CARP_MALLOC(n*sizeof($t));"]
+                                         ++ initTy arrayType ++
+                                        ["    return a;"
+                                         ,"}"])))
             (\(FuncTy [_] arrayType) ->
                depsForDeleteFunc typeEnv env arrayType)
 
@@ -324,6 +326,23 @@ deleteTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "    CARP_FREE(a.data);\n"
   ]
 deleteTy _ _ _ = []
+
+initTy :: Ty -> [String]
+initTy (StructTy "Array" [innerType@(FuncTy _ _)]) =
+  [ "    // initialize each Lambda struct "
+  , "    for(int i = 0; i < a.len; i++) {"
+  , "    " ++ insideArrayInitLambda innerType "i"
+  , "    }"
+  ]
+initTy _ = []
+
+insideArrayInitLambda :: Ty -> String -> String
+insideArrayInitLambda t indexer =
+    "    Lambda lambda = " ++ initLambda ++ "\n" ++
+    "        ((" ++ tyToCLambdaFix t ++ "*)a.data)[" ++ indexer ++ "] = lambda;"
+
+initLambda :: String
+initLambda = "{ .callback = NULL, .env = NULL, .delete = NULL, .copy = NULL };"
 
 insideArrayDeletion :: TypeEnv -> Env -> Ty -> String -> String
 insideArrayDeletion typeEnv env t indexer =
