@@ -7,7 +7,6 @@ import Debug.Trace
 import Obj
 import Types
 import Util
---import Infer
 import Concretize
 import Polymorphism
 import Lookup
@@ -15,26 +14,55 @@ import Template
 import ToTemplate
 import Deftype
 import StructUtils
+import TypeError
 
-moduleForSumtype :: TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either String (String, XObj, [XObj])
+data SumtypeCase = SumtypeCase { caseName :: String
+                               , caseTys :: [Ty]
+                               } deriving (Show, Eq)
+
+toCases :: [XObj] -> Either TypeError [SumtypeCase]
+toCases xobjs = sequence (map toCase xobjs)
+
+toCase :: XObj -> Either TypeError SumtypeCase
+toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
+  Right $ SumtypeCase { caseName = name
+                      , caseTys = (map (fromJust . xobjToTy) tyXObjs)
+                      }
+toCase (XObj (Sym (SymPath [] name) Symbol) _ _) =
+  Right $ SumtypeCase { caseName = name
+                      , caseTys = []
+                      }
+toCase x =
+  Left (InvalidSumtypeCase x)
+
+getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
+getCase cases caseNameToFind =
+  case filter (\c -> caseName c == caseNameToFind) cases of
+    found : _ -> Just found
+    [] -> Nothing
+
+moduleForSumtype :: TypeEnv -> Env -> [String] -> String -> [Ty] -> [XObj] -> Maybe Info -> Maybe Env -> Either TypeError (String, XObj, [XObj])
 moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingEnv =
   let typeModuleName = typeName
       typeModuleEnv = case existingEnv of
                              Just env -> env
                              Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0
       insidePath = pathStrings ++ [typeModuleName]
-  in do -- TODO: validate members
-        let structTy = StructTy typeName typeVariables
-            cases = toCases rest
+  in do let structTy = StructTy typeName typeVariables
+        cases <- toCases rest
         okIniters <- initers insidePath structTy cases
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy cases
         (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy cases
+        okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-            deps = strDeps ++ deleteDeps ++ copyDeps
+            deps = strDeps ++ deleteDeps ++ copyDeps ++ okMemberDeps
         return (typeModuleName, typeModuleXObj, deps)
+
+memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
+memberDeps typeEnv cases = fmap concat (sequence (map (concretizeType typeEnv) (concatMap caseTys cases)))
 
 replaceGenericTypesOnCases :: TypeMappings -> [SumtypeCase] -> [SumtypeCase]
 replaceGenericTypesOnCases mappings cases =
@@ -43,10 +71,10 @@ replaceGenericTypesOnCases mappings cases =
           let newTys = map (replaceTyVars mappings) (caseTys theCase)
           in  theCase { caseTys = newTys }
 
-initers :: [String] -> Ty -> [SumtypeCase] -> Either String [(String, Binder)]
+initers :: [String] -> Ty -> [SumtypeCase] -> Either TypeError [(String, Binder)]
 initers insidePath structTy cases = sequence (map (binderForCaseInit insidePath structTy) cases)
 
-binderForCaseInit :: [String] -> Ty -> SumtypeCase -> Either String (String, Binder)
+binderForCaseInit :: [String] -> Ty -> SumtypeCase -> Either TypeError (String, Binder)
 binderForCaseInit insidePath structTy@(StructTy typeName _) sumtypeCase =
   if isTypeGeneric structTy
   then Right (genericCaseInit StackAlloc insidePath structTy sumtypeCase)
@@ -80,7 +108,7 @@ genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =
                (tokensForCaseInit allocationMode concreteStructTy sumtypeCase))
             (\(FuncTy _ concreteStructTy) ->
                case concretizeType typeEnv concreteStructTy of
-                 Left err -> error (err ++ ". This error should not crash the compiler - change return type to Either here.")
+                 Left err -> error (show err ++ ". This error should not crash the compiler - change return type to Either here.")
                  Right ok -> ok)
 
 
@@ -105,7 +133,7 @@ caseMemberAssignment allocationMode caseName (memberName, _) =
                 HeapAlloc -> "->"
 
 -- | Helper function to create the binder for the 'str' template.
-binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either String ((String, Binder), [XObj])
+binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError ((String, Binder), [XObj])
 binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) cases strOrPrn =
   if isTypeGeneric structTy
   then Right (genericStr insidePath structTy cases strOrPrn, [])
@@ -203,7 +231,7 @@ strSizeCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
      ]
 
 -- | Helper function to create the binder for the 'delete' template.
-binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either String ((String, Binder), [XObj])
+binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
 binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) cases =
   if isTypeGeneric structTy
   then Right (genericSumtypeDelete insidePath structTy cases, [])
@@ -260,7 +288,7 @@ deleteCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isF
      ]
 
 -- | Helper function to create the binder for the 'copy' template.
-binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either String ((String, Binder), [XObj])
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
 binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) cases =
   if isTypeGeneric structTy
   then Right (genericSumtypeCopy insidePath structTy cases, [])

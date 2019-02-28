@@ -1,5 +1,10 @@
 html {
     font-family: "Helvetica", sans-serif;
+    font-size: 1.0em;
+}
+
+p {
+    margin: 0em 0em 0.5em 0em;
 }
 
 a {
@@ -65,7 +70,11 @@ h3 {
 }
 
 .sig {
-    font-family: "Hasklig", "Lucida Console", monospace;
+    font-family: "Hasklig", "Source Code Pro", "Lucida Console", monospace;
+}
+
+code {
+    font-family: "Hasklig", "Source Code Pro", "Lucida Console", monospace;
 }
 
 .doc {
@@ -73,7 +82,8 @@ h3 {
 }
 
 .description {
-    margin-top: 0.3em;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
     font-size: 0.8em;
     color: #aaa;
 }

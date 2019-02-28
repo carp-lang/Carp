@@ -154,7 +154,7 @@
                     (bench f)
                 </pre>
                 <p class="doc">
-                    <p>Benchmark function f and print the results.</p>
+                    <p>benchmarks the function <code>f</code> and prints the results to <code>stdout</code>.</p>
 
                 </p>
             </div>
@@ -174,7 +174,8 @@
                     (set-min-runs! n)
                 </pre>
                 <p class="doc">
-                    <p>Set the minimum number of runs. If your functions takes a large amount of time, experimenting with this might make sense.</p>
+                    <p>sets the minimum number of runs to <code>n</code>.</p>
+<p>If your functions takes a large amount of time, experimenting with this might make sense. The default value is <code>50</code>, which means that your function runs at least <code>50</code> times before even hitting a timeout.</p>
 
                 </p>
             </div>
