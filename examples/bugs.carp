@@ -108,10 +108,16 @@
 ;;   (let [g f]
 ;;     (fn [] (Int.+ (g 1) 12345))))
 
+(def g @"")
+
 (defmodule Blah
   (def s @"")
-  (defn-do f []
-    (set! s @"x")))
+  (defn f []
+    (let [t @""]
+      (do
+        (set! g @"C")
+        (set! t @"A")
+        (set! s @"B")))))
 
 (defn main []
   (Blah.f))

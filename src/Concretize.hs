@@ -949,7 +949,7 @@ manageMemory typeEnv globalEnv root =
         varOfXObj :: XObj -> String
         varOfXObj xobj =
           case xobj of
-            XObj (Sym (SymPath [] name) _) _ _ -> name
+            XObj (Sym path _) _ _ -> pathToC path
             _ -> case info xobj of
                    Just i -> freshVar i
                    Nothing -> error ("Missing info on " ++ show xobj)
