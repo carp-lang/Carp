@@ -9,11 +9,8 @@ data TextColor = Blue | Red | Yellow | Green | White
 
 strWithColor :: TextColor -> String -> String
 strWithColor color str =
-    --if useColors
     "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[0m"
-    --then "\x1b[" ++ col ++ "m" ++ str ++ "\x1b[0m"
-    --else str
-  where --useColors = platform /= Windows
+  where
         col = case color of
                 Red -> "31"
                 Green -> "32"
