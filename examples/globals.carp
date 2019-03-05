@@ -12,7 +12,7 @@
 (def stuff [(A.init 10) (A.init 20) (A.init 30)])
 
 (defn main []
-  (Debug.assert-balanced
+  ;;(Debug.assert-balanced
    (do
      ;;(IO.println s)
      (IO.println &(A.str &a))
@@ -20,7 +20,9 @@
      ;;(IO.println &(A.str &a))
      (IO.println &(str &q))
      (IO.println &(str &stuff))
-     )))
+     )
+     ;;)
+     )
 
 ;; (defn f [x]
 ;;   (do

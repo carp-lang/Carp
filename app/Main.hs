@@ -5,6 +5,7 @@ import qualified System.Environment as SystemEnvironment
 import System.IO (stdout)
 import System.Console.Haskeline (runInputT)
 import System.Directory (doesPathExist, getHomeDirectory)
+import GHC.IO.Encoding
 
 import ColorText
 import Obj
@@ -49,7 +50,8 @@ defaultProject =
 
 -- | Starting point of the application.
 main :: IO ()
-main = do args <- SystemEnvironment.getArgs
+main = do setLocaleEncoding utf8
+          args <- SystemEnvironment.getArgs
           sysEnv <- SystemEnvironment.getEnvironment
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               logMemory = LogMemory `elem` otherOptions

@@ -11,14 +11,64 @@ void IO_error(String *s) { fprintf(stderr, "%s", *s); }
 
 char IO_EOF = (char) EOF;
 
-#ifndef _WIN32
+#ifdef _WIN32
+// getline isn't a C standard library function so it's missing on windows
+// This implementation is stolen from StackOverflow, not sure if it's optimal...
+size_t getline(char **lineptr, size_t *n, FILE *stream) {
+    size_t pos;
+    int c;
+
+    if (lineptr == NULL || stream == NULL || n == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    c = fgetc(stream);
+    if (c == EOF) {
+        return -1;
+    }
+
+    if (*lineptr == NULL) {
+        *lineptr = malloc(128);
+        if (*lineptr == NULL) {
+            return -1;
+        }
+        *n = 128;
+    }
+
+    pos = 0;
+    while(c != EOF) {
+        if (pos + 1 >= *n) {
+            size_t new_size = *n + (*n >> 2);
+            if (new_size < 128) {
+                new_size = 128;
+            }
+            char *new_ptr = realloc(*lineptr, new_size);
+            if (new_ptr == NULL) {
+                return -1;
+            }
+            *n = new_size;
+            *lineptr = new_ptr;
+        }
+
+        ((unsigned char *)(*lineptr))[pos ++] = c;
+        if (c == '\n') {
+            break;
+        }
+        c = fgetc(stream);
+    }
+
+    (*lineptr)[pos] = '\0';
+    return pos;
+}
+#endif
+
 String IO_get_MINUS_line() {
     size_t size = 1024;
     String buffer = CARP_MALLOC(size);
     getline(&buffer, &size, stdin);
     return buffer;
 }
-#endif
 
 String IO_read_MINUS_file(String *filename) {
     String buffer = 0;

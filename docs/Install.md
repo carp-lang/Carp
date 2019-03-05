@@ -1,10 +1,10 @@
 # Installation
 
-Carp is mainly developed on macOS, but it also works fine on Linux. Windows is currently not supported - but please get in touch in case you want to help out with that!
+Carp is mainly developed on macOS, but it also works fine on Linux. There is ongoing work on Windows support but it's not completely done yet.
 
 ## Building the Carp executable from source
 
-1. Make sure you have [Stack](https://docs.haskellstack.org/en/stable/README/) installed.
+1. Make sure you have a recent version of [Stack](https://docs.haskellstack.org/en/stable/README/) installed.
 2. Clone this repo to your machine.
 3. Run ```stack build``` in the root of the project directory.
 4. ```stack install``` will install the Carp command line tool for easy access on your system.
@@ -12,7 +12,7 @@ Carp is mainly developed on macOS, but it also works fine on Linux. Windows is c
 
 ## Setting the CARP_DIR
 
-The `carp` executable must know where to find its core libraries and other files.
+To be able to run `carp` from anywhere on you system, the executable must know where to find its core libraries and other files.
 Set the environment variable CARP_DIR so that it points to the root of the Carp repo.
 
 For example, add this to your `.bashrc` or similar:
@@ -30,9 +30,11 @@ $ carp
 ## C compiler
 
 The `carp` executable will emit a single file with C code, `main.c` and try to compile it using an external C compiler.
-On macOS and Linux it defaults to `clang`, on Windows it's `cl.exe`.
+On macOS and Linux it defaults to `clang`, so make sure you have that installed (On macOS this is preferably done by installing XCode, including its developer tools).
 
-You can configure the exact compiler command like so:
+On Windows the default C compiler used by Carp is `clang-cl.exe` which compiles the code using Clang but links it with the Visual Studio linker. Tip: use the package manager [Scoop](https://scoop.sh/) to install LLVM for an easy way to set this up on Windows.
+
+If you want to use another compiler, you can configure the exact build command like so:
 
 ```clojure
 (Project.config "compiler" "gcc --important-flag")
