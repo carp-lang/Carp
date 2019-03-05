@@ -25,7 +25,9 @@ defaultProject =
           , projectEchoC = False
           , projectLibDir = ".carp/libs/"
           , projectCarpDir = "./"
-          , projectOutDir = "./out/"
+          , projectOutDir = case platform of
+                              Windows -> ".\\out" 
+                              _ -> "./out"
           , projectDocsDir = "./docs/"
           , projectDocsLogo = ""
           , projectDocsPrelude = ""
@@ -37,8 +39,8 @@ defaultProject =
           , projectCarpSearchPaths = []
           , projectPrintTypedAST = False
           , projectCompiler = case platform of
-                                Windows -> "cl.exe -lm"
-                                _ ->       "clang -fPIC -lm"
+                                Windows -> "clang-cl.exe -D _CRT_SECURE_NO_WARNINGS"
+                                _ ->       "clang -fPIC -lm -g"
           , projectCore = True
           , projectEchoCompilationCommand = False
           , projectCanExecute = False

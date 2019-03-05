@@ -14,7 +14,19 @@ int System_time() {
     return time(0);
 }
 
-#ifndef _WIN32
+#ifdef _WIN32
+void System_sleep_MINUS_seconds(int t) {
+    // TODO!
+}
+
+void System_sleep_MINUS_micros(int t) {
+    // TODO!
+}
+
+double System_nanotime() {
+    return 0;
+}
+#else
 void System_sleep_MINUS_seconds(int t) {
     sleep(t);
 }
@@ -22,14 +34,13 @@ void System_sleep_MINUS_seconds(int t) {
 void System_sleep_MINUS_micros(int t) {
     usleep(t);
 }
-#endif
-
 
 double System_nanotime() {
   struct timespec tv;
   clock_gettime(CLOCK_REALTIME, &tv);
   return 1000000000 * tv.tv_sec + tv.tv_nsec;
 }
+#endif
 
 void System_system(String *command) {
     system(*command);

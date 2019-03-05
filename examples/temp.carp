@@ -3,14 +3,17 @@
 
 ;;(deftype A [xs (Array Double)])
 
-(deftype JSON
-  (Str [String])
-  (Num [Double])
-  (Arr [(Array JSON)])
-  (Obj [(Map String JSON)]))
+; (deftype JSON
+;   (Str [String])
+;   (Num [Double])
+;   (Arr [(Array JSON)])
+;   (Obj [(Map String JSON)]))
 
 ;; (deftype (Tree a)
 ;;   (Root [(Tree a) (Tree a)])
 ;;   (Leaf [a]))
 
 ;;(defn main [] (println* &(Tree.Leaf 100)))
+
+(defn main []
+	(println* "hello my dear friend"))

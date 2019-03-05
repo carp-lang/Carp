@@ -67,6 +67,12 @@ platform =
       "darwin" -> MacOS
       "mingw32" -> Windows
 
+pathSeparator :: String
+pathSeparator =
+  case platform of
+    Windows -> "\\"
+    _ -> "/"
+
 unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
 unionOfSetsInList [] =
