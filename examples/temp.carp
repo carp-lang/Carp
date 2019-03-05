@@ -1,19 +1,19 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-(defn call-me [f] (~f @"hello"))
+;;(deftype A [xs (Array Double)])
 
-(defn foo []
-  (let [f (fn [s] (String.append &s "!"))]
-    (for [i 0 3]
-      (println* (call-me &f)))))
+; (deftype JSON
+;   (Str [String])
+;   (Num [Double])
+;   (Arr [(Array JSON)])
+;   (Obj [(Map String JSON)]))
 
-;; (defn foo [s]
-;;   (println* &(Array.endo-map (fn [x] @s) [@"A" @"B" @"C"])))
+;; (deftype (Tree a)
+;;   (Root [(Tree a) (Tree a)])
+;;   (Leaf [a]))
+
+;;(defn main [] (println* &(Tree.Leaf 100)))
 
 (defn main []
-  (do
-    (Debug.reset-memory-balance!)
-    (foo)
-    (println* (Debug.memory-balance))
-    0))
+	(println* "hello my dear friend"))

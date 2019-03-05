@@ -2,6 +2,7 @@ module InitialTypes where
 
 import Control.Monad.State
 import qualified Data.Map as Map
+import Data.Maybe (catMaybes)
 import Debug.Trace
 
 import Types
@@ -233,6 +234,26 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
         XObj If _ _ : _ -> return (Left (InvalidObj If xobj))
 
+        -- Match
+        matchExpr@(XObj Match _ _) : expr : cases ->
+          do visitedExpr <- visit env expr
+             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do let lhs' = (uniquifyWildcardNames (helpWithParens lhs)) -- Add parens if missing
+                                                                     env' <- extendEnvWithCaseMatch env lhs'
+                                                                     visitedLhs <- visit env' lhs'
+                                                                     visitedRhs <- visit env' rhs
+                                                                     return $ do okLhs <- visitedLhs
+                                                                                 okRhs <- visitedRhs
+                                                                                 return (okLhs, okRhs))
+                                                  (pairwise cases)
+             returnType <- genVarTy
+             return $ do okExpr <- visitedExpr
+                         okCases <- visitedCases
+                         let okCasesConcatenated = concatMap (\(a, b) -> [a, b]) okCases
+                         return (XObj (Lst ([matchExpr, okExpr] ++ okCasesConcatenated))
+                                  i (Just returnType))
+
+        XObj Match _ _ : _ -> return (Left (InvalidObj Match xobj))
+
         -- While (always return Unit)
         [whileExpr@(XObj While _ _), expr, body] ->
           do visitedExpr <- visit env expr
@@ -357,3 +378,67 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                  let xobjWithTy = xobj { ty = Just t }
                  return (name, Binder emptyMeta xobjWithTy)
             _ -> error "Can't create binder for non-symbol parameter."
+
+    extendEnvWithCaseMatch :: Env -> XObj -> State Integer Env
+    extendEnvWithCaseMatch env singleCaseList@(XObj (Lst xs) _ _) =
+      do binders <- fmap catMaybes (mapM createBinderForCaseVariable xs)
+         return Env { envBindings = Map.fromList binders
+                    , envParent = Just env
+                    , envModuleName = Nothing
+                    , envUseModules = []
+                    , envMode = InternalEnv
+                    , envFunctionNestingLevel = envFunctionNestingLevel env
+                    }
+      where
+        createBinderForCaseVariable :: XObj -> State Integer (Maybe (String, Binder))
+        createBinderForCaseVariable xobj =
+          case obj xobj of
+            (Sym (SymPath _ name) _) ->
+              createBinderInternal xobj name
+            (MultiSym name _) ->
+              createBinderInternal xobj name
+            (InterfaceSym name) ->
+              createBinderInternal xobj name
+            x -> error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
+
+        createBinderInternal :: XObj -> String -> State Integer (Maybe (String, Binder))
+        createBinderInternal xobj name =
+          if isVarName name
+          -- A variable that will bind to something:
+          then do freshTy <- genVarTy
+                  return (Just (name, Binder emptyMeta xobj { ty = Just freshTy }))
+          -- Tags for the sumtypes won't bind to anything:
+          else return Nothing
+    extendEnvWithCaseMatch env xobj@(XObj (Sym (SymPath _ name) _) _ _) =
+      do freshTy <- genVarTy
+         return Env { envBindings = Map.fromList [(name, Binder emptyMeta xobj { ty = Just freshTy })]
+                    , envParent = Just env
+                    , envModuleName = Nothing
+                    , envUseModules = []
+                    , envMode = InternalEnv
+                    , envFunctionNestingLevel = envFunctionNestingLevel env
+                    }
+    extendEnvWithCaseMatch env _ =
+      return env -- TODO: Handle nesting!!!
+
+uniquifyWildcardNames :: XObj -> XObj
+uniquifyWildcardNames (XObj (Sym (SymPath [] "_") mode) (Just i) t) =
+  let uniqueName = "wildcard_" ++ show (infoIdentifier i)
+  in  XObj (Sym (SymPath [] uniqueName) mode) (Just i) t
+uniquifyWildcardNames (XObj (Lst xobjs) i t) =
+  XObj (Lst (map uniquifyWildcardNames xobjs)) i t
+uniquifyWildcardNames (XObj (Arr xobjs) i t) =
+  XObj (Arr (map uniquifyWildcardNames xobjs)) i t
+uniquifyWildcardNames x =
+  x
+
+-- | Help our programmer friend using Carp to add/remove parens around the lhs of a match
+helpWithParens :: XObj -> XObj
+helpWithParens xobj@(XObj (Sym (SymPath _ name) _) _ _)
+  | isVarName name = xobj -- Don't wrap
+  | otherwise = wrapInParens xobj
+helpWithParens outer@(XObj (Lst [inner@(XObj (Sym (SymPath _ name) _) _ _)]) _ _)
+  | isVarName name = inner -- Unwrap
+  | otherwise = outer -- Keep wrapped
+helpWithParens xobj =
+  wrapInParens xobj

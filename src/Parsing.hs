@@ -115,7 +115,7 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
                                'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
                                'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
-                               '(', ')', '^', '"']
+                               '(', ')', '^', '"', '*', '.']
             case c of
               'b' -> do c1 <- Parsec.noneOf ['"']
                         c2 <- Parsec.noneOf ['"']
@@ -229,6 +229,7 @@ symbol = do i <- createInfo
               "let" -> return (XObj Let i Nothing)
               "break" -> return (XObj Break i Nothing)
               "if" -> return (XObj If i Nothing)
+              "match" -> return (XObj Match i Nothing)
               "true" -> return (XObj (Bol True) i Nothing)
               "false" -> return (XObj (Bol False) i Nothing)
               "address" -> return (XObj Address i Nothing)

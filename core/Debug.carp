@@ -2,7 +2,9 @@
 
 (defmodule Debug
 
-  (doc sanitize-addresses "Instruct the compiler to sanitize addresses.")
+  (doc sanitize-addresses "instructs the compiler to sanitize addresses.
+
+This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.")
   (defdynamic sanitize-addresses []
     (add-cflag "-fsanitize=address"))
 
@@ -10,14 +12,14 @@
   (register reset-memory-balance! (Fn [] ()))
   (register log-memory-balance! (Fn [Bool] ()))
 
-  (doc memory-logged "Log all calls to memory allocation within te form. Requires compiling with --log-memory.")
+  (doc memory-logged "logs all calls to memory allocation within the form. Requires the flag `--log-memory` to be passed during compilation.")
   (defmacro memory-logged [form]
     (list 'do
           '(Debug.log-memory-balance! true)
           form
           '(Debug.log-memory-balance! false)))
 
-  (doc assert-balanced "Raises an error if the memory balance (numberr of alloc:s - number of free:s) isn't 0. Requires compiling with --log-memory.")
+  (doc assert-balanced "raises an error if the memory balance (number of `alloc`s - number of `free`s) isn't `0`. Requires the flag `--log-memory` to be passed durng compilation.")
   (defmacro assert-balanced [form]
     (list 'let '[balance (Debug.memory-balance)]
           (list 'do
@@ -29,14 +31,14 @@
                        (System.exit 1)))
                 ())))
 
-  (doc trace "Print the value of an expression to stdout, then return its value.")
+  (doc trace "prints the value of an expression to `stdout`, then returns its value.")
   (defmacro trace [x]
     (list 'let-do (array 'tmp x)
       (list 'IO.println (list 'ref (list 'fmt "%s:%d:%d: %s" (file x) (line x) (column x) '&(str tmp))))
       'tmp)
   )
 
-  (doc leak-array "Leak some memory. Useful for testing tools that detect leaks.")
+  (doc leak-array "leaks some memory. This function is useful for testing tools that detect leaks.")
   (register leak-array (Fn [a] ()) "Debug_leak_MINUS_array")
 
 )

@@ -211,12 +211,12 @@
 
 (defn array-first []
   (let [xs [@"a" @"b" @"c"]
-        result (Array.first &xs)]
+        result (Array.unsafe-first &xs)]
     (assert (= @"a" result))))
 
 (defn array-last []
   (let [xs [@"a" @"b" @"c"]
-        result (Array.last &xs)]
+        result (Array.unsafe-last &xs)]
     (assert (= @"c" result))))
 
 (defn array-eq-1 []
@@ -368,6 +368,70 @@
   (let-do [stuff [@"A" @"B" @"C"]]
     (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
 
+(deftype StrangeThings
+  (Piff [String String])
+  (Puff [String String]))
+
+(defn sumtype-1 []
+  (let [thing (StrangeThings.Piff @"A" @"B")]
+    (assert
+     (= @"B"
+        (match thing
+          (StrangeThings.Piff a b) b
+          (StrangeThings.Puff c d) d)))))
+
+(defn sumtype-2 []
+  (let [thing (StrangeThings.Puff @"A" @"B")]
+    (assert
+     (= @"A"
+        (match thing
+          (StrangeThings.Piff a b) b
+          (StrangeThings.Puff a b) a)))))
+
+(defn sumtype-3 []
+  (let [thing (StrangeThings.Piff @"A" @"B")
+        another-thing @"blah"]
+    (assert
+     (= @"A"
+        (match thing
+          (StrangeThings.Piff a b) a
+          (StrangeThings.Puff c d) another-thing)))))
+
+(defn sumtype-4 []
+  (let [m (Maybe.Just @"Yo")]
+    (assert
+     (= @"Yo"
+        (match m
+          (Maybe.Just x) x
+          (Maybe.Nothing) @"Nope")))))
+
+(defn sumtype-5 []
+  (let [m (Maybe.Nothing)]
+    (assert
+     (= @"Nope"
+        (match m
+          (Maybe.Just x) x
+          (Maybe.Nothing) @"Nope")))))
+
+(deftype Name
+  (Simple [String String])
+  (Fancy [String String String]))
+
+(defn sumtype-6 []
+  (let [m (Name.Simple @"Mrs" @"Robinson")]
+    (assert
+     (= 1
+        (match m
+          (Name.Simple _ _) 1
+          (Name.Fancy _ _ _) 2)))))
+
+(defn sumtype-7 []
+  (let [m (Name.Fancy @"Mr" @"von" @"Plutt")]
+    (assert
+     (= 1
+        (match m
+          _ 1)))))
+
 (deftest test
   (assert-no-leak test scope-1 "scope-1 does not leak")
   (assert-no-leak test scope-2 "scope-2 does not leak")
@@ -427,4 +491,12 @@
   (assert-no-leak test lambda-2 "lambda-2 does not leak")
   (assert-no-leak test lambda-3 "lambda-3 does not leak")
   (assert-no-leak test lambda-4 "lambda-4 does not leak")
-  (assert-no-leak test lambda-5 "lambda-5 does not leak"))
+  (assert-no-leak test lambda-5 "lambda-5 does not leak")
+  (assert-no-leak test sumtype-1 "sumtype-1 does not leak")
+  (assert-no-leak test sumtype-2 "sumtype-2 does not leak")
+  (assert-no-leak test sumtype-3 "sumtype-3 does not leak")
+  (assert-no-leak test sumtype-4 "sumtype-4 does not leak")
+  (assert-no-leak test sumtype-5 "sumtype-5 does not leak")
+  (assert-no-leak test sumtype-6 "sumtype-6 does not leak")
+  (assert-no-leak test sumtype-7 "sumtype-7 does not leak")
+  )

@@ -18,6 +18,7 @@ import Polymorphism
 import InitialTypes
 import Lookup
 import ToTemplate
+import Validate
 
 --import Template
 --import ArrayTemplates
@@ -175,6 +176,13 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
+    visitList allowAmbig env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
+      do visitedExpr <- visit allowAmbig env expr
+         visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig env) (pairwise rest))
+         return $ do okVisitedExpr <- visitedExpr
+                     okVisitedRest <- fmap concat visitedRest
+                     return ([matchExpr, okVisitedExpr] ++ okVisitedRest)
+
     visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args
@@ -183,6 +191,14 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
+
+    visitMatchCase :: Bool -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
+    visitMatchCase allowAmbig env (lhs, rhs) =
+      do visitedLhs <- visit allowAmbig env lhs -- TODO! This changes the names of some tags (which is corrected in Emit) but perhaps there is a better way where they can be identified as tags and not changed?
+         visitedRhs <- visit allowAmbig env rhs
+         return $ do okVisitedLhs <- visitedLhs
+                     okVisitedRhs <- visitedRhs
+                     return [okVisitedLhs, okVisitedRhs]
 
     visitSymbol :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
     visitSymbol allowAmbig env xobj@(XObj (Sym path lookupMode) i t) =
@@ -193,7 +209,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                 Just theType = ty theXObj
                 typeOfVisited = case t of
                                   Just something -> something
-                                  Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)
+                                  Nothing -> error ("Missing type on " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj ++ " when looking up path " ++ show path)
             in if --(trace $ "CHECKING " ++ getName xobj ++ " : " ++ show theType ++ " with visited type " ++ show typeOfVisited ++ " and visited definitions: " ++ show visitedDefinitions) $
                   isTypeGeneric theType && not (isTypeGeneric typeOfVisited)
                   then case concretizeDefinition allowAmbig typeEnv env visitedDefinitions theXObj typeOfVisited of
@@ -321,11 +337,11 @@ concretizeTypeOfXObj typeEnv (XObj _ _ (Just t)) =
   case concretizeType typeEnv t of
     Right t -> do modify (t ++)
                   return (Right ())
-    Left err -> return (Left (InvalidMemberType err))
+    Left err -> return (Left err)
 concretizeTypeOfXObj _ xobj = return (Right ()) --error ("Missing type: " ++ show xobj)
 
 -- | Find all the concrete deps of a type.
-concretizeType :: TypeEnv -> Ty -> Either String [XObj]
+concretizeType :: TypeEnv -> Ty -> Either TypeError [XObj]
 concretizeType _ ft@(FuncTy _ _) =
   if isTypeGeneric ft
   then Right []
@@ -341,6 +357,10 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       if isTypeGeneric originalStructTy
       then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
       else Right []
+    Just (_, Binder _ (XObj (Lst (XObj (DefSumtype originalStructTy) _ _ : _ : rest)) _ _)) ->
+      if isTypeGeneric originalStructTy
+      then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
+      else Right []
     Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
       Right []
     Just (_, Binder _ x) ->
@@ -355,7 +375,7 @@ concretizeType _ t =
     Right [] -- ignore all other types
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
-instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either String [XObj]
+instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
 instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
@@ -368,7 +388,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
           in  case validateMembers typeEnv originalTyVars concretelyTypedMembers of
                 Left err -> Left err
                 Right () ->
-                  let deps = sequence (map (f typeEnv) (pairwise concretelyTypedMembers))
+                  let deps = sequence (map (depsForStructMemberPair typeEnv) (pairwise concretelyTypedMembers))
                   in case deps of
                        Left err -> Left err
                        Right okDeps ->
@@ -378,11 +398,46 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
                                         ) (Just dummyInfo) (Just TypeTy)
                                  ] ++ concat okDeps
 
-f :: TypeEnv -> (XObj, XObj) -> Either String [XObj]
-f typeEnv (_, tyXObj) =
+depsForStructMemberPair :: TypeEnv -> (XObj, XObj) -> Either TypeError [XObj]
+depsForStructMemberPair typeEnv (_, tyXObj) =
   case (xobjToTy tyXObj) of
     Just okTy -> concretizeType typeEnv okTy
-    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ "to a type.")
+    Nothing -> error ("Failed to convert " ++ pretty tyXObj ++ " to a type.")
+
+-- | Given an generic sumtype and a concrete version of it, generate all dependencies needed to use the concrete one.
+instantiateGenericSumtype :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
+instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy cases =
+  -- Turn (deftype (Maybe a) (Just a) (Nothing)) into (deftype (Maybe Int) (Just Int) (Nothing))
+  let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
+      fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
+  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
+        Left e -> error (show e)
+        Right mappings ->
+          let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
+              deps = sequence (map (depsForCase typeEnv) concretelyTypedCases)
+          in -- TODO: Validate?! (see struct types above)
+            case deps of
+              Right  okDeps -> Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
+                                                  XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                                  concretelyTypedCases
+                                                 )
+                                             ) (Just dummyInfo) (Just TypeTy)
+                                      ] ++ concat okDeps
+              Left err -> Left err
+
+depsForCase :: TypeEnv -> XObj -> Either TypeError [XObj]
+depsForCase typeEnv x@(XObj (Lst [_, XObj (Arr members) _ _]) _ _) =
+  fmap concat $ sequence $
+  map (\m -> case xobjToTy m of
+               Just okTy -> concretizeType typeEnv okTy
+               Nothing -> error ("Failed to convert " ++ pretty m ++ " to a type: " ++ pretty x))
+    members
+
+replaceGenericTypeSymbolsOnCase :: Map.Map String Ty -> XObj -> XObj
+replaceGenericTypeSymbolsOnCase mappings singleCase@(XObj (Lst (caseName : caseMembers)) i t) =
+  XObj (Lst (caseName : map replacer caseMembers)) i t
+  where replacer memberXObj =
+          replaceGenericTypeSymbols mappings memberXObj
 
 -- | Get the type of a symbol at a given path.
 typeFromPath :: Env -> SymPath -> Ty
@@ -829,6 +884,57 @@ manageMemory typeEnv globalEnv root =
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
 
+            matchExpr@(XObj Match _ _) : expr : cases ->
+              -- General idea of how to figure out what to delete in a 'match' statement:
+              -- 1. Visit each case and investigate which variables are deleted in each one of the cases
+              -- 2. Variables deleted in at least one case has to be deleted in all, so make a union U of all such vars
+              --    but remove the ones that were not present before the 'match'
+              -- 3. In each case - take the intersection of U and the vars deleted in that case and add this result to its deleters
+              do visitedExpr <- visit expr
+                 case visitedExpr of
+                   Left e -> return (Left e)
+                   Right okVisitedExpr ->
+                     do unmanage okVisitedExpr
+                        MemState preDeleters deps <- get
+                        visitedCasesWithDeleters <- mapM visitMatchCase (pairwise cases)
+                        case figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters of
+                          Left e -> return (Left e)
+                          Right (finalXObj, postDeleters) ->
+                            do put (MemState postDeleters deps)
+                               manage xobj
+                               return (Right finalXObj)
+
+                   where figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters =
+                           do okVisitedCasesWithDeleters <- sequence visitedCasesWithDeleters
+                              let postDeleters = map fst okVisitedCasesWithDeleters
+                                  postDeletersUnion = unionOfSetsInList postDeleters
+                                  postDeletersIntersection = intersectionOfSetsInList postDeleters
+                                  deletersAfterTheMatch = Set.intersection preDeleters postDeletersIntersection
+                                  -- The "postDeletersUnionPreExisting" are the vars that existed before the match but needs to
+                                  -- be deleted after it has executed (because some branches delete them)
+                                  postDeletersUnionPreExisting = Set.intersection postDeletersUnion preDeleters
+                                  deletersForEachCase = map (\dels -> dels \\ deletersAfterTheMatch) postDeleters
+                                  -- These are the surviving vars after the 'match' expression:
+
+                                  okVisitedCases = map snd okVisitedCasesWithDeleters
+                                  okVisitedCasesWithAllDeleters =
+                                    zipWith (\(lhs, rhs) finalSetOfDeleters ->
+                                               -- Putting the deleter info on the lhs,
+                                               -- because the right one can collide with
+                                               -- the other expressions, e.g. a 'let'
+                                               let newLhsInfo = setDeletersOnInfo (info lhs) finalSetOfDeleters
+                                               in [lhs { info = newLhsInfo }, rhs]
+                                            )
+                                        okVisitedCases
+                                        deletersForEachCase
+                              -- trace ("post deleters: " ++ show postDeleters)
+                              -- trace ("\npost deleters union: " ++ show postDeletersUnion)
+                              -- trace ("\npost deleters intersection: " ++ show postDeletersIntersection)
+                              -- trace ("Post deleters union pre-existing: " ++ show postDeletersUnionPreExisting)
+                              -- trace ("Post deleters for each case: " ++ show postDeleters)
+                              return ((XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t)
+                                     , deletersAfterTheMatch)
+
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
                  visitedArgs <- sequence <$> mapM (visitArg ) args
@@ -847,10 +953,50 @@ manageMemory typeEnv globalEnv root =
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
 
+        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError (Set.Set Deleter, (XObj, XObj)))
+        visitMatchCase (lhs@(XObj _ lhsInfo _), rhs@(XObj _ _ _)) =
+          do MemState preDeleters deps <- get -- | TODO: Don't forget to handle deps!
+             _ <- visitCaseLhs lhs
+             visitedRhs <- visit rhs
+             unmanage rhs
+             MemState postDeleters deps <- get
+             let diff = postDeleters \\ preDeleters
+             put (MemState preDeleters deps) -- Restore managed variables, TODO: Use a "local" state monad instead?
+             return $ do okVisitedRhs <- visitedRhs
+                         -- trace ("\npre: " ++ show preDeleters ++
+                         --        "\npost: " ++ show postDeleters ++
+                         --        "\ndiff: " ++ show diff)
+                         --   $
+                         return (postDeleters, (lhs, okVisitedRhs)) -- TODO: Return deps too?
+
+        visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
+        visitCaseLhs (XObj (Lst vars) _ _) =
+          case vars of
+            [xobj@(XObj (Sym (SymPath _ name) _) _ _)] | isVarName name ->
+                                                           do manage xobj
+                                                              return (Right [])
+                                                       | otherwise ->
+                                                           return (Right [])
+            _ -> visitVars
+            where visitVars =
+                    do results <- mapM (\var ->
+                                           case var of
+                                             XObj (Sym path mode) _ _ ->
+                                               do manage var
+                                                  return (Right ())
+                                             _ -> return (Right ()))
+                                       (tail vars) -- Don't do anything to the first one, it's a tag
+                       return (sequence results)
+        visitCaseLhs xobj@(XObj (Sym _ _) _ _) =
+          do manage xobj
+             return (Right [])
+        visitCaseLhs _ =
+          return (Right []) -- TODO: Handle nesting!!!
+
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
           do visitedExpr <- visit  expr
-             result <- transferOwnership  expr name
+             result <- transferOwnership expr name
              return $ case result of
                         Left e -> Left e
                         Right _ -> do okExpr <- visitedExpr
@@ -1012,7 +1158,7 @@ memberDeletionGeneral separator typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "delete" (typesDeleterFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName -> "    " ++ functionFullName ++ "(p" ++ separator ++ memberName ++ ");"
     FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
 memberDeletion = memberDeletionGeneral "."
 
@@ -1042,4 +1188,4 @@ memberCopy typeEnv env (memberName, memberType) =
     FunctionFound functionFullName ->
       "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
     FunctionNotFound msg -> error msg
-    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' */"
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"

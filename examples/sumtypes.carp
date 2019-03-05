@@ -1,0 +1,82 @@
+(use Maybe)
+(Project.no-echo)
+(Project.config "print-ast" true)
+
+;; Generic types
+(defn generic-sumtypes [s]
+  (match s
+    (Maybe.Nothing) @"Nada"
+    (Maybe.Just x)  (str* "Something like " (str x))
+    ))
+
+;; A more convenient syntax when doing C-style enums
+(deftype Grade A B C)
+
+(use Grade)
+
+(defn grade-value [g]
+  (match (the Grade g)
+    A 20
+    B 15
+    C 10))
+
+;; Figure out which type to use when some cases have the same name
+(deftype Commands
+  StandGround
+  Fire
+  Retreat)
+
+(deftype Elements
+  Water
+  Fire ;; <- name clash!
+  Earth
+  Air)
+
+(use Commands)
+(use Elements)
+
+(defn figure-out-sumtype [x]
+  (match x
+    Fire (Water)
+    Air (Earth)))
+
+;; Variable shadowing inside match
+(defn confusion [x]
+  (match x
+    (Maybe.Just x) x
+    (Maybe.Nothing) @"Nope"))
+
+;; Wildcards
+(defn wildcard [x]
+  (match x
+    Nothing @"No"
+    _ @"Yes"
+    ))
+
+(deftype Name
+  (Simple [String String])
+  (Fancy [String String String]))
+
+(use Name)
+
+(defn wildcards-inside [name]
+  (match name
+    (Simple _ _) 1
+    (Fancy _ _ _) 2))
+
+;; Recursive sumtype
+;; (deftype JSON
+;;   (Str [String])
+;;   (Num [Double])
+;;   (Arr [(Array JSON)])
+;;   (Obj [(Map String JSON)]))
+
+(defn main []
+  (do
+    (println* (generic-sumtypes (Maybe.Just 123)))
+    (println* (generic-sumtypes (the (Maybe Int) (Maybe.Nothing))))
+    (println* &(figure-out-sumtype (Elements.Fire)))
+    (println* "Grade.B has value " (grade-value (Grade.B)))
+    (println* (confusion (Just @"Yo")))
+    (println* (wildcard (Just @"Woop")))
+    (println* (wildcards-inside (Simple @"Erik" @"Svedäng")))))

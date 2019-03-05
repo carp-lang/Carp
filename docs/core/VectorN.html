@@ -122,6 +122,16 @@
                                 Map
                             </a>
                         </li>
+                        <li>
+                            <a href="Maybe.html">
+                                Maybe
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Result.html">
+                                Result
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -176,7 +186,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (VectorN a))
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -195,7 +205,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Double))
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -215,7 +225,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -273,7 +283,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Double))
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -312,7 +322,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Double)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Double))
                 </p>
                 <pre class="args">
                     (dot x y)
@@ -351,7 +361,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a)), (Ref (VectorN a)), a] (VectorN a))
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a)), a] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (lerp a b amnt)
@@ -469,7 +479,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -489,7 +499,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] Bool)
+                    (λ [(Ref (VectorN Double)), (Ref (VectorN Double))] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -642,7 +652,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (VectorN a))
+                    (λ [(Ref (VectorN a)), (Ref (VectorN a))] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -737,7 +747,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] a), (Ref (VectorN a)), (Ref (VectorN b))] (VectorN a))
+                    (λ [(λ [a, b] c), (Ref (VectorN a)), (Ref (VectorN b))] (Maybe (VectorN c)))
                 </p>
                 <pre class="args">
                     (zip f a b)

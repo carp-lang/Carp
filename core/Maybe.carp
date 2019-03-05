@@ -1,0 +1,47 @@
+(deftype (Maybe a)
+  (Just [a])
+  (Nothing []))
+
+(defmodule Maybe
+  (doc apply "applies a function to the value inside `a` if it is a `Just`, and wraps it up again. If it is `Nothing`, it is just returned.")
+  (defn apply [a f]
+    (match a
+      (Nothing) (Nothing)
+      (Just x) (Just (f x))))
+
+  (doc unsafe-from "is an unsafe unwrapper that will get the value from a `Just`. If `a` is `Nothing`, a runtime error will be generated.")
+  (defn unsafe-from [a]
+    (match a
+      (Just x) x))
+
+  (doc from "is an unwrapper that will get the value from a `Just`, or a default value if a `Nothing` is passed.")
+  (defn from [a dflt]
+    (match a
+      (Nothing) dflt
+      (Just x) x))
+
+  (doc just? "checks whether the given value `a` is a `Just`.
+
+It is the inverse of [`nothing?`](#nothing?).")
+  (defn just? [a]
+    (match @a
+      (Nothing) false
+      (Just x) true))
+
+  (doc nothing? "checks whether the given value `a` is a `Nothing`.
+
+It is the inverse of [`just?`](#just?).")
+  (defn nothing? [a]
+    (match @a
+      (Nothing) true
+      (Just x) false))
+
+  (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Just 1)` and `(Just 1)` are the same, but `(Just 1)` and `(Just 2)` are not.")
+  (defn = [a b]
+    (match @a
+      (Nothing) (nothing? b)
+      (Just x)
+        (match @b
+          (Nothing) false
+          (Just y) (= x y))))
+)

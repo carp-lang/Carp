@@ -46,6 +46,10 @@ data Ty = IntTy
         | InterfaceTy
         deriving (Eq, Ord)
 
+data SumTyCase = SumTyCase { caseName :: String
+                           , caseMembers :: [(String, Ty)]
+                           } deriving (Show, Ord, Eq)
+
 fnOrLambda =
   case platform of
     Windows -> "Fn"
@@ -98,25 +102,25 @@ tyToCRawFunctionPtrFix t@(FuncTy _ _) = "void*"
 tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
-tyToCManglePtr _ IntTy                 = "int"
-tyToCManglePtr _ BoolTy                = "bool"
-tyToCManglePtr _ FloatTy               = "float"
-tyToCManglePtr _ DoubleTy              = "double"
-tyToCManglePtr _ LongTy                = "long"
-tyToCManglePtr _ StringTy              = "String"
-tyToCManglePtr _ PatternTy             = "Pattern"
-tyToCManglePtr _ CharTy                = "char"
-tyToCManglePtr _ UnitTy                = "void"
-tyToCManglePtr _ (VarTy x)             = x
-tyToCManglePtr _ (FuncTy argTys retTy) = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
-tyToCManglePtr _ ModuleTy              = error "Can't emit module type."
-tyToCManglePtr b (PointerTy p)         = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
-tyToCManglePtr b (RefTy r)             = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
-tyToCManglePtr _ (StructTy s [])       = mangle s
-tyToCManglePtr _ (StructTy s typeArgs) = mangle s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
-tyToCManglePtr _ TypeTy                = error "Can't emit the type of types."
-tyToCManglePtr _ MacroTy               = error "Can't emit the type of macros."
-tyToCManglePtr _ DynamicTy             = error "Can't emit the type of dynamic functions."
+tyToCManglePtr _ IntTy                   = "int"
+tyToCManglePtr _ BoolTy                  = "bool"
+tyToCManglePtr _ FloatTy                 = "float"
+tyToCManglePtr _ DoubleTy                = "double"
+tyToCManglePtr _ LongTy                  = "long"
+tyToCManglePtr _ StringTy                = "String"
+tyToCManglePtr _ PatternTy               = "Pattern"
+tyToCManglePtr _ CharTy                  = "char"
+tyToCManglePtr _ UnitTy                  = "void"
+tyToCManglePtr _ (VarTy x)               = x
+tyToCManglePtr _ (FuncTy argTys retTy)   = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
+tyToCManglePtr _ ModuleTy                = error "Can't emit module type."
+tyToCManglePtr b (PointerTy p)           = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
+tyToCManglePtr b (RefTy r)               = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
+tyToCManglePtr _ (StructTy s [])         = mangle s
+tyToCManglePtr _ (StructTy s typeArgs)   = mangle s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
+tyToCManglePtr _ TypeTy                  = error "Can't emit the type of types."
+tyToCManglePtr _ MacroTy                 = error "Can't emit the type of macros."
+tyToCManglePtr _ DynamicTy               = error "Can't emit the type of dynamic functions."
 
 isTypeGeneric :: Ty -> Bool
 isTypeGeneric (VarTy _) = True

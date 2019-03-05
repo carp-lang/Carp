@@ -39,9 +39,13 @@ data TypeError = SymbolMissingType XObj Env
                | MainCannotHaveArguments XObj Int
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
-               | InvalidMemberType String
                | CannotSet XObj
                | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
+               | CannotMatch XObj
+               | InvalidSumtypeCase XObj
+               | InvalidMemberType Ty XObj
+               | NotAmongRegisteredTypes Ty XObj
+               | UnevenMembers [XObj]
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -126,12 +130,20 @@ instance Show TypeError where
     "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
   show (NotAType xobj) =
     "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
-  show (InvalidMemberType msg) =
-    msg
   show (CannotSet xobj) =
     "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
     "Definition at " ++ prettyInfoFromXObj xobj ++ " does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)
+  show (CannotMatch xobj) =
+    "Can't match '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+  show (InvalidSumtypeCase xobj) =
+    "Failed to convert '" ++ pretty xobj ++ "' to a sumtype case, at " ++ prettyInfoFromXObj xobj
+  show (InvalidMemberType t xobj) =
+    "Can't use the type '" ++ show t ++ "' as a member type at " ++ prettyInfoFromXObj xobj
+  show (NotAmongRegisteredTypes t xobj) =
+    "Can't find a definition for the type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
+  show (UnevenMembers xobjs) =
+    "Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs) ++ " at " ++ prettyInfoFromXObj (head xobjs)
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -230,6 +242,19 @@ machineReadableErrorStrings fppl err =
 
     (DoesNotMatchSignatureAnnotation xobj sigTy) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Definition does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)]
+
+    (CannotMatch xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't match '" ++ pretty xobj ++ "'."]
+
+    (InvalidSumtypeCase xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Failed to convert '" ++ pretty xobj ++ "' to a sumtype case."]
+
+    (InvalidMemberType t xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Can't use '" ++ show t ++ "' as a type for a member variable."]
+    (NotAmongRegisteredTypes t xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " The type '" ++ show t ++ "' isn't defined."]
+    (UnevenMembers xobjs) ->
+      [machineReadableInfoFromXObj fppl (head xobjs) ++ " Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs)]
 
     _ ->
       [show err]

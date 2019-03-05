@@ -2,6 +2,7 @@ module Util where
 
 import Data.List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe (fromMaybe)
 import System.Info (os)
 
@@ -65,3 +66,19 @@ platform =
       "linux" -> Linux
       "darwin" -> MacOS
       "mingw32" -> Windows
+
+pathSeparator :: String
+pathSeparator =
+  case platform of
+    Windows -> "\\"
+    _ -> "/"
+
+unionOfSetsInList (x:xs) =
+  foldl' Set.union x xs
+unionOfSetsInList [] =
+  Set.empty
+
+intersectionOfSetsInList (x:xs) =
+  foldl' Set.intersection x xs
+intersectionOfSetsInList [] =
+  Set.empty

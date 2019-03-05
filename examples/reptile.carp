@@ -110,7 +110,7 @@
 (defn grow [snake]
   (let [new-snake (Snake.update-freeze snake &inc2)
         b (Snake.body &new-snake)]
-    (Snake.set-body new-snake (push-back @b (last b)))))
+    (Snake.set-body new-snake (push-back @b (unsafe-last b)))))
 
 (defn update-after-kill [world]
   (let [s (World.snake &world)
@@ -121,7 +121,7 @@
   (let [s (World.snake world)
         h (World.human world)
         b (Snake.body s)
-        head &(first b)]
+        head &(unsafe-first b)]
     (if (= head h)
       (update-after-kill @world)
       @world)))
@@ -129,7 +129,7 @@
 (defn check-world [world]
   (let [snake (World.snake world)
         b (Snake.body snake)
-        head &(first b)
+        head &(unsafe-first b)
         x @(Vector2.x head)
         y @(Vector2.y head)]
     (World.set-dead @world (or (< x 0.0)

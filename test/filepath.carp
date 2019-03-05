@@ -1,0 +1,37 @@
+(load "Filepath.carp")
+(load "Test.carp")
+
+(use-all Test Filepath)
+
+(deftest test
+  (assert-equal test
+                "test.h"
+                &(file-from-path "/an/absolute/path/for/test.h")
+                "file-from-path works with non-empty paths"
+  )
+  (assert-equal test
+                "."
+                &(file-from-path ".")
+                "file-from-path works with relative paths"
+  )
+  (assert-equal test
+                ""
+                &(file-from-path "")
+                "file-from-path works with empty paths"
+  )
+  (assert-equal test
+                "/an/absolute/path/for/"
+                &(dir-from-path "/an/absolute/path/for/test.h")
+                "dir-from-path works with non-empty paths"
+  )
+  (assert-equal test
+                ""
+                &(dir-from-path ".")
+                "dir-from-path works with relative paths"
+  )
+  (assert-equal test
+                ""
+                &(dir-from-path "")
+                "dir-from-path works with empty paths"
+  )
+)

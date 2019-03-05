@@ -198,7 +198,7 @@ commandRunExe args =
   do ctx <- get
      let proj = contextProj ctx
          outDir = projectOutDir proj
-         outExe = "\"" ++ outDir ++ "/" ++ projectTitle (contextProj ctx) ++ "\""
+         outExe = "\"" ++ outDir ++ pathSeparator ++ projectTitle (contextProj ctx) ++ "\""
      if projectCanExecute proj
        then liftIO $ do handle <- spawnCommand outExe
                         exitCode <- waitForProcess handle
@@ -233,9 +233,8 @@ commandBuild args =
                 echoCompilationCommand = projectEchoCompilationCommand proj
                 incl = projectIncludesToC proj
                 includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-                switches = " -g "
-                flags = projectFlags proj ++ includeCorePath ++ switches
-                outDir = projectOutDir proj ++ "/"
+                flags = projectFlags proj ++ includeCorePath
+                outDir = projectOutDir proj ++ pathSeparator
                 outMain = outDir ++ "main.c"
                 outExe = outDir ++ projectTitle proj
                 outLib = outDir ++ projectTitle proj

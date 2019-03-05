@@ -4,16 +4,18 @@ import Data.List (foldl', sort, zipWith4)
 import Control.Arrow
 import Control.Monad.State
 import Data.Maybe (mapMaybe)
+import Debug.Trace (trace)
 
 import Types
 import Obj
 import Constraints
 import Util
 import TypeError
+import Lookup
 
 -- | Will create a list of type constraints for a form.
-genConstraints :: XObj -> Either TypeError [Constraint]
-genConstraints root = fmap sort (gen root)
+genConstraints :: TypeEnv -> XObj -> Either TypeError [Constraint]
+genConstraints typeEnv root = fmap sort (gen root)
   where gen xobj =
           case obj xobj of
             Lst lst -> case lst of
@@ -76,6 +78,45 @@ genConstraints root = fmap sort (gen root)
                                 return (conditionConstraint : sameReturnConstraint :
                                         wholeStatementConstraint : insideConditionConstraints ++
                                         insideTrueConstraints ++ insideFalseConstraints)
+
+                           -- Match
+                           XObj Match _ _ : expr : cases ->
+                             do insideExprConstraints <- gen expr
+                                casesLhsConstraints <- fmap join (mapM gen (map fst (pairwise cases)))
+                                casesRhsConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
+                                exprType <- toEither (ty expr) (ExpressionMissingType expr)
+                                xobjType <- toEither (ty xobj) (DefMissingType xobj)
+
+                                let
+                                  -- Each case rhs should have the same return type as the whole match form:
+                                  mkRetConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- | TODO: Ord
+                                  mkRetConstr _ = Nothing
+                                  returnConstraints = mapMaybe (\(_, rhs) -> mkRetConstr rhs) (pairwise cases)
+
+                                  -- Each case lhs should have the same type as the expression matching on
+                                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint t exprType x expr OrdArg) -- | TODO: Ord
+                                  mkExprConstr _ = Nothing
+                                  exprConstraints = mapMaybe (\(lhs, _) -> mkExprConstr lhs) (pairwise cases)
+
+                                  -- Constraints for the variables in the left side of each matching case,
+                                  -- like the 'r'/'g'/'b' in (match col (RGB r g b) ...) being constrained to Int.
+                                  -- casesLhsConstraints = concatMap (genLhsConstraintsInCase typeEnv exprType) (map fst (pairwise cases))
+
+                                  -- exprConstraint =
+                                  --   -- | TODO: Only guess if there isn't already a type set on the expression!
+                                  --   case guessExprType typeEnv cases of
+                                  --     Just guessedExprTy ->
+                                  --       let expected = XObj (Sym (SymPath [] "Expression in match-statement") Symbol)
+                                  --                      (info expr) (Just guessedExprTy)
+                                  --       in  [Constraint exprType guessedExprTy expr expected OrdIfCondition] -- | TODO: Ord
+                                  --     Nothing ->
+                                  --       []
+
+                                return (insideExprConstraints ++
+                                        casesLhsConstraints ++
+                                        casesRhsConstraints ++
+                                        returnConstraints ++
+                                        exprConstraints)
 
                            -- While
                            [XObj While _ _, expr, body] ->

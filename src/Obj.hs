@@ -59,12 +59,14 @@ data Obj = Sym SymPath SymbolMode
          | Def
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
-         | Let
+             | Let
          | While
          | Break
          | If
+         | Match
          | Mod Env
-         | Typ Ty
+         | Typ Ty -- TODO: Rename to Deftype!
+         | DefSumtype Ty
          | With
          | External (Maybe String)
          | ExternalType
@@ -189,6 +191,7 @@ getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
+getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
 getBinderDescription (XObj (Mod _) _ _) = "module"
 getBinderDescription b = error ("Unhandled binder: " ++ show b)
@@ -260,17 +263,19 @@ pretty = visit 0
             Chr c -> '\\' : c : ""
             Sym path mode -> show path -- ++ " <" ++ show mode ++ ">"
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
-            InterfaceSym name -> name
+            InterfaceSym name -> name -- ++ "§"
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
             Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
+            Match -> "match"
             While -> "while"
             Do -> "do"
             Let -> "let"
             Mod env -> fromMaybe "module" (envModuleName env)
             Typ _ -> "deftype"
+            DefSumtype _ -> "deftype"
             Deftemplate _ -> "deftemplate"
             Instantiate _ -> "instantiate"
             External Nothing -> "external"
@@ -737,3 +742,25 @@ definitionMode _ = AFunction
 isGlobalVariableLookup :: SymbolMode -> Bool
 isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
+
+anonMemberNames :: [String]
+anonMemberNames = map (\i -> ("member" ++ show i)) [0..]
+
+anonMemberSymbols :: [XObj]
+anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames
+
+-- | Calculate the name of a Sumtype tag
+tagName :: Ty -> String -> String
+tagName sumTy caseName =
+  tyToC sumTy ++ "_" ++ mangle caseName ++ "_tag"
+
+wrapInParens :: XObj -> XObj
+wrapInParens xobj@(XObj (Lst _) _ _) =
+  xobj -- already in parens
+wrapInParens xobj@(XObj _ i t) =
+  XObj (Lst [xobj]) i t
+
+-- | Is this symbol name appropriate for a normal variable (i.e. NOT a type name or sumtype tag)
+isVarName :: String -> Bool
+isVarName (firstLetter:_) =
+  not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars

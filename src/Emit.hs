@@ -101,6 +101,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             While -> error (show (DontVisitObj While))
             Do -> error (show (DontVisitObj Do))
             e@(Typ _) -> error (show (DontVisitObj e))
+            e@(DefSumtype _) -> error (show (DontVisitObj e))
             Mod _ -> error (show CannotEmitModKeyword)
             External _ -> error (show CannotEmitExternal)
             ExternalType -> error (show (DontVisitObj ExternalType))
@@ -269,6 +270,71 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      appendToSrc (addIndent indent ++ "}\n")
                      return ifRetVar
 
+            -- Match
+            XObj Match _ _ : expr@(XObj _ (Just exprInfo) (Just exprTy)) : rest ->
+              let indent' = indent + indentAmount
+                  retVar = freshVar i
+                  isNotVoid = t /= Just UnitTy
+                  sumTypeAsPath = SymPath [] (show exprTy)
+
+                  tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
+
+                  emitCaseMatcher :: String -> XObj -> Integer -> State EmitterState ()
+                  emitCaseMatcher caseName (XObj (Sym path _) i t) index =
+                    let Just tt = t
+                    in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
+                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ mangle caseName ++
+                                     ".member" ++ show index ++ ";\n")
+
+                  emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
+                  emitCase exprVar isFirst (caseLhs@(XObj (Lst ((XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _) : caseMatchers)) caseLhsInfo _), caseExpr) =
+                    -- A list of things, beginning with a tag
+                    do appendToSrc (addIndent indent)
+                       when (not isFirst) (appendToSrc "else ")
+                       -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
+                       -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
+                       -- This requires a bunch of extra machinery though, so this will do for now...
+                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy (removeSuffix caseName) ++ ") {\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
+                       zipWithM (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
+                       caseExprRetVal <- visit indent' caseExpr
+                       when isNotVoid $
+                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
+                       let Just caseLhsInfo' = caseLhsInfo
+                       delete indent' caseLhsInfo'
+                       appendToSrc (addIndent indent ++ "}\n")
+                  emitCase exprVar isFirst ((XObj (Sym firstPath _) caseLhsInfo _), caseExpr) =
+                    -- Single variable
+                    do appendToSrc (addIndent indent)
+                       when (not isFirst) (appendToSrc "else ")
+                       appendToSrc ("if(true) {\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
+                                    pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
+                       caseExprRetVal <- visit indent' caseExpr
+                       when isNotVoid $
+                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
+                       let Just caseLhsInfo' = caseLhsInfo
+                       delete indent' caseLhsInfo'
+                       appendToSrc (addIndent indent ++ "}\n")
+
+              in  do exprVar <- visit indent expr
+                     when isNotVoid $
+                       let Just tt = t
+                       in  appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ ";\n")
+                     zipWithM (emitCase exprVar) (True : repeat False) (pairwise rest)
+                     appendToSrc (addIndent indent ++ "else {\n")
+                     appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in 'match' expressions:\n")
+                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ prettyInfo i ++ "\\n\");\n")
+                     appendToSrc (addIndent indent ++ "  exit(1);\n")
+                     appendToSrc (addIndent indent ++ "}\n")
+                     return retVar
+
+            XObj Match _ _ : _ ->
+              error "Fell through match."
+
             -- While
             [XObj While _ _, expr, body] ->
               let indent' = indent + indentAmount
@@ -357,6 +423,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
 
             -- Deftype
             XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->
+              return ""
+
+            -- DefSumtype
+            XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _ ->
               return ""
 
             -- Template
@@ -530,20 +600,20 @@ templateToDeclaration template path actualTy =
       tokens = concatMap (concretizeTypesInToken mappings (pathToC path) e) declaration
   in  concatMap show tokens ++ ";\n"
 
-deftypeToDeclaration :: Ty -> SymPath -> [XObj] -> String
-deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
+memberToDecl :: Int -> (XObj, XObj) -> State EmitterState ()
+memberToDecl indent (memberName, memberType) =
+  case xobjToTy memberType of
+    -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
+    Just t  -> appendToSrc (addIndent indent ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
+    Nothing -> error ("Invalid memberType: " ++ show memberType)
+
+defStructToDeclaration :: Ty -> SymPath -> [XObj] -> String
+defStructToDeclaration structTy@(StructTy typeName typeVariables) path rest =
   let indent' = indentAmount
 
       typedefCaseToMemberDecl :: XObj -> State EmitterState [()]
-      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM memberToDecl (pairwise members)
+      typedefCaseToMemberDecl (XObj (Arr members) _ _) = mapM (memberToDecl indent') (pairwise members)
       typedefCaseToMemberDecl _ = error "Invalid case in typedef."
-
-      memberToDecl :: (XObj, XObj) -> State EmitterState ()
-      memberToDecl (memberName, memberType) =
-        case xobjToTy memberType of
-          -- Handle function pointers as members specially to allow members that are functions referring to the struct itself.
-          Just t  -> appendToSrc (addIndent indent' ++ tyToCLambdaFix t ++ " " ++ mangle (getName memberName) ++ ";\n")
-          Nothing -> error ("Invalid memberType: " ++ show memberType)
 
       -- Note: the names of types are not namespaced
       visit = do appendToSrc "typedef struct {\n"
@@ -552,6 +622,37 @@ deftypeToDeclaration structTy@(StructTy typeName typeVariables) path rest =
 
   in if isTypeGeneric structTy
      then "" -- ("// " ++ show structTy ++ "\n")
+     else emitterSrc (execState visit (EmitterState ""))
+
+defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
+  let indent = indentAmount
+
+      visit = do appendToSrc "typedef struct {\n"
+                 appendToSrc (addIndent indent ++ "union {\n")
+                 mapM_ (emitSumtypeCase (indent)) rest
+                 appendToSrc (addIndent indent ++ "};\n")
+                 appendToSrc (addIndent indent ++ "char _tag;\n")
+                 appendToSrc ("} " ++ tyToC sumTy ++ ";\n")
+                 --appendToSrc ("// " ++ show typeVariables ++ "\n")
+                 mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
+
+      emitSumtypeCase :: Int -> XObj -> State EmitterState ()
+      emitSumtypeCase indent xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), (XObj (Arr memberTys) _ _)]) _ _) =
+        do appendToSrc (addIndent indent ++ "struct {\n")
+           let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
+           mapM (memberToDecl (indent + indentAmount)) members
+           appendToSrc (addIndent indent ++ "} " ++ caseName ++ ";\n")
+      emitSumtypeCase indent xobj@(XObj (Sym (SymPath [] caseName) _) _ _) =
+        appendToSrc (addIndent indent ++ "// " ++ caseName ++ "\n")
+
+      emitSumtypeCaseTagDefinition :: (Int, XObj) -> State EmitterState ()
+      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Lst [(XObj (Sym (SymPath [] caseName) _) _ _), _]) _ _)) =
+        appendToSrc ("#define " ++ tagName sumTy (caseName) ++ " " ++ show tagIndex ++ "\n")
+      emitSumtypeCaseTagDefinition (tagIndex, xobj@(XObj (Sym (SymPath [] caseName) _) _ _)) =
+        appendToSrc ("#define " ++ tagName sumTy (caseName) ++ " " ++ show tagIndex ++ "\n")
+
+  in if isTypeGeneric sumTy
+     then ""
      else emitterSrc (execState visit (EmitterState ""))
 
 defaliasToDeclaration :: Ty -> SymPath -> String
@@ -571,7 +672,9 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
       let Just t' = t
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
     XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
-      deftypeToDeclaration t path rest
+      defStructToDeclaration t path rest
+    XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
+      defSumtypeToDeclaration t path rest
     XObj (Deftemplate _) _ _ : _ ->
       ""
     XObj Macro _ _ : _ ->
@@ -712,3 +815,9 @@ isNumericLiteral (XObj (Num _ _) _ _) = True
 isNumericLiteral (XObj (Bol _) _ _) = True
 isNumericLiteral (XObj (Chr _) _ _) = True
 isNumericLiteral _ = False
+
+removeSuffix :: String -> String
+removeSuffix [] = []
+removeSuffix [c] = [c]
+removeSuffix ('_' : '_' : cs) = []
+removeSuffix (c:cs) = c : (removeSuffix cs)

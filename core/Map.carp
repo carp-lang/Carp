@@ -79,6 +79,12 @@
         (get-idx b i)
         @default-value)))
 
+  (defn get-maybe [b k]
+    (let [i (find b k)]
+      (if (<= 0 i)
+        (Maybe.Just (Pair.b (Array.nth (entries b) i)))
+        (Maybe.Nothing))))
+
   (defn put [b k v]
     (let [i (find &b k)]
       (if (<= 0 i)
@@ -132,6 +138,11 @@
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
     (get-with-default m k &(zero)))
+
+  (doc get-maybe "Get the value for the key k from map m. It returns a Maybe type, meaning that if nothing is found, Nothing is returned.")
+  (defn get-maybe [m k]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+      (Bucket.get-maybe (Array.nth (buckets m) idx) k)))
 
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]

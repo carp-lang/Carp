@@ -122,6 +122,16 @@
                                 Map
                             </a>
                         </li>
+                        <li>
+                            <a href="Maybe.html">
+                                Maybe
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Result.html">
+                                Result
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -400,6 +410,26 @@
                 </pre>
                 <p class="doc">
                     <p>Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-maybe">
+                    <h3 id="get-maybe">
+                        get-maybe
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Map a b)), &amp;a] (Maybe &amp;b))
+                </p>
+                <pre class="args">
+                    (get-maybe m k)
+                </pre>
+                <p class="doc">
+                    <p>Get the value for the key k from map m. It returns a Maybe type, meaning that if nothing is found, Nothing is returned.</p>
 
                 </p>
             </div>

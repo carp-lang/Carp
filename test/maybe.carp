@@ -1,0 +1,56 @@
+(load "Test.carp")
+(use-all Maybe Test)
+
+(deftest test
+  (assert-true test
+               (nothing? &(the (Maybe Int) (Nothing)))
+               "nothing? works on Nothing"
+  )
+  (assert-false test
+                (nothing? &(Just 1))
+                "nothing? works on Just"
+  )
+  (assert-true test
+               (just? &(Just 1))
+               "just? works on Just"
+  )
+  (assert-false test
+                (just? &(the (Maybe Int) (Nothing)))
+                "just? works on Nothing"
+  )
+  (assert-equal test
+                1
+                (from (Just 1) 0)
+                "from works on Just"
+  )
+  (assert-equal test
+                0
+                (from (the (Maybe Int) (Nothing)) 0)
+                "from works on Nothing"
+  )
+  (assert-equal test
+                1
+                (unsafe-from (Just 1))
+                "unsafe-from works on Just"
+  )
+  (assert-equal test
+                2
+                (from (apply (Just 1) Int.inc) 0)
+                "apply works on Just"
+  )
+  (assert-equal test
+                0
+                (from (apply (the (Maybe Int) (Nothing)) Int.inc) 0)
+                "apply works on Nothing"
+  )
+  (assert-equal test
+                &(Result.Success 1)
+                &(to-result (Just 1) "error")
+                "to-result works on Just"
+  )
+  (assert-equal test
+                &(the (Result Int (Ref String)) (Result.Error "error"))
+                &(to-result (Nothing) "error")
+                "to-result works on Nothing"
+  )
+)

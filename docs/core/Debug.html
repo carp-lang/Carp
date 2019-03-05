@@ -122,6 +122,16 @@
                                 Map
                             </a>
                         </li>
+                        <li>
+                            <a href="Maybe.html">
+                                Maybe
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Result.html">
+                                Result
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -144,7 +154,7 @@
                     (assert-balanced form)
                 </pre>
                 <p class="doc">
-                    <p>Raises an error if the memory balance (numberr of alloc:s - number of free:s) isn't 0. Requires compiling with --log-memory.</p>
+                    <p>raises an error if the memory balance (number of <code>alloc</code>s - number of <code>free</code>s) isn't <code>0</code>. Requires the flag <code>--log-memory</code> to be passed durng compilation.</p>
 
                 </p>
             </div>
@@ -164,7 +174,7 @@
                     
                 </span>
                 <p class="doc">
-                    <p>Leak some memory. Useful for testing tools that detect leaks.</p>
+                    <p>leaks some memory. This function is useful for testing tools that detect leaks.</p>
 
                 </p>
             </div>
@@ -222,7 +232,7 @@
                     (memory-logged form)
                 </pre>
                 <p class="doc">
-                    <p>Log all calls to memory allocation within te form. Requires compiling with --log-memory.</p>
+                    <p>logs all calls to memory allocation within the form. Requires the flag <code>--log-memory</code> to be passed during compilation.</p>
 
                 </p>
             </div>
@@ -261,7 +271,8 @@
                     (sanitize-addresses)
                 </pre>
                 <p class="doc">
-                    <p>Instruct the compiler to sanitize addresses.</p>
+                    <p>instructs the compiler to sanitize addresses.</p>
+<p>This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.</p>
 
                 </p>
             </div>
@@ -281,7 +292,7 @@
                     (trace x)
                 </pre>
                 <p class="doc">
-                    <p>Print the value of an expression to stdout, then return its value.</p>
+                    <p>prints the value of an expression to <code>stdout</code>, then returns its value.</p>
 
                 </p>
             </div>
