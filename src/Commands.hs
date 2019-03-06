@@ -132,6 +132,8 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                           return (proj { projectDocsPrelude = prelude })
                      "docs-url" -> do url <- unwrapStringXObj value
                                       return (proj { projectDocsURL = url })
+                     "docs-styling" -> do url <- unwrapStringXObj value
+                                          return (proj { projectDocsStyling = url })
                      "file-path-print-length" -> do length <- unwrapStringXObj value
                                                     case length of
                                                       "short" -> return (proj { projectFilePathPrintLength = ShortPath })
