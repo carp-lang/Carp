@@ -9,6 +9,13 @@
 
 (use-all Test Vector2 Foo)
 
+(defmodule T
+  (def v [1])
+
+  (defn get-v [] @&v)
+  (defn set-v [x] (set! v x))
+)
+
 (deftest test
   (assert-equal test
                  1
@@ -19,5 +26,10 @@
                  \\
                  (String.char-at "\\" 0)
                  "test that strings get escaped correctly"
+  )
+  (assert-equal test
+                &[1]
+                &(T.get-v)
+                "test that we're generating valid code for non-locals"
   )
 )
