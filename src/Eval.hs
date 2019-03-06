@@ -1034,7 +1034,7 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
       _ <- liftIO $ setCurrentDirectory fpath
       _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
       _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
-      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch"] ""
+      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
       case x0 of
         ExitFailure _ -> do
           _ <- liftIO $ setCurrentDirectory cur
