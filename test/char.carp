@@ -54,4 +54,40 @@
   (assert-false test
                 (lower-case? \#)
                 "lower-case? works as expected III")
+  (assert-true  test
+                (alpha? \a)
+                "alpha? works as expected I")
+  (assert-true  test
+                (alpha? \A)
+                "alpha? works as expected II")
+  (assert-false test
+                (alpha? \#)
+                "alpha? works as expected III")
+  (assert-false test
+                (alpha? \0)
+                "alpha? works as expected III")
+  (assert-false test
+                (num? \a)
+                "num? works as expected I")
+  (assert-false test
+                (num? \A)
+                "num? works as expected II")
+  (assert-false test
+                (num? \#)
+                "num? works as expected III")
+  (assert-true  test
+                (num? \0)
+                "num? works as expected III")
+  (assert-true  test
+                (alphanum? \a)
+                "alphanum? works as expected I")
+  (assert-true  test
+                (alphanum? \A)
+                "alphanum? works as expected II")
+  (assert-false test
+                (alphanum? \#)
+                "alphanum? works as expected III")
+  (assert-true test
+                (alphanum? \0)
+                "alphanum? works as expected III")
 )
