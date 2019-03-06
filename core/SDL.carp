@@ -1,7 +1,17 @@
 (system-include "math.h")
+
 (local-include "../core/SDLHelper.h")
-(add-cflag "`sdl2-config --cflags --libs`")
-(add-cflag "-D_THREAD_SAFE")
+
+(not-on-windows
+  (add-cflag "`sdl2-config --cflags --libs`")
+  (add-cflag "-D_THREAD_SAFE"))
+
+(windows-only
+  ;; Note - you'll still need the SDL2.dll to be able to run the executable
+  (add-cflag "-DSDL_MAIN_HANDLED")
+  (add-cflag "-Wno-pragma-pack")
+  (add-cflag "-IC:\\SDL2-2.0.9\\include")
+  (add-lib "/link C:\\SDL2-2.0.9\\lib\\x86\\SDL2.lib C:\\SDL2-2.0.9\\lib\\x86\\SDL2main.lib"))
 
 ;; Types
 (register-type SDL_Keycode)

@@ -184,12 +184,12 @@
     ()))
 
 (defmacro windows-only [:rest forms]
-  (if (= "windows" (os))
+  (if (Dynamic.or (= "windows" (os)) (= "mingw32" (os)))
     (cons (quote do) forms)
     ()))
 
 (defmacro not-on-windows [:rest forms]
-  (if (not (= "windows" (os)))
+  (if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
     (cons (quote do) forms)
     ()))
 
