@@ -33,6 +33,18 @@
   (doc upper-case? "tests whether a character is upper case.")
   (defn upper-case? [c]
     (and (<= \A c) (<= c \Z)))
+
+  (doc alpha? "tests whether a character is alphabetical.")
+  (defn alpha? [c]
+    (or (lower-case? c) (upper-case? c)))
+
+  (doc num? "tests whether a character is numerical.")
+  (defn num? [c]
+    (and (<= \0 c) (<= c \9)))
+
+  (doc alphanum? "tests whether a character is alphanumerical.")
+  (defn alphanum? [c]
+    (or (alpha? c) (num? c)))
 )
 
 (defmodule CharRef
