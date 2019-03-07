@@ -7,7 +7,7 @@ Types are inferred but can be annoted for readability using the ```the``` keywor
 Memory management is handled by static analysis, a value is owned by the function where it was created.
 When a value is returned or passed to another function the initial function will give up ownership of it
 and any subsequent use will lead to a compiler error. To temporarily lend a value to another function
-(i.e. to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
+(for example to print it) a reference must be created, using the ```ref``` special form (or the ```&``` reader macro).
 
 To learn more about the details of memory management, check out [Memory.md](https://github.com/carp-lang/Carp/blob/master/docs/Memory.md)
 
