@@ -32,7 +32,7 @@ $ carp
 The `carp` executable will emit a single file with C code, `main.c` and try to compile it using an external C compiler.
 On macOS and Linux it defaults to `clang`, so make sure you have that installed (On macOS this is preferably done by installing XCode, including its developer tools).
 
-On Windows the default C compiler used by Carp is `clang-cl.exe` which compiles the code using Clang but links it with the Visual Studio linker. Tip: use the package manager [Scoop](https://scoop.sh/) to install LLVM for an easy way to set this up on Windows.
+On Windows the default C compiler used by Carp is `clang-cl.exe` which compiles the code using Clang but links it with the Visual Studio linker. Tip: use the package manager [Scoop](https://scoop.sh/) to install LLVM for an easy way to set this up on Windows. Also make sure you have Visual Studio with the C/C++ addon installed. Please note that you *don't* need WSL (Windows Subsystem for Linux) to use Carp.
 
 If you want to use another compiler, you can configure the exact build command like so:
 
