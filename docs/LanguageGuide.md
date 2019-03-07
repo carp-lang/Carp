@@ -76,7 +76,14 @@ and other static analysis. The first three of them are also available in dynamic
 (ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
-(the Int <expression>) ;; Explicitly declare the type of an expression
+(the <type> <expression>) ;; Explicitly declare the type of an expression
+```
+
+Here's an example of how to use the `the` form to make an identity function that only accepts Integers:
+
+```clojure
+(defn f [x]
+  (the Int x))
 ```
 
 ### Reader Macros
