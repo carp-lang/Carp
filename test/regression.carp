@@ -11,13 +11,18 @@
 
 (deftest test
   (assert-equal test
-                 1
-                 (init)
-                 "test that the right module gets resolved"
+                1
+                (init)
+                "test that the right module gets resolved"
   )
   (assert-equal test
-                 \\
-                 (String.char-at "\\" 0)
-                 "test that strings get escaped correctly"
+                \\
+                (String.char-at "\\" 0)
+                "test that strings get escaped correctly"
+  )
+  (assert-equal test
+                Int.MAX
+                @&Int.MAX
+                "test that the address of Int.MAX can be taken"
   )
 )
