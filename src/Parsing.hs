@@ -91,9 +91,11 @@ string = do i <- createInfo
             let str = concat strL
             _ <- Parsec.char '"'
             incColumn (length str + 2)
+            incLine (countLinebreaks str)
             return (XObj (Str str) i Nothing)
   where simple = do c <- Parsec.noneOf ['"']
                     return [c]
+        countLinebreaks = foldr (\x sum -> if x == '\n' then sum+1 else sum) 0
 
 parseInternalPattern :: Parsec.Parsec String ParseState String
 parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
@@ -253,6 +255,17 @@ incColumn x = do s <- Parsec.getState
                      newInfo = Info line (column + x) file (Set.fromList []) identifier
                  Parsec.putState (s { parseInfo = newInfo })
                  return ()
+
+incLine :: Int -> Parsec.Parsec String ParseState ()
+incLine x = do s <- Parsec.getState
+               let i = parseInfo s
+                   line = infoLine i
+                   column = infoColumn i
+                   identifier = infoIdentifier i
+                   file = infoFile i
+                   newInfo = Info (line + x) column file (Set.fromList []) identifier
+               Parsec.putState (s { parseInfo = newInfo })
+               return ()
 
 comment :: Parsec.Parsec String ParseState ()
 comment = do _ <- Parsec.char ';'
