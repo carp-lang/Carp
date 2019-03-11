@@ -222,7 +222,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                            let Just headTy = ty x
                                genObj o n = XObj (Sym (SymPath [] ("Whereas the " ++ enumerate n ++ " element in the array is " ++ show (getPath o))) Symbol)
                                   (info o) (ty o)
-                               headObj = XObj (Sym (SymPath [] ("I inferred the type of tge array from the first element of the array " ++ show (getPath x))) Symbol)
+                               headObj = XObj (Sym (SymPath [] ("I inferred the type of the array from the first element of the array " ++ show (getPath x))) Symbol)
                                   (info x) (Just headTy)
                                Just (StructTy "Array" [t]) = ty xobj
                                betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
