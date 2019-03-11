@@ -25,8 +25,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 xobjType <- toEither (ty xobj) (DefnMissingType xobj)
                                 bodyType <- toEither (ty body) (ExpressionMissingType xobj)
                                 let (FuncTy argTys retTy) = xobjType
-                                    bodyConstr = Constraint retTy bodyType xobj body OrdDefnBody
-                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj OrdArg) (map forceTy args) argTys args
+                                    bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
+                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
                                 return (bodyConstr : argConstrs ++ insideBodyConstraints)
 
                            -- Fn
@@ -36,8 +36,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 xobjType <- toEither (ty xobj) (DefnMissingType xobj)
                                 bodyType <- toEither (ty body) (ExpressionMissingType xobj)
                                 let (FuncTy argTys retTy) = xobjType
-                                    bodyConstr = Constraint retTy bodyType xobj body OrdDefnBody
-                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj OrdArg) (map forceTy args) argTys args
+                                    bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
+                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
                                 return (bodyConstr : argConstrs ++ insideBodyConstraints)
 
                            -- Def
@@ -45,7 +45,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                              do insideExprConstraints <- gen expr
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 exprType <- toEither (ty expr) (ExpressionMissingType xobj)
-                                let defConstraint = Constraint xobjType exprType xobj expr OrdDefExpr
+                                let defConstraint = Constraint xobjType exprType xobj expr xobj OrdDefExpr
                                 return (defConstraint : insideExprConstraints)
 
                            -- Let
@@ -54,9 +54,9 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 insideBindingsConstraints <- fmap join (mapM gen bindings)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
                                 let Just xobjTy = ty xobj
-                                    wholeStatementConstraint = Constraint bodyType xobjTy body xobj OrdLetBody
+                                    wholeStatementConstraint = Constraint bodyType xobjTy body xobj xobj OrdLetBody
                                     bindingsConstraints = zipWith (\(symTy, exprTy) (symObj, exprObj) ->
-                                                                     Constraint symTy exprTy symObj exprObj OrdLetBind)
+                                                                     Constraint symTy exprTy symObj exprObj xobj OrdLetBind)
                                                                   (map (forceTy *** forceTy) (pairwise bindings))
                                                                   (pairwise bindings)
                                 return (wholeStatementConstraint : insideBodyConstraints ++
@@ -70,11 +70,12 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 trueType <- toEither (ty ifTrue) (ExpressionMissingType ifTrue)
                                 falseType <- toEither (ty ifFalse) (ExpressionMissingType ifFalse)
-                                let expected = XObj (Sym (SymPath [] "Condition in if-value") Symbol) (info expr) (Just BoolTy)
-                                    conditionConstraint = Constraint exprType BoolTy expr expected OrdIfCondition
-                                    sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse OrdIfReturn
+                                let expected = XObj (Sym (SymPath [] "Condition in if value") Symbol) (info expr) (Just BoolTy)
+                                let lol = XObj (Sym (SymPath [] "lol") Symbol) (info expr) (Just BoolTy)
+                                    conditionConstraint = Constraint exprType BoolTy expr expected xobj OrdIfCondition
+                                    sameReturnConstraint = Constraint trueType falseType ifTrue ifFalse xobj OrdIfReturn
                                     Just t = ty xobj
-                                    wholeStatementConstraint = Constraint trueType t ifTrue xobj OrdIfWhole
+                                    wholeStatementConstraint = Constraint trueType t ifTrue xobj xobj OrdIfWhole
                                 return (conditionConstraint : sameReturnConstraint :
                                         wholeStatementConstraint : insideConditionConstraints ++
                                         insideTrueConstraints ++ insideFalseConstraints)
@@ -89,12 +90,12 @@ genConstraints typeEnv root = fmap sort (gen root)
 
                                 let
                                   -- Each case rhs should have the same return type as the whole match form:
-                                  mkRetConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj OrdArg) -- | TODO: Ord
+                                  mkRetConstr x@(XObj _ _ (Just t)) = Just (Constraint t xobjType x xobj xobj OrdArg) -- | TODO: Ord
                                   mkRetConstr _ = Nothing
                                   returnConstraints = mapMaybe (\(_, rhs) -> mkRetConstr rhs) (pairwise cases)
 
                                   -- Each case lhs should have the same type as the expression matching on
-                                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint t exprType x expr OrdArg) -- | TODO: Ord
+                                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint t exprType x expr xobj OrdArg) -- | TODO: Ord
                                   mkExprConstr _ = Nothing
                                   exprConstraints = mapMaybe (\(lhs, _) -> mkExprConstr lhs) (pairwise cases)
 
@@ -126,8 +127,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 bodyType <- toEither (ty body) (ExpressionMissingType body)
                                 let expectedCond = XObj (Sym (SymPath [] "Condition in while-expression") Symbol) (info expr) (Just BoolTy)
                                     expectedBody = XObj (Sym (SymPath [] "Body in while-expression") Symbol) (info xobj) (Just UnitTy)
-                                    conditionConstraint = Constraint exprType BoolTy expr expectedCond OrdWhileCondition
-                                    wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody OrdWhileBody
+                                    conditionConstraint = Constraint exprType BoolTy expr expectedCond xobj OrdWhileCondition
+                                    wholeStatementConstraint = Constraint bodyType UnitTy body expectedBody xobj OrdWhileBody
                                 return (conditionConstraint : wholeStatementConstraint :
                                         insideConditionConstraints ++ insideBodyConstraints)
 
@@ -139,9 +140,9 @@ genConstraints typeEnv root = fmap sort (gen root)
                                     in do insideExpressionsConstraints <- fmap join (mapM gen expressions)
                                           xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                           lastExprType <- toEither (ty lastExpr) (ExpressionMissingType xobj)
-                                          let retConstraint = Constraint xobjType lastExprType xobj lastExpr OrdDoReturn
+                                          let retConstraint = Constraint xobjType lastExprType xobj lastExpr xobj OrdDoReturn
                                               must = XObj (Sym (SymPath [] "Statement in do-expression") Symbol) (info xobj) (Just UnitTy)
-                                              mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must OrdDoStatement)
+                                              mkConstr x@(XObj _ _ (Just t)) = Just (Constraint t UnitTy x must xobj OrdDoStatement)
                                               mkConstr _ = Nothing
                                               expressionsShouldReturnUnit = mapMaybe mkConstr (init expressions)
                                           return (retConstraint : insideExpressionsConstraints ++ expressionsShouldReturnUnit)
@@ -156,7 +157,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 insideVariableConstraints <- gen variable
                                 variableType <- toEither (ty variable) (ExpressionMissingType variable)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let sameTypeConstraint = Constraint variableType valueType variable value OrdSetBang
+                                let sameTypeConstraint = Constraint variableType valueType variable value xobj OrdSetBang
                                 return (sameTypeConstraint : insideValueConstraints ++ insideVariableConstraints)
 
                            -- The
@@ -164,7 +165,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
                                 valueType <- toEither (ty value) (DefMissingType value)
-                                let theTheConstraint = Constraint xobjType valueType xobj value OrdThe
+                                let theTheConstraint = Constraint xobjType valueType xobj value xobj OrdThe
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Ref
@@ -176,7 +177,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let theTheConstraint = Constraint (RefTy xobjType) valueType xobj value OrdDeref
+                                let theTheConstraint = Constraint (RefTy xobjType) valueType xobj value xobj OrdDeref
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Break
@@ -196,18 +197,18 @@ genConstraints typeEnv root = fmap sort (gen root)
                                       let expected t n =
                                             XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")) Symbol)
                                             (info func) (Just t)
-                                          argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) OrdFuncAppArg)
+                                          argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
                                                                     (map forceTy args)
                                                                     argTys
                                                                     args
                                                                     [0..]
                                           Just xobjTy = ty xobj
-                                          retConstraint = Constraint xobjTy retTy xobj func OrdFuncAppRet
+                                          retConstraint = Constraint xobjTy retTy xobj func xobj OrdFuncAppRet
                                       in  return (retConstraint : funcConstraints ++ argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
                                         expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
-                                        wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected OrdFuncAppVarTy
+                                        wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : funcConstraints ++ insideArgsConstraints)
                                   _ -> Left (NotAFunction func)
 
@@ -219,9 +220,13 @@ genConstraints typeEnv root = fmap sort (gen root)
                 [] -> Right []
                 x:xs -> do insideExprConstraints <- fmap join (mapM gen arr)
                            let Just headTy = ty x
+                               genObj o n = XObj (Sym (SymPath [] ("Whereas the " ++ enumerate n ++ " element in the array is " ++ show (getPath o))) Symbol)
+                                  (info o) (ty o)
+                               headObj = XObj (Sym (SymPath [] ("I inferred the type of tge array from the first element of the array " ++ show (getPath x))) Symbol)
+                                  (info x) (Just headTy)
                                Just (StructTy "Array" [t]) = ty xobj
-                               betweenExprConstraints = map (\o -> Constraint headTy (forceTy o) x o OrdArrBetween) xs
-                               headConstraint = Constraint headTy t x xobj OrdArrHead
+                               betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
+                               headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
 
             _ -> Right []
