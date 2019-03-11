@@ -670,7 +670,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                      Right ok -> put ok
                    return dynamicNil
            Left err ->
-             return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "'. " ++ show err)))
+             return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err)))
        (_, Nothing) ->
          return (Left (EvalError ("Invalid type variables for type definition: " ++ pretty nameXObj)))
        _ ->

@@ -191,7 +191,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 case funcTy of
                                   (FuncTy argTys retTy) ->
                                     if length args /= length argTys then
-                                      Left (WrongArgCount func)
+                                      Left (WrongArgCount func (length argTys) (length args))
                                     else
                                       let expected t n =
                                             XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")) Symbol)

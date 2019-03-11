@@ -15,7 +15,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidObj Obj XObj
                | CantUseDerefOutsideFunctionApplication XObj
                | NotAType XObj
-               | WrongArgCount XObj
+               | WrongArgCount XObj Int Int
                | NotAFunction XObj
                | NoStatementsInDo XObj
                | TooManyFormsInBody XObj
@@ -49,35 +49,35 @@ data TypeError = SymbolMissingType XObj Env
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
-    "Symbol '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ " in env:\n" ++ prettyEnvironment env
+    "I couldn’t find a type for the symbol '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ " in the environment:\n" ++ prettyEnvironment env ++ "\n\nIt might be too general. You could try adding a type hint using `the`."
   show (DefnMissingType xobj) =
-    "Function definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
+    "I couldn’t find a type for the function definition '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj  ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (DefMissingType xobj) =
-    "Variable definition '" ++ getName xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj  ++ "."
+    "I couldn’t find a type for the variable definition '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj  ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (ExpressionMissingType xobj)=
-    "Expression '" ++ pretty xobj ++ "' missing type at " ++ prettyInfoFromXObj xobj ++ "."
+    "I couldn’t find a type for the expression '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (SymbolNotDefined symPath xobj) =
-    "Trying to refer to an undefined symbol '" ++ show symPath ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    "I couldn’t find the symbol '" ++ show symPath ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nMaybe you forgot to define it?"
   show (InvalidObj Defn xobj) =
-    "Invalid function definition at " ++ prettyInfoFromXObj xobj ++ "."
+    "I didn’t understand the function definition at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
   show (CantUseDerefOutsideFunctionApplication xobj) =
-    "Can't use 'deref' / '~' outside function application at " ++ prettyInfoFromXObj xobj ++ "."
+    "I found a `deref` / `~` that isn’t inside a function application at " ++ prettyInfoFromXObj xobj ++ ".\n\nEvery usage of `~` must be inside a function application."
   show (InvalidObj If xobj) =
-    "Invalid if-statement at " ++ prettyInfoFromXObj xobj ++ "."
+    "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
   show (InvalidObj o xobj) =
-    "Invalid obj '" ++ show o ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
-  show (WrongArgCount xobj) =
-    "Wrong argument count in call to '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    "I didn’t understand the form '" ++ show o ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
+  show (WrongArgCount xobj expected actual) =
+    "You used the wrong number of arguments in '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ". I expected " ++ show expected ++ ", but got " ++ show actual ++ "."
   show (NotAFunction xobj) =
-    "Trying to call non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    "You are trying to call the non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
   show (NoStatementsInDo xobj) =
-    "The do-statement has no expressions inside of it at " ++ prettyInfoFromXObj xobj ++ "."
+    "There are no expressions inside of the `do` statement at " ++ prettyInfoFromXObj xobj ++ ".\n\nAll do statements need to have one or more expressions in it."
   show (TooManyFormsInBody xobj) =
-    "Too many expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+    "There are too many expressions in the body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nTry wrapping them in a `do`."
   show (NoFormsInBody xobj) =
-    "No expressions in body position at " ++ prettyInfoFromXObj xobj ++ "."
+    "There are no expressions in the body body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
-    "Can't unify " ++ show (recursiveLookupTy mappings a) ++ " with " ++ show (recursiveLookupTy mappings b) ++ "\n\n" ++
+    "I can’t match the types '" ++ show (recursiveLookupTy mappings a) ++ "' and '" ++ show (recursiveLookupTy mappings b) ++ "'.\n\n" ++
     --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
     "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
@@ -86,64 +86,64 @@ instance Show TypeError where
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
   show (CantDisambiguate xobj originalName theType options) =
-    "Can't disambiguate symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    "I can’t disambiguate the symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (CantDisambiguateInterfaceLookup xobj name theType options) =
-    "Can't disambiguate interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    "I can’t disambiguate the interface '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (SeveralExactMatches xobj name theType options) =
-    "Several exact matches for interface lookup symbol '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    "There are several exact matches for the interface '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (NoMatchingSignature xobj originalName theType options) =
-    "Can't find matching lookup for symbol '" ++ originalName ++
+    "I can’t find any implementation for the interface '" ++ originalName ++
     "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
     "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (LeadingColon xobj) =
-    "Symbol '" ++ pretty xobj ++ "' starting with colon at " ++ prettyInfoFromXObj xobj ++ "."
+    "I found a symbol '" ++ pretty xobj ++ "' that starts with a colon at " ++ prettyInfoFromXObj xobj ++ ".\n\nThis is disallowed."
   show (HolesFound holes) =
-    "Holes found:\n\n    " ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++ "\n"
+    "I found the following holes:\n\n    " ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++ "\n"
   show (FailedToExpand xobj (EvalError errorMessage)) =
-    "Failed to expand at " ++ prettyInfoFromXObj xobj ++ ": " ++ errorMessage
+    "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++ ".\n\nThe error message I got was: " ++ errorMessage
   show (NotAValidType xobj) =
-    "Not a valid type: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+    pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
-    "Functions can't return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+    "Functions can’t return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj ++ "\n\nYou’ll have to copy the return value using `@`."
   show (LetCantReturnRefTy xobj t) =
-    "Let-expressions can't return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj
+    "`let` expressions can’t return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj ++ "\n\nYou’ll have to copy the return value using `@`."
   show (GettingReferenceToUnownedValue xobj) =
-    "Referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
-    prettyInfoFromXObj xobj ++ "\n" ++ show xobj
+    "You’re referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
+    prettyInfoFromXObj xobj ++ "\n" ++ show xobj ++ "\n\nYou’ll have to copy the value using `@`."
   show (UsingUnownedValue xobj) =
-    "Using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "You’re using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to copy the value using `@`."
   show (UsingCapturedValue xobj) =
-    "Using a captured value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "You’re using a value '" ++ pretty xobj ++ "' that was captured by a function at " ++ prettyInfoFromXObj xobj ++ "."
   show (ArraysCannotContainRefs xobj) =
-    "Arrays can't contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "Arrays can’t contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to make a copy using `@`."
   show (MainCanOnlyReturnUnitOrInt xobj t) =
-    "Main function can only return Int or (), got " ++ show t
+    "The main function can only return an `Int` or a unit type (`()`), but it got `" ++ show t ++ "`."
   show (MainCannotHaveArguments xobj c) =
-    "Main function can not have arguments, got " ++ show c
+    "The main function may not receive arguments, but it got " ++ show c ++ "."
   show (CannotConcretize xobj) =
-    "Unable to concretize '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "I’m unable to concretize the expression '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (TooManyAnnotateCalls xobj) =
-    "Too many annotate calls (infinite loop) when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "There were too many annotation calls when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\n I deduced it was an infinite loop."
   show (NotAType xobj) =
-    "Can't understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "I don’t understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "\n\nIs it defined?"
   show (CannotSet xobj) =
-    "Can't 'set!' " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+    "I can’t `set!` the expression " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
-    "Definition at " ++ prettyInfoFromXObj xobj ++ " does not match 'sig' annotation " ++ show sigTy ++ ", actual type is " ++ show (forceTy xobj)
+    "The definition at " ++ prettyInfoFromXObj xobj ++ " does not match its annotation provided to `sig` as" ++ show sigTy ++ ", its actual type is " ++ show (forceTy xobj) ++ "."
   show (CannotMatch xobj) =
-    "Can't match '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj
+    "I can’t `match` '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nOnly sumtypes can be matched against."
   show (InvalidSumtypeCase xobj) =
-    "Failed to convert '" ++ pretty xobj ++ "' to a sumtype case, at " ++ prettyInfoFromXObj xobj
+    "I failed to read '" ++ pretty xobj ++ "' as a sumtype case, at " ++ prettyInfoFromXObj xobj ++ ".\n\nSumtype cases look like this: `(Foo Int typevar)`"
   show (InvalidMemberType t xobj) =
-    "Can't use the type '" ++ show t ++ "' as a member type at " ++ prettyInfoFromXObj xobj
+    "I can’t use the type '" ++ show t ++ "' as a member type at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it defined and captured in the head of the type definition?"
   show (NotAmongRegisteredTypes t xobj) =
-    "Can't find a definition for the type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
+    "I can’t find a definition for the type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nWas it registered?"
   show (UnevenMembers xobjs) =
-    "Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs) ++ " at " ++ prettyInfoFromXObj (head xobjs)
+    "The number of members and types is uneven: '" ++ joinWithComma (map pretty xobjs) ++ "' at " ++ prettyInfoFromXObj (head xobjs) ++ ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -172,8 +172,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid obj '" ++ show o ++ "'."]
     (CantUseDerefOutsideFunctionApplication xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Can't use 'deref' / '~' outside function application."]
-    (WrongArgCount xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "'."]
+    (WrongArgCount xobj expected actual) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Wrong argument count in call to '" ++ getName xobj ++ "' (expected " ++ show expected ++ ", received " ++ show actual ++ ")."]
     (NotAFunction xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Trying to call non-function '" ++ getName xobj ++ "'."]
     (NoStatementsInDo xobj) ->
