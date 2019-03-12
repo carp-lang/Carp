@@ -46,10 +46,10 @@ data ConstraintOrder = OrdNo
                      | OrdInterfaceSym
                      deriving (Show, Ord, Eq)
 
-data Constraint = Constraint Ty Ty XObj XObj ConstraintOrder deriving Eq
+data Constraint = Constraint Ty Ty XObj XObj XObj ConstraintOrder deriving Eq
 
 instance Ord Constraint where
-  compare (Constraint _ _ _ _ a) (Constraint _ _ _ _ b) = compare a b
+  compare (Constraint _ _ _ _ _ a) (Constraint _ _ _ _ _ b) = compare a b
 
 data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                                              , unificationMappings :: TypeMappings
@@ -58,7 +58,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b xa xb ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb))
+  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty
@@ -105,54 +105,54 @@ solveOneInternal :: TypeMappings -> Constraint -> Either UnificationFailure Type
 solveOneInternal mappings constraint =
   case constraint of --trace ("SOLVE " ++ show constraint) constraint of
     -- Two type variables
-    Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ _ ->
+    Constraint aTy@(VarTy aName) bTy@(VarTy bName) _ _ _ _ ->
       if aTy == bTy
       then Right mappings
       else do m' <- checkForConflict mappings constraint aName bTy
               checkForConflict m' constraint bName aTy
 
     -- One type variable
-    Constraint (VarTy aName) bTy           _ _ _ -> checkForConflict mappings constraint aName bTy
-    Constraint aTy           (VarTy bName) _ _ _ -> checkForConflict mappings constraint bName aTy
+    Constraint (VarTy aName) bTy           _ _ _ _ -> checkForConflict mappings constraint aName bTy
+    Constraint aTy           (VarTy bName) _ _ _ _ -> checkForConflict mappings constraint bName aTy
 
     -- Struct types
-    Constraint (StructTy nameA varsA) (StructTy nameB varsB) _ _ _ ->
+    Constraint (StructTy nameA varsA) (StructTy nameB varsB) _ _ _ _ ->
       if nameA == nameB
-      then let (Constraint _ _ i1 i2 ord) = constraint
-           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ord)) mappings (zip varsA varsB)
+      then let (Constraint _ _ i1 i2 ctx ord) = constraint
+           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip varsA varsB)
       else Left (UnificationFailure constraint mappings)
 
     -- Func types
-    Constraint (FuncTy argsA retA) (FuncTy argsB retB) _ _ _ ->
+    Constraint (FuncTy argsA retA) (FuncTy argsB retB) _ _ _ _ ->
       if length argsA == length argsB
-      then let (Constraint _ _ i1 i2 ord) = constraint
-           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ord )) mappings (zip (retA : argsA)
+      then let (Constraint _ _ i1 i2 ctx ord) = constraint
+           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip (retA : argsA)
                                                                                                      (retB : argsB))
       else Left (UnificationFailure constraint mappings)
 
     -- Pointer types
-    Constraint (PointerTy a) (PointerTy b) _ _ _ ->
-      let (Constraint _ _ i1 i2 ord) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2 ord)
+    Constraint (PointerTy a) (PointerTy b) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+      in  solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
 
     -- Ref types
     -- TODO: This messes up the error message since the constraint is between non-reffed types so the refs don't show in the error message!!!
-    Constraint (RefTy a) (RefTy b) _ _ _ ->
-      let (Constraint _ _ i1 i2 ord) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2 ord)
+    Constraint (RefTy a) (RefTy b) _ _ _ _ ->
+      let (Constraint _ _ i1 i2 ctx ord) = constraint
+      in  solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
 
     -- Else
-    Constraint aTy bTy _ _ _ ->
+    Constraint aTy bTy _ _ _ _ ->
       if aTy == bTy
       then Right mappings
       else Left (UnificationFailure constraint mappings)
 
-mkConstraint :: ConstraintOrder -> XObj -> XObj -> Ty -> Ty -> Constraint
-mkConstraint order xobj1 xobj2 t1 t2 = Constraint t1 t2 xobj1 xobj2 order
+mkConstraint :: ConstraintOrder -> XObj -> XObj -> XObj -> Ty -> Ty -> Constraint
+mkConstraint order xobj1 xobj2 ctx t1 t2 = Constraint t1 t2 xobj1 xobj2 ctx order
 
 checkForConflict :: TypeMappings -> Constraint -> String -> Ty -> Either UnificationFailure TypeMappings
 checkForConflict mappings constraint name otherTy =
-  let (Constraint _ _ xobj1 xobj2 _) = constraint
+  let (Constraint _ _ xobj1 xobj2 ctx  _) = constraint
       found = recursiveLookup mappings name
   in
     if doesTypeContainTyVarWithName name otherTy
@@ -163,23 +163,23 @@ checkForConflict mappings constraint name otherTy =
         Just (StructTy structName structTyVars) ->
           case otherTy of
             StructTy otherStructName otherTyVars | structName == otherStructName ->
-                                                   foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2) structTyVars otherTyVars)
+                                                   foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (FuncTy argTys retTy) ->
           case otherTy of
-            FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2) argTys otherArgTys)
-                                                solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 retTy otherRetTy)
+            FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
+                                                solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (PointerTy innerTy) ->
           case otherTy of
-            PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 innerTy otherInnerTy)
+            PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (RefTy innerTy) ->
           case otherTy of
-            RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 innerTy otherInnerTy)
+            RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of

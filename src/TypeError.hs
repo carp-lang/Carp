@@ -76,8 +76,8 @@ instance Show TypeError where
     "There are too many expressions in the body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nTry wrapping them in a `do`."
   show (NoFormsInBody xobj) =
     "There are no expressions in the body body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
-  show (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) =
-    "I can’t match the types '" ++ show (recursiveLookupTy mappings a) ++ "' and '" ++ show (recursiveLookupTy mappings b) ++ "'.\n\n" ++
+  show (UnificationFailed constraint@(Constraint a b aObj bObj ctx _) mappings constraints) =
+    "I can’t match the types '" ++ show (recursiveLookupTy mappings a) ++ "' and '" ++ show (recursiveLookupTy mappings b) ++ "'" ++ extra ++ ".\n\n" ++
     --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
     "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
@@ -85,6 +85,8 @@ instance Show TypeError where
     -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
+    where extra = if ctx == aObj || ctx == bObj then "" else " within `" ++ snip (pretty ctx) ++ "`"
+          snip s = if length s > 25 then take 15 s ++ " ... " ++ drop (length s - 5) s else s
   show (CantDisambiguate xobj originalName theType options) =
     "I can’t disambiguate the symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
     "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
@@ -148,10 +150,9 @@ instance Show TypeError where
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
   case err of
-    (UnificationFailed constraint@(Constraint a b aObj bObj _) mappings constraints) ->
-      [machineReadableInfoFromXObj fppl aObj ++ " " ++ pretty aObj ++ " : " ++
-       showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
-      ,machineReadableInfoFromXObj fppl bObj ++ " " ++ pretty bObj ++ " : " ++
+    (UnificationFailed constraint@(Constraint a b aObj bObj _ _) mappings constraints) ->
+      [machineReadableInfoFromXObj fppl aObj ++ " Inferred " ++ showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
+      ,machineReadableInfoFromXObj fppl bObj ++ " Inferred " ++
        showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
     (DefnMissingType xobj) ->

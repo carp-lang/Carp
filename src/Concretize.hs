@@ -240,7 +240,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                  fake1 = XObj (Sym (SymPath [] "theType") Symbol) Nothing Nothing
                                                  fake2 = XObj (Sym (SymPath [] "xobjType") Symbol) Nothing Nothing
                                                  Just i' = i
-                                       in  case solve [Constraint theType t' fake1 fake2 OrdMultiSym] of
+                                       in  case solve [Constraint theType t' fake1 fake2 fake1 OrdMultiSym] of
                                              Right mappings ->
                                                let replaced = replaceTyVars mappings t'
                                                    suffixed = suffixTyVars ("_x" ++ show (infoIdentifier i')) replaced -- Make sure it gets unique type variables. TODO: Is there a better way?
@@ -381,7 +381,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
       XObj (Arr memberXObjs) _ _ = head membersXObjs
-  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
+  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym] of
         Left e -> error (show e)
         Right mappings ->
           let concretelyTypedMembers = replaceGenericTypeSymbolsOnMembers mappings memberXObjs
@@ -410,7 +410,7 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
   -- Turn (deftype (Maybe a) (Just a) (Nothing)) into (deftype (Maybe Int) (Just Int) (Nothing))
   let fake1 = XObj (Sym (SymPath [] "a") Symbol) Nothing Nothing
       fake2 = XObj (Sym (SymPath [] "b") Symbol) Nothing Nothing
-  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 OrdMultiSym] of
+  in  case solve [Constraint originalStructTy genericStructTy fake1 fake2 fake1 OrdMultiSym] of
         Left e -> error (show e)
         Right mappings ->
           let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
