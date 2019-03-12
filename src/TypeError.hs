@@ -6,12 +6,13 @@ import Types
 import Obj
 import Constraints
 import Util
+import Lookup
 
 data TypeError = SymbolMissingType XObj Env
                | DefnMissingType XObj
                | DefMissingType XObj
                | ExpressionMissingType XObj
-               | SymbolNotDefined SymPath XObj
+               | SymbolNotDefined SymPath XObj Env
                | InvalidObj Obj XObj
                | CantUseDerefOutsideFunctionApplication XObj
                | NotAType XObj
@@ -49,103 +50,172 @@ data TypeError = SymbolMissingType XObj Env
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
-    "I couldn’t find a type for the symbol '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ " in the environment:\n" ++ prettyEnvironment env ++ "\n\nIt might be too general. You could try adding a type hint using `the`."
+    "I couldn’t find a type for the symbol '" ++ getName xobj ++ "' at " ++
+    prettyInfoFromXObj xobj ++ " in the environment:\n" ++
+    prettyEnvironment env ++
+    "\n\nIt might be too general. You could try adding a type hint using `the`."
   show (DefnMissingType xobj) =
-    "I couldn’t find a type for the function definition '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj  ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
+    "I couldn’t find a type for the function definition '" ++ getName xobj ++
+    "' at " ++ prettyInfoFromXObj xobj  ++
+    ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (DefMissingType xobj) =
-    "I couldn’t find a type for the variable definition '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj  ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
+    "I couldn’t find a type for the variable definition '" ++ getName xobj ++
+    "' at " ++ prettyInfoFromXObj xobj  ++
+    ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (ExpressionMissingType xobj)=
-    "I couldn’t find a type for the expression '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
-  show (SymbolNotDefined symPath xobj) =
-    "I couldn’t find the symbol '" ++ show symPath ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nMaybe you forgot to define it?"
+    "I couldn’t find a type for the expression '" ++ pretty xobj ++ "' at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nIt might be too general. You could try adding a type hint using `the`."
+  show (SymbolNotDefined symPath@(SymPath p _) xobj env) =
+    "I couldn’t find the symbol '" ++ show symPath ++ "' at " ++
+    prettyInfoFromXObj xobj ++ ".\n\n" ++
+    matches (keysInEnvEditDistance symPath env 3)
+    where matches [] = "Maybe you forgot to define it?"
+          matches x = "Maybe you wanted one of the following?\n    " ++ joinWith "\n    " (map (\s -> show $ (SymPath p s)) x)
   show (InvalidObj Defn xobj) =
-    "I didn’t understand the function definition at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
+    "I didn’t understand the function definition at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nIs it valid?  Every `defn` needs to follow the form `(defn name [arg] body)`."
   show (CantUseDerefOutsideFunctionApplication xobj) =
-    "I found a `deref` / `~` that isn’t inside a function application at " ++ prettyInfoFromXObj xobj ++ ".\n\nEvery usage of `~` must be inside a function application."
+    "I found a `deref` / `~` that isn’t inside a function application at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nEvery usage of `~` must be inside a function application."
   show (InvalidObj If xobj) =
-    "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
+    "I didn’t understand the `if` statement at " ++ prettyInfoFromXObj xobj ++
+    ".\n\nIs it valid? Every `if` needs to follow the form `(if cond iftrue iffalse)`."
   show (InvalidObj o xobj) =
-    "I didn’t understand the form '" ++ show o ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
+    "I didn’t understand the form `" ++ show o ++ "` at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nIs it valid?"
   show (WrongArgCount xobj expected actual) =
-    "You used the wrong number of arguments in '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ". I expected " ++ show expected ++ ", but got " ++ show actual ++ "."
+    "You used the wrong number of arguments in '" ++ getName xobj ++ "' at " ++
+    prettyInfoFromXObj xobj ++ ". I expected " ++ show expected ++
+    ", but got " ++ show actual ++ "."
   show (NotAFunction xobj) =
-    "You are trying to call the non-function '" ++ getName xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "."
+    "You are trying to call the non-function `" ++ getName xobj ++ "` at " ++
+    prettyInfoFromXObj xobj ++ "."
   show (NoStatementsInDo xobj) =
-    "There are no expressions inside of the `do` statement at " ++ prettyInfoFromXObj xobj ++ ".\n\nAll do statements need to have one or more expressions in it."
+    "There are no expressions inside of the `do` statement at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nAll instances of `do` need to have one or more expressions in it."
   show (TooManyFormsInBody xobj) =
-    "There are too many expressions in the body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nTry wrapping them in a `do`."
+    "There are too many expressions in the body of the form at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nTry wrapping them in a `do`."
   show (NoFormsInBody xobj) =
-    "There are no expressions in the body body of the form at " ++ prettyInfoFromXObj xobj ++ ".\n\nI need exactly one body form. For multiple forms, try using `do`."
+    "There are no expressions in the body body of the form at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed constraint@(Constraint a b aObj bObj ctx _) mappings constraints) =
-    "I can’t match the types '" ++ show (recursiveLookupTy mappings a) ++ "' and '" ++ show (recursiveLookupTy mappings b) ++ "'" ++ extra ++ ".\n\n" ++
+    "I can’t match the types `" ++ show (recursiveLookupTy mappings a) ++
+    "` and `" ++ show (recursiveLookupTy mappings b) ++ "`" ++ extra ++
+    ".\n\n" ++
     --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
-    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings aObj ++ "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
+    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings aObj ++
+    "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
     "\n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj mappings bObj ++ "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
+    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj mappings bObj ++
+    "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
     -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
     where extra = if ctx == aObj || ctx == bObj then "" else " within `" ++ snip (pretty ctx) ++ "`"
-          snip s = if length s > 25 then take 15 s ++ " ... " ++ drop (length s - 5) s else s
+          snip s = if length s > 25
+                    then take 15 s ++ " ... " ++ drop (length s - 5) s
+                    else s
   show (CantDisambiguate xobj originalName theType options) =
-    "I can’t disambiguate the symbol '" ++ originalName ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-    "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+    "I found an ambiguous symbol `" ++ originalName ++ "` of type `" ++
+    show theType ++ "` at " ++ prettyInfoFromXObj xobj ++
+    "\nPossibilities:\n    " ++
+    joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (CantDisambiguateInterfaceLookup xobj name theType options) =
-    "I can’t disambiguate the interface '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-    "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+    "I found an ambiguous interface `" ++ name ++ "` of type `" ++
+    show theType ++ "` at " ++ prettyInfoFromXObj xobj ++
+    "\nPossibilities:\n    " ++
+    joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (SeveralExactMatches xobj name theType options) =
-    "There are several exact matches for the interface '" ++ name ++ "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-    "\nPossibilities:\n    " ++ joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
+    "There are several exact matches for the interface `" ++ name ++
+    "` of type `" ++ show theType ++ "` at " ++ prettyInfoFromXObj xobj ++
+    "\nPossibilities:\n    " ++
+    joinWith "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (NoMatchingSignature xobj originalName theType options) =
-    "I can’t find any implementation for the interface '" ++ originalName ++
-    "' of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
-    "\nNone of the possibilities have the correct signature:\n    " ++ joinWith
+    "I can’t find any implementation for the interface `" ++ originalName ++
+    "` of type " ++ show theType ++ " at " ++ prettyInfoFromXObj xobj ++
+    ".\n\nNone of the possibilities have the correct signature:\n    " ++ joinWith
     "\n    " (map (\(t, p) -> show p ++ " : " ++ show t) options)
   show (LeadingColon xobj) =
-    "I found a symbol '" ++ pretty xobj ++ "' that starts with a colon at " ++ prettyInfoFromXObj xobj ++ ".\n\nThis is disallowed."
+    "I found a symbol '" ++ pretty xobj ++ "' that starts with a colon at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nThis is disallowed."
   show (HolesFound holes) =
-    "I found the following holes:\n\n    " ++ joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++ "\n"
-  show (FailedToExpand xobj (EvalError errorMessage)) =
-    "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++ ".\n\nThe error message I got was: " ++ errorMessage
+    "I found the following holes:\n\n    " ++
+    joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++
+    "\n"
+  show (FailedToExpand xobj err@(EvalError _ _)) =
+    "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++
+    ".\n\nThe error message I got was: " ++ show err
   show (NotAValidType xobj) =
     pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
-    "Functions can’t return references. " ++ getName xobj ++ " : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj ++ "\n\nYou’ll have to copy the return value using `@`."
+    "Functions can’t return references. " ++ getName xobj ++ " : " ++ show t
+    ++ " at " ++ prettyInfoFromXObj xobj ++
+    "\n\nYou’ll have to copy the return value using `@`."
   show (LetCantReturnRefTy xobj t) =
-    "`let` expressions can’t return references. '" ++ pretty xobj ++ "' : " ++ show t ++ " at " ++ prettyInfoFromXObj xobj ++ "\n\nYou’ll have to copy the return value using `@`."
+    "`let` expressions can’t return references. " ++ pretty xobj ++ " : " ++
+    show t ++ " at " ++ prettyInfoFromXObj xobj ++
+    "\n\nYou’ll have to copy the return value using `@`."
   show (GettingReferenceToUnownedValue xobj) =
-    "You’re referencing a given-away value '" ++ pretty xobj ++ "' at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
-    prettyInfoFromXObj xobj ++ "\n" ++ show xobj ++ "\n\nYou’ll have to copy the value using `@`."
+    "You’re referencing a given-away value `" ++ pretty xobj ++ "` at " ++ --"' (expression " ++ freshVar i ++ ") at " ++
+    prettyInfoFromXObj xobj ++ "\n" ++ show xobj ++
+    "\n\nYou’ll have to copy the value using `@`."
   show (UsingUnownedValue xobj) =
-    "You’re using a given-away value '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to copy the value using `@`."
+    "You’re using a given-away value `" ++ pretty xobj ++ "` at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to copy the value using `@`."
   show (UsingCapturedValue xobj) =
-    "You’re using a value '" ++ pretty xobj ++ "' that was captured by a function at " ++ prettyInfoFromXObj xobj ++ "."
+    "You’re using a value `" ++ pretty xobj ++
+    "` that was captured by a function at " ++ prettyInfoFromXObj xobj ++ "."
   show (ArraysCannotContainRefs xobj) =
-    "Arrays can’t contain references: '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to make a copy using `@`."
+    "Arrays can’t contain references: `" ++ pretty xobj ++ "` at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nYou’ll have to make a copy using `@`."
   show (MainCanOnlyReturnUnitOrInt xobj t) =
-    "The main function can only return an `Int` or a unit type (`()`), but it got `" ++ show t ++ "`."
+    "The main function can only return an `Int` or a unit type (`()`), but it got `" ++
+    show t ++ "`."
   show (MainCannotHaveArguments xobj c) =
     "The main function may not receive arguments, but it got " ++ show c ++ "."
   show (CannotConcretize xobj) =
-    "I’m unable to concretize the expression '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nIt might be too general. You could try adding a type hint using `the`."
+    "I’m unable to concretize the expression '" ++ pretty xobj ++ "' at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nIt might be too general. You could try adding a type hint using `the`."
   show (TooManyAnnotateCalls xobj) =
-    "There were too many annotation calls when annotating '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\n I deduced it was an infinite loop."
+    "There were too many annotation calls when annotating `" ++ pretty xobj ++
+    "` at " ++ prettyInfoFromXObj xobj ++
+    ".\n\n I deduced it was an infinite loop."
   show (NotAType xobj) =
-    "I don’t understand the type '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ "\n\nIs it defined?"
+    "I don’t understand the type '" ++ pretty xobj ++ "' at " ++
+    prettyInfoFromXObj xobj ++ "\n\nIs it defined?"
   show (CannotSet xobj) =
-    "I can’t `set!` the expression " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
+    "I can’t `set!` the expression `" ++ pretty xobj ++ "` at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
-    "The definition at " ++ prettyInfoFromXObj xobj ++ " does not match its annotation provided to `sig` as" ++ show sigTy ++ ", its actual type is " ++ show (forceTy xobj) ++ "."
+    "The definition at " ++ prettyInfoFromXObj xobj ++
+    " does not match its annotation provided to `sig` as `" ++ show sigTy ++
+    "`, its actual type is `" ++ show (forceTy xobj) ++ "`."
   show (CannotMatch xobj) =
-    "I can’t `match` '" ++ pretty xobj ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nOnly sumtypes can be matched against."
+    "I can’t `match` `" ++ pretty xobj ++ "` at " ++ prettyInfoFromXObj xobj ++
+    ".\n\nOnly sumtypes can be matched against."
   show (InvalidSumtypeCase xobj) =
-    "I failed to read '" ++ pretty xobj ++ "' as a sumtype case, at " ++ prettyInfoFromXObj xobj ++ ".\n\nSumtype cases look like this: `(Foo Int typevar)`"
+    "I failed to read `" ++ pretty xobj ++ "` as a sumtype case at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nSumtype cases look like this: `(Foo [Int typevar])`"
   show (InvalidMemberType t xobj) =
-    "I can’t use the type '" ++ show t ++ "' as a member type at " ++ prettyInfoFromXObj xobj ++ ".\n\nIs it defined and captured in the head of the type definition?"
+    "I can’t use the type `" ++ show t ++ "` as a member type at " ++
+    prettyInfoFromXObj xobj ++
+    ".\n\nIs it defined and captured in the head of the type definition?"
   show (NotAmongRegisteredTypes t xobj) =
-    "I can’t find a definition for the type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj ++ ".\n\nWas it registered?"
+    "I can’t find a definition for the type `" ++ show t ++ "` at " ++
+    prettyInfoFromXObj xobj ++ ".\n\nWas it registered?"
   show (UnevenMembers xobjs) =
-    "The number of members and types is uneven: '" ++ joinWithComma (map pretty xobjs) ++ "' at " ++ prettyInfoFromXObj (head xobjs) ++ ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
+    "The number of members and types is uneven: `" ++
+    joinWithComma (map pretty xobjs) ++ "` at " ++
+    prettyInfoFromXObj (head xobjs) ++
+    ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -161,7 +231,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Variable definition '" ++ getName xobj ++ "' missing type."]
     (ExpressionMissingType xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Expression '" ++ pretty xobj ++ "' missing type."]
-    (SymbolNotDefined symPath xobj) ->
+    (SymbolNotDefined symPath xobj _) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
     (SymbolMissingType xobj env) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
@@ -203,7 +273,7 @@ machineReadableErrorStrings fppl err =
     -- (HolesFound holes) ->
     --   (map (\(name, t) -> machineReadableInfoFromXObj fppl xobj ++ " " ++ name ++ " : " ++ show t) holes)
 
-    (FailedToExpand xobj (EvalError errorMessage)) ->
+    (FailedToExpand xobj (EvalError errorMessage _)) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Failed to expand: " ++ errorMessage]
 
     -- TODO: Remove overlapping errors:

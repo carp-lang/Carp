@@ -89,14 +89,18 @@ expand eval env xobj =
                   return $ do okBindings <- sequence bind
                               okBody <- expandedBody
                               Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
-          else return (Left (EvalError ("Uneven number of forms in let-statement: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)))
+          else return (Left (EvalError (
+            "I ecountered an odd number of forms inside a `let` (`" ++
+            pretty xobj ++ "`)")
+            (info xobj)))
 
         matchExpr@(XObj Match _ _) : expr : rest ->
           do ctx <- get
              let fppl = projectFilePathPrintLength (contextProj ctx)
              if null rest
-                then return (Left (EvalError ("No forms in match-expression: " ++
-                                               machineReadableInfoFromXObj fppl xobj))) -- TODO: fppl shouldn't be decided here
+                then return (Left
+                      (EvalError "I encountered a `match` without forms"
+                                 (info xobj)))
                 else if even (length rest)
                      then do expandedExpr <- expand eval env expr
                              expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
@@ -106,8 +110,9 @@ expand eval env xobj =
                              return $ do okExpandedExpr <- expandedExpr
                                          okExpandedRest <- expandedRest
                                          return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
-                     else return (Left (EvalError ("Uneven number of forms in match-expression: " ++
-                                                    machineReadableInfoFromXObj fppl xobj)))
+                     else return (Left (EvalError
+                        "I encountered an odd number of forms inside a `match`"
+                        (info xobj)))
 
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand eval env) expressions
@@ -118,11 +123,20 @@ expand eval env xobj =
              return $ do okExpression <- expandedExpression
                          Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t) -- Replace the with-expression with just the expression!
         [withExpr@(XObj With _ _), _, _] ->
-          return (Left (EvalError ("Non-symbol in 'with' expression: " ++ show xobj ++ " at " ++ prettyInfoFromXObj xobj)))
+          return (Left (EvalError ("I encountered the value `" ++ pretty xobj ++
+          "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
+          ".\n\n`with` accepts only symbols.")
+          Nothing))
         (XObj With _ _) : _ ->
-          return (Left (EvalError ("Can't have multiple forms within a 'with' expression (except at top-level) at " ++ prettyInfoFromXObj xobj)))
+          return (Left (EvalError (
+            "I encountered multiple forms inside a `with` at " ++
+            prettyInfoFromXObj xobj ++
+            ".\n\n`with` accepts only one expression, except at the top level.")
+            Nothing))
         XObj Mod{} _ _ : _ ->
-          return (Left (EvalError "Can't eval module"))
+          return (Left (EvalError ("I can’t evaluate the module `" ++
+                                   pretty xobj ++ "`")
+                                  (info xobj)))
         f:args -> do expandedF <- expand eval env f
                      expandedArgs <- fmap sequence (mapM (expand eval env) args)
                      case expandedF of

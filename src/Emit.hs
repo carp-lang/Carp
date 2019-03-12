@@ -32,10 +32,10 @@ indentAmount = 4
 
 data ToCError = InvalidParameter XObj
               | InvalidList XObj
-              | DontVisitObj Obj
-              | CannotEmitUnit
-              | CannotEmitExternal
-              | CannotEmitModKeyword
+              | DontVisitObj XObj
+              | CannotEmitUnit XObj
+              | CannotEmitExternal XObj
+              | CannotEmitModKeyword XObj
               | BinderIsMissingType Binder
               | UnresolvedMultiSymbol XObj
               | UnresolvedInterfaceSymbol XObj
@@ -43,23 +43,40 @@ data ToCError = InvalidParameter XObj
               | CannotSet XObj
 
 instance Show ToCError where
-  show (InvalidParameter xobj) = "Invalid parameter: " ++ show (obj xobj)
-  show (InvalidList xobj) = "Invalid list: " ++ show (obj xobj)
-  show (DontVisitObj o) = "Don't visit " ++ show o ++ " (internal compiler error)."
-  show CannotEmitUnit = "Can't emit code for empty list: ()"
-  show CannotEmitExternal = "Can't emit code for external function/variable."
-  show CannotEmitModKeyword = "Can't emit code for Mod."
-  show (BinderIsMissingType b) = "Binder is missing type: " ++ show b
+  show (InvalidParameter xobj) =
+    "I encountered an invalid parameter `" ++ show (obj xobj) ++ "` at " ++
+    prettyInfoFromXObj xobj ++ "."
+  show (InvalidList xobj) =
+    "I encountered an invalid list `" ++ show (obj xobj) ++ "` at " ++
+    prettyInfoFromXObj xobj ++ "."
+  show (DontVisitObj xobj) =
+    "I can’t visit " ++ show (obj xobj) ++ " at " ++ prettyInfoFromXObj xobj ++
+    "."
+  show (CannotEmitUnit xobj) =
+    "I can't emit code for the unit type `()` at" ++ prettyInfoFromXObj xobj ++
+    "."
+  show (CannotEmitExternal xobj) =
+    "I can’t emit code for the external function/variable `" ++
+    show (obj xobj) ++ "` at " ++ prettyInfoFromXObj xobj ++ "."
+  show (CannotEmitModKeyword xobj) =
+    "I can’t emit code for the module `" ++ show (obj xobj) ++ "` at " ++
+    prettyInfoFromXObj xobj ++ "."
+  show (BinderIsMissingType b) =
+    "I encountered a binder `" ++ show b ++ "` that is missing its type."
   show (UnresolvedMultiSymbol xobj@(XObj (MultiSym symName symPaths) _ _)) =
-    "Found ambiguous symbol '" ++ symName ++
-    "' (alternatives are " ++ joinWithComma (map show symPaths) ++ ")" ++
-    " at " ++ prettyInfoFromXObj xobj
+    "I found an ambiguous symbol `" ++ symName ++
+    "` at " ++ prettyInfoFromXObj xobj ++ "\n\nPossibilities:\n  " ++
+    joinWith "\n  " (map show symPaths) ++
+    "\n\nAll possibilities have the correct type."
   show (UnresolvedInterfaceSymbol xobj@(XObj (InterfaceSym symName) _ _)) =
-    "Found unresolved use of interface '" ++ symName ++ "'" ++
-    " at " ++ prettyInfoFromXObj xobj
+    "I found an interface `" ++ symName ++
+    "` that is unresolved in the context at" ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
-    "Found unresolved generic type '" ++ show t ++ "' at " ++ prettyInfoFromXObj xobj
-  show (CannotSet xobj) = "Can't emit code for setting " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj
+    "I found an unresolved generic type `" ++ show t ++
+    "` for the expression `" ++ show xobj ++ "` at " ++ prettyInfoFromXObj xobj
+  show (CannotSet xobj) =
+    "I can’t emit code for setting `" ++ pretty xobj ++ "` at " ++
+    prettyInfoFromXObj xobj ++ "\n\nOnly variables can be reset using `set!`."
 
 data ToCMode = Functions | Globals | All deriving Show
 
@@ -93,32 +110,32 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                                 '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
             Sym _ _ -> visitSymbol indent xobj
-            Defn -> error (show (DontVisitObj Defn))
-            Def -> error (show (DontVisitObj Def))
-            Let -> error (show (DontVisitObj Let))
-            If -> error (show (DontVisitObj If))
-            Break -> error (show (DontVisitObj Break))
-            While -> error (show (DontVisitObj While))
-            Do -> error (show (DontVisitObj Do))
-            e@(Typ _) -> error (show (DontVisitObj e))
-            e@(DefSumtype _) -> error (show (DontVisitObj e))
-            Mod _ -> error (show CannotEmitModKeyword)
-            External _ -> error (show CannotEmitExternal)
-            ExternalType -> error (show (DontVisitObj ExternalType))
-            e@(Command _) -> error (show (DontVisitObj e))
-            e@(Deftemplate _) ->  error (show (DontVisitObj e))
-            e@(Instantiate _) ->  error (show (DontVisitObj e))
-            e@(Defalias _) -> error (show (DontVisitObj e))
-            e@(MultiSym _ _) -> error (show (DontVisitObj e))
-            e@(InterfaceSym _) -> error (show (DontVisitObj e))
-            Address -> error (show (DontVisitObj Address))
-            SetBang -> error (show (DontVisitObj SetBang))
-            Macro -> error (show (DontVisitObj Macro))
-            Dynamic -> error (show (DontVisitObj Dynamic))
-            The -> error (show (DontVisitObj The))
-            Ref -> error (show (DontVisitObj Ref))
-            Deref -> error (show (DontVisitObj Deref))
-            e@(Interface _ _) -> error (show (DontVisitObj e))
+            Defn -> error (show (DontVisitObj xobj))
+            Def -> error (show (DontVisitObj xobj))
+            Let -> error (show (DontVisitObj xobj))
+            If -> error (show (DontVisitObj xobj))
+            Break -> error (show (DontVisitObj xobj))
+            While -> error (show (DontVisitObj xobj))
+            Do -> error (show (DontVisitObj xobj))
+            e@(Typ _) -> error (show (DontVisitObj xobj))
+            e@(DefSumtype _) -> error (show (DontVisitObj xobj))
+            Mod _ -> error (show (CannotEmitModKeyword xobj))
+            External _ -> error (show (CannotEmitExternal xobj))
+            ExternalType -> error (show (DontVisitObj xobj))
+            e@(Command _) -> error (show (DontVisitObj xobj))
+            e@(Deftemplate _) ->  error (show (DontVisitObj xobj))
+            e@(Instantiate _) ->  error (show (DontVisitObj xobj))
+            e@(Defalias _) -> error (show (DontVisitObj xobj))
+            e@(MultiSym _ _) -> error (show (DontVisitObj xobj))
+            e@(InterfaceSym _) -> error (show (DontVisitObj xobj))
+            Address -> error (show (DontVisitObj xobj))
+            SetBang -> error (show (DontVisitObj xobj))
+            Macro -> error (show (DontVisitObj xobj))
+            Dynamic -> error (show (DontVisitObj xobj))
+            The -> error (show (DontVisitObj xobj))
+            Ref -> error (show (DontVisitObj xobj))
+            Deref -> error (show (DontVisitObj xobj))
+            e@(Interface _ _) -> error (show (DontVisitObj xobj))
 
         visitStr' indent str i =
           -- | This will allocate a new string every time the code runs:

@@ -294,10 +294,12 @@ pretty = visit 0
             Interface _ _ -> "interface"
             With -> "with"
 
-newtype EvalError = EvalError String deriving (Eq)
+data EvalError = EvalError String (Maybe Info) deriving (Eq)
 
 instance Show EvalError where
-  show (EvalError msg) = msg
+  show (EvalError msg info) = msg ++ getInfo info
+    where getInfo (Just i) = " at " ++ prettyInfo i ++ "."
+          getInfo Nothing = ""
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
