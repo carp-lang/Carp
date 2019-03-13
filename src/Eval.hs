@@ -221,10 +221,10 @@ eval env xobj =
         XObj (Sym (SymPath [] "definterface") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to `definterface`: " ++ pretty xobj) (info xobj) fppl))
 
-        [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
-          specialCommandDefdynamic name params body
-        XObj (Sym (SymPath [] "defdynamic") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `defdynamic`: " ++ pretty xobj) (info xobj) fppl))
+        [XObj (Sym (SymPath [] "defndynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
+          specialCommandDefndynamic name params body
+        XObj (Sym (SymPath [] "defndynamic") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to `defndynamic`: " ++ pretty xobj) (info xobj) fppl))
 
         [XObj (Sym (SymPath [] "defmacro") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefmacro name params body
@@ -743,8 +743,8 @@ specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty
          return (Left (EvalError ("Invalid type for interface '" ++ name ++ "': " ++
                                    pretty typeXObj) (info typeXObj) fppl))
 
-specialCommandDefdynamic :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefdynamic name params body =
+specialCommandDefndynamic :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandDefndynamic name params body =
   do ctx <- get
      let pathStrings = contextPath ctx
          globalEnv = contextGlobalEnv ctx

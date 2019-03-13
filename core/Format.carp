@@ -1,6 +1,6 @@
 (private fmt-internal)
 (hidden fmt-internal)
-(defdynamic fmt-internal [s args]
+(defndynamic fmt-internal [s args]
   (let [idx (String.index-of s \%)
         len (String.length s)]
     (if (= idx -1)

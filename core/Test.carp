@@ -106,7 +106,7 @@
         (IO.println &(Int.str failed))
         (IO.color "reset")))))
 
-(defdynamic with-test-internal [name forms]
+(defndynamic with-test-internal [name forms]
   (if (= (length forms) 1)
     (list (list 'set! name (list 'ref (car forms))))
     (cons (list 'set! name (list 'ref (car forms)))

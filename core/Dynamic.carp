@@ -1,15 +1,15 @@
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
 
-  (defdynamic inc [x]
+  (defndynamic inc [x]
     (+ x 1))
 
-  (defdynamic dec [x]
+  (defndynamic dec [x]
     (- x 1))
 
   (defmodule Project
     (doc no-echo "Turn off debug printing in the compiler.")
-    (defdynamic no-echo []
+    (defndynamic no-echo []
       (do
         (Project.config "print-ast" false)
         (Project.config "echo-compiler-cmd" false))))
@@ -19,8 +19,8 @@
 
 ;; The following functions are not put into a module for now:
 
-(defdynamic add-cflag [flag]
+(defndynamic add-cflag [flag]
   (Project.config "cflag" flag))
 
-(defdynamic add-lib [lib]
+(defndynamic add-lib [lib]
   (Project.config "libflag" lib))

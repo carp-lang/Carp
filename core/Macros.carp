@@ -34,36 +34,36 @@
 
 
 (defmodule Dynamic
-  (defdynamic caar [pair] (car (car pair)))
-  (defdynamic cadr [pair] (car (cdr pair)))
-  (defdynamic cdar [pair] (cdr (car pair)))
-  (defdynamic cddr [pair] (cdr (cdr pair)))
-  (defdynamic caaar [pair] (car (car (car pair))))
-  (defdynamic caadr [pair] (car (car (cdr pair))))
-  (defdynamic cadar [pair] (car (cdr (car pair))))
-  (defdynamic cdaar [pair] (cdr (car (car pair))))
-  (defdynamic caddr [pair] (car (cdr (cdr pair))))
-  (defdynamic cdadr [pair] (cdr (car (cdr pair))))
-  (defdynamic cddar [pair] (cdr (cdr (car pair))))
-  (defdynamic cdddr [pair] (cdr (cdr (cdr pair))))
-  (defdynamic caaaar [pair] (car (car (car (car pair)))))
-  (defdynamic caaadr [pair] (car (car (car (cdr pair)))))
-  (defdynamic caadar [pair] (car (car (cdr (car pair)))))
-  (defdynamic caaddr [pair] (car (car (cdr (cdr pair)))))
-  (defdynamic cadaar [pair] (car (cdr (car (car pair)))))
-  (defdynamic cadadr [pair] (car (cdr (car (cdr pair)))))
-  (defdynamic caddar [pair] (car (cdr (cdr (car pair)))))
-  (defdynamic cadddr [pair] (car (cdr (cdr (cdr pair)))))
-  (defdynamic cdaaar [pair] (cdr (car (car (car pair)))))
-  (defdynamic cdaadr [pair] (cdr (car (car (cdr pair)))))
-  (defdynamic cdadar [pair] (cdr (car (cdr (car pair)))))
-  (defdynamic cdaddr [pair] (cdr (car (cdr (cdr pair)))))
-  (defdynamic cddaar [pair] (cdr (cdr (car (car pair)))))
-  (defdynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
-  (defdynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
-  (defdynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
+  (defndynamic caar [pair] (car (car pair)))
+  (defndynamic cadr [pair] (car (cdr pair)))
+  (defndynamic cdar [pair] (cdr (car pair)))
+  (defndynamic cddr [pair] (cdr (cdr pair)))
+  (defndynamic caaar [pair] (car (car (car pair))))
+  (defndynamic caadr [pair] (car (car (cdr pair))))
+  (defndynamic cadar [pair] (car (cdr (car pair))))
+  (defndynamic cdaar [pair] (cdr (car (car pair))))
+  (defndynamic caddr [pair] (car (cdr (cdr pair))))
+  (defndynamic cdadr [pair] (cdr (car (cdr pair))))
+  (defndynamic cddar [pair] (cdr (cdr (car pair))))
+  (defndynamic cdddr [pair] (cdr (cdr (cdr pair))))
+  (defndynamic caaaar [pair] (car (car (car (car pair)))))
+  (defndynamic caaadr [pair] (car (car (car (cdr pair)))))
+  (defndynamic caadar [pair] (car (car (cdr (car pair)))))
+  (defndynamic caaddr [pair] (car (car (cdr (cdr pair)))))
+  (defndynamic cadaar [pair] (car (cdr (car (car pair)))))
+  (defndynamic cadadr [pair] (car (cdr (car (cdr pair)))))
+  (defndynamic caddar [pair] (car (cdr (cdr (car pair)))))
+  (defndynamic cadddr [pair] (car (cdr (cdr (cdr pair)))))
+  (defndynamic cdaaar [pair] (cdr (car (car (car pair)))))
+  (defndynamic cdaadr [pair] (cdr (car (car (cdr pair)))))
+  (defndynamic cdadar [pair] (cdr (car (cdr (car pair)))))
+  (defndynamic cdaddr [pair] (cdr (car (cdr (cdr pair)))))
+  (defndynamic cddaar [pair] (cdr (cdr (car (car pair)))))
+  (defndynamic cddadr [pair] (cdr (cdr (car (cdr pair)))))
+  (defndynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
+  (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
 
-  (defdynamic eval-internal [form]
+  (defndynamic eval-internal [form]
     (list 'do
           (list 'defn 'main [] (list 'IO.println* form))
           (list 'build)
@@ -77,7 +77,7 @@
 
   )
 
-(defdynamic cond-internal [xs]
+(defndynamic cond-internal [xs]
   (if (= (length xs) 0)
     (list)
     (if (= (length xs) 2)
@@ -125,7 +125,7 @@
 ;;   (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
 ;;         (list f (list 'Array.nth (list 'ref xs) 'i))))
 
-(defdynamic foreach-internal [var xs expr]
+(defndynamic foreach-internal [var xs expr]
   (list 'let ['xs xs
               'len (list 'Array.length 'xs)]
         (list 'for ['i 0 'len]
@@ -137,7 +137,7 @@
     (foreach-internal (car binding) (cadr binding) expr)
     (macro-error "Binding has to be an array.")))
 
-(defdynamic thread-first-internal [xs]
+(defndynamic thread-first-internal [xs]
   (if (= (length xs) 2)
     (if (list? (last xs))
       (cons (caadr xs)
@@ -152,7 +152,7 @@
        (cdr (last xs)))
       (list (last xs) (thread-first-internal (all-but-last xs))))))
 
-(defdynamic thread-last-internal [xs]
+(defndynamic thread-last-internal [xs]
   (if (= (length xs) 2)
     (if (list? (last xs))
       (cons-last (car xs) (last xs))
@@ -193,7 +193,7 @@
     (cons (quote do) forms)
     ()))
 
-(defdynamic use-all-fn [names]
+(defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
     (if (= (length names) 1)
@@ -227,7 +227,7 @@
 (defmacro forever-do [:rest forms]
   (list 'while true (cons 'do forms)))
 
-(defdynamic case-internal [name xs]
+(defndynamic case-internal [name xs]
   (if (= (length xs) 0)
     (list)
     (if (= (length xs) 2)
@@ -248,7 +248,7 @@
 (defmacro or [x y]
   (list 'if x true y))
 
-(defdynamic build-vararg [func forms]
+(defndynamic build-vararg [func forms]
   (if (= (length forms) 0)
     (macro-error "vararg macro needs at least one argument")
     (if (= (length forms) 1)
@@ -261,7 +261,7 @@
 (defmacro or* [:rest forms]
   (build-vararg 'or forms))
 
-(defdynamic build-str* [forms]
+(defndynamic build-str* [forms]
   (if (= (length forms) 0)
     (list "")
     (if (= (length forms) 1)

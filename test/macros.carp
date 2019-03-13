@@ -28,7 +28,7 @@
 (defmacro test-> [a b] (> a b))
 (defmacro test-= [a b] (= a b))
 
-(defdynamic gc- [key] (Project.get-config key))
+(defndynamic gc- [key] (Project.get-config key))
 (defmacro gc [key] (gc- key))
 
 (deftest test

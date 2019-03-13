@@ -1,7 +1,7 @@
 (load "Test.carp")
 (use Test)
 
-(defdynamic _make-exe-path [pth]
+(defndynamic _make-exe-path [pth]
   (String.join (array (Project.get-config "output-directory") pth)))
 
 (defmacro make-exe-path [pth]

@@ -5,7 +5,7 @@
   (doc sanitize-addresses "instructs the compiler to sanitize addresses.
 
 This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.")
-  (defdynamic sanitize-addresses []
+  (defndynamic sanitize-addresses []
     (add-cflag "-fsanitize=address"))
 
   (register memory-balance (Fn [] Long))
