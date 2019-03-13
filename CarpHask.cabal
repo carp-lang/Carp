@@ -60,6 +60,7 @@ library
                      , text
                      , ansi-terminal >= 0.9
                      , cmark
+                     , edit-distance
 
   default-language:    Haskell2010
 

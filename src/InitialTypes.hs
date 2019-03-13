@@ -118,7 +118,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                                                             return (Right (xobj { ty = Just renamed }))
                              | otherwise -> return (Right (xobj { ty = Just theType }))
                 Nothing -> return (Left (SymbolMissingType xobj foundEnv))
-            Nothing -> return (Left (SymbolNotDefined symPath xobj)) -- Gives the error message "Trying to refer to an undefined symbol ..."
+            Nothing -> return (Left (SymbolNotDefined symPath xobj env)) -- Gives the error message "Trying to refer to an undefined symbol ..."
 
     visitMultiSym :: Env -> XObj -> [SymPath] -> State Integer (Either TypeError XObj)
     visitMultiSym _ xobj@(XObj (MultiSym name _) _ _) _ =
