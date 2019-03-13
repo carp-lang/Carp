@@ -453,8 +453,9 @@ reportExecutionError ctx errorMessage =
 callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
 callCallbackWithArgs ctx callback args =
   do (ret, newCtx) <- runStateT (callback args) ctx
+     let fppl = projectFilePathPrintLength (contextProj newCtx)
      case ret of
-       Left err -> throw (EvalException err)
+       Left err -> throw (EvalException (err fppl))
        Right _ -> return newCtx
 
 -- | Convert an XObj to a ReplCommand so that it can be executed dynamically.
@@ -1026,14 +1027,14 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
           Check ->
             (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
           _ -> "Invalid path: '" ++ path ++ "'") ++
-        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (info xobj) (fppl ctx)
+        "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (info xobj)
     invalidPathWith ctx path stderr =
       Left $ EvalError
         ((case contextExecMode ctx of
           Check ->
             (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
           _ -> "Invalid path: '" ++ path ++ "'") ++
-        "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr) (info xobj) (fppl ctx)
+        "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr) (info xobj)
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
@@ -1083,10 +1084,8 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
                   Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
             ExitFailure _ -> do
                 return $ invalidPathWith ctx path stderr1
-commandLoad [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
-  return $ Left (EvalError ("Invalid args to 'load' command: " ++ pretty x) (info x) fppl)
+commandLoad [x] =
+  return $ Left (EvalError ("Invalid args to `load`: " ++ pretty x) (info x))
 
 
 -- | Load several files in order.
@@ -1122,10 +1121,11 @@ commandExpand [xobj] =
      result <- expandAll eval (contextGlobalEnv ctx) xobj
      case result of
        Left e ->
-         return (Left e)
+         return (Left (removeFppl e))
        Right expanded ->
          liftIO $ do putStrLnWithColor Yellow (pretty expanded)
                      return dynamicNil
+  where removeFppl (EvalError msg info fppl) = EvalError msg info
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
@@ -1133,14 +1133,13 @@ commandC :: CommandCallback
 commandC [xobj] =
   do ctx <- get
      let globalEnv = contextGlobalEnv ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
          typeEnv = contextTypeEnv ctx
      result <- expandAll eval globalEnv xobj
      case result of
-       Left err -> return (Left (EvalError (show err) (info xobj) fppl))
+       Left err -> return (Left (EvalError (show err) (info xobj)))
        Right expanded ->
          case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
-           Left err -> return (Left (EvalError (show err) (info xobj) fppl))
+           Left err -> return (Left (EvalError (show err) (info xobj)))
            Right (annXObj, annDeps) ->
              do liftIO (printC annXObj)
                 liftIO (mapM printC annDeps)

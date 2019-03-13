@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
 
-type CommandCallback = [XObj] -> StateT Context IO (Either EvalError XObj)
+type CommandCallback = [XObj] -> StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj)
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -59,18 +59,23 @@ addCommandConfigurable name maybeArity callback =
                       ])
             (Just dummyInfo) (Just DynamicTy)
   in (name, Binder emptyMeta cmd)
-  where f = case maybeArity of
+  where unwrap :: StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj) -> StateT Context IO (Either EvalError XObj)
+        unwrap wrapped = do
+          ctx <- get
+          let fppl = projectFilePathPrintLength (contextProj ctx)
+          unwrapped <- wrapped
+          case unwrapped of
+            Right val -> return $ Right val
+            Left err  -> return $ Left (err fppl)
+        f = case maybeArity of
               Just arity -> withArity arity
               Nothing -> withoutArity
         withArity arity args =
           if length args == arity
-            then callback args
-            else do
-              ctx <- get
-              let fppl = projectFilePathPrintLength (contextProj ctx)
-              return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing fppl))
-        withoutArity args =
-          callback args
+            then unwrap $ callback args
+            else
+              unwrap $ return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing))
+        withoutArity args = unwrap $ callback args
 
 -- | DEPRECATED Command for changing various project settings.
 commandProjectSet :: CommandCallback
@@ -155,11 +160,10 @@ commandProjectGetConfig :: CommandCallback
 commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
   do ctx <- get
      let proj = contextProj ctx
-         fppl = projectFilePathPrintLength proj
          env = contextGlobalEnv ctx
      case getVal proj of
       Right val -> return $ Right $ XObj val (Just dummyInfo) (Just StringTy)
-      Left err -> return $ Left (err fppl)
+      Left err -> return $ Left err
   where getVal proj = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
@@ -222,7 +226,6 @@ commandBuild args =
          typeEnv = contextTypeEnv ctx
          proj = contextProj ctx
          execMode = contextExecMode ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
          src = do decl <- envToDeclarations typeEnv env
                   typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
                   c <- envToC env Functions
@@ -237,7 +240,7 @@ commandBuild args =
          return (Left (EvalError
                         ("I encountered an error when emitting code:\n\n" ++
                          (show err))
-                        Nothing fppl))
+                        Nothing))
        Right okSrc ->
          do let compiler = projectCompiler proj
                 echoCompilationCommand = projectEchoCompilationCommand proj
@@ -510,84 +513,66 @@ commandIsSymbol [x] =
     _ -> return (Right falseXObj)
 
 commandLength :: CommandCallback
-commandLength [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandLength [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
     XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
-    _ -> return (Left (EvalError ("Applying 'length' to non-list: " ++ pretty x) (info x) fppl))
+    _ -> return (Left (EvalError ("Applying 'length' to non-list: " ++ pretty x) (info x)))
 
 commandCar :: CommandCallback
-commandCar [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandCar [x] =
   case x of
     XObj (Lst (car : _)) _ _ -> return (Right car)
     XObj (Arr (car : _)) _ _ -> return (Right car)
-    _ -> return (Left (EvalError ("Applying 'car' to non-list: " ++ pretty x) (info x) fppl))
+    _ -> return (Left (EvalError ("Applying 'car' to non-list: " ++ pretty x) (info x)))
 
 commandCdr :: CommandCallback
-commandCdr [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandCdr [x] =
   case x of
     XObj (Lst (_ : cdr)) i _ -> return (Right (XObj (Lst cdr) i Nothing))
     XObj (Arr (_ : cdr)) i _ -> return (Right (XObj (Arr cdr) i Nothing))
-    _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list" (info x) fppl))
+    _ -> return (Left (EvalError "Applying 'cdr' to non-list or empty list" (info x)))
 
 commandLast :: CommandCallback
-commandLast [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandLast [x] =
   case x of
     XObj (Lst lst) _ _ -> return (Right (last lst))
     XObj (Arr arr) _ _ -> return (Right (last arr))
-    _ -> return (Left (EvalError "Applying 'last' to non-list or empty list." (info x) fppl))
+    _ -> return (Left (EvalError "Applying 'last' to non-list or empty list." (info x)))
 
 commandAllButLast :: CommandCallback
-commandAllButLast [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandAllButLast [x] =
   case x of
     XObj (Lst lst) i _ -> return (Right (XObj (Lst (init lst)) i Nothing))
     XObj (Arr arr) i _ -> return (Right (XObj (Arr (init arr)) i Nothing))
-    _ -> return (Left (EvalError "Applying 'all-but-last' to non-list or empty list." (info x) fppl))
+    _ -> return (Left (EvalError "Applying 'all-but-last' to non-list or empty list." (info x)))
 
 commandCons :: CommandCallback
-commandCons [x, xs] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandCons [x, xs] =
   case xs of
     XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
     XObj (Arr arr) _ _ -> return (Right (XObj (Arr (x : arr)) (info x) (ty x)))
-    _ -> return (Left (EvalError "Applying 'cons' to non-list or empty list." (info x) fppl))
+    _ -> return (Left (EvalError "Applying 'cons' to non-list or empty list." (info x)))
 
 commandConsLast :: CommandCallback
-commandConsLast [x, xs] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandConsLast [x, xs] =
   case xs of
     XObj (Lst lst) i t -> return (Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
-    _ -> return (Left (EvalError "Applying 'cons-last' to non-list or empty list." (info x) fppl))
+    _ -> return (Left (EvalError "Applying 'cons-last' to non-list or empty list." (info x)))
 
 commandAppend :: CommandCallback
-commandAppend [xs, ys] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandAppend [xs, ys] =
   case (xs, ys) of
     (XObj (Lst lst1) i t, XObj (Lst lst2) _ _) ->
       return (Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
     _ ->
-      return (Left (EvalError "Applying 'append' to non-list or empty list." (info xs) fppl))
+      return (Left (EvalError "Applying 'append' to non-list or empty list." (info xs)))
 
 commandMacroError :: CommandCallback
-commandMacroError [msg] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandMacroError [msg] =
   case msg of
-    XObj (Str smsg) _ _ -> return (Left (EvalError smsg (info msg) fppl))
-    x                  -> return (Left (EvalError (pretty x) (info msg) fppl))
+    XObj (Str smsg) _ _ -> return (Left (EvalError smsg (info msg)))
+    x                  -> return (Left (EvalError (pretty x) (info msg)))
 
 commandMacroLog :: CommandCallback
 commandMacroLog [msg] =
@@ -598,9 +583,7 @@ commandMacroLog [msg] =
                              return dynamicNil
 
 commandEq :: CommandCallback
-commandEq [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandEq [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       if (round aNum :: Int) == (round bNum :: Int)
@@ -625,12 +608,10 @@ commandEq [a, b] = do
     (XObj (Lst []) _ _, XObj (Lst []) _ _) ->
       Right trueXObj
     _ ->
-      Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (info a))
 
 commandLt :: CommandCallback
-commandLt [a, b] = do
- ctx <- get
- let fppl = projectFilePathPrintLength (contextProj ctx)
+commandLt [a, b] =
  return $ case (a, b) of
    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
      if (round aNum :: Int) < (round bNum :: Int)
@@ -645,12 +626,10 @@ commandLt [a, b] = do
      if aNum < bNum
      then Right trueXObj else Right falseXObj
    _ ->
-     Left (EvalError ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b) (info a) fppl)
+     Left (EvalError ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b) (info a))
 
 commandGt :: CommandCallback
-commandGt [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandGt [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       if (round aNum :: Int) > (round bNum :: Int)
@@ -665,120 +644,100 @@ commandGt [a, b] = do
       if aNum > bNum
       then Right trueXObj else Right falseXObj
     _ ->
-      Left (EvalError ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b) (info a))
 
 commandCharAt :: CommandCallback
-commandCharAt [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandCharAt [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
       Right (XObj (Chr (s !! (round n :: Int))) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandIndexOf :: CommandCallback
-commandIndexOf [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandIndexOf [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Chr c) _ _) ->
       Right (XObj (Num IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (info a))
   where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
 
 commandSubstring :: CommandCallback
-commandSubstring [a, b, c] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandSubstring [a, b, c] =
   return $ case (a, b, c) of
     (XObj (Str s) _ _, XObj (Num IntTy f) _ _, XObj (Num IntTy t) _ _) ->
       Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (info a) fppl)
+      Left (EvalError ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (info a))
 
 commandStringLength :: CommandCallback
-commandStringLength [a] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandStringLength [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
     _ ->
-      Left (EvalError ("Can't call length with " ++ pretty a) (info a) fppl)
+      Left (EvalError ("Can't call length with " ++ pretty a) (info a))
 
 commandStringJoin :: CommandCallback
-commandStringJoin [a] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandStringJoin [a] =
   return $ case a of
     XObj (Arr strings) _ _ ->
       case (sequence (map unwrapStringXObj strings)) of
-        Left err -> Left (EvalError err (info a) fppl)
+        Left err -> Left (EvalError err (info a))
         Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call join with " ++ pretty a) (info a) fppl)
+      Left (EvalError ("Can't call join with " ++ pretty a) (info a))
 
 commandStringDirectory :: CommandCallback
-commandStringDirectory [a] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandStringDirectory [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call directory with " ++ pretty a) (info a) fppl)
+      Left (EvalError ("Can't call directory with " ++ pretty a) (info a))
 
 commandPlus :: CommandCallback
-commandPlus [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandPlus [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum + bNum)) (Just dummyInfo) (Just aty))
-      else Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      else Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a))
     _ ->
-      Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandMinus :: CommandCallback
 commandMinus [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum - bNum)) (Just dummyInfo) (Just aty))
-      else Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      else Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a))
     _ ->
-      Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandDiv :: CommandCallback
-commandDiv [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandDiv [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy))
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty))
-      else Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      else Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a))
     _ ->
-      Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandMul :: CommandCallback
-commandMul [a, b] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandMul [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
       then Right (XObj (Num aty (aNum * bNum)) (Just dummyInfo) (Just aty))
-      else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      else Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a))
     _ ->
-      Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a) fppl)
+      Left (EvalError ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandStr :: CommandCallback
 commandStr xs =
@@ -792,36 +751,30 @@ commandStr xs =
         escape (x:y) = x : escape y
 
 commandNot :: CommandCallback
-commandNot [x] = do
-  ctx <- get
-  let fppl = projectFilePathPrintLength (contextProj ctx)
+commandNot [x] =
   case x of
     XObj (Bol ab) _ _ ->
       if ab
       then return (Right falseXObj)
       else return (Right trueXObj)
     _ ->
-      return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x) (info x) fppl))
+      return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x) (info x)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal [modulePath] = do
      ctx <- get
      let globalEnv = contextGlobalEnv ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
      case modulePath of
        XObj (Lst xobjs) _ _ ->
          case sequence (map unwrapSymPathXObj xobjs) of
-           Left err -> return (Left (EvalError err (info modulePath) fppl))
+           Left err -> return (Left (EvalError err (info modulePath)))
            Right okPaths ->
-             case sequence (map ((unwrap fppl) . (getEnvironmentForDocumentation globalEnv)) okPaths) of
+             case sequence (map (getEnvironmentForDocumentation globalEnv) okPaths) of
                Left err -> return (Left err)
                Right okEnvs -> saveDocs (zip okPaths okEnvs)
        x ->
-         return (Left (EvalError ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (info modulePath) fppl))
-  where unwrap :: FilePathPrintLength -> Either (FilePathPrintLength -> EvalError) Env -> Either EvalError Env
-        unwrap fppl (Right val) = Right val
-        unwrap fppl (Left err) = Left (err fppl)
-        getEnvironmentForDocumentation :: Env -> SymPath -> Either (FilePathPrintLength -> EvalError) Env
+         return (Left (EvalError ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (info modulePath)))
+  where getEnvironmentForDocumentation :: Env -> SymPath -> Either (FilePathPrintLength -> EvalError) Env
         getEnvironmentForDocumentation env path =
           case lookupInEnv path env of
             Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
@@ -831,7 +784,7 @@ commandSaveDocsInternal [modulePath] = do
             Nothing ->
               Left (EvalError ("I can’t find the module `" ++ show path ++ "`") (info modulePath))
 
-saveDocs :: [(SymPath, Env)] -> StateT Context IO (Either EvalError XObj)
+saveDocs :: [(SymPath, Env)] -> StateT Context IO (Either a XObj)
 saveDocs pathsAndEnvs =
   do ctx <- get
      liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvs)
