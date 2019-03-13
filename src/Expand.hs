@@ -38,7 +38,9 @@ expand eval env xobj =
 
   where
     expandList :: XObj -> StateT Context IO (Either EvalError XObj)
-    expandList (XObj (Lst xobjs) i t) =
+    expandList (XObj (Lst xobjs) i t) = do
+      ctx <- get
+      let fppl = projectFilePathPrintLength (contextProj ctx)
       case xobjs of
         [] -> return (Right xobj)
         XObj (External _) _ _ : _ -> return (Right xobj)
@@ -92,27 +94,25 @@ expand eval env xobj =
           else return (Left (EvalError (
             "I ecountered an odd number of forms inside a `let` (`" ++
             pretty xobj ++ "`)")
-            (info xobj)))
+            (info xobj) fppl))
 
         matchExpr@(XObj Match _ _) : expr : rest ->
-          do ctx <- get
-             let fppl = projectFilePathPrintLength (contextProj ctx)
-             if null rest
-                then return (Left
-                      (EvalError "I encountered a `match` without forms"
-                                 (info xobj)))
-                else if even (length rest)
-                     then do expandedExpr <- expand eval env expr
-                             expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
-                                                                 return [Right l, expandedR])
-                                                   (pairwise rest)
-                             let expandedRest = sequence (concat expandedPairs)
-                             return $ do okExpandedExpr <- expandedExpr
-                                         okExpandedRest <- expandedRest
-                                         return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
-                     else return (Left (EvalError
-                        "I encountered an odd number of forms inside a `match`"
-                        (info xobj)))
+          if null rest
+            then return (Left
+                  (EvalError "I encountered a `match` without forms"
+                             (info xobj) fppl))
+            else if even (length rest)
+                 then do expandedExpr <- expand eval env expr
+                         expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
+                                                             return [Right l, expandedR])
+                                               (pairwise rest)
+                         let expandedRest = sequence (concat expandedPairs)
+                         return $ do okExpandedExpr <- expandedExpr
+                                     okExpandedRest <- expandedRest
+                                     return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
+                 else return (Left (EvalError
+                    "I encountered an odd number of forms inside a `match`"
+                    (info xobj) fppl))
 
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand eval env) expressions
@@ -124,19 +124,19 @@ expand eval env xobj =
                          Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t) -- Replace the with-expression with just the expression!
         [withExpr@(XObj With _ _), _, _] ->
           return (Left (EvalError ("I encountered the value `" ++ pretty xobj ++
-          "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
-          ".\n\n`with` accepts only symbols.")
-          Nothing))
+            "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
+            ".\n\n`with` accepts only symbols.")
+            Nothing fppl))
         (XObj With _ _) : _ ->
           return (Left (EvalError (
             "I encountered multiple forms inside a `with` at " ++
             prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only one expression, except at the top level.")
-            Nothing))
+            Nothing fppl))
         XObj Mod{} _ _ : _ ->
           return (Left (EvalError ("I can’t evaluate the module `" ++
                                    pretty xobj ++ "`")
-                                  (info xobj)))
+                                  (info xobj) fppl))
         f:args -> do expandedF <- expand eval env f
                      expandedArgs <- fmap sequence (mapM (expand eval env) args)
                      case expandedF of

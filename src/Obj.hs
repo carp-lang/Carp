@@ -147,7 +147,7 @@ prettyInfoFromXObj xobj = case info xobj of
                             Nothing -> "no info"
 
 data FilePathPrintLength = FullPath
-                         | ShortPath
+                         | ShortPath deriving Eq
 
 instance Show FilePathPrintLength where
   show FullPath = "full"
@@ -294,11 +294,11 @@ pretty = visit 0
             Interface _ _ -> "interface"
             With -> "with"
 
-data EvalError = EvalError String (Maybe Info) deriving (Eq)
+data EvalError = EvalError String (Maybe Info) FilePathPrintLength deriving (Eq)
 
 instance Show EvalError where
-  show (EvalError msg info) = msg ++ getInfo info
-    where getInfo (Just i) = " at " ++ prettyInfo i ++ "."
+  show (EvalError msg info fppl) = msg ++ getInfo info
+    where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
           getInfo Nothing = ""
 
 -- | Get the type of an XObj as a string.

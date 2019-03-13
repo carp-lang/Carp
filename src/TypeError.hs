@@ -148,7 +148,7 @@ instance Show TypeError where
     "I found the following holes:\n\n    " ++
     joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++
     "\n"
-  show (FailedToExpand xobj err@(EvalError _ _)) =
+  show (FailedToExpand xobj err@(EvalError _ _ _)) =
     "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++
     ".\n\nThe error message I got was: " ++ show err
   show (NotAValidType xobj) =
@@ -273,7 +273,7 @@ machineReadableErrorStrings fppl err =
     -- (HolesFound holes) ->
     --   (map (\(name, t) -> machineReadableInfoFromXObj fppl xobj ++ " " ++ name ++ " : " ++ show t) holes)
 
-    (FailedToExpand xobj (EvalError errorMessage _)) ->
+    (FailedToExpand xobj (EvalError errorMessage _ _)) ->
       [machineReadableInfoFromXObj fppl xobj ++ "Failed to expand: " ++ errorMessage]
 
     -- TODO: Remove overlapping errors:
