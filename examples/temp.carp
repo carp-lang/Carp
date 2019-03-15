@@ -15,5 +15,13 @@
 
 ;;(defn main [] (println* &(Tree.Leaf 100)))
 
-(defn main []
-	(println* "hello my dear friend"))
+;;(defdynamic p [] "foooooo")
+
+;; (defmacro defvar [name expr]
+;;   (list 'defdynamic name [] expr))
+
+;; (defvar p "foo.h")
+
+(defdynamic p "foo.h")
+
+(local-include p)

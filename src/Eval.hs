@@ -226,6 +226,13 @@ eval env xobj =
         XObj (Sym (SymPath [] "defndynamic") _) _ _ : _ ->
           return (Left (EvalError ("Invalid args to `defndynamic`: " ++ pretty xobj) (info xobj) fppl))
 
+        [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), body] ->
+          specialCommandDefdynamic name body
+        [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), _, _] ->
+          return (Left (EvalError ("Invalid args to `defdynamic`: " ++ pretty xobj ++ " (did you try to define a dynamic function - use 'defndynamic' instead)") (info xobj) fppl))
+        XObj (Sym (SymPath [] "defdynamic") _) _ _ : _ ->
+          return (Left (EvalError ("Invalid args to `defdynamic`: " ++ pretty xobj) (info xobj) fppl))
+
         [XObj (Sym (SymPath [] "defmacro") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefmacro name params body
         XObj (Sym (SymPath [] "defmacro") _) _ _ : _ ->
@@ -307,10 +314,10 @@ eval env xobj =
       ctx <- get
       let fppl = projectFilePathPrintLength (contextProj ctx)
       case lookupInEnv (SymPath ("Dynamic" : pathStrings) name) env of -- A slight hack!
-        Just (_, Binder _ found) -> return (Right found) -- use the found value
+        Just (_, Binder _ found) -> return (Right (resolveDef found)) -- use the found value
         Nothing ->
           case lookupInEnv path env of
-            Just (_, Binder _ found) -> return (Right found)
+            Just (_, Binder _ found) -> return (Right (resolveDef found))
             Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "'") (info xobj) fppl))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
 
@@ -320,6 +327,12 @@ eval env xobj =
          return $ do okXObjs <- evaledXObjs
                      Right (XObj (Arr okXObjs) i t)
     evalArray _ = error "Can't eval non-array in evalArray."
+
+    resolveDef :: XObj -> XObj
+    resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) =
+      value
+    resolveDef x =
+      x
 
 -- | Make sure the arg list is the same length as the parameter list
 checkMatchingNrOfArgs :: FilePathPrintLength -> XObj -> [XObj] -> [XObj] -> Either EvalError ()
@@ -753,6 +766,22 @@ specialCommandDefndynamic name params body =
          meta = existingMeta globalEnv dynamic
      put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta dynamic) })
      return dynamicNil
+
+specialCommandDefdynamic :: String -> XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandDefdynamic name body =
+  do env <- fmap contextGlobalEnv get
+     result <- eval env body
+     case result of
+       Left err -> return (Left err)
+       Right evaledBody ->
+         do ctx <- get
+            let pathStrings = contextPath ctx
+                globalEnv = contextGlobalEnv ctx
+                path = SymPath pathStrings name
+                dynamic = XObj (Lst [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) (info body) (Just DynamicTy)
+                meta = existingMeta globalEnv dynamic
+            put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta dynamic) })
+            return dynamicNil
 
 specialCommandDefmacro :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefmacro name params body =

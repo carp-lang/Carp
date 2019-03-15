@@ -479,17 +479,21 @@ commandOS _ =
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> CommandCallback
-commandAddInclude includerConstructor [XObj (Str file) _ _] =
-  do ctx <- get
-     let proj = contextProj ctx
-         includer = includerConstructor file
-         includers = projectIncludes proj
-         includers' = if includer `elem` includers
-                      then includers
-                      else includer : includers
-         proj' = proj { projectIncludes = includers' }
-     put (ctx { contextProj = proj' })
-     return dynamicNil
+commandAddInclude includerConstructor [x] =
+  case x of
+    XObj (Str file) _ _ ->
+      do ctx <- get
+         let proj = contextProj ctx
+             includer = includerConstructor file
+             includers = projectIncludes proj
+             includers' = if includer `elem` includers
+                          then includers
+                          else includer : includers
+             proj' = proj { projectIncludes = includers' }
+         put (ctx { contextProj = proj' })
+         return dynamicNil
+    _ ->
+      return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
 
 commandAddSystemInclude = commandAddInclude SystemInclude
 commandAddLocalInclude  = commandAddInclude LocalInclude

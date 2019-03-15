@@ -76,7 +76,8 @@ data Obj = Sym SymPath SymbolMode
          | Address
          | SetBang
          | Macro
-         | Dynamic
+         | Dynamic -- DefnDynamic
+         | DefDynamic
          | Command CommandFunctionType
          | The
          | Ref
@@ -286,6 +287,7 @@ pretty = visit 0
             SetBang -> "set!"
             Macro -> "macro"
             Dynamic -> "dynamic"
+            DefDynamic -> "defdynamic"
             Command _ -> "command"
             The -> "the"
             Ref -> "ref"

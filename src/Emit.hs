@@ -132,6 +132,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             SetBang -> error (show (DontVisitObj xobj))
             Macro -> error (show (DontVisitObj xobj))
             Dynamic -> error (show (DontVisitObj xobj))
+            DefDynamic -> error (show (DontVisitObj xobj))
             The -> error (show (DontVisitObj xobj))
             Ref -> error (show (DontVisitObj xobj))
             Deref -> error (show (DontVisitObj xobj))
@@ -475,6 +476,10 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
             XObj Dynamic _ _ : _ ->
               return ""
 
+            -- DefDynamic
+            XObj DefDynamic _ _ : _ ->
+              return ""
+
             -- Command
             XObj (Command _) _ _ : _ ->
               return ""
@@ -697,6 +702,8 @@ toDeclaration xobj@(XObj (Lst xobjs) _ t) =
     XObj Macro _ _ : _ ->
       ""
     XObj Dynamic _ _ : _ ->
+      ""
+    XObj DefDynamic _ _ : _ ->
       ""
     [XObj (Instantiate template) _ _, XObj (Sym path _) _ _] ->
       let Just t' = t
