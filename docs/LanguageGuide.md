@@ -60,7 +60,7 @@ foo ; symbol
 (definterface interface-name (Fn [<t1> <t2>] <return>)) ;; Define a generic function that can have multiple implementations
 (def variable-name value) ;; Define a global variable (only handles primitive constants for the moment)
 (defmacro <name> [<arg1> <arg2> ...] <macro-body>) ;; Define a macro, its argument will not be evaluated when called
-(defdynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL or during compilation
+(defndynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL or during compilation
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
 
