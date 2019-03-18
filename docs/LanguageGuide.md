@@ -69,6 +69,7 @@ The following forms can be used in Carp source code and will be compiled to C af
 and other static analysis. The first three of them are also available in dynamic functions.
 
 ```clojure
+(fn [<arg1> <arg2> ...] <body>) ;; Create a lambda function (a.k.a. closure)
 (let [<var1> <expr1> <var2> <expr2> ...] <body>) ;; Create local bindings
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
