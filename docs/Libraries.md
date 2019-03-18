@@ -38,6 +38,9 @@ This will download the [Anima](https://github.com/hellerve/anima) library to `~/
 * [Interfaces ⦁](../core/Interfaces.carp)
 * [Dynamic ⦁](http://carp-lang.github.io/Carp/core/Dynamic.html) (only available in the repl and at compile time)
 
+* [Maybe ⦁](http://carp-lang.github.io/Carp/core/Maybe.html)
+* [Either ⦁](http://carp-lang.github.io/Carp/core/Either.html)
+
 ### Numerics
 * [Int ⦁](http://carp-lang.github.io/Carp/core/Int.html)
 * SafeInt
