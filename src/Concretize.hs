@@ -176,8 +176,10 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
-    visitList allowAmbig env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
-      do visitedExpr <- visit allowAmbig env expr
+    visitList allowAmbig env matchXObj@(XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
+      do concretizeTypeOfXObj typeEnv expr
+         visitedExpr <- visit allowAmbig env expr
+         mapM_ (concretizeTypeOfXObj typeEnv) (map snd (pairwise rest))
          visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig env) (pairwise rest))
          return $ do okVisitedExpr <- visitedExpr
                      okVisitedRest <- fmap concat visitedRest
@@ -896,17 +898,22 @@ manageMemory typeEnv globalEnv root =
                    Right okVisitedExpr ->
                      do unmanage okVisitedExpr
                         MemState preDeleters deps <- get
-                        visitedCasesWithDeleters <- mapM visitMatchCase (pairwise cases)
-                        case figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters of
+                        vistedCasesAndDeps <- mapM visitMatchCase (pairwise cases)
+                        case sequence vistedCasesAndDeps of
                           Left e -> return (Left e)
-                          Right (finalXObj, postDeleters) ->
-                            do put (MemState postDeleters deps)
-                               manage xobj
-                               return (Right finalXObj)
+                          Right okCasesAndDeps ->
+                            let visitedCases = map fst okCasesAndDeps
+                                depsFromCases = concatMap snd okCasesAndDeps
+                                (finalXObj, postDeleters) = figureOutStuff okVisitedExpr visitedCases preDeleters
+                            in  do put (MemState postDeleters (deps ++ depsFromCases))
+                                   manage xobj
+                                   return (Right finalXObj)
 
-                   where figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters =
-                           do okVisitedCasesWithDeleters <- sequence visitedCasesWithDeleters
-                              let postDeleters = map fst okVisitedCasesWithDeleters
+                   where figureOutStuff :: XObj -> [(Set.Set Deleter, (XObj, XObj))]
+                                                -> Set.Set Deleter
+                                                -> (XObj, Set.Set Deleter)
+                         figureOutStuff okVisitedExpr visitedCasesWithDeleters preDeleters =
+                              let postDeleters = map fst visitedCasesWithDeleters
                                   postDeletersUnion = unionOfSetsInList postDeleters
                                   postDeletersIntersection = intersectionOfSetsInList postDeleters
                                   deletersAfterTheMatch = Set.intersection preDeleters postDeletersIntersection
@@ -916,7 +923,7 @@ manageMemory typeEnv globalEnv root =
                                   deletersForEachCase = map (\dels -> dels \\ deletersAfterTheMatch) postDeleters
                                   -- These are the surviving vars after the 'match' expression:
 
-                                  okVisitedCases = map snd okVisitedCasesWithDeleters
+                                  okVisitedCases = map snd visitedCasesWithDeleters
                                   okVisitedCasesWithAllDeleters =
                                     zipWith (\(lhs, rhs) finalSetOfDeleters ->
                                                -- Putting the deleter info on the lhs,
@@ -932,7 +939,7 @@ manageMemory typeEnv globalEnv root =
                               -- trace ("\npost deleters intersection: " ++ show postDeletersIntersection)
                               -- trace ("Post deleters union pre-existing: " ++ show postDeletersUnionPreExisting)
                               -- trace ("Post deleters for each case: " ++ show postDeleters)
-                              return ((XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t)
+                                  in ((XObj (Lst ([matchExpr, okVisitedExpr] ++ concat okVisitedCasesWithAllDeleters)) i t)
                                      , deletersAfterTheMatch)
 
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
@@ -953,21 +960,21 @@ manageMemory typeEnv globalEnv root =
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
 
-        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError (Set.Set Deleter, (XObj, XObj)))
+        visitMatchCase :: (XObj, XObj) -> State MemState (Either TypeError ((Set.Set Deleter, (XObj, XObj)), [XObj]))
         visitMatchCase (lhs@(XObj _ lhsInfo _), rhs@(XObj _ _ _)) =
-          do MemState preDeleters deps <- get -- | TODO: Don't forget to handle deps!
+          do MemState preDeleters preDeps <- get
              _ <- visitCaseLhs lhs
              visitedRhs <- visit rhs
              unmanage rhs
-             MemState postDeleters deps <- get
+             MemState postDeleters postDeps <- get
              let diff = postDeleters \\ preDeleters
-             put (MemState preDeleters deps) -- Restore managed variables, TODO: Use a "local" state monad instead?
+             put (MemState preDeleters postDeps) -- Restore managed variables, TODO: Use a "local" state monad instead?
              return $ do okVisitedRhs <- visitedRhs
                          -- trace ("\npre: " ++ show preDeleters ++
                          --        "\npost: " ++ show postDeleters ++
                          --        "\ndiff: " ++ show diff)
                          --   $
-                         return (postDeleters, (lhs, okVisitedRhs)) -- TODO: Return deps too?
+                         return ((postDeleters, (lhs, okVisitedRhs)), postDeps)
 
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
         visitCaseLhs (XObj (Lst vars) _ _) =
