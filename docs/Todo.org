@@ -5,25 +5,22 @@
 
 * Unsorted Todo:s
 ** Could assert that functions sent to extern code doesn't have an environment (that'd mean that a Lambda is passed outside Carp-land where it most likely won't work)
-** Wrong argument count error doesn't tell you the number of arguments expected/given
 * Critical Bugs
 ** 0.3
-*** Memory management inside 'and' & 'or' seems to be wrong.
 *** References must keep track of their origin and prevent usage of them if the origin has been given away.
     Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * Big Language Features
 ** 1.0
-*** Lambdas
-*** Tagged unions (also known as "sum types" or "enums")
 *** Stack allocated Array with an explicit size.
 * Tests to write
-** Tests that make sure all the various type errors are triggered. Requires host specific info to be purged from error messages.
 * Smaller Language Features ("niceties")
 ** 0.4
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
 *** Remove StringCopy.append, use String.append in all those cases.
 *** Unified signatures for struct updaters and aupdate
+*** Allow matching on references, to avoid copying
+*** Check that sumtypes don't save refs
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?
@@ -35,6 +32,7 @@
 *** A non-manual way to get both the ref-version and nonref-version of functions like =, <, >, etc. (Also don't expect non-ref:ed version in core, like Array.= does now).
 * Macro System
 ** 1.0
+*** Gensym (right now the variables tend to clash in "for" when you use the same names as in the macro)
 *** Quasiquote
 *** Splicing in macros
 *** Pattern matching on arguments in macros?
@@ -55,14 +53,16 @@
 *** Emacs-mode: Make foreach and deftype indent correctly.
 *** Emacs-mode: Make foreach, and*, not*, etc. into keywords (highlight them).
 *** A way to assert compiler errors in tests.
+*** The REPL prompt on windows should not contain escape codes
+*** A way of configuring paths to libraries like SDL (especially on Windows)
 * Code generation
 ** [1.X] LLVM backend
 ** [?] Emit #LINE macros in the generated C code?
 
 * Libraries
-** Make Vector generic
 ** Threading
 ** Game development libraries with switchable backends
+** Make Rect and Point in SDL into normal structs, right now they are wrapped in an unorthodox way
 * Documentation
 ** Generate documentation pages for files like Macros.carp that does not put their functions in a module but dump them in global scope
 ** Document all core functions
