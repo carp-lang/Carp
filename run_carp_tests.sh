@@ -23,7 +23,7 @@ stack install;
 ./test/execute.sh ./examples/generic_structs.carp
 ./test/execute.sh ./examples/setting_variables.carp
 ./test/execute.sh ./examples/function_members.carp
-./test/execute.sh ./examples/map.carp
+./test/execute.sh ./examples/maps.carp
 ./test/execute.sh ./examples/lambdas.carp
 ./test/execute.sh ./examples/sumtypes.carp
 
