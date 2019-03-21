@@ -55,18 +55,18 @@ void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
 #include <stdio.h>
 
 long Debug_memory_MINUS_balance() {
-    printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled.\n");
+    printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled (--log-memory).\n");
     exit(1);
     return 0;
 }
 
 void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
-    printf("Error - calling 'reset-memory-balance!' without compiling with LOG_MEMORY enabled.\n");
+    printf("Error - calling 'reset-memory-balance!' without compiling with LOG_MEMORY enabled (--log-memory).\n");
     exit(1);
 }
 
 void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
-    printf("Error - calling 'log-memory-balance!' without compiling with LOG_MEMORY enabled.\n");
+    printf("Error - calling 'log-memory-balance!' without compiling with LOG_MEMORY enabled (--log-memory).\n");
     exit(1);
 }
 
