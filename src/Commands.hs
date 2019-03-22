@@ -1,17 +1,5 @@
 module Commands where
 
-import Parsing
-import Emit
-import Obj
-import Types
-import Infer
-import Deftype
-import ColorText
-import Template
-import Util
-import Lookup
-import RenderDocs
-
 import System.Directory
 import System.Info (os)
 import Control.Monad.State
@@ -23,6 +11,19 @@ import System.FilePath (takeDirectory)
 import qualified Data.Map as Map
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
+
+import Parsing
+import Emit
+import Obj
+import Types
+import Infer
+import Deftype
+import ColorText
+import Template
+import Util
+import Lookup
+import RenderDocs
+import TypeError
 
 type CommandCallback = [XObj] -> StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj)
 
@@ -161,10 +162,10 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
   do ctx <- get
      let proj = contextProj ctx
          env = contextGlobalEnv ctx
-     case getVal proj of
+     case getVal ctx proj of
       Right val -> return $ Right $ XObj val (Just dummyInfo) (Just StringTy)
       Left err -> return $ Left err
-  where getVal proj = case key of
+  where getVal ctx proj = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
           "prompt" -> Right $ Str $ projectPrompt proj
@@ -182,8 +183,7 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
           _ ->
-            Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++
-                               key) (info xobj)
+            Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj)
 commandProjectGetConfig [faultyKey] =
   do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 

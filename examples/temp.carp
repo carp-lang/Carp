@@ -22,6 +22,14 @@
 
 ;; (defvar p "foo.h")
 
+;;(def m)
+(defn f)
+
+(defn foo [] (Int.+ 2 3))
+
+(deftype a123 [x Int y klfb])
+(deftype 123 [x Int])
+
 (deftype Wrong
     (A [(Ref String)])
     Boo

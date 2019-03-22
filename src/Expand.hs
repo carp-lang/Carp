@@ -8,6 +8,7 @@ import Types
 import Obj
 import Util
 import Lookup
+import TypeError
 
 -- | Used for calling back to the 'eval' function in Eval.hs
 type DynamicEvaluator = Env -> XObj -> StateT Context IO (Either EvalError XObj)
@@ -98,9 +99,7 @@ expand eval env xobj =
 
         matchExpr@(XObj Match _ _) : expr : rest ->
           if null rest
-            then return (Left
-                  (EvalError "I encountered a `match` without forms"
-                             (info xobj) fppl))
+            then return (makeEvalError ctx Nothing  "I encountered a `match` without forms" (info xobj))
             else if even (length rest)
                  then do expandedExpr <- expand eval env expr
                          expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r

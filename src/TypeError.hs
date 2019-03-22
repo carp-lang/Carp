@@ -330,6 +330,9 @@ machineReadableErrorStrings fppl err =
     _ ->
       [show err]
 
+joinedMachineReadableErrorStrings :: FilePathPrintLength -> TypeError -> String
+joinedMachineReadableErrorStrings fppl err = (joinWith "\n\n" (machineReadableErrorStrings fppl err))
+
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> fromMaybe t (recursiveLookup mappings v)
@@ -345,3 +348,17 @@ showTypeFromXObj mappings xobj =
   case ty xobj of
     Just t -> show (recursiveLookupTy mappings t)
     Nothing -> "Type missing"
+
+-- | Print type errors correctly when running the compiler in 'Check' mode
+makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> Either EvalError a
+makeEvalError ctx err msg info =
+  let fppl = projectFilePathPrintLength (contextProj ctx)
+  in case contextExecMode ctx of
+       Check -> let messageWhenChecking = case err of
+                                            Just okErr -> joinedMachineReadableErrorStrings fppl okErr
+                                            Nothing ->
+                                              case info of
+                                                Just okInfo -> machineReadableInfo fppl okInfo ++ " " ++ msg
+                                                Nothing -> msg
+                in  Left (EvalError messageWhenChecking Nothing fppl) -- Passing no info to avoid appending it at the end in 'show' instance for EvalError
+       _ ->  Left (EvalError msg info fppl)

@@ -61,40 +61,40 @@ eval env xobj =
         [XObj (Sym (SymPath [] "file") _) _ _] ->
           case i of
             Just info -> return (Right (XObj (Str (infoFile info)) i t))
-            Nothing -> return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+            Nothing -> return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "line") _) _ _] ->
           case i of
             Just info ->
               return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
             Nothing ->
-              return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+              return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "column") _) _ _] ->
           case i of
             Just info ->
               return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
             Nothing ->
-              return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+              return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "file") _) _ _, XObj _ infoToCheck _] ->
           case infoToCheck of
             Just info -> return (Right (XObj (Str (infoFile info)) i t))
-            Nothing -> return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+            Nothing -> return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "line") _) _ _, XObj _ infoToCheck _] ->
           case infoToCheck of
             Just info ->
               return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
             Nothing ->
-              return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+              return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "column") _) _ _, XObj _ infoToCheck _] ->
           case infoToCheck of
             Just info ->
               return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
             Nothing ->
-              return (Left (EvalError ("No information about object " ++ pretty xobj) (info xobj) fppl))
+              return (makeEvalError ctx Nothing ("No information about object " ++ pretty xobj) (info xobj))
 
         XObj Do _ _ : rest ->
           do evaledList <- fmap sequence (mapM (eval env) rest)
@@ -102,7 +102,7 @@ eval env xobj =
                Left e -> return (Left e)
                Right ok ->
                  case ok of
-                   [] -> return (Left (EvalError "No forms in 'do' statement." (info xobj) fppl))
+                   [] -> return (makeEvalError ctx Nothing "No forms in 'do' statement." (info xobj))
                    _ -> return (Right (last ok))
 
         XObj (Sym (SymPath [] "list") _) _ _ : rest ->
@@ -128,10 +128,10 @@ eval env xobj =
                                          XObj (Bol bb) _ _ ->
                                            if bb then Right trueXObj else Right falseXObj
                                          _ ->
-                                           Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okB) (info okB) fppl)
+                                           makeEvalError ctx Nothing ("Can't perform logical operation (and) on " ++ pretty okB) (info okB)
                                else Right falseXObj
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (and) on " ++ pretty okA) (info okA) fppl)
+                             makeEvalError ctx Nothing ("Can't perform logical operation (and) on " ++ pretty okA) (info okA)
 
         [XObj (Sym (SymPath ["Dynamic"] "or") _) _ _, a, b] ->
           do evaledA <- eval env a
@@ -146,9 +146,9 @@ eval env xobj =
                                          XObj (Bol bb) _ _ ->
                                            if bb then Right trueXObj else Right falseXObj
                                          _ ->
-                                           Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okB) (info okB) fppl)
+                                           makeEvalError ctx Nothing ("Can't perform logical operation (or) on " ++ pretty okB) (info okB)
                            _ ->
-                             Left (EvalError ("Can't perform logical operation (or) on " ++ pretty okA) (info okA) fppl)
+                             makeEvalError ctx Nothing ("Can't perform logical operation (or) on " ++ pretty okA) (info okA)
 
         [XObj If _ _, condition, ifTrue, ifFalse] ->
           do evaledCondition <- eval env condition
@@ -158,21 +158,21 @@ eval env xobj =
                    Bol b -> if b
                             then eval env ifTrue
                             else eval env ifFalse
-                   _ -> return (Left (EvalError ("`if` condition contains non-boolean value: " ++ pretty okCondition) (info okCondition) fppl))
+                   _ -> return (makeEvalError ctx Nothing ("`if` condition contains non-boolean value: " ++ pretty okCondition) (info okCondition))
                Left err -> return (Left err)
 
         [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
             if all isSym a
               then specialCommandDefine xobj
-              else return (Left (EvalError ("`defn` requires all arguments to be symbols, but it got `" ++ pretty args ++ "`") (info xobj) fppl))
+              else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be symbols, but it got `" ++ pretty args ++ "`") (info xobj))
             where isSym (XObj (Sym _ _) _ _) = True
                   isSym _ = False
 
         [defnExpr@(XObj Defn _ _), name, invalidArgs, _] ->
-            return (Left (EvalError ("`defn` requires an array of symbols as argument list, but it got `" ++ pretty invalidArgs ++ "`") (info xobj) fppl))
+            return (makeEvalError ctx Nothing ("`defn` requires an array of symbols as argument list, but it got `" ++ pretty invalidArgs ++ "`") (info xobj))
 
         (defnExpr@(XObj Defn _ _) : _) ->
-            return (Left (EvalError ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.") Nothing fppl))
+            return (makeEvalError ctx Nothing ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.") Nothing)
 
         [defExpr@(XObj Def _ _), name, expr] ->
           specialCommandDefine xobj
@@ -199,12 +199,12 @@ eval env xobj =
                       evaledBody <- eval envWithBindings body
                       return $ do okBody <- evaledBody
                                   Right okBody
-          else return (Left (EvalError ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj) fppl)) -- Unreachable?
+          else return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
         XObj (Sym (SymPath _ "register-type") _) _ _ : _ ->
-          return (Left (EvalError (show "Invalid args to `register-type`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing (show "Invalid args to `register-type`: " ++ pretty xobj) (info xobj))
 
         XObj (Sym (SymPath [] "deftype") _) _ _ : nameXObj : rest ->
           specialCommandDeftype nameXObj rest
@@ -214,74 +214,74 @@ eval env xobj =
         [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj, XObj (Str overrideName) _ _] ->
           specialCommandRegister name typeXObj (Just overrideName)
         XObj (Sym (SymPath [] "register") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `register`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `register`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "definterface") _) _ _, nameXObj@(XObj (Sym _ _) _ _), typeXObj] ->
           specialCommandDefinterface nameXObj typeXObj
         XObj (Sym (SymPath [] "definterface") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `definterface`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `definterface`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "defndynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefndynamic name params body
         XObj (Sym (SymPath [] "defndynamic") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `defndynamic`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `defndynamic`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), body] ->
           specialCommandDefdynamic name body
         [XObj (Sym (SymPath [] "defdynamic") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), _, _] ->
-          return (Left (EvalError ("Invalid args to `defdynamic`: " ++ pretty xobj ++ " (did you try to define a dynamic function - use 'defndynamic' instead)") (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `defdynamic`: " ++ pretty xobj ++ " (did you try to define a dynamic function - use 'defndynamic' instead)") (info xobj))
         XObj (Sym (SymPath [] "defdynamic") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `defdynamic`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `defdynamic`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "defmacro") _) _ _, (XObj (Sym (SymPath [] name) _) _ _), params, body] ->
           specialCommandDefmacro name params body
         XObj (Sym (SymPath [] "defmacro") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `defmacro`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `defmacro`: " ++ pretty xobj) (info xobj))
 
         XObj (Sym (SymPath [] "defmodule") _) _ _ : (XObj (Sym (SymPath [] moduleName) _) _ _) : innerExpressions ->
           specialCommandDefmodule xobj moduleName innerExpressions
         XObj (Sym (SymPath [] "defmodule") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `defmodule`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `defmodule`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "info") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _)] ->
           specialCommandInfo target
         XObj (Sym (SymPath [] "info") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `info`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `info`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "type") _) _ _, target] ->
           specialCommandType target
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `type`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `type`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), (XObj (Str key) _ _), value] ->
           specialCommandMetaSet path key value
         XObj (Sym (SymPath [] "meta-set!") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `meta-set!`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `meta-set!`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "meta") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), (XObj (Str key) _ _)] ->
           specialCommandMetaGet path key
         XObj (Sym (SymPath [] "meta") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `meta`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `meta`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "members") _) _ _, target] ->
           specialCommandMembers target
         XObj (Sym (SymPath [] "members") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `members`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `members`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "use") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
           specialCommandUse xobj path
         XObj (Sym (SymPath [] "use") _) _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `use`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `use`: " ++ pretty xobj) (info xobj))
 
         XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
           specialCommandWith xobj path forms
         XObj With _ _ : _ ->
-          return (Left (EvalError ("Invalid args to `with`: " ++ pretty xobj) (info xobj) fppl))
+          return (makeEvalError ctx Nothing ("Invalid args to `with`: " ++ pretty xobj) (info xobj))
 
         f:args -> do evaledF <- eval env f
                      case evaledF of
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                         case checkMatchingNrOfArgs fppl f params args of
+                         case checkMatchingNrOfArgs ctx fppl f params args of
                            Left err -> return (Left err)
                            Right () ->
                              do evaledArgs <- fmap sequence (mapM (eval env) args)
@@ -290,7 +290,7 @@ eval env xobj =
                                   Left err -> return (Left err)
 
                        Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                         case checkMatchingNrOfArgs fppl f params args of
+                         case checkMatchingNrOfArgs ctx fppl f params args of
                            Left err ->
                              return (Left err)
                            Right () ->
@@ -304,8 +304,8 @@ eval env xobj =
                               Right okArgs -> getCommand callback okArgs
                               Left err -> return (Left err)
                        _ ->
-                         return (Left (EvalError ("Can't eval '" ++ pretty f ++ "' (it’s neither a macro nor a dynamic function) in " ++
-                                                  pretty xobj) (info f) fppl))
+                         return (makeEvalError ctx Nothing ("Can't eval '" ++ pretty f ++ "' (it’s neither a macro nor a dynamic function) in " ++
+                                                            pretty xobj) (info f))
 
     evalList _ = error "Can't eval non-list in evalList."
 
@@ -318,7 +318,7 @@ eval env xobj =
         Nothing ->
           case lookupInEnv path env of
             Just (_, Binder _ found) -> return (Right (resolveDef found))
-            Nothing -> return (Left (EvalError ("Can't find symbol '" ++ show path ++ "'") (info xobj) fppl))
+            Nothing -> return (makeEvalError ctx Nothing ("Can't find symbol '" ++ show path ++ "'") (info xobj))
     evalSymbol _ = error "Can't eval non-symbol in evalSymbol."
 
     evalArray :: XObj -> StateT Context IO (Either EvalError XObj)
@@ -335,8 +335,8 @@ eval env xobj =
       x
 
 -- | Make sure the arg list is the same length as the parameter list
-checkMatchingNrOfArgs :: FilePathPrintLength -> XObj -> [XObj] -> [XObj] -> Either EvalError ()
-checkMatchingNrOfArgs fppl xobj params args =
+checkMatchingNrOfArgs :: Context -> FilePathPrintLength -> XObj -> [XObj] -> [XObj] -> Either EvalError ()
+checkMatchingNrOfArgs ctx fppl xobj params args =
   let usesRestArgs = not (null (filter isRestArgSeparator (map getName params)))
       paramLen = if usesRestArgs then length params - 2 else length params
       argsLen = length args
@@ -346,7 +346,9 @@ checkMatchingNrOfArgs fppl xobj params args =
         else show paramLen
   in  if (usesRestArgs && argsLen > paramLen) || (paramLen == argsLen)
       then Right ()
-      else Left (EvalError ("Wrong number of arguments in call to '" ++ pretty xobj ++ "', expected " ++ expected ++ " but got " ++ show argsLen) (info xobj) fppl)
+      else case makeEvalError ctx Nothing ("Wrong number of arguments in call to '" ++ pretty xobj ++ "', expected " ++ expected ++ " but got " ++ show argsLen) (info xobj) of
+             Left e -> Left e
+             Right _ -> Right ()
 
 -- | Apply a function to some arguments. The other half of 'eval'.
 apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
@@ -610,7 +612,7 @@ specialCommandDefine xobj =
      expansionResult <- expandAll eval globalEnv xobj
      ctxAfterExpansion <- get
      case expansionResult of
-       Left err -> return (Left (EvalError (show err) Nothing fppl))
+       Left err -> return (makeEvalError ctx Nothing (show err) Nothing)
        Right expanded ->
          let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
              xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
@@ -648,8 +650,8 @@ specialCommandRegisterType typeName rest =
             return dynamicNil
        members ->
          case bindingsForRegisteredType typeEnv globalEnv pathStrings typeName members i preExistingModule of
-           Left errorMessage ->
-             return (Left (EvalError (show errorMessage) Nothing fppl))
+           Left err ->
+             return (makeEvalError ctx (Just err) (show err) Nothing)
            Right (typeModuleName, typeModuleXObj, deps) ->
              let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
@@ -663,6 +665,9 @@ specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) rest =
   deftypeInternal nameXObj typeName [] rest
 specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) : typeVariables)) _ _) rest =
   deftypeInternal nameXObj typeName typeVariables rest
+specialCommandDeftype nameXObj _ =
+  do ctx <- get
+     return (makeEvalError ctx Nothing ("Invalid name for type definition: " ++ pretty nameXObj) (info nameXObj))
 
 deftypeInternal :: XObj -> String -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
 deftypeInternal nameXObj typeName typeVariableXObjs rest =
@@ -700,11 +705,9 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                      Right ok -> put ok
                    return dynamicNil
            Left err ->
-             return (Left (EvalError ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing fppl))
+             return (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
        (_, Nothing) ->
-         return (Left (EvalError ("Invalid type variables for type definition: " ++ pretty nameXObj) (info nameXObj) fppl))
-       _ ->
-         return (Left (EvalError ("Invalid name for type definition: " ++ pretty nameXObj) (info nameXObj) fppl))
+         return (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (info nameXObj))
 
 specialCommandRegister :: String -> XObj -> Maybe String -> StateT Context IO (Either EvalError XObj)
 specialCommandRegister name typeXObj overrideName =
@@ -720,17 +723,13 @@ specialCommandRegister name typeXObj overrideName =
                          meta = existingMeta globalEnv registration
                          env' = envInsertAt globalEnv path (Binder meta registration)
                      in  case registerInInterfaceIfNeeded ctx path t of
-                           Left err ->
-                             let prefix = case contextExecMode ctx of
-                                            Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
-                                                     in  machineReadableInfoFromXObj fppl typeXObj ++ " "
-                                            _ -> ""
-                             in  return (Left (EvalError (prefix ++ err) (info typeXObj) fppl))
+                           Left errorMessage ->
+                             return (makeEvalError ctx Nothing errorMessage (info typeXObj))
                            Right ctx' ->
                              do put (ctx' { contextGlobalEnv = env' })
                                 return dynamicNil
            Nothing ->
-             return (Left (EvalError ("Can't understand type when registering '" ++ name ++ "'") (info typeXObj) fppl))
+             return (makeEvalError ctx Nothing ("Can't understand type when registering '" ++ name ++ "'") (info typeXObj))
 
 specialCommandDefinterface :: XObj -> XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) typeXObj =
@@ -753,8 +752,7 @@ specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty
              in  do put (ctx { contextTypeEnv = typeEnv' })
                     return dynamicNil
        Nothing ->
-         return (Left (EvalError ("Invalid type for interface '" ++ name ++ "': " ++
-                                   pretty typeXObj) (info typeXObj) fppl))
+         return (makeEvalError ctx Nothing ("Invalid type for interface '" ++ name ++ "': " ++ pretty typeXObj) (info typeXObj))
 
 specialCommandDefndynamic :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefndynamic name params body =
@@ -811,7 +809,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
                       put (popModulePath ctxAfterModuleAdditions)
                       return dynamicNil -- TODO: propagate errors...
                  Just _ ->
-                   return (Left (EvalError ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj) fppl))
+                   return (makeEvalError ctx Nothing ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
                  Nothing ->
                    do let parentEnv = getEnv env pathStrings
                           innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
@@ -918,9 +916,9 @@ specialCommandMembers target =
                  ->
                       return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
                _ ->
-                 return (Left (EvalError ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target) fppl))
+                 return (makeEvalError ctx Nothing ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
            _ ->
-             return (Left (EvalError ("Can't get the members of non-symbol: " ++ pretty target) (info target) fppl))
+             return (makeEvalError ctx Nothing ("Can't get the members of non-symbol: " ++ pretty target) (info target))
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =
@@ -937,7 +935,7 @@ specialCommandUse xobj path =
          do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
             return dynamicNil
        Nothing ->
-         return (Left (EvalError ("Can't find a module named '" ++ show path ++ "'") (info xobj) fppl))
+         return (makeEvalError ctx Nothing ("Can't find a module named '" ++ show path ++ "'") (info xobj))
 
 specialCommandWith :: XObj -> SymPath -> [XObj] -> StateT Context IO (Either EvalError XObj)
 specialCommandWith xobj path forms =
@@ -974,7 +972,7 @@ specialCommandMetaSet path key value =
                                               (Just dummyInfo)
                                               (Just (VarTy "a"))))
            (SymPath _ _) ->
-             return (Left (EvalError ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'") (info value) fppl))
+             return (makeEvalError ctx Nothing ("Special command 'meta-set!' failed, can't find '" ++ show path ++ "'") (info value))
        where
          setMetaOn :: Context -> Binder -> StateT Context IO (Either EvalError XObj)
          setMetaOn ctx binder@(Binder metaData xobj) =
@@ -1002,7 +1000,7 @@ specialCommandMetaGet path key =
              Nothing ->
                return dynamicNil
        Nothing ->
-         return (Left (EvalError ("Special command 'meta' failed, can't find '" ++ show path ++ "'") Nothing fppl))
+         return (makeEvalError ctx Nothing ("Special command 'meta' failed, can't find '" ++ show path ++ "'") Nothing)
 
 
 
