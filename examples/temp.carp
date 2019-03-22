@@ -28,6 +28,8 @@
 
 ;;(defdynamic h [] 123)
 
+(load "dgdfsdff")
+
 (defn g []
   (let [x 123 y x x]
     123))

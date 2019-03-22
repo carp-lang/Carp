@@ -1052,15 +1052,15 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
       Left $ EvalError
         ((case contextExecMode ctx of
           Check ->
-            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
-          _ -> "Invalid path: '" ++ path ++ "'") ++
+            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " I can't find a file named: '" ++ path ++ "'"
+          _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (info xobj)
     invalidPathWith ctx path stderr =
       Left $ EvalError
         ((case contextExecMode ctx of
           Check ->
-            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " Invalid path: '" ++ path ++ "'"
-          _ -> "Invalid path: '" ++ path ++ "'") ++
+            (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " I can't find a file named: '" ++ path ++ "'"
+          _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr) (info xobj)
     tryInstall path =
       let split = splitOn "@" path
