@@ -6,12 +6,17 @@
   (add-cflag "`sdl2-config --cflags --libs`")
   (add-cflag "-D_THREAD_SAFE"))
 
+(defmodule SDL
+  (defmodule Windows
+    (defdynamic header-path "C:\\SDL2-2.0.9\\include")
+    (defdynamic library-path "C:\\SDL2-2.0.9\\lib\\x86\\")))
+
 (windows-only
   ;; Note - you'll still need the SDL2.dll to be able to run the executable
   (add-cflag "-DSDL_MAIN_HANDLED")
   (add-cflag "-Wno-pragma-pack")
-  (add-cflag "-IC:\\SDL2-2.0.9\\include")
-  (add-lib "/link C:\\SDL2-2.0.9\\lib\\x86\\SDL2.lib C:\\SDL2-2.0.9\\lib\\x86\\SDL2main.lib"))
+  (add-cflag (str "-I" SDL.Windows.header-path))
+  (add-lib (str "/link " SDL.Windows.library-path "SDL2.lib " SDL.Windows.library-path "SDL2main.lib")))
 
 ;; Types
 (register-type SDL_Keycode)
