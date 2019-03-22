@@ -55,4 +55,4 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     VarTy _ -> if t `elem` typeVariables
                then return ()
                else Left (InvalidMemberType t xobj)
-    _ -> error ("Invalid member type: " ++ show t)
+    _ -> Left (InvalidMemberType t xobj)

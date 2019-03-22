@@ -22,6 +22,14 @@
 
 ;; (defvar p "foo.h")
 
-(defdynamic p "foo.h")
+(deftype Wrong
+    (A [(Ref String)])
+    Boo
+  )
 
-(local-include p)
+(defn main []
+  (let [s @"hello"
+        w (Wrong.A &s)]
+    (do
+      (delete s)
+      (println* &w))))

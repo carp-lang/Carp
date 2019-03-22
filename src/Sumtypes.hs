@@ -15,24 +15,35 @@ import ToTemplate
 import Deftype
 import StructUtils
 import TypeError
+import Validate
 
 data SumtypeCase = SumtypeCase { caseName :: String
                                , caseTys :: [Ty]
                                } deriving (Show, Eq)
 
-toCases :: [XObj] -> Either TypeError [SumtypeCase]
-toCases xobjs = sequence (map toCase xobjs)
+toCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError [SumtypeCase]
+toCases typeEnv typeVars xobjs = sequence (map (toCase typeEnv typeVars) xobjs)
 
-toCase :: XObj -> Either TypeError SumtypeCase
-toCase (XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
-  Right $ SumtypeCase { caseName = name
-                      , caseTys = (map (fromJust . xobjToTy) tyXObjs)
-                      }
-toCase (XObj (Sym (SymPath [] name) Symbol) _ _) =
+toCase :: TypeEnv -> [Ty] -> XObj -> Either TypeError SumtypeCase
+toCase typeEnv typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =
+  let tys = map xobjToTy tyXObjs
+  in case sequence tys of
+    Nothing ->
+      Left (InvalidSumtypeCase x)
+    Just okTys ->
+      let validated = map (\t -> canBeUsedAsMemberType typeEnv typeVars t x) okTys
+      in case sequence validated of
+           Left e ->
+             Left e
+           Right _ ->
+             Right $ SumtypeCase { caseName = name
+                                 , caseTys = okTys
+                                 }
+toCase _ _ (XObj (Sym (SymPath [] name) Symbol) _ _) =
   Right $ SumtypeCase { caseName = name
                       , caseTys = []
                       }
-toCase x =
+toCase _ _ x =
   Left (InvalidSumtypeCase x)
 
 getCase :: [SumtypeCase] -> String -> Maybe SumtypeCase
@@ -49,7 +60,7 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
                              Nothing -> Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0
       insidePath = pathStrings ++ [typeModuleName]
   in do let structTy = StructTy typeName typeVariables
-        cases <- toCases rest
+        cases <- toCases typeEnv typeVariables rest
         okIniters <- initers insidePath structTy cases
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
         (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
