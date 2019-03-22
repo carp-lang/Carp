@@ -1,6 +1,11 @@
 (system-include "SDL2/SDL_image.h")
 (add-lib "-lSDL2_image")
 
+;; Windows
+;; (system-include "SDL_image.h")
+;; (add-cflag "-I.\\vendor\\SDL2_image-2.0.4\\include")
+;; (add-lib ".\\vendor\\SDL2_image-2.0.4\\lib\\x64\\SDL2_image.lib")
+
 (defmodule IMG
   (register load-texture (Fn [(Ptr SDL_Renderer) (Ptr Char)] (Ptr SDL_Texture)) "IMG_LoadTexture")
   (register load (Fn [(Ptr Char)] (Ptr SDL_Surface)) "IMG_Load")
