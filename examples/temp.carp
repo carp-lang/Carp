@@ -23,9 +23,18 @@
 ;; (defvar p "foo.h")
 
 ;;(def m)
+
+;;(defn foo [] (Int.+ 2 3 3))
+
+;;(defdynamic h [] 123)
+
+(defn g []
+  (let [x 123 y x x]
+    123))
+
+
 (defn f)
 
-(defn foo [] (Int.+ 2 3))
 
 (deftype a123 [x Int y klfb])
 (deftype 123 [x Int])
