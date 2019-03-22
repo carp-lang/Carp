@@ -1,4 +1,4 @@
-(load "Filepath.carp")
+(load "core/Filepath.carp") ;; specified path to avoid loading itself on case insensitive file systems
 (load "Test.carp")
 
 (use-all Test Filepath)

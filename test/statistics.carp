@@ -1,5 +1,5 @@
 (load "Test.carp")
-(load "Statistics.carp")
+(load "core/Statistics.carp") ;; specified path to avoid loading itself on case insensitive file systems
 
 (use-all Double Test Statistics)
 

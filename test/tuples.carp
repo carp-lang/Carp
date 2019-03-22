@@ -1,4 +1,4 @@
-(load "Tuples.carp")
+(load "core/Tuples.carp")  ;; specified path to avoid loading itself on case insensitive file systems
 
 (load "Test.carp")
 (use Test)

@@ -9,6 +9,7 @@ import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
 import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, getHomeDirectory, setCurrentDirectory)
+import System.FilePath (takeDirectory)
 import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
@@ -1008,20 +1009,27 @@ specialCommandMetaGet path key =
 
 -- | Command for loading a Carp file.
 commandLoad :: CommandCallback
-commandLoad [xobj@(XObj (Str path) _ _)] =
+commandLoad [xobj@(XObj (Str path) i _)] =
   do ctx <- get
      home <- liftIO $ getHomeDirectory
-     let proj = contextProj ctx
+     let relativeTo = case i of
+                        Just ii ->
+                          case infoFile ii of
+                            "REPL" -> "."
+                            file -> takeDirectory file
+                        Nothing -> "."
+         proj = contextProj ctx
          libDir = home ++ "/" ++ projectLibDir proj
          carpDir = projectCarpDir proj
          fullSearchPaths =
            path :
-           ("./" ++ path) :                                      -- the path from the current directory
+           (relativeTo ++ "/" ++ path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
            map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
            [carpDir ++ "/core/" ++ path] ++
            [libDir ++ "/" ++ path]
-            -- putStrLn ("Full search paths = " ++ show fullSearchPaths)
+     --liftIO $ putStrLn ("Full search paths = " ++ joinWithComma fullSearchPaths)
      existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
+     --liftIO $ putStrLn ("Existing paths = " ++ joinWithComma existingPaths)
      case existingPaths of
        [] ->
         if elem '@' path
@@ -1029,22 +1037,27 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
           else return $ invalidPath ctx path
        firstPathFound : _ ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
-            let alreadyLoaded = projectAlreadyLoaded proj
-            if canonicalPath `elem` alreadyLoaded
-              then do --liftIO (putStrLn ("Ignoring 'load' command for already loaded file '" ++ canonicalPath ++ "'"))
-                      return ()
-              else do contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
-                                              handle <- SysIO.openFile canonicalPath SysIO.ReadMode
-                                              SysIO.hSetEncoding handle SysIO.utf8
-                                              SysIO.hGetContents handle
-                      let files = projectFiles proj
-                          files' = if canonicalPath `elem` files
-                                   then files
-                                   else files ++ [canonicalPath]
-                          proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
-                      newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
-                      put newCtx
-            return dynamicNil
+            fileThatLoads <- liftIO (canonicalizePath (case i of
+                                                         Just ii -> infoFile ii
+                                                         Nothing -> ""))
+            if (canonicalPath == fileThatLoads)
+              then return $ cantLoadSelf ctx path
+              else do let alreadyLoaded = projectAlreadyLoaded proj
+                      if canonicalPath `elem` alreadyLoaded
+                        then do --liftIO (putStrLn ("Ignoring 'load' command for already loaded file '" ++ canonicalPath ++ "'"))
+                                return ()
+                        else do contents <- liftIO $ do --putStrLn ("Will load '" ++ canonicalPath ++ "'")
+                                                        handle <- SysIO.openFile canonicalPath SysIO.ReadMode
+                                                        SysIO.hSetEncoding handle SysIO.utf8
+                                                        SysIO.hGetContents handle
+                                let files = projectFiles proj
+                                    files' = if canonicalPath `elem` files
+                                             then files
+                                             else files ++ [canonicalPath]
+                                    proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
+                                newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
+                                put newCtx
+                      return dynamicNil
   where
     fppl ctx =
       projectFilePathPrintLength (contextProj ctx)
@@ -1062,6 +1075,12 @@ commandLoad [xobj@(XObj (Str path) _ _)] =
             (machineReadableInfoFromXObj (fppl ctx) xobj) ++ " I can't find a file named: '" ++ path ++ "'"
           _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr) (info xobj)
+    cantLoadSelf ctx path =
+      case contextExecMode ctx of
+        Check ->
+          Left (EvalError (machineReadableInfoFromXObj (fppl ctx) xobj ++ " A file can't load itself: '" ++ path ++ "'") Nothing)
+        _ ->
+          Left (EvalError ("A file can't load itself: '" ++ path ++ "'") (info xobj))
     tryInstall path =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)

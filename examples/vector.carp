@@ -1,5 +1,5 @@
-(load "Vector.carp")
-(load "Geometry.carp")
+(load "core/Vector.carp")   ;; specified path to avoid loading itself on case insensitive file systems
+(load "core/Geometry.carp")
 
 (use-all IO Vector2 Geometry)
 
