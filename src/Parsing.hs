@@ -27,7 +27,7 @@ maybeSigned = do i <- createInfo
                  digits <- Parsec.many1 Parsec.digit
                  let num = maybe "" (\x -> [x]) sign ++ digits
                  incColumn (length num)
-                 return (i, trace num num)
+                 return (i, num)
 
 double :: Parsec.Parsec String ParseState XObj
 double = do (i, num) <- maybeSigned
