@@ -21,14 +21,11 @@ createInfo :: Parsec.Parsec String ParseState (Maybe Info)
 createInfo = do i <- fmap parseInfo Parsec.getState
                 return (Just i)
 
-firstDigit :: Parsec.Parsec String ParseState Char
-firstDigit = Parsec.choice [Parsec.digit, Parsec.char '-']
-
 maybeSigned :: Parsec.Parsec String ParseState (Maybe Info, String)
 maybeSigned = do i <- createInfo
-                 num0 <- firstDigit
-                 num1 <- Parsec.many Parsec.digit
-                 let num = num0 : num1
+                 sign <- Parsec.optionMaybe (Parsec.char '-')
+                 digits <- Parsec.many1 Parsec.digit
+                 let num = maybe "" (\x -> [x]) sign ++ digits
                  incColumn (length num)
                  return (i, num)
 
@@ -38,9 +35,7 @@ double = do (i, num) <- maybeSigned
             incColumn 1
             decimals <- Parsec.many1 Parsec.digit
             incColumn (length decimals)
-            if num == "-"
-              then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
-              else return (XObj (Num DoubleTy (read (num ++ "." ++ decimals))) i Nothing)
+            return (XObj (Num DoubleTy (read (num ++ "." ++ decimals))) i Nothing)
 
 float :: Parsec.Parsec String ParseState XObj
 float = do (i, num) <- maybeSigned
@@ -50,32 +45,24 @@ float = do (i, num) <- maybeSigned
            incColumn (length decimals)
            _ <- Parsec.char 'f'
            incColumn 1
-           if num == "-"
-             then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
-             else return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
+           return (XObj (Num FloatTy (read (num ++ "." ++ decimals))) i Nothing)
 
 floatNoPeriod :: Parsec.Parsec String ParseState XObj
 floatNoPeriod =
   do (i, num) <- maybeSigned
      _ <- Parsec.char 'f'
      incColumn 1
-     if num == "-"
-       then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
-       else return (XObj (Num FloatTy (read num)) i Nothing)
+     return (XObj (Num FloatTy (read num)) i Nothing)
 
 integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- maybeSigned
-             if num == "-"
-               then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
-               else return (XObj (Num IntTy (read num)) i Nothing)
+             return (XObj (Num IntTy (read num)) i Nothing)
 
 long :: Parsec.Parsec String ParseState XObj
 long = do (i, num) <- maybeSigned
           _ <- Parsec.char 'l'
           incColumn 1
-          if num == "-"
-            then return (XObj (Sym (SymPath [] "-") Symbol) i Nothing)
-            else return (XObj (Num LongTy (read num)) i Nothing)
+          return (XObj (Num LongTy (read num)) i Nothing)
 
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
