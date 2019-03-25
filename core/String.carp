@@ -146,6 +146,9 @@
           (string-set-at! &result j str)
           (set! j (+ j len))))
       result))
+
+  (doc contains? "Checks whether the string `s` contains the character `c`.")
+  (defn contains? [s c] (> (index-of s c) -1))
 )
 
 (defmodule StringCopy
