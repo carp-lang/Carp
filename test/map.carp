@@ -25,12 +25,12 @@
                 "get works with defaults"
   )
   (assert-equal test
-                &(the (Maybe (Ref Int)) (Maybe.Nothing))
+                &(the (Maybe Int) (Maybe.Nothing))
                 &(Map.get-maybe &(Map.create) "1")
                 "get works with maybe"
   )
   (assert-equal test
-                &(Maybe.Just "2")
+                &(Maybe.Just @"2")
                 &(Map.get-maybe &(Map.put (Map.create) "1" "2") "1")
                 "get works with maybe"
   )

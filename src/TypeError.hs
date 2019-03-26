@@ -45,6 +45,7 @@ data TypeError = SymbolMissingType XObj Env
                | CannotMatch XObj
                | InvalidSumtypeCase XObj
                | InvalidMemberType Ty XObj
+               | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
                | NotAmongRegisteredTypes Ty XObj
                | UnevenMembers [XObj]
 
@@ -208,6 +209,8 @@ instance Show TypeError where
     "I can’t use the type `" ++ show t ++ "` as a member type at " ++
     prettyInfoFromXObj xobj ++
     ".\n\nIs it defined and captured in the head of the type definition?"
+  show (InvalidMemberTypeWhenConcretizing t xobj err) =
+    "I can’t use the concrete type `" ++ show t ++ "` at " ++ prettyInfoFromXObj xobj ++ ": " ++ show err
   show (NotAmongRegisteredTypes t xobj) =
     "I can’t find a definition for the type `" ++ show t ++ "` at " ++
     prettyInfoFromXObj xobj ++ ".\n\nWas it registered?"

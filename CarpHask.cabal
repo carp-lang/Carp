@@ -23,6 +23,7 @@ library
                        Constraints,
                        Deftype,
                        Sumtypes,
+                       SumtypeCase,
                        Commands,
                        Template,
                        ToTemplate,

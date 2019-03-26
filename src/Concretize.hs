@@ -19,6 +19,7 @@ import InitialTypes
 import Lookup
 import ToTemplate
 import Validate
+import SumtypeCase
 
 --import Template
 --import ArrayTemplates
@@ -417,15 +418,17 @@ instantiateGenericSumtype typeEnv originalStructTy@(StructTy _ originalTyVars) g
         Right mappings ->
           let concretelyTypedCases = map (replaceGenericTypeSymbolsOnCase mappings) cases
               deps = sequence (map (depsForCase typeEnv) concretelyTypedCases)
-          in -- TODO: Validate?! (see struct types above)
-            case deps of
-              Right  okDeps -> Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
-                                                  XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
-                                                  concretelyTypedCases
-                                                 )
-                                             ) (Just dummyInfo) (Just TypeTy)
-                                      ] ++ concat okDeps
-              Left err -> Left err
+          in  case toCases typeEnv originalTyVars concretelyTypedCases of -- Don't care about the cases, this is done just for validation.
+                Left err -> Left err
+                Right _ ->
+                  case deps of
+                    Right  okDeps -> Right $ [XObj (Lst (XObj (DefSumtype genericStructTy) Nothing Nothing :
+                                                        XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
+                                                        concretelyTypedCases
+                                                       )
+                                                   ) (Just dummyInfo) (Just TypeTy)
+                                            ] ++ concat okDeps
+                    Left err -> Left err
 
 depsForCase :: TypeEnv -> XObj -> Either TypeError [XObj]
 depsForCase typeEnv x@(XObj (Lst [_, XObj (Arr members) _ _]) _ _) =

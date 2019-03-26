@@ -4,19 +4,19 @@
 
 (deftest test
   (assert-true test
-               (success? &(the (Result Int (Ref String)) (Success 1)))
+               (success? &(the (Result Int String) (Success 1)))
                "success? works with Success"
   )
   (assert-false test
-                (success? &(the (Result Int (Ref String)) (Error "error")))
+                (success? &(the (Result Int String) (Error @"error")))
                 "success? works with Error"
   )
   (assert-true test
-               (error? &(the (Result Int (Ref String)) (Error "error")))
+               (error? &(the (Result Int String) (Error @"error")))
                "error? works with Error"
   )
   (assert-false test
-                (error? &(the (Result Int (Ref String)) (Success 1)))
+                (error? &(the (Result Int String) (Success 1)))
                 "error? works with Success"
   )
   (assert-equal test
@@ -35,7 +35,7 @@
   )
   (assert-equal test
                 &(Success 2)
-                &(map (the (Result Int (Ref String)) (Success 1)) Int.inc)
+                &(map (the (Result Int String) (Success 1)) Int.inc)
                 "map works with Success"
   )
   (assert-true test
@@ -44,13 +44,13 @@
   )
   (assert-equal test
                 &(Success 2)
-                &(and-then (the (Result Int (Ref String)) (Success 1))
+                &(and-then (the (Result Int String) (Success 1))
                            (fn [x] (Success (Int.inc x))))
                 "and-then works with Success"
   )
   (assert-equal test
                 2
-                (unwrap-or-zero (the (Result Int (Ref String)) (Success 2)))
+                (unwrap-or-zero (the (Result Int String) (Success 2)))
                 "unwrap-or-zero works with Success"
   )
   (assert-equal test
@@ -60,8 +60,8 @@
   )
   (assert-equal test
                 &(Error 5)
-                &(or-else (the (Result Int (Ref String)) (Error "error"))
-                          (fn [x] (Error (String.length x))))
+                &(or-else (the (Result Int String) (Error @"error"))
+                          (fn [x] (Error (String.length &x))))
                 "or-else works with Error"
   )
   (assert-equal test
@@ -71,8 +71,8 @@
   )
   (assert-equal test
                 5
-                (unwrap-or-else (the (Result Int (Ref String)) (Error "error"))
-                                String.length)
+                (unwrap-or-else (the (Result Int String) (Error @"error"))
+                                (fn [s] (String.length &s)))
                 "unwrap-or-else works with Error"
   )
   (assert-equal test
@@ -82,12 +82,12 @@
   )
   (assert-equal test
                 1
-                (unsafe-from-success (the (Result Int (Ref String)) (Success 1)))
+                (unsafe-from-success (the (Result Int String) (Success 1)))
                 "unsafe-from-success works with Success"
   )
   (assert-equal test
                 1
-                (from-success (the (Result Int (Ref String)) (Success 1)) 0)
+                (from-success (the (Result Int String) (Success 1)) 0)
                 "from-success works with Success"
   )
   (assert-equal test
@@ -113,12 +113,12 @@
   )
   (assert-equal test
                 &(Maybe.Just 1)
-                &(to-maybe (the (Result Int (Ref String)) (Success 1)))
+                &(to-maybe (the (Result Int String) (Success 1)))
                 "to-maybe works with Success"
   )
   (assert-equal test
                 &(Maybe.Nothing)
-                &(to-maybe (the (Result Int (Ref String)) (Error "error")))
+                &(to-maybe (the (Result Int String) (Error @"error")))
                 "to-maybe works with Error"
   )
 )

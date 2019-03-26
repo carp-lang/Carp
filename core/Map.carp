@@ -82,7 +82,7 @@
   (defn get-maybe [b k]
     (let [i (find b k)]
       (if (<= 0 i)
-        (Maybe.Just (Pair.b (Array.nth (entries b) i)))
+        (Maybe.Just @(Pair.b (Array.nth (entries b) i)))
         (Maybe.Nothing))))
 
   (defn put [b k v]

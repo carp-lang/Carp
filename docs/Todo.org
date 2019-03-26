@@ -23,7 +23,7 @@
 *** Remove StringCopy.append, use String.append in all those cases.
 *** Unified signatures for struct updaters and aupdate
 *** Allow matching on references, to avoid copying
-*** Check that sumtypes don't save refs
+*** Check that sumtypes don't save refs -- half-done but needs to check when instantiating generic sumtypes, e.g. (Just (Ref String))
 ** 1.0
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
 *** Array.copy should just do a memcopy for primitive/plain types. Select most concrete version of 'copy'?

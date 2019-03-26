@@ -1,54 +1,15 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-;;(deftype A [xs (Array Double)])
-
 ; (deftype JSON
 ;   (Str [String])
 ;   (Num [Double])
 ;   (Arr [(Array JSON)])
 ;   (Obj [(Map String JSON)]))
 
-;; (deftype (Tree a)
-;;   (Root [(Tree a) (Tree a)])
-;;   (Leaf [a]))
+(def x (Maybe.Just "Heya"))
 
-;;(defn main [] (println* &(Tree.Leaf 100)))
-
-;;(defdynamic p [] "foooooo")
-
-;; (defmacro defvar [name expr]
-;;   (list 'defdynamic name [] expr))
-
-;; (defvar p "foo.h")
-
-;;(def m)
-
-;;(defn foo [] (Int.+ 2 3 3))
-
-;;(defdynamic h [] 123)
-
-(load "dgdfsdff")
-
-(defn g []
-  (let [x 123 y x x]
-    123))
-
-
-(defn f)
-
-
-(deftype a123 [x Int y klfb])
-(deftype 123 [x Int])
-
-(deftype Wrong
-    (A [(Ref String)])
-    Boo
-  )
-
-(defn main []
-  (let [s @"hello"
-        w (Wrong.A &s)]
-    (do
-      (delete s)
-      (println* &w))))
+;; (defn f []
+;;   (match x
+;;     (Maybe.Just a)  a
+;;     (Maybe.Nothing) 0))
