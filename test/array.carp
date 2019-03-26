@@ -112,6 +112,10 @@
                 &(range 10 15 1)
                 "range works as expected")
   (assert-equal test
+                &[10.0 10.5 11.0 11.5 12.0]
+                &(range 10.0 12.0 0.5)
+                "range works as expected on non-integers")
+  (assert-equal test
                 &[10 9 8 7 6 5 4 3 2 1 0]
                 &(range 10 0 -1)
                 "range backwards works as expected")
