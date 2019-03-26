@@ -43,14 +43,14 @@
                 (from (apply (the (Maybe Int) (Nothing)) Int.inc) 0)
                 "apply works on Nothing"
   )
-  ;; (assert-equal test
-  ;;               &(Result.Success 1)
-  ;;               &(to-result (Just 1) "error")
-  ;;               "to-result works on Just"
-  ;; )
-  ;; (assert-equal test
-  ;;               &(the (Result Int String) (Result.Error @"error"))
-  ;;               &(to-result (Nothing) @"error")
-  ;;               "to-result works on Nothing"
-  ;; )
+  (assert-equal test
+                &(Result.Success 1)
+                &(to-result (Just 1) @"error")
+                "to-result works on Just"
+  )
+  (assert-equal test
+                &(the (Result Int String) (Result.Error @"error"))
+                &(to-result (Nothing) @"error")
+                "to-result works on Nothing"
+  )
 )

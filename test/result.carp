@@ -30,7 +30,7 @@
                 "apply works with Error"
   )
   (assert-true test
-               (error? &(map (Error "hi") Int.inc))
+               (error? &(map (Error @"hi") Int.inc))
                "map works with Error"
   )
   (assert-equal test
@@ -39,7 +39,7 @@
                 "map works with Success"
   )
   (assert-true test
-               (error? &(and-then (Error "hi") (fn [x] (Success (Int.inc x)))))
+               (error? &(and-then (Error @"hi") (fn [x] (Success (Int.inc x)))))
                "and-then works with Error"
   )
   (assert-equal test
@@ -55,7 +55,7 @@
   )
   (assert-equal test
                 0
-                (unwrap-or-zero (Error "error"))
+                (unwrap-or-zero (Error @"error"))
                 "unwrap-or-zero works with Error"
   )
   (assert-equal test
@@ -66,7 +66,7 @@
   )
   (assert-equal test
                 &(Success 1)
-                &(or-else (Success 1) (fn [x] (Error (String.length x))))
+                &(or-else (Success 1) (fn [x] (Error (String.length &x))))
                 "or-else works with Success"
   )
   (assert-equal test
@@ -77,7 +77,7 @@
   )
   (assert-equal test
                 1
-                (unwrap-or-else (Success 1) String.length)
+                (unwrap-or-else (Success 1) (fn [s] (String.length &s)))
                 "unwrap-or-else works with Success"
   )
   (assert-equal test
@@ -92,7 +92,7 @@
   )
   (assert-equal test
                 0
-                (from-success (Error "error") 0)
+                (from-success (Error @"error") 0)
                 "from-success works with Error"
   )
   (assert-equal test

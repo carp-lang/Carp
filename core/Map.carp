@@ -82,6 +82,7 @@
   (defn get-maybe [b k]
     (let [i (find b k)]
       (if (<= 0 i)
+        ;; The call to copy ('@') here is annoying - had to add it since sumtypes can't contain refs for now:
         (Maybe.Just @(Pair.b (Array.nth (entries b) i)))
         (Maybe.Nothing))))
 
