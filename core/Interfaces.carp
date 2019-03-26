@@ -24,6 +24,9 @@
 (definterface inc (λ [a] a))
 (definterface dec (λ [a] a))
 
+(definterface to-int (λ [a] Int))
+(definterface from-int (λ [Int] a))
+
 (definterface format (λ [&String a] String))
 (definterface from-string (λ [&String] a))
 
