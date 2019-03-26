@@ -66,10 +66,10 @@
 
 (defmodule Char
   (defn random []
-    (from-int (Int.random)))
+    (Char.from-int (Int.random)))
 
   (defn random-between [a b]
-    (from-int (Int.random-between (to-int a) (to-int b))))
+    (Char.from-int (Int.random-between (Char.to-int a) (Char.to-int b))))
 )
 
 (defmodule String

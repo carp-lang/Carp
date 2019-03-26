@@ -60,6 +60,14 @@
       (if (> 0 r)
         (+ r n)
         r)))
+
+  (doc to-int "acts as the identity function to implement the interface.")
+  (sig to-int (Fn [Int] Int))
+  (defn to-int [a] a)
+
+  (doc from-int "acts as the identity function to implement the interface.")
+  (sig from-int (Fn [Int] Int))
+  (defn from-int [a] a)
 )
 
 (defmodule IntRef
