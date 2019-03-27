@@ -14,6 +14,7 @@ import Repl
 import StartingEnv
 import Eval
 import Util
+import Lookup
 
 defaultProject :: Project
 defaultProject =
@@ -27,7 +28,7 @@ defaultProject =
           , projectLibDir = ".carp/libs/"
           , projectCarpDir = "./"
           , projectOutDir = case platform of
-                              Windows -> ".\\out" 
+                              Windows -> ".\\out"
                               _ -> "./out"
           , projectDocsDir = "./docs/"
           , projectDocsLogo = ""
@@ -83,7 +84,7 @@ main = do setLocaleEncoding utf8
                       else do --putStrLn ("No '" ++ carpProfile ++ "' found.")
                               return context
           finalContext <- loadFiles context' argFilesToLoad
-          settings <- readlineSettings
+          settings <- readlineSettings (bindingNames $ contextGlobalEnv finalContext)
           case execMode of
             Repl -> do putStrLn "Welcome to Carp 0.2.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."

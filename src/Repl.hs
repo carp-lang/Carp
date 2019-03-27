@@ -20,8 +20,8 @@ import ColorText
 import Eval
 import Parsing (balance)
 
-completeKeywords :: Monad m => String -> String -> m [Completion]
-completeKeywords _ word = return $ findKeywords word keywords []
+completeKeywordsAnd :: Monad m => [String ] -> String -> String -> m [Completion]
+completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords) []
   where
         findKeywords match [] res = res
         findKeywords match (x : xs) res =
@@ -67,11 +67,11 @@ completeKeywords _ word = return $ findKeywords word keywords []
                    ]
 
 
-readlineSettings :: Monad m => IO (Settings m)
-readlineSettings = do
+readlineSettings :: Monad m => [String] -> IO (Settings m)
+readlineSettings words = do
   home <- getHomeDirectory
   return $ Settings {
-    complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] completeKeywords,
+    complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] (completeKeywordsAnd words),
     historyFile = Just $ home ++ "/.carp/history",
     autoAddHistory = True
   }
