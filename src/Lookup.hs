@@ -225,3 +225,9 @@ keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
       case envParent env of
         Just parent -> keysInEnvEditDistance path parent distance
         Nothing -> []
+
+bindingNames :: Env -> [String]
+bindingNames = concatMap select . envBindings
+  where select :: Binder -> [String]
+        select (Binder _ (XObj (Mod i) _ _)) = bindingNames i
+        select (Binder _ obj) = [getName obj]
