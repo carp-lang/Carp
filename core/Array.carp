@@ -116,7 +116,7 @@ Returns `Nothing` if the array is empty.")
       (do
         (for [i 1 n]
           (let [x @(nth xs i)]
-            (if (< result x)
+            (if (< &result &x)
               (set! result x)
               ())))
         result)))
@@ -129,7 +129,7 @@ Returns `Nothing` if the array is empty.")
       (do
         (for [i 1 n]
           (let [x @(nth xs i)]
-            (if (> result x)
+            (if (> &result &x)
               (set! result x)
               ())))
         result)))
