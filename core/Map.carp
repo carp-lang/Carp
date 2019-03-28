@@ -156,7 +156,7 @@
             (Array.aset b idx (Bucket.set-idx @n i &(f (Bucket.get-idx n i))))
             b))))))
 
-  (doc update "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
+  (doc update-with-default "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
   (defn update-with-default [m k f v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
