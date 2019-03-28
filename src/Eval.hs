@@ -305,8 +305,8 @@ eval env xobj =
                               Right okArgs -> getCommand callback okArgs
                               Left err -> return (Left err)
                        _ ->
-                         return (makeEvalError ctx Nothing ("Can't eval '" ++ pretty f ++ "' (it’s neither a macro nor a dynamic function) in " ++
-                                                            pretty xobj) (info f))
+                         executeFunctionAsMain ctx listXObj
+                         --return (makeEvalError ctx Nothing ("Can't eval '" ++ pretty f ++ "' (it’s neither a macro nor a dynamic function) in " ++ pretty xobj) (info f))
 
     evalList _ = error "Can't eval non-list in evalList."
 
@@ -598,12 +598,8 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
        Nothing ->
          return ctx
 
-
-
--- | SPECIAL FORM COMMANDS (needs to get access to unevaluated arguments, which makes them "special forms" in Lisp lingo)
-
-specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefine xobj =
+annotateWithinContext :: Bool -> XObj -> StateT Context IO (Either EvalError (XObj, [XObj]))
+annotateWithinContext qualifyDefn xobj =
   do ctx <- get
      let pathStrings = contextPath ctx
          fppl = projectFilePathPrintLength (contextProj ctx)
@@ -615,7 +611,7 @@ specialCommandDefine xobj =
      case expansionResult of
        Left err -> return (makeEvalError ctx Nothing (show err) Nothing)
        Right expanded ->
-         let xobjFullPath = setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj))
+         let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
              xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
          in case annotate typeEnv globalEnv xobjFullSymbols of
               Left err ->
@@ -625,11 +621,23 @@ specialCommandDefine xobj =
                     in  return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing fppl))
                   _ ->
                     return (Left (EvalError (show err) Nothing fppl))
-              Right (annXObj, annDeps) ->
-                do ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
-                   ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
-                   put ctxWithDef
-                   return dynamicNil
+              Right ok ->
+                return (Right ok)
+
+-- | SPECIAL FORM COMMANDS (needs to get access to unevaluated arguments, which makes them "special forms" in Lisp lingo)
+
+specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandDefine xobj =
+  do result <- annotateWithinContext True xobj
+     case result of
+       Right (annXObj, annDeps) ->
+         do ctxAfterExpansion <- get
+            ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
+            ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
+            put ctxWithDef
+            return dynamicNil
+       Left err ->
+         return (Left err)
 
 specialCommandRegisterType :: String -> [XObj] -> StateT Context IO (Either EvalError XObj)
 specialCommandRegisterType typeName rest =
@@ -1199,3 +1207,43 @@ printC xobj =
       putStrLnWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
       putStrLnWithColor Green (toC All xobj)
+
+-- | This allows execution of calls to non-dynamic functions (defined with 'defn') to be run from the REPL
+executeFunctionAsMain :: Context -> XObj -> StateT Context IO (Either EvalError XObj)
+executeFunctionAsMain ctx expression =
+  let fppl = projectFilePathPrintLength (contextProj ctx)
+      -- [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _]
+      tempMainFunction x = XObj (Lst [XObj Defn (Just dummyInfo) Nothing
+                                     ,XObj (Sym (SymPath [] "main") Symbol) (Just dummyInfo) Nothing
+                                     ,XObj (Arr []) (Just dummyInfo) Nothing
+                                     ,case ty x of
+                                        Just UnitTy -> x
+                                        Just (RefTy _) -> XObj (Lst [(XObj (Sym (SymPath [] "println*") Symbol)) (Just dummyInfo) Nothing, x])
+                                                               (Just dummyInfo) (Just UnitTy)
+                                        Just _ -> XObj (Lst [(XObj (Sym (SymPath [] "println*") Symbol)) (Just dummyInfo) Nothing,
+                                                             (XObj (Lst [XObj Ref (Just dummyInfo) Nothing, x])
+                                                                   (Just dummyInfo) (Just UnitTy))])
+                                                       (Just dummyInfo) (Just UnitTy)
+                                     ]) (Just dummyInfo) (Just (FuncTy [] UnitTy))
+  in  do r <- annotateWithinContext False expression
+         case r of
+           Right (annXObj, annDeps) ->
+             do let m = (tempMainFunction annXObj)
+                liftIO $ putStrLn (pretty m)
+
+                ctxAfterExpansion <- get
+                ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
+                put ctxWithDeps
+
+                r1 <- specialCommandDefine m
+                case r1 of
+                  Left e -> return (Left e)
+                  Right _ ->
+                    do r2 <- commandBuild []
+                       case r2 of
+                         Left e -> error (show (e fppl)) -- return (Left e)
+                         Right _ ->
+                           do r3 <- commandRunExe []
+                              return dynamicNil
+           Left err ->
+             return (Left err)
