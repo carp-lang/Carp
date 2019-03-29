@@ -66,6 +66,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Dan Connolly
 * Reini Urban
 * Jonas Granquist
+* Joel Kaasinen ([@opqdonut](https://github.com/opqdonut))
 
 Are you missing from the contributors list? Please send a pull request!
 
