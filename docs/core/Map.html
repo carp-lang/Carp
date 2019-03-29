@@ -741,7 +741,7 @@
                     (update m k f)
                 </pre>
                 <p class="doc">
-                    <p>Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).</p>
+                    <p>Update value at key k in map with function f, if it exists.</p>
 
                 </p>
             </div>
@@ -799,7 +799,8 @@
                     (update-with-default m k f v)
                 </pre>
                 <p class="doc">
-                    
+                    <p>Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).</p>
+
                 </p>
             </div>
             <div class="binder">
