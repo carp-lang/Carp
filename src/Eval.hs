@@ -486,7 +486,7 @@ objToCommand ctx xobj =
 charToCommand :: Char -> Maybe CommandCallback
 charToCommand 'x' = Just commandRunExe
 charToCommand 'r' = Just commandReload
-charToCommand 'b' = Just commandBuild
+charToCommand 'b' = Just (commandBuild False)
 charToCommand 'c' = Just commandCat
 charToCommand 'e' = Just commandListBindings
 charToCommand 'h' = Just commandHelp
@@ -1229,21 +1229,23 @@ executeFunctionAsMain ctx expression =
          case r of
            Right (annXObj, annDeps) ->
              do let m = (tempMainFunction annXObj)
-                liftIO $ putStrLn (pretty m)
+                --liftIO $ putStrLn (pretty m)
 
                 ctxAfterExpansion <- get
                 ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
                 put ctxWithDeps
 
-                r1 <- specialCommandDefine m
-                case r1 of
+                defineResult <- specialCommandDefine m
+                case defineResult of
                   Left e -> return (Left e)
                   Right _ ->
-                    do r2 <- commandBuild []
-                       case r2 of
-                         Left e -> error (show (e fppl)) -- return (Left e)
+                    do buildResult <- commandBuild True []
+                       case buildResult of
+                         Left e -> return (Left (e fppl))
                          Right _ ->
-                           do r3 <- commandRunExe []
-                              return dynamicNil
+                           do executionResult <- commandRunExe []
+                              case executionResult of
+                                Left e -> return (Left (e fppl))
+                                Right _ -> return dynamicNil
            Left err ->
              return (Left err)

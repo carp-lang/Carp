@@ -219,8 +219,8 @@ commandRunExe args =
                         return dynamicNil
 
 -- | Command for building the project, producing an executable binary or a shared library.
-commandBuild :: CommandCallback
-commandBuild args =
+commandBuild :: Bool -> [XObj] -> StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj)
+commandBuild shutUp args =
   do ctx <- get
      let env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
@@ -257,13 +257,13 @@ commandBuild args =
               Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
                            liftIO $ do when echoCompilationCommand (putStrLn cmd)
                                        callCommand cmd
-                                       when (execMode == Repl) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
+                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                            setProjectCanExecute True
                            return dynamicNil
               Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
                             liftIO $ do when echoCompilationCommand (putStrLn cmd)
                                         callCommand cmd
-                                        when (execMode == Repl) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
+                                        when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
                             setProjectCanExecute False
                             return dynamicNil
 

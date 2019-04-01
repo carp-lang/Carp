@@ -223,7 +223,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "quit" 0 commandQuit
                     , addCommand "cat" 0 commandCat
                     , addCommand "run" 0 commandRunExe
-                    , addCommand "build" 0 commandBuild
+                    , addCommand "build" 0 (commandBuild False)
                     , addCommand "reload" 0 commandReload
                     , addCommand "env" 0 commandListBindings
                     , addCommandConfigurable "help" Nothing commandHelp
