@@ -265,7 +265,7 @@ eval env xobj =
           return (makeEvalError ctx Nothing ("Invalid args to `meta`: " ++ pretty xobj) (info xobj))
 
         [XObj (Sym (SymPath [] "members") _) _ _, target] ->
-          specialCommandMembers target
+          specialCommandMembers target env
         XObj (Sym (SymPath [] "members") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `members`: " ++ pretty xobj) (info xobj))
 
@@ -909,25 +909,36 @@ specialCommandType target =
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
 
-specialCommandMembers :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandMembers target =
+specialCommandMembers :: XObj -> Env -> StateT Context IO (Either EvalError XObj)
+specialCommandMembers target env =
   do ctx <- get
      let typeEnv = contextTypeEnv ctx
          fppl = projectFilePathPrintLength (contextProj ctx)
-     case target of
-           XObj (Sym path@(SymPath [] name) _) _ _ ->
-             case lookupInEnv path (getTypeEnv typeEnv) of
-               Just (_, Binder _ (XObj (Lst (XObj (Typ structTy) Nothing Nothing :
-                                             XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
-                                             XObj (Arr members) _ _ :
-                                             []))
-                                  _ _))
-                 ->
-                      return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
-               _ ->
-                 return (makeEvalError ctx Nothing ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
-           _ ->
-             return (makeEvalError ctx Nothing ("Can't get the members of non-symbol: " ++ pretty target) (info target))
+     case bottomedTarget target of
+           XObj (Sym path@(SymPath _ name) _) _ _ ->
+              case lookupInEnv path (getTypeEnv typeEnv) of
+                Just (_, Binder _ (XObj (Lst (XObj (Typ structTy) Nothing Nothing :
+                                           XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                                           XObj (Arr members) _ _ :
+                                           []))
+                                _ _))
+                  ->
+                    return (Right (XObj (Arr (map (\(a, b) -> (XObj (Lst [a, b]) Nothing Nothing)) (pairwise members))) Nothing Nothing))
+                _ ->
+                  return (makeEvalError ctx Nothing ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
+           _ -> return (makeEvalError ctx Nothing ("Can't get the members of non-symbol: " ++ pretty target) (info target))
+  where bottomedTarget target =
+          case target of
+            XObj (Sym targetPath _) _ _ ->
+              case lookupInEnv targetPath env of
+                -- this is a trick: every type generates a module in the env;
+                -- we’re special-casing here because we need the parent of the
+                -- module
+                Just (_, Binder _ (XObj (Mod _) _ _)) -> target
+                -- if we’re recursing into a non-sym, we’ll stop one level down
+                Just (_, Binder _ x) -> bottomedTarget x
+                _ -> target
+            _ -> target
 
 specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 specialCommandUse xobj path =
