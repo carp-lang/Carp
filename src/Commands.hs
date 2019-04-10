@@ -693,6 +693,16 @@ commandStringJoin [a] =
     _ ->
       Left (EvalError ("Can't call join with " ++ pretty a) (info a))
 
+commandSymJoin :: CommandCallback
+commandSymJoin [a] =
+  return $ case a of
+    XObj (Arr syms) _ _ ->
+      case (sequence (map unwrapSymPathXObj syms)) of
+        Left err -> Left (EvalError err (info a))
+        Right result -> Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing)
+    _ ->
+      Left (EvalError ("Can't call join with " ++ pretty a) (info a))
+
 commandStringDirectory :: CommandCallback
 commandStringDirectory [a] =
   return $ case a of

@@ -31,6 +31,10 @@
 (defndynamic gc- [key] (Project.get-config key))
 (defmacro gc [key] (gc- key))
 
+(def xy 1)
+(defndynamic test-join- [] (Symbol.join ['x 'y]))
+(defmacro test-join [] (test-join-))
+
 (deftest test
   (assert-true test
                (test-do-let)
@@ -176,4 +180,9 @@
   (assert-equal test
                 "Untitled"
                 (gc "title")
-                "Project.get-config works as expected II"))
+                "Project.get-config works as expected II")
+  (assert-equal test
+                1
+                (test-join)
+                "Symbol.join works as expected")
+)
