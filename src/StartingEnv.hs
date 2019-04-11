@@ -238,6 +238,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "save-docs-internal" 1 commandSaveDocsInternal
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
+                       ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
                        ,("Project", Binder emptyMeta (XObj (Mod dynamicProjectModule) Nothing Nothing))
                        ]
 
@@ -255,6 +256,17 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand "length" 1 commandStringLength
                                 , addCommand "join" 1 commandStringJoin
                                 , addCommand "directory" 1 commandStringDirectory
+                                ]
+
+-- | A submodule of the Dynamic module. Contains functions for working with symbolss in the repl or during compilation.
+dynamicSymModule :: Env
+dynamicSymModule = Env { envBindings = bindings
+                       , envParent = Nothing
+                       , envModuleName = Just "Sym"
+                       , envUseModules = []
+                       , envMode = ExternalEnv
+                       , envFunctionNestingLevel = 0 }
+  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
