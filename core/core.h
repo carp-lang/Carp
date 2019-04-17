@@ -1,15 +1,14 @@
 #ifndef PRELUDE_H
 #define PRELUDE_H
 
+#ifndef OPTIMIZE
 #include <assert.h>
+#endif
 #include "carp_stdbool.h"
 #include <stddef.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <windows.h>
-#else
-#include <sys/wait.h>
 #endif
-#include <signal.h>
 
 typedef char* String;
 typedef char* Pattern;
