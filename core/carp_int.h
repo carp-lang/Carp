@@ -1,5 +1,4 @@
 #include <limits.h>
-#include <math.h>
 #include "carp_stdbool.h"
 
 int CARP_INT_MAX = INT_MAX;

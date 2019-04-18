@@ -15,7 +15,7 @@
   (register system (Fn [&String] ()))
   (doc get-arg "Gets the command line argument at a specified index.")
   (register get-arg (Fn [Int] (Ref String)))
-  (doc get-arg "Gets the number of command line arguments.")
+  (doc get-args-len "Gets the number of command line arguments.")
   (register get-args-len (Fn [] Int))
   (register fork (Fn [] Int) "fork")
   (register wait (Fn [(Ptr Int)] Int) "wait")
