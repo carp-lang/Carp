@@ -161,15 +161,18 @@ consPath qualifyers (SymPath stringPaths name) =
 
 -- | Replaces symbols not allowed in C-identifiers.
 mangle :: String -> String
-mangle = replaceChars (Map.fromList [('+', "_PLUS_")
-                                    ,('-', "_MINUS_")
-                                    ,('*', "_MUL_")
-                                    ,('/', "_DIV_")
-                                    ,('<', "_LT_")
-                                    ,('>', "_GT_")
-                                    ,('?', "_QMARK_")
-                                    ,('!', "_BANG_")
-                                    ,('=', "_EQ_")])
+mangle = sreplace . creplace
+  where creplace = replaceChars (Map.fromList [('+', "_PLUS_")
+                                               ,('-', "_MINUS_")
+                                               ,('*', "_MUL_")
+                                               ,('/', "_DIV_")
+                                               ,('<', "_LT_")
+                                               ,('>', "_GT_")
+                                               ,('?', "_QMARK_")
+                                               ,('!', "_BANG_")
+                                               ,('=', "_EQ_")])
+        sreplace = replaceStrings (Map.fromList [("short", "_SHORT_")
+                                                 ,("long", "_LONG_")])
 
 -- | From two types, one with type variables and one without (e.g. (Fn ["t0"] "t1") and (Fn [Int] Bool))
 --   create mappings that translate from the type variables to concrete types, e.g. "t0" => Int, "t1" => Bool
