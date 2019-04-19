@@ -46,7 +46,7 @@ The examples involving graphics/sound/interaction will require the following lib
 
 * [SDL 2](https://www.libsdl.org/download-2.0.php) (cross platform game/interactivity library)
 * [SDL_image 2](https://www.libsdl.org/projects/SDL_image/) (image helpers)
-* [SDL_ttf 2](https://www.libsdl.org/projects/SDL_ttf/) (font rendering
+* [SDL_ttf 2](https://www.libsdl.org/projects/SDL_ttf/) (font rendering)
 * [SDL_mixer 2](https://www.libsdl.org/projects/SDL_mixer/) (audio playback)
 * [glfw](http://www.glfw.org) (Create a rendering context for OpenGL or Vulcan)
 
