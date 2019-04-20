@@ -39,6 +39,9 @@ replaceChars :: Map.Map Char String -> String -> String
 replaceChars dict = concatMap replacer
   where replacer c = fromMaybe [c] (Map.lookup c dict)
 
+replaceStrings :: Map.Map String String -> String -> String
+replaceStrings dict s = fromMaybe s (Map.lookup s dict)
+
 addIfNotPresent :: Eq a => a -> [a] -> [a]
 addIfNotPresent x xs =
   if x `elem` xs
