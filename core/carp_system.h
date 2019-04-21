@@ -49,7 +49,9 @@ void System_system(String *command) {
 Array System_args;
 
 String* System_get_MINUS_arg(int idx) {
+#ifndef OPTIMIZE
     assert(idx < System_args.len);
+#endif
     return &(((String*)System_args.data)[idx]);
 }
 
