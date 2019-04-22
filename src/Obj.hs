@@ -504,7 +504,7 @@ data Project = Project { projectTitle :: String
                        , projectEchoCompilationCommand :: Bool
                        , projectCanExecute :: Bool
                        , projectFilePathPrintLength :: FilePathPrintLength
-                       , projectNoCompile :: Bool
+                       , projectGenerateOnly :: Bool
                        }
 
 projectFlags :: Project -> String
@@ -535,7 +535,7 @@ instance Show Project where
         echoCompilationCommand
         canExecute
         filePathPrintLength
-        noCompile
+        generateOnly
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
@@ -560,7 +560,7 @@ instance Show Project where
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
             , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
             , "File path print length (when using --check): " ++ show filePathPrintLength
-            , "Don't compile: " ++ if noCompile then "true" else "false"
+            , "Generate Only: " ++ if generateOnly then "true" else "false"
             ]
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"
