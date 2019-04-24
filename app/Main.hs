@@ -47,6 +47,7 @@ defaultProject =
           , projectEchoCompilationCommand = False
           , projectCanExecute = False
           , projectFilePathPrintLength = FullPath
+          , projectGenerateOnly = False
           }
 
 -- | Starting point of the application.
@@ -58,10 +59,12 @@ main = do setLocaleEncoding utf8
               logMemory = LogMemory `elem` otherOptions
               noCore = NoCore `elem` otherOptions
               optimize = Optimize `elem` otherOptions
+              generateOnly = GenerateOnly `elem` otherOptions
               projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
                                                                   (if optimize then ["-O3 -D OPTIMIZE"] else []) ++
                                                                   (projectCFlags defaultProject),
-                                                  projectCore = not noCore}
+                                                  projectCore = not noCore,
+                                                  projectGenerateOnly = generateOnly}
               noArray = False
               coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
@@ -106,6 +109,7 @@ main = do setLocaleEncoding utf8
 data OtherOptions = NoCore
                   | LogMemory
                   | Optimize
+                  | GenerateOnly
                   | SetPrompt String
                   deriving (Show, Eq)
 
@@ -124,6 +128,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
+            "--generate-only" -> parseArgsInternal filesToLoad execMode (GenerateOnly : otherOptions) restArgs
             "--prompt" -> case restArgs of
                              newPrompt : restRestArgs ->
                                parseArgsInternal filesToLoad execMode (SetPrompt newPrompt : otherOptions) restRestArgs

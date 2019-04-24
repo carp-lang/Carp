@@ -148,6 +148,8 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                                       "short" -> return (proj { projectFilePathPrintLength = ShortPath })
                                                       "full" -> return (proj { projectFilePathPrintLength = ShortPath })
                                                       _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
+                     "generate-only" -> do generateOnly <- unwrapBoolXObj value
+                                           return (proj { projectGenerateOnly = generateOnly })
                      _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
      case newProj of
        Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
@@ -182,6 +184,7 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "docs-url" -> Right $ Str $ projectDocsURL proj
           "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
+          "generate-only" -> Right $ Str $ show (projectGenerateOnly proj)
           _ ->
             Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj)
 commandProjectGetConfig [faultyKey] =
@@ -251,21 +254,23 @@ commandBuild shutUp args =
                 outMain = outDir ++ "main.c"
                 outExe = outDir ++ projectTitle proj
                 outLib = outDir ++ projectTitle proj
+                generateOnly = projectGenerateOnly proj
             liftIO $ createDirectoryIfMissing False outDir
             liftIO $ writeFile outMain (incl ++ okSrc)
-            case Map.lookup "main" (envBindings env) of
-              Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
-                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                       callCommand cmd
-                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
-                           setProjectCanExecute True
-                           return dynamicNil
-              Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
-                            liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                        callCommand cmd
-                                        when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
-                            setProjectCanExecute False
-                            return dynamicNil
+            if generateOnly then return dynamicNil else
+                case Map.lookup "main" (envBindings env) of
+                                Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
+                                             liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                                         (callCommand cmd)
+                                                         when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
+                                             setProjectCanExecute True
+                                             return dynamicNil
+                                Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
+                                              liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                                          (callCommand cmd)
+                                                          when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
+                                              setProjectCanExecute False
+                                              return dynamicNil
 
 setProjectCanExecute :: Bool -> StateT Context IO ()
 setProjectCanExecute value =
@@ -453,6 +458,7 @@ commandHelp [] =
               putStrLn "--log-memory                     - Enables use of memory logging functions in the Debug module."
               putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
               putStrLn "--check                          - Report all errors found in a machine readable way."
+              putStrLn "--generate-only                  - Don't compile the C source."
               return dynamicNil
 
 commandHelp args =
