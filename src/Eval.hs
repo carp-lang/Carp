@@ -163,11 +163,13 @@ eval env xobj =
                Left err -> return (Left err)
 
         [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
-            if all isSym a
-              then specialCommandDefine xobj
-              else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be symbols, but it got `" ++ pretty args ++ "`") (info xobj))
-            where isSym (XObj (Sym _ _) _ _) = True
-                  isSym _ = False
+            case (obj name) of
+              (Sym _ _) -> if all isSym a
+                           then specialCommandDefine xobj
+                           else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be symbols, but it got `" ++ pretty args ++ "`") (info xobj))
+                        where isSym (XObj (Sym _ _) _ _) = True
+                              isSym _ = False
+              _         -> return (makeEvalError ctx Nothing ("`defn` identifiers must be symbols, but it got `" ++ pretty name ++ "`") (info xobj))
 
         [defnExpr@(XObj Defn _ _), name, invalidArgs, _] ->
             return (makeEvalError ctx Nothing ("`defn` requires an array of symbols as argument list, but it got `" ++ pretty invalidArgs ++ "`") (info xobj))
