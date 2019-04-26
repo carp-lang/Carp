@@ -70,7 +70,7 @@ instance Show ToCError where
     "\n\nAll possibilities have the correct type."
   show (UnresolvedInterfaceSymbol xobj@(XObj (InterfaceSym symName) _ _)) =
     "I found an interface `" ++ symName ++
-    "` that is unresolved in the context at" ++ prettyInfoFromXObj xobj
+    "` that is unresolved in the context at " ++ prettyInfoFromXObj xobj
   show (UnresolvedGenericType xobj@(XObj _ _ (Just t))) =
     "I found an unresolved generic type `" ++ show t ++
     "` for the expression `" ++ show xobj ++ "` at " ++ prettyInfoFromXObj xobj
