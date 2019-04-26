@@ -186,6 +186,9 @@ eval env xobj =
              return $ do okValue <- evaledValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
 
+        (XObj The _ _ : _) ->
+            return (makeEvalError ctx Nothing ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
+
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
           if even (length bindings)
           then do bind <- mapM (\(n, x) -> do x' <- eval env x
