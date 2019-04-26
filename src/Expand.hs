@@ -60,6 +60,8 @@ expand eval env xobj =
           do expandedValue <- expand eval env value
              return $ do okValue <- expandedValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
+        (XObj The _ _ : _) ->
+            return (makeEvalError ctx Nothing ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
         [ifExpr@(XObj If _ _), condition, trueBranch, falseBranch] ->
           do expandedCondition <- expand eval env condition
              expandedTrueBranch <- expand eval env trueBranch
