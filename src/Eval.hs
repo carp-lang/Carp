@@ -218,7 +218,17 @@ eval env xobj =
           return (makeEvalError ctx Nothing (show "Invalid args to `register-type`: " ++ pretty xobj) (info xobj))
 
         XObj (Sym (SymPath [] "deftype") _) _ _ : nameXObj : rest ->
-          specialCommandDeftype nameXObj rest
+          -- We can't as-pattern on the rest as plenty of type definitions (e.g.) Core.Maybe
+          -- don't contain arrays of members.
+          case rest of
+          (XObj (Arr a) _ _ : _) -> if all isUnqualifiedSym (map fst (members a))
+                                   then specialCommandDeftype nameXObj rest
+                                   else return (makeEvalError ctx Nothing ("Type members must be unqualified symbols, but got `" ++ (concat (map pretty rest)) ++ "`") (info xobj))
+                                   where isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
+                                         isUnqualifiedSym _ = False
+                                         members (binding:val:xs) = (binding, val):members xs
+                                         members [] = []
+          _ -> specialCommandDeftype nameXObj rest
 
         [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj] ->
           specialCommandRegister name typeXObj Nothing
