@@ -165,11 +165,9 @@ eval env xobj =
         [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
             case (obj name) of
               (Sym (SymPath [] _) _) ->
-                  if all isSym a
+                  if all isUnqualifiedSym a
                   then specialCommandDefine xobj
                   else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
-                  where isSym (XObj (Sym (SymPath [] _) _) _ _) = True
-                        isSym _ = False
               _                      -> return (makeEvalError ctx Nothing ("`defn` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
 
         [defnExpr@(XObj Defn _ _), name, invalidArgs, _] ->
@@ -179,7 +177,9 @@ eval env xobj =
             return (makeEvalError ctx Nothing ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.") Nothing)
 
         [defExpr@(XObj Def _ _), name, expr] ->
-          specialCommandDefine xobj
+          if isUnqualifiedSym name
+          then specialCommandDefine xobj
+          else return (makeEvalError ctx Nothing ("`def` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
@@ -214,7 +214,15 @@ eval env xobj =
           return (makeEvalError ctx Nothing (show "Invalid args to `register-type`: " ++ pretty xobj) (info xobj))
 
         XObj (Sym (SymPath [] "deftype") _) _ _ : nameXObj : rest ->
-          specialCommandDeftype nameXObj rest
+          -- We can't as-pattern on the rest as plenty of type definitions (e.g.) Core.Maybe
+          -- don't contain arrays of members.
+          case rest of
+          (XObj (Arr a) _ _ : _) -> if all isUnqualifiedSym (map fst (members a))
+                                   then specialCommandDeftype nameXObj rest
+                                   else return (makeEvalError ctx Nothing ("Type members must be unqualified symbols, but got `" ++ (concat (map pretty rest)) ++ "`") (info xobj))
+                                   where members (binding:val:xs) = (binding, val):members xs
+                                         members [] = []
+          _ -> specialCommandDeftype nameXObj rest
 
         [XObj (Sym (SymPath [] "register") _) _ _, XObj (Sym (SymPath _ name) _) _ _, typeXObj] ->
           specialCommandRegister name typeXObj Nothing
