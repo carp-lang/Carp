@@ -165,11 +165,9 @@ eval env xobj =
         [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
             case (obj name) of
               (Sym (SymPath [] _) _) ->
-                  if all isSym a
+                  if all isUnqualifiedSym a
                   then specialCommandDefine xobj
                   else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
-                  where isSym (XObj (Sym (SymPath [] _) _) _ _) = True
-                        isSym _ = False
               _                      -> return (makeEvalError ctx Nothing ("`defn` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
 
         [defnExpr@(XObj Defn _ _), name, invalidArgs, _] ->
@@ -182,8 +180,6 @@ eval env xobj =
           if isUnqualifiedSym name
           then specialCommandDefine xobj
           else return (makeEvalError ctx Nothing ("`def` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
-          where isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
-                isUnqualifiedSym _ = False
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
@@ -224,9 +220,7 @@ eval env xobj =
           (XObj (Arr a) _ _ : _) -> if all isUnqualifiedSym (map fst (members a))
                                    then specialCommandDeftype nameXObj rest
                                    else return (makeEvalError ctx Nothing ("Type members must be unqualified symbols, but got `" ++ (concat (map pretty rest)) ++ "`") (info xobj))
-                                   where isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
-                                         isUnqualifiedSym _ = False
-                                         members (binding:val:xs) = (binding, val):members xs
+                                   where members (binding:val:xs) = (binding, val):members xs
                                          members [] = []
           _ -> specialCommandDeftype nameXObj rest
 

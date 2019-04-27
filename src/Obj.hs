@@ -771,3 +771,8 @@ wrapInParens xobj@(XObj _ i t) =
 isVarName :: String -> Bool
 isVarName (firstLetter:_) =
   not (isUpper firstLetter) -- This allows names beginning with special chars etc. to be OK for vars
+
+-- | Is the given XObj an unqualified symbol.
+isUnqualifiedSym :: XObj -> Bool
+isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
+isUnqualifiedSym _ = False
