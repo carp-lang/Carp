@@ -179,7 +179,11 @@ eval env xobj =
             return (makeEvalError ctx Nothing ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.") Nothing)
 
         [defExpr@(XObj Def _ _), name, expr] ->
-          specialCommandDefine xobj
+          if isUnqualifiedSym name
+          then specialCommandDefine xobj
+          else return (makeEvalError ctx Nothing ("`def` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
+          where isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
+                isUnqualifiedSym _ = False
 
         [theExpr@(XObj The _ _), typeXObj, value] ->
           do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
