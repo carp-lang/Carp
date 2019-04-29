@@ -495,6 +495,7 @@ data Project = Project { projectTitle :: String
                        , projectDocsLogo :: FilePath
                        , projectDocsPrelude :: String
                        , projectDocsURL :: String
+                       , projectDocsGenerateIndex :: Bool
                        , projectDocsStyling :: String
                        , projectPrompt :: String
                        , projectCarpSearchPaths :: [FilePath]
@@ -526,6 +527,7 @@ instance Show Project where
         docsLogo
         docsPrelude
         docsURL
+        docsGenerateIndex
         docsStyling
         prompt
         searchPaths
@@ -552,6 +554,7 @@ instance Show Project where
             , "Docs logo: " ++ docsLogo
             , "Docs prelude: " ++ docsPrelude
             , "Docs Project URL: " ++ docsURL
+            , "Docs generate index: " ++ show docsGenerateIndex
             , "Docs CSS URL: " ++ docsStyling
             , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir

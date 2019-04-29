@@ -34,6 +34,7 @@ defaultProject =
           , projectDocsLogo = ""
           , projectDocsPrelude = ""
           , projectDocsURL = ""
+          , projectDocsGenerateIndex = True
           , projectDocsStyling = "carp_style.css"
           , projectPrompt = case platform of
                               MacOS -> "鲮 "

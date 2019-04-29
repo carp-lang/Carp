@@ -135,6 +135,9 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                                               return (proj { projectOutDir = outDir })
                      "docs-directory" -> do docsDir <- unwrapStringXObj value
                                             return (proj { projectDocsDir = docsDir })
+                     "docs-generate-index" ->
+                       do docsGenerateIndex <- unwrapBoolXObj value
+                          return (proj { projectDocsGenerateIndex = docsGenerateIndex })
                      "docs-logo" -> do logo <- unwrapStringXObj value
                                        return (proj { projectDocsLogo = logo })
                      "docs-prelude" -> do prelude <- unwrapStringXObj value
@@ -182,6 +185,7 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "docs-logo" -> Right $ Str $ projectDocsLogo proj
           "docs-prelude" -> Right $ Str $ projectDocsPrelude proj
           "docs-url" -> Right $ Str $ projectDocsURL proj
+          "docs-generate-index" -> Right $ Bol $ projectDocsGenerateIndex proj
           "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
           "generate-only" -> Right $ Str $ show (projectGenerateOnly proj)
@@ -418,6 +422,7 @@ commandHelp [XObj(Str "project") _ _] =
               putStrLn "'docs-logo'          - Location of the documentation logo."
               putStrLn "'docs-prelude'       - The documentation foreword."
               putStrLn "'docs-url'           - A URL for the project (useful for generated documentation)."
+              putStrLn "'docs-generate-index'- Whether to generate the documentation index."
               putStrLn "'docs-styling'        - A URL to CSS for the project documentation."
               putStrLn "'prompt'             - Set the prompt in the repl."
               putStrLn "'search-path'        - Add a path where the Carp compiler will look for '*.carp' files."

@@ -22,9 +22,13 @@ saveDocsForEnvs :: Project -> [(SymPath, Env)] -> IO ()
 saveDocsForEnvs ctx envs =
   let dir = projectDocsDir ctx
       title = projectTitle ctx
+      generateIndex = projectDocsGenerateIndex ctx
       allEnvNames = (fmap (getModuleName . snd) envs)
   in  do mapM_ (saveDocsForEnv ctx allEnvNames) envs
-         writeFile (dir ++ "/" ++ title ++ "_index.html") (projectIndexPage ctx allEnvNames)
+         if generateIndex
+         then writeFile (dir ++ "/" ++ title ++ "_index.html")
+                        (projectIndexPage ctx allEnvNames)
+         else return ()
          putStrLn ("Generated docs to '" ++ dir ++ "'")
 
 
