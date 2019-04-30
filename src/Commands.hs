@@ -91,9 +91,10 @@ commandProjectSet [XObj (Str key) _ _, value] =
                       "libflag" -> return ctx { contextProj = proj { projectLibFlags = addIfNotPresent valueStr (projectLibFlags proj) } }
                       "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
                       "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
-                      "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = (valueStr == "true") } }
-                      "echoC" -> return ctx { contextProj = proj { projectEchoC = (valueStr == "true") } }
-                      "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = (valueStr == "true") } }
+                      -- TODO: should these be booleans?
+                      "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = valueStr == "true" } }
+                      "echoC" -> return ctx { contextProj = proj { projectEchoC = valueStr == "true" } }
+                      "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = valueStr == "true" } }
                       "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
                       "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
                       _ -> presentError ("Unrecognized key: '" ++ key ++ "'") ctx
@@ -159,7 +160,7 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
        Right ok -> do put (ctx { contextProj = ok })
                       return dynamicNil
 commandProjectConfig [faultyKey, _] =
-  do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
+  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 
 -- | Command for changing various project settings.
 commandProjectGetConfig :: CommandCallback
@@ -192,7 +193,7 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           _ ->
             Left $ EvalError ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj)
 commandProjectGetConfig [faultyKey] =
-  do presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
+  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
@@ -246,7 +247,7 @@ commandBuild shutUp args =
        Left err ->
          return (Left (EvalError
                         ("I encountered an error when emitting code:\n\n" ++
-                         (show err))
+                         show err)
                         Nothing))
        Right okSrc ->
          do let compiler = projectCompiler proj
@@ -265,13 +266,13 @@ commandBuild shutUp args =
                 case Map.lookup "main" (envBindings env) of
                                 Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
                                              liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                         (callCommand cmd)
+                                                         callCommand cmd
                                                          when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
                                              setProjectCanExecute True
                                              return dynamicNil
                                 Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
                                               liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                          (callCommand cmd)
+                                                          callCommand cmd
                                                           when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
                                               setProjectCanExecute False
                                               return dynamicNil
@@ -327,7 +328,7 @@ commandHelp [XObj (Str "language") _ _] =
               putStrLn "(while <condition> <body>)"
               putStrLn "(do <statement1> <statement2> ... <exprN>)"
               putStrLn "(let [<sym1> <expr1> <name2> <expr2> ...] <body>)"
-              --putStrLn "(fn [<args>] <body>)"
+              putStrLn "(fn [<args>] <body>)"
               putStrLn "(the <type> <expression>)"
               putStrLn "(ref <expression>)"
               putStrLn "(address <expr>)"
@@ -698,7 +699,7 @@ commandStringJoin :: CommandCallback
 commandStringJoin [a] =
   return $ case a of
     XObj (Arr strings) _ _ ->
-      case (sequence (map unwrapStringXObj strings)) of
+      case mapM unwrapStringXObj strings of
         Left err -> Left (EvalError err (info a))
         Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
     _ ->
@@ -708,7 +709,7 @@ commandSymJoin :: CommandCallback
 commandSymJoin [a] =
   return $ case a of
     XObj (Arr syms) _ _ ->
-      case (sequence (map unwrapSymPathXObj syms)) of
+      case mapM unwrapSymPathXObj syms of
         Left err -> Left (EvalError err (info a))
         Right result -> Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing)
     _ ->
@@ -733,7 +734,7 @@ commandPlus [a, b] =
       Left (EvalError ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
 commandMinus :: CommandCallback
-commandMinus [a, b] = do
+commandMinus [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
@@ -791,10 +792,10 @@ commandSaveDocsInternal [modulePath] = do
      let globalEnv = contextGlobalEnv ctx
      case modulePath of
        XObj (Lst xobjs) _ _ ->
-         case sequence (map unwrapSymPathXObj xobjs) of
+         case mapM unwrapSymPathXObj xobjs of
            Left err -> return (Left (EvalError err (info modulePath)))
            Right okPaths ->
-             case sequence (map (getEnvironmentForDocumentation globalEnv) okPaths) of
+             case mapM (getEnvironmentForDocumentation globalEnv) okPaths of
                Left err -> return (Left err)
                Right okEnvs -> saveDocs (zip okPaths okEnvs)
        x ->

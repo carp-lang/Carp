@@ -88,7 +88,7 @@ expand eval env xobj =
           if even (length bindings)
           then do bind <- mapM (\(n, x) -> do x' <- expand eval env x
                                               return $ do okX <- x'
-                                                          (Right [n, okX]))
+                                                          Right [n, okX])
                                (pairwise bindings)
                   expandedBody <- expand eval env body
                   return $ do okBindings <- sequence bind
@@ -99,19 +99,19 @@ expand eval env xobj =
             pretty xobj ++ "`)")
             (info xobj))
 
-        matchExpr@(XObj Match _ _) : expr : rest ->
-          if null rest
-            then return (makeEvalError ctx Nothing "I encountered a `match` without forms" (info xobj))
-            else if even (length rest)
-                 then do expandedExpr <- expand eval env expr
-                         expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
-                                                             return [Right l, expandedR])
-                                               (pairwise rest)
-                         let expandedRest = sequence (concat expandedPairs)
-                         return $ do okExpandedExpr <- expandedExpr
-                                     okExpandedRest <- expandedRest
-                                     return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
-                 else return (makeEvalError ctx Nothing
+        matchExpr@(XObj Match _ _) : (expr : rest)
+          | null rest ->
+              return (makeEvalError ctx Nothing "I encountered a `match` without forms" (info xobj))
+          | even (length rest) ->
+              do expandedExpr <- expand eval env expr
+                 expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
+                                                     return [Right l, expandedR])
+                                       (pairwise rest)
+                 let expandedRest = sequence (concat expandedPairs)
+                 return $ do okExpandedExpr <- expandedExpr
+                             okExpandedRest <- expandedRest
+                             return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
+          | otherwise -> return (makeEvalError ctx Nothing
                     "I encountered an odd number of forms inside a `match`"
                     (info xobj))
 
@@ -128,7 +128,7 @@ expand eval env xobj =
             "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
             ".\n\n`with` accepts only symbols.")
             Nothing)
-        (XObj With _ _) : _ ->
+        XObj With _ _ : _ ->
           return (makeEvalError ctx Nothing (
             "I encountered multiple forms inside a `with` at " ++
             prettyInfoFromXObj xobj ++
@@ -148,7 +148,7 @@ expand eval env xobj =
                          --trace ("Found macro: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj)
                          eval env xobj
                        Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
-                         (getCommand callback) args
+                         getCommand callback args
                        Right _ ->
                          return $ do okF <- expandedF
                                      okArgs <- expandedArgs

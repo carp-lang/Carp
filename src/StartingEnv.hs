@@ -67,7 +67,7 @@ templatePointerCopy = defineTemplate
 
 templatePointerEqual = defineTemplate
   (SymPath ["Pointer"] "eq")
-  (FuncTy [(PointerTy (VarTy "p")), (PointerTy (VarTy "p"))] BoolTy)
+  (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy)
   (toTemplate "bool $NAME ($p *p1, $p *p2)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p1 == p2;"
@@ -77,7 +77,7 @@ templatePointerEqual = defineTemplate
 -- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
 templatePointerToRef = defineTemplate
   (SymPath ["Pointer"] "to-ref")
-  (FuncTy [(PointerTy (VarTy "p"))] (RefTy (VarTy "p")))
+  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p")))
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p;"
@@ -180,7 +180,7 @@ generateTemplateFuncDelete funcTy = defineTemplate
 generateTemplateFuncStrOrPrn :: String -> Ty -> (String, Binder)
 generateTemplateFuncStrOrPrn name funcTy = defineTemplate
   (SymPath ["Function"] name)
-  (FuncTy [(RefTy funcTy)] StringTy)
+  (FuncTy [RefTy funcTy] StringTy)
   (toTemplate "String $NAME (Lambda *f)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    static String lambda = \"λ\";"
@@ -285,7 +285,7 @@ dynamicProjectModule = Env { envBindings = bindings
 templateEnumToInt :: (String, Binder)
 templateEnumToInt = defineTemplate
   (SymPath [] "enum-to-int")
-  (FuncTy [(VarTy "a")] IntTy)
+  (FuncTy [VarTy "a"] IntTy)
   (toTemplate "int $NAME ($a e)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return (int)e;"
@@ -322,24 +322,24 @@ startingTypeEnv = Env { envBindings = bindings
                       , envFunctionNestingLevel = 0
                       }
   where bindings = Map.fromList
-          $ [ interfaceBinder "copy" (FuncTy [(RefTy (VarTy "a"))] (VarTy "a"))
-              ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
-              builtInSymbolInfo
+          [ interfaceBinder "copy" (FuncTy [RefTy (VarTy "a")] (VarTy "a"))
+            ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
+            builtInSymbolInfo
 
-            , interfaceBinder "str" (FuncTy [(VarTy "a")] StringTy)
-              ([SymPath ["Array"] "str"] ++ registerFunctionFunctionsWithInterface "str")
-              builtInSymbolInfo
+          , interfaceBinder "str" (FuncTy [VarTy "a"] StringTy)
+            (SymPath ["Array"] "str" : registerFunctionFunctionsWithInterface "str")
+            builtInSymbolInfo
 
-            , interfaceBinder "prn" (FuncTy [(VarTy "a")] StringTy)
-              (registerFunctionFunctionsWithInterface "prn")
-              builtInSymbolInfo
-            ]
+          , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy)
+            (registerFunctionFunctionsWithInterface "prn")
+            builtInSymbolInfo
+          ]
         builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
 
 -- | Make the functions in the Function.Arity<N> modules register with the interfaces in the type Env.
 registerFunctionFunctionsWithInterface :: String -> [SymPath]
 registerFunctionFunctionsWithInterface interfaceName =
-  map (\arity -> (SymPath ["Function", "Arity" ++ show arity] interfaceName)) [0..maxArity]
+  map (\arity -> SymPath ["Function", "Arity" ++ show arity] interfaceName) [0..maxArity]
 
 -- | Create a binder for an interface definition.
 interfaceBinder :: String -> Ty -> [SymPath] -> Info -> (String, Binder)

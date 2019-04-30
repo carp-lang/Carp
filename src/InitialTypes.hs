@@ -151,14 +151,18 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
     visitDictionary _ _ = error "The function 'visitArray' only accepts XObj:s with dictionaries in them."
 
+    getTys env argList =
+      do argTypes <- genVarTys (length argList)
+         returnType <- genVarTy
+         funcScopeEnv <- extendEnvWithParamList env argList
+         return (argTypes, returnType, funcScopeEnv)
+
     visitList :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
         -- Defn
         [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
-          do argTypes <- genVarTys (length argList)
-             returnType <- genVarTy
-             funcScopeEnv <- extendEnvWithParamList env argList
+          do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              let funcTy = Just (FuncTy argTypes returnType)
                  typedNameSymbol = nameSymbol { ty = funcTy }
                  -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
@@ -174,15 +178,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
         -- Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
-          do argTypes <- genVarTys (length argList)
-             returnType <- genVarTy
-             funcScopeEnv <- extendEnvWithParamList env argList
+          do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              let funcTy = Just (FuncTy argTypes returnType)
              visitedBody <- visit funcScopeEnv body
              visitedArgs <- mapM (visit funcScopeEnv) argList
              return $ do okBody <- visitedBody
                          okArgs <- sequence visitedArgs
-                         let final = (XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
+                         let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
                          return final --(trace ("FINAL: " ++ show final) final)
 
         [XObj (Fn _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
@@ -237,13 +239,14 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Match
         matchExpr@(XObj Match _ _) : expr : cases ->
           do visitedExpr <- visit env expr
-             visitedCases <- fmap sequence $ mapM (\(lhs, rhs) -> do let lhs' = (uniquifyWildcardNames (helpWithParens lhs)) -- Add parens if missing
-                                                                     env' <- extendEnvWithCaseMatch env lhs'
-                                                                     visitedLhs <- visit env' lhs'
-                                                                     visitedRhs <- visit env' rhs
-                                                                     return $ do okLhs <- visitedLhs
-                                                                                 okRhs <- visitedRhs
-                                                                                 return (okLhs, okRhs))
+             visitedCases <- sequence <$>
+              mapM (\(lhs, rhs) -> do let lhs' = uniquifyWildcardNames (helpWithParens lhs) -- Add parens if missing
+                                      env' <- extendEnvWithCaseMatch env lhs'
+                                      visitedLhs <- visit env' lhs'
+                                      visitedRhs <- visit env' rhs
+                                      return $ do okLhs <- visitedLhs
+                                                  okRhs <- visitedRhs
+                                                  return (okLhs, okRhs))
                                                   (pairwise cases)
              returnType <- genVarTy
              return $ do okExpr <- visitedExpr
@@ -307,7 +310,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
 
         -- Deref (error!)
-        [(XObj Deref _ _), value] ->
+        [XObj Deref _ _, value] ->
           return (Left (CantUseDerefOutsideFunctionApplication xobj))
 
         -- Function application with Deref
@@ -319,7 +322,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
              visitedArgs <- fmap sequence (mapM (visit env) args)
              return $ do okFunc <- visitedFunc
                          okArgs <- visitedArgs
-                         return (XObj (Lst ((XObj (Lst [deref, okFunc]) xi (Just derefTy)) : okArgs)) i (Just t))
+                         return (XObj (Lst (XObj (Lst [deref, okFunc]) xi (Just derefTy) : okArgs)) i (Just t))
 
         -- Function application
         func : args ->
@@ -354,9 +357,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             Left err -> return (Left err)
             Right env' ->
               case obj sym of
-                (Sym (SymPath _ name) _) -> do visited <- visit env' expr
-                                               return $ do okVisited <- visited
-                                                           return (envAddBinding env' name (Binder emptyMeta okVisited))
+                (Sym (SymPath _ name) _) ->
+                  do visited <- visit env' expr
+                     return (envAddBinding env' name . Binder emptyMeta <$> visited)
                 _ -> error ("Can't create let-binder for non-symbol: " ++ show sym) -- TODO: Use proper error mechanism
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env

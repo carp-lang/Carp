@@ -72,7 +72,7 @@ instance Show TypeError where
     prettyInfoFromXObj xobj ++ ".\n\n" ++
     matches (keysInEnvEditDistance symPath env 3)
     where matches [] = "Maybe you forgot to define it?"
-          matches x = "Maybe you wanted one of the following?\n    " ++ joinWith "\n    " (map (\s -> show $ (SymPath p s)) x)
+          matches x = "Maybe you wanted one of the following?\n    " ++ joinWith "\n    " (map (show . SymPath p) x)
   show (InvalidObj Defn xobj) =
     "I didn’t understand the function definition at " ++
     prettyInfoFromXObj xobj ++
@@ -149,7 +149,7 @@ instance Show TypeError where
     "I found the following holes:\n\n    " ++
     joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++
     "\n"
-  show (FailedToExpand xobj err@(EvalError _ _ _)) =
+  show (FailedToExpand xobj err@EvalError{}) =
     "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++
     ".\n\nThe error message I got was: " ++ show err
   show (NotAValidType xobj) =
@@ -334,7 +334,7 @@ machineReadableErrorStrings fppl err =
       [show err]
 
 joinedMachineReadableErrorStrings :: FilePathPrintLength -> TypeError -> String
-joinedMachineReadableErrorStrings fppl err = (joinWith "\n\n" (machineReadableErrorStrings fppl err))
+joinedMachineReadableErrorStrings fppl err = joinWith "\n\n" (machineReadableErrorStrings fppl err)
 
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of

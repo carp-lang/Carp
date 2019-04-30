@@ -224,5 +224,5 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
           in  StructTy name (map (fullLookup newVisited) vs)
         fullLookup visited funcTy@(FuncTy argTys retTy) =
           let newVisited = Set.insert funcTy visited
-          in  FuncTy (map (fullLookup newVisited) argTys) ((fullLookup newVisited) retTy)
+          in  FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy)
         fullLookup visited x = x
