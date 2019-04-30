@@ -218,6 +218,10 @@
   (list 'let bindings
     (cons 'do forms)))
 
+(defmacro while-do [condition :rest forms]
+  (list 'while condition
+    (cons 'do forms)))
+
 (defmacro defn-do [name arguments :rest body]
   (list 'defn name arguments (cons 'do body)))
 
