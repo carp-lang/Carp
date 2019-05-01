@@ -37,7 +37,7 @@ stable version of the library you should specify a git tag rather than
 `@master`.
 
 Please note that currently only loading through SSH is supported. If you want to
-make a library reading for loading, either prepare a file that has the same name
+make a library ready for loading, either prepare a file that has the same name
 as the library—in the case above, `anima.carp`—or a file called `main.carp` as
 an entrypoint.
 
