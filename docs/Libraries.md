@@ -25,11 +25,21 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 
 ## Loading via git
 
-You can also load libraries via git in this way:
+You can also load libraries via Git like that:
 
-`(load "https://github.com/hellerve/anima.carp@master")`
+```clojure
+(load "git@github.com/hellerve:anima.carp@master")
+```
 
-This will download the [Anima](https://github.com/hellerve/anima) library to `~/.carp/libs/<library>/<tag>` and load the file `anima.carp` in it. To get a stable version of the library you should specify a git tag rather than `@master`.
+This will download the [Anima](https://github.com/hellerve/anima) library to
+`~/.carp/libs/<library>/<tag>` and load the file `anima.carp` in it. To get a
+stable version of the library you should specify a git tag rather than
+`@master`.
+
+Please note that currently only loading through SSH is supported. If you want to
+make a library ready for loading, either prepare a file that has the same name
+as the library—in the case above, `anima.carp`—or a file called `main.carp` as
+an entrypoint.
 
 ## Core Modules
 
