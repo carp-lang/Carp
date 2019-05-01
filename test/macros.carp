@@ -1,10 +1,18 @@
 (load "Test.carp")
 (use Test)
 
-(defn test-do-let []
+(defn test-let-do []
   (let-do [x 1]
     (set! x (+ x 1))
     (= x 2)))
+
+(defn test-while-do []
+  (let-do [i 0
+           x 0]
+    (while-do (< i 10)
+      (set! x (+ x 2))
+      (set! i (+ i 1)))
+    (= x 20)))
 
 (defn test-comment []
   (let-do [x 1]
@@ -37,8 +45,11 @@
 
 (deftest test
   (assert-true test
-               (test-do-let)
-               "do-let works as expected")
+               (test-let-do)
+               "let-do works as expected")
+  (assert-true test
+               (test-while-do)
+               "while-do works as expected")
   (assert-true test
                (test-case-dflt)
                "case correctly selects default")
