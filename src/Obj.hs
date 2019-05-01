@@ -92,7 +92,7 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
-newtype CommandFunctionType = CommandFunction { getCommand :: ([XObj] -> StateT Context IO (Either EvalError XObj)) }
+newtype CommandFunctionType = CommandFunction { getCommand :: [XObj] -> StateT Context IO (Either EvalError XObj) }
 
 instance Eq CommandFunctionType where
   a == b = True
@@ -133,11 +133,11 @@ instance Show Deleter where
   show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
 
+getInfo i = (infoLine i, infoColumn i, infoFile i)
+
 prettyInfo :: Info -> String
 prettyInfo i =
-  let line = infoLine i
-      column = infoColumn i
-      file = infoFile i
+  let (line, column, file) = getInfo i
   in  (if line > -1 then "line " ++ show line else "unkown line") ++ ", " ++
       (if column > -1 then "column " ++ show column else "unknown column") ++
       " in '" ++ file ++ "'"
@@ -156,9 +156,7 @@ instance Show FilePathPrintLength where
 
 machineReadableInfo :: FilePathPrintLength -> Info -> String
 machineReadableInfo filePathPrintLength i =
-  let line = infoLine i
-      column = infoColumn i
-      file = infoFile i
+  let (line, column, file) = getInfo i
       file' = case filePathPrintLength of
                 FullPath -> file
                 ShortPath -> takeFileName file
@@ -201,20 +199,20 @@ getName :: XObj -> String
 getName xobj = show (getPath xobj)
 
 getSimpleName :: XObj -> String
-getSimpleName xobj = let SymPath _ name = (getPath xobj) in name
+getSimpleName xobj = let SymPath _ name = getPath xobj in name
 
 getSimpleNameWithArgs :: XObj -> Maybe String
-getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
-getSimpleNameWithArgs xobj@(XObj (Lst (XObj Macro _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Macro _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
-getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : (XObj (Arr args) _ _) : _)) _ _) =
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj Dynamic _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
-    "(" ++ getSimpleName xobj ++ (if length args > 0 then " " else "") ++
+    "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
 getSimpleNameWithArgs xobj = Nothing
 
@@ -339,7 +337,7 @@ prettyTyped = visit 0
 newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Show)
 
 emptyMeta :: MetaData
-emptyMeta = (MetaData Map.empty)
+emptyMeta = MetaData Map.empty
 
 metaIsTrue :: MetaData -> String -> Bool
 metaIsTrue metaData key =
@@ -388,19 +386,19 @@ replaceGenericTypeSymbols mappings xobj@(XObj (Sym (SymPath pathStrings name) _)
             Nothing -> xobj -- error ("Failed to concretize member '" ++ name ++ "' at " ++ prettyInfoFromXObj xobj ++ ", mappings: " ++ show mappings)
      else xobj
 replaceGenericTypeSymbols mappings (XObj (Lst lst) i t) =
-  (XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t)
+  XObj (Lst (map (replaceGenericTypeSymbols mappings) lst)) i t
 replaceGenericTypeSymbols mappings (XObj (Arr arr) i t) =
-  (XObj (Arr (map (replaceGenericTypeSymbols mappings) arr)) i t)
+  XObj (Arr (map (replaceGenericTypeSymbols mappings) arr)) i t
 replaceGenericTypeSymbols _ xobj = xobj
 
 -- | Convert a Ty to the s-expression that represents that type.
 -- | TODO: Add more cases and write tests for this.
 tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
-tyToXObj (StructTy n vs) = XObj (Lst ((XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) : (map tyToXObj vs))) Nothing Nothing
-tyToXObj (RefTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing
-tyToXObj (PointerTy t) = XObj (Lst [(XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing), tyToXObj t]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
+tyToXObj (RefTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
+tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -452,12 +450,10 @@ prettyEnvironmentIndented indent env =
 prettyEnvironmentChain :: Env -> String
 prettyEnvironmentChain env =
   let bs = envBindings env
-      name = case envModuleName env of
-               Just n -> n
-               Nothing -> "<env has no name>"
+      name = fromMaybe "<env has no name>" (envModuleName env)
       otherInfo = "(" ++ show (envMode env) ++ ", lvl " ++ show (envFunctionNestingLevel env) ++ ")"
   in  (if length bs < 20
-       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ (joinWith "\n" $ filter (/= "")
+       then "'" ++ name ++ "' " ++ otherInfo ++ ":\n" ++ joinWith "\n" (filter (/= "")
                                                  (map (showBinderIndented 4) (Map.toList (envBindings env))))
        else "'" ++ name ++ "' " ++ otherInfo ++ ":\n    Too big to show bindings.")
       ++
@@ -754,7 +750,7 @@ isGlobalVariableLookup (LookupGlobal _ AVariable) = True
 isGlobalVariableLookup _ = False
 
 anonMemberNames :: [String]
-anonMemberNames = map (\i -> ("member" ++ show i)) [0..]
+anonMemberNames = map (\i -> "member" ++ show i) [0..]
 
 anonMemberSymbols :: [XObj]
 anonMemberSymbols = map (\n -> XObj (Sym (SymPath [] n) Symbol) Nothing Nothing) anonMemberNames

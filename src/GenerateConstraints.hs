@@ -16,29 +16,24 @@ import Lookup
 -- | Will create a list of type constraints for a form.
 genConstraints :: TypeEnv -> XObj -> Either TypeError [Constraint]
 genConstraints typeEnv root = fmap sort (gen root)
-  where gen xobj =
+  where genF xobj args body =
+         do insideBodyConstraints <- gen body
+            xobjType <- toEither (ty xobj) (DefnMissingType xobj)
+            bodyType <- toEither (ty body) (ExpressionMissingType xobj)
+            let (FuncTy argTys retTy) = xobjType
+                bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
+                argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
+            return (bodyConstr : argConstrs ++ insideBodyConstraints)
+        gen xobj =
           case obj xobj of
             Lst lst -> case lst of
                            -- Defn
                            [XObj Defn _ _, _, XObj (Arr args) _ _, body] ->
-                             do insideBodyConstraints <- gen body
-                                xobjType <- toEither (ty xobj) (DefnMissingType xobj)
-                                bodyType <- toEither (ty body) (ExpressionMissingType xobj)
-                                let (FuncTy argTys retTy) = xobjType
-                                    bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
-                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
-                                return (bodyConstr : argConstrs ++ insideBodyConstraints)
+                             genF xobj args body
 
                            -- Fn
-                           -- TODO: Too much duplication from Defn...
                            [XObj (Fn _ _) _ _, XObj (Arr args) _ _, body] ->
-                             do insideBodyConstraints <- gen body
-                                xobjType <- toEither (ty xobj) (DefnMissingType xobj)
-                                bodyType <- toEither (ty body) (ExpressionMissingType xobj)
-                                let (FuncTy argTys retTy) = xobjType
-                                    bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
-                                    argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
-                                return (bodyConstr : argConstrs ++ insideBodyConstraints)
+                             genF xobj args body
 
                            -- Def
                            [XObj Def _ _, _, expr] ->
@@ -83,8 +78,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                            -- Match
                            XObj Match _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
-                                casesLhsConstraints <- fmap join (mapM gen (map fst (pairwise cases)))
-                                casesRhsConstraints <- fmap join (mapM gen (map snd (pairwise cases)))
+                                casesLhsConstraints <- fmap join (mapM (gen . fst) (pairwise cases))
+                                casesRhsConstraints <- fmap join (mapM (gen .snd) (pairwise cases))
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
 

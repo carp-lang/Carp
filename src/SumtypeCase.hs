@@ -11,7 +11,7 @@ data SumtypeCase = SumtypeCase { caseName :: String
                                } deriving (Show, Eq)
 
 toCases :: TypeEnv -> [Ty] -> [XObj] -> Either TypeError [SumtypeCase]
-toCases typeEnv typeVars xobjs = sequence (map (toCase typeEnv typeVars) xobjs)
+toCases typeEnv typeVars xobjs = mapM (toCase typeEnv typeVars) xobjs
 
 toCase :: TypeEnv -> [Ty] -> XObj -> Either TypeError SumtypeCase
 toCase typeEnv typeVars x@(XObj (Lst [XObj (Sym (SymPath [] name) Symbol) _ _, XObj (Arr tyXObjs) _ _]) _ _) =

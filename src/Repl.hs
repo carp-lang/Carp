@@ -25,7 +25,7 @@ completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords
   where
         findKeywords match [] res = res
         findKeywords match (x : xs) res =
-          if isPrefixOf match x
+          if match `isPrefixOf` x
             then findKeywords match xs (res ++ [simpleCompletion x])
             else findKeywords match xs res
         keywords = [ "Int" -- we should probably have a list of those somewhere
@@ -78,8 +78,8 @@ readlineSettings words = do
 
 repl :: Context -> String -> InputT IO ()
 repl context readSoFar =
-  do let prompt = strWithColor Yellow (if null readSoFar then (projectPrompt (contextProj context)) else "     ")
-     input <- (getInputLine prompt)
+  do let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
+     input <- getInputLine prompt
      case input of
         Nothing -> return ()
         Just i -> do

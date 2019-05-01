@@ -86,7 +86,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
                                                xs
                             r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
                         in  [l', r']
-                      XObj _ _ _ ->
+                      XObj{} ->
                         let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
                             r' = setFullyQualifiedSymbols typeEnv globalEnv env r
                         in  [l', r']
@@ -145,7 +145,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
                     if finalRecurse
                     then xobj -- This was the TRUE global env, stop here and leave 'xobj' as is.
                     else doesNotBelongToAnInterface True globalEnv
-          [(_, Binder _ foundOne@(XObj (Lst ((XObj (External (Just overrideWithName)) _ _) : _)) _ _))] ->
+          [(_, Binder _ foundOne@(XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _))] ->
             XObj (Sym (getPath foundOne) (LookupGlobalOverride overrideWithName)) i t
           [(e, Binder _ foundOne)] ->
             case envMode e of
@@ -171,12 +171,15 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
 
     removeThoseShadowedByRecursiveSymbol :: [(Env, Binder)] -> [(Env, Binder)]
     removeThoseShadowedByRecursiveSymbol allBinders = visit allBinders allBinders
-      where visit [] result = result
-            visit (b:bs) result =
-              visit bs $ case b of
-                           (Env { envMode = RecursionEnv }, Binder _ xobj) ->
-                             remove (\(_, Binder _ x) -> xobj /= x && getName xobj == getName x) result
-                           _ -> result
+      where visit bs result =
+              foldl
+                (\result b ->
+                  case b of
+                   (Env { envMode = RecursionEnv }, Binder _ xobj) ->
+                     remove (\(_, Binder _ x) -> xobj /= x && getName xobj == getName x) result
+                   _ -> result)
+                result
+                bs
 
 
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =

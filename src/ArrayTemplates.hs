@@ -28,7 +28,7 @@ templateEMap =
       (toTemplate $ unlines
         ["$DECL { "
         ,"    for(int i = 0; i < a.len; ++i) {"
-        ,"        (($a*)a.data)[i] = " ++ (templateCodeForCallingLambda "(*f)" fTy [elem]) ++ ";"
+        ,"        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" fTy [elem] ++ ";"
         ,"    }"
         ,"    return a;"
         ,"}"
@@ -59,12 +59,12 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t
         t
         (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
         (\(FuncTy [RefTy (FuncTy [RefTy insideTy] BoolTy), _] _) ->
-           (toTemplate $ unlines $
+           toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
                , "    int insertIndex = 0;"
                , "    for(int i = 0; i < a.len; ++i) {"
-               , "        if(" ++ (templateCodeForCallingLambda "(*predicate)" fTy [elem]) ++ ") {"
+               , "        if(" ++ templateCodeForCallingLambda "(*predicate)" fTy [elem] ++ ") {"
                , "            ((($a*)a.data)[insertIndex++]) = (($a*)a.data)[i];"
                , "        } else {"
                , "        " ++ deleter "i"
@@ -74,7 +74,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t
                , templateShrinkCheck "a"
                , "    return a;"
                , "}"
-               ]))
+               ])
         (\(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType] BoolTy), arrayType] _) ->
            [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy)] ++
             depsForDeleteFunc typeEnv env insideType)
@@ -93,11 +93,6 @@ templatePushBack =
         ,"    if(a.len > a.capacity) {"
         ,"        a.capacity = a.len * 2;"
         ,"        a.data = realloc(a.data, sizeof($a) * a.capacity);"
-        -- ,"        void *pre = a.data;"
-        -- ,"        a.data = CARP_MALLOC(sizeof($a) * a.capacity);"
-        -- ,"        unsigned long s = sizeof($a) * (a.len - 1);"
-        -- ,"        memmove(a.data, pre, s);"
-        -- ,"        CARP_FREE(pre);"
         ,"    }"
         ,"    (($a*)a.data)[a.len - 1] = value;"
         ,"    return a;"
@@ -190,7 +185,7 @@ templateNth =
                         ,"    #endif"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
-  (\(FuncTy [(RefTy arrayType), _] _) ->
+  (\(FuncTy [RefTy arrayType, _] _) ->
      [])
 
 templateRaw :: (String, Binder)
@@ -204,12 +199,12 @@ templateRaw = defineTemplate
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t
   where path = SymPath ["Array"] "aset"
-        t = (FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]))
+        t = FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"])
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
-            (\_ -> toTemplate $ "Array $NAME (Array a, int n, $t newValue)")
+            (\_ -> toTemplate "Array $NAME (Array a, int n, $t newValue)")
             (\(FuncTy [_, _, insideTy] _) ->
                let deleter = insideArrayDeletion typeEnv env insideTy
                in  toTemplate $ unlines ["$DECL {"
@@ -226,8 +221,8 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t
 
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "aset!")
-        t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy)
+  where path = SymPath ["Array"] "aset!"
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -244,15 +239,15 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t
                                          ,     deleter "n"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
-            (\(FuncTy [(RefTy arrayType), _, _] _) ->
+            (\(FuncTy [RefTy arrayType, _, _] _) ->
                depsForDeleteFunc typeEnv env arrayType)
 
 -- | This function can set uninitialized memory in an array (used together with 'allocate').
 -- | It will NOT try to free the value that is already at location 'n'.
 templateAsetUninitializedBang :: (String, Binder)
 templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "aset-uninitialized!")
-        t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy)
+  where path = SymPath ["Array"] "aset-uninitialized!"
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"]), IntTy, VarTy "t"] UnitTy
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -270,35 +265,35 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
 
 templateLength :: (String, Binder)
 templateLength = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "length")
-        t = (FuncTy [RefTy (StructTy "Array" [VarTy "t"])] IntTy)
+  where path = SymPath ["Array"] "length"
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"])] IntTy
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "int $NAME (Array *a)"))
             (const (toTemplate "$DECL { return (*a).len; }"))
-            (\(FuncTy [(RefTy arrayType)] _) ->
+            (\(FuncTy [RefTy arrayType] _) ->
               depsForDeleteFunc typeEnv env arrayType)
 
 templateAllocate :: (String, Binder)
 templateAllocate = defineTypeParameterizedTemplate templateCreator path t
-  where path = (SymPath ["Array"] "allocate")
-        t = (FuncTy [IntTy] (StructTy "Array" [VarTy "t"]))
+  where path = SymPath ["Array"] "allocate"
+        t = FuncTy [IntTy] (StructTy "Array" [VarTy "t"])
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "Array $NAME (int n)"))
             (\(FuncTy [_] arrayType) ->
-               (toTemplate $ unlines (["$DECL {"
+               toTemplate $ unlines (["$DECL {"
                                          ,"    Array a;"
                                          ,"    a.len = n;"
                                          ,"    a.capacity = n;"
                                          ,"    a.data = CARP_MALLOC(n*sizeof($t));"]
                                          ++ initTy arrayType ++
                                         ["    return a;"
-                                         ,"}"])))
+                                         ,"}"]))
             (\(FuncTy [_] arrayType) ->
                depsForDeleteFunc typeEnv env arrayType)
 

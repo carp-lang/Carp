@@ -132,7 +132,7 @@ isTypeGeneric _ = False
 
 doesTypeContainTyVarWithName :: String -> Ty -> Bool
 doesTypeContainTyVarWithName name (VarTy n) = name == n
-doesTypeContainTyVarWithName name (FuncTy argTys retTy) = any (doesTypeContainTyVarWithName name) argTys || (doesTypeContainTyVarWithName name) retTy
+doesTypeContainTyVarWithName name (FuncTy argTys retTy) = any (doesTypeContainTyVarWithName name) argTys || doesTypeContainTyVarWithName name retTy
 doesTypeContainTyVarWithName name (StructTy _ tyArgs) = any (doesTypeContainTyVarWithName name) tyArgs
 doesTypeContainTyVarWithName name (PointerTy p) = doesTypeContainTyVarWithName name p
 doesTypeContainTyVarWithName name (RefTy r) = doesTypeContainTyVarWithName name r

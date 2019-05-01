@@ -23,7 +23,7 @@ validateMembers typeEnv typeVariables membersXObjs =
   then mapM_ (okXObjForType typeEnv typeVariables . snd) (pairwise membersXObjs)
   else Left (UnevenMembers membersXObjs)
 validateOneCase _ XObj {} =
-  error ("Type members must be defined using array syntax: [member1 type1 member2 type2 ...]") -- | TODO: How to reach this case?
+  error "Type members must be defined using array syntax: [member1 type1 member2 type2 ...]" -- | TODO: How to reach this case?
 
 okXObjForType :: TypeEnv -> [Ty] -> XObj -> Either TypeError ()
 okXObjForType typeEnv typeVariables xobj =

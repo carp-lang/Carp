@@ -45,19 +45,17 @@ toTemplate text = case Parsec.runParser templateSyntax 0 "(template)" text of
 
     parseTokTyGrouped :: Parsec.Parsec String Int Token
     parseTokTyGrouped = do _ <- Parsec.char '$'
-                           _ <- Parsec.char '('
-                           Parsec.putState 1 -- One paren to close.
-                           s <- fmap ('(' :) (Parsec.many parseCharBalanced)
-                           -- Note: The closing paren is read by parseCharBalanced.
-                           return (toTokTy Normal s)
+                           toTokTy Normal <$> parseGrouping
 
     parseTokTyRawGrouped :: Parsec.Parsec String Int Token
     parseTokTyRawGrouped = do _ <- Parsec.char '§'
-                              _ <- Parsec.char '('
-                              Parsec.putState 1 -- One paren to close.
-                              s <- fmap ('(' :) (Parsec.many parseCharBalanced)
-                              -- Note: The closing paren is read by parseCharBalanced.
-                              return (toTokTy Raw s)
+                              toTokTy Raw <$> parseGrouping
+
+    parseGrouping :: Parsec.Parsec String Int String
+    parseGrouping = do _ <- Parsec.char '('
+                       Parsec.putState 1 -- One paren to close.
+                       fmap ('(' :) (Parsec.many parseCharBalanced)
+                       -- Note: The closing paren is read by parseCharBalanced.
 
     parseCharBalanced :: Parsec.Parsec String Int Char
     parseCharBalanced = do balanceState <- Parsec.getState

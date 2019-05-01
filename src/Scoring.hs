@@ -22,14 +22,14 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       in  (depthOfType typeEnv Set.empty selfName aliasedType + 1, b)
     Typ (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder _ typedef) -> let depth = ((depthOfDeftype typeEnv Set.empty typedef varTys), b)
+        Just (_, Binder _ typedef) -> let depth = (depthOfDeftype typeEnv Set.empty typedef varTys, b)
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
     DefSumtype (StructTy structName varTys) ->
       -- DUPLICATION FROM ABOVE:
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
-        Just (_, Binder _ typedef) -> let depth = ((depthOfDeftype typeEnv Set.empty typedef varTys), b)
+        Just (_, Binder _ typedef) -> let depth = (depthOfDeftype typeEnv Set.empty typedef varTys, b)
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)
                                         depth
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
@@ -43,7 +43,7 @@ depthOfDeftype :: TypeEnv -> Set.Set Ty -> XObj -> [Ty] -> Int
 depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _) _ _ : rest)) _ _) varTys =
   case concatMap expandCase rest of
     [] -> 100
-    xs -> (maximum xs) + 1
+    xs -> maximum xs + 1
   where
     depthsFromVarTys = map (depthOfType typeEnv visited selfName) varTys
 
@@ -52,8 +52,8 @@ depthOfDeftype typeEnv visited (XObj (Lst (_ : XObj (Sym (SymPath _ selfName) _)
       let members = memberXObjsToPairs arr
           depthsFromMembers = map (depthOfType typeEnv visited selfName . snd) members
       in depthsFromMembers ++ depthsFromVarTys
-    expandCase (XObj (Lst [XObj _ _ _, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
-      let depthsFromCaseTys = map (depthOfType typeEnv visited selfName) (map (fromJust . xobjToTy) sumtypeCaseTys)
+    expandCase (XObj (Lst [XObj{}, XObj (Arr sumtypeCaseTys) _ _]) _ _) =
+      let depthsFromCaseTys = map (depthOfType typeEnv visited selfName . fromJust . xobjToTy) sumtypeCaseTys
       in depthsFromCaseTys ++ depthsFromVarTys
     expandCase (XObj (Sym _ _) _ _) =
       []
@@ -83,7 +83,7 @@ depthOfType typeEnv visited selfName theType =
         _ | name == selfName -> 30
           | otherwise ->
               case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-                Just (_, Binder _ typedef) -> (depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys) + 1
+                Just (_, Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys + 1
                 Nothing -> --trace ("Unknown type: " ++ name) $
                            depthOfVarTys -- The problem here is that generic types don't generate
                                          -- their definition in time so we get nothing for those.
@@ -91,7 +91,7 @@ depthOfType typeEnv visited selfName theType =
       where depthOfVarTys =
               case fmap (depthOfType typeEnv visited name) varTys of
                 [] -> 50
-                xs -> (maximum xs) + 1
+                xs -> maximum xs + 1
 
 
 
@@ -99,11 +99,11 @@ depthOfType typeEnv visited selfName theType =
 -- | The score is used for sorting the bindings before emitting them.
 -- | A lower score means appearing earlier in the emitted file.
 scoreValueBinder :: Env -> Set.Set SymPath -> Binder -> (Int, Binder)
-scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst ((XObj (External _) _ _) : _)) _ _)) =
+scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) =
   (0, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [(XObj Def  _ _), XObj (Sym path Symbol) _ _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Def  _ _, XObj (Sym path Symbol) _ _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [(XObj Defn _ _), XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Defn _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
   (0, binder)

@@ -213,7 +213,7 @@ isStructType _ = False
 
 keysInEnvEditDistance :: SymPath -> Env -> Int -> [String]
 keysInEnvEditDistance (SymPath [] name) env distance =
-  let candidates = Map.filterWithKey (\k _ -> (levenshteinDistance defaultEditCosts k name) < distance) (envBindings env)
+  let candidates = Map.filterWithKey (\k _ -> levenshteinDistance defaultEditCosts k name < distance) (envBindings env)
   in Map.keys candidates
 keysInEnvEditDistance path@(SymPath (p : ps) name) env distance =
   case Map.lookup p (envBindings env) of
