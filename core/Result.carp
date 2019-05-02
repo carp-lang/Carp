@@ -105,7 +105,7 @@ It is the inverse of [`success?`](#success?).")
 (defmodule Maybe
   (doc to-result "is a function that will convert a `Maybe` to a `Result`, where a `Just` becomes a `Success` and a `Nothing` becomes an `Error`.
 
-You’ll also nee to provide an error message `error` that is given to the `Error` constructor if necessary.")
+You’ll also need to provide an error message `error` that is given to the `Error` constructor if necessary.")
   (defn to-result [a error]
     (match a
       (Nothing) (Result.Error error)
