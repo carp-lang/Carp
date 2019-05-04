@@ -1,19 +1,31 @@
 (system-include "carp_pattern.h")
 
 (defmodule Pattern
-  (doc find "Finds the index of a pattern in a string. Returns -1 otherwise.")
+  (doc find "finds the index of a pattern in a string.
+
+Returns `-1` if it doesn’t find a matching pattern.")
   (register find (Fn [&Pattern &String] Int))
-  (doc find-all "Finds all indices of a pattern in a string. Returns [] otherwise.")
+  (doc find-all "finds all indices of a pattern in a string.
+
+Returns `[]` if it doesn’t find a matching pattern.")
   (register find-all (Fn [&Pattern &String] (Array Int)))
-  (doc match-groups "Finds the match groups of the first match of a pattern in a string. Returns [] otherwise.")
+  (doc match-groups "finds the match groups of the first match of a pattern in a string.
+
+Returns `[]` if it doesn’t find a matching pattern.")
   (register match-groups (Fn [&Pattern &String] (Array String)))
-  (doc match-str "Finds the first match of a pattern in a string. Returns [] otherwise.")
+  (doc match-str "finds the first match of a pattern in a string.
+
+Returns `[]` if it doesn’t find a matching pattern.")
   (register match-str (Fn [&Pattern &String] String))
-  (doc global-match "Finds all matches of a pattern in a string as a nested array. Returns [] otherwise.")
+  (doc global-match "finds all matches of a pattern in a string as a nested array.
+
+Returns `[]` if it doesn’t find a matching pattern.")
   (register global-match (Fn [&Pattern &String] (Array (Array String))))
-  (doc substitute "Finds all matches of a pattern in a string and replaces it by another n times (-1 for all occurrences).")
+  (doc substitute "finds all matches of a pattern in a string and replaces it by another pattern `n` times.
+
+If you want to replace all occurrences of the pattern, use `-1`.")
   (register substitute (Fn [&Pattern &String &String Int] String))
-  (doc matches? "Checks whether a pattern matches a string.")
+  (doc matches? "checks whether a pattern matches a string.")
   (defn matches? [pat s] (/= (find pat s) -1))
 
   (register str (Fn [&Pattern] String))
@@ -24,61 +36,61 @@
   (register delete     (Fn [Pattern] ()))
   (register copy       (Fn [&Pattern] Pattern))
 
-  (doc from-chars "Creates a pattern that matches a group of characters from a list of those characters.")
+  (doc from-chars "creates a pattern that matches a group of characters from a list of those characters.")
   (defn from-chars [chars]
     (Pattern.init &(str* @"[" (String.from-chars chars) @"]")))
 )
 
 (defmodule String
-  (doc in? "Checks whether a string contains another string.")
+  (doc in? "checks whether a string contains another string.")
   (defn in? [s sub]
     (Pattern.matches? &(Pattern.init sub) s))
 
-  (doc upper? "Checks whether a string is all uppercase.")
+  (doc upper? "checks whether a string is all uppercase.")
   (defn upper? [s]
     (Pattern.matches? #"^[\u\s\p]*$" s))
 
-  (doc lower? "Checks whether a string is all lowercase.")
+  (doc lower? "checks whether a string is all lowercase.")
   (defn lower? [s]
     (Pattern.matches? #"^[\l\s\p]*$" s))
 
-  (doc num? "Checks whether a string is numerical.")
+  (doc num? "checks whether a string is numerical.")
   (defn num? [s]
     (Pattern.matches? #"^[0-9]*$" s))
 
-  (doc alpha? "Check if a string contains only alpha characters (a-Z).")
+  (doc alpha? "checks whether a string contains only alphabetical characters (a-Z).")
   (defn alpha? [s]
     (Pattern.matches? #"^[\u\l]*$" s))
 
-  (doc alphanum? "Checks whether a string is alphanumerical.")
+  (doc alphanum? "checks whether a string is alphanumerical.")
   (defn alphanum? [s]
     (Pattern.matches? #"^[\w]*$" s))
 
-  (doc hex? "Checks whether a string is hexadecimal.")
+  (doc hex? "checks whether a string is hexadecimal.")
   (defn hex? [s]
     (Pattern.matches? #"^[\x]*$" s))
 
-  (doc trim-left "Trims whitespace from the left of a string.")
+  (doc trim-left "trims whitespace from the left of a string.")
   (defn trim-left [s]
     (Pattern.substitute #"^\s+" s "" 1))
 
-  (doc trim-right "Trims whitespace from the right of a string.")
+  (doc trim-right "trims whitespace from the right of a string.")
   (defn trim-right [s]
     (Pattern.substitute #"\s+$" s "" 1))
 
-  (doc trim "Trims whitespace from both sides of a string.")
+  (doc trim "trims whitespace from both sides of a string.")
   (defn trim [s]
     (trim-left &(trim-right s)))
 
-  (doc chomp "Trims newline from the end of a string.")
+  (doc chomp "trims a newline from the end of a string.")
   (defn chomp [s]
     (Pattern.substitute #"\n$" s "" 1))
 
-  (doc collapse-whitespace "Collapse groups of whitespace into single spaces.")
+  (doc collapse-whitespace "collapses groups of whitespace into single spaces.")
   (defn collapse-whitespace [s]
     (Pattern.substitute #"\s+" s " " -1))
 
-  (doc split-by "Split a string by separators.")
+  (doc split-by "splits a string by separators.")
   (defn split-by [s separators]
     (let-do [pat (Pattern.from-chars separators)
              idx (Pattern.find-all &pat s)
@@ -94,11 +106,11 @@
           (suffix-string s (Int.inc @(Array.nth &idx (Int.dec lidx))))))
       result))
 
-  (doc words "Split a string into words.")
+  (doc words "splits a string into words.")
   (defn words [s]
     (split-by s &[\tab \space]))
 
-  (doc lines "Split a string into lines.")
+  (doc lines "splits a string into lines.")
   (defn lines [s]
     (split-by s &[\newline]))
 )
