@@ -1,6 +1,7 @@
 ## The Language
 
 ### Introduction
+
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust.
 Types are inferred but can be annoted for readability using the ```the``` keyword (see below).
 
@@ -224,11 +225,11 @@ Here is a little overview of the API:
 ; matches? checks whether a string matches a pattern
 (Pattern.matches? #"(\d+) (\d+)" "  12 13") ; => true
 
-; match returns all match groups of the first match
-(Pattern.match #"(\d+) (\d+)" "  12 13") ; => ["12" "13"]
+; match-groups returns all match groups of the first match
+(Pattern.match-groups #"(\d+) (\d+)" "  12 13") ; => ["12" "13"]
 
 ; match-str returns the whole string of the first match
-(Pattern.match #"(\d+) (\d+)" "  12 13") ; => "12 13"
+(Pattern.match-str #"(\d+) (\d+)" "  12 13") ; => "12 13"
 
 ; global-match gets all match groups of all matches
 (Pattern.global-match #"(\d+) (\d+)" "  12 13 14 15") ; => [["12" "13"] ["14" "15"]]
