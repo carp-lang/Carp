@@ -33,4 +33,7 @@
   (defn > [p1 p2]
     (PairRef.> &p1 &p2))
 
+  (doc reverse "reverses a `Pair` `p` such that its first member is its second member and vice versa.")
+  (defn reverse [p]
+    (Pair.init @(Pair.b p) @(Pair.a p)))
   )

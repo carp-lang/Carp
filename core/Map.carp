@@ -276,6 +276,10 @@
                          @"{"
                          m)]
       (String.append &res " }")))
+
+  (doc reverse "reverses they keys and values in a given map `m`.")
+  (defn reverse [m]
+    (from-array &(Array.copy-map &Pair.reverse &(to-array m))))
 )
 
 (deftype (SetBucket a) [entries (Array a)])
