@@ -198,6 +198,11 @@
                 "Pairs work as keys"
   )
   (assert-equal test
+                &{1 @"hi" 2 @"bye"}
+                &(Map.reverse &{@"hi" 1 @"bye" 2})
+                "reverse works"
+  )
+  (assert-equal test
                 1
                 (Set.length &(Set.put (Set.create) "1"))
                 "length works"

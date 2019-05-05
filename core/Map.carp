@@ -276,6 +276,9 @@
                          @"{"
                          m)]
       (String.append &res " }")))
+
+  (defn reverse [m]
+    (from-array &(Array.copy-map &Pair.reverse &(to-array m))))
 )
 
 (deftype (SetBucket a) [entries (Array a)])

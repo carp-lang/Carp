@@ -21,4 +21,9 @@
                "comparison works with (Ref (Pair String Int)) I")
   (assert-false test
                 (< &(Pair.init @"a" 2) &(Pair.init @"a" 1))
-                "comparison works with (Ref (Pair String Int)) II"))
+                "comparison works with (Ref (Pair String Int)) II")
+  (assert-equal test
+                &(Pair.init 2 @"a")
+                &(Pair.reverse &(Pair.init @"a" 2))
+                "reverse works")
+)
