@@ -6,7 +6,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>Update (Mars 5, 2019): Union types are merged into master. The final big feature before release is "lifetimes", after those are in the core language will be more or less finished.</i>
+<i>Update (March 5, 2019): Union types are merged into master. The final big feature before release is "lifetimes", after those are in the core language will be more or less finished.</i>
 
 <i>A conference talk about Carp was recorded and the video can be seen [here](https://youtu.be/BQeG6fXMk28).</i>
 
