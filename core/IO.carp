@@ -48,13 +48,15 @@
 
   (doc read->EOF "reads a file given by name until the End-Of-File character is reached.")
   (defn read->EOF [filename]
-    (let [f (IO.fopen filename "rb")
-          c (Char.from-int 0)
-          r []]
-      (do
-        (while (do (set! c (IO.fgetc f))
-                   (/= c IO.EOF))
-          (set! r (Array.push-back r c)))
-        (IO.fclose f)
-        (String.from-chars &r))))
+    (let [f (IO.fopen filename "rb")]
+      (if (null? f)
+        (Result.Error (fmt "File “%s” couldn’t be opened!" filename))
+        (let [c (Char.from-int 0)
+              r []]
+          (do
+            (while (do (set! c (IO.fgetc f))
+                       (/= c IO.EOF))
+              (set! r (Array.push-back r c)))
+            (IO.fclose f)
+            (Result.Success (String.from-chars &r)))))))
 )
