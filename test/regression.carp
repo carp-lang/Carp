@@ -25,4 +25,9 @@
                 @&Int.MAX
                 "test that the address of Int.MAX can be taken"
   )
+  (assert-equal test
+                &(Result.Error @"File “foobar” couldn’t be opened!")
+                &(IO.read->EOF "foobar")
+                "test that reading from an undefined file works"
+  )
 )
