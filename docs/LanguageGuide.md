@@ -176,6 +176,7 @@ Specifying the type solves this error:
 ;; A 'lens' is automatically generated for each member:
 (Vector2.x my-pos) ;; => 10
 (Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
+(Vector2.set-x! &my-pos 30) ;; => Will update the vector my-pos in place and return ()
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
 ```
 
