@@ -247,12 +247,12 @@
                 (all? &(fn [x] (= 0 @x)) &(range 10 1 -1))
                 "all? works as expected II")
   (assert-equal test
-                3
-                (find &(fn [x] (= 3 @x)) &(range 1 10 1))
+                &(Maybe.Just 3)
+                &(find &(fn [x] (= 3 @x)) &(range 1 10 1))
                 "find works as expected I")
   (assert-equal test
-                0
-                (find &(fn [x] (= 0 @x)) &(range 1 10 1))
+                &(Maybe.Nothing)
+                &(find &(fn [x] (= 0 @x)) &(range 1 10 1))
                 "find works as expected II")
   (assert-equal test
                 &(Maybe.Nothing)

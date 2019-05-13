@@ -41,13 +41,15 @@ It will sum the previous sum with each new value, starting at `0`.")
             (break))))
       res))
 
-  (doc find "finds an element in `a` that matches the function `f`.")
+  (doc find "finds an element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an element, `Nothing` will be returned.")
   (defn find [f a]
-    (let-do [res (zero)]
+    (let-do [res (Maybe.Nothing)]
       (for [i 0 (length a)]
         (when (~f (nth a i))
           (do
-            (set! res @(nth a i))
+            (set! res (Maybe.Just @(nth a i)))
             (break))))
       res))
 
@@ -122,7 +124,7 @@ Returns `Nothing` if the array is empty.")
         result)))
 
   ; TODO unsafe!
-  (doc minimum "gets the maximum in an array (elements must support `>`).")
+  (doc minimum "gets the minimum in an array (elements must support `>`).")
   (defn minimum [xs]
     (let [result (unsafe-first xs)
           n (length xs)]
@@ -134,7 +136,7 @@ Returns `Nothing` if the array is empty.")
               ())))
         result)))
 
-  (doc sum "ums an array (elements must support `+` and `zero`).")
+  (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
     (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
 
