@@ -659,6 +659,8 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
                  mapM_ emitSumtypeCaseTagDefinition (zip [0..] rest)
 
       emitSumtypeCase :: Int -> XObj -> State EmitterState ()
+      emitSumtypeCase indent (XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr []) _ _]) _ _) =
+        appendToSrc (addIndent indent ++ "/* " ++ caseName ++ " */\n")
       emitSumtypeCase indent xobj@(XObj (Lst [XObj (Sym (SymPath [] caseName) _) _ _, XObj (Arr memberTys) _ _]) _ _) =
         do appendToSrc (addIndent indent ++ "struct {\n")
            let members = zipWith (\anonName tyXObj -> (anonName, tyXObj)) anonMemberSymbols memberTys
