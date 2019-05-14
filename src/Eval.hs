@@ -842,11 +842,17 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
          execMode = contextExecMode ctx
          printer allowLookupInALL binderPair itIsAnErrorNotToFindIt =
            case binderPair of
-             Just (_, binder@(Binder _ x@(XObj _ (Just i) _))) ->
-               do putStrLnWithColor White (show binder ++ "\nDefined at " ++ prettyInfo i)
+             Just (_, binder@(Binder metaData x@(XObj _ (Just i) _))) ->
+               do putStrLn (show binder ++ "\nDefined at " ++ prettyInfo i)
+                  case Map.lookup "doc" (getMeta metaData) of
+                    Just (XObj (Str val) _ _) -> putStrLn ("Documentation: " ++ val)
+                    Nothing -> return ()
                   when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-             Just (_, binder@(Binder _ x)) ->
-               do putStrLnWithColor White (show binder)
+             Just (_, binder@(Binder metaData x)) ->
+               do print binder
+                  case Map.lookup "doc" (getMeta metaData) of
+                    Just (XObj (Str val) _ _) -> putStrLn ("Documentation: " ++ val)
+                    Nothing -> return ()
                   when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
              Nothing ->
                when allowLookupInALL
