@@ -5,8 +5,8 @@
 (defmodule Statistics
   (deftype Summary [
     sum Double,
-    min (Maybe Double),
-    max (Maybe Double),
+    min Double,
+    max Double,
     mean Double,
     median Double,
     var Double,
@@ -177,8 +177,8 @@
   (defn summary [samples]
     (Summary.init
       (Array.sum samples)
-      (Array.minimum samples)
-      (Array.maximum samples)
+      (Maybe.from (Array.minimum samples) 0.0)
+      (Maybe.from (Array.maximum samples) 0.0)
       (mean samples)
       (median samples)
       (variance samples)
