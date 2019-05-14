@@ -325,7 +325,7 @@ eval env xobj =
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
     evalSymbol xobj@(XObj (Sym path@(SymPath [] "help") _) _ _) = do
       ctx <- get
-      return (makeEvalError ctx Nothing ("`help` needs to be called like a function.\n\nTry using `(help)`.") (info xobj))
+      return (makeEvalError ctx Nothing ("`help` needs to be called like a function.\n\nTry using `(help)` or `:h`.") (info xobj))
     evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name) _) _ _) = do
       ctx <- get
       let fppl = projectFilePathPrintLength (contextProj ctx)
