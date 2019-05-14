@@ -110,7 +110,6 @@ Returns `Nothing` if the array is empty.")
   (defn /= [a b]
     (not (= (the (Ref (Array a)) a) b)))
 
-  ; TODO unsafe!
   (doc maximum "gets the maximum in an array (elements must support `<` and `zero`)and wraps it in a `Just`.
 
 If the array is empty, returns `Nothing`")
