@@ -76,19 +76,19 @@
                 &(reverse [1 2 3])
                 "reverse works as expected")
   (assert-equal test
-                10
-                (maximum &(range 1 10 1))
+                &(Maybe.Just 10)
+                &(maximum &(range 1 10 1))
                 "maximum works as expected")
   (assert-equal test
-                1
-                (minimum &(range 1 10 1))
+                &(Maybe.Just 1)
+                &(minimum &(range 1 10 1))
                 "minimum works as expected")
   (assert-equal test
-                &(Pair.init 2 1)
+                &(Maybe.Just (Pair.init 2 1))
                 &(maximum &[(Pair.init 1 3) (Pair.init 2 1) (Pair.init 2 0)])
                 "maximum works on pairs")
   (assert-equal test
-                &(Pair.init 1 3)
+                &(Maybe.Just (Pair.init 1 3))
                 &(minimum &[(Pair.init 1 3) (Pair.init 2 1) (Pair.init 2 0)])
                 "minimum works on pairs")
   (assert-equal test

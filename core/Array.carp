@@ -111,30 +111,35 @@ Returns `Nothing` if the array is empty.")
     (not (= (the (Ref (Array a)) a) b)))
 
   ; TODO unsafe!
-  (doc maximum "gets the maximum in an array (elements must support `<`).")
-  (defn maximum [xs]
-    (let [result (unsafe-first xs)
-          n (length xs)]
-      (do
-        (for [i 1 n]
-          (let [x @(nth xs i)]
-            (if (< &result &x)
-              (set! result x)
-              ())))
-        result)))
+  (doc maximum "gets the maximum in an array (elements must support `<`)and wraps it in a `Just`.
 
-  ; TODO unsafe!
-  (doc minimum "gets the minimum in an array (elements must support `>`).")
+If the array is empty, returns `Nothing`")
+  (defn maximum [xs]
+    (let-do [result (first xs)
+          n (length xs)
+          res (Maybe.from @&result (zero))]
+      (for [i 0 n]
+        (let [x @(nth xs i)]
+          (when (< &res &x)
+            (do
+              (set! result (Maybe.Just x))
+              (set! res x)))))
+      result))
+
+  (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
+
+If the array is empty, returns `Nothing`")
   (defn minimum [xs]
-    (let [result (unsafe-first xs)
-          n (length xs)]
-      (do
-        (for [i 1 n]
-          (let [x @(nth xs i)]
-            (if (> &result &x)
-              (set! result x)
-              ())))
-        result)))
+    (let-do [result (first xs)
+          n (length xs)
+          res (Maybe.from @&result (zero))]
+      (for [i 0 n]
+        (let [x @(nth xs i)]
+          (when (> &res &x)
+            (do
+              (set! res x)
+              (set! result (Maybe.Just x))))))
+      result))
 
   (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
@@ -142,11 +147,10 @@ Returns `Nothing` if the array is empty.")
 
   (doc subarray "gets a subarray from `start-index` to `end-index`.")
   (defn subarray [xs start-index end-index]
-    (let [result []]
-      (do
-        (for [i start-index end-index]
-          (set! result (push-back result @(nth xs i))))
-        result)))
+    (let-do [result []]
+      (for [i start-index end-index]
+        (set! result (push-back result @(nth xs i))))
+      result))
 
   (doc prefix-array "gets a prefix array to `end-index`.")
   (defn prefix-array [xs end-index]

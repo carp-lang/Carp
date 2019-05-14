@@ -36,4 +36,8 @@
   (doc reverse "reverses a `Pair` `p` such that its first member is its second member and vice versa.")
   (defn reverse [p]
     (Pair.init @(Pair.b p) @(Pair.a p)))
-  )
+
+  (doc zero "return default values of the type inside `Pair`")
+  (defn zero []
+      (Pair.init (zero) (zero)))
+)
