@@ -54,6 +54,7 @@ eval env xobj =
         [] ->
           return (Right xobj)
 
+
         [XObj (Sym (SymPath [] "quote") _) _ _, target] ->
           return (Right target)
 
@@ -322,6 +323,9 @@ eval env xobj =
     evalList _ = error "Can't eval non-list in evalList."
 
     evalSymbol :: XObj -> StateT Context IO (Either EvalError XObj)
+    evalSymbol xobj@(XObj (Sym path@(SymPath [] "help") _) _ _) = do
+      ctx <- get
+      return (makeEvalError ctx Nothing ("`help` needs to be called like a function.\n\nTry using `(help)`.") (info xobj))
     evalSymbol xobj@(XObj (Sym path@(SymPath pathStrings name) _) _ _) = do
       ctx <- get
       let fppl = projectFilePathPrintLength (contextProj ctx)
