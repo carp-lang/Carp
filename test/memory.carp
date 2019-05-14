@@ -252,7 +252,7 @@
 
 (defn array-index-of []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
-    (assert (= (Maybe.Just 2) (Array.index-of &xs "c")))))
+    (assert (= &(Maybe.Just 2) &(Array.index-of &xs "c")))))
 
 (defn array-element-count []
   (let [xs [@"a" @"b" @"a" @"a" @"b"]]
