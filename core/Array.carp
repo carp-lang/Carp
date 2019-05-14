@@ -173,11 +173,11 @@ If the array is empty, returns `Nothing`")
 
   (doc index-of "gets the index of element `e` in an array.")
   (defn index-of [a e]
-    (let-do [idx -1]
+    (let-do [idx (Maybe.Nothing)]
       (for [i 0 (length a)]
         (when (= (nth a i) e)
           (do
-            (set! idx i)
+            (set! idx (Maybe.Just i))
             (break))))
       idx))
 
