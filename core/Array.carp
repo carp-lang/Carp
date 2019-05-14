@@ -110,35 +110,33 @@ Returns `Nothing` if the array is empty.")
   (defn /= [a b]
     (not (= (the (Ref (Array a)) a) b)))
 
-  (doc maximum "gets the maximum in an array (elements must support `<` and `zero`)and wraps it in a `Just`.
+    (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
+
+If the array is empty, it returns `Nothing`.")
+  (defn maximum [xs]
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (nth xs 0)
+               n (length xs)]
+        (for [i 1 n]
+          (let [x (nth xs i)]
+            (when (< result x)
+              (set! result x))))
+        (Maybe.Just @result))))
+
+  (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
 
 If the array is empty, returns `Nothing`")
   (defn maximum [xs]
-    (let-do [result (first xs)
-          n (length xs)
-          res (Maybe.from @&result (zero))]
-      (for [i 0 n]
-        (let [x @(nth xs i)]
-          (when (< &res &x)
-            (do
-              (set! result (Maybe.Just x))
-              (set! res x)))))
-      result))
-
-  (doc minimum "gets the minimum in an array (elements must support `>` and `zero`) and wraps it in a `Just`.
-
-If the array is empty, returns `Nothing`")
-  (defn minimum [xs]
-    (let-do [result (first xs)
-          n (length xs)
-          res (Maybe.from @&result (zero))]
-      (for [i 0 n]
-        (let [x @(nth xs i)]
-          (when (> &res &x)
-            (do
-              (set! res x)
-              (set! result (Maybe.Just x))))))
-      result))
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (nth xs 0)
+             n (length xs)]
+        (for [i 1 n]
+          (let [x (nth xs i)]
+            (when (< result x)
+              (set! result x))))
+        (Maybe.Just @result))))
 
   (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]

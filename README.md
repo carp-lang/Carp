@@ -58,15 +58,16 @@ To build this example, save it to a file called 'example.carp' and load it with 
 [Veit Heller](http://veitheller.de) ([@hellerve](https://github.com/hellerve))
 
 ### Contributors
-* Markus Gustavsson
-* Fyodor Shchukin
 * Anes Lihovac
 * Chris Hall
-* Tom Smeding
 * Dan Connolly
-* Reini Urban
-* Jonas Granquist
+* Eric Shimizu Karbstein ([@GrayJack](https://github.com/GrayJack))
+* Fyodor Shchukin
 * Joel Kaasinen ([@opqdonut](https://github.com/opqdonut))
+* Jonas Granquist
+* Markus Gustavsson
+* Reini Urban
+* Tom Smeding
 
 Are you missing from the contributors list? Please send a pull request!
 
