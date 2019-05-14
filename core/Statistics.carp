@@ -5,8 +5,8 @@
 (defmodule Statistics
   (deftype Summary [
     sum Double,
-    min Double,
-    max Double,
+    min (Maybe Double),
+    max (Maybe Double),
     mean Double,
     median Double,
     var Double,
@@ -82,7 +82,7 @@
             (= n 1) @(Array.nth data 0)
             (let [x @(Array.nth data (/ n 2)) ; else
                   l (- x (/ (from-int interval) 2.0))
-                  cf (Array.index-of data &x)
+                  cf (Maybe.from (Array.index-of data &x) -1)
                   f (Array.element-count data &x)]
               (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
                       (from-int f)))))))

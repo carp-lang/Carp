@@ -231,11 +231,11 @@
 
 (defn array-maximum []
   (let [xs [1 7 2 9 3 8 4 6 5]]
-    (assert (= 9 (maximum &xs)))))
+    (assert (= (Maybe.Just 9) (maximum &xs)))))
 
 (defn array-minimum []
   (let [xs [8 4 6 5 1 7 2 9 3]]
-    (assert (= 1 (minimum &xs)))))
+    (assert (= (Maybe.Just 1) (minimum &xs)))))
 
 (defn array-sum []
   (let [xs [10 20 30 40 50]]
@@ -252,7 +252,7 @@
 
 (defn array-index-of []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
-    (assert (= 2 (Array.index-of &xs "c")))))
+    (assert (= (Maybe.Just 2) (Array.index-of &xs "c")))))
 
 (defn array-element-count []
   (let [xs [@"a" @"b" @"a" @"a" @"b"]]
