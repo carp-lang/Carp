@@ -111,7 +111,7 @@ Returns `Nothing` if the array is empty.")
     (not (= (the (Ref (Array a)) a) b)))
 
   ; TODO unsafe!
-  (doc maximum "gets the maximum in an array (elements must support `<`)and wraps it in a `Just`.
+  (doc maximum "gets the maximum in an array (elements must support `<` and `zero`)and wraps it in a `Just`.
 
 If the array is empty, returns `Nothing`")
   (defn maximum [xs]
@@ -126,7 +126,7 @@ If the array is empty, returns `Nothing`")
               (set! res x)))))
       result))
 
-  (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
+  (doc minimum "gets the minimum in an array (elements must support `>` and `zero`) and wraps it in a `Just`.
 
 If the array is empty, returns `Nothing`")
   (defn minimum [xs]
