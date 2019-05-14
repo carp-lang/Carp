@@ -171,7 +171,9 @@ If the array is empty, returns `Nothing`")
           (set! j (Int.dec j))))
       a))
 
-  (doc index-of "gets the index of element `e` in an array.")
+  (doc index-of "gets the index of element `e` in an array and wraps it on a `Just`.
+
+If the element is not found, returns `Nothing`")
   (defn index-of [a e]
     (let-do [idx (Maybe.Nothing)]
       (for [i 0 (length a)]
