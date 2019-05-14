@@ -8,9 +8,10 @@ import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import System.FilePath (takeDirectory)
-import qualified Data.Map as Map
+import System.IO
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
+import qualified Data.Map as Map
 
 import Parsing
 import Emit
@@ -785,6 +786,19 @@ commandNot [x] =
       else return (Right trueXObj)
     _ ->
       return (Left (EvalError ("Can't perform logical operation (not) on " ++ pretty x) (info x)))
+
+commandReadFile :: CommandCallback
+commandReadFile [filename] =
+  case filename of
+    XObj (Str fname) _ _ -> do
+         exceptional <- liftIO $ ((try $ readFile fname) :: (IO (Either IOException String)))
+         case exceptional of
+            Right contents ->
+              return (Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
+            Left _ ->
+              return (Left (EvalError ("The argument to `read-file` `" ++ fname ++ "` does not exist") (info filename)))
+    _ ->
+      return (Left (EvalError ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal [modulePath] = do
