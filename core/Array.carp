@@ -127,14 +127,14 @@ If the array is empty, it returns `Nothing`.")
   (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
 
 If the array is empty, returns `Nothing`")
-  (defn maximum [xs]
+  (defn minimum [xs]
     (if (empty? xs)
       (Maybe.Nothing)
       (let-do [result (nth xs 0)
              n (length xs)]
         (for [i 1 n]
           (let [x (nth xs i)]
-            (when (< result x)
+            (when (> result x)
               (set! result x))))
         (Maybe.Just @result))))
 
