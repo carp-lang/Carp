@@ -775,3 +775,7 @@ isVarName (firstLetter:_) =
 isUnqualifiedSym :: XObj -> Bool
 isUnqualifiedSym (XObj (Sym (SymPath [] _) _) _ _) = True
 isUnqualifiedSym _ = False
+
+isSym :: XObj -> Bool
+isSym (XObj (Sym (SymPath _ _) _) _ _) = True
+isSym _ = False

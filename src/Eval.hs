@@ -187,24 +187,26 @@ eval env xobj =
         (XObj The _ _ : _) ->
             return (makeEvalError ctx Nothing ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
 
-        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
-          if even (length bindings)
-          then do bind <- mapM (\(n, x) -> do x' <- eval env x
-                                              return $ do okX <- x'
-                                                          Right [n, okX])
-                               (pairwise bindings)
-                  let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
-                  let okBindings = sequence bind
-                  case okBindings of
-                    (Left err) -> return (Left err)
-                    Right binds -> do
-                      let envWithBindings = foldl' (\e [XObj (Sym (SymPath _ n) _) _ _, x] -> extendEnv e n x)
-                                    innerEnv
-                                    binds
-                      evaledBody <- eval envWithBindings body
-                      return $ do okBody <- evaledBody
-                                  Right okBody
-          else return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] 
+          | odd (length bindings) -> return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
+          | not (all isSym bindings) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ concatMap pretty bindings ++ "`") (info xobj))
+          | otherwise -> 
+              do bind <- mapM (\(n, x) -> do x' <- eval env x
+                                             return $ do okX <- x'
+                                                         Right [n, okX])
+                              (pairwise bindings)
+                 let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
+                 let okBindings = sequence bind
+                 case okBindings of
+                   (Left err) -> return (Left err)
+                   Right binds -> do
+                     let envWithBindings = foldl' (\e [XObj (Sym (SymPath _ n) _) _ _, x] -> extendEnv e n x)
+                                   innerEnv
+                                   binds
+                     evaledBody <- eval envWithBindings body
+                     return $ do okBody <- evaledBody
+                                 Right okBody
+          
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
