@@ -208,26 +208,33 @@ period = do Parsec.char '.'
 symbol :: Parsec.Parsec String ParseState XObj
 symbol = do i <- createInfo
             segments <- Parsec.sepBy1 symbolSegment period
-            case last segments of
-              "defn" -> return (XObj Defn i Nothing)
-              "def" -> return (XObj Def i Nothing)
-              -- TODO: What about the other def- forms?
-              "do" -> return (XObj Do i Nothing)
-              "while" -> return (XObj While i Nothing)
-              "fn" -> return (XObj (Fn Nothing Set.empty) i Nothing)
-              "let" -> return (XObj Let i Nothing)
-              "break" -> return (XObj Break i Nothing)
-              "if" -> return (XObj If i Nothing)
-              "match" -> return (XObj Match i Nothing)
-              "true" -> return (XObj (Bol True) i Nothing)
-              "false" -> return (XObj (Bol False) i Nothing)
-              "address" -> return (XObj Address i Nothing)
-              "set!" -> return (XObj SetBang i Nothing)
-              "the" -> return (XObj The i Nothing)
-              "ref" -> return (XObj Ref i Nothing)
-              "deref" -> return (XObj Deref i Nothing)
-              "with" -> return (XObj With i Nothing)
-              name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
+            if length segments > 1
+            -- if it’s qualified, it can’t be a special form
+            then return (XObj
+                          (Sym (SymPath (init segments) (last segments))
+                               Symbol)
+                          i Nothing)
+            else
+              case last segments of
+                "defn" -> return (XObj Defn i Nothing)
+                "def" -> return (XObj Def i Nothing)
+                -- TODO: What about the other def- forms?
+                "do" -> return (XObj Do i Nothing)
+                "while" -> return (XObj While i Nothing)
+                "fn" -> return (XObj (Fn Nothing Set.empty) i Nothing)
+                "let" -> return (XObj Let i Nothing)
+                "break" -> return (XObj Break i Nothing)
+                "if" -> return (XObj If i Nothing)
+                "match" -> return (XObj Match i Nothing)
+                "true" -> return (XObj (Bol True) i Nothing)
+                "false" -> return (XObj (Bol False) i Nothing)
+                "address" -> return (XObj Address i Nothing)
+                "set!" -> return (XObj SetBang i Nothing)
+                "the" -> return (XObj The i Nothing)
+                "ref" -> return (XObj Ref i Nothing)
+                "deref" -> return (XObj Deref i Nothing)
+                "with" -> return (XObj With i Nothing)
+                name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
 atom = Parsec.choice [number, pattern, string, aChar, symbol]
