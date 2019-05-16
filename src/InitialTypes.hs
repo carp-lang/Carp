@@ -70,6 +70,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Pattern _)        -> return (Right (xobj { ty = Just (RefTy PatternTy) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
                        Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
+                       (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
                        (Dict _)           -> visitDictionary env xobj
