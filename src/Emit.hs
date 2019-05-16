@@ -153,6 +153,7 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
         visitString indent (XObj (Pattern str) (Just i) _) = visitStr' indent str i
         visitString _ _ = error "Not a string."
         escaper '\"' acc = "\\\"" ++ acc
+        escaper '\n' acc = "\\n" ++ acc
         escaper x acc = x : acc
         escapeString = foldr escaper ""
 
