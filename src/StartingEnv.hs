@@ -59,6 +59,7 @@ templatePointerCopy :: (String, Binder)
 templatePointerCopy = defineTemplate
   (SymPath ["Pointer"] "copy")
   (FuncTy [RefTy (PointerTy (VarTy "p"))] (PointerTy (VarTy "p")))
+  "copies a pointer `p`."
   (toTemplate "$p* $NAME ($p** ptrRef)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return *ptrRef;"
@@ -68,6 +69,7 @@ templatePointerCopy = defineTemplate
 templatePointerEqual = defineTemplate
   (SymPath ["Pointer"] "eq")
   (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy)
+  "checks two pointers for equality."
   (toTemplate "bool $NAME ($p *p1, $p *p2)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p1 == p2;"
@@ -78,6 +80,7 @@ templatePointerEqual = defineTemplate
 templatePointerToRef = defineTemplate
   (SymPath ["Pointer"] "to-ref")
   (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p")))
+  "converts a pointer to a reference type. The user will have to ensure themselves that this is a safe operation."
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p;"
@@ -99,6 +102,7 @@ templateExit :: (String, Binder)
 templateExit = defineTemplate
   (SymPath ["System"] "exit")
   (FuncTy [IntTy] (VarTy "a"))
+  "exits the program."
   (toTemplate "$a $NAME (int code)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    exit(code);"
@@ -137,8 +141,8 @@ generateInnerFunctionModule arity =
     funcTy = FuncTy (take arity (map (VarTy . charToTyName) alphabet)) (VarTy "z")
     bindings = Map.fromList [ generateTemplateFuncCopy funcTy
                             , generateTemplateFuncDelete funcTy
-                            , generateTemplateFuncStrOrPrn "str" funcTy
-                            , generateTemplateFuncStrOrPrn "prn" funcTy
+                            , generateTemplateFuncStrOrPrn "str" "converts a function to a string." funcTy
+                            , generateTemplateFuncStrOrPrn "prn" "converts a function to a string (internal representation)." funcTy
                             ]
 
 
@@ -147,6 +151,7 @@ generateTemplateFuncCopy :: Ty -> (String, Binder)
 generateTemplateFuncCopy funcTy = defineTemplate
   (SymPath ["Function"] "copy")
   (FuncTy [RefTy funcTy] (VarTy "a"))
+  "copies a function."
   (toTemplate "$a $NAME ($a* ref)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    if(ref->env) {"
@@ -167,6 +172,7 @@ generateTemplateFuncDelete :: Ty -> (String, Binder)
 generateTemplateFuncDelete funcTy = defineTemplate
   (SymPath ["Function"] "delete")
   (FuncTy [funcTy] UnitTy)
+  "deletes a function."
   (toTemplate "void $NAME (Lambda f)")
   (toTemplate $ unlines ["$DECL {"
                         ,"  if(f.delete) {"
@@ -177,10 +183,11 @@ generateTemplateFuncDelete funcTy = defineTemplate
   (const [])
 
 -- | A template function for generating 'str' or 'prn' functions for function pointers.
-generateTemplateFuncStrOrPrn :: String -> Ty -> (String, Binder)
-generateTemplateFuncStrOrPrn name funcTy = defineTemplate
+generateTemplateFuncStrOrPrn :: String -> String -> Ty -> (String, Binder)
+generateTemplateFuncStrOrPrn name docs funcTy = defineTemplate
   (SymPath ["Function"] name)
   (FuncTy [RefTy funcTy] StringTy)
+  docs
   (toTemplate "String $NAME (Lambda *f)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    static String lambda = \"λ\";"
@@ -287,6 +294,7 @@ templateEnumToInt :: (String, Binder)
 templateEnumToInt = defineTemplate
   (SymPath [] "enum-to-int")
   (FuncTy [VarTy "a"] IntTy)
+  "converts an enum `e` to an integer."
   (toTemplate "int $NAME ($a e)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return (int)e;"
