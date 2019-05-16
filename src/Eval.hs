@@ -54,7 +54,6 @@ eval env xobj =
         [] ->
           return (Right xobj)
 
-
         [XObj (Sym (SymPath [] "quote") _) _ _, target] ->
           return (Right target)
 
