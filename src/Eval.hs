@@ -189,7 +189,7 @@ eval env xobj =
 
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] 
           | odd (length bindings) -> return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
-          | not (all isSym bindings) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ concatMap pretty bindings ++ "`") (info xobj))
+          | not (all isSym (evenIndicies bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ concatMap pretty bindings ++ "`") (info xobj))
           | otherwise -> 
               do bind <- mapM (\(n, x) -> do x' <- eval env x
                                              return $ do okX <- x'
@@ -206,6 +206,7 @@ eval env xobj =
                      evaledBody <- eval envWithBindings body
                      return $ do okBody <- evaledBody
                                  Right okBody
+          where evenIndicies xs = map snd . filter (even . fst) $ zip [0..] xs
           
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
