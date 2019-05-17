@@ -85,3 +85,6 @@ intersectionOfSetsInList (x:xs) =
   foldl' Set.intersection x xs
 intersectionOfSetsInList [] =
   Set.empty
+
+evenIndicies :: [a] -> [a]
+evenIndicies xs = map snd . filter (even . fst) $ zip [0..] xs

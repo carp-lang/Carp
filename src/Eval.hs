@@ -206,7 +206,7 @@ eval env xobj =
                      evaledBody <- eval envWithBindings body
                      return $ do okBody <- evaledBody
                                  Right okBody
-          where evenIndicies xs = map snd . filter (even . fst) $ zip [0..] xs
+          
           
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
