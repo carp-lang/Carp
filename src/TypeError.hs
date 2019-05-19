@@ -48,6 +48,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidMemberTypeWhenConcretizing Ty XObj TypeError
                | NotAmongRegisteredTypes Ty XObj
                | UnevenMembers [XObj]
+               | InvalidLetBinding [XObj] (XObj, XObj)
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -219,6 +220,10 @@ instance Show TypeError where
     joinWithComma (map pretty xobjs) ++ "` at " ++
     prettyInfoFromXObj (head xobjs) ++
     ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
+  show (InvalidLetBinding xobjs (sym, expr)) =
+    "The binding:` [" ++ pretty sym ++ " " ++ pretty expr ++ "]` is invalid at: " ++ 
+    prettyInfoFromXObj (head xobjs) ++ ". \n\n Because binding names must be symbols."
+
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -329,7 +334,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " The type '" ++ show t ++ "' isn't defined."]
     (UnevenMembers xobjs) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ " Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs)]
-
+    (InvalidLetBinding xobjs (sym, expr)) ->
+      [machineReadableInfoFromXObj fppl (head xobjs) ++ "Invalid let binding: " ++ pretty sym ++ pretty expr ++ " at: " ++ joinWithComma (map pretty xobjs)]
     _ ->
       [show err]
 
