@@ -209,9 +209,16 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                  do visitedBindings <- mapM (visit okLetScopeEnv) bindings
                     visitedBody <- visit okLetScopeEnv body
                     return $ do okBindings <- sequence visitedBindings
-                                okBody <- visitedBody
-                                return (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i (Just wholeExprType))
+                                case getDuplicate [] okBindings of
+                                  Just dup -> Left (DuplicateBinding dup)
+                                  Nothing -> do
+                                    okBody <- visitedBody
+                                    Right (XObj (Lst [letExpr, XObj (Arr okBindings) bindi bindt, okBody]) i (Just wholeExprType))
                Left err -> return (Left err)
+          where getDuplicate _ [] = Nothing
+                getDuplicate names (o@(XObj (Sym (SymPath _ x) _) _ _):y:xs) =
+                  if x `elem` names then Just o else getDuplicate (x:names) xs
+
 
         [XObj Let _ _, XObj (Arr _) _ _] ->
           return (Left (NoFormsInBody xobj))

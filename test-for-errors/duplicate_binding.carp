@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f []
+  (let [x 1
+        x 2]
+    x))
