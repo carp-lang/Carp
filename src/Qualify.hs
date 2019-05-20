@@ -51,19 +51,19 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
   let expr' = setFullyQualifiedSymbols typeEnv globalEnv env expr
   in  XObj (Lst [def, sym, expr']) i t
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) =
-  if even (length bindings)
-  then let Just ii = i
-           lvl = envFunctionNestingLevel env
-           innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
-           (innerEnv', bindings') =
-             foldl' (\(e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) ->
-                       let qualified = setFullyQualifiedSymbols typeEnv globalEnv e o
-                       in (extendEnv e binderName s, bs ++ [s, qualified]))
-                    (innerEnv, []) (pairwise bindings)
-           newBody = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body
-       in  XObj (Lst [letExpr, XObj (Arr bindings') bindi bindt, newBody]) i t
-  else XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) 
+  | odd (length bindings) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+  | not (all isSym (evenIndicies bindings)) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+  | otherwise = let Just ii = i
+                    lvl = envFunctionNestingLevel env
+                    innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
+                    (innerEnv', bindings') =
+                      foldl' (\(e, bs) (s@(XObj (Sym (SymPath _ binderName) _) _ _), o) ->
+                                let qualified = setFullyQualifiedSymbols typeEnv globalEnv e o
+                                in (extendEnv e binderName s, bs ++ [s, qualified]))
+                             (innerEnv, []) (pairwise bindings)
+                    newBody = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body
+                in  XObj (Lst [letExpr, XObj (Arr bindings') bindi bindt, newBody]) i t
 
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : casesXObjs)) i t) =
   if even (length casesXObjs)

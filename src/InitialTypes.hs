@@ -361,7 +361,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 (Sym (SymPath _ name) _) ->
                   do visited <- visit env' expr
                      return (envAddBinding env' name . Binder emptyMeta <$> visited)
-                _ -> error ("Can't create let-binder for non-symbol: " ++ show sym) -- TODO: Use proper error mechanism
+                _ -> return (Left (InvalidLetBinding xobjs (sym, expr))) 
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
     extendEnvWithParamList env xobjs =
