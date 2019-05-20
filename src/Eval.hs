@@ -187,10 +187,10 @@ eval env xobj =
         (XObj The _ _ : _) ->
             return (makeEvalError ctx Nothing ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
 
-        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] 
+        [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]
           | odd (length bindings) -> return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
-          | not (all isSym (evenIndicies bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ concatMap pretty bindings ++ "`") (info xobj))
-          | otherwise -> 
+          | not (all isSym (evenIndicies bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ joinWithSpace (map pretty bindings) ++ "`") (info xobj))
+          | otherwise ->
               do bind <- mapM (\(n, x) -> do x' <- eval env x
                                              return $ do okX <- x'
                                                          Right [n, okX])
@@ -206,8 +206,8 @@ eval env xobj =
                      evaledBody <- eval envWithBindings body
                      return $ do okBody <- evaledBody
                                  Right okBody
-          
-          
+
+
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
