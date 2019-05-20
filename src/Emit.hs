@@ -346,10 +346,13 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                      zipWithM_ (emitCase exprVar) (True : repeat False) (pairwise rest)
                      appendToSrc (addIndent indent ++ "else {\n")
                      appendToSrc (addIndent indent ++ "  // This will not be needed with static exhaustiveness checking in 'match' expressions:\n")
-                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ prettyInfo i ++ "\\n\");\n")
+                     appendToSrc (addIndent indent ++ "  fprintf(stderr, \"Unhandled case in 'match' expression at " ++ quoteBackslashes (prettyInfo i) ++ "\\n\");\n")
                      appendToSrc (addIndent indent ++ "  exit(1);\n")
                      appendToSrc (addIndent indent ++ "}\n")
                      return retVar
+              where quoteBackslashes [] = []
+                    quoteBackslashes ('\\':r) = "\\\\" ++ quoteBackslashes r
+                    quoteBackslashes (x:r) = x : quoteBackslashes r
 
             XObj Match _ _ : _ ->
               error "Fell through match."
