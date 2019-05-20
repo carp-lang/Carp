@@ -104,7 +104,7 @@ Returns `Nothing` if the array is empty.")
               (break))))
         eq)))
 
-  (doc = "compares two arrays and inverts the result.")
+  (doc /= "compares two arrays and inverts the result.")
   (defn /= [a b]
     (not (= (the (Ref (Array a)) a) b)))
 

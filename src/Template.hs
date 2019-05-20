@@ -1,5 +1,6 @@
 module Template where
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Debug.Trace
 
@@ -12,16 +13,20 @@ import Concretize
 import ToTemplate
 
 -- | Create a binding pair used for adding a template instantiation to an environment.
-instanceBinder :: SymPath -> Ty -> Template -> (String, Binder)
-instanceBinder path@(SymPath _ name) actualType template =
+instanceBinder :: SymPath -> Ty -> Template -> String -> (String, Binder)
+instanceBinder path@(SymPath _ name) actualType template docs =
   let (x, _) = instantiateTemplate path actualType template
-  in  (name, Binder emptyMeta x)
+      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      meta = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta x)
 
 -- | Create a binding pair and don't discard the dependencies
-instanceBinderWithDeps :: SymPath -> Ty -> Template -> ((String, Binder), [XObj])
-instanceBinderWithDeps path@(SymPath _ name) actualType template =
+instanceBinderWithDeps :: SymPath -> Ty -> Template -> String -> ((String, Binder), [XObj])
+instanceBinderWithDeps path@(SymPath _ name) actualType template docs =
   let (x, deps) = instantiateTemplate path actualType template
-  in  ((name, Binder emptyMeta x), deps)
+      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      meta = MetaData (Map.insert "doc" docObj Map.empty)
+  in  ((name, Binder meta x), deps)
 
 -- | Templates are instructions for the compiler to generate some C-code
 -- | based on some template and the names and types to fill into the template.
@@ -34,21 +39,25 @@ instanceBinderWithDeps path@(SymPath _ name) actualType template =
 -- | "int length__Float(Array__Float xs) { return xs->len; }"
 
 -- | Create a binding pair used for adding a template definition to an environment.
-defineTemplate :: SymPath -> Ty -> [Token] -> [Token] -> (Ty -> [XObj]) -> (String, Binder)
-defineTemplate path t declaration definition depsFunc =
+defineTemplate :: SymPath -> Ty -> String -> [Token] -> [Token] -> (Ty -> [XObj]) -> (String, Binder)
+defineTemplate path t docs declaration definition depsFunc =
   let (SymPath _ name) = path
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-  in  (name, Binder emptyMeta (XObj (Lst defLst) (Just i) (Just t)))
+      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      meta = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | The more advanced version of a template, where the code can vary depending on the type.
-defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> (String, Binder)
-defineTypeParameterizedTemplate templateCreator path t =
+defineTypeParameterizedTemplate :: TemplateCreator -> SymPath -> Ty -> String -> (String, Binder)
+defineTypeParameterizedTemplate templateCreator path t docs =
   let (SymPath _ name) = path
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-  in  (name, Binder emptyMeta (XObj (Lst defLst) (Just i) (Just t)))
+      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      meta = MetaData (Map.insert "doc" docObj Map.empty)
+  in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
 -- | Concretizes the types used in @token
 --   @cName is the name of the definition, i.e. the "foo" in "void foo() { ... }"
@@ -86,6 +95,7 @@ templateNoop :: (String, Binder)
 templateNoop = defineTemplate
   (SymPath [] "noop")
   (FuncTy [PointerTy (VarTy "a")] UnitTy)
+  "accepts a pointer and will do nothing with it."
   (toTemplate "void $NAME ($a* a)")
   (toTemplate "$DECL { }")
   (const [])

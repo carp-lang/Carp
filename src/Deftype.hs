@@ -77,14 +77,16 @@ templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> 
 templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) t)
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) t) ("gets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
      , if isTypeGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
-       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t)
-     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p, t] UnitTy) (templateMutatingSetter typeEnv env (mangle memberName) t)
+       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
+     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p, t] UnitTy) (templateMutatingSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place.")
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
                                                             (FuncTy [p, RefTy (FuncTy [t] t)] p)
-                                                            (templateUpdater (mangle memberName))]
+                                                            (templateUpdater (mangle memberName))
+                                                            ("updates the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` using a function `f`.")
+                                                            ]
 
 -- | The template for getters of a deftype.
 templateGetter :: String -> Ty -> Template
@@ -119,10 +121,11 @@ templateSetter typeEnv env memberName memberTy =
 
 -- | The template for setters of a generic deftype.
 templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
-templateGenericSetter pathStrings originalStructTy memberTy memberName =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy)
+templateGenericSetter pathStrings originalStructTy@(StructTy typeName _) memberTy memberName =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName)
         t = FuncTy [VarTy "p", VarTy "t"] (VarTy "p")
+        docs = "sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -175,6 +178,7 @@ binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs)
   else Right $ instanceBinder (SymPath insidePath "init")
                 (FuncTy (initArgListTypes membersXObjs) structTy)
                 (concreteInit StackAlloc structTy membersXObjs)
+                ("creates a `" ++ typeName ++ "`.")
 
 -- | Generate a list of types from a deftype declaration.
 initArgListTypes :: [XObj] -> [Ty]
@@ -196,9 +200,10 @@ concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) m
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
 genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
-  defineTypeParameterizedTemplate templateCreator path t
+  defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings "init"
         t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy
+        docs = "creates a `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -248,7 +253,8 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (A
   then Right (genericStr insidePath structTy membersXObjs strOrPrn, [])
   else Right (instanceBinderWithDeps (SymPath insidePath strOrPrn)
               (FuncTy [RefTy structTy] StringTy)
-              (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs) strOrPrn))
+              (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs) strOrPrn)
+              ("converts a `" ++ typeName ++ "` to a string."))
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
@@ -266,10 +272,11 @@ concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOr
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
 genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs strOrPrn =
-  defineTypeParameterizedTemplate templateCreator path t
+  defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings strOrPrn
         t = FuncTy [RefTy originalStructTy] StringTy
         members = memberXObjsToPairs membersXObjs
+        docs = "converts a `" ++ typeName ++ "` to a string."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -331,14 +338,16 @@ binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr
   then Right (genericDelete insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "delete")
              (FuncTy [structTy] UnitTy)
-             (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs)))
+             (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs))
+             ("deletes a `" ++ typeName ++"`."))
 
 -- | The template for the 'delete' function of a generic deftype.
 genericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
-genericDelete pathStrings originalStructTy membersXObjs =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy)
+genericDelete pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy) docs
   where path = SymPath pathStrings "delete"
         t = FuncTy [VarTy "p"] UnitTy
+        docs = "deletes a `" ++ typeName ++ "`. Should usually not be called manually."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
@@ -367,14 +376,16 @@ binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr m
   then Right (genericCopy insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "copy")
               (FuncTy [RefTy structTy] structTy)
-              (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs)))
+              (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs))
+              ("copies a `" ++ typeName ++ "`."))
 
 -- | The template for the 'copy' function of a generic deftype.
 genericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
-genericCopy pathStrings originalStructTy membersXObjs =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy] originalStructTy)
+genericCopy pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy] originalStructTy) docs
   where path = SymPath pathStrings "copy"
         t = FuncTy [RefTy (VarTy "p")] (VarTy "p")
+        docs = "copies the `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
