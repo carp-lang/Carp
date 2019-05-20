@@ -28,7 +28,7 @@ This line of configuration can be put into a `~/.carp/profile.carp` file to make
 You can also load libraries via Git like that:
 
 ```clojure
-(load "git@github.com/hellerve:anima.carp@master")
+(load "git@github.com:hellerve/anima.carp@master")
 ```
 
 This will download the [Anima](https://github.com/hellerve/anima) library to
