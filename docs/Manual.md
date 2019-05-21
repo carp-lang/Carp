@@ -21,13 +21,13 @@ There are a bunch of handy shortcuts for doing common things at the REPL:
 ```
 
 ### Differences compared to REPL:s in other Lisp:s
-While powerful, the REPL in Carp currently has some big limitations compared to most other Lisp:s. To execute the code in a compiled function (the ones defined with `defn`) you have to define a function called `main` and then build & run the project (with `:bx` or `(build) (run)`. To make this somewhat nicer there is a helper macro called `eval` that can be used like this:
+While powerful, the REPL in Carp currently has some big limitations compared to most other Lisp:s. If you type in an expression and press enter one of the following things will happen:
 
-```clojure
-鲮 (eval (my-function 12345 "w00t"))
-```
+1. If you're calling a dynamic function (something defined with `defndynamic`, or a built in `command`) it will be executed right away. This works very much like a classic, dynamically typed Lisp interpreter. The dynamic functions are not available in compiled code! Their main usage is in macros and to programatically control your build settings.
 
-Dynamic functions (defined with `defndynamic`) do not share this limitation but they are not available in compiled code.
+2. If you're calling a function defined with `defn` it's a "normal" Carp function which will be compiled (via C) to an executable binary, which is then run in a child process to the REPL. This means that the function has no chance to modify anything else in your program, like global variables and the like.
+
+3. If the top-level form isn't a function call, the REPL might get confused. For example, entering an array of calls to a Carp function will give unexpected results (the array will be dynamic but the function calls will not). The easiest way to work around that at the moment is to wrap the expression in a `defn` and call that one instead. This will be fixed in a future version of Carp.
 
 ### Adding annotations
 Carp has a flexible meta data system (inspired by the one in Clojure) that lets anyone add and retrieve data on the bindings in the environment. The general way to do that is with `(meta-set! <path> <key> <value>)` and `(meta <path> <key>)`.
