@@ -41,13 +41,15 @@ It will sum the previous sum with each new value, starting at `0`.")
             (break))))
       res))
 
-  (doc find "finds an element in `a` that matches the function `f`.")
+  (doc find "finds an element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an element, `Nothing` will be returned.")
   (defn find [f a]
-    (let-do [res (zero)]
+    (let-do [res (Maybe.Nothing)]
       (for [i 0 (length a)]
         (when (~f (nth a i))
           (do
-            (set! res @(nth a i))
+            (set! res (Maybe.Just @(nth a i)))
             (break))))
       res))
 
@@ -108,43 +110,44 @@ Returns `Nothing` if the array is empty.")
   (defn /= [a b]
     (not (= (the (Ref (Array a)) a) b)))
 
-  ; TODO unsafe!
-  (doc maximum "gets the maximum in an array (elements must support `<`).")
+    (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
+
+If the array is empty, it returns `Nothing`.")
   (defn maximum [xs]
-    (let [result (unsafe-first xs)
-          n (length xs)]
-      (do
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (nth xs 0)
+               n (length xs)]
         (for [i 1 n]
-          (let [x @(nth xs i)]
-            (if (< &result &x)
-              (set! result x)
-              ())))
-        result)))
+          (let [x (nth xs i)]
+            (when (< result x)
+              (set! result x))))
+        (Maybe.Just @result))))
 
-  ; TODO unsafe!
-  (doc minimum "gets the maximum in an array (elements must support `>`).")
+  (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
+
+If the array is empty, returns `Nothing`")
   (defn minimum [xs]
-    (let [result (unsafe-first xs)
-          n (length xs)]
-      (do
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (nth xs 0)
+             n (length xs)]
         (for [i 1 n]
-          (let [x @(nth xs i)]
-            (if (> &result &x)
-              (set! result x)
-              ())))
-        result)))
+          (let [x (nth xs i)]
+            (when (> result x)
+              (set! result x))))
+        (Maybe.Just @result))))
 
-  (doc sum "ums an array (elements must support `+` and `zero`).")
+  (doc sum "sums an array (elements must support `+` and `zero`).")
   (defn sum [xs]
     (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
 
   (doc subarray "gets a subarray from `start-index` to `end-index`.")
   (defn subarray [xs start-index end-index]
-    (let [result []]
-      (do
-        (for [i start-index end-index]
-          (set! result (push-back result @(nth xs i))))
-        result)))
+    (let-do [result []]
+      (for [i start-index end-index]
+        (set! result (push-back result @(nth xs i))))
+      result))
 
   (doc prefix-array "gets a prefix array to `end-index`.")
   (defn prefix-array [xs end-index]
@@ -166,13 +169,15 @@ Returns `Nothing` if the array is empty.")
           (set! j (Int.dec j))))
       a))
 
-  (doc index-of "gets the index of element `e` in an array.")
+  (doc index-of "gets the index of element `e` in an array and wraps it on a `Just`.
+
+If the element is not found, returns `Nothing`")
   (defn index-of [a e]
-    (let-do [idx -1]
+    (let-do [idx (Maybe.Nothing)]
       (for [i 0 (length a)]
         (when (= (nth a i) e)
           (do
-            (set! idx i)
+            (set! idx (Maybe.Just i))
             (break))))
       idx))
 

@@ -82,7 +82,7 @@
             (= n 1) @(Array.nth data 0)
             (let [x @(Array.nth data (/ n 2)) ; else
                   l (- x (/ (from-int interval) 2.0))
-                  cf (Array.index-of data &x)
+                  cf (Maybe.from (Array.index-of data &x) -1)
                   f (Array.element-count data &x)]
               (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
                       (from-int f)))))))
@@ -177,8 +177,8 @@
   (defn summary [samples]
     (Summary.init
       (Array.sum samples)
-      (Array.minimum samples)
-      (Array.maximum samples)
+      (Maybe.from (Array.minimum samples) 0.0)
+      (Maybe.from (Array.maximum samples) 0.0)
       (mean samples)
       (median samples)
       (variance samples)
