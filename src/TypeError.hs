@@ -49,6 +49,7 @@ data TypeError = SymbolMissingType XObj Env
                | NotAmongRegisteredTypes Ty XObj
                | UnevenMembers [XObj]
                | InvalidLetBinding [XObj] (XObj, XObj)
+               | DuplicateBinding XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -221,9 +222,11 @@ instance Show TypeError where
     prettyInfoFromXObj (head xobjs) ++
     ".\n\nBecause they are pairs of names and their types, they need to be even.\nDid you forget a name or type?"
   show (InvalidLetBinding xobjs (sym, expr)) =
-    "The binding:` [" ++ pretty sym ++ " " ++ pretty expr ++ "]` is invalid at: " ++ 
-    prettyInfoFromXObj (head xobjs) ++ ". \n\n Because binding names must be symbols."
+    "The binding `[" ++ pretty sym ++ " " ++ pretty expr ++ "]` is invalid at " ++
+    prettyInfoFromXObj (head xobjs) ++ ". \n\n Binding names must be symbols."
 
+  show (DuplicateBinding xobj) =
+    "I encountered a duplicate binding `" ++ pretty xobj ++ "` inside the `let` at " ++ prettyInfoFromXObj xobj ++ "."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -335,7 +338,10 @@ machineReadableErrorStrings fppl err =
     (UnevenMembers xobjs) ->
       [machineReadableInfoFromXObj fppl (head xobjs) ++ " Uneven nr of members / types: " ++ joinWithComma (map pretty xobjs)]
     (InvalidLetBinding xobjs (sym, expr)) ->
-      [machineReadableInfoFromXObj fppl (head xobjs) ++ "Invalid let binding: " ++ pretty sym ++ pretty expr ++ " at: " ++ joinWithComma (map pretty xobjs)]
+      [machineReadableInfoFromXObj fppl (head xobjs) ++ "Invalid let binding `" ++ pretty sym ++ pretty expr ++ "` at " ++ joinWithComma (map pretty xobjs)]
+    (DuplicateBinding xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
+
     _ ->
       [show err]
 

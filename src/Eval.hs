@@ -199,15 +199,19 @@ eval env xobj =
                  let okBindings = sequence bind
                  case okBindings of
                    (Left err) -> return (Left err)
-                   Right binds -> do
-                     let envWithBindings = foldl' (\e [XObj (Sym (SymPath _ n) _) _ _, x] -> extendEnv e n x)
-                                   innerEnv
-                                   binds
-                     evaledBody <- eval envWithBindings body
-                     return $ do okBody <- evaledBody
-                                 Right okBody
-
-
+                   Right binds ->
+                    case getDuplicate [] binds of
+                      Just dup -> return (makeEvalError ctx Nothing ("I encountered a duplicate binding `" ++ dup ++ "` inside a `let`") (info xobj))
+                      Nothing -> do
+                       let envWithBindings = foldl' (\e [XObj (Sym (SymPath _ n) _) _ _, x] -> extendEnv e n x)
+                                     innerEnv
+                                     binds
+                       evaledBody <- eval envWithBindings body
+                       return $ do okBody <- evaledBody
+                                   Right okBody
+          where getDuplicate _ [] = Nothing
+                getDuplicate names ([XObj (Sym (SymPath _ x) _) _ _,y]:xs) =
+                  if x `elem` names then Just x else getDuplicate (x:names) xs
 
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
