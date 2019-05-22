@@ -1,6 +1,11 @@
 (load "Test.carp")
 (use Test)
 
+; this won’t show up in the test output, sadly
+(const-assert true "const-assert works I")
+(const-assert (= 1 1) "const-assert works II")
+(const-assert (= false (= 1 2)) "const-assert works III")
+
 (defn test-let-do []
   (let-do [x 1]
     (set! x (+ x 1))
