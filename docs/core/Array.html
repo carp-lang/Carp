@@ -550,13 +550,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] a)
+                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] (Maybe a))
                 </p>
                 <pre class="args">
                     (find f a)
                 </pre>
                 <p class="doc">
-                    <p>finds an element in <code>a</code> that matches the function <code>f</code>.</p>
+                    <p>finds an element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an element, <code>Nothing</code> will be returned.</p>
 
                 </p>
             </div>
@@ -612,13 +613,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), &amp;a] Int)
+                    (λ [(Ref (Array a)), &amp;a] (Maybe Int))
                 </p>
                 <pre class="args">
                     (index-of a e)
                 </pre>
                 <p class="doc">
-                    <p>gets the index of element <code>e</code> in an array.</p>
+                    <p>gets the index of element <code>e</code> in an array and wraps it on a <code>Just</code>.</p>
+<p>If the element is not found, returns <code>Nothing</code></p>
 
                 </p>
             </div>
@@ -673,13 +675,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a))] (Maybe a))
                 </p>
                 <pre class="args">
                     (maximum xs)
                 </pre>
                 <p class="doc">
-                    <p>gets the maximum in an array (elements must support <code>&lt;</code>).</p>
+                    <p>gets the maximum in an array (elements must support <code>&lt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, it returns <code>Nothing</code>.</p>
 
                 </p>
             </div>
@@ -693,13 +696,14 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a))] (Maybe a))
                 </p>
                 <pre class="args">
                     (minimum xs)
                 </pre>
                 <p class="doc">
-                    <p>gets the maximum in an array (elements must support <code>&gt;</code>).</p>
+                    <p>gets the minimum in an array (elements must support <code>&gt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, returns <code>Nothing</code></p>
 
                 </p>
             </div>
@@ -1244,7 +1248,7 @@
                     (sum xs)
                 </pre>
                 <p class="doc">
-                    <p>ums an array (elements must support <code>+</code> and <code>zero</code>).</p>
+                    <p>sums an array (elements must support <code>+</code> and <code>zero</code>).</p>
 
                 </p>
             </div>
