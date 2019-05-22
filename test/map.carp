@@ -20,6 +20,13 @@
                 "basic put and get works with negative keys"
   )
   (assert-equal test
+                "2"
+                &(let-do [em (Map.create)]
+                  (Map.put! &em "1" "2")
+                  (Map.get &em "1"))
+                "put! works"
+  )
+  (assert-equal test
                 ""
                 &(Map.get &(Map.create) "1")
                 "get works with defaults"
@@ -201,6 +208,12 @@
                 &{1 @"hi" 2 @"bye"}
                 &(Map.reverse &{@"hi" 1 @"bye" 2})
                 "reverse works"
+  )
+  (assert-true test
+               (let-do [s (Set.create)]
+                 (Set.put! &s "1")
+                 (Set.contains? &s "1"))
+               "put! works"
   )
   (assert-equal test
                 1

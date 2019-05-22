@@ -131,6 +131,13 @@
         (let [n (Array.nth &b idx)]
           (Array.aset b idx (Bucket.put @n k v)))))))
 
+  (doc put! "Put a a value v into map m, using the key k, in place.")
+  (defn put! [m k v]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets m))
+          b (buckets m)
+          n (Array.nth b idx)]
+      (Array.aset! b idx (Bucket.put @n k v))))
+
   (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
   (defn get-with-default [m k default-value]
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
@@ -338,6 +345,14 @@
           (if (SetBucket.contains? n k)
             b
             (Array.aset b idx (SetBucket.grow n @k))))))))
+
+  (doc put! "Put a a key k into the set s, in place.")
+  (defn put! [s k]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets s))
+          b (buckets s)
+          n (Array.nth b idx)]
+      (when (not (SetBucket.contains? n k))
+        (Array.aset! b idx (SetBucket.grow n @k)))))
 
   (doc length "Get the length of set s.")
   (defn length [s]
