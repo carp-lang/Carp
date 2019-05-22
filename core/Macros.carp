@@ -304,3 +304,10 @@
 (doc defproject "Define a project configuration.")
 (defmacro defproject [:rest bindings] 
   (project-config bindings))
+
+(doc const-assert "asserts that the expression `expr` is true at compile time.
+Otherwise it will fail with the message `msg`.
+
+The expression must be evaluable at compile time.")
+(defndynamic const-assert [expr msg]
+  (if expr () (macro-error msg)))
