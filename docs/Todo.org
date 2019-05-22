@@ -11,6 +11,7 @@
 * Big Language Features
 ** 1.0
 *** Stack allocated Array with an explicit size.
+*** Stack allocated environments for lambdas, when possible
 * Tests to write
 * Smaller Language Features ("niceties")
 ** 0.3
