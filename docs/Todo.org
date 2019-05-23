@@ -12,6 +12,8 @@
 ** 1.0
 *** Stack allocated Array with an explicit size.
 *** Stack allocated environments for lambdas, when possible
+*** Being able to constraint arguments to functions so that they must implement certain interfaces
+*** Being able to group interfaces under a common name, like type classes in Haskell
 * Tests to write
 * Smaller Language Features ("niceties")
 ** 0.3
