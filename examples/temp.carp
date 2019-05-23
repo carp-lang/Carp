@@ -12,7 +12,7 @@
 ;; (def b (Aha.init "bleh"))
 
 ;; Refs in sumtypes
-(def x (Maybe.Just "Heya"))
+;;(def x (Maybe.Just "Heya"))
 
 ;; (defn f []
 ;;   (match x
