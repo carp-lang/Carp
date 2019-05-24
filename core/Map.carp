@@ -180,7 +180,7 @@
         (set! c (+ c (Array.length (Bucket.entries (Array.nth (buckets m) i))))))
       c))
 
-  (doc empty "Check whether the map m is empty.")
+  (doc empty? "Check whether the map m is empty.")
   (defn empty? [m]
     (= (length m) 0))
 
