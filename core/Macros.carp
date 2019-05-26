@@ -284,6 +284,13 @@
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))
 
+;; Also expose this as 'void' for those familiar with C?
+(doc unit "Convenience macro for specifing a return type of unit '()' for
+side-effecting functions. Can be slightly clearer than plain () in certain
+contexts, though this form is more verbose.")
+(defmacro unit []
+  (list))
+
 ;; Allows inclusion of C headers relative to the Carp file in which this macro is called.
 (defmacro relative-include [file]
   (list 'local-include
