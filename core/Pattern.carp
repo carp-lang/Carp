@@ -108,7 +108,7 @@ If you want to replace all occurrences of the pattern, use `-1`.")
 
   (doc words "splits a string into words.")
   (defn words [s]
-    (split-by s &[\tab \space]))
+    (split-by s &[\tab \space \newline]))
 
   (doc lines "splits a string into lines.")
   (defn lines [s]
