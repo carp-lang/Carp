@@ -6,9 +6,10 @@
     (if (= idx -1)
       (list 'copy s) ; no more splits found, just return string
       (if (= \% (String.char-at s (inc idx))) ; this is an escaped %
-        (list 'StringCopy.append
-              (list 'copy "%")
-              (fmt-internal (String.substring s (+ idx 2) len) args))
+        (list 'ref
+          (list 'String.append
+                "%"
+                (fmt-internal (String.substring s (+ idx 2) len) args)))
         (if (= 0 (length args)) ; we need to insert something, but have nothing
           (macro-error "error in format string: not enough arguments to format string")
           ; okay, this is the meat:
@@ -17,12 +18,14 @@
             (if (= -1 next)
               (if (< 1 (length args))
                 (macro-error "error in format string: too many arguments to format string")
-                (list 'format s (car args)))
+                (list 'ref (list 'format s (car args))))
               (let [slice (String.substring s 0 (+ (inc idx) next))]
-                (list 'StringCopy.append (list 'format slice (car args))
-                                         (fmt-internal (String.substring s (+ (inc idx) next) len)
-                                                       (cdr args)))))))))))
+                (list 'ref
+                  (list 'String.append
+                    (list 'ref (list 'format slice (car args)))
+                    (fmt-internal (String.substring s (+ (inc idx) next) len)
+                                      (cdr args))))))))))))
 
 (doc fmt "formats a string. It supports all of the string interpolations defined in format of the type that should be interpolated (e.g. %d and %x on integers).")
 (defmacro fmt [s :rest args]
-  (fmt-internal s args))
+  (list 'copy (fmt-internal s args)))

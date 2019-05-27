@@ -19,7 +19,6 @@
 ** 0.3
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
-*** Remove StringCopy.append, use String.append in all those cases.
 *** Unified signatures for struct updaters and aupdate
 *** Allow matching on references, to avoid copying
 ** 1.0

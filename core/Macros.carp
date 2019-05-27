@@ -269,17 +269,17 @@
   (if (= (length forms) 0)
     (list "")
     (if (= (length forms) 1)
-      (list 'str (car forms))
-      (list 'StringCopy.append (list 'str (car forms)) (build-str* (cdr forms))))))
+      (list 'ref (list 'str (car forms)))
+      (list 'ref (list 'String.append (list 'ref (list 'str (car forms))) (build-str* (cdr forms)))))))
 
 (defmacro str* [:rest forms]
-  (build-str* forms))
+  (list 'copy (build-str* forms)))
 
 (defmacro println* [:rest forms]
-  (list 'IO.println (list 'ref (build-str* forms))))
+  (list 'IO.println (build-str* forms)))
 
 (defmacro print* [:rest forms]
-  (list 'IO.print (list 'ref (build-str* forms))))
+  (list 'IO.print (build-str* forms)))
 
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))

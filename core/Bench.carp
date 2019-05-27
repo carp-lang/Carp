@@ -20,10 +20,10 @@ If your functions takes a large amount of time, experimenting with this might ma
   (hidden get-unit)
   (defn get-unit [n]
     (cond
-      (< n 1000.0) (StringCopy.append (Double.str n) @"ns")
-      (< n 1000000.0) (StringCopy.append (Double.str (/ n 1000.0)) @"µs")
-      (< n 1000000000.0) (StringCopy.append (Double.str (/ n 1000000.0)) @"ms")
-      (StringCopy.append (Double.str (/ n 1000000000.0)) @"s")))
+      (< n 1000.0) (String.append &(Double.str n) "ns")
+      (< n 1000000.0) (String.append &(Double.str (/ n 1000.0)) "µs")
+      (< n 1000000000.0) (String.append &(Double.str (/ n 1000000.0)) "ms")
+      (String.append &(Double.str (/ n 1000000000.0)) "s")))
 
   (private print)
   (hidden print)
