@@ -1,26 +1,13 @@
 * Milestones
 ** 0.3 - A nice minimal version of the language. Should be possible to use for somewhat realistic projects.
 ** 1.0 - The completed version of the language with all planned features and extra nice ergonomics.
-* Unsorted Todo:s
-** Regression test for issue #433
-** Different error messages when entering "project" (which is a command) or "sdgsdgdsgsd" (which is nothing) at the REPL.
-* Critical Bugs
-** 0.3
-*** References must keep track of their origin and prevent usage of them if the origin has been given away.
-    Currently it's possible to set a ref so it points to a value in a more short-lived scope, leads to 'stack-use-after-scope' error in clang-sanitizer.
 * Big Language Features
 ** 1.0
 *** Stack allocated Array with an explicit size.
 *** Stack allocated environments for lambdas, when possible
 *** Being able to constraint arguments to functions so that they must implement certain interfaces
 *** Being able to group interfaces under a common name, like type classes in Haskell
-* Tests to write
 * Smaller Language Features ("niceties")
-** 0.3
-*** Prevent usage of 'private' functions from outside their module.
-*** Type annotations should affect the type, not just check it.
-*** Unified signatures for struct updaters and aupdate
-*** Allow matching on references, to avoid copying
 ** 1.0
 *** Could assert that functions sent to extern code doesn't have an environment (that'd mean that a Lambda is passed outside Carp-land where it most likely won't work)
 *** Returning refs in functions should be possible to prove safe in some cases, if origin or ref is stored during memory management pass. Requires lifetimes or similar.
@@ -41,11 +28,6 @@
 
 * Tooling & error messages
 ** 0.3
-*** 'local-include' not needed, just need 'relative-include'?
-*** Tweak the weight of the constraints to make error messages better for type errors
-*** Use same terminology in long and short error messages
-*** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
-*** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.
 *** Flycheck hangs and eats all resources sometimes. One ugly solution would be to have a timer that kills the process after a certain time when running with --check
 ** 1.0
 *** Show "call stack" when getting an error during concretization.
