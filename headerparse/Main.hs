@@ -102,7 +102,7 @@ parseHeaderFile path src prefix kebab =
                                                  argList
                                Parsec.many spaceOrTab
                                Parsec.char ';'
-                               Parsec.many spaceOrTab
+                               Parsec.many (Parsec.noneOf "\n")
                                let tyXObj = toFnTypeXObj argTypeStrings (returnTypeString, length stars1 + length stars2)
                                return (createRegisterForm name tyXObj prefix kebab)
 
