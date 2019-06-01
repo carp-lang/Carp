@@ -476,6 +476,10 @@ pathToEnv rootEnv = visit rootEnv
 showImportIndented :: Int -> SymPath -> String
 showImportIndented indent path = replicate indent ' ' ++ " * " ++ show path
 
+incrementEnvNestLevel :: Env -> Env
+incrementEnvNestLevel env = let current = envFunctionNestingLevel env
+                            in env { envFunctionNestingLevel = current + 1 }
+
 -- | Project (represents a lot of useful information for working at the REPL and building executables)
 data Project = Project { projectTitle :: String
                        , projectIncludes :: [Includer]

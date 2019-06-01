@@ -71,7 +71,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   functionEnv argsArr
              Just funcTy = t
              allowAmbig = isTypeGeneric funcTy
-         visitedBody <- visit allowAmbig envWithArgs body
+         visitedBody <- visit allowAmbig (incrementEnvNestLevel envWithArgs) body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
@@ -86,11 +86,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              Just funcTy = t
              argObjs = map obj argsArr
               -- | TODO: This code is a copy of the one above in Defn, remove duplication:
-             functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env + 1)
+             functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv (envFunctionNestingLevel env)
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
-         visitedBody <- visit allowAmbig envWithArgs body
+         visitedBody <- visit allowAmbig (incrementEnvNestLevel envWithArgs) body
          case visitedBody of
            Right okBody ->
              let -- Analyse the body of the lambda to find what variables it captures
@@ -103,7 +103,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
                  SymPath path name = rootDefinitionPath
-                 lambdaPath = SymPath path ("_Lambda_" ++ name ++ "_" ++ show (infoIdentifier ii))
+                 lambdaPath = SymPath path ("_Lambda_" ++ (lambdaToCName name (envFunctionNestingLevel envWithArgs)) ++ "_" ++ show (infoIdentifier ii))
                  lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args
