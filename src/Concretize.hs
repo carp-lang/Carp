@@ -1154,6 +1154,7 @@ memberDeletionGeneral separator typeEnv env (memberName, memberType) =
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
 
 memberDeletion = memberDeletionGeneral "."
+memberRefDeletion = memberDeletionGeneral "Ref->"
 
 -- | The template for the 'copy' function of a concrete deftype.
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
