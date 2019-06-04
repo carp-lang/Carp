@@ -787,3 +787,7 @@ isSym _ = False
 isArray :: XObj -> Bool
 isArray (XObj (Arr _) _ _) = True
 isArray _ = False
+
+-- construct an empty list xobj
+emptyList :: XObj
+emptyList = XObj (Lst []) Nothing Nothing

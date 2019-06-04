@@ -85,8 +85,8 @@ newtype EmitterState = EmitterState { emitterSrc :: String }
 appendToSrc :: String -> State EmitterState ()
 appendToSrc moreSrc = modify (\s -> s { emitterSrc = emitterSrc s ++ moreSrc })
 
-toC :: ToCMode -> XObj -> String
-toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterState ""))
+toC :: ToCMode -> Binder -> String
+toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent root) (EmitterState ""))
   where startingIndent = case toCMode of
                            Functions -> 0
                            Globals -> 4
@@ -187,10 +187,8 @@ toC toCMode root = emitterSrc (execState (visit startingIndent root) (EmitterSta
                 _ ->
                   do let innerIndent = indent + indentAmount
                          Just (FuncTy _ retTy) = t
-                         defnDecl = defnToDeclaration path argList retTy
-                     if name == "main"
-                       then appendToSrc "int main(int argc, char** argv) {\n"
-                       else appendToSrc (defnDecl ++ " {\n")
+                         defnDecl = defnToDeclaration meta path argList retTy
+                     appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
                        appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
                      ret <- visit innerIndent body
@@ -602,13 +600,19 @@ delete indent i = mapM_ deleterToC (infoDelete i)
         deleterToC deleter@ProperDeleter{} =
           appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 
-defnToDeclaration :: SymPath -> [XObj] -> Ty -> String
-defnToDeclaration path@(SymPath _ name) argList retTy =
-  if name == "main"
-    then "int main(int argc, char** argv)"
-    else let retTyAsC = tyToCLambdaFix retTy
-             paramsAsC = paramListToC argList
-         in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
+defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
+defnToDeclaration meta path@(SymPath _ name) argList retTy =
+  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
+      annotationsStr = joinWith " " (map strToC annotations)
+  in annotationsStr ++ if not (null annotationsStr) then " " else "" ++
+    if name == "main"
+      then "int main(int argc, char** argv)"
+      else let retTyAsC = tyToCLambdaFix retTy
+               paramsAsC = paramListToC argList
+               annotations = meta
+           in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
+  where strToC (XObj (Str s) _ _) = s
+        strToC xobj = pretty xobj
 
 templateToC :: Template -> SymPath -> Ty -> String
 templateToC template path actualTy =
@@ -690,12 +694,12 @@ defaliasToDeclaration t path =
                              intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
-toDeclaration :: XObj -> String
-toDeclaration xobj@(XObj (Lst xobjs) _ t) =
+toDeclaration :: Binder -> String
+toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
   case xobjs of
     [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
       let (Just (FuncTy _ retTy)) = t
-      in  defnToDeclaration path argList retTy ++ ";\n"
+      in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
@@ -750,7 +754,7 @@ binderToC toCMode binder =
                Just t -> if isTypeGeneric t
                          then Right ""
                          else do checkForUnresolvedSymbols xobj
-                                 return (toC toCMode xobj)
+                                 return (toC toCMode binder)
                Nothing -> Left (BinderIsMissingType binder)
 
 binderToDeclaration :: TypeEnv -> Binder -> Either ToCError String
@@ -759,7 +763,7 @@ binderToDeclaration typeEnv binder =
   in  case xobj of
         XObj (Mod env) _ _ -> envToDeclarations typeEnv env
         _ -> case ty xobj of
-               Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration xobj ++ "")
+               Just t -> if isTypeGeneric t then Right "" else Right (toDeclaration binder ++ "")
                Nothing -> Left (BinderIsMissingType binder)
 
 envToC :: Env -> ToCMode -> Either ToCError String

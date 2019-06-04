@@ -273,13 +273,17 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `type`: " ++ pretty xobj) (info xobj))
 
-        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] ->
-          specialCommandMetaSet path key value
+        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] -> do
+            specialCommandMetaSet path key value
         XObj (Sym (SymPath [] "meta-set!") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `meta-set!`: " ++ pretty xobj) (info xobj))
 
-        [XObj (Sym (SymPath [] "meta") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _] ->
-          specialCommandMetaGet path key
+        [XObj (Sym (SymPath [] "meta") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _] -> do
+            -- make sure we resolve all variables
+            p <- eval env target
+            case p of
+              Right (XObj (Sym newPath _) _ _) -> specialCommandMetaGet newPath key
+              _ -> specialCommandMetaGet path key
         XObj (Sym (SymPath [] "meta") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `meta`: " ++ pretty xobj) (info xobj))
 
@@ -567,7 +571,7 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
               Nothing ->
                 return ()
             when (projectEchoC proj) $
-              putStrLn (toC All annXObj)
+              putStrLn (toC All (Binder emptyMeta annXObj))
             case previousType of
               Just previousTypeUnwrapped ->
                 unless (areUnifiable (forceTy annXObj) previousTypeUnwrapped) $
@@ -1225,7 +1229,7 @@ printC xobj =
     Left e ->
       putStrLnWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      putStrLnWithColor Green (toC All xobj)
+      putStrLnWithColor Green (toC All (Binder emptyMeta xobj))
 
 -- | This allows execution of calls to non-dynamic functions (defined with 'defn') to be run from the REPL
 executeFunctionAsMain :: Context -> XObj -> StateT Context IO (Either EvalError XObj)
