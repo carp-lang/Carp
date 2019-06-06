@@ -327,7 +327,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [&amp;a, &amp;b] b), (Map a b)] (Map a b))
+                    (λ [(Ref (λ [&amp;a, &amp;b] b)), (Map a b)] (Map a b))
                 </p>
                 <pre class="args">
                     (endo-map f m)
@@ -347,7 +347,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b)), (λ [&amp;a, &amp;b] ())] ())
+                    (λ [(Ref (Map a b)), (Ref (λ [&amp;a, &amp;b] ()))] ())
                 </p>
                 <pre class="args">
                     (for-each m f)
@@ -487,7 +487,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, &amp;b, &amp;c] a), a, (Ref (Map b c))] a)
+                    (λ [(Ref (λ [a, &amp;b, &amp;c] a)), a, (Ref (Map b c))] a)
                 </p>
                 <pre class="args">
                     (kv-reduce f init m)
@@ -767,7 +767,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), &amp;a, (λ [b] b)] (Map a b))
+                    (λ [(Map a b), &amp;a, (Ref (λ [b] b))] (Map a b))
                 </p>
                 <pre class="args">
                     (update m k f)
@@ -827,7 +827,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), &amp;a, (λ [b] b), b] (Map a b))
+                    (λ [(Map a b), &amp;a, (Ref (λ [b] b)), b] (Map a b))
                 </p>
                 <pre class="args">
                     (update-with-default m k f v)

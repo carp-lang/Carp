@@ -152,8 +152,6 @@
 )
 
 (defmodule StringCopy
-  (register append     (Fn [String String] String))
-
   (defn str [s] (the String s))
 
   (defn = [a b]

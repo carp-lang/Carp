@@ -100,7 +100,7 @@ be used at a specific point in your program. In such cases the concept of 'holes
 add a hole in your source code and reload (":r") to let the Carp compiler figure out what type goes there.
 
 ```clojure
-(StringCopy.append ?w00t @"!") ;; Will generate a type error telling you that the type of '?w00t' is String
+(String.append ?w00t "!") ;; Will generate a type error telling you that the type of '?w00t' is &String
 ```
 
 ### Special forms during evaluation of dynamic code

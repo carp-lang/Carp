@@ -13,10 +13,10 @@
 
 (defmodule Things
   (defn inside [s]
-    (let [msg (StringCopy.append s (String.copy "!"))]
+    (let [msg (String.append s "!")]
       (println (ref msg))))
   (defn call []
-    (inside (String.copy "Hello"))))
+    (inside "Hello")))
 
 (defn use-doubles []
   (println (ref (str (Double.to-int (Double.+ 2.0 3.0))))))
@@ -132,7 +132,7 @@
 (defn print-last-string []
   (println &(get-last-string [(String.copy "NO") (String.copy "NO") (String.copy "YES")])))
 
-(defn exclaim [x] (StringCopy.append x @"!"))
+(defn exclaim [x] (String.append &x "!"))
 
 (deftype Simple [])
 (deftype Complex [x Int f Float d Double s String c Char])
@@ -185,7 +185,7 @@
         b [1 2 3]
         c1 (length &a)
         c2 (length &b)]
-    (println* &(str (+ c1 c2)))))
+    (println* (+ c1 c2))))
 
 (defn changing-target-of-ref []
   (let [s1 @"hello"

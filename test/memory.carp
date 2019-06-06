@@ -192,7 +192,7 @@
         (assert (= &[@"q" @"b" @"c"] &xs)))))
 
 (defn append-ref [a b]
-  (StringCopy.append a @b))
+  (String.append &a b))
 
 (defn array-reduce []
   (let [xs [@"a" @"b" @"c"]
@@ -332,12 +332,6 @@
   (let [a "abcdef"
         b "ghijklmnopqrstuvwxyz"]
        (let [result (String.append a b)]
-            (assert (StringCopy.= result @"abcdefghijklmnopqrstuvwxyz")))))
-
-(defn stringcopy-append-leak-test []
-  (let [a "abcdef"
-        b "ghijklmnopqrstuvwxyz"]
-       (let [result (StringCopy.append @a @b)]
             (assert (StringCopy.= result @"abcdefghijklmnopqrstuvwxyz")))))
 
 (defn lambda-1 []
@@ -486,7 +480,6 @@
   (assert-no-leak test array-copy-map-1 "array-copy-map-1 does not leak")
   (assert-no-leak test array-copy-map-2 "array-copy-map-2 does not leak")
   (assert-no-leak test string-append-leak-test "String.append does not leak")
-  (assert-no-leak test stringcopy-append-leak-test "StringCopy.append does not leak")
   (assert-no-leak test lambda-1 "lambda-1 does not leak")
   (assert-no-leak test lambda-2 "lambda-2 does not leak")
   (assert-no-leak test lambda-3 "lambda-3 does not leak")

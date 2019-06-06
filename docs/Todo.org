@@ -19,7 +19,6 @@
 ** 0.3
 *** Prevent usage of 'private' functions from outside their module.
 *** Type annotations should affect the type, not just check it.
-*** Remove StringCopy.append, use String.append in all those cases.
 *** Unified signatures for struct updaters and aupdate
 *** Allow matching on references, to avoid copying
 ** 1.0
@@ -44,7 +43,6 @@
 ** 0.3
 *** 'local-include' not needed, just need 'relative-include'?
 *** Tweak the weight of the constraints to make error messages better for type errors
-*** Defining a sumtype with just one case gives strange error message.
 *** Use same terminology in long and short error messages
 *** The error reporting in Eval is a mess, must make it possible to return errors with correct location for all kinds of errors.
 *** Errors in macros should present the code location of _both_ the macro and of the code that uses of it.

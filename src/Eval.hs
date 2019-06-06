@@ -705,7 +705,10 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
                                Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                                _ -> Nothing
-         (creatorFunction, typeConstructor) = if length rest == 1 then (moduleForDeftype, Typ) else (moduleForSumtype, DefSumtype)
+         (creatorFunction, typeConstructor) =
+            if length rest == 1 && isArray (head rest)
+            then (moduleForDeftype, Typ)
+            else (moduleForSumtype, DefSumtype)
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
          case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of

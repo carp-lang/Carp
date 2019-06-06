@@ -633,11 +633,11 @@ String Pattern_internal_add_value(PatternMatchState *ms, String res, String src,
         }
         res = Pattern_internal_add_char(res, tr[i]);
       }
-      else if (tr[i] == '0') res = StringCopy_append(res, src);
+      else if (tr[i] == '0') res = String_append(&res, &src);
       else {
         Array a = {.len = 0, .capacity = 0, .data = NULL};
         Pattern_internal_push_onecapture(ms, tr[i] - '1', src, e, a);
-        res = StringCopy_append(res, ((String*)a.data)[0]);  /* add capture to accumulated result */
+        res = String_append(&res, &((String*)a.data)[0]);  /* add capture to accumulated result */
       }
     }
   }
