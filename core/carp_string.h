@@ -105,13 +105,6 @@ String String_append(String *a, String *b) {
     return buffer;
 }
 
-String StringCopy_append(String a, String b) {
-    String buffer = String_append(&a, &b);
-    CARP_FREE(a);
-    CARP_FREE(b);
-    return buffer;
-}
-
 int String_length(String *s) {
     return strlen(*s);
 }
