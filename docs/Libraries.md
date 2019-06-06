@@ -40,7 +40,7 @@ If you want to make a library ready for loading, either prepare a file that has 
 as the library—in the case above, `anima.carp`—or a file called `main.carp` as
 an entrypoint.
 
-Please note that for private repos only loading through SSH is supported. For public repos you can use `https` like this:
+Please note that for private repos only loading through SSH is supported. For public repos you can use HTTPS:
 
 ```clojure
 (load "https://github.com/hellerve/anima@master")
