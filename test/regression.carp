@@ -7,6 +7,10 @@
   (register init (Fn [] Int) "fooInit")
 )
 
+; test whether sumtypes with single cases get classified correctly
+(deftype (SumT x)
+  (SingleC [x]))
+
 (use-all Test Vector2 Foo)
 
 (deftest test
@@ -29,5 +33,10 @@
                 &(Result.Error @"File “foobar” couldn’t be opened!")
                 &(IO.read->EOF "foobar")
                 "test that reading from an undefined file works"
+  )
+  (assert-equal test
+                "(SingleC 1)"
+                &(str &(SumT.SingleC 1))
+                "test that sumtypes with single cases work"
   )
 )
