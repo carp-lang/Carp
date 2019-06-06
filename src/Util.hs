@@ -88,3 +88,13 @@ intersectionOfSetsInList [] =
 
 evenIndicies :: [a] -> [a]
 evenIndicies xs = map snd . filter (even . fst) $ zip [0..] xs
+
+-- 'Naked' Lmabdas declared at the top level have their own s-expression forms
+-- as names, e.g. (fn <> [] ()). This can result in invalid c code. This
+-- function checks a lambda's nesting level. If the lambda is declared at the
+-- top level it returns a constant string, otherwise it returns the provided
+-- name (usually the name of the function in which the lambda is defined).
+lambdaToCName :: String -> Int -> String
+lambdaToCName name nestLevel = if nestLevel > 0
+                               then name
+                               else "NAKED_LAMBDA"
