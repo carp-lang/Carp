@@ -32,6 +32,12 @@
 (defmacro hidden? [name]
   (list 'not (list '= () (list 'meta name "hidden")))) ;; TODO: This is buggy, will report true when meta is set to 'false'!
 
+(defndynamic annotate-helper [name annotation]
+  (cons annotation (meta name "annotations")))
+
+(doc annotate "Add an annotation to this binding.")
+(defmacro annotate [name annotation]
+  (list 'meta-set! name "annotations" (annotate-helper name annotation)))
 
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
