@@ -1,3 +1,5 @@
+(doc Dynamic "This module contains dynamic functions which are used in the Carp repl and during compilation. They are not available in compiled code. Read more about dynamic functions in the [Language Guide](https://github.com/carp-lang/Carp/blob/master/docs/LanguageGuide.md#dynamic-functions).")
+
 (defmodule Dynamic
   ;; Functions for doing things at the REPL and during compile time.
 
