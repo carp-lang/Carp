@@ -20,17 +20,23 @@ import Obj
 import Types
 import Util
 
-saveDocsForEnvs :: Project -> [(SymPath, Env)] -> IO ()
-saveDocsForEnvs ctx envs =
+saveDocsForEnvs :: Project -> [(SymPath, Binder)] -> IO ()
+saveDocsForEnvs ctx pathsAndEnvBinders =
   let dir = projectDocsDir ctx
       title = projectTitle ctx
       generateIndex = projectDocsGenerateIndex ctx
-      allEnvNames = fmap (getModuleName . snd) envs
-  in  do mapM_ (saveDocsForEnv ctx allEnvNames) envs
+      allEnvNames = fmap (getModuleName . fst . getEnvAndMetaFromBinder . snd) pathsAndEnvBinders
+  in  do mapM_ (saveDocsForEnvBinder ctx allEnvNames) pathsAndEnvBinders
          when generateIndex (writeFile (dir ++ "/" ++ title ++ "_index.html")
                                        (projectIndexPage ctx allEnvNames))
          putStrLn ("Generated docs to '" ++ dir ++ "'")
 
+-- | This function expects a binder that contains an environment, anything else is a runtime error.
+getEnvAndMetaFromBinder :: Binder -> (Env, MetaData)
+getEnvAndMetaFromBinder envBinder =
+  case envBinder of
+    Binder meta (XObj (Mod env) _ _) -> (env, meta)
+    _ -> error "Binder's not a module. This should be detected in 'commandSaveDocsInternal'."
 
 projectIndexPage :: Project -> [String] -> String
 projectIndexPage ctx moduleNames =
@@ -62,19 +68,24 @@ headOfPage css =
 getModuleName :: Env -> String
 getModuleName env = fromMaybe "Global" (envModuleName env)
 
-saveDocsForEnv :: Project -> [String] -> (SymPath, Env) -> IO ()
-saveDocsForEnv ctx moduleNames (pathToEnv, env) =
+saveDocsForEnvBinder :: Project -> [String] -> (SymPath, Binder) -> IO ()
+saveDocsForEnvBinder ctx moduleNames (pathToEnv, envBinder) =
   do let SymPath _ moduleName = pathToEnv
          dir = projectDocsDir ctx
          fullPath = dir ++ "/" ++ moduleName ++ ".html"
-         string = renderHtml (envToHtml env ctx (show pathToEnv) moduleNames)
+         string = renderHtml (envBinderToHtml envBinder ctx (show pathToEnv) moduleNames)
      createDirectoryIfMissing False dir
      writeFile fullPath string
 
-envToHtml :: Env -> Project -> String -> [String] -> H.Html
-envToHtml env ctx moduleName moduleNames =
-  let title = projectTitle ctx
+envBinderToHtml :: Binder -> Project -> String -> [String] -> H.Html
+envBinderToHtml envBinder ctx moduleName moduleNames =
+  let (env, meta) = getEnvAndMetaFromBinder envBinder
+      title = projectTitle ctx
       css = projectDocsStyling ctx
+      moduleDescription = case Map.lookup "doc" (getMeta meta) of
+                            Just (XObj (Str s) _ _) -> s
+                            Nothing -> ""
+      moduleDescriptionHtml = commonmarkToHtml [optSafe] $ Text.pack moduleDescription
   in H.docTypeHtml $
            do headOfPage css
               H.body $
@@ -86,6 +97,7 @@ envToHtml env ctx moduleName moduleNames =
                           H.div  ! A.class_ "title" $ toHtml title
                           moduleIndex moduleNames
                      H.h1 (toHtml moduleName)
+                     H.div ! A.class_ "module-description" $ preEscapedToHtml moduleDescriptionHtml
                      mapM_ (binderToHtml . snd) (Prelude.filter shouldEmitDocsForBinder (Map.toList (envBindings env)))
 
 shouldEmitDocsForBinder :: (String, Binder) -> Bool

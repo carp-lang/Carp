@@ -809,23 +809,23 @@ commandSaveDocsInternal [modulePath] = do
          case mapM unwrapSymPathXObj xobjs of
            Left err -> return (Left (EvalError err (info modulePath)))
            Right okPaths ->
-             case mapM (getEnvironmentForDocumentation globalEnv) okPaths of
+             case mapM (getEnvironmentBinderForDocumentation globalEnv) okPaths of
                Left err -> return (Left err)
-               Right okEnvs -> saveDocs (zip okPaths okEnvs)
+               Right okEnvBinders -> saveDocs (zip okPaths okEnvBinders)
        x ->
          return (Left (EvalError ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (info modulePath)))
-  where getEnvironmentForDocumentation :: Env -> SymPath -> Either (FilePathPrintLength -> EvalError) Env
-        getEnvironmentForDocumentation env path =
+  where getEnvironmentBinderForDocumentation :: Env -> SymPath -> Either (FilePathPrintLength -> EvalError) Binder
+        getEnvironmentBinderForDocumentation env path =
           case lookupInEnv path env of
-            Just (_, Binder _ (XObj (Mod foundEnv) _ _)) ->
-              Right foundEnv
+            Just (_, foundBinder@(Binder _ (XObj (Mod foundEnv) _ _))) ->
+              Right foundBinder
             Just (_, Binder _ x) ->
               Left (EvalError ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module") (info modulePath))
             Nothing ->
               Left (EvalError ("I can’t find the module `" ++ show path ++ "`") (info modulePath))
 
-saveDocs :: [(SymPath, Env)] -> StateT Context IO (Either a XObj)
-saveDocs pathsAndEnvs =
+saveDocs :: [(SymPath, Binder)] -> StateT Context IO (Either a XObj)
+saveDocs pathsAndEnvBinders =
   do ctx <- get
-     liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvs)
+     liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvBinders)
      return dynamicNil
