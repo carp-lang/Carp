@@ -49,7 +49,7 @@ ul {
 }
 
 h1 {
-    margin-bottom: 1.5em;
+
 }
 
 h3 {
@@ -66,7 +66,7 @@ h3 {
 }
 
 .binder {
-    margin: 0em 0em 3.5em 0em;
+    margin: 3.5em 0em 0em 0em;
 }
 
 .sig {
@@ -86,6 +86,10 @@ code {
     margin-bottom: 0.5em;
     font-size: 0.8em;
     color: #aaa;
+}
+
+.module-description {
+    margin: 0em;
 }
 
 .huge {
