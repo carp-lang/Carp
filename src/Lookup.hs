@@ -131,8 +131,8 @@ envInsertAt env (SymPath [] name) binder =
   envAddBinding env name binder
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
-    Just (Binder _ (XObj (Mod innerEnv) i t)) ->
-      let newInnerEnv = Binder emptyMeta (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
+    Just (Binder existingMeta (XObj (Mod innerEnv) i t)) ->
+      let newInnerEnv = Binder existingMeta (XObj (Mod (envInsertAt innerEnv (SymPath ps name) xobj)) i t)
       in  env { envBindings = Map.insert p newInnerEnv (envBindings env) }
     Just _ -> error ("Can't insert into non-module: " ++ p)
     Nothing -> error ("Can't insert into non-existing module: " ++ p)

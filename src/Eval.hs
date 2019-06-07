@@ -826,23 +826,30 @@ specialCommandDefmodule xobj moduleName innerExpressions =
          lastInput = contextLastInput ctx
          execMode = contextExecMode ctx
          proj = contextProj ctx
+
+         defineIt :: MetaData -> StateT Context IO (Either EvalError XObj)
+         defineIt meta = do let parentEnv = getEnv env pathStrings
+                                innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
+                                newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
+                                globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
+                                ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode
+                            ctxAfterModuleDef <- liftIO $ foldM folder ctx' innerExpressions
+                            put (popModulePath ctxAfterModuleDef)
+                            return dynamicNil
+
      result <- case lookupInEnv (SymPath pathStrings moduleName) env of
                  Just (_, Binder _ (XObj (Mod _) _ _)) ->
                    do let ctx' = Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode -- use { = } syntax instead
                       ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
                       put (popModulePath ctxAfterModuleAdditions)
                       return dynamicNil -- TODO: propagate errors...
-                 Just _ ->
+                 Just (_, Binder existingMeta (XObj (Lst [(XObj DocStub _ _), _]) _ _)) ->
+                   defineIt existingMeta
+                 Just (_, Binder _ x) ->
                    return (makeEvalError ctx Nothing ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
                  Nothing ->
-                   do let parentEnv = getEnv env pathStrings
-                          innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
-                          newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
-                          globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder emptyMeta newModule)
-                          ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode -- TODO: also change
-                      ctxAfterModuleDef <- liftIO $ foldM folder ctx' innerExpressions
-                      put (popModulePath ctxAfterModuleDef)
-                      return dynamicNil
+                   defineIt emptyMeta
+
      case result of
        Left err -> return (Left err)
        Right _ -> return dynamicNil
@@ -1002,7 +1009,7 @@ specialCommandMetaSet path key value =
          case path of
            -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
            (SymPath [] name) ->
-             setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj (External Nothing) Nothing Nothing,
+             setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
                                                          XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
                                               (Just dummyInfo)
                                               (Just (VarTy "a"))))

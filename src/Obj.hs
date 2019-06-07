@@ -59,7 +59,7 @@ data Obj = Sym SymPath SymbolMode
          | Def
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
-             | Let
+         | Let
          | While
          | Break
          | If
@@ -70,6 +70,7 @@ data Obj = Sym SymPath SymbolMode
          | With
          | External (Maybe String)
          | ExternalType
+         | DocStub
          | Deftemplate TemplateCreator
          | Instantiate Template
          | Defalias Ty
@@ -189,6 +190,7 @@ getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ :
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
+getBinderDescription (XObj (Lst (XObj DocStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "doc-stub"
 getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
@@ -227,6 +229,7 @@ getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) 
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj DocStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -280,6 +283,7 @@ pretty = visit 0
             External Nothing -> "external"
             External (Just override) -> "external (override: " ++ show override ++ ")"
             ExternalType -> "external-type"
+            DocStub -> "doc-stub"
             Defalias _ -> "defalias"
             Address -> "address"
             SetBang -> "set!"
