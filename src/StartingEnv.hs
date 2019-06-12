@@ -266,7 +266,7 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand "directory" 1 commandStringDirectory
                                 ]
 
--- | A submodule of the Dynamic module. Contains functions for working with symbolss in the repl or during compilation.
+-- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
 dynamicSymModule :: Env
 dynamicSymModule = Env { envBindings = bindings
                        , envParent = Nothing
@@ -274,7 +274,8 @@ dynamicSymModule = Env { envBindings = bindings
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin
+  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin,
+                                  addCommand "prefix" 2 commandSymPrefix
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
