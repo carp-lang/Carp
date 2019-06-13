@@ -415,9 +415,7 @@ void Pattern_internal_prepstate(PatternMatchState *ms, String s, size_t ls,
 
 void Pattern_internal_reprepstate(PatternMatchState *ms) {
   ms->level = 0;
-#ifndef OPTIMIZE
   assert(ms->matchdepth == MAXCCALLS);
-#endif
 }
 
 int Pattern_find(Pattern* p, String* s) {
