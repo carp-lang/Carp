@@ -714,9 +714,11 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
          env = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          typeVariables = mapM xobjToTy typeVariableXObjs
-         preExistingModule = case lookupInEnv (SymPath pathStrings typeName) env of
-                               Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
-                               _ -> Nothing
+         (preExistingModule, existingMeta) =
+           case lookupInEnv (SymPath pathStrings typeName) env of
+             Just (_, Binder existingMeta (XObj (Mod found) _ _)) -> (Just found, existingMeta)
+             Just (_, Binder existingMeta _) -> (Nothing, existingMeta)
+             _ -> (Nothing, emptyMeta)
          (creatorFunction, typeConstructor) =
             if length rest == 1 && isArray (head rest)
             then (moduleForDeftype, Typ)
@@ -732,7 +734,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
                               XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
                               rest)
                         ) i (Just TypeTy)
-                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
+                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder existingMeta typeModuleXObj)
                              , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
                              })
              in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
