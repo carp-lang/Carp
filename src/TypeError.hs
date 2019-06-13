@@ -200,7 +200,7 @@ instance Show TypeError where
     prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
   show (CannotSetVariableFromLambda variable xobj) =
     "I can’t `set!` the variable `" ++ pretty variable ++ "` at " ++
-    prettyInfoFromXObj variable ++ " because it's outside the lambda."
+    prettyInfoFromXObj variable ++ " because it's defined outside the lambda."
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
     "The definition at " ++ prettyInfoFromXObj xobj ++
     " does not match its annotation provided to `sig` as `" ++ show sigTy ++
