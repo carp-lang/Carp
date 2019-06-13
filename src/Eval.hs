@@ -327,8 +327,16 @@ eval env xobj =
                             case evaledArgs of
                               Right okArgs -> getCommand callback okArgs
                               Left err -> return (Left err)
-                       _ ->
+
+                       Right (XObj (Lst (XObj _ _ _ : _)) _ _) ->
                          executeFunctionAsMain ctx listXObj
+
+                       Right x ->
+                         return (makeEvalError ctx Nothing ("Can't evaluate " ++ show x) (info x))
+
+                       Left err ->
+                         return (Left err)
+
 
     evalList _ = error "Can't eval non-list in evalList."
 

@@ -108,16 +108,14 @@
 ;;   (let [g f]
 ;;     (fn [] (Int.+ (g 1) 12345))))
 
-(def g @"")
+;; (defmodule T)
+;; (defmacro test [x] x)
+;; (test T) ; => T
+;; (test T) ; => T
 
-(defmodule Blah
-  (def s @"")
-  (defn f []
-    (let [t @""]
-      (do
-        (set! g @"C")
-        (set! t @"A")
-        (set! s @"B")))))
-
-(defn main []
-  (Blah.f))
+(defmacro test1 [adrd] adrd)
+;;(test1 T) ; fails, symbol not found
+(expand '(test1 T)) ; => T
+(defmodule T)
+(test1 T) ; => T
+(expand '(test1 T)) ; => hangs
