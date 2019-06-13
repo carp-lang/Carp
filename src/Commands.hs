@@ -582,8 +582,10 @@ commandAppend [xs, ys] =
   case (xs, ys) of
     (XObj (Lst lst1) i t, XObj (Lst lst2) _ _) ->
       return (Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
+    (XObj (Arr arr1) i t, XObj (Arr arr2) _ _) ->
+      return (Right (XObj (Arr (arr1 ++ arr2)) i t))
     _ ->
-      return (Left (EvalError "Applying 'append' to non-list or empty list." (info xs)))
+      return (Left (EvalError "Applying 'append' to non-array/list or empty list." (info xs)))
 
 commandMacroError :: CommandCallback
 commandMacroError [msg] =
