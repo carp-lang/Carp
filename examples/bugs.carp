@@ -120,12 +120,10 @@
 ;; (test1 T) ; => T
 ;; (expand '(test1 T)) ; => hangs
 
-(defn x [] (IO.println &(str (+ 22 3))))
-
-(defmacro after-x [body]
-  (list 'do
-        (list x) ; misspelled because not quoted
-        body))
-
 (defn main []
-  (IO.println &(str (after-x "test"))))
+  (let [ret false
+        f (fn []
+            (set! ret true))]
+    (do
+      (f)
+      (IO.println &(str ret)))))
