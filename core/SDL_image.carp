@@ -1,6 +1,7 @@
 (not-on-windows
  (system-include "SDL2/SDL_image.h")
- (add-lib "-lSDL2_image"))
+ (add-cflag "`pkg-config SDL2_image --cflags --static`")
+ (add-lib "`pkg-config SDL2_image --libs --static`"))
 
 (defmodule IMG
   (defmodule Windows

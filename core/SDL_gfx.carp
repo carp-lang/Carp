@@ -1,5 +1,6 @@
 (system-include "SDL2/SDL2_gfxPrimitives.h")
-(add-lib "-lSDL2_gfx")
+(add-cflag "`pkg-config SDL2_gfx --cflags --static`")
+(add-lib "`pkg-config SDL2_gfx --libs --static`")
 
 (defmodule GFX
   (doc thick-line-rgba "Draw a line from x1, y1 to x2, y2 with the width `width` and color r, g, b, a.")
