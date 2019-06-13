@@ -41,6 +41,7 @@ data TypeError = SymbolMissingType XObj Env
                | CannotConcretize XObj
                | TooManyAnnotateCalls XObj
                | CannotSet XObj
+               | CannotSetVariableFromLambda XObj XObj
                | DoesNotMatchSignatureAnnotation XObj Ty -- Not used at the moment (but should?)
                | CannotMatch XObj
                | InvalidSumtypeCase XObj
@@ -197,6 +198,9 @@ instance Show TypeError where
   show (CannotSet xobj) =
     "I can’t `set!` the expression `" ++ pretty xobj ++ "` at " ++
     prettyInfoFromXObj xobj ++ ".\n\nOnly variables can be reset using `set!`."
+  show (CannotSetVariableFromLambda variable xobj) =
+    "I can’t `set!` the variable `" ++ pretty variable ++ "` at " ++
+    prettyInfoFromXObj variable ++ " because it's outside the lambda."
   show (DoesNotMatchSignatureAnnotation xobj sigTy) =
     "The definition at " ++ prettyInfoFromXObj xobj ++
     " does not match its annotation provided to `sig` as `" ++ show sigTy ++
@@ -322,6 +326,9 @@ machineReadableErrorStrings fppl err =
 
     (CannotSet xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Can't set! '" ++ pretty xobj ++ "'."]
+    (CannotSetVariableFromLambda variable xobj) ->
+      [machineReadableInfoFromXObj fppl variable ++ " Can't set! '" ++ pretty variable ++ "' from inside of a lambda."]
+
     (CannotConcretize xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Unable to concretize '" ++ pretty xobj ++ "'."]
 

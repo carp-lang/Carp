@@ -192,6 +192,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                      okVisitedRest <- fmap concat visitedRest
                      return ([matchExpr, okVisitedExpr] ++ okVisitedRest)
 
+    visitList allowAmbig level env setXObj@(XObj (Lst [setbangExpr@(XObj SetBang _ _), variable, value]) _ _) =
+      do visitedValue <- visit allowAmbig Inside env value
+         return $ do okVisitedValue <- visitedValue
+                     return [setbangExpr, variable, okVisitedValue]
+
     visitList allowAmbig level env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args
@@ -762,9 +767,13 @@ manageMemory typeEnv globalEnv root =
                           LookupLocal _ -> manage okCorrectVariable
                           LookupGlobal _ _ -> return ()
 
-                        return $ do okValue <- visitedValue
-                                    okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
-                                    return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
+                        case okMode of
+                          LookupLocal Capture ->
+                            return (Left (CannotSetVariableFromLambda variable setbangExpr))
+                          _ ->
+                            return $ do okValue <- visitedValue
+                                        okOwnsTheVarBefore <- ownsTheVarBefore -- Force Either to fail
+                                        return (XObj (Lst [setbangExpr, newVariable, okValue]) i t)
 
             [addressExpr@(XObj Address _ _), value] ->
               do visitedValue <- visit  value

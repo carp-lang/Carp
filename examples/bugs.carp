@@ -127,3 +127,18 @@
     (do
       (f)
       (IO.println &(str ret)))))
+
+(defn main []
+  (let [ret false
+        f (fn []
+            (let [x 10]
+              (set! x 11)))]
+    (do
+      (f)
+      (IO.println &(str ret)))))
+
+(defn main2 []
+  (let [x 10]
+    (do
+      (set! x 11)
+      (println* x))))
