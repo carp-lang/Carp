@@ -50,6 +50,7 @@ data TypeError = SymbolMissingType XObj Env
                | UnevenMembers [XObj]
                | InvalidLetBinding [XObj] (XObj, XObj)
                | DuplicateBinding XObj
+               | DefinitionsMustBeAtToplevel XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -227,6 +228,8 @@ instance Show TypeError where
 
   show (DuplicateBinding xobj) =
     "I encountered a duplicate binding `" ++ pretty xobj ++ "` inside the `let` at " ++ prettyInfoFromXObj xobj ++ "."
+  show (DefinitionsMustBeAtToplevel xobj) =
+    "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -341,6 +344,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl (head xobjs) ++ "Invalid let binding `" ++ pretty sym ++ pretty expr ++ "` at " ++ joinWithComma (map pretty xobjs)]
     (DuplicateBinding xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
+    (DefinitionsMustBeAtToplevel xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
 
     _ ->
       [show err]

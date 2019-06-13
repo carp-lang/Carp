@@ -22,48 +22,50 @@ import ToTemplate
 import Validate
 import SumtypeCase
 
+data Level = Toplevel | Inside
+
 -- | This function performs two things:
 -- |  1. Finds out which polymorphic functions that needs to be added to the environment for the calls in the function to work.
 -- |  2. Changes the name of symbols at call sites so they use the polymorphic name
 -- |  Both of these results are returned in a tuple: (<new xobj>, <dependencies>)
 concretizeXObj :: Bool -> TypeEnv -> Env -> [SymPath] -> XObj -> Either TypeError (XObj, [XObj])
 concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
-  case runState (visit allowAmbiguityRoot rootEnv root) [] of
+  case runState (visit allowAmbiguityRoot Toplevel rootEnv root) [] of
     (Left err, _) -> Left err
     (Right xobj, deps) -> Right (xobj, deps)
   where
     rootDefinitionPath :: SymPath
     rootDefinitionPath = getPath root
 
-    visit :: Bool -> Env -> XObj -> State [XObj] (Either TypeError XObj)
-    visit allowAmbig env xobj@(XObj (Sym _ _) _ _) = visitSymbol allowAmbig env xobj
-    visit allowAmbig env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym allowAmbig env xobj
-    visit allowAmbig env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym allowAmbig env xobj
-    visit allowAmbig env xobj@(XObj (Lst _) i t) =
-      do visited <- visitList allowAmbig env xobj
+    visit :: Bool -> Level -> Env -> XObj -> State [XObj] (Either TypeError XObj)
+    visit allowAmbig level env xobj@(XObj (Sym _ _) _ _) = visitSymbol allowAmbig env xobj
+    visit allowAmbig level env xobj@(XObj (MultiSym _ _) _ _) = visitMultiSym allowAmbig env xobj
+    visit allowAmbig level env xobj@(XObj (InterfaceSym _) _ _) = visitInterfaceSym allowAmbig env xobj
+    visit allowAmbig level env xobj@(XObj (Lst _) i t) =
+      do visited <- visitList allowAmbig level env xobj
          return $ do okVisited <- visited
                      Right (XObj (Lst okVisited) i t)
-    visit allowAmbig env xobj@(XObj (Arr arr) i (Just t)) =
-      do visited <- fmap sequence (mapM (visit allowAmbig env) arr)
+    visit allowAmbig level env xobj@(XObj (Arr arr) i (Just t)) =
+      do visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
          concretizeTypeOfXObj typeEnv xobj
          return $ do okVisited <- visited
                      Right (XObj (Arr okVisited) i (Just t))
-    visit _ _ x = return (Right x)
+    visit _ _ _ x = return (Right x)
 
-    visitList :: Bool -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
-    visitList _ _ (XObj (Lst []) _ _) = return (Right [])
+    visitList :: Bool -> Level -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
+    visitList _ _ _ (XObj (Lst []) _ _) = return (Right [])
 
-    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
+    visitList _ Toplevel env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then return $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
-      else do visitedBody <- visit False env body
+      else do visitedBody <- visit False Inside env body
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
                             then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                             else return [defn, nameSymbol, args, okBody]
 
-    visitList _ env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
+    visitList _ Toplevel env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -71,12 +73,15 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   functionEnv argsArr
              Just funcTy = t
              allowAmbig = isTypeGeneric funcTy
-         visitedBody <- visit allowAmbig (incrementEnvNestLevel envWithArgs) body
+         visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
+    visitList _ Inside env xobj@(XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
+      return (Left (DefinitionsMustBeAtToplevel xobj))
+
     -- | Fn / λ
-    visitList allowAmbig env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
+    visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
@@ -90,7 +95,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
                                      extendEnv e argSymName arg)
                                   functionEnv argsArr
-         visitedBody <- visit allowAmbig (incrementEnvNestLevel envWithArgs) body
+         visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
          case visitedBody of
            Right okBody ->
              let -- Analyse the body of the lambda to find what variables it captures
@@ -155,48 +160,51 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
            Left err ->
              return (Left err)
 
-    visitList _ env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
+    visitList _ Toplevel env (XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
       do let Just defTy = t
              allowAmbig = isTypeGeneric defTy
-         visitedBody <- visit allowAmbig env body
+         visitedBody <- visit allowAmbig Inside env body
          return $ do okBody <- visitedBody
                      return [def, nameSymbol, okBody]
 
-    visitList allowAmbig env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
-      do visitedBindings <- fmap sequence (mapM (visit allowAmbig env) bindings)
-         visitedBody <- visit allowAmbig env body
+    visitList _ Inside env xobj@(XObj (Lst [def@(XObj Def _ _), nameSymbol, body]) _ t) =
+      return (Left (DefinitionsMustBeAtToplevel xobj))
+
+    visitList allowAmbig level env (XObj (Lst [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]) _ _) =
+      do visitedBindings <- fmap sequence (mapM (visit allowAmbig level env) bindings)
+         visitedBody <- visit allowAmbig level env body
          mapM_ (concretizeTypeOfXObj typeEnv . fst) (pairwise bindings)
          return $ do okVisitedBindings <- visitedBindings
                      okVisitedBody <- visitedBody
                      return [letExpr, XObj (Arr okVisitedBindings) bindi bindt, okVisitedBody]
 
-    visitList allowAmbig env (XObj (Lst [theExpr@(XObj The _ _), typeXObj, value]) _ _) =
-      do visitedValue <- visit allowAmbig env value
+    visitList allowAmbig level env (XObj (Lst [theExpr@(XObj The _ _), typeXObj, value]) _ _) =
+      do visitedValue <- visit allowAmbig level env value
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
-    visitList allowAmbig env matchXObj@(XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
+    visitList allowAmbig level env matchXObj@(XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
       do concretizeTypeOfXObj typeEnv expr
-         visitedExpr <- visit allowAmbig env expr
+         visitedExpr <- visit allowAmbig level env expr
          mapM_ (concretizeTypeOfXObj typeEnv . snd) (pairwise rest)
-         visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig env) (pairwise rest))
+         visitedRest <- fmap sequence (mapM (visitMatchCase allowAmbig level env) (pairwise rest))
          return $ do okVisitedExpr <- visitedExpr
                      okVisitedRest <- fmap concat visitedRest
                      return ([matchExpr, okVisitedExpr] ++ okVisitedRest)
 
-    visitList allowAmbig env (XObj (Lst (func : args)) _ _) =
+    visitList allowAmbig level env (XObj (Lst (func : args)) _ _) =
       do concretizeTypeOfXObj typeEnv func
          mapM_ (concretizeTypeOfXObj typeEnv) args
-         f <- visit allowAmbig env func
-         a <- fmap sequence (mapM (visit allowAmbig env) args)
+         f <- visit allowAmbig level env func
+         a <- fmap sequence (mapM (visit allowAmbig level env) args)
          return $ do okF <- f
                      okA <- a
                      return (okF : okA)
 
-    visitMatchCase :: Bool -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
-    visitMatchCase allowAmbig env (lhs, rhs) =
-      do visitedLhs <- visit allowAmbig env lhs -- TODO! This changes the names of some tags (which is corrected in Emit) but perhaps there is a better way where they can be identified as tags and not changed?
-         visitedRhs <- visit allowAmbig env rhs
+    visitMatchCase :: Bool -> Level -> Env -> (XObj, XObj) -> State [XObj] (Either TypeError [XObj])
+    visitMatchCase allowAmbig level env (lhs, rhs) =
+      do visitedLhs <- visit allowAmbig level env lhs -- TODO! This changes the names of some tags (which is corrected in Emit) but perhaps there is a better way where they can be identified as tags and not changed?
+         visitedRhs <- visit allowAmbig level env rhs
          return $ do okVisitedLhs <- visitedLhs
                      okVisitedRhs <- visitedRhs
                      return [okVisitedLhs, okVisitedRhs]

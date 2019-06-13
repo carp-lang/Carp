@@ -113,9 +113,19 @@
 ;; (test T) ; => T
 ;; (test T) ; => T
 
-(defmacro test1 [adrd] adrd)
-;;(test1 T) ; fails, symbol not found
-(expand '(test1 T)) ; => T
-(defmodule T)
-(test1 T) ; => T
-(expand '(test1 T)) ; => hangs
+;; (defmacro test1 [adrd] adrd)
+;; ;;(test1 T) ; fails, symbol not found
+;; (expand '(test1 T)) ; => T
+;; (defmodule T)
+;; (test1 T) ; => T
+;; (expand '(test1 T)) ; => hangs
+
+(defn x [] (IO.println &(str (+ 22 3))))
+
+(defmacro after-x [body]
+  (list 'do
+        (list x) ; misspelled because not quoted
+        body))
+
+(defn main []
+  (IO.println &(str (after-x "test"))))
