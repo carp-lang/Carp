@@ -1,3 +1,6 @@
+(mac-only
+ (add-lib "-framework OpenGL"))
+
 (defmodule GL
 
   (register-type GLenum)
