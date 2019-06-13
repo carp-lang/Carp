@@ -139,9 +139,7 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
                let deleteElement = insideArrayDeletion typeEnv env insideTy
                in toTemplate (unlines
                                ["$DECL { "
-                               ,"  #ifndef OPTIMIZE"
                                ,"  assert(a.len > 0);"
-                               ,"  #endif"
                                ,"  a.len--;"
                                ,"  " ++ deleteElement "a.len"
                                , templateShrinkCheck "a"
@@ -165,9 +163,7 @@ templatePopBackBang =
       (toTemplate $ unlines
         ["$DECL { "
          ,"  $a ret;"
-         ,"  #ifndef OPTIMIZE"
          ,"  assert(aRef->len > 0);"
-         ,"  #endif"
          ,"  ret = (($a*)aRef->data)[aRef->len - 1];"
          ,"  aRef->len--;"
          ,"  return ret;"
@@ -186,10 +182,8 @@ templateNth =
   (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    Array a = *aRef;"
-                        ,"    #ifndef OPTIMIZE"
                         ,"    assert(n >= 0);"
                         ,"    assert(n < a.len);"
-                        ,"    #endif"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
   (\(FuncTy [RefTy arrayType, _] _) ->
@@ -217,10 +211,8 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t docs
             (\(FuncTy [_, _, insideTy] _) ->
                let deleter = insideArrayDeletion typeEnv env insideTy
                in  toTemplate $ unlines ["$DECL {"
-                                        ,"    #ifndef OPTIMIZE"
                                         ,"    assert(n >= 0);"
                                         ,"    assert(n < a.len);"
-                                        ,"    #endif"
                                         ,     deleter "n"
                                         ,"    (($t*)a.data)[n] = newValue;"
                                         ,"    return a;"
@@ -242,10 +234,8 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
                let deleter = insideArrayDeletion typeEnv env insideTy
                in  (toTemplate $ unlines ["$DECL {"
                                          ,"    Array a = *aRef;"
-                                         ,"    #ifndef OPTIMIZE"
                                          ,"    assert(n >= 0);"
                                          ,"    assert(n < a.len);"
-                                         ,"    #endif"
                                          ,     deleter "n"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
@@ -266,10 +256,8 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
             (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
             (const (toTemplate $ unlines ["$DECL {"
                                          ,"    Array a = *aRef;"
-                                         ,"    #ifndef OPTIMIZE"
                                          ,"    assert(n >= 0);"
                                          ,"    assert(n < a.len);"
-                                         ,"    #endif"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
             (const [])

@@ -22,11 +22,10 @@ void String_delete(String s) {
 }
 
 void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
-#ifndef OPTIMIZE
     int l = strlen(*s);
+    (void)l;
     assert(i >= 0);
     assert(i < l);
-#endif
     (*s)[i] = ch;
 }
 
@@ -34,8 +33,8 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
     char *dest = (*into) + i;
     int lsrc = strlen(*src);
 
-#ifndef OPTIMIZE
     int linto = strlen(*into);
+    (void)linto;
     assert(i >= 0);
     /* given a string and indicies
      *
@@ -68,7 +67,6 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
      * so this write is safe
      */
     assert((i+lsrc-1) < linto);
-#endif
 
     strncpy(dest, *src, lsrc);
 }
