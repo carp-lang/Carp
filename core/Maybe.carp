@@ -20,6 +20,13 @@
       (Nothing) dflt
       (Just x) x))
 
+  (doc or-zero "is an unwrapper that will get the value from a `Just`, or build
+a value using `zero` if a `Nothing` is passed.")
+  (defn or-zero [a]
+    (match a
+      (Nothing) (zero)
+      (Just x) x))
+
   (doc just? "checks whether the given value `a` is a `Just`.
 
 It is the inverse of [`nothing?`](#nothing?).")

@@ -44,6 +44,16 @@
                 "apply works on Nothing"
   )
   (assert-equal test
+                10
+                (or-zero (Just 10))
+                "or-zero works on Just"
+  )
+  (assert-equal test
+                0
+                (or-zero (the (Maybe Int) (Nothing)))
+                "or-zero works on Nothing"
+  )
+  (assert-equal test
                 &(Result.Success 1)
                 &(to-result (Just 1) @"error")
                 "to-result works on Just"
