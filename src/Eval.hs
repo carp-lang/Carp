@@ -332,7 +332,7 @@ eval env xobj =
                          executeFunctionAsMain ctx listXObj
 
                        Right x ->
-                         return (makeEvalError ctx Nothing ("Can't evaluate " ++ show x) (info x))
+                         return (makeEvalError ctx Nothing ("Can't evaluate " ++ pretty x) (info x))
 
                        Left err ->
                          return (Left err)
