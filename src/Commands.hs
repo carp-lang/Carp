@@ -718,6 +718,14 @@ commandSymJoin [a] =
     _ ->
       Left (EvalError ("Can't call join with " ++ pretty a) (info a))
 
+commandSymPrefix :: CommandCallback
+commandSymPrefix [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
+  return $ Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t)
+commandSymPrefix [x, XObj (Sym (SymPath [] _) _) _ _] =
+  return $ Left (EvalError ("Can’t call `prefix` with " ++ pretty x) (info x))
+commandSymPrefix [_, x] =
+  return $ Left (EvalError ("Can’t call `prefix` with " ++ pretty x) (info x))
+
 commandStringDirectory :: CommandCallback
 commandStringDirectory [a] =
   return $ case a of
