@@ -330,7 +330,7 @@ eval env xobj =
 
                        -- | TODO / BUG: The following code is what I want to write, but it breaks the ability to
                        -- | 'use' modules and have their functions automatically resolve when calling them from
-                       -- | the repl, like for instance `(use Array) (endo-map ...)`.
+                       -- | the REPL, like for instance `(use Array) (endo-map ...)`.
                        -- | Having a catch all at the end that routes everything (even errors) to executeFunctionAsMain
                        -- | Makes it work but that seems strange. Need to investigate this!
                        -- Right (XObj (Lst (XObj _ _ _ : _)) _ _) ->
