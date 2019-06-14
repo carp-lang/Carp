@@ -210,7 +210,11 @@
 (defmodule IntRef
   (defn prn [x] (Int.str @x))
   (defn str [x] (Int.str @x))
-)
+  )
+
+(defmodule BoolRef
+  (defn prn [x] (Bool.str @x))
+  (defn str [x] (Bool.str @x)))
 
 (defmodule Long (defn prn [x] (Long.str x)))
 (defmodule Float (defn prn [x] (Float.str x)))
