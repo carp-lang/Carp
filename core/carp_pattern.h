@@ -355,9 +355,6 @@ String Pattern_internal_lmemfind(String s1, size_t l1, String s2, size_t l2) {
 
 String String_copy_len(String s, int len) {
     String ptr = CARP_MALLOC(len+1);
-
-    if (!ptr) return NULL;
-
     memcpy(ptr, s, len);
     ptr[len] = '\0';
     return ptr;
@@ -573,6 +570,7 @@ PatternGMatchRes Pattern_internal_gmatch_aux(PatternGMatchState* gm) {
       return (PatternGMatchRes){.valid=true, .data=a};
     }
   }
+  memset(&a, 0, sizeof(a));
   return (PatternGMatchRes){.valid=false, .data=a};  /* not found */
 }
 
@@ -682,9 +680,6 @@ String Pattern_substitute(Pattern* p, String *s, String *t, int ns) {
 Pattern Pattern_copy(Pattern *p) {
     size_t len = strlen(*p) + 1;
     Pattern ptr = CARP_MALLOC(len);
-
-    if (!ptr) return NULL;
-
     return (Pattern) memcpy(ptr, *p, len);
 }
 

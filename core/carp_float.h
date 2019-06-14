@@ -11,7 +11,7 @@ bool Float__GT_(float x, float y) { return x > y; }
 bool Float__EQ_(float x, float y) { return x == y; }
 float Float_neg(float x) { return -x; }
 
-float Float_copy(float *x) { return *x; }
+float Float_copy(const float *x) { return *x; }
 
 int Float_to_MINUS_int(float x) {
     return (int)x;
@@ -72,7 +72,7 @@ float Float_exp(float x) {
 }
 
 float Float_frexp(float x, int* exponent) {
-    return frexp(x, exponent);
+    return frexpf(x, exponent);
 }
 
 float Float_ldexp(float x, int exponent) {
@@ -87,8 +87,8 @@ float Float_log10(float x) {
     return log10(x);
 }
 
-float Float_modf(float x, float* integer) {
-    return modf(x, (double*) integer);
+float Float_modf(float x, float * integer) {
+    return modff(x, integer);
 }
 
 float Float_pow(float x, float y) {

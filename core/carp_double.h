@@ -11,7 +11,7 @@ bool Double__GT_(double x, double y) { return x > y; }
 bool Double__EQ_(double x, double y) { return x == y; }
 double Double_neg(double x) { return -x; }
 
-double Double_copy(double *x) { return *x; }
+double Double_copy(const double *x) { return *x; }
 
 // Double.toInt : Double -> Int
 int Double_to_MINUS_int(double x) {

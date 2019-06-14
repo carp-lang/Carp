@@ -20,17 +20,12 @@ char Char_from_MINUS_int(int i) {
   return (char)i;
 }
 
-char Char_copy(char *c) {
+char Char_copy(const char *c) {
   return *c;
 }
 
-String PtrChar_str(char *c) {
+String PtrChar_str(const char *c) {
     size_t len = strlen(c) + 1;
     String ptr = CARP_MALLOC(len);
-
-    if (ptr == NULL) {
-      return NULL;
-    }
-
     return (String) memcpy(ptr, c, len);
 }

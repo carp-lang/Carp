@@ -29,7 +29,7 @@ void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
     (*s)[i] = ch;
 }
 
-void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
+void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *src) {
     char *dest = (*into) + i;
     int lsrc = strlen(*src);
 
@@ -71,30 +71,25 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, String *src) {
     strncpy(dest, *src, lsrc);
 }
 
-String String_copy(String *s) {
+String String_copy(const String *s) {
     size_t len = strlen(*s) + 1;
     String ptr = CARP_MALLOC(len);
-
-    if (ptr == NULL) {
-      return NULL;
-    }
-
     return (String) memcpy(ptr, *s, len);
 }
 
-bool String__EQ_(String *a, String *b) {
+bool String__EQ_(const String *a, const String *b) {
     return strcmp(*a, *b) == 0;
 }
 
-bool String__GT_(String *a, String *b) {
+bool String__GT_(const String *a, const String *b) {
     return strcmp(*a, *b) > 0;
 }
 
-bool String__LT_(String *a, String *b) {
+bool String__LT_(const String *a, const String *b) {
     return strcmp(*a, *b) < 0;
 }
 
-String String_append(String *a, String *b) {
+String String_append(const String *a, const String *b) {
     int la = strlen(*a);
     int lb = strlen(*b);
     int total = la + lb + 1;
@@ -103,41 +98,37 @@ String String_append(String *a, String *b) {
     return buffer;
 }
 
-int String_length(String *s) {
+int String_length(const String *s) {
     return strlen(*s);
 }
 
-char* String_cstr(String *s) {
+char* String_cstr(const String *s) {
     return *s;
 }
 
-String String_str(String *s) {
-    int n = strlen(*s) + 1;
-    String buffer = CARP_MALLOC(n);
-    snprintf(buffer, n, "%s", *s);
-    return buffer;
+String String_str(const String *s) {
+    return String_copy(s);
 }
 
-
-String String_prn(String *s) {
+String String_prn(const String *s) {
     int n = strlen(*s) + 4;
     String buffer = CARP_MALLOC(n);
     snprintf(buffer, n, "@\"%s\"", *s);
     return buffer;
 }
 
-char String_char_MINUS_at(String* s, int i) {
+char String_char_MINUS_at(const String* s, int i) {
   return (*s)[i];
 }
 
-String String_format(String *str, String *s) {
+String String_format(const String *str, const String *s) {
     int size = snprintf(NULL, 0, *str, *s)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, *s);
     return buffer;
 }
 
-Array String_chars(String *s) {
+Array String_chars(const String *s) {
     Array chars;
     chars.len = strlen(*s);
     chars.capacity = chars.len;
@@ -145,19 +136,19 @@ Array String_chars(String *s) {
     return chars;
 }
 
-String String_from_MINUS_chars(Array *a) {
+String String_from_MINUS_chars(const Array *a) {
     String s = CARP_MALLOC(a->len+1);
-    memmove(s, a->data, a->len);
+    memcpy(s, a->data, a->len);
     s[a->len] = '\0';
     return s;
 }
 
-String String_tail(String* s) {
-  int len = strlen(*s);
-  String news = CARP_MALLOC(len);
-  memcpy(news, (*s)+1, len-1);
-  news[len-1] = '\0';
-  return news;
+String String_tail(const String* s) {
+    int len = strlen(*s);
+    String news = CARP_MALLOC(len);
+    memcpy(news, (*s)+1, len-1);
+    news[len-1] = '\0';
+    return news;
 }
 
 String String_empty() {
@@ -167,8 +158,8 @@ String String_empty() {
 }
 
 String Bool_str(bool b) {
-    String true_str = "true";
-    String false_str = "false";
+    const String true_str = "true";
+    const String false_str = "false";
     if(b) {
         return String_copy(&true_str);
     } else {
@@ -176,7 +167,7 @@ String Bool_str(bool b) {
     }
 }
 
-String Bool_format(String* str, bool b) {
+String Bool_format(const String* str, bool b) {
     int size = snprintf(NULL, 0, *str, b)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, b);
@@ -195,7 +186,7 @@ String Char_prn(char c) {
     return buffer;
 }
 
-String Char_format(String* str, char b) {
+String Char_format(const String* str, char b) {
     int size = snprintf(NULL, 0, *str, b)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, b);
@@ -209,7 +200,7 @@ String Double_str(double x) {
     return buffer;
 }
 
-String Double_format(String* s, double x) {
+String Double_format(const String* s, double x) {
     int size = snprintf(NULL, 0, *s, x)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *s, x);
@@ -223,7 +214,7 @@ String Float_str(float x) {
     return buffer;
 }
 
-String Float_format(String* str, float x) {
+String Float_format(const String* str, float x) {
     int size = snprintf(NULL, 0, *str, x)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
@@ -237,14 +228,14 @@ String Int_str(int x) {
     return buffer;
 }
 
-String Int_format(String* str, int x) {
+String Int_format(const String* str, int x) {
     int size = snprintf(NULL, 0, *str, x)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
     return buffer;
 }
 
-int Int_from_MINUS_string(String *s) {
+int Int_from_MINUS_string(const String *s) {
     return atoi(*s);
 }
 
@@ -255,18 +246,18 @@ String Long_str(long x) {
     return buffer;
 }
 
-String Long_format(String* str, long x) {
+String Long_format(const String* str, long x) {
     int size = snprintf(NULL, 0, *str, x)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
     return buffer;
 }
 
-long Long_from_MINUS_string(String *s) {
+long Long_from_MINUS_string(const String *s) {
     return atol(*s);
 }
 
-int String_index_MINUS_of_MINUS_from(String *s, char c, int i) {
+int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {
     /* Return index of first occurrence of `c` in `s` AFTER index i
      * Returns -1 if not found
      */
@@ -280,7 +271,7 @@ int String_index_MINUS_of_MINUS_from(String *s, char c, int i) {
     return -1;
 }
 
-int String_index_MINUS_of(String *s, char c) {
+int String_index_MINUS_of(const String *s, char c) {
     /* Return index of first occurrence of `c` in `s`
      * Returns -1 if not found
      */
