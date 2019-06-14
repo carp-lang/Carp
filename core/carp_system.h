@@ -5,6 +5,7 @@
 #endif
 
 #include <carp_memory.h>
+#include <carp_string.h>
 
 void System_free(void *p) {
     CARP_FREE(p);
