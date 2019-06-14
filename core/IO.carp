@@ -51,7 +51,7 @@
     (let [f (IO.fopen filename "rb")]
       (if (null? f)
         (Result.Error (fmt "File “%s” couldn’t be opened!" filename))
-        (let [c (Char.from-int 0)
+        (let [c (zero)
               r []]
           (do
             (while (do (set! c (IO.fgetc f))

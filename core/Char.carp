@@ -45,6 +45,9 @@
   (doc alphanum? "tests whether a character is alphanumerical.")
   (defn alphanum? [c]
     (or (alpha? c) (num? c)))
+
+  (defn zero []
+    (from-int 0))
 )
 
 (defmodule CharRef
