@@ -1,6 +1,5 @@
 (system-include "SDL2/SDL_mixer.h")
-(add-cflag "`pkg-config SDL2_mixer --cflags --static`")
-(add-lib "`pkg-config SDL2_mixer --libs --static`")
+(add-pkg "SDL2_mixer")
 (Project.config "cflag" "-Wno-incompatible-pointer-types-discards-qualifiers")
 
 (register-type Mix_Chunk)

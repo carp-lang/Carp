@@ -1,6 +1,5 @@
 (system-include "SDL2/SDL_ttf.h")
-(add-cflag "`pkg-config SDL2_ttf --cflags --static`")
-(add-lib "`pkg-config SDL2_ttf --libs --static`")
+(add-pkg "SDL2_ttf")
 (Project.config "cflag" "-Wno-incompatible-pointer-types-discards-qualifiers")
 
 (register-type TTF_Font)

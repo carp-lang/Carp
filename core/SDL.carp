@@ -3,8 +3,7 @@
 (local-include "../core/SDLHelper.h")
 
 (not-on-windows
-  (add-cflag "`pkg-config SDL2 --cflags --static`")
-  (add-lib "`pkg-config SDL2 --libs --static`"))
+  (add-pkg "SDL2"))
 
 (defmodule SDL
   (defmodule Windows
