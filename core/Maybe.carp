@@ -55,9 +55,10 @@ It is the inverse of [`just?`](#just?).")
   (doc ptr "Creates a `(Ptr a)` from a `(Maybe a)`. If the `Maybe` was
 `Nothing`, this function will return a `NULL` value.")
   (defn ptr [a]
-    (match a
-      (Nothing) NULL
-      (Just x) (address x)))
+    (the (Ptr a) (Unsafe.coerce
+      (match @a
+        (Nothing) NULL
+        (Just _) (the (Ref (Maybe a)) a)))))
 
  (doc from-ptr "Creates a `(Maybe a)` from a `(Ptr a)`. If the `Ptr` was
 `NULL`, this function will return `Nothing`.")
