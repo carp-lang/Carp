@@ -25,7 +25,7 @@ long Long_bit_MINUS_or(long x, long y) { return x | y; }
 long Long_bit_MINUS_xor(long x, long y) { return x ^ y; }
 long Long_bit_MINUS_not(long x) { return ~x; }
 
-long Long_copy(long *x) { return *x; }
+long Long_copy(const long *x) { return *x; }
 
 long Long_mod(long x, long divider) {
     return x % divider;

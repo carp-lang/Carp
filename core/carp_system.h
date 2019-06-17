@@ -43,7 +43,7 @@ double System_nanotime() {
 }
 #endif
 
-void System_system(String *command) {
+void System_system(const String *command) {
     system(*command);
 }
 

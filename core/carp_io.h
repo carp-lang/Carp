@@ -70,7 +70,7 @@ String IO_get_MINUS_line() {
     return buffer;
 }
 
-String IO_read_MINUS_file(String *filename) {
+String IO_read_MINUS_file(const String *filename) {
     String buffer = 0;
     long length;
     FILE *f = fopen(*filename, "rb");
@@ -105,6 +105,6 @@ void IO_fclose(FILE *f) {
     fclose(f);
 }
 
-FILE *IO_fopen(String *filename, String *mode) {
+FILE *IO_fopen(const String *filename, const String *mode) {
     return fopen(*filename, *mode);
 }

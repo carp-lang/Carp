@@ -1,7 +1,7 @@
 #include "carp_stdbool.h"
 
 // Bool
-bool Bool_copy(bool* b) {
+bool Bool_copy(const bool* b) {
   return *b;
 }
 

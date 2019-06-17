@@ -24,7 +24,7 @@ int Int_bit_MINUS_or(int x, int y) { return x | y; }
 int Int_bit_MINUS_xor(int x, int y) { return x ^ y; }
 int Int_bit_MINUS_not(int x) { return ~x; }
 
-int Int_copy(int *x) { return *x; }
+int Int_copy(const int *x) { return *x; }
 
 int Int_mod(int x, int divider) {
     return x % divider;
