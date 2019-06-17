@@ -308,7 +308,7 @@ instance Show EvalError where
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
 typeStr xobj = case ty xobj of
-                 Nothing -> " : _"
+                 Nothing -> "" --" : _"
                  Just t -> " : " ++ show t
 
 -- | Get the identifier of an XObj as a string.
@@ -333,9 +333,23 @@ prettyTyped = visit 0
                        deletersStr xobj ++ " " ++
                        "\n"
           in case obj xobj of
-               Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")" ++ suffix
-               Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]" ++ suffix
-               _ -> pretty xobj ++ suffix
+               Lst lst ->
+                 listPrinter "(" ")" lst suffix indent
+               Arr arr ->
+                 listPrinter "[" "]" arr suffix indent
+               _ ->
+                 pretty xobj ++ suffix
+
+        listPrinter :: String -> String -> [XObj] -> String -> Int -> String
+        listPrinter opening closing xobjs suffix indent =
+          opening ++ "   " ++
+          joinWith (spaces (indent + 4)) (map (visit (indent + 4)) xobjs) ++
+          spaces indent ++ closing ++
+          suffix
+
+spaces :: Int -> String
+spaces n =
+  join (take n (repeat " "))
 
 -- | Datatype for holding meta data about a binder, like type annotation or docstring.
 newtype MetaData = MetaData { getMeta :: Map.Map String XObj } deriving (Eq, Show)
