@@ -6,6 +6,7 @@
 // Event
 SDL_Event SDL_Event_init() {
     SDL_Event e;
+    memset(&e, 0, sizeof(e));
     return e;
 }
 
