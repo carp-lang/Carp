@@ -65,11 +65,11 @@
   )
   (assert-equal test
                 1
-                @(Pointer.to-ref (ptr (Just 1)))
+                @(Pointer.to-ref (ptr &(Just 1)))
                 "ptr works on Just"
   )
   (assert-true test
-               (null? (ptr (the (Maybe Int) (Nothing))))
+               (null? (ptr &(the (Maybe Int) (Nothing))))
                "ptr works on Nothing"
   )
   (assert-equal test

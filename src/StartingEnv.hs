@@ -302,6 +302,28 @@ templateEnumToInt = defineTemplate
                         ,"}"])
   (const [])
 
+-- | The Unsafe module contains dangerous functions
+unsafeModule :: Env
+unsafeModule = Env { envBindings = bindings
+                   , envParent = Nothing
+                   , envModuleName = Just "Unsafe"
+                   , envUseModules = []
+                   , envMode = ExternalEnv
+                   , envFunctionNestingLevel = 0 }
+  where bindings = Map.fromList [ templateCoerce ]
+
+-- | A template for coercing (casting) a type to another type
+templateCoerce :: (String, Binder)
+templateCoerce = defineTemplate
+  (SymPath ["Unsafe"] "coerce")
+  (FuncTy [VarTy "b"] (VarTy "a"))
+  "coerces a value of type b to a value of type a."
+  (toTemplate "$a $NAME ($b b)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"   return ($a)b;"
+                        ,"}"])
+  (const [])
+
 -- | The global environment before any code is run.
 startingGlobalEnv :: Bool -> Env
 startingGlobalEnv noArray =
@@ -321,6 +343,7 @@ startingGlobalEnv noArray =
                    ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
                    ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
+                   ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
