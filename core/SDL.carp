@@ -3,7 +3,7 @@
 (local-include "../core/SDLHelper.h")
 
 (not-on-windows
-  (add-pkg "SDL2"))
+  (add-pkg "sdl2"))
 
 (defmodule SDL
   (defmodule Windows
