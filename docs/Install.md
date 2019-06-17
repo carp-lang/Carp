@@ -50,4 +50,6 @@ The examples involving graphics/sound/interaction will require the following lib
 * [SDL_mixer 2](https://www.libsdl.org/projects/SDL_mixer/) (audio playback)
 * [glfw](http://www.glfw.org) (Create a rendering context for OpenGL or Vulcan)
 
-Please let us know if you have trouble getting these examples to work.
+*NOTE!* On macOS and Linux we use [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) to handle include paths and linking flags, so make sure you have that properly installed and configured to find the external libraries.
+
+Please let us know if you have trouble getting these bindings to work! We have tried making everything as reliable as possible but there are always corner cases when it comes to dependency management. You're always welcome to start an issue or ask questions in [![the gitter channel](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp).
