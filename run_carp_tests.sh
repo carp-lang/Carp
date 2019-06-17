@@ -45,6 +45,7 @@ done
 stack exec carp -- ./examples/mutual_recursion.carp -b
 stack exec carp -- ./examples/guessing.carp -b
 stack exec carp -- ./examples/no_core.carp --no-core -b
+stack exec carp -- ./examples/check_malloc.carp -b
 
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in
 if [[ ${NO_SDL} -eq 0 ]]; then

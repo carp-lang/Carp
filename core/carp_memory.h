@@ -49,7 +49,16 @@ void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
 
 #else
 
+#ifdef CHECK_ALLOCATIONS
+void* CARP_MALLOC(size_t size) {
+  void* res = malloc(size);
+  if (!res) abort();
+  return res;
+}
+#else
 #define CARP_MALLOC(size) malloc(size)
+#endif
+
 #define CARP_FREE(ptr) free(ptr)
 
 #include <stdio.h>

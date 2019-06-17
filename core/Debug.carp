@@ -8,6 +8,11 @@ This might not work on all compilers, but reasonably new versions of GCC and Cla
   (defndynamic sanitize-addresses []
     (add-cflag "-fsanitize=address"))
 
+  (doc check-allocations "will check the allocations made by the program
+immediately, raising a `SIGABRT` if it fails.")
+  (defndynamic check-allocations []
+    (add-cflag "-DCHECK_ALLOCATIONS"))
+
   (register memory-balance (Fn [] Long))
   (register reset-memory-balance! (Fn [] ()))
   (register log-memory-balance! (Fn [Bool] ()))
