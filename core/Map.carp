@@ -171,7 +171,7 @@
               i (Bucket.find n k)]
           (if (<= 0 i)
             (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
-            (Array.aset b idx (Bucket.push-back @n k &(~f v)))))))))
+            (Array.aset b idx (Bucket.push-back @n k &(~f @&v)))))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
