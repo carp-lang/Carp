@@ -1,6 +1,6 @@
 (not-on-windows
  (system-include "SDL2/SDL_image.h")
- (add-lib "-lSDL2_image"))
+ (add-pkg "SDL2_image"))
 
 (defmodule IMG
   (defmodule Windows

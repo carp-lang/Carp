@@ -1,5 +1,5 @@
 (system-include "GLFW/glfw3.h")
-(add-cflag "`pkg-config glfw3 --cflags --libs --static`")
+(add-pkg "glfw3")
 
 (defmodule GLFW
   (register init (λ [] Int) "glfwInit")

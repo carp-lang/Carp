@@ -26,3 +26,11 @@
 
 (defndynamic add-lib [lib]
   (Project.config "libflag" lib))
+
+(defndynamic pkg-config [pkg flags]
+  (Dynamic.String.join ["`pkg-config " pkg " " flags "`"]))
+
+(defndynamic add-pkg [pkg]
+  (do
+    (add-cflag (pkg-config pkg "--cflags --static"))
+    (add-lib (pkg-config pkg "--libs --static"))))
