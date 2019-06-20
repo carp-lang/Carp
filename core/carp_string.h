@@ -22,7 +22,7 @@ void String_delete(String s) {
 }
 
 void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
-    assert((size_t)i < strlen(*s));
+    CHK_INDEX(i, strlen(*s));
     (*s)[i] = ch;
 }
 
@@ -58,7 +58,7 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *s
      *
      * so this write is safe
      */
-    assert((size_t)(i+lsrc) < strlen(*into)+1);
+    CHK_INDEX(i+lsrc, strlen(*into)+1);
     strncpy(dest, *src, lsrc);
 }
 
