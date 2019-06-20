@@ -28,35 +28,9 @@
   (defn to-int [k]
     (to-int @(the (Ref Char) (Unsafe.coerce (the (Ref Id) &k)))))
   (defn hash [k]
-    (to-int @k))
+    (to-int (the Id @k)))
   (defn = [a b]
-    (= (to-int @a) (to-int @b)))
-  (defn str [cid]
-    (match cid
-       Black @"Black"
-       Red @"Red"
-       Green @"Green"
-       Yellow @"Yellow"
-       Blue @"Blue"
-       Magenta @"Magenta"
-       Cyan @"Cyan"
-       White @"White"
-       Reset @"Reset"
-       None @"None"
-       Bold @"Bold"
-       Italic @"Italic"
-       Underline @"Underline"
-       BlinkSlow @"BlinkSlow"
-       BlinkRapid @"BlinkRapid"
-       BgBlack @"BgBlack"
-       BgRed @"BgRed"
-       BgGreen @"BgGreen"
-       BgYellow @"BgYellow"
-       BgBlue @"BgBlue"
-       BgMagenta @"BgMagenta"
-       BgCyan @"BgCyan"
-       BgWhite @"BgWhite"))
-
+    (= (to-int (the Id @a)) (to-int (the Id @b))))
 
   (def table
     {(Black) @"30"
