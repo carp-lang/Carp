@@ -22,20 +22,13 @@ void String_delete(String s) {
 }
 
 void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
-    int l = strlen(*s);
-    (void)l;
-    assert(i >= 0);
-    assert(i < l);
+    assert((size_t)i < strlen(*s));
     (*s)[i] = ch;
 }
 
 void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *src) {
     char *dest = (*into) + i;
     int lsrc = strlen(*src);
-
-    int linto = strlen(*into);
-    (void)linto;
-    assert(i >= 0);
     /* given a string and indicies
      *
      *  0 1 2 3 4 5 6 7 8 9
@@ -46,7 +39,7 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *s
      *
      *  0 1 2 3
      * "w x y z"
-     * ldest = strlen(...) = 4
+     * lsrc = strlen(...) = 4
      *
      * we need to make sure that the new string will not grow the first
      *
@@ -58,16 +51,14 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *s
      *             "w x y z"
      *
      * we check this by
-     *      (i + ldest - 1) < linto
-     *      (6 +     4 - 1) < 10
-     *      (10        - 1) < 10
-     *      9               < 10
+     *      (i + lsrc) < (linto + 1)
+     *      (6 +    4) < (10    + 1)
+     *      10         < 11
      *      true
      *
      * so this write is safe
      */
-    assert((i+lsrc-1) < linto);
-
+    assert((size_t)(i+lsrc) < strlen(*into)+1);
     strncpy(dest, *src, lsrc);
 }
 
