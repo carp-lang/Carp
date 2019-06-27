@@ -24,13 +24,19 @@
 (defmacro private [name]
   (list 'meta-set! name "private" true))
 
+(doc todo "sets the todo property for a binding.")
+(defmacro todo [name value]
+  (list 'meta-set! name "todo" value))
+
 (doc private? "Is this binding private?")
+(todo private? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro private? [name]
-  (list 'not (list '= () (list 'meta name "private")))) ;; TODO: This is buggy, will report true when meta is set to 'false'!
+  (list 'not (list '= () (list 'meta name "private"))))
 
 (doc hidden? "Is this binding hidden?")
+(todo hidden? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro hidden? [name]
-  (list 'not (list '= () (list 'meta name "hidden")))) ;; TODO: This is buggy, will report true when meta is set to 'false'!
+  (list 'not (list '= () (list 'meta name "hidden"))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
