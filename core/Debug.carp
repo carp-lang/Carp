@@ -6,7 +6,7 @@
 
 This might not work on all compilers, but reasonably new versions of GCC and Clang are supported.")
   (defndynamic sanitize-addresses []
-    (add-cflag "-fsanitize=address"))
+    (add-cflag "-fsanitize=address -Wno-macro-redefined"))
 
   (doc check-allocations "will check the allocations made by the program
 immediately, raising a `SIGABRT` if it fails.")
