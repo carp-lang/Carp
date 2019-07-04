@@ -18,3 +18,12 @@
 ;;   (match x
 ;;     (Maybe.Just a)  a
 ;;     (Maybe.Nothing) 0))
+
+(use Maybe)
+
+(defn main []
+  (let [s (Just @"Yo")
+        r &s]
+    (match r
+      (Just x) (IO.println x)
+      Nothing (IO.println "nada"))))
