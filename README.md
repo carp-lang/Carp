@@ -6,9 +6,7 @@
 
 <i>WARNING! This is a research project and a lot of information here might become outdated and misleading without any explanation. Don't use it for anything important just yet!</i>
 
-<i>Update (March 5, 2019): Union types are merged into master. The final big feature before release is "lifetimes", after those are in the core language will be more or less finished.</i>
-
-<i>A conference talk about Carp was recorded and the video can be seen [here](https://youtu.be/BQeG6fXMk28).</i>
+<i>Version 0.3.0 of the language is out!</i>
 
 ## About
 
@@ -73,7 +71,7 @@ Are you missing from the contributors list? Please send a pull request!
 
 ## License
 
-Copyright 2016 - 2018 Erik Svedäng
+Copyright 2016 - 2019 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
