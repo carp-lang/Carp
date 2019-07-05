@@ -74,7 +74,7 @@ It will reset the color afterwards.")
   (defn color [cid]
     (print &(Color.color cid)))
 
-  (doc colorize "wraps a string in ANSI coloration based on a color name `cid` and prints it.")
+  (doc colorize "wraps a string in ANSI coloration based on a color id `cid` and prints it.")
   (defn colorize [cid s]
     (print &(Color.colorize cid s)))
 )
