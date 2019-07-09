@@ -75,6 +75,10 @@
                 "dot works")
   (assert-equal test
                 &(init 2.5 5.0)
-                &(lerp &(init 0.0 0.0) &(init 5.0 10.0) 0.5)
+                &(lerp &(zero) &(init 5.0 10.0) 0.5)
                 "lerp works")
+  (assert-equal test
+                &(init 1.5 15.0)
+                &(lerp &(init 1.0 10.0) &(init 2.0 20.0) 0.5)
+                "lerp works 2")
 )

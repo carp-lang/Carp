@@ -91,8 +91,8 @@
 
   (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
-    (init (* (- @(x b) @(x a)) amnt)
-          (* (- @(y b) @(y a)) amnt)))
+    (init (xlerp @(x a) @(x b) amnt)
+          (xlerp @(y a) @(y b) amnt)))
 )
 
 (deftype (Vector3 a) [x a, y a, z a])
@@ -185,9 +185,9 @@
 
   (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
-    (init (* (- @(x b) @(x a)) amnt)
-          (* (- @(y b) @(y a)) amnt)
-          (* (- @(z b) @(z a)) amnt)))
+    (init (xlerp @(x a) @(x b) amnt)
+          (xlerp @(y a) @(y b) amnt)
+          (xlerp @(z a) @(z b) amnt)))
 )
 
 (deftype (VectorN a) [n Int, v (Array a)])
@@ -283,7 +283,5 @@
 
   (doc lerp "Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).")
   (defn lerp [a b amnt]
-    (Maybe.apply (zip - b a)
-      (fn [x] (init @(n a) @(v &(zip- * &(Array.replicate @(n a) &amnt)
-                           (v &x)))))))
+    (zip (fn [from to] (xlerp from to amnt)) a b))
 )

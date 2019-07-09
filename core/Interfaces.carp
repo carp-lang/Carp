@@ -77,3 +77,6 @@
 
 (defn not-null? [p]
   (not (null? p)))
+
+(defn xlerp [from to amount]
+  (+ from (* (- to from) amount)))
