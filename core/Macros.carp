@@ -108,25 +108,25 @@
 (defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
   (if (> (length body) 1)
     (macro-error "Warning: the body of the 'for' loop can only contain one expression")
-    (list
-     'let
-     (array (car settings) (cadr settings))
-     (list
-      'while
-      (list 'Int.< (car settings) (caddr settings))
-      (list 'do
-            (if (= (length body) 0)
-              ()
-              (if (list? body)
-                (car body)
-                body))
-            (list
-             'set! (car settings)
-             (list 'Int.+
-                   (car settings)
-                   (if (= 4 (length settings)) ;; optional arg for step
-                     (cadddr settings)
-                     1))))))))
+    (let [variable (car settings)
+          from (cadr settings)
+          to (caddr settings)
+          step (if (= (length settings) 4) (cadddr settings) 1)
+          ]
+      (list
+       'let (array variable from)
+       (list
+	'while (list (if (< step (- step step)) '> '<) variable to)
+	(list
+         'do
+         (if (= (length body) 0)
+           ()
+           (if (list? body)
+             (car body)
+             body))
+         (list
+          'set! variable
+          (list '+ variable step))))))))
 
 (defmacro refstr [x]
   (list 'ref
@@ -307,14 +307,14 @@
   ;; A trick to be able to send unquoted symbols to 'save-docs'
   (list 'save-docs-internal (list 'quote modules)))
 
-(defndynamic project-config [bindings] 
+(defndynamic project-config [bindings]
   (if (< (length bindings) 2)
     (list)
     (cons-last (project-config (cdr (cdr bindings))) (list 'do (list 'Project.config
     (car bindings) (car (cdr bindings)))))))
 
 (doc defproject "Define a project configuration.")
-(defmacro defproject [:rest bindings] 
+(defmacro defproject [:rest bindings]
   (project-config bindings))
 
 (doc const-assert "asserts that the expression `expr` is true at compile time.
