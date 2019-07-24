@@ -571,7 +571,7 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   in case annXObj of
        XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
-       XObj (Lst (XObj (Typ _) _ _ : _)) _ _ ->
+       XObj (Lst (XObj (Deftype _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
@@ -727,7 +727,7 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
              _ -> (Nothing, emptyMeta)
          (creatorFunction, typeConstructor) =
             if length rest == 1 && isArray (head rest)
-            then (moduleForDeftype, Typ)
+            then (moduleForDeftype, Deftype)
             else (moduleForSumtype, DefSumtype)
      case (nameXObj, typeVariables) of
        (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
@@ -957,7 +957,7 @@ specialCommandMembers target env =
            XObj (Sym path@(SymPath _ name) _) _ _ ->
               case lookupInEnv path (getTypeEnv typeEnv) of
                 Just (_, Binder _ (XObj (Lst [
-                  XObj (Typ structTy) Nothing Nothing,
+                  XObj (Deftype structTy) Nothing Nothing,
                   XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing,
                   XObj (Arr members) _ _]) _ _))
                   ->

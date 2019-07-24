@@ -126,7 +126,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                      capturedVars
                  environmentTypeName = pathToC lambdaPath ++ "_env"
                  environmentStructTy = StructTy environmentTypeName []
-                 environmentStruct = XObj (Lst [XObj (Typ environmentStructTy) Nothing Nothing,
+                 environmentStruct = XObj (Lst [XObj (Deftype environmentStructTy) Nothing Nothing,
                                                 XObj (Sym (SymPath [] environmentTypeName) Symbol) Nothing Nothing,
                                                 XObj (Arr structMemberPairs) Nothing Nothing]
                                           ) i (Just TypeTy)
@@ -358,7 +358,7 @@ concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
           Right (defineArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv genericStructTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-    Just (_, Binder _ (XObj (Lst (XObj (Typ originalStructTy) _ _ : _ : rest)) _ _)) ->
+    Just (_, Binder _ (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
       then instantiateGenericStructType typeEnv originalStructTy genericStructTy rest
       else Right []
@@ -397,7 +397,7 @@ instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars
                   in case deps of
                        Left err -> Left err
                        Right okDeps ->
-                         Right $ XObj (Lst (XObj (Typ genericStructTy) Nothing Nothing :
+                         Right $ XObj (Lst (XObj (Deftype genericStructTy) Nothing Nothing :
                                             XObj (Sym (SymPath [] (tyToC genericStructTy)) Symbol) Nothing Nothing :
                                             [XObj (Arr concretelyTypedMembers) Nothing Nothing])
                                       ) (Just dummyInfo) (Just TypeTy)

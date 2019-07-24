@@ -20,7 +20,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       -- will at least have the same score as the type, but
       -- need to come after. the increment represents this dependency
       in  (depthOfType typeEnv Set.empty selfName aliasedType + 1, b)
-    Typ (StructTy structName varTys) ->
+    Deftype (StructTy structName varTys) ->
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
         Just (_, Binder _ typedef) -> let depth = (depthOfDeftype typeEnv Set.empty typedef varTys, b)
                                     in  --trace ("depth of " ++ structName ++ ": " ++ show depth)

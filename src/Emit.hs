@@ -117,7 +117,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             Break -> error (show (DontVisitObj xobj))
             While -> error (show (DontVisitObj xobj))
             Do -> error (show (DontVisitObj xobj))
-            e@(Typ _) -> error (show (DontVisitObj xobj))
+            e@(Deftype _) -> error (show (DontVisitObj xobj))
             e@(DefSumtype _) -> error (show (DontVisitObj xobj))
             Mod _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
@@ -442,7 +442,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  return ("(*" ++ x ++ ")")
 
             -- Deftype
-            XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->
+            XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _ ->
               return ""
 
             -- DefSumtype
@@ -703,7 +703,7 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
-    XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
+    XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defSumtypeToDeclaration t path rest
