@@ -85,7 +85,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        While              -> return (Left (InvalidObj While xobj))
                        Do                 -> return (Left (InvalidObj Do xobj))
                        (Mod _)            -> return (Left (InvalidObj If xobj))
-                       e@(Typ _)          -> return (Left (InvalidObj e xobj))
+                       e@(Deftype _)      -> return (Left (InvalidObj e xobj))
                        e@(External _)     -> return (Left (InvalidObj e xobj))
                        ExternalType       -> return (Left (InvalidObj ExternalType xobj))
                        e@(Deftemplate _)  -> return (Left (InvalidObj e xobj))
@@ -368,7 +368,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                 (Sym (SymPath _ name) _) ->
                   do visited <- visit env' expr
                      return (envAddBinding env' name . Binder emptyMeta <$> visited)
-                _ -> return (Left (InvalidLetBinding xobjs (sym, expr))) 
+                _ -> return (Left (InvalidLetBinding xobjs (sym, expr)))
 
     extendEnvWithParamList :: Env -> [XObj] -> State Integer Env
     extendEnvWithParamList env xobjs =
