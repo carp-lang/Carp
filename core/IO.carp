@@ -3,6 +3,9 @@
 (register-type FILE)
 
 (defmodule IO
+  (register stdin (Ptr FILE) "stdin")
+  (register stdout (Ptr FILE) "stdout")
+  (register stderr (Ptr FILE) "stderr")
   (doc println "prints a string ref to stdout, appends a newline.")
   (register println (Fn [(Ref String)] ()))
   (doc print "prints a string ref to stdout, does not append a newline.")
