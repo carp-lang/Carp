@@ -523,6 +523,12 @@ commandIsSymbol [x] =
     XObj (Sym _ _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
 
+commandArray :: CommandCallback
+commandArray args = return $ Right (XObj (Arr args) (Just dummyInfo) Nothing)
+
+commandList :: CommandCallback
+commandList  args = return $ Right (XObj (Lst args) (Just dummyInfo) Nothing)
+
 commandLength :: CommandCallback
 commandLength [x] =
   case x of
