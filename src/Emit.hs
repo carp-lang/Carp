@@ -604,7 +604,8 @@ defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
   let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
       annotationsStr = joinWith " " (map strToC annotations)
-  in annotationsStr ++ if not (null annotationsStr) then " " else "" ++
+      sep = if not (null annotationsStr) then " " else ""
+  in annotationsStr ++ sep ++
     if name == "main"
       then "int main(int argc, char** argv)"
       else let retTyAsC = tyToCLambdaFix retTy
