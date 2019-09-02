@@ -104,16 +104,6 @@ eval env xobj =
                    [] -> return (makeEvalError ctx Nothing "No forms in 'do' statement." (info xobj))
                    _ -> return (Right (last ok))
 
-        XObj (Sym (SymPath [] "list") _) _ _ : rest ->
-          do evaledList <- fmap sequence (mapM (eval env) rest)
-             return $ do okList <- evaledList
-                         Right (XObj (Lst okList) i t)
-
-        XObj (Sym (SymPath [] "array") _) _ _ : rest ->
-          do evaledArray <- fmap sequence (mapM (eval env) rest)
-             return $ do okEvaledArray <- evaledArray
-                         Right (XObj (Arr okEvaledArray) i t)
-
         -- 'and' and 'or' are defined here because they are expected to short circuit
         [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] ->
           do evaledA <- eval env a
