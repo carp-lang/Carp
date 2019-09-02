@@ -28,47 +28,51 @@ int Float_to_MINUS_bytes(float x) {
 }
 
 float Float_abs(float x) {
-    return fabs(x);
+    return fabsf(x);
 }
 
 float Float_acos(float x) {
-    return acos(x);
+    return acosf(x);
 }
 
 float Float_asin(float x) {
-    return asin(x);
+    return asinf(x);
 }
 
 float Float_atan(float x) {
-    return atan(x);
+    return atanf(x);
 }
 
 float Float_atan2(float y, float x) {
-    return atan2(y, x);
+    return atan2f(y, x);
 }
 
 float Float_cos(float x) {
-    return cos(x);
+    return cosf(x);
 }
 
 float Float_cosh(float x) {
-    return cosh(x);
+    return coshf(x);
 }
 
 float Float_sin(float x) {
-    return sin(x);
+    return sinf(x);
 }
 
 float Float_sinh(float x) {
-    return sinh(x);
+    return sinhf(x);
+}
+
+float Float_tan(float x) {
+    return tanf(x);
 }
 
 float Float_tanh(float x) {
-    return tanh(x);
+    return tanhf(x);
 }
 
 float Float_exp(float x) {
-    return exp(x);
+    return expf(x);
 }
 
 float Float_frexp(float x, int* exponent) {
@@ -76,15 +80,15 @@ float Float_frexp(float x, int* exponent) {
 }
 
 float Float_ldexp(float x, int exponent) {
-    return ldexp(x, exponent);
+    return ldexpf(x, exponent);
 }
 
 float Float_log(float x) {
-    return log(x);
+    return logf(x);
 }
 
 float Float_log10(float x) {
-    return log10(x);
+    return log10f(x);
 }
 
 float Float_modf(float x, float * integer) {
@@ -92,21 +96,21 @@ float Float_modf(float x, float * integer) {
 }
 
 float Float_pow(float x, float y) {
-    return pow(x, y);
+    return powf(x, y);
 }
 
 float Float_sqrt(float x) {
-    return sqrt(x);
+    return sqrtf(x);
 }
 
 float Float_ceil(float x) {
-    return ceil(x);
+    return ceilf(x);
 }
 
 float Float_floor(float x) {
-    return floor(x);
+    return floorf(x);
 }
 
 float Float_mod(float x, float y) {
-    return fmod(x, y);
+    return fmodf(x, y);
 }
