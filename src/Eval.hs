@@ -1156,34 +1156,39 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       cur <- liftIO getCurrentDirectory
       _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
-      _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
-      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
-      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
-      case x0 of
-        ExitFailure _ -> do
-          _ <- liftIO $ setCurrentDirectory cur
-          return $ invalidPathWith ctx path stderr0
-        ExitSuccess -> do
-          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
-          _ <- liftIO $ setCurrentDirectory cur
-          case x1 of
-            ExitSuccess ->
-              let fName = last (splitOn "/" path)
-                  realName' = if ".git" `isSuffixOf` fName
-                               then take (length fName - 4) fName
-                               else fName
-                  realName = if ".carp" `isSuffixOf` realName'
-                              then realName'
-                              else realName' ++ ".carp"
-                  fileToLoad = fpath ++ "/" ++ realName
-                  mainToLoad = fpath ++ "/main.carp"
-              in do
-                res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
-                case res of
-                  ret@(Right _) -> return ret
-                  Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
-            ExitFailure _ ->
-                return $ invalidPathWith ctx path stderr1
+      (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
+      if txt == "HEAD\n"
+      then doGitLoad path fpath
+      else do
+        _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
+        _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
+        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
+        case x0 of
+          ExitFailure _ -> do
+            _ <- liftIO $ setCurrentDirectory cur
+            return $ invalidPathWith ctx path stderr0
+          ExitSuccess -> do
+            (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
+            _ <- liftIO $ setCurrentDirectory cur
+            case x1 of
+              ExitSuccess -> doGitLoad path fpath
+              ExitFailure _ ->
+                  return $ invalidPathWith ctx path stderr1
+    doGitLoad path fpath =
+      let fName = last (splitOn "/" path)
+          realName' = if ".git" `isSuffixOf` fName
+                       then take (length fName - 4) fName
+                       else fName
+          realName = if ".carp" `isSuffixOf` realName'
+                      then realName'
+                      else realName' ++ ".carp"
+          fileToLoad = fpath ++ "/" ++ realName
+          mainToLoad = fpath ++ "/main.carp"
+      in do
+        res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+        case res of
+          ret@(Right _) -> return ret
+          Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
 commandLoad [x] =
   return $ Left (EvalError ("Invalid args to `load`: " ++ pretty x) (info x))
 
