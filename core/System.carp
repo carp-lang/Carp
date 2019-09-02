@@ -27,5 +27,5 @@
   (register signal-int Int "SIGINT")
   (register signal-segv Int "SIGSEGV")
   (register signal-term Int "SIGTERM")
+  (register abort (Fn [] ()) "abort")
 )
-

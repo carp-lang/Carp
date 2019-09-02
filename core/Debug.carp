@@ -54,4 +54,4 @@ immediately, raising a `SIGABRT` if it fails.")
         ()
         (list 'do
               (list 'println* (list 'fmt "Assertion '%s' failed at line %d, column %d in file %s" (str expr) (line) (column) (file)))
-              '(System.exit 1))))
+              '(System.abort))))
