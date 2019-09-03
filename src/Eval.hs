@@ -952,6 +952,19 @@ specialCommandMembers target env =
                   XObj (Arr members) _ _]) _ _))
                   ->
                     return (Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
+                Just (_, Binder _ (XObj (Lst (
+                  XObj (DefSumtype structTy) Nothing Nothing :
+                  XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                  sumtypeCases)) _ _))
+                  ->
+                    return (Right (XObj (Arr (concatMap getMembersFromCase sumtypeCases)) Nothing Nothing))
+                  where getMembersFromCase :: XObj -> [XObj]
+                        getMembersFromCase (XObj (Lst members) _ _) =
+                          map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members)
+                        getMembersFromCase x@(XObj (Sym sym _) _ _) =
+                          [XObj (Lst [x, XObj (Arr []) Nothing Nothing]) Nothing Nothing]
+                        getMembersFromCase (XObj x _ _) =
+                          error ("Can't handle case " ++ show x)
                 _ ->
                   return (makeEvalError ctx Nothing ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
            _ -> return (makeEvalError ctx Nothing ("Can't get the members of non-symbol: " ++ pretty target) (info target))
