@@ -138,7 +138,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  (deleteFn, deleterDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_delete")) deleteFnTy deleteFnTemplate
 
                  copyFnTy = typesCopyFunctionType environmentStructTy
-                 copyFnTemplate = concreteCopy typeEnv env pairs
+                 copyFnTemplate = concreteCopyPtr typeEnv env pairs
                  (copyFn, copyDeps) = instantiateTemplate (SymPath [] (environmentTypeName ++ "_copy")) copyFnTy copyFnTemplate
 
                  -- The type env has to contain the lambdas environment struct for 'concretizeDefinition' to work:
@@ -1198,5 +1198,32 @@ memberCopy typeEnv env (memberName, memberType) =
   case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
     FunctionFound functionFullName ->
       "    copy." ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
+    FunctionNotFound msg -> error msg
+    FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
+
+
+concreteCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> Template
+concreteCopyPtr typeEnv env memberPairs =
+  Template
+   (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+   (const (toTemplate "$p* $NAME($p* pRef)"))
+   (const (tokensForCopyPtr typeEnv env memberPairs))
+   (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
+                    (filter (isManaged typeEnv) (map snd memberPairs)))
+
+tokensForCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> [Token]
+tokensForCopyPtr typeEnv env memberPairs=
+  toTemplate $ unlines [ "$DECL {"
+                       , "    $p* copy = CARP_MALLOC(sizeof(*pRef));"
+                       , "    *copy = *pRef;"
+                       , joinWith "\n" (map (memberCopyPtr typeEnv env) memberPairs)
+                       , "    return copy;"
+                       , "}"]
+
+memberCopyPtr :: TypeEnv -> Env -> (String, Ty) -> String
+memberCopyPtr typeEnv env (memberName, memberType) =
+  case findFunctionForMember typeEnv env "copy" (typesCopyFunctionType memberType) (memberName, memberType) of
+    FunctionFound functionFullName ->
+      "    copy->" ++ memberName ++ " = " ++ functionFullName ++ "(&(pRef->" ++ memberName ++ "));"
     FunctionNotFound msg -> error msg
     FunctionIgnored -> "    /* Ignore non-managed member '" ++ memberName ++ "' : " ++ show memberType ++ " */"
