@@ -728,13 +728,30 @@ commandSymPrefix [x, XObj (Sym (SymPath [] _) _) _ _] =
 commandSymPrefix [_, x] =
   return $ Left (EvalError ("Can’t call `prefix` with " ++ pretty x) (info x))
 
+commandSymFrom :: CommandCallback
+commandSymFrom [x@(XObj (Sym _ _) _ _)] = return $ Right x
+commandSymFrom [XObj (Str s) i t] = return $ Right $ XObj (sFrom_ s) i t
+commandSymFrom [XObj (Pattern s) i t] = return $ Right $ XObj (sFrom_ s) i t
+commandSymFrom [XObj (Chr c) i t] = return $ Right $ XObj (sFrom_ (show c)) i t
+commandSymFrom [XObj n@(Num _ _) i t] =
+  return $ Right $ XObj (sFrom_ (simpleFromNum n)) i t
+commandSymFrom [XObj (Bol b) i t] = return $ Right $ XObj (sFrom_ (show b)) i t
+commandSymFrom [x] =
+  return $ Left (EvalError ("Can’t call `from` with " ++ pretty x) (info x))
+
+sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
+
+simpleFromNum (Num IntTy num) = show (round num :: Int)
+simpleFromNum (Num LongTy num) = show (round num :: Int)
+simpleFromNum (Num _ num) = show num
+
 commandStringDirectory :: CommandCallback
 commandStringDirectory [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call directory with " ++ pretty a) (info a))
+      Left (EvalError ("Can't call `directory` with " ++ pretty a) (info a))
 
 commandPlus :: CommandCallback
 commandPlus [a, b] =
