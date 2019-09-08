@@ -3,6 +3,7 @@
 (defmodule Double
   (def pi 3.141592653589793)
   (def e 2.718281828459045)
+  (register MAX Double "CARP_DBL_MAX")
   (register = (Fn [Double Double] Bool))
   (register < (Fn [Double Double] Bool))
   (register > (Fn [Double Double] Bool))
@@ -18,44 +19,36 @@
   (register to-long (Fn [Double] Long))
   (register from-long (Fn [Long] Double))
   (register to-bytes (Fn [Double] Long))
-  (register sin (Fn [Double] Double))
-  (register cos (Fn [Double] Double))
-  (register tan (Fn [Double] Double))
+  (register copy (Fn [(Ref Double)] Double))
+
+  (register abs (Fn [Double] Double))
   (register acos (Fn [Double] Double))
   (register asin (Fn [Double] Double))
   (register atan (Fn [Double] Double))
   (register atan2 (Fn [Double Double] Double))
+  (register ceil (Fn [Double] Double))
+  (register cos (Fn [Double] Double))
   (register cosh (Fn [Double] Double))
-  (register sinh (Fn [Double] Double))
-  (register tanh (Fn [Double] Double))
   (register exp (Fn [Double] Double))
+  (register floor (Fn [Double] Double))
   (register frexp (Fn [Double (Ref Int)] Double))
   (register ldexp (Fn [Double Int] Double))
   (register log (Fn [Double] Double))
   (register log10 (Fn [Double] Double))
+  (register mod (Fn [Double Double] Double))
   (register modf (Fn [Double (Ref Double)] Double))
   (register pow (Fn [Double Double] Double))
+  (register sin (Fn [Double] Double))
+  (register sinh (Fn [Double] Double))
   (register sqrt (Fn [Double] Double))
-  (register floor (Fn [Double] Double))
-  (register ceil (Fn [Double] Double))
-  (register mod (Fn [Double Double] Double))
-  (register copy (Fn [(Ref Double)] Double))
-  (register abs (Fn [Double] Double))
-
-  (defn clamp [min, max, val]
-    (if (> val max)
-      max
-      (if (< val min)
-        min
-        val)))
+  (register tan (Fn [Double] Double))
+  (register tanh (Fn [Double] Double))
 
   (doc approx "checks whether `x` and `y` are approximately equal.
 
 The margin of error is `0.00001`.")
   (defn approx [x y]
-    (if (> x y)
-      (< (- x y) 0.00001)
-      (< (- y x) 0.00001)))
+    (Generics.approx x y))
 
   (defn /= [x y]
     (not (Double.= x y)))
@@ -63,6 +56,12 @@ The margin of error is `0.00001`.")
   (doc zero "returns the value `0.0`.")
   (defn zero []
     0.0)
+
+  (defn inc [x]
+    (+ 1.0 x))
+
+  (defn dec [x]
+    (- x 1.0))
 
   (defn add-ref [x y]
     (Double.+ @x @y))

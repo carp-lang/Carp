@@ -238,7 +238,7 @@ If the element is not found, returns `Nothing`")
       (for [i 0 n] (aset-uninitialized! &a i (~f)))
       a))
 
-  (doc repeat-indexed "repeats function `f` `n `times and stores the results in an array.
+  (doc repeat-indexed "repeats function `f` `n` times and stores the results in an array.
 
 This is similar to [`repeat`](#repeat), but the function `f` will be supplied with the index of the element.")
   (defn repeat-indexed [n f]

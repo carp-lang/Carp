@@ -6,7 +6,7 @@
 
 (deftest test
   (assert-equal test
-                &(init 0.0 0.0 0.0) &(zero)
+                &(init 0.0 0.0 0.0) &(Vector3.zero)
                 "zero works")
   (assert-equal test
                 &(init 1.0 2.0 3.0) &(init 1.0 2.0 3.0)
@@ -15,6 +15,10 @@
              &(init 1.0 2.0 3.0) &(init 1.0 1.0 3.0)
              "/= operator works"
              Vector3./=)
+  (assert-op test
+             &(init 1.0 2.0 3.0) &(init 1.000001 2.000001 3.000001)
+             "approx works"
+             vapprox)
   (assert-equal test
                 &(init 3.0 3.0 4.5)
                 &(add &(init 2.0 1.0 2.0) &(init 1.0 2.0 2.5))
@@ -27,6 +31,10 @@
                 &(init 4.0 2.0 2.2)
                 &(mul &(init 2.0 1.0 1.1) 2.0)
                 "mul operator works")
+  (assert-equal test
+                &(init 4.0f 2.0f 2.2f)
+                &(mul &(init 2.0f 1.0f 1.1f) 2.0f)
+                "float mul operator works")
   (assert-equal test
                 &(init 1.0 0.5 0.25)
                 &(div &(init 2.0 1.0 0.5) 2.0)
@@ -63,7 +71,9 @@
                 (dot &(init 10.0 2.0 3.0) &(init 2.0 12.0 3.0))
                 "dot works")
   (assert-equal test
-                &(init 2.5 5.0 0.75)
-                &(lerp &(init 0.0 0.0 0.5) &(init 5.0 10.0 2.0) 0.5)
-                "lerp works")
+                &(init 2.5 5.0 1.0)
+                &(vlerp &(Vector3.zero) &(init 5.0 10.0 2.0) 0.5)
+                "vlerp works")
+
+
 )

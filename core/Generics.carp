@@ -1,0 +1,106 @@
+;; The following generic functions make use of the interfaces
+
+(defmodule Generics
+  (defn one [] (inc (zero)))
+  (defn minus-one [] (dec (zero)))
+  (defn two [] (inc (one)))
+  (defn three [] (inc (two)))
+  (defn minus-two [] (* (two) (minus-one)))
+  (defn four [] (+ (two) (two)))
+  (defn five [] (+ (four) (one)))
+  (defn ten [] (+ (five) (five)))
+  (defn hundred [] (* (ten) (ten)))
+  (defn thousand [] (* (hundred) (ten)))
+  (defn hundred-thousand [] (* (hundred) (thousand)))
+  (defn million [] (* (thousand) (thousand)))
+  (defn minus-four [] (* (four) (minus-one)))
+  (defn twice [x] (* (two) x))
+  (defn halved [x] (/ x (two)))
+  (defn squared [x] (* x x))
+  (defn inverse [x] (/ (one) x))
+  (defn half [] (halved (one)))
+  (defn half-pi [] (halved pi))
+  (defn tau [] (twice pi))
+  (defn ninety [] (* (two) (* (* (three) (three)) (five))))
+  (defn one-hundred-eighty [] (* (two) (ninety)))
+  (defn small [] (inverse (hundred-thousand)))
+
+  (doc approx-margin "checks whether `x` and `y` are approximately equal within a `margin`.")
+  (defn approx-margin [x y margin]
+    (if (> x y)
+      (< (- x y) margin)
+      (< (- y x) margin)))
+
+  (doc approx-margin "checks whether `x` and `y` are approximately equal with a margin.
+
+The margin of error is 0.00001.")
+  (defn approx [a b]
+    (approx-margin a b (small)))
+
+)
+
+
+;; These are defined in the global scope.
+
+(use Generics)
+
+(defn <= [a b]
+  (or (< a b)
+      (= a b)))
+
+(defn >= [a b]
+  (or (> a b)
+      (= a b)))
+
+(defn cmp [a b]
+  (if (= a b)
+    0
+    (if (< a b) -1 1)))
+
+(defn max [a b]
+  (if (> a b) a b))
+
+(defn min [a b]
+  (if (< a b) a b))
+
+(defn zero? [x]
+  (= (zero) x))
+
+(defn pos? [x]
+  (< (zero) x))
+
+(defn neg? [x]
+  (< x (zero)))
+
+(defn not-neg? [x]
+  (not (neg? x)))
+
+(defn id [x] x)
+
+(defn null? [p]
+  (Pointer.eq NULL (the (Ptr t) p)))
+
+(defn not-null? [p]
+  (not (null? p)))
+
+(defn clamp [min, max, val]
+  (if (> val max)
+      max
+    (if (< val min)
+        min
+      val)))
+
+(defn clamp--1-1 [v]
+  (clamp (minus-one) (one) v))
+
+(defn lerp [from to amount]
+  (+ from (* (- to from) amount)))
+
+(defn between [x l u]
+  (and (>= x l) (<= x u)))
+
+(defn random-0-1 []
+  (random-between (zero) (one)))
+
+(defn random--1-1 []
+  (random-between (minus-one) (one)))
