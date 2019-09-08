@@ -92,21 +92,16 @@
         acc
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
-  (doc list-to-array "Transforms a list dynamic data literal into an array dynamic data
-  literal, preserving order")
-  (defndynamic list-to-array [xs]
-    (list-to-array-internal xs (array)))
- 
-  (defndynamic array-to-list-internal [xs acc]
-    (if (= 0 (length xs)) 
-        acc 
-        (array-to-list-internal (cdr xs) (append acc (list (car xs))))))
-  
-  (doc array-to-list "Transforms an array dynamic data literal into a list dynamic data
-  literal, preserving order.")
-  (defndynamic array-to-list [xs]
+  (defndynamic collect-into-internal [xs acc f]
+    (if (= 0 (length xs))
+        acc
+        (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
+
+  (doc collect-into 
+    "Transforms a dynamic data literal into another, preserving order")
+  (defndynamic collect-into [xs f]
     (list 'quote
-      (array-to-list-internal xs (list))))
+      (collect-into-internal xs (f) f)))
   )
 
 (defndynamic cond-internal [xs]
