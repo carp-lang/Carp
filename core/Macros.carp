@@ -105,8 +105,8 @@
   (doc array-to-list "Transforms an array dynamic data literal into a list dynamic data
   literal, preserving order.")
   (defndynamic array-to-list [xs]
-    (list-to-array-internal xs (list)))
-
+    (list 'quote
+      (array-to-list-internal xs (list))))
   )
 
 (defndynamic cond-internal [xs]
