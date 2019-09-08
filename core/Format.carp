@@ -11,13 +11,19 @@
                 "%"
                 (fmt-internal (String.substring s (+ idx 2) len) args)))
         (if (= 0 (length args)) ; we need to insert something, but have nothing
-          (macro-error "error in format string: not enough arguments to format string")
+          (macro-error
+            (str "error in format string: not enough arguments to format string (missing argument for '%"
+                 (String.substring s (inc idx) (inc (inc idx)))
+                 "')"))
           ; okay, this is the meat:
           ; get the next % after our escaper
           (let [next (String.index-of (String.substring s (inc idx) len) \%)]
             (if (= -1 next)
               (if (< 1 (length args))
-                (macro-error "error in format string: too many arguments to format string")
+                (macro-error
+                  (str "error in format string: too many arguments to format string (missing directive for '"
+                       (cadr args)
+                       "')"))
                 (list 'ref (list 'format s (car args))))
               (let [slice (String.substring s 0 (+ (inc idx) next))]
                 (list 'ref

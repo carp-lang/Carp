@@ -236,6 +236,7 @@
                 &(let-do [str @"aaaaaaaaaa"]
                          (string-set-at! &str 4 "bcde")
                          (string-set-at! &str 9 "q")
+                         (string-set-at! &str 0 "")
                          str)
                 "string-set-at! works correctly")
   (assert-equal test

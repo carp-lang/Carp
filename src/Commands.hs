@@ -479,12 +479,6 @@ commandProject args =
      liftIO (print (contextProj ctx))
      return dynamicNil
 
--- | Command for printing a message to the screen.
-commandPrint :: CommandCallback
-commandPrint args =
-  do liftIO $ mapM_ (putStrLn . pretty) args
-     return dynamicNil
-
 -- | Command for getting the name of the operating system you're on.
 commandOS :: CommandCallback
 commandOS _ =
@@ -528,6 +522,12 @@ commandIsSymbol [x] =
   case x of
     XObj (Sym _ _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
+
+commandArray :: CommandCallback
+commandArray args = return $ Right (XObj (Arr args) (Just dummyInfo) Nothing)
+
+commandList :: CommandCallback
+commandList  args = return $ Right (XObj (Lst args) (Just dummyInfo) Nothing)
 
 commandLength :: CommandCallback
 commandLength [x] =
@@ -594,12 +594,14 @@ commandMacroError [msg] =
     x                  -> return (Left (EvalError (pretty x) (info msg)))
 
 commandMacroLog :: CommandCallback
-commandMacroLog [msg] =
-  case msg of
-    XObj (Str msg) _ _ -> do liftIO (putStrLn msg)
-                             return dynamicNil
-    x                  -> do liftIO (putStrLn (pretty x))
-                             return dynamicNil
+commandMacroLog msgs = do
+  liftIO (mapM_ (putStr . logify) msgs)
+  liftIO (putStr "\n")
+  return dynamicNil
+  where logify msg =
+          case msg of
+            XObj (Str msg) _ _ -> msg
+            x                  -> pretty x
 
 commandEq :: CommandCallback
 commandEq [a, b] =

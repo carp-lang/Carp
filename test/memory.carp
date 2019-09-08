@@ -362,6 +362,13 @@
   (let-do [stuff [@"A" @"B" @"C"]]
     (assert (= &[@"X" @"X" @"X"] &(endo-map &(fn [c] @"X") stuff)))))
 
+(defn lambda-6 []
+  (let [v 1
+        adder (fn [x] (+ v x))
+        f @&adder
+        ]
+    (assert (= 11 (f 10)))))
+
 (deftype StrangeThings
   (Piff [String String])
   (Puff [String String]))
@@ -485,6 +492,7 @@
   (assert-no-leak test lambda-3 "lambda-3 does not leak")
   (assert-no-leak test lambda-4 "lambda-4 does not leak")
   (assert-no-leak test lambda-5 "lambda-5 does not leak")
+  (assert-no-leak test lambda-6 "lambda-6 does not leak")
   (assert-no-leak test sumtype-1 "sumtype-1 does not leak")
   (assert-no-leak test sumtype-2 "sumtype-2 does not leak")
   (assert-no-leak test sumtype-3 "sumtype-3 does not leak")

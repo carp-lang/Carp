@@ -104,16 +104,6 @@ eval env xobj =
                    [] -> return (makeEvalError ctx Nothing "No forms in 'do' statement." (info xobj))
                    _ -> return (Right (last ok))
 
-        XObj (Sym (SymPath [] "list") _) _ _ : rest ->
-          do evaledList <- fmap sequence (mapM (eval env) rest)
-             return $ do okList <- evaledList
-                         Right (XObj (Lst okList) i t)
-
-        XObj (Sym (SymPath [] "array") _) _ _ : rest ->
-          do evaledArray <- fmap sequence (mapM (eval env) rest)
-             return $ do okEvaledArray <- evaledArray
-                         Right (XObj (Arr okEvaledArray) i t)
-
         -- 'and' and 'or' are defined here because they are expected to short circuit
         [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] ->
           do evaledA <- eval env a
@@ -962,6 +952,19 @@ specialCommandMembers target env =
                   XObj (Arr members) _ _]) _ _))
                   ->
                     return (Right (XObj (Arr (map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members))) Nothing Nothing))
+                Just (_, Binder _ (XObj (Lst (
+                  XObj (DefSumtype structTy) Nothing Nothing :
+                  XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                  sumtypeCases)) _ _))
+                  ->
+                    return (Right (XObj (Arr (concatMap getMembersFromCase sumtypeCases)) Nothing Nothing))
+                  where getMembersFromCase :: XObj -> [XObj]
+                        getMembersFromCase (XObj (Lst members) _ _) =
+                          map (\(a, b) -> XObj (Lst [a, b]) Nothing Nothing) (pairwise members)
+                        getMembersFromCase x@(XObj (Sym sym _) _ _) =
+                          [XObj (Lst [x, XObj (Arr []) Nothing Nothing]) Nothing Nothing]
+                        getMembersFromCase (XObj x _ _) =
+                          error ("Can't handle case " ++ show x)
                 _ ->
                   return (makeEvalError ctx Nothing ("Can't find a struct type named '" ++ name ++ "' in type environment") (info target))
            _ -> return (makeEvalError ctx Nothing ("Can't get the members of non-symbol: " ++ pretty target) (info target))
@@ -1156,34 +1159,39 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       cur <- liftIO getCurrentDirectory
       _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
-      _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
-      _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
-      (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
-      case x0 of
-        ExitFailure _ -> do
-          _ <- liftIO $ setCurrentDirectory cur
-          return $ invalidPathWith ctx path stderr0
-        ExitSuccess -> do
-          (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
-          _ <- liftIO $ setCurrentDirectory cur
-          case x1 of
-            ExitSuccess ->
-              let fName = last (splitOn "/" path)
-                  realName' = if ".git" `isSuffixOf` fName
-                               then take (length fName - 4) fName
-                               else fName
-                  realName = if ".carp" `isSuffixOf` realName'
-                              then realName'
-                              else realName' ++ ".carp"
-                  fileToLoad = fpath ++ "/" ++ realName
-                  mainToLoad = fpath ++ "/main.carp"
-              in do
-                res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
-                case res of
-                  ret@(Right _) -> return ret
-                  Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
-            ExitFailure _ ->
-                return $ invalidPathWith ctx path stderr1
+      (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
+      if txt == "HEAD\n"
+      then doGitLoad path fpath
+      else do
+        _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
+        _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
+        (x0, _, stderr0) <- liftIO $ readProcessWithExitCode "git" ["fetch", "--all", "--tags"] ""
+        case x0 of
+          ExitFailure _ -> do
+            _ <- liftIO $ setCurrentDirectory cur
+            return $ invalidPathWith ctx path stderr0
+          ExitSuccess -> do
+            (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
+            _ <- liftIO $ setCurrentDirectory cur
+            case x1 of
+              ExitSuccess -> doGitLoad path fpath
+              ExitFailure _ ->
+                  return $ invalidPathWith ctx path stderr1
+    doGitLoad path fpath =
+      let fName = last (splitOn "/" path)
+          realName' = if ".git" `isSuffixOf` fName
+                       then take (length fName - 4) fName
+                       else fName
+          realName = if ".carp" `isSuffixOf` realName'
+                      then realName'
+                      else realName' ++ ".carp"
+          fileToLoad = fpath ++ "/" ++ realName
+          mainToLoad = fpath ++ "/main.carp"
+      in do
+        res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+        case res of
+          ret@(Right _) -> return ret
+          Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
 commandLoad [x] =
   return $ Left (EvalError ("Invalid args to `load`: " ++ pretty x) (info x))
 
