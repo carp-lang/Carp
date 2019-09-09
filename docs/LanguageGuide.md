@@ -167,6 +167,42 @@ Specifying the type solves this error:
   (String.length x))
 ```
 
+When you `use` a module, its declarations are brought into the current scope. If you `use` a module in the global scope, all of its declarations are brought into global scope after the call to `use`. Similarly, if you `use` a module in another module's scope, its declarations can be reffered to without qualifiers within the scope of the module:
+
+```clojure
+(use String)
+
+;; Only the `String` module is used in the global scope, 
+;; so we can refer to `length` without a module qualifier.
+(defn Baz [x]
+  (length x))
+
+(defmodule Foo
+  (use Array)
+  ;; Since the the `String` module is used in the global scope, 
+  ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length` 
+  ;; to disambiguite which declaration we're referring to.
+  (defn Bar [xs] 
+    (Array.length xs)))
+```
+
+Sometimes, it's more convenient to bring a module's declarations into scope only for a limited number of forms. You can do this using the `with` form:
+
+```clojure
+(defmodule Foo
+  ;; we need to use a module qualifier here, 
+  ;; since there's no call to `use` in the `Foo` module scope.
+  (defn Bar [x] 
+    (String.length x))
+    
+    ;; Using the `with` form, we can reference the module's declarations 
+    ;; unqualified in all the forms contained in the `with`'s scope.
+    (with String
+      (defn Baz [x] 
+        (length x)))
+)
+```
+
 ### Structs
 ```clojure
 (deftype Vector2 [x Int, y Int])
