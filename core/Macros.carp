@@ -86,7 +86,22 @@
 
   (defmacro e [form]
     (eval-internal form))
+ 
+  (defndynamic list-to-array-internal [xs acc]
+    (if (= 0 (length xs))
+        acc
+        (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
+  (defndynamic collect-into-internal [xs acc f]
+    (if (= 0 (length xs))
+        acc
+        (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
+
+  (doc collect-into 
+    "Transforms a dynamic data literal into another, preserving order")
+  (defndynamic collect-into [xs f]
+    (list 'quote
+      (collect-into-internal xs (f) f)))
   )
 
 (defndynamic cond-internal [xs]
