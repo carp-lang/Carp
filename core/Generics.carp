@@ -39,10 +39,8 @@ The margin of error is 0.00001.")
 
 )
 
-
+(with Generics
 ;; These are defined in the global scope.
-
-(use Generics)
 
 (defn <= [a b]
   (or (< a b)
@@ -104,3 +102,5 @@ The margin of error is 0.00001.")
 
 (defn random--1-1 []
   (random-between (minus-one) (one)))
+
+)
