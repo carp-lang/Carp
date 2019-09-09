@@ -275,9 +275,9 @@ dynamicSymModule = Env { envBindings = bindings
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin,
-                                  addCommand "prefix" 2 commandSymPrefix,
-                                  addCommand "from" 1 commandSymFrom
+  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin
+                                , addCommand "prefix" 2 commandSymPrefix
+                                , addCommand "from" 1 commandSymFrom
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
