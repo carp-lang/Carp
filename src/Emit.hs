@@ -741,7 +741,7 @@ paramListToC xobjs = intercalate ", " (map getParam xobjs)
 projectIncludesToC :: Project -> String
 projectIncludesToC proj = intercalate "\n" (map includerToC (projectIncludes proj)) ++ "\n\n"
   where includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
-        includerToC (LocalInclude file) = "#include \"" ++ file ++ "\""
+        includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =

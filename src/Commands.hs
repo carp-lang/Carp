@@ -503,7 +503,17 @@ commandAddInclude includerConstructor [x] =
       return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
 
 commandAddSystemInclude = commandAddInclude SystemInclude
-commandAddLocalInclude  = commandAddInclude LocalInclude
+
+commandAddRelativeInclude :: CommandCallback
+commandAddRelativeInclude [x] =
+  case x of
+    XObj (Str file) i@(Just info) t ->
+        let compiledFile = infoFile info
+        in commandAddInclude RelativeInclude [
+          XObj (Str $ (takeDirectory compiledFile) ++ "/" ++ file) i t
+        ]
+    _ ->
+      return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
 
 commandIsList :: CommandCallback
 commandIsList [x] =

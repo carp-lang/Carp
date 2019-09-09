@@ -586,12 +586,12 @@ instance Show Project where
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"
 data Includer = SystemInclude String
-              | LocalInclude String
+              | RelativeInclude String
               deriving Eq
 
 instance Show Includer where
   show (SystemInclude file) = "<" ++ file ++ ">"
-  show (LocalInclude file) = "\"" ++ file ++ "\""
+  show (RelativeInclude file) = "\"" ++ file ++ "\""
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty

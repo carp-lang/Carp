@@ -1,6 +1,6 @@
 (system-include "math.h")
 
-(local-include "../core/SDLHelper.h")
+(relative-include "SDLHelper.h")
 
 (not-on-windows
   (add-pkg "sdl2"))

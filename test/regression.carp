@@ -1,4 +1,4 @@
-(local-include "../test/fixture_foo.h")
+(relative-include "fixture_foo.h")
 (load "Test.carp")
 (load "Vector.carp")
 
