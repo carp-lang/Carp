@@ -271,7 +271,7 @@ dynamicStringModule = Env { envBindings = bindings
 dynamicSymModule :: Env
 dynamicSymModule = Env { envBindings = bindings
                        , envParent = Nothing
-                       , envModuleName = Just "Sym"
+                       , envModuleName = Just "Symbol"
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
