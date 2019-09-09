@@ -1,4 +1,4 @@
-(local-include "../examples/banana.h")
+(relative-include "banana.h")
 (Project.no-echo)
 
 (register-type Apple)

@@ -242,7 +242,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "project-set!" 2 commandProjectSet
                     , addCommand "os" 0 commandOS
                     , addCommand "system-include" 1 commandAddSystemInclude
-                    , addCommand "local-include" 1 commandAddLocalInclude
+                    , addCommand "relative-include" 1 commandAddRelativeInclude
                     , addCommand "save-docs-internal" 1 commandSaveDocsInternal
                     , addCommand "read-file" 1 commandReadFile
                     ]
