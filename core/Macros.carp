@@ -323,3 +323,12 @@ Otherwise it will fail with the message `msg`.
 The expression must be evaluable at compile time.")
 (defndynamic const-assert [expr msg]
   (if expr () (macro-error msg)))
+
+(doc *gensym-counter* "is a helper counter for `gensym`.")
+(defdynamic *gensym-counter* 1000)
+
+(doc gensym "generates symbols dynamically as needed.")
+(defndynamic gensym []
+  (do
+    (defdynamic *gensym-counter* (inc *gensym-counter*))
+    (Symbol.join ['gensym-generated- (Symbol.from *gensym-counter*)])))
