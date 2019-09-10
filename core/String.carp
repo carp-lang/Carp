@@ -114,7 +114,7 @@
   (defn join [sep strings]
     (let-do [j 0
              lstrings (Array.length strings)
-             num-seps (- lstrings 1)
+             num-seps (max 0 (- lstrings 1))
              sep-length (String.length &sep)
              seps-size (* num-seps sep-length)
              result (String.allocate (+ seps-size (sum-length strings)) \ )]
@@ -134,7 +134,7 @@
     ;; (= (join-with-char \  ["Hello" "world"]) (join " " ["Hello" "world"]))
     (let-do [j 0
              lstrings (Array.length strings)
-             sep-length (- lstrings 1)
+             sep-length (max 0 (- lstrings 1))
              result (String.allocate (+ sep-length (sum-length strings)) \ )]
       (for [i 0 lstrings]
         (let-do [str (Array.nth strings i)
