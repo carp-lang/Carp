@@ -1,4 +1,5 @@
 (load "Interfaces.carp")
+(load "Generics.carp")
 (load "Macros.carp")
 (load "Maybe.carp")
 (load "Result.carp")

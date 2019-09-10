@@ -79,6 +79,6 @@
                 "dot works")
   (assert-equal test
                 &(init 1 [2.0])
-                &(Maybe.unsafe-from (lerp &(init 1 [0.0]) &(init 1 [5.0]) 0.4))
-                "lerp works")
+                &(Maybe.unsafe-from (vlerp &(init 1 [0.0]) &(init 1 [5.0]) 0.4))
+                "vlerp works")
 )
