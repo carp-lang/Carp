@@ -211,6 +211,10 @@
                 &(join @" aaaa " &[@"hello" @"there" @"world"])
                 "join works correctly III")
   (assert-equal test
+                ""
+                &(join @" aaaa " &[])
+                "join works correctly IV")
+  (assert-equal test
                 "hello there world"
                 &(join-with-char \  &[@"hello" @"there" @"world"])
                 "join-with-char works correctly I")
@@ -218,6 +222,10 @@
                 "hello, there, world"
                 &(join-with-char \, &[@"hello" @" there" @" world"])
                 "join-with-char works correctly II")
+  (assert-equal test
+                ""
+                &(join-with-char \, &[])
+                "join-with-char works correctly III")
   (assert-equal test
                 "hellohellohello"
                 &(repeat 3 "hello")
