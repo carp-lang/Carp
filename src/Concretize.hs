@@ -58,7 +58,8 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList _ Toplevel env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then return $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
-      else do visitedBody <- visit False Inside env body
+      else do concretizeTypeOfXObj typeEnv body
+              visitedBody <- visit False Inside env body
               return $ do okBody <- visitedBody
                           let t = fromMaybe UnitTy (ty okBody)
                           if not (isTypeGeneric t) && t /= UnitTy && t /= IntTy
@@ -73,6 +74,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                   functionEnv argsArr
              Just funcTy = t
              allowAmbig = isTypeGeneric funcTy
+         concretizeTypeOfXObj typeEnv body
          visitedBody <- visit allowAmbig Inside (incrementEnvNestLevel envWithArgs) body
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
