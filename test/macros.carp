@@ -47,6 +47,12 @@
 (def xy 1)
 (defndynamic test-join- [] (Symbol.join ['x 'y]))
 (defmacro test-join [] (test-join-))
+(defmacro test-gensym []
+  (let [x (gensym)]
+    (list 'let (array x 1) (list '= x 1))))
+(defmacro test-gensym-with []
+  (let [x (gensym-with 'a)]
+    (list 'let (array x 1) (list '= x 1))))
 
 (deftest test
   (assert-true test
@@ -205,4 +211,10 @@
                 "test file contents\n"
                 (Dynamic.read-file "test/fixture_file.txt")
                 "Dynamic.read-file works as expected")
+  (assert-true test
+               (test-gensym-with)
+               "gensym-with works as expected")
+  (assert-true test
+               (test-gensym)
+               "gensym works as expected")
 )

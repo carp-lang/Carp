@@ -271,12 +271,13 @@ dynamicStringModule = Env { envBindings = bindings
 dynamicSymModule :: Env
 dynamicSymModule = Env { envBindings = bindings
                        , envParent = Nothing
-                       , envModuleName = Just "Sym"
+                       , envModuleName = Just "Symbol"
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin,
-                                  addCommand "prefix" 2 commandSymPrefix
+  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin
+                                , addCommand "prefix" 2 commandSymPrefix
+                                , addCommand "from" 1 commandSymFrom
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
