@@ -220,7 +220,7 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 ### C Interop
 ```clojure
 (system-include "math.h") ;; compiles to #include <math.h>
-(local-include "math.h") ;; compiles to #include "math.h"
+(relative-include "math.h") ;; compiles to #include "/full/path/to/file/math.h"
 
 (register blah (Fn [Int Int] String)) ;; Will register the function 'blah' that takes two Int:s and returns a String
 (register pi Double) ;; Will register the global variable 'pi' of type Double
