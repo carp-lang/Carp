@@ -179,7 +179,7 @@ eval env xobj =
 
         [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body]
           | odd (length bindings) -> return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
-          | not (all isSym (evenIndicies bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ joinWithSpace (map pretty bindings) ++ "`") (info xobj))
+          | not (all isSym (evenIndices bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ joinWithSpace (map pretty bindings) ++ "`") (info xobj))
           | otherwise ->
               do bind <- mapM (\(n, x) -> do x' <- eval env x
                                              return $ do okX <- x'

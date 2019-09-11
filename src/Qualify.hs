@@ -51,9 +51,9 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
   let expr' = setFullyQualifiedSymbols typeEnv globalEnv env expr
   in  XObj (Lst [def, sym, expr']) i t
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) 
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t)
   | odd (length bindings) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
-  | not (all isSym (evenIndicies bindings)) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+  | not (all isSym (evenIndices bindings)) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | otherwise = let Just ii = i
                     lvl = envFunctionNestingLevel env
                     innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
