@@ -16,7 +16,17 @@
         (Project.config "print-ast" false)
         (Project.config "echo-compiler-cmd" false))))
 
+  (defmodule String
+    (defndynamic prefix-string [s to]
+      (String.substring s 0 to))
+
+    (defndynamic suffix-string [s from]
+      (String.substring s from (String.length s)))
+
+    (defndynamic tail [s ]
+      (String.suffix-string s 1))
   )
+)
 
 
 ;; The following functions are not put into a module for now:
