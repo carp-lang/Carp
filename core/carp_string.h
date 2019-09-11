@@ -29,7 +29,7 @@ void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
 void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *src) {
     char *dest = (*into) + i;
     int lsrc = strlen(*src);
-    /* given a string and indicies
+    /* given a string and indices
      *
      *  0 1 2 3 4 5 6 7 8 9
      * "a b c d e f g h i j"
