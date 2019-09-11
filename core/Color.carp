@@ -25,12 +25,10 @@
      BgCyan
      BgWhite)
   (use Id)
-  (defn to-int [k]
-    (to-int @(the (Ref Char) (Unsafe.coerce (the (Ref Id) &k)))))
   (defn hash [k]
-    (to-int (the Id @k)))
+    (get-tag k))
   (defn = [a b]
-    (= (to-int (the Id @a)) (to-int (the Id @b))))
+    (= (hash (the (Ref Id) a)) (hash b)))
 
   (def table
     {(Black) @"30"
