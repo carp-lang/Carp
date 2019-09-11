@@ -59,7 +59,7 @@ void String_string_MINUS_set_MINUS_at_BANG_(String *into, int i, const String *s
      * so this write is safe
      */
     CHK_INDEX(i+lsrc, strlen(*into)+1);
-    strncpy(dest, *src, lsrc);
+    memcpy(dest, *src, lsrc);
 }
 
 String String_copy(const String *s) {
