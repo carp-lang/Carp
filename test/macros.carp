@@ -54,6 +54,11 @@
   (let [x (gensym-with 'a)]
     (list 'let (array x 1) (list '= x 1))))
 
+(defmacro test-map []
+  (let [mapped (Dynamic.map length '(a) '(b c) '(d e f))]
+    (Dynamic.and (Dynamic.and (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
+    (Dynamic.caddr mapped)))))
+
 (deftest test
   (assert-true test
                (test-let-do)
@@ -217,4 +222,7 @@
   (assert-true test
                (test-gensym)
                "gensym works as expected")
+  (assert-true test
+               (test-map)
+               "map works as expected")
 )
