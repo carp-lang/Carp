@@ -19,6 +19,16 @@
                 "just? works on Nothing"
   )
   (assert-equal test
+                0
+                (get-tag &(Just 1))
+                "tag works on Just"
+  )
+  (assert-equal test
+                1
+                (get-tag &(the (Maybe Int) (Nothing)))
+                "tag works on Nothing"
+  )
+  (assert-equal test
                 1
                 (from (Just 1) 0)
                 "from works on Just"

@@ -32,15 +32,15 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
   in do let structTy = StructTy typeName typeVariables
         cases <- toCases typeEnv typeVariables rest
         okIniters <- initers insidePath structTy cases
-        (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
-        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
-        (okDelete, deleteDeps) <- binderForDelete typeEnv env insidePath structTy cases
-        (okCopy, copyDeps) <- binderForCopy typeEnv env insidePath structTy cases
+        okTag <- binderForTag insidePath structTy
+        okStr <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
+        okPrn <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
+        okDelete <- binderForDelete typeEnv env insidePath structTy cases
+        okCopy <- binderForCopy typeEnv env insidePath structTy cases
         okMemberDeps <- memberDeps typeEnv cases
-        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy])
+        let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-            deps = strDeps ++ deleteDeps ++ copyDeps ++ okMemberDeps
-        return (typeModuleName, typeModuleXObj, deps)
+        return (typeModuleName, typeModuleXObj, okMemberDeps)
 
 memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))
@@ -115,12 +115,25 @@ caseMemberAssignment allocationMode caseName (memberName, _) =
                 StackAlloc -> "."
                 HeapAlloc -> "->"
 
+binderForTag :: [String] -> Ty -> Either TypeError (String, Binder)
+binderForTag insidePath originalStructTy@(StructTy typeName _) =
+  Right $ instanceBinder path (FuncTy [RefTy originalStructTy] IntTy) template doc
+  where path = SymPath insidePath "get-tag"
+        template = Template
+          (FuncTy [RefTy originalStructTy] IntTy)
+          (\(FuncTy [RefTy structTy] IntTy) -> toTemplate $ proto structTy)
+          (\(FuncTy [RefTy structTy] IntTy) -> toTemplate $ proto structTy ++ " { return p->_tag; }")
+          (\_ -> [])
+        proto structTy = "int $NAME(" ++ tyToCLambdaFix structTy ++ " *p)"
+        doc = "Gets the tag from a `" ++ typeName ++ "`."
+
+
 -- | Helper function to create the binder for the 'str' template.
-binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError ((String, Binder), [XObj])
+binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError (String, Binder)
 binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) cases strOrPrn =
-  if isTypeGeneric structTy
-  then Right (genericStr insidePath structTy cases strOrPrn, [])
-  else Right (concreteStr typeEnv env insidePath structTy cases strOrPrn, [])
+  Right $ if isTypeGeneric structTy
+          then genericStr insidePath structTy cases strOrPrn
+          else concreteStr typeEnv env insidePath structTy cases strOrPrn
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> (String, Binder)
@@ -216,11 +229,11 @@ strSizeCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
      ]
 
 -- | Helper function to create the binder for the 'delete' template.
-binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
+binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError (String, Binder)
 binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) cases =
-  if isTypeGeneric structTy
-  then Right (genericSumtypeDelete insidePath structTy cases, [])
-  else Right (concreteSumtypeDelete insidePath typeEnv env structTy cases, [])
+  Right $ if isTypeGeneric structTy
+          then genericSumtypeDelete insidePath structTy cases
+          else concreteSumtypeDelete insidePath typeEnv env structTy cases
 
 -- | The template for the 'delete' function of a generic sumtype.
 genericSumtypeDelete :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
@@ -273,11 +286,11 @@ deleteCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isF
      ]
 
 -- | Helper function to create the binder for the 'copy' template.
-binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError (String, Binder)
 binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) cases =
-  if isTypeGeneric structTy
-  then Right (genericSumtypeCopy insidePath structTy cases, [])
-  else Right (concreteSumtypeCopy insidePath typeEnv env structTy cases, [])
+  Right $ if isTypeGeneric structTy
+          then genericSumtypeCopy insidePath structTy cases
+          else concreteSumtypeCopy insidePath typeEnv env structTy cases
 
 -- | The template for the 'copy' function of a generic sumtype.
 genericSumtypeCopy :: [String] -> Ty -> [SumtypeCase] -> (String, Binder)
