@@ -174,7 +174,7 @@ When you `use` a module, its declarations are brought into the current scope. If
 
 ;; Only the `String` module is used in the global scope, 
 ;; so we can refer to `length` without a module qualifier.
-(defn Baz [x]
+(defn f [x]
   (length x))
 
 (defmodule Foo
@@ -182,7 +182,7 @@ When you `use` a module, its declarations are brought into the current scope. If
   ;; Since the the `String` module is used in the global scope, 
   ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length` 
   ;; to disambiguite which declaration we're referring to.
-  (defn Bar [xs] 
+  (defn g [xs] 
     (Array.length xs)))
 ```
 
@@ -192,13 +192,13 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 (defmodule Foo
   ;; we need to use a module qualifier here, 
   ;; since there's no call to `use` in the `Foo` module scope.
-  (defn Bar [x] 
+  (defn f [x] 
     (String.length x))
     
     ;; Using the `with` form, we can reference the module's declarations 
     ;; unqualified in all the forms contained in the `with`'s scope.
     (with String
-      (defn Baz [x] 
+      (defn g [x] 
         (length x)))
 )
 ```
