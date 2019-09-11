@@ -102,6 +102,30 @@
   (defndynamic collect-into [xs f]
     (list 'quote
       (collect-into-internal xs (f) f)))
+
+  (defndynamic map-internal [f xs acc]
+    (if (= 0 (length xs))
+        acc
+        (map-internal f (cdr xs) (append acc (list (f (car xs)))))))
+
+  (doc map
+    "Applies a function `f` to `forms` and returns a list dynamic data literal
+    containing the result of the function applications.
+
+    Note: because this function returns a list, you need to quote it's
+    result to prevent immediate evaluation of the result in the REPL.
+
+    For example:
+      ```clojure
+      '(map symbol? 'a 'b 'c)
+      => (true true true)
+      (collect-into (map length '[a b c] '[d] '[e f]) array)
+      => [3 1 2]
+      '(map car '(Maps of the world) '(Are never lacking) '(Great expanses))
+      => (Maps Are Great)
+      ```")
+  (defndynamic map [f :rest forms]
+    (map-internal f forms (list)))
   )
 
 (defndynamic cond-internal [xs]
