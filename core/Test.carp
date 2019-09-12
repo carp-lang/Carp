@@ -2,20 +2,20 @@
 
 (defmodule Test
   (deftype State [passed Int, failed Int])
-
+  (use Color.Id)
   (hidden handler)
   (defn handler [state expected actual descr what op]
     (if (op expected actual)
       (do
-        (IO.colorize "green" &(str* @"Test '" @descr @"' passed\n"))
+        (IO.colorize (Green) &(str* @"Test '" @descr @"' passed\n"))
         (State.update-passed (State.copy state) &Int.inc))
       (do
-        (IO.color "red")
+        (IO.color (Red))
         (IO.println &(str* @"Test '" @descr @"' failed:"))
         (IO.print &(str* @"\tExpected " @what @": '"))
         (IO.print &(str expected))
         (IO.println &(str* @"', actual value: '" (str actual) @"'"))
-        (IO.color "reset")
+        (IO.color (Reset))
         (State.update-failed (State.copy state) &Int.inc))))
 
   (doc assert-op "Assert that op returns true when given x and y.")
@@ -90,21 +90,21 @@
         (IO.println "Results:")
         (if (Int.> (Int.+ passed failed) 0)
           (do
-            (IO.color "green")
+            (IO.color (Green))
             (if (Int.> passed 0) (IO.print &(String.append "\t|" &(String.repeat passed "="))) ())
             (if (Int.= failed 0) (IO.print "|") ())
-            (IO.color "red")
+            (IO.color (Red))
             (if (Int.= passed 0) (IO.print "\t|") ())
             (if (Int.> failed 0) (IO.print &(String.append &(String.repeat failed "=") "|")) ())
             (IO.println ""))
           ())
-        (IO.color "green")
+        (IO.color (Green))
         (IO.print "\tPassed: ")
         (IO.print &(Int.str passed))
-        (IO.color "red")
+        (IO.color (Red))
         (IO.print "\tFailed: ")
         (IO.println &(Int.str failed))
-        (IO.color "reset")))))
+        (IO.color (Reset))))))
 
 (defndynamic with-test-internal [name forms]
   (if (= (length forms) 1)
