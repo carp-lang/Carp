@@ -88,9 +88,9 @@ Please note that for private repos only loading through SSH is supported. For pu
 
 ### Graphics, sound and interaction
 * [SDL](http://carp-lang.github.io/Carp/sdl/SDL_index.html)
-* [SDL Image](../core/SDL_image.carp)
-* [SDL TTF](../core/SDL_ttf.carp)
-* [SDL Mixer](../core/SDL_mixer.carp)
+* [SDL Image](http://carp-lang.github.io/Carp/sdl/IMG.html)
+* [SDL TTF](http://carp-lang.github.io/Carp/sdl/TTF.html)
+* [SDL Mixer](http://carp-lang.github.io/Carp/sdl/Mixer.html)
 * [GLFW](../core/GLFW.carp)
 * [OpenGL](../core/OpenGL.carp)
 

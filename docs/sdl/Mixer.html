@@ -51,89 +51,123 @@
                 </div>
             </div>
             <h1>
-                SDLApp
+                Mixer
             </h1>
             <div class="module-description">
                 
             </div>
             <div class="binder">
-                <a class="anchor" href="#copy">
-                    <h3 id="copy">
-                        copy
+                <a class="anchor" href="#any-free-channel">
+                    <h3 id="any-free-channel">
+                        any-free-channel
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    def
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] SDLApp)
+                    Int
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>copies a <code>SDLApp</code>.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#create">
-                    <h3 id="create">
-                        create
+                <a class="anchor" href="#channel-playing?">
+                    <h3 id="channel-playing?">
+                        channel-playing?
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int, Int] SDLApp)
-                </p>
-                <pre class="args">
-                    (create title width height)
-                </pre>
-                <p class="doc">
-                    <p>creates an SDLApp instance that can then be used by <code>run-with-callbacks</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#default-draw">
-                    <h3 id="default-draw">
-                        default-draw
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [a, (Ptr SDL_Renderer), b] ())
-                </p>
-                <pre class="args">
-                    (default-draw app rend state-ref)
-                </pre>
-                <p class="doc">
-                    <p>is a default rendering function that can be passed to <code>run-with-callbacks</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#fps">
-                    <h3 id="fps">
-                        fps
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp)] &amp;Int)
+                    (λ [Int] Bool)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>gets the <code>fps</code> property of a <code>SDLApp</code>.</p>
-
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#default-format">
+                    <h3 id="default-format">
+                        default-format
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#flac-support">
+                    <h3 id="flac-support">
+                        flac-support
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-error">
+                    <h3 id="get-error">
+                        get-error
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] (Ptr Char))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#get-music-decoder">
+                    <h3 id="get-music-decoder">
+                        get-music-decoder
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Int] (Ptr Char))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -143,337 +177,244 @@
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ptr SDL_Window), (Ptr SDL_Renderer), Int] SDLApp)
+                    (λ [Int] Int)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>creates a <code>SDLApp</code>.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#prn">
-                    <h3 id="prn">
-                        prn
+                <a class="anchor" href="#load-music">
+                    <h3 id="load-music">
+                        load-music
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] String)
+                    (λ [(Ptr Char)] (Ptr Mix_Music))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>converts a <code>SDLApp</code> to a string.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#quit-on-esc">
-                    <h3 id="quit-on-esc">
-                        quit-on-esc
+                <a class="anchor" href="#load-wav">
+                    <h3 id="load-wav">
+                        load-wav
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr Char)] (Ptr Mix_Chunk))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mod-support">
+                    <h3 id="mod-support">
+                        mod-support
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mp3-support">
+                    <h3 id="mp3-support">
+                        mp3-support
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#nr-of-music-decoders">
+                    <h3 id="nr-of-music-decoders">
+                        nr-of-music-decoders
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#ogg-support">
+                    <h3 id="ogg-support">
+                        ogg-support
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    Int
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#ok?">
+                    <h3 id="ok?">
+                        ok?
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), a, (Ref SDL_Event)] a)
+                    (λ [Int] Bool)
                 </p>
                 <pre class="args">
-                    (quit-on-esc app state event)
+                    (ok? error-code)
                 </pre>
                 <p class="doc">
-                    <p>is a default event handling function that can be passed to <code>run-with-callbacks</code>. Allows the application to quit if the player presses the escape key.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#renderer">
-                    <h3 id="renderer">
-                        renderer
+                <a class="anchor" href="#open-audio">
+                    <h3 id="open-audio">
+                        open-audio
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] (Ref (Ptr SDL_Renderer)))
+                    (λ [Int, Int, Int, Int] Int)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>gets the <code>renderer</code> property of a <code>SDLApp</code>.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#run-with-callbacks">
-                    <h3 id="run-with-callbacks">
-                        run-with-callbacks
+                <a class="anchor" href="#play-channel">
+                    <h3 id="play-channel">
+                        play-channel
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Int, (Ptr Mix_Chunk), Int] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#play-music">
+                    <h3 id="play-music">
+                        play-music
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ptr Mix_Music), Int] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#quit">
+                    <h3 id="quit">
+                        quit
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [] ())
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#valid-channel?">
+                    <h3 id="valid-channel?">
+                        valid-channel?
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), (λ [(Ref SDLApp), a, (Ref SDL_Event)] a), (λ [a] a), (λ [(Ref SDLApp), (Ptr SDL_Renderer), &amp;a] ()), a] ())
+                    (λ [Int] Bool)
                 </p>
                 <pre class="args">
-                    (run-with-callbacks app event-fn update-fn draw-fn initial-state)
+                    (valid-channel? ch)
                 </pre>
                 <p class="doc">
-                    <p>starts the SDLApp and uses three callbacks to handle events, update state and render graphics.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-fps">
-                    <h3 id="set-fps">
-                        set-fps
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, Int] SDLApp)
-                </p>
-                <span>
                     
-                </span>
-                <p class="doc">
-                    <p>sets the <code>fps</code> property of a <code>SDLApp</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-fps!">
-                    <h3 id="set-fps!">
-                        set-fps!
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp), Int] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>fps</code> property of a <code>SDLApp</code> in place.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-renderer">
-                    <h3 id="set-renderer">
-                        set-renderer
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, (Ptr SDL_Renderer)] SDLApp)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>renderer</code> property of a <code>SDLApp</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-renderer!">
-                    <h3 id="set-renderer!">
-                        set-renderer!
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp), (Ptr SDL_Renderer)] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>renderer</code> property of a <code>SDLApp</code> in place.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-window">
-                    <h3 id="set-window">
-                        set-window
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, (Ptr SDL_Window)] SDLApp)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>window</code> property of a <code>SDLApp</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-window!">
-                    <h3 id="set-window!">
-                        set-window!
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp), (Ptr SDL_Window)] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>window</code> property of a <code>SDLApp</code> in place.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#stop">
-                    <h3 id="stop">
-                        stop
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp)] a)
-                </p>
-                <pre class="args">
-                    (stop app)
-                </pre>
-                <p class="doc">
-                    <p>stops the app. This function return 'a' to enable it to be called from anywhere.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#str">
-                    <h3 id="str">
-                        str
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp)] String)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>converts a <code>SDLApp</code> to a string.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#update-fps">
-                    <h3 id="update-fps">
-                        update-fps
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, (Ref (λ [Int] Int))] SDLApp)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>updates the <code>fps</code> property of a <code>SDLApp</code> using a function <code>f</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#update-renderer">
-                    <h3 id="update-renderer">
-                        update-renderer
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Renderer)] (Ptr SDL_Renderer)))] SDLApp)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>updates the <code>renderer</code> property of a <code>SDLApp</code> using a function <code>f</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#update-window">
-                    <h3 id="update-window">
-                        update-window
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Window)] (Ptr SDL_Window)))] SDLApp)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>updates the <code>window</code> property of a <code>SDLApp</code> using a function <code>f</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#window">
-                    <h3 id="window">
-                        window
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref SDLApp)] (Ref (Ptr SDL_Window)))
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>gets the <code>window</code> property of a <code>SDLApp</code>.</p>
-
                 </p>
             </div>
         </div>

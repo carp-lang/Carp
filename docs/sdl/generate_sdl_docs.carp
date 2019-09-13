@@ -5,10 +5,17 @@
 (Project.config "docs-url" "https://github.com/carp-lang/carp")
 
 (load "SDL.carp")
-(load "SDL_Image.carp")
+(load "SDL_image.carp")
+(load "SDL_gfx.carp")
+(load "SDL_mixer.carp")
+(load "SDL_ttf.carp")
 
 (save-docs SDL
            SDLApp
+           IMG
+           GFX
+           Mixer
+           TTF
            )
 
 (quit)
