@@ -20,17 +20,24 @@
         (SDL.destroy-texture text1))
       (set! text1 (TTF.render-text-to-texture rend font &(str* "TICK: " (SDL.get-ticks)) (SDL.rgb 0 0 0)))))
 
-(defn event-handler [app]
-    (let [event (SDL.Event.init)]
-      (while (SDL.Event.poll (address event))
-        (let [et (SDL.Event.type &event)]
-          (cond (= et SDL.Event.quit) (SDLApp.stop app)
-                (= et SDL.Event.key-down) (let [key (SDL.Event.keycode &event)]
-                                            (cond
-                                              (= key SDL.Keycode.escape) (SDLApp.stop app)
-                                              (= key SDL.Keycode.return) (change-text @(SDLApp.renderer app))
-                                              ()))
-                ())))))
+(defn event-handler [app state event]
+  (let [et (SDL.Event.type event)]
+    (cond
+      ;; Quit event
+      (= et SDL.Event.quit)
+      (SDLApp.stop app)
+
+      ;; Key events
+      (= et SDL.Event.key-down)
+      (let [key (SDL.Event.keycode event)]
+        (cond
+          (= key SDL.Keycode.escape) (SDLApp.stop app)
+          (= key SDL.Keycode.return) (do (change-text @(SDLApp.renderer app))
+                                         state)
+          state))
+
+      ;; Other event
+      state)))
 
 (defn main []
   (let [app (SDLApp.create "Font Rendering with SDL_ttf" 400 300)

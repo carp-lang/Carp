@@ -260,6 +260,11 @@
           (SDL.set-window-title win (cstr title))
           (SDLApp.init win ren 60))))
 
+  (defn reduce-events [app f state-to-reduce-over]
+    (Array.reduce &(fn [s e] (~f app s e)) ;; Note, this will malloc an environment that captures the 'app' variable.
+                  state-to-reduce-over
+                  &(SDL.Event.all)))
+
   (defn run-with-callbacks [app event-fn update-fn draw-fn initial-state]
     (let-do [rend @(SDLApp.renderer app)
              state initial-state
@@ -267,7 +272,7 @@
              target-dt (/ 1000 @(SDLApp.fps app))]
       (while true
         (do
-          (event-fn app)
+          (set! state (reduce-events app &event-fn state))
           (set! state (update-fn state))
           (let-do [dt (- (SDL.get-ticks) last-t)
                 time-left (- target-dt dt)]
@@ -287,12 +292,11 @@
     (do (SDL.set-render-draw-color rend 0 0 0 255)
         (SDL.render-clear rend)))
 
-  (defn quit-on-esc [app]
-    (foreach [event &(SDL.Event.all)]
-             (case (SDL.Event.type event)
-               SDL.Event.quit (SDLApp.stop app)
-               SDL.Event.key-down (let [key (SDL.Event.keycode event)]
-                                    (if (= key SDL.Keycode.escape)
-                                      (SDLApp.stop app)
-                                      ()))
-               ()))))
+  (defn quit-on-esc [app state event]
+    (case (SDL.Event.type event)
+      SDL.Event.quit (SDLApp.stop app)
+      SDL.Event.key-down (let [key (SDL.Event.keycode event)]
+                           (if (= key SDL.Keycode.escape)
+                             (SDLApp.stop app)
+                             state))
+      state)))
