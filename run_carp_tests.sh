@@ -58,6 +58,7 @@ if [[ ${NO_SDL} -eq 0 ]]; then
 fi
 
 # Generate core docs
-stack exec carp -- ./docs/core/generate_core_docs.carp -b
+stack exec carp -- ./docs/core/generate_core_docs.carp
+stack exec carp -- ./docs/core/generate_sdl_docs.carp
 
 echo "ALL TESTS DONE."

@@ -1,0 +1,14 @@
+(Project.config "title" "SDL")
+(Project.config "docs-directory" "./docs/sdl/")
+(Project.config "docs-logo" "logo.png")
+(Project.config "docs-prelude" "Docs for the official SDL bindings for Carp.")
+(Project.config "docs-url" "https://github.com/carp-lang/carp")
+
+(load "SDL.carp")
+(load "SDL_Image.carp")
+
+(save-docs SDL
+           SDLApp
+           )
+
+(quit)
