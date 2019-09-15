@@ -103,29 +103,101 @@
     (list 'quote
       (collect-into-internal xs (f) f)))
 
-  (defndynamic map-internal [f xs acc]
+  (doc empty?
+    "Returns true if the provided data literal is empty, false otherwise.")
+  (defndynamic empty? [xs]
     (if (= 0 (length xs))
+      true
+      false))
+
+  (defndynamic and-internal [x y]
+    (if x y false))
+
+  (defndynamic or-internal [x y]
+    (if x true y))
+
+  (doc reduce
+    "Reduces or 'folds' a data literal, such as a list or array, into a single
+    value through successive applications of `f`.")
+  (defndynamic reduce [f x xs]
+    (if (empty? xs)
+      x
+      (reduce f (f x (car xs)) (cdr xs))))
+
+  (defndynamic apply-internal [argument-list acc]
+      (if (empty? argument-list)
+          acc
+          (apply-internal (cdr argument-list) (append acc (list (car
+          argument-list))))))
+
+  (doc apply
+    "Applies the function `f` to the provided argument list, passing each value
+    in the list as an argument to the function.")
+  (defndynamic apply [f argument-list]
+    ;; The let clause here is a tad mysterious at first glance. When passed a
+    ;; standalone function name (i.e. not an application (f x), carp evaluates
+    ;; it into the function's defining form, e.g. foo becomes (defn foo [x] x),
+    ;; commands such as + become (command +) etc.  ;; The binding here accounts
+    ;; for that case, allowing users to pass the function name to apply
+    ;; unquoted.
+    ;;
+    ;; This is necessary for parity across map-internal, zip, and apply.
+    ;; Since map calls its function directly, it takes it as is. Apply, on the
+    ;; other hand, would have to take the quoted form, since it builds a list
+    ;; that serves as the actual application.
+    ;;
+    ;; This is problematic for the user facing map function, since it makes
+    ;; calls to map or zip (which uses apply) as appropriate--unless we support
+    ;; the quoted function name argument in map-internal or the unquoted one in
+    ;; apply, we can't use zip and map-internal in map.
+    ;;
+    ;; TODO: Once issue #555 is fixed, we shouldn't need to call (list 'quote...
+    ;; here
+    (let [function-name (list (cadr f))]
+      (apply-internal argument-list function-name)))
+
+  (defndynamic map-internal [f xs acc]
+    (if (empty? xs)
         acc
         (map-internal f (cdr xs) (append acc (list (f (car xs)))))))
 
+  (defndynamic zip-internal [f forms acc]
+    (if (reduce or-internal false (map-internal empty? forms (list)))
+        acc
+        (zip-internal
+          f
+          (map-internal cdr forms (list))
+          (let [result (list (apply f (map-internal car forms (list))))]
+            (append acc result)))))
+
+  (defndynamic zip [f :rest forms]
+    (zip-internal f forms (list)))
+
   (doc map
     "Applies a function `f` to `forms` and returns a list dynamic data literal
-    containing the result of the function applications.
+    containing the result of the function applications. If a single form is
+    provided, the function is applied to each member of the form. If multiple
+    forms are provided, the function is applied to the members of each form in
+    succession. If the members of a single form are exhuasted, the result of the
+    applications thus far is returned, and any remaining members in the other
+    forms are ignored.
 
     Note: because this function returns a list, you need to quote it's
     result to prevent immediate evaluation of the result in the REPL.
 
     For example:
       ```clojure
-      '(map symbol? 'a 'b 'c)
+      '(map symbol? '(a b c))
       => (true true true)
-      (collect-into (map length '[a b c] '[d] '[e f]) array)
-      => [3 1 2]
-      '(map car '(Maps of the world) '(Are never lacking) '(Great expanses))
-      => (Maps Are Great)
+      '(map + '(1 2 3) '(4 5 6))
+      => ((+ 1 4) (2 5) (6 3))
+      '(map + '(1 2 3) '(4 5 6) '(7))
+      => ((+ 1 4 7))
       ```")
   (defndynamic map [f :rest forms]
-    (map-internal f forms (list)))
+    (if (= 1 (length forms))
+        (map-internal f forms (list))
+        (zip-internal f forms (list))))
   )
 
 (defndynamic cond-internal [xs]
