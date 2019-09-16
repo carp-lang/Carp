@@ -322,5 +322,15 @@ The trailing elements of the longer array will be discarded.")
    (doc copy-filter "filters the elements in an array.
 
 It will create a copy. If you want to avoid that, consider using [`endo-filter`](#endo-filter) instead.")
-   (defn copy-filter [f a] (endo-filter f @a))
+  (defn copy-filter [f a] (endo-filter f @a))
+
+  (doc contains? "checks wether an element exists in the array.")
+  (defn contains? [arr el]
+    (let-do [result false]
+      (for [i 0 (Array.length arr)]
+        (when (= el (Array.nth arr i))
+          (do
+            (set! result true)
+            (break))))
+      result))
 )
