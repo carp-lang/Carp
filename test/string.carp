@@ -200,19 +200,19 @@
 
   (assert-equal test
                 "hello world"
-                &(join @"" &[@"hello" @" " @"world"])
+                &(join "" &[@"hello" @" " @"world"])
                 "join works correctly I")
   (assert-equal test
                 "hello world"
-                &(join @" " &[@"hello" @"world"])
+                &(join " " &[@"hello" @"world"])
                 "join works correctly II")
   (assert-equal test
                 "hello aaaa there aaaa world"
-                &(join @" aaaa " &[@"hello" @"there" @"world"])
+                &(join " aaaa " &[@"hello" @"there" @"world"])
                 "join works correctly III")
   (assert-equal test
                 ""
-                &(join @" aaaa " &[])
+                &(join " aaaa " &[])
                 "join works correctly IV")
   (assert-equal test
                 "hello there world"
