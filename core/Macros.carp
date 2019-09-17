@@ -29,14 +29,12 @@
   (list 'meta-set! name "todo" value))
 
 (doc private? "Is this binding private?")
-(todo private? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro private? [name]
-  (list 'not (list '= () (list 'meta name "private"))))
+  (list 'not (list 'list? (meta name "private"))))
 
 (doc hidden? "Is this binding hidden?")
-(todo hidden? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro hidden? [name]
-  (list 'not (list '= () (list 'meta name "hidden"))))
+  (list 'not (list 'list? (meta name "hidden"))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
@@ -86,7 +84,7 @@
 
   (defmacro e [form]
     (eval-internal form))
- 
+
   (defndynamic list-to-array-internal [xs acc]
     (if (= 0 (length xs))
         acc
@@ -97,7 +95,7 @@
         acc
         (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
 
-  (doc collect-into 
+  (doc collect-into
     "Transforms a dynamic data literal into another, preserving order")
   (defndynamic collect-into [xs f]
     (list 'quote
