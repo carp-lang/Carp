@@ -287,18 +287,17 @@
   (let [xs (Array.range 0 5 1)]
     (assert (= &[0 1 2 3 4 5] &xs))))
 
-;; TODO! Failing to compile this...
-;; (defmodule ArrayCompareExtension
-;;   (defn < [a b]
-;;     (Int.< (Array.length a)
-;;            (Array.length b)))
-;;   (defn > [a b]
-;;     (Int.> (Array.length a)
-;;            (Array.length b))))
-;; (defn array-sort-1 []
-;;   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
-;;         ys (Array.sort xs)]
-;;     (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
+(defmodule ArrayCompareExtension
+  (defn < [a b]
+    (< (Array.length a)
+       (Array.length b)))
+  (defn > [a b]
+    (> (Array.length a)
+       (Array.length b))))
+(defn array-sort-1 []
+  (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
+        ys (Array.sort xs)]
+    (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
 
 (defn array-sort-2 []
   (let [xs [5 2 4 3 1]
@@ -480,7 +479,7 @@
   (assert-no-leak test array-swap "array-swap does not leak")
   (assert-no-leak test array-swap! "array-swap! does not leak")
   (assert-no-leak test array-range "array-range does not leak")
-  ;; PROBLEMATIC (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
+  (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
   (assert-no-leak test array-sort-2 "array-sort-2 does not leak")
   (assert-no-leak test array-repeat "array-repeat does not leak")
   (assert-no-leak test array-replicate "array-replicate does not leak")
