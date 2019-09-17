@@ -59,6 +59,6 @@ fi
 
 # Generate core docs
 stack exec carp -- ./docs/core/generate_core_docs.carp
-stack exec carp -- ./docs/core/generate_sdl_docs.carp
+stack exec carp -- ./docs/sdl/generate_sdl_docs.carp
 
 echo "ALL TESTS DONE."
