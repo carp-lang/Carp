@@ -3,7 +3,7 @@ module AssignTypes where
 import Types
 import Obj
 import Util
-import TypeError
+import TypeErrorDef
 import Data.List (nub)
 import qualified Data.Map as Map
 
@@ -49,15 +49,23 @@ isArrayTypeOK (StructTy "Array" [RefTy _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
 
 
--- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
 -- | TODO: Only change variables that are machine generated.
+beautyMappings :: Ty -> TypeMappings
+beautyMappings t =
+  Map.fromList (zip (map (\(VarTy name) -> name) tys)
+                 (map (VarTy . (:[])) ['a'..]))
+  where tys = nub (typeVariablesInOrderOfAppearance t)
+
+-- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
 beautifyTypeVariables :: XObj -> Either TypeError XObj
 beautifyTypeVariables root =
   let Just t = ty root
-      tys = nub (typeVariablesInOrderOfAppearance t)
-      mappings = Map.fromList (zip (map (\(VarTy name) -> name) tys)
-                                   (map (VarTy . (:[])) ['a'..]))
+      mappings = beautyMappings t
   in  assignTypes mappings root
+
+beautifyTyVariables :: Ty -> Ty
+beautifyTyVariables t = replaceTyVars mappings t
+  where mappings = beautyMappings t
 
 typeVariablesInOrderOfAppearance :: Ty -> [Ty]
 typeVariablesInOrderOfAppearance (FuncTy argTys retTy) =

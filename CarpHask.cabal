@@ -31,6 +31,7 @@ library
                        Util,
                        Eval,
                        TypeError,
+                       TypeErrorDef,
                        InitialTypes,
                        AssignTypes,
                        GenerateConstraints,
