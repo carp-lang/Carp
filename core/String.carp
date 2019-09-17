@@ -115,7 +115,7 @@
     (let-do [j 0
              lstrings (Array.length strings)
              num-seps (max 0 (- lstrings 1))
-             sep-length (String.length &sep)
+             sep-length (String.length sep)
              seps-size (* num-seps sep-length)
              result (String.allocate (+ seps-size (sum-length strings)) \ )]
       (for [i 0 lstrings]
@@ -123,7 +123,7 @@
                  len (String.length str)]
           (when (> i 0)
             (do
-              (string-set-at! &result j &sep)
+              (string-set-at! &result j sep)
               (set! j (+ j sep-length))))
           (string-set-at! &result j str)
           (set! j (+ j len))))

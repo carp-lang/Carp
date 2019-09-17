@@ -279,7 +279,7 @@
 
   (defn str [m]
     (let [res (kv-reduce &(fn [s k v]
-                           (String.join @"" &[s @" " (prn @k) @" " (prn @v)]))
+                           (String.join "" &[s @" " (prn @k) @" " (prn @v)]))
                          @"{"
                          m)]
       (String.append &res " }")))
@@ -449,7 +449,7 @@
     (reduce &(fn [arr elt] (Array.push-back arr @elt)) [] s))
 
   (defn str [set]
-    (let [res (reduce &(fn [s e] (String.join @"" &[s @" " (prn e)]))
+    (let [res (reduce &(fn [s e] (String.join "" &[s @" " (prn e)]))
                       @"{"
                       set)]
       (String.append &res " }")))
