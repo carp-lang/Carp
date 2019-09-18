@@ -9,7 +9,14 @@
 
 ; test whether sumtypes with single cases get classified correctly
 (deftype (SumT x)
-  (SingleC [x]))
+    (SingleC [x]))
+
+; make sure nested lambdas don't break again (issue #342)
+(defn nested-lambdas []
+  (let [f (fn [x] ((fn [y] (+ x y))
+                   1))]
+    (f 1)))
+
 
 (use-all Test Vector2 Foo)
 
@@ -17,26 +24,25 @@
   (assert-equal test
                 1
                 (init)
-                "test that the right module gets resolved"
-  )
+                "test that the right module gets resolved")
   (assert-equal test
                 \\
                 (String.char-at "\\" 0)
-                "test that strings get escaped correctly"
-  )
+                "test that strings get escaped correctly")
   (assert-equal test
                 Int.MAX
                 @&Int.MAX
-                "test that the address of Int.MAX can be taken"
-  )
+                "test that the address of Int.MAX can be taken")
   (assert-equal test
                 &(Result.Error @"File “foobar” couldn’t be opened!")
                 &(IO.read->EOF "foobar")
-                "test that reading from an undefined file works"
-  )
+                "test that reading from an undefined file works")
   (assert-equal test
                 "(SingleC 1)"
                 &(str &(SumT.SingleC 1))
-                "test that sumtypes with single cases work"
-  )
+                "test that sumtypes with single cases work")
+  (assert-equal test
+                2
+                (nested-lambdas)
+                "test that nested lambdas can use captured values")
 )
