@@ -25,9 +25,6 @@
 to non-refs.")
   (register copy (λ [&Long] Long))
 
-  (defn /= [x y]
-    (not (Long.= x y)))
-
   (register safe-add (λ [Long Long (Ref Long)] Bool))
   (register safe-sub (λ [Long Long (Ref Long)] Bool))
   (register safe-mul (λ [Long Long (Ref Long)] Bool))

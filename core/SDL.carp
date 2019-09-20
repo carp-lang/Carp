@@ -121,8 +121,6 @@
     (register str (Fn [SDL_Keycode] String))
     (defn prn [x]
       (SDL.Keycode.str x))
-    (defn /= [x y]
-      (not (SDL.Keycode.= x y)))
 
     (register return SDL_Keycode "SDLK_RETURN")
     (register space SDL_Keycode "SDLK_SPACE")

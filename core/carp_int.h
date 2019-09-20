@@ -8,8 +8,7 @@ int Int__PLUS_(int x, int y)   { return x + y; }
 int Int__MINUS_(int x, int y)  { return x - y; }
 int Int__MUL_(int x, int y)    { return x * y; }
 int Int__DIV_(int x, int y)    { return x / y; }
-bool Int__EQ_(int x, int y)     { return x == y; }
-bool Int__DIV__EQ_(int x, int y) { return x != y; }
+bool Int__EQ_(int x, int y)    { return x == y; }
 bool Int__LT_(int x, int y)    { return x < y; }
 bool Int__GT_(int x, int y)    { return x > y; }
 int Int_neg(int x)    { return -x; }
