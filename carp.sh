@@ -4,7 +4,7 @@ then
     then
 	CARP="stack exec carp --"
     else
-	CARP="cabal -v0 new-run carp --"
+	CARP="cabal -v0 run carp --"
     fi
 fi
 $CARP $*
