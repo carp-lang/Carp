@@ -20,6 +20,7 @@
            Vector2
            Vector3
            VectorN
+           GlobalGenerics
            Geometry
            Statistics
            String
