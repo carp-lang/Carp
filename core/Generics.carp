@@ -39,6 +39,8 @@ The margin of error is 0.00001.")
 
 )
 
+(defmodule GlobalGenerics
+
 (with Generics
 ;; These are defined in the global scope.
 
@@ -100,7 +102,9 @@ The margin of error is 0.00001.")
 (defn random-0-1 []
   (random-between (zero) (one)))
 
+(doc random--1-1 "Generate a random number between -1 and 1")
 (defn random--1-1 []
   (random-between (minus-one) (one)))
 
-)
+))
+(use GlobalGenerics)

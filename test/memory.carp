@@ -45,9 +45,6 @@
   (let [s (g @"")]
     ()))
 
-(defn id [x]
-  x)
-
 (defn call-3 []
   (let [s (id (f))]
     ()))
