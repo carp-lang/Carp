@@ -4,7 +4,7 @@ import Control.Monad
 import qualified System.Environment as SystemEnvironment
 import System.IO (stdout)
 import System.Console.Haskeline (runInputT)
-import System.Directory (doesPathExist, getHomeDirectory)
+import System.Directory (doesPathExist, getXdgDirectory, XdgDirectory(..))
 import GHC.IO.Encoding
 
 import ColorText
@@ -25,7 +25,7 @@ defaultProject =
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
-          , projectLibDir = ".carp/libs/"
+          , projectLibDir = "carp/libs/"
           , projectCarpDir = "./"
           , projectOutDir = case platform of
                               Windows -> ".\\out"
@@ -80,8 +80,7 @@ main = do setLocaleEncoding utf8
                                   ""
                                   execMode)
           context <- loadFiles startingContext coreModulesToLoad
-          home <- getHomeDirectory
-          let carpProfile = home ++ "/.carp/profile.carp"
+          carpProfile <- getXdgDirectory XdgConfig "carp/profile.carp"
           hasProfile <- doesPathExist carpProfile
           context' <- if hasProfile
                       then loadFiles context [carpProfile]
