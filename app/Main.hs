@@ -1,10 +1,7 @@
 module Main where
 
-import Control.Monad
 import qualified System.Environment as SystemEnvironment
-import System.IO (stdout)
 import System.Console.Haskeline (runInputT)
-import System.Directory (doesPathExist, getHomeDirectory)
 import GHC.IO.Encoding
 
 import ColorText
@@ -15,6 +12,7 @@ import StartingEnv
 import Eval
 import Util
 import Lookup
+import Path
 
 defaultProject :: Project
 defaultProject =
@@ -25,12 +23,10 @@ defaultProject =
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
-          , projectLibDir = ".carp/libs/"
-          , projectCarpDir = "./"
-          , projectOutDir = case platform of
-                              Windows -> ".\\out"
-                              _ -> "./out"
-          , projectDocsDir = "./docs/"
+          , projectLibDir = "libs"
+          , projectCarpDir = "."
+          , projectOutDir = "out"
+          , projectDocsDir = "docs"
           , projectDocsLogo = ""
           , projectDocsPrelude = ""
           , projectDocsURL = ""
@@ -80,9 +76,8 @@ main = do setLocaleEncoding utf8
                                   ""
                                   execMode)
           context <- loadFiles startingContext coreModulesToLoad
-          home <- getHomeDirectory
-          let carpProfile = home ++ "/.carp/profile.carp"
-          hasProfile <- doesPathExist carpProfile
+          carpProfile <- configPath "profile.carp"
+          hasProfile <- doesFileExist carpProfile
           context' <- if hasProfile
                       then loadFiles context [carpProfile]
                       else do --putStrLn ("No '" ++ carpProfile ++ "' found.")

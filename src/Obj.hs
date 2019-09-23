@@ -1,6 +1,5 @@
 module Obj where
 
-import System.FilePath (takeFileName)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (intercalate, foldl')
@@ -9,6 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
+import Path (takeFileName)
 import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
