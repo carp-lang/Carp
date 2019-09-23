@@ -6,8 +6,8 @@ import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
 import qualified System.IO as SysIO
-import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, getHomeDirectory, setCurrentDirectory)
-import System.FilePath (takeDirectory)
+import System.Directory (doesFileExist, canonicalizePath, createDirectoryIfMissing, getCurrentDirectory, getXdgDirectory, setCurrentDirectory, XdgDirectory(..))
+import System.FilePath (takeDirectory, (</>))
 import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
@@ -1070,22 +1070,21 @@ specialCommandMetaGet path key =
 commandLoad :: CommandCallback
 commandLoad [xobj@(XObj (Str path) i _)] =
   do ctx <- get
-     home <- liftIO getHomeDirectory
+     let proj = contextProj ctx
+     libDir <- liftIO $ getXdgDirectory XdgCache $ projectLibDir proj
      let relativeTo = case i of
                         Just ii ->
                           case infoFile ii of
                             "REPL" -> "."
                             file -> takeDirectory file
                         Nothing -> "."
-         proj = contextProj ctx
-         libDir = home ++ "/" ++ projectLibDir proj
          carpDir = projectCarpDir proj
          fullSearchPaths =
            path :
-           (relativeTo ++ "/" ++ path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
-           map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
-           [carpDir ++ "/core/" ++ path] ++
-           [libDir ++ "/" ++ path]
+           (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+           map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+           [carpDir </> "core" </> path] ++
+           [libDir </> path]
      existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
      case existingPaths of
        [] ->
@@ -1145,19 +1144,17 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       let split = splitOn "/" url
           fst = head split
       in if fst `elem` ["https:", "http:"]
-        then joinWith "/" (tail split)
+        then joinWith "/" $ tail $ tail split
         else
           if '@' `elem` fst
             then joinWith "/" (joinWith "@" (tail (splitOn "@" fst)) : tail split)
             else url
     tryInstallWithCheckout path toCheckout = do
       ctx <- get
-      home <- liftIO getHomeDirectory
       let proj = contextProj ctx
-      let libDir = home ++ "/" ++ projectLibDir proj
-      let fpath = libDir ++ "/" ++ fromURL path ++ "/" ++ toCheckout
+      fpath <- liftIO $ getXdgDirectory XdgCache $ projectLibDir proj </> fromURL path </> toCheckout
       cur <- liftIO getCurrentDirectory
-      _ <- liftIO $ createDirectoryIfMissing True fpath
+      _ <- liftIO $ createDirectoryIfMissing True $ fpath
       _ <- liftIO $ setCurrentDirectory fpath
       (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
       if txt == "HEAD\n"
@@ -1185,8 +1182,8 @@ commandLoad [xobj@(XObj (Str path) i _)] =
           realName = if ".carp" `isSuffixOf` realName'
                       then realName'
                       else realName' ++ ".carp"
-          fileToLoad = fpath ++ "/" ++ realName
-          mainToLoad = fpath ++ "/main.carp"
+          fileToLoad = fpath </> realName
+          mainToLoad = fpath </> "main.carp"
       in do
         res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
         case res of
