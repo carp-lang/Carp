@@ -5,9 +5,6 @@
     (and (= (Pair.a p1) (Pair.a p2))
          (= (Pair.b p1) (Pair.b p2))))
 
-  (defn /= [p1 p2]
-    (not (PairRef.= p1 p2)))
-
   (defn < [p1 p2]
     (if (= (Pair.a p1) (Pair.a p2))
       (< (Pair.b p1) (Pair.b p2))
@@ -23,9 +20,6 @@
   (defn = [p1 p2]
     (and (= (Pair.a &p1) (Pair.a &p2))
          (= (Pair.b &p1) (Pair.b &p2))))
-
-  (defn /= [p1 p2]
-    (not (Pair.= p1 p2)))
 
   (defn < [p1 p2]
     (PairRef.< &p1 &p2))

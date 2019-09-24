@@ -35,9 +35,6 @@
   (defn = [a b]
     (vreduce (fn [i v] (and i v)) true &(zip = a b)))
 
-  (defn /= [a b]
-    (not (= a b)))
-
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
     (vreduce (fn [i v] (and i v)) true &(zip Generics.approx a b)))
@@ -125,9 +122,6 @@
 
   (defn = [a b]
     (vreduce (fn [i v] (and i v)) true &(zip = a b)))
-
-  (defn /= [a b]
-    (not (= a b)))
 
   (doc vapprox "Check whether the vectors a and b are approximately equal.")
   (defn vapprox [a b]
@@ -237,9 +231,6 @@
   (defn = [a b]
     (and (Int.= @(n a) @(n b))
          (Array.= (v a) (v b))))
-
-  (defn /= [a b]
-    (not (= a b)))
 
   (defn add [a b]
     (zip + a b))

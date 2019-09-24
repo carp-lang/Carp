@@ -106,10 +106,6 @@ Returns `Nothing` if the array is empty.")
               (break))))
         eq)))
 
-  (doc /= "compares two arrays and inverts the result.")
-  (defn /= [a b]
-    (not (= (the (Ref (Array a)) a) b)))
-
     (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
 
 If the array is empty, it returns `Nothing`.")

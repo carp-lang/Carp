@@ -1,6 +1,8 @@
 ; this compiles without needing the core libraries (--no-core flag)
 
 (load "Macros.carp")
+(load "Interfaces.carp")
+(load "Generics.carp")
 (load "Int.carp")
 
 (defn main []

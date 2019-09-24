@@ -19,8 +19,6 @@
 
 (defmodule Young
   (defn = [y1 y2]
-    (Int.= @(age y1) @(age y2)))
-  (defn /= [y1 y2]
     (Int.= @(age y1) @(age y2))))
 
 ;; Now I want to use 'Young.=' in with 'Ur.compare'

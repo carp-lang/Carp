@@ -23,9 +23,6 @@
   (register string-set-at! (Fn [&String Int &String] ()))
   (register allocate (Fn [Int Char] String))
 
-  (defn /= [a b]
-    (not (= (the (Ref String) a) b)))
-
   (doc head "Returns the character at start of string.")
   (defn head [s]
     (char-at s 0))
@@ -156,9 +153,6 @@
 
   (defn = [a b]
     (String.= &a &b))
-
-  (defn /= [a b]
-    (String./= &a &b))
 
   (defn < [a b]
     (String.< &a &b))

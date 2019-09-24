@@ -14,8 +14,6 @@
   (register copy (Fn [(Ref Float)] Float))
 
   (register = (Fn [Float Float] Bool))
-  (defn /= [x y]
-    (not (Float.= x y)))
   (register < (Fn [Float Float] Bool))
   (register > (Fn [Float Float] Bool))
 

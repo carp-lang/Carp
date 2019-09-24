@@ -103,4 +103,7 @@ The margin of error is 0.00001.")
 (defn random--1-1 []
   (random-between (minus-one) (one)))
 
+(defn /= [a b]
+  (not (= a b)))
+
 )

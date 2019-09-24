@@ -23,9 +23,6 @@
       (= @char-ref \9) 9
       -1))
 
-  (defn /= [a b]
-    (not (= (the Char a) b)))
-
   (doc lower-case? "tests whether a character is lower case.")
   (defn lower-case? [c]
     (and (<= \a c) (<= c \z)))
@@ -53,8 +50,6 @@
 (defmodule CharRef
   (defn = [a b]
     (Char.= @a @b))
-  (defn /= [a b]
-    (Char./= @a @b))
   (defn < [a b]
     (Char.< @a @b))
   (defn > [a b]
