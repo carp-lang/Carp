@@ -8,6 +8,8 @@ if [[ $# -gt 0 ]] && [[ "$1" == "--no_sdl" ]]; then
     NO_SDL=1
 fi
 
+./build.sh
+
 # Build and run some examples
 ./test/execute.sh ./examples/basics.carp
 ./test/execute.sh ./examples/functor.carp
