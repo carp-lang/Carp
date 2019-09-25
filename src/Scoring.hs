@@ -19,7 +19,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       -- we add 1 here because deftypes generate aliases that
       -- will at least have the same score as the type, but
       -- need to come after. the increment represents this dependency
-      in  (depthOfType typeEnv Set.empty selfName aliasedType + 1, b)
+      in (depthOfType typeEnv Set.empty selfName aliasedType + 2, b)
     Deftype s -> depthOfStruct s
     DefSumtype s -> depthOfStruct s
     _ -> (500, b)
@@ -69,13 +69,13 @@ depthOfType typeEnv visited selfName theType =
       maximum (visitType retTy : fmap visitType argTys)
     visitType (PointerTy p) = visitType p
     visitType (RefTy r) = visitType r
-    visitType _ = 1
+    visitType _ = 0
 
     depthOfStructType :: String -> [Ty] -> Int
-    depthOfStructType name varTys = 1 +
+    depthOfStructType name varTys =
       case name of
         "Array" -> depthOfVarTys
-        _ | name == selfName -> 1
+        _ | name == selfName -> 0
           | otherwise ->
               case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
                 Just (_, Binder _ typedef) -> depthOfDeftype typeEnv (Set.insert theType visited) typedef varTys
@@ -85,7 +85,7 @@ depthOfType typeEnv visited selfName theType =
                                          -- Instead, let's try the type vars.
       where depthOfVarTys =
               case fmap (depthOfType typeEnv visited name) varTys of
-                [] -> 1
+                [] -> 0
                 xs -> maximum xs + 1
 
 
