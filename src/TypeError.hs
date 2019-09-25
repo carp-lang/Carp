@@ -3,7 +3,6 @@ module TypeError ( module TypeError
                  ) where
 
 import Data.Maybe (fromMaybe)
-import Data.Either (fromRight)
 
 import Types
 import Obj
@@ -70,15 +69,9 @@ instance Show TypeError where
     prettyInfoFromXObj xobj ++
     ".\n\nI need exactly one body form. For multiple forms, try using `do`."
   show (UnificationFailed constraint@(Constraint a b aObj bObj ctx _) mappings constraints) =
-    "I can’t match the types `" ++ show (beautifyTyVariables $ recursiveLookupTy mappings a) ++
-    "` and `" ++ show (beautifyTyVariables $ recursiveLookupTy mappings b) ++ "`" ++ extra ++
-    ".\n\n" ++
-    --show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
-    "  " ++ pretty aObj ++ " : " ++ showTypeFromXObj mappings (beauty aObj) ++
-    "\n  At " ++ prettyInfoFromXObj aObj ++ "" ++
-    "\n\n" ++
-    "  " ++ pretty bObj ++ " : " ++ showTypeFromXObj mappings (beauty bObj) ++
-    "\n  At " ++ prettyInfoFromXObj bObj ++ "\n"
+    "I can’t match the types `" ++ showTy a ++ "` and `" ++ showTy b ++ "`."
+    ++ extra ++ showObj aObj ++ showObj bObj
+    -- ++ show aObj ++ "\nWITH\n" ++ show bObj ++ "\n\n" ++
     -- ++ "Constraint: " ++ show constraint ++ "\n\n"
     -- "All constraints:\n" ++ show constraints ++ "\n\n" ++
     -- "Mappings: \n" ++ show mappings ++ "\n\n"
@@ -86,7 +79,12 @@ instance Show TypeError where
           snip s = if length s > 25
                     then take 15 s ++ " ... " ++ drop (length s - 5) s
                     else s
-          beauty o = fromRight o $ beautifyTypeVariables o
+          beautifulTy = beautifyTy mappings . recursiveLookupTy mappings
+          showTy = show . beautifulTy
+          showObjTy = fromMaybe "Type missing" . fmap showTy . ty
+          showObj o = "\n\n  " ++ pretty o ++ " : " ++ showObjTy o
+            ++ "\n  At " ++ prettyInfoFromXObj o ++ ""
+
   show (CantDisambiguate xobj originalName theType options) =
     "I found an ambiguous symbol `" ++ originalName ++ "` of type `" ++
     show theType ++ "` at " ++ prettyInfoFromXObj xobj ++

@@ -48,24 +48,33 @@ isArrayTypeOK :: Ty -> Bool
 isArrayTypeOK (StructTy "Array" [RefTy _]) = False -- An array containing refs!
 isArrayTypeOK _ = True
 
-
--- | TODO: Only change variables that are machine generated.
-beautyMappings :: Ty -> TypeMappings
-beautyMappings t =
-  Map.fromList (zip (map (\(VarTy name) -> name) tys)
-                 (map (VarTy . (:[])) ['a'..]))
-  where tys = nub (typeVariablesInOrderOfAppearance t)
+beautifyTy :: TypeMappings -> Ty -> Ty
+beautifyTy mappings = f
+  where f :: Ty -> Ty
+        f (FuncTy argTys retTy) = FuncTy (f <$> argTys) (f retTy)
+        f (StructTy n typeArgs) = StructTy n (f <$> typeArgs)
+        f (RefTy innerTy) = RefTy $ f innerTy
+        f (PointerTy innerTy) = PointerTy $ f innerTy
+        f t@(VarTy n) = case Map.lookup n bmappings of
+                        Just nn -> VarTy nn
+                        Nothing -> t
+        f t = t
+        bmappings = beautification mappings
+        beautification :: TypeMappings -> Map.Map String String
+        beautification m =
+          Map.fromList $ zip (map (\(VarTy name) -> name) tys) ((:[]) <$> ['a'..])
+          where tys = nub $ concat $ typeVariablesInOrderOfAppearance <$> tys'
+                tys' = snd <$> Map.assocs m
 
 -- | Change auto generated type names (i.e. 't0') to letters (i.e. 'a', 'b', 'c', etc...)
+-- | TODO: Only change variables that are machine generated.
 beautifyTypeVariables :: XObj -> Either TypeError XObj
 beautifyTypeVariables root =
   let Just t = ty root
-      mappings = beautyMappings t
+      tys = nub (typeVariablesInOrderOfAppearance t)
+      mappings = Map.fromList (zip (map (\(VarTy name) -> name) tys)
+                                   (map (VarTy . (:[])) ['a'..]))
   in  assignTypes mappings root
-
-beautifyTyVariables :: Ty -> Ty
-beautifyTyVariables t = replaceTyVars mappings t
-  where mappings = beautyMappings t
 
 typeVariablesInOrderOfAppearance :: Ty -> [Ty]
 typeVariablesInOrderOfAppearance (FuncTy argTys retTy) =
