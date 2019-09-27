@@ -1,6 +1,6 @@
 #ifdef LOG_MEMORY
 
-long malloc_balance_counter = 0;
+Long malloc_balance_counter = 0;
 bool log_memory_balance = false;
 
 void *logged_malloc(size_t size) {
@@ -35,7 +35,7 @@ void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
 #define CARP_FREE(ptr) logged_free(ptr)
 #define CARP_REALLOC(ptr, size) realloc(ptr, size)
 
-long Debug_memory_MINUS_balance() {
+Long Debug_memory_MINUS_balance() {
     return malloc_balance_counter;
 }
 
@@ -63,7 +63,7 @@ void* CARP_REALLOC(void* ptr, size_t size) {
 
 #define CARP_FREE(ptr) free(ptr)
 
-long Debug_memory_MINUS_balance() {
+Long Debug_memory_MINUS_balance() {
     printf(
         "Error - calling 'memory-balance' without compiling with LOG_MEMORY "
         "enabled (--log-memory).\n");

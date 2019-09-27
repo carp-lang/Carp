@@ -7,9 +7,11 @@ typedef SSIZE_T ssize_t;
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+#include <inttypes.h>
 
 typedef char *String;
 typedef char *Pattern;
+typedef int64_t Long;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)
