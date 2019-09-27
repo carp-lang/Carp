@@ -1,12 +1,14 @@
 #pragma once
-#include "carp_stdbool.h"
 #include <stdlib.h>
+#include "core.h"
+
+#include "carp_stdbool.h"
 
 #ifdef LOG_MEMORY
 
 #include <stdio.h>
 
-long malloc_balance_counter = 0;
+Long malloc_balance_counter = 0;
 bool log_memory_balance = false;
 
 void *logged_malloc(size_t size) {
@@ -39,7 +41,7 @@ void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
 
-long Debug_memory_MINUS_balance() {
+Long Debug_memory_MINUS_balance() {
     return malloc_balance_counter;
 }
 
@@ -63,7 +65,7 @@ void* CARP_MALLOC(size_t size) {
 
 #include <stdio.h>
 
-long Debug_memory_MINUS_balance() {
+Long Debug_memory_MINUS_balance() {
     printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled (--log-memory).\n");
     exit(1);
     return 0;

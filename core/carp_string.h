@@ -230,21 +230,21 @@ int Int_from_MINUS_string(const String *s) {
     return atoi(*s);
 }
 
-String Long_str(long x) {
-    int size = snprintf(NULL, 0, "%ldl", x)+1;
+String Long_str(Long x) {
+    int size = snprintf(NULL, 0, "%" PRIi64, x)+1;
     String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%ldl", x);
+    snprintf(buffer, size, "%" PRIi64, x);
     return buffer;
 }
 
-String Long_format(const String* str, long x) {
+String Long_format(const String* str, Long x) {
     int size = snprintf(NULL, 0, *str, x)+1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
     return buffer;
 }
 
-long Long_from_MINUS_string(const String *s) {
+Long Long_from_MINUS_string(const String *s) {
     return atol(*s);
 }
 

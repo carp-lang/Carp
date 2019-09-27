@@ -2,6 +2,7 @@
 #define PRELUDE_H
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include "carp_stdbool.h"
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
@@ -10,6 +11,7 @@
 
 typedef char* String;
 typedef char* Pattern;
+typedef int64_t Long;
 
 #if defined NDEBUG
 #define CHK_INDEX(i,n)

@@ -72,7 +72,7 @@ String IO_get_MINUS_line() {
 
 String IO_read_MINUS_file(const String *filename) {
     String buffer = 0;
-    long length;
+    Long length;
     FILE *f = fopen(*filename, "rb");
 
     if(f) {
