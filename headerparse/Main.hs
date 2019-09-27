@@ -76,7 +76,7 @@ parseHeaderFile path src prefix kebab =
 
         defineBody :: Parsec.Parsec String () ()
         defineBody = do s <- Parsec.many (Parsec.noneOf "\\\n")
-                        ending <- Parsec.optionMaybe (Parsec.string "\\\\\n")
+                        ending <- Parsec.optionMaybe (Parsec.string "\\\n")
                         case ending of
                           Nothing ->
                             do c <- Parsec.optionMaybe (Parsec.noneOf "\n")

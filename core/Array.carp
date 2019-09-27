@@ -100,7 +100,7 @@ Returns `Nothing` if the array is empty.")
       false
       (let-do [eq true]
         (for [i 0 (length a)]
-          (when (/= @(nth a i) @(nth b i))
+          (when (/= (nth a i) (nth b i))
             (do
               (set! eq false)
               (break))))
