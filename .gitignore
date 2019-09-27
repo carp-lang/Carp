@@ -12,3 +12,4 @@ dist/
 /releases
 main.obj
 examples/out
+/stack.yaml.lock
