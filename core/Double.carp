@@ -68,9 +68,6 @@ The margin of error is `0.00001`.")
   (defn = [a b]
     (Double.= @a @b))
 
-  (defn /= [a b]
-    (Double./= @a @b))
-
   (defn < [a b]
     (Double.< @a @b))
 
