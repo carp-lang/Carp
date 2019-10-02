@@ -4,12 +4,6 @@
 ** Copyright (C) 1994-2017 Lua.org, PUC-Rio; see LUA_LICENSE
 ** =======================================================
 */
-#include <ctype.h>
-#include <stdarg.h>
-#include <stddef.h>
-
-#include <carp_string.h>
-
 #if !defined(CARP_MAXCAPTURES)
 #define CARP_MAXCAPTURES 16
 #endif

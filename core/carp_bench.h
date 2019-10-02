@@ -1,5 +1,3 @@
-#include <time.h>
-
 double get_MINUS_time_MINUS_elapsed() {
   struct timespec tv;
   clock_gettime(CLOCK_REALTIME, &tv);

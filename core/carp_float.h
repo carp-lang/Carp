@@ -1,8 +1,3 @@
-#include <float.h>
-#include <limits.h>
-#include <math.h>
-#include "carp_stdbool.h"
-
 const float CARP_FLT_MAX = FLT_MAX;
 
 float Float__PLUS_(float x, float y) { return x + y; }

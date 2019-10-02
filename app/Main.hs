@@ -19,7 +19,7 @@ import Lookup
 defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
-          , projectIncludes = [SystemInclude "core.h"]
+          , projectIncludes = []
           , projectCFlags = [""]
           , projectLibFlags = [""]
           , projectFiles = []
