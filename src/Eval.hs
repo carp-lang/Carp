@@ -1132,6 +1132,8 @@ commandLoad [xobj@(XObj (Str path) i _)] =
             machineReadableInfoFromXObj (fppl ctx) xobj ++ " I can't find a file named: '" ++ path ++ "'"
           _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nI tried interpreting the statement as a git import, but got: " ++ stderr) (info xobj)
+    replaceC c s [] = []
+    replaceC c s (a:b) = if a == c then s ++ replaceC c s b else a : replaceC c s b
     cantLoadSelf ctx path =
       case contextExecMode ctx of
         Check ->
@@ -1142,7 +1144,7 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       let split = splitOn "@" path
       in tryInstallWithCheckout (joinWith "@" (init split)) (last split)
     fromURL url =
-      let split = splitOn "/" url
+      let split = splitOn "/" (replaceC ':' "_COLON_" url)
           fst = head split
       in if fst `elem` ["https:", "http:"]
         then joinWith "/" (tail split)
