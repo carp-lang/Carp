@@ -1,0 +1,21 @@
+(defmodule Numeric
+  (defmacro register [t]
+    (list 'do
+          (list 'register '* (list 'λ [t t] t))
+          (list 'register '+ (list 'λ [t t] t))
+          (list 'register '- (list 'λ [t t] t))
+          (list 'register '/ (list 'λ [t t] t))
+          (list 'register '< (list 'λ [t t] 'Bool))
+          (list 'register '= (list 'λ [t t] 'Bool))
+          (list 'register '> (list 'λ [t t] 'Bool))
+          (list 'register 'copy (list 'λ [(list 'ref t)] t))
+          (list 'register 'dec (list 'λ [t] t))
+          (list 'register 'from-floating (list 'λ ['Floating] t))
+          (list 'register 'from-integral (list 'λ ['Integral] t))
+          (list 'register 'inc (list 'λ [t] t))
+          (list 'register 'neg (list 'λ [t] t))
+          (list 'register 'to-bytes (list 'λ [t] 'Long))
+          (list 'register 'to-floating (list 'λ [t] 'Floating))
+          (list 'register 'to-integral (list 'λ [t] 'Integral))
+          ))
+)

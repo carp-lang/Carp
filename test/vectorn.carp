@@ -59,7 +59,7 @@
               (Maybe.unsafe-from (angle-between &(init 3 [1.0 0.0 0.0])
                                                 &(init 3 [0.0 1.0 0.0]))))
              "angle-between works"
-             Double.approx)
+             Generics.approx)
   (assert-true test
                (Maybe.unsafe-from (anti-parallel? &(init 4 [1.0 0.0 0.0 0.0])
                                                   &(init 4 [-1.0 0.0 0.0 0.0])))

@@ -40,3 +40,13 @@ typedef struct {
 } Lambda;
 
 typedef void *LambdaEnv;
+
+#define CAT_(x, y) x##_##y
+#define CAT(x, y) CAT_(x, y)
+
+#define STATIC_ASSERT2(x, l) extern char CAT(static_assert, l)[x ? 0 : -1]
+#define STATIC_ASSERT(x) STATIC_ASSERT2(x, __LINE__)
+
+typedef int64_t Integral;
+typedef double Floating;
+STATIC_ASSERT(sizeof(Integral) == sizeof(Floating));

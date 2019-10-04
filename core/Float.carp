@@ -1,72 +1,12 @@
 (system-include "carp_float.h")
 
 (defmodule Float
-  (def pi 3.1415926536f)
-  (register MAX Float "CARP_FLT_MAX")
-  (register neg (Fn [Float] Float))
-  (register + (Fn [Float Float] Float))
-  (register - (Fn [Float Float] Float))
-  (register * (Fn [Float Float] Float))
-  (register / (Fn [Float Float] Float))
-  (register to-int (Fn [Float] Int))
-  (register to-bytes (Fn [Float] Int))
-  (register from-int (Fn [Int] Float))
-  (register copy (Fn [(Ref Float)] Float))
-
-  (register = (Fn [Float Float] Bool))
-  (register < (Fn [Float Float] Bool))
-  (register > (Fn [Float Float] Bool))
-
-  (defn clamp [min, max, val]
-    (if (> val max)
-      max
-      (if (< val min)
-        min
-        val)))
-
-  (doc approx "checks whether `x` and `y` are approximately equal.
-
-The margin of error is 0.00001.")
-  (defn approx [x y]
-    (Generics.approx x y))
-
-  (register copy (Fn [(Ref Float)] Float))
-
-  (register abs (Fn [Float] Float))
-  (register acos (Fn [Float] Float))
-  (register asin (Fn [Float] Float))
-  (register atan (Fn [Float] Float))
-  (register atan2 (Fn [Float Float] Float))
-  (register ceil (Fn [Float] Float))
-  (register cos (Fn [Float] Float))
-  (register cosh (Fn [Float] Float))
-  (register exp (Fn [Float] Float))
-  (register floor (Fn [Float] Float))
-  (register frexp (Fn [Float (Ref Int)] Float))
-  (register ldexp (Fn [Float Int] Float))
-  (register log (Fn [Float] Float))
-  (register log10 (Fn [Float] Float))
-  (register mod (Fn [Float Float] Float))
-  (register modf (Fn [Float (Ref Float)] Float))
-  (register pow (Fn [Float Float] Float))
-  (register sin (Fn [Float] Float))
-  (register sinh (Fn [Float] Float))
-  (register sqrt (Fn [Float] Float))
-  (register tan (Fn [Float] Float))
-  (register tanh (Fn [Float] Float))
+  (Numeric.register Float)
+  (Floating.register Float)
 
   (doc zero "returns `0.0f`.")
   (defn zero []
     0.0f)
-
-  (defn inc [x]
-    (+ 1.0f x))
-
-  (defn dec [x]
-    (- x 1.0f))
-
-  (defn add-ref [x y]
-    (Float.+ @x @y))
 )
 
 (defmodule FloatRef
@@ -78,4 +18,7 @@ The margin of error is 0.00001.")
 
   (defn > [a b]
     (Float.> @a @b))
+
+  (defn + [a b]
+    (Float.+ @a @b))
 )

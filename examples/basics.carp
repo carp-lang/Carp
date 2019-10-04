@@ -19,7 +19,7 @@
     (inside "Hello")))
 
 (defn use-doubles []
-  (println (ref (str (Double.to-int (Double.+ 2.0 3.0))))))
+  (println (ref (str (the Int (iconv (Double.+ 2.0 3.0)))))))
 
 (deftype Person
     [name String
@@ -58,7 +58,7 @@
   (+ x (the Double y)))
 
 (defn flip []
-  (random-between 0 2))
+  (Int.random-between 0 2))
 
 (defn macrooo []
   (let [msg "Print!"]
@@ -99,7 +99,7 @@
 
 (defn negative-numbers []
   (let [x -10.0 y -20.0f z -30]
-    (* (* (to-int x) (to-int y)) z)))
+    (* (* (iconv x) (iconv y)) z)))
 
 (defn square [x]
   (Int.* x x))

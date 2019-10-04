@@ -57,7 +57,7 @@ If your functions takes a large amount of time, experimenting with this might ma
           samples (Array.replicate min-runs &zero)]
       (do
         (for [i 0 min-runs]
-          (Array.aset! &samples i (Double./ (ns-iter-inner f (Double.to-int n)) n)))
+          (Array.aset! &samples i (Double./ (ns-iter-inner f (iconv n)) n)))
         (Statistics.summary &(Statistics.winsorize &samples 5.0)))))
 
   (private min-one)

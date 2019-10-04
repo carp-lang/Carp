@@ -83,7 +83,7 @@
 
   (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
-    (= (angle-between a b) pi))
+    (= (angle-between a b) (Generics.pi)))
 
   (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
@@ -189,7 +189,7 @@
 
   (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
-    (= (angle-between a b) pi))
+    (= (angle-between a b) (Generics.pi)))
 
   (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]
@@ -277,7 +277,7 @@
 
   (doc anti-parallel? "Check whether the two vectors a and b are anti-parallel.")
   (defn anti-parallel? [a b]
-    (Maybe.apply (angle-between a b) (fn [x] (= x pi))))
+    (Maybe.apply (angle-between a b) (fn [x] (= x (Generics.pi)))))
 
   (doc parallel? "Check whether the two vectors a and b are parallel.")
   (defn parallel? [a b]

@@ -61,10 +61,10 @@
                 "integer division truncates as expected")
   (assert-equal test
                 3
-                (positive-mod -7 5)
+                (Generics.positive-mod -7 5)
                 "positive-mod works on negative inputs")
   (assert-equal test
                 0
-                (positive-mod 0 7)
+                (Generics.positive-mod 0 7)
                 "positive-mod works on zero")
 )

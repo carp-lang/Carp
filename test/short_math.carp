@@ -1,0 +1,78 @@
+(load "Test.carp")
+
+(use-all Short Test Generics)
+
+(deftest test
+  (assert-equal test
+                (the Short (one))
+                (min (one) (two))
+                "min works as expected")
+  (assert-equal test
+                (the Short (two))
+                (max (one) (two))
+                "max works as expected")
+  (assert-equal test
+                (the Short (one))
+                (abs (minus-one))
+                "abs works as expected")
+  (assert-equal test
+                false
+                (even? (the Short (three)))
+                "even? works as expected")
+  (assert-equal test
+                true
+                (odd? (the Short (three)))
+                "odd? works as expected")
+  (assert-equal test
+                (the Short (one))
+                (bit-and (three) (five))
+                "bit-and works as expected")
+  (assert-equal test
+                (the Short (five))
+                (bit-or (one) (four))
+                "bit-or works as expected")
+  (assert-equal test
+                (the Short (four))
+                (bit-xor (one) (five))
+                "bit-xor works as expected")
+  (assert-equal test
+                (the Short (minus-two))
+                (bit-not (one))
+                "bit-not works as expected")
+  (assert-equal test
+                (the Short (iconv 8))
+                (bit-shift-left (two) (two))
+                "bit-shift-left works as expected")
+  (assert-equal test
+                (the Short (two))
+                (bit-shift-right (iconv 16) (three))
+                "bit-shift-right works as expected")
+  (assert-equal test
+                (the Short (iconv -2))
+                (neg (two))
+                "neg works as expected")
+  (assert-equal test
+                (the Short (two))
+                (neg (minus-two))
+                "neg works as expected II")
+  (assert-equal test
+                (the Short (one))
+                (/ (three) (two))
+                "integer division truncates as expected")
+  (assert-equal test
+                (the Short (three))
+                (positive-mod (iconv -7) (five))
+                "positive-mod works on negative inputs")
+  (assert-equal test
+                (the Short (zero))
+                (positive-mod (zero) (three))
+                "positive-mod works on zero")
+  (assert-equal test
+                (the Short (iconv 32767))
+                MAX
+                "MAX works as expected")
+  (assert-equal test
+                (the Short (iconv -32768))
+                MIN
+                "MIN works as expected")
+)

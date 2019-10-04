@@ -51,16 +51,16 @@
              1.0f
              (exp 0.0f)
              "exp works as expected"
-             Float.approx)
+             Generics.approx)
   (assert-equal test
                 8.0f
                 (ldexp 2.0f 2)
                 "ldexp works as expected")
   (assert-op test
              1.0f
-             (log (Double.to-float Double.e))
+             (log (Generics.e))
              "log works as expected"
-             Float.approx)
+             Generics.approx)
   (assert-equal test
                 1.0f
                 (log10 10.0f)
@@ -97,14 +97,14 @@
              0.3f
              (mod 9.3f 3.0f)
              "mod works as expected"
-             Float.approx)
+             Generics.approx)
   (assert-equal test
-                1065353216
+                1065353216l
                 (to-bytes 1f)
                 "to-bytes works as expected I"
   )
   (assert-equal test
-                0
+                0l
                 (to-bytes 0.0f)
                 "to-bytes works as expected II"
   ))

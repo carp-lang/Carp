@@ -20,7 +20,7 @@
     (let [res true]
       (do
         (for [i 0 (Array.length a)]
-          (if (not (Double.approx @(Array.unsafe-nth a i) @(Array.unsafe-nth b i)))
+          (if (not (Generics.approx @(Array.unsafe-nth a i) @(Array.unsafe-nth b i)))
             (set! res false)
             ()))
         res))))
@@ -88,12 +88,12 @@
              3.7065
              (median-abs-dev &[5.0 10.0])
              "median-abs-dev works as expected"
-             Double.approx)
+             Generics.approx)
   (assert-op test
              49.42
              (median-abs-dev-pct &[5.0 10.0])
              "median-abs-dev-pct works as expected"
-             Double.approx)
+             Generics.approx)
   (assert-equal test
                 2.0
                 @(Summary.median &(summary &[1.0 2.0 3.0]))

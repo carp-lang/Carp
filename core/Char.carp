@@ -1,12 +1,8 @@
 (system-include "carp_char.h")
 
 (defmodule Char
-  (register = (Fn [Char Char] Bool))
-  (register < (Fn [Char Char] Bool))
-  (register > (Fn [Char Char] Bool))
-  (register to-int (Fn [Char] Int))
-  (register from-int (Fn [Int] Char))
-  (register copy (Fn [&Char] Char))
+  (Numeric.register Char)
+  (Integral.register Char)
 
   (doc meaning "converts a numerical char into the appropriate number (e.g. from `\1` to `1`).")
   (defn meaning [char-ref]
@@ -45,7 +41,7 @@
     (or (alpha? c) (num? c)))
 
   (defn zero []
-    (from-int 0))
+    (iconv 0))
 )
 
 (defmodule CharRef

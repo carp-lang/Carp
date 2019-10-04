@@ -1,9 +1,13 @@
 ; this compiles without needing the core libraries (--no-core flag)
 (system-include "limits.h")
+(system-include "stdint.h")
 (system-include "carp_stdbool.h")
+(system-include "core.h")
 (load "Interfaces.carp")
 (load "Bool.carp")
 (load "Generics.carp")
+(load "Numeric.carp")
+(load "Integral.carp")
 (load "Int.carp")
 
 (defn main []

@@ -56,7 +56,7 @@
              (radians-to-degree (angle-between &(init 1.0 0.0 0.0)
                                                &(init 0.0 1.0 0.0)))
              "angle-between works"
-             Double.approx)
+             Generics.approx)
   (assert-true test
                (anti-parallel? &(init 1.0 0.0 0.0) &(init -1.0 0.0 0.0))
                "anti-parallel? works")

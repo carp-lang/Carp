@@ -1,21 +1,25 @@
 (load "Macros.carp")
 
+(register-type Integral)
+(register-type Floating)
+(definterface from-integral (λ [Integral] a))
+(definterface to-integral (λ [a] Integral))
+(definterface from-floating (λ [Floating] a))
+(definterface to-floating (λ [a] Floating))
+
 ;; The 'copy' and 'str' interfaces are defined internally:
 ;;(definterface copy (λ [&a] a))
 ;;(definterface str (λ [a] String))
 
 (definterface = (λ [a a] Bool))
 
-(definterface add-ref (λ [&a &a] a))
-(definterface sub-ref (λ [&a &a] a))
-(definterface mul-ref (λ [&a &a] a))
-(definterface div-ref (λ [&a &a] a))
-
 (definterface + (λ [a a] a))
 (definterface - (λ [a a] a))
 (definterface * (λ [a a] a))
 (definterface / (λ [a a] a))
 (definterface mod (λ [a a] a))
+(definterface MAX a)
+(definterface MIN a)
 
 (definterface < (λ [a a] Bool))
 (definterface > (λ [a a] Bool))
@@ -25,16 +29,11 @@
 (definterface dec (λ [a] a))
 (definterface neg (λ [a] a))
 
-(definterface to-int (λ [a] Int))
-(definterface from-int (λ [Int] a))
-
 (definterface format (λ [&String a] String))
 (definterface from-string (λ [&String] a))
 
 (definterface random (Fn [] a))
 (definterface random-between (Fn [a a] a))
-
-(definterface pi a)
 
 (definterface abs (λ [a] a))
 (definterface acos (λ [a] a))

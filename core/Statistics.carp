@@ -20,7 +20,7 @@
 
   (doc mean "Compute the mean of the samples data.")
   (defn mean [data]
-    (/ (Array.sum data) (from-int (Array.length data))))
+    (/ (Array.sum data) (fconv (Array.length data))))
 
   (hidden _pp)
   (defn _pp [a mean]
@@ -45,7 +45,7 @@
           tmp (_xx data m)]
       (Double.- (_pp data m)
                 (Double./ (Double.* tmp tmp)
-                          (Double.from-int (Array.length data))))))
+                          (fconv (Array.length data))))))
 
   (doc median "Compute the median of the samples data.")
   (defn median [data]
@@ -81,23 +81,23 @@
       (cond (= n 0) 0.0
             (= n 1) @(Array.unsafe-nth data 0)
             (let [x @(Array.unsafe-nth data (/ n 2)) ; else
-                  l (- x (/ (from-int interval) 2.0))
+                  l (- x (/ (fconv interval) 2.0))
                   cf (Maybe.from (Array.index-of data &x) -1)
                   f (Array.element-count data &x)]
-              (+ l (/ (* (from-int interval) (- (/ (from-int n) 2.0) (from-int cf)))
-                      (from-int f)))))))
+              (+ l (/ (* (fconv interval) (- (/ (fconv n) 2.0) (fconv cf)))
+                      (fconv f)))))))
 
   (doc variance "Compute the variance of the samples data.")
   (defn variance [data]
     (let [n (Array.length data)
           ss (_ss data)]
-      (/ ss (from-int (dec n)))))
+      (/ ss (fconv (dec n)))))
 
   (doc pvariance "Compute the population variance of the samples data.")
   (defn pvariance [data]
     (let [n (Array.length data)
           ss (_ss data)]
-      (/ ss (from-int n))))
+      (/ ss (fconv n))))
 
   (doc stdev "Compute the standard deviation of the samples data.")
   (defn stdev [data]
@@ -135,10 +135,10 @@
       (Int.= 1 (Array.length sorted)) @(Array.unsafe-nth sorted 0)
       (Double.= 100.0 pct) @(Array.unsafe-nth sorted (Int.dec (Array.length sorted)))
       (let [len (Int.dec (Array.length sorted))
-            rank (Double.* (Double./ pct 100.0) (Double.from-int len))
+            rank (Double.* (Double./ pct 100.0) (fconv len))
             lrank (Double.floor rank)
             d (Double.- rank lrank)
-            n (Double.to-int lrank)
+            n (iconv lrank)
             lo @(Array.unsafe-nth sorted n)
             hi @(Array.unsafe-nth sorted (Int.inc n))]
         (Double.+ lo (Double.* d (Double.- hi lo))))))

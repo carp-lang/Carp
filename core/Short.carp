@@ -1,0 +1,23 @@
+(system-include "carp_short.h")
+
+(defmodule Short
+  (register-type Short)
+  (Numeric.register Short)
+  (Integral.register Short)
+  (register str (λ [Short] String))
+)
+
+(defmodule ShortRef
+  (defn = [a b]
+    (Short.= @a @b))
+
+  (defn < [a b]
+    (Short.< @a @b))
+
+  (defn > [a b]
+    (Short.> @a @b))
+
+  (defn + [a b]
+    (Short.+ @a @b))
+
+)

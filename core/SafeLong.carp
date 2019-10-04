@@ -1,0 +1,10 @@
+(system-include "carp_safe_long.h")
+
+(defmodule Long
+  (doc safe-add "Performs an addition and checks whether it overflowed.")
+  (register safe-add (λ [Long Long (Ref Long)] Bool))
+  (doc safe-sub "Performs an substraction and checks whether it overflowed.")
+  (register safe-sub (λ [Long Long (Ref Long)] Bool))
+  (doc safe-mul "Performs an multiplication and checks whether it overflowed.")
+  (register safe-mul (λ [Long Long (Ref Long)] Bool))
+)

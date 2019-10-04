@@ -14,7 +14,7 @@
       (println "(Enter q to quit.)\n")
 
       (set! guessing true)
-      (set! answer (random-between 1 100))
+      (set! answer (the Int (random-between 1 100)))
 
       (print "Please enter a number between 1 - 99: ")))
 
@@ -39,7 +39,7 @@
 
 (defn main []
   (do (println "Seeding random number generator...\n")
-      (Random.seed-from (Double.from-int (System.time)))
+      (Random.seed-from (fconv (System.time)))
       (start-new-game!)
       (while guessing
         (let [user-input (get-line)

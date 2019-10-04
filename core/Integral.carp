@@ -1,0 +1,15 @@
+(defmodule Integral
+  (defmacro register [t]
+    (list 'do
+          (list 'register 'MAX t)
+          (list 'register 'MIN t)
+          (list 'register 'abs (list 'λ [t] t))
+          (list 'register 'bit-and (list 'λ [t t] t))
+          (list 'register 'bit-not (list 'λ [t] t))
+          (list 'register 'bit-or (list 'λ [t t] t))
+          (list 'register 'bit-shift-left (list 'λ [t t] t))
+          (list 'register 'bit-shift-right (list 'λ [t t] t))
+          (list 'register 'bit-xor (list 'λ [t t] t))
+          (list 'register 'mod (list 'λ [t t] t))
+          ))
+)

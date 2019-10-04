@@ -45,7 +45,7 @@
         ff2 @&ff1
         to-copy @to
         upper (to-copy)]
-    (endo-map &(fn [x] (Int.pow x exponent)) (range 0 upper 1))))
+    (endo-map &(fn [x] (Generics.pow x exponent)) (range 0 upper 1))))
 
 (defn twenty [] 20)
 

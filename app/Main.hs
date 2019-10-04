@@ -58,7 +58,7 @@ main = do setLocaleEncoding utf8
               optimize = Optimize `elem` otherOptions
               generateOnly = GenerateOnly `elem` otherOptions
               projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
-                                                                  (if optimize then ["-O3 -D NDEBUG"] else []) ++
+                                                                  (if optimize then ["-O3 -fomit-frame-pointer -D NDEBUG"] else []) ++
                                                                   (projectCFlags defaultProject),
                                                   projectCore = not noCore,
                                                   projectGenerateOnly = generateOnly}

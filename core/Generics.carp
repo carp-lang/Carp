@@ -1,5 +1,8 @@
 ;; The following generic functions make use of the interfaces
 
+(defn fconv [a]
+  (from-floating (to-floating a)))
+
 (defmodule Generics
   (defn one [] (inc (zero)))
   (defn minus-one [] (dec (zero)))
@@ -19,8 +22,10 @@
   (defn squared [x] (* x x))
   (defn inverse [x] (/ (one) x))
   (defn half [] (halved (one)))
-  (defn half-pi [] (halved pi))
-  (defn tau [] (twice pi))
+  (defn pi [] (fconv 3.141592653589793))
+  (defn e [] (fconv 2.718281828459045))
+  (defn half-pi [] (halved (pi)))
+  (defn tau [] (twice (pi)))
   (defn ninety [] (* (two) (* (* (three) (three)) (five))))
   (defn one-hundred-eighty [] (* (two) (ninety)))
   (defn small [] (inverse (hundred-thousand)))
@@ -106,4 +111,31 @@ The margin of error is 0.00001.")
 (defn /= [a b]
   (not (= a b)))
 
+(defn iconv [a]
+  (from-integral (to-integral a)))
+
+(defn even? [a] (= (mod a (two)) (zero)))
+
+(defn odd? [a] (not (even? a)))
+
+(defmodule Generics
+  (doc pow "Raise x to the power of y.")
+  (defn pow [x y]
+    (let-do [r (one)]
+      (while (pos? y)
+        (do
+          (when (odd? y)
+            (set! r (* r x)))
+          (set! y (halved y))
+          (set! x (squared x))))
+      r))
+
+  (doc positive-mod "Like mod but always returns a positive answer.")
+  (defn positive-mod [k n]
+    (let [r (mod k n)]
+      (if (neg? r)
+        (+ r n)
+        r)))
+
+)
 )

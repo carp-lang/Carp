@@ -48,7 +48,7 @@
                 (tanh 0.0)
                 "tanh works as expected")
   (assert-equal test
-                Double.e
+                (Generics.e)
                 (exp 1.0)
                 "exp works as expected")
   (assert-equal test
@@ -57,7 +57,7 @@
                 "ldexp works as expected")
   (assert-equal test
                 1.0
-                (log Double.e)
+                (log (Generics.e))
                 "log works as expected")
   (assert-equal test
                 1.0
@@ -91,7 +91,7 @@
              0.3
              (mod 9.3 3.0)
              "mod works as expected"
-             Double.approx)
+             Generics.approx)
   (assert-equal test
                 4607182418800017408l
                 (to-bytes 1.0)

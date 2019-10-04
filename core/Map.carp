@@ -7,7 +7,7 @@
              vh 0]
       (for [x 0 (length k)]
         (do
-          (set! vh (+ (* a vh) (Char.to-int (char-at k x))))
+          (set! vh (+ (* a vh) (iconv (char-at k x))))
           (set! a (* a b))
           (set! x (Int.inc x))))
       (Int.abs vh)))
@@ -18,7 +18,7 @@
 )
 
 (defmodule Long
-  (defn hash [k] (to-int (the Long @k)))
+  (defn hash [k] (iconv (the Long @k)))
 )
 
 (defmodule Bool
@@ -26,15 +26,15 @@
 )
 
 (defmodule Char
-  (defn hash [k] (to-int (the Char @k)))
+  (defn hash [k] (iconv (the Char @k)))
 )
 
 (defmodule Float
-  (defn hash [k] (to-bytes @k))
+  (defn hash [k] (iconv (to-bytes @k)))
 )
 
 (defmodule Double
-  (defn hash [k] (Long.to-int (to-bytes @k)))
+  (defn hash [k] (iconv (to-bytes @k)))
 )
 
 (defmodule Pair
@@ -126,21 +126,21 @@
 
   (doc put "Put a a value v into map m, using the key k.")
   (defn put [m k v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (Bucket.put @n k v)))))))
 
   (doc put! "Put a a value v into map m, using the key k, in place.")
   (defn put! [m k v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets m))
           b (buckets m)
           n (Array.unsafe-nth b idx)]
       (Array.aset! b idx (Bucket.put @n k v))))
 
   (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
   (defn get-with-default [m k default-value]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets m))]
       (Bucket.get (Array.unsafe-nth (buckets m) idx) k default-value)))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
@@ -149,12 +149,12 @@
 
   (doc get-maybe "Get the value for the key k from map m. It returns a Maybe type, meaning that if nothing is found, Nothing is returned.")
   (defn get-maybe [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets m))]
       (Bucket.get-maybe (Array.unsafe-nth (buckets m) idx) k)))
 
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
@@ -165,7 +165,7 @@
 
   (doc update-with-default "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
   (defn update-with-default [m k f v]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
@@ -186,12 +186,12 @@
 
   (doc contains? "Check whether the map m contains the key k.")
   (defn contains? [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets m))]
       (Bucket.contains? (Array.unsafe-nth (buckets m) idx) k)))
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (Bucket.shrink @n k)))))))
@@ -339,7 +339,7 @@
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.unsafe-nth &b idx)]
           (if (SetBucket.contains? n k)
@@ -348,7 +348,7 @@
 
   (doc put! "Put a a key k into the set s, in place.")
   (defn put! [s k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets s))
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets s))
           b (buckets s)
           n (Array.unsafe-nth b idx)]
       (when (not (SetBucket.contains? n k))
@@ -367,12 +367,12 @@
 
   (doc contains? "Check whether the set s contains the key k.")
   (defn contains? [s k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets s))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets s))]
       (SetBucket.contains? (Array.unsafe-nth (buckets s) idx) k)))
 
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
+    (let [idx (Generics.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
         (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))

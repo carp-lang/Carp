@@ -15,7 +15,7 @@
 
   (doc seed "seed resets the seed of the random number generator.")
   (defn seed []
-    (set! s (Double.from-long (System.nanotime))))
+    (set! s (fconv (System.nanotime))))
 
   (doc seed-from "seed-from resets the seed of the random number generator to `new-seed`.")
   (defn seed-from [new-seed]
@@ -31,7 +31,7 @@
 (defmodule Int
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
-      (+ (Double.to-int (* (Double.from-int diff) (Random.random))) lower)))
+      (+ (iconv (* (fconv diff) (Random.random))) (the Int lower))))
 
   (defn random []
     (random-between 0 MAX))
@@ -40,19 +40,19 @@
 (defmodule Float
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
-      (+ (Double.to-float (* (Double.from-float diff) (Random.random))) lower)))
+      (+ (fconv (* (fconv diff) (Random.random))) (the Float lower))))
 
   (defn random []
-    (random-between 0.0f (from-int Int.MAX)))
+    (random-between 0.0f (fconv Int.MAX)))
 )
 
 (defmodule Long
   (defn random-between [lower upper]
     (let [diff (- upper lower)]
-      (+ (Double.to-long (* (Double.from-long diff) (Random.random))) lower)))
+      (+ (iconv (* (fconv diff) (Random.random))) (the Long lower))))
 
   (defn random []
-    (random-between 0l (from-int Int.MAX)))
+    (random-between 0l (iconv Int.MAX)))
 )
 
 (defmodule Double
@@ -61,15 +61,15 @@
       (+ (* diff (Random.random)) lower)))
 
   (defn random []
-    (random-between 0.0 (from-int Int.MAX)))
+    (random-between 0.0 (fconv Int.MAX)))
 )
 
 (defmodule Char
   (defn random []
-    (Char.from-int (Int.random)))
+    (iconv (Int.random)))
 
   (defn random-between [a b]
-    (Char.from-int (Int.random-between (Char.to-int a) (Char.to-int b))))
+    (iconv (Int.random-between (iconv a) (iconv b))))
 )
 
 (defmodule String

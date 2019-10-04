@@ -1,38 +1,8 @@
 (system-include "carp_long.h")
 
 (defmodule Long
-  (register + (λ [Long Long] Long))
-  (register - (λ [Long Long] Long))
-  (register * (λ [Long Long] Long))
-  (register / (λ [Long Long] Long))
-  (register < (λ [Long Long] Bool))
-  (register > (λ [Long Long] Bool))
-  (register = (λ [Long Long] Bool))
-  (register neg (λ [Long] Long))
-  (register mod (λ [Long Long] Long))
-  (register seed (λ [Long] ()))
-  (register bit-shift-left (λ [Long Long] Long))
-  (register bit-shift-right (λ [Long Long] Long))
-  (register bit-and (λ [Long Long] Long))
-  (register bit-or (λ [Long Long] Long))
-  (register bit-xor (λ [Long Long] Long))
-  (register bit-not (λ [Long] Long))
-  (register inc (λ [Long] Long))
-  (register dec (λ [Long] Long))
-  (register to-int (λ [Long] Int))
-  (register from-int (λ [Int] Long))
-  (todo copy "Should not be needed when refs to value types are auto-converted
-to non-refs.")
-  (register copy (λ [&Long] Long))
-
-  (register safe-add (λ [Long Long (Ref Long)] Bool))
-  (register safe-sub (λ [Long Long (Ref Long)] Bool))
-  (register safe-mul (λ [Long Long (Ref Long)] Bool))
-
-  (register abs (λ [Long] Long))
-
-  (defn even? [a] (= (mod a 2l) 0l))
-  (defn odd? [a] (not (even? a)))
+  (Numeric.register Long)
+  (Integral.register Long)
 )
 
 (defmodule LongRef

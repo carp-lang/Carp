@@ -32,8 +32,8 @@
   (let [body-length (length (body snake))]
     (for [i 0 body-length]
       (let [part (unsafe-nth (body snake) i)
-            x (* grid-size (to-int @(Vector2.x part)))
-            y (* grid-size (to-int @(Vector2.y part)))]
+            x (* grid-size (iconv @(Vector2.x part)))
+            y (* grid-size (iconv @(Vector2.y part)))]
         (if (= i 0)
           (do
             (SDL.set-render-draw-color rend 200 255 (+ 100 (* body-length 10)) 255)
@@ -45,8 +45,8 @@
 (defn draw-human [rend human]
   (do
     (SDL.set-render-draw-color rend 100 100 250 255)
-    (let [x (* grid-size (to-int @(Vector2.x human)))
-          y (* grid-size (to-int @(Vector2.y human)))]
+    (let [x (* grid-size (iconv @(Vector2.x human)))
+          y (* grid-size (iconv @(Vector2.y human)))]
       (SDL.render-fill-rect rend (address (SDL.rect x y grid-size grid-size))))))
 
 (defn draw [rend world]
@@ -97,8 +97,8 @@
     @body))
 
 (defn create-human []
-  (Vector2.init (from-int (random-between 0 26))
-                (from-int (random-between 0 20))))
+  (Vector2.init (fconv (random-between 0 26))
+                (fconv (random-between 0 20))))
 
 (defn kill-human [world]
   (let [new-human (create-human)]
