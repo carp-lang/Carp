@@ -17,4 +17,4 @@ Integral NAME(to_MINUS_bytes)(T x) {
   return y;
 }
 Floating NAME(to_MINUS_floating)(T a) { return (Floating)a; }
-Integral NAME(to_MINUS_integral)(a) { return (Integral)a; }
+Integral NAME(to_MINUS_integral)(T a) { return (Integral)a; }
