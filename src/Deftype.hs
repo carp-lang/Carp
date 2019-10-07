@@ -237,16 +237,16 @@ tokensForInit allocationMode typeName membersXObjs =
 -- | will be used in the init function like this: "A_init(int x)"
 memberArg :: (String, Ty) -> String
 memberArg (memberName, memberTy) =
-  tyToCLambdaFix (templitizeTy memberTy) ++ " " ++ memberName
+  tyToCLambdaFix (templatizeTy memberTy) ++ " " ++ memberName
 
 -- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
-templitizeTy :: Ty -> Ty
-templitizeTy (VarTy vt) = VarTy ("$" ++ vt)
-templitizeTy (FuncTy argTys retTy) = FuncTy (map templitizeTy argTys) (templitizeTy retTy)
-templitizeTy (StructTy name tys) = StructTy name (map templitizeTy tys)
-templitizeTy (RefTy t) = RefTy (templitizeTy t)
-templitizeTy (PointerTy t) = PointerTy (templitizeTy t)
-templitizeTy t = t
+templatizeTy :: Ty -> Ty
+templatizeTy (VarTy vt) = VarTy ("$" ++ vt)
+templatizeTy (FuncTy argTys retTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy)
+templatizeTy (StructTy name tys) = StructTy name (map templatizeTy tys)
+templatizeTy (RefTy t) = RefTy (templatizeTy t)
+templatizeTy (PointerTy t) = PointerTy (templatizeTy t)
+templatizeTy t = t
 
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> String -> Either TypeError ((String, Binder), [XObj])

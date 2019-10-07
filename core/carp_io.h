@@ -1,8 +1,3 @@
-#pragma once
-#include <stdio.h>
-
-#include <carp_string.h>
-
 void IO_println(String *s) { puts(*s); }
 void IO_print(String *s) { printf("%s", *s); }
 

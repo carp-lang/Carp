@@ -1,6 +1,3 @@
-#include <math.h>
-#include "carp_stdbool.h"
-
 long Long__PLUS_(long x, long y)   { return x + y; }
 long Long__MINUS_(long x, long y)  { return x - y; }
 long Long__MUL_(long x, long y)    { return x * y; }

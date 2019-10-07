@@ -336,8 +336,7 @@ startingGlobalEnv noArray =
       , envMode = ExternalEnv
       , envFunctionNestingLevel = 0
       }
-  where bindings = Map.fromList $ [ register "not" (FuncTy [BoolTy] BoolTy)
-                                  , register "NULL" (VarTy "a")
+  where bindings = Map.fromList $ [ register "NULL" (VarTy "a")
                                   , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])

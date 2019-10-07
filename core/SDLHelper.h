@@ -1,8 +1,5 @@
 #include <SDL.h>
 
-#include <carp_memory.h>
-#include <core.h>
-
 // Event
 SDL_Event SDL_Event_init() {
     SDL_Event e;

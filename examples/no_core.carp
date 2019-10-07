@@ -1,7 +1,8 @@
 ; this compiles without needing the core libraries (--no-core flag)
-
-(load "Macros.carp")
+(system-include "limits.h")
+(system-include "carp_stdbool.h")
 (load "Interfaces.carp")
+(load "Bool.carp")
 (load "Generics.carp")
 (load "Int.carp")
 

@@ -1,11 +1,8 @@
-#ifndef PRELUDE_H
-#define PRELUDE_H
-
-#include <assert.h>
-#include <stddef.h>
-#include "carp_stdbool.h"
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <windows.h>
+#endif
+#ifndef _WIN32
+#include <unistd.h>
 #endif
 
 typedef char* String;
@@ -42,12 +39,3 @@ typedef struct {
 } Lambda;
 
 typedef void* LambdaEnv;
-
-bool not(bool b) {
-    return !b;
-}
-
-bool and(bool x, bool y) { return x && y; }
-bool or(bool x, bool y) { return x || y; }
-
-#endif

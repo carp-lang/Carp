@@ -22,10 +22,7 @@ startingGlobalEnv = Env { envBindings = bs,
                           envUseModules = [SymPath [] "String"],
                           envMode = ExternalEnv
                         }
-  where bs = Map.fromList [ register "and" (FuncTy [BoolTy, BoolTy] BoolTy)
-                          , register "or" (FuncTy [BoolTy, BoolTy] BoolTy)
-                          , register "not" (FuncTy [BoolTy] BoolTy)
-                          , templateNoop
+  where bs = Map.fromList [ templateNoop
                           --, ("Array", Binder (XObj (Mod arrayModule) Nothing Nothing))
                           , register "NULL" (VarTy "a")
                           ]

@@ -1,4 +1,6 @@
 *.dSYM
+*~
+*#
 */.DS_Store
 
 .stack-work/

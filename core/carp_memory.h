@@ -1,10 +1,4 @@
-#pragma once
-#include "carp_stdbool.h"
-#include <stdlib.h>
-
 #ifdef LOG_MEMORY
-
-#include <stdio.h>
 
 long malloc_balance_counter = 0;
 bool log_memory_balance = false;
@@ -60,8 +54,6 @@ void* CARP_MALLOC(size_t size) {
 #endif
 
 #define CARP_FREE(ptr) free(ptr)
-
-#include <stdio.h>
 
 long Debug_memory_MINUS_balance() {
     printf("Error - calling 'memory-balance' without compiling with LOG_MEMORY enabled (--log-memory).\n");

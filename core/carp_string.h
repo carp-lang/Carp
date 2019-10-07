@@ -1,9 +1,3 @@
-#pragma once
-#include <string.h>
-
-#include <carp_memory.h>
-#include <core.h>
-
 String String_allocate(int len, char byte) {
     /* Allocate a string of length 'len + 1'
      * setting the first len bytes to byte

@@ -1,6 +1,3 @@
-#include <limits.h>
-#include "carp_stdbool.h"
-
 int CARP_INT_MAX = INT_MAX;
 int CARP_INT_MIN = INT_MIN;
 
