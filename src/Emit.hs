@@ -742,7 +742,7 @@ projectIncludesToC :: Project -> String
 projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"
   where includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
         includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
-        includes = reverse $ projectIncludes proj
+        includes = projectIncludes proj
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =

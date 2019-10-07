@@ -495,7 +495,7 @@ commandAddInclude includerConstructor [x] =
              includers = projectIncludes proj
              includers' = if includer `elem` includers
                           then includers
-                          else includer : includers
+                          else includers ++ [includer] -- Add last to preserve include order
              proj' = proj { projectIncludes = includers' }
          put (ctx { contextProj = proj' })
          return dynamicNil
