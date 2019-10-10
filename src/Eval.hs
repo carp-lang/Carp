@@ -1145,8 +1145,8 @@ commandLoad [xobj@(XObj (Str path) i _)] =
     fromURL url =
       let split = splitOn "/" (replaceC ':' "_COLON_" url)
           fst = head split
-      in if fst `elem` ["https:", "http:"]
-        then joinWith "/" $ tail $ tail split
+      in if fst `elem` ["https_COLON_", "http_COLON_"]
+        then joinWith "/" (tail (tail split))
         else
           if '@' `elem` fst
             then joinWith "/" (joinWith "@" (tail (splitOn "@" fst)) : tail split)
