@@ -32,6 +32,7 @@ void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
 
 #define CARP_MALLOC(size) logged_malloc(size)
 #define CARP_FREE(ptr) logged_free(ptr)
+#define CARP_REALLOC(ptr, size) realloc(ptr, size)
 
 long Debug_memory_MINUS_balance() {
     return malloc_balance_counter;
@@ -49,8 +50,14 @@ void* CARP_MALLOC(size_t size) {
   if (!res) abort();
   return res;
 }
+void* CARP_REALLOC(void * ptr, size_t size) {
+  void* res = realloc(ptr, size);
+  if (!res) abort();
+  return res;
+}
 #else
 #define CARP_MALLOC(size) malloc(size)
+#define CARP_REALLOC(ptr, size) realloc(ptr, size)
 #endif
 
 #define CARP_FREE(ptr) free(ptr)

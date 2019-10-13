@@ -442,7 +442,7 @@ void Pattern_internal_update_int_array(Array* a, int value) {
     a->len++;
     if(a->len > a->capacity) {
         a->capacity = a->len * 2;
-        a->data = realloc(a->data, sizeof(int) * a->capacity);
+        a->data = CARP_REALLOC(a->data, sizeof(int) * a->capacity);
     }
     ((int*)a->data)[a->len - 1] = value;
 }
@@ -570,7 +570,7 @@ PatternGMatchRes Pattern_internal_gmatch_aux(PatternGMatchState* gm) {
 
 Array Array_push_back(Array res, Array tmp) {
   res.len++;
-  res.data = realloc(res.data, res.len*sizeof(Array));
+  res.data = CARP_REALLOC(res.data, res.len*sizeof(Array));
   ((Array*)res.data)[res.len-1] = tmp;
   return res;
 }
