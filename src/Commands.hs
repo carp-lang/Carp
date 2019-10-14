@@ -815,6 +815,22 @@ commandReadFile [filename] =
     _ ->
       return (Left (EvalError ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename)))
 
+commandWriteFile :: CommandCallback
+commandWriteFile [filename, contents] =
+  case filename of
+    XObj (Str fname) _ _ -> do
+      case contents of
+        XObj (Str s) _ _ -> do
+         exceptional <- liftIO $ ((try $ writeFile fname s) :: (IO (Either IOException ())))
+         case exceptional of
+            Right () -> return dynamicNil
+            Left _ ->
+              return (Left (EvalError ("Cannot write to argument to `" ++ fname ++ "`, an argument to `write-file`") (info filename)))
+        _ ->
+          return (Left (EvalError ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (info contents)))
+    _ ->
+      return (Left (EvalError ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename)))
+
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal [modulePath] = do
      ctx <- get
