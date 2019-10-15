@@ -33,7 +33,7 @@ defaultProject =
           , projectDocsGenerateIndex = True
           , projectDocsStyling = "carp_style.css"
           , projectPrompt = case platform of
-                              MacOS -> "鲮 "
+                              MacOS -> "鲤 "
                               _     -> "> "
           , projectCarpSearchPaths = []
           , projectPrintTypedAST = False
