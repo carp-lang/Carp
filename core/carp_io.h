@@ -38,7 +38,7 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
             if (new_size < 128) {
                 new_size = 128;
             }
-            char *new_ptr = realloc(*lineptr, new_size);
+            char *new_ptr = CARP_REALLOC(*lineptr, new_size);
             if (new_ptr == NULL) {
                 return -1;
             }
