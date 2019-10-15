@@ -40,15 +40,15 @@
                 (bit-not (one))
                 "bit-not works as expected")
   (assert-equal test
-                (the Short (iconv 8))
+                (the Short (Integral.convert 8))
                 (bit-shift-left (two) (two))
                 "bit-shift-left works as expected")
   (assert-equal test
                 (the Short (two))
-                (bit-shift-right (iconv 16) (three))
+                (bit-shift-right (Integral.convert 16) (three))
                 "bit-shift-right works as expected")
   (assert-equal test
-                (the Short (iconv -2))
+                (the Short (Integral.convert -2))
                 (neg (two))
                 "neg works as expected")
   (assert-equal test
@@ -61,18 +61,18 @@
                 "integer division truncates as expected")
   (assert-equal test
                 (the Short (three))
-                (positive-mod (iconv -7) (five))
+                (positive-mod (Integral.convert -7) (five))
                 "positive-mod works on negative inputs")
   (assert-equal test
                 (the Short (zero))
                 (positive-mod (zero) (three))
                 "positive-mod works on zero")
   (assert-equal test
-                (the Short (iconv 32767))
+                (the Short (Integral.convert 32767))
                 MAX
                 "MAX works as expected")
   (assert-equal test
-                (the Short (iconv -32768))
+                (the Short (Integral.convert -32768))
                 MIN
                 "MIN works as expected")
 )

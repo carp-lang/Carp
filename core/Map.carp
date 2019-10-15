@@ -7,7 +7,7 @@
              vh 0]
       (for [x 0 (length k)]
         (do
-          (set! vh (+ (* a vh) (iconv (char-at k x))))
+          (set! vh (+ (* a vh) (Integral.convert (char-at k x))))
           (set! a (* a b))
           (set! x (Int.inc x))))
       (Int.abs vh)))
@@ -18,7 +18,7 @@
 )
 
 (defmodule Long
-  (defn hash [k] (iconv (the Long @k)))
+  (defn hash [k] (Integral.convert (the Long @k)))
 )
 
 (defmodule Bool
@@ -26,15 +26,15 @@
 )
 
 (defmodule Char
-  (defn hash [k] (iconv (the Char @k)))
+  (defn hash [k] (Integral.convert (the Char @k)))
 )
 
 (defmodule Float
-  (defn hash [k] (iconv (to-bytes @k)))
+  (defn hash [k] (Integral.convert (to-bytes @k)))
 )
 
 (defmodule Double
-  (defn hash [k] (iconv (to-bytes @k)))
+  (defn hash [k] (Integral.convert (to-bytes @k)))
 )
 
 (defmodule Pair

@@ -57,7 +57,7 @@
                             img
                             (address (SDL.dimensions img))
                             (address (SDL.rect 100 100 300 300))
-                            (* 0.1 (fconv (SDL.get-ticks)))
+                            (* 0.1 (Floating.convert (SDL.get-ticks)))
                             (address (SDL.point 150 150))
                             SDL.flip-none)))))
 

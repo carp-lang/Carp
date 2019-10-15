@@ -26,4 +26,6 @@
           (list 'register 'tan (list 'λ [t] t))
           (list 'register 'tanh (list 'λ [t] t))
           ))
+  (defn convert [a]
+    (from-floating (to-floating a)))
 )

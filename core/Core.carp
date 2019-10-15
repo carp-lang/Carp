@@ -17,6 +17,8 @@
 
 (load "Interfaces.carp")
 (load "Bool.carp")
+(load "Integral.carp")
+(load "Floating.carp")
 (load "Generics.carp")
 (load "Macros.carp")
 (load "Maybe.carp")
@@ -24,8 +26,6 @@
 (load "Dynamic.carp")
 (load "Format.carp")
 (load "Numeric.carp")
-(load "Integral.carp")
-(load "Floating.carp")
 (load "Char.carp")
 (load "Int.carp")
 (load "Short.carp")

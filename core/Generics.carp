@@ -1,8 +1,5 @@
 ;; The following generic functions make use of the interfaces
 
-(defn fconv [a]
-  (from-floating (to-floating a)))
-
 (defmodule Generics
   (defn one [] (inc (zero)))
   (defn minus-one [] (dec (zero)))
@@ -22,8 +19,8 @@
   (defn squared [x] (* x x))
   (defn inverse [x] (/ (one) x))
   (defn half [] (halved (one)))
-  (defn pi [] (fconv 3.141592653589793))
-  (defn e [] (fconv 2.718281828459045))
+  (defn pi [] (Floating.convert 3.141592653589793))
+  (defn e [] (Floating.convert 2.718281828459045))
   (defn half-pi [] (halved (pi)))
   (defn tau [] (twice (pi)))
   (defn ninety [] (* (two) (* (* (three) (three)) (five))))
@@ -110,9 +107,6 @@ The margin of error is 0.00001.")
 
 (defn /= [a b]
   (not (= a b)))
-
-(defn iconv [a]
-  (from-integral (to-integral a)))
 
 (defn even? [a] (= (mod a (two)) (zero)))
 

@@ -19,7 +19,7 @@
     (inside "Hello")))
 
 (defn use-doubles []
-  (println (ref (str (the Int (iconv (Double.+ 2.0 3.0)))))))
+  (println (ref (str (the Int (Integral.convert (Double.+ 2.0 3.0)))))))
 
 (deftype Person
     [name String
@@ -99,7 +99,7 @@
 
 (defn negative-numbers []
   (let [x -10.0 y -20.0f z -30]
-    (* (* (iconv x) (iconv y)) z)))
+    (* (* (Integral.convert x) (Integral.convert y)) z)))
 
 (defn square [x]
   (Int.* x x))

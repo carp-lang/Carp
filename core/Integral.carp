@@ -12,4 +12,6 @@
           (list 'register 'bit-xor (list 'λ [t t] t))
           (list 'register 'mod (list 'λ [t t] t))
           ))
+  (defn convert [a]
+    (from-integral (to-integral a)))
 )

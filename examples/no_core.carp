@@ -5,9 +5,10 @@
 (system-include "core.h")
 (load "Interfaces.carp")
 (load "Bool.carp")
+(load "Integral.carp")
+(load "Floating.carp")
 (load "Generics.carp")
 (load "Numeric.carp")
-(load "Integral.carp")
 (load "Int.carp")
 
 (defn main []

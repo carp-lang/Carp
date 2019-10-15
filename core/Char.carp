@@ -41,7 +41,7 @@
     (or (alpha? c) (num? c)))
 
   (defn zero []
-    (iconv 0))
+    (Integral.convert 0))
 )
 
 (defmodule CharRef
