@@ -79,30 +79,6 @@ addCommandConfigurable name maybeArity callback =
               unwrap $ return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing))
         withoutArity args = unwrap $ callback args
 
--- | DEPRECATED Command for changing various project settings.
-commandProjectSet :: CommandCallback
-commandProjectSet [XObj (Str key) _ _, value] =
-  do ctx <- get
-     let proj = contextProj ctx
-         env = contextGlobalEnv ctx
-     case value of
-       XObj (Str valueStr) _ _ -> do
-          newCtx <- case key of
-                      "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
-                      "libflag" -> return ctx { contextProj = proj { projectLibFlags = addIfNotPresent valueStr (projectLibFlags proj) } }
-                      "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
-                      "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
-                      -- TODO: should these be booleans?
-                      "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = valueStr == "true" } }
-                      "echoC" -> return ctx { contextProj = proj { projectEchoC = valueStr == "true" } }
-                      "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = valueStr == "true" } }
-                      "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
-                      "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
-                      _ -> presentError ("Unrecognized key: '" ++ key ++ "'") ctx
-          put newCtx
-          return dynamicNil
-       val -> presentError "Argument to project-set! must be a string" dynamicNil
-
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
   liftIO $ do putStrLnWithColor Red msg

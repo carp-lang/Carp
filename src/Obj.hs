@@ -564,25 +564,26 @@ instance Show Project where
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
             , "Carp source files:\n    " ++ joinWith "\n    " srcFiles
             , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
-            , "Echo C: " ++ if echoC then "true" else "false"
-            , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
-            , "Can execute: " ++ if canExecute then "true" else "false"
+            , "Echo C: " ++ showB echoC
+            , "Echo compilation command: " ++ showB echoCompilationCommand
+            , "Can execute: " ++ showB canExecute
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
             , "Docs logo: " ++ docsLogo
             , "Docs prelude: " ++ docsPrelude
             , "Docs Project URL: " ++ docsURL
-            , "Docs generate index: " ++ show docsGenerateIndex
+            , "Docs generate index: " ++ showB docsGenerateIndex
             , "Docs CSS URL: " ++ docsStyling
             , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
-            , "Using Core: " ++ show core
+            , "Using Core: " ++ showB core
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
-            , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
+            , "Print AST (with 'info' command): " ++ showB printTypedAST
             , "File path print length (when using --check): " ++ show filePathPrintLength
-            , "Generate Only: " ++ if generateOnly then "true" else "false"
+            , "Generate Only: " ++ showB generateOnly
             ]
+    where showB b = if b then "true" else "false"
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"
 data Includer = SystemInclude String

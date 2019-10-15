@@ -11,8 +11,7 @@ import System.FilePath (takeDirectory)
 import System.Process (readProcess, readProcessWithExitCode)
 import Control.Concurrent (forkIO)
 import qualified Data.Map as Map
-import Data.Maybe (fromJust, mapMaybe, isJust)
-import Control.Monad
+import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..))
 import Control.Exception
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Error as ParsecError
@@ -1086,13 +1085,19 @@ commandLoad [xobj@(XObj (Str path) i _)] =
            map (++ "/" ++ path) (projectCarpSearchPaths proj) ++ -- user defined search paths
            [carpDir ++ "/core/" ++ path] ++
            [libDir ++ "/" ++ path]
-     existingPaths <- liftIO (filterM doesFileExist fullSearchPaths)
-     case existingPaths of
-       [] ->
+         firstM _ [] = return Nothing
+         firstM p (x:xs) = do
+           q <- p x
+           if q
+             then return $ Just x
+             else firstM p xs
+     existingPath <- liftIO $ firstM doesFileExist fullSearchPaths
+     case existingPath of
+       Nothing ->
         if '@' `elem` path
           then tryInstall path
           else return $ invalidPath ctx path
-       firstPathFound : _ ->
+       Just firstPathFound ->
          do canonicalPath <- liftIO (canonicalizePath firstPathFound)
             fileThatLoads <- liftIO (canonicalizePath (case i of
                                                          Just ii -> infoFile ii

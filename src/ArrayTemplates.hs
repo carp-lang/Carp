@@ -41,7 +41,7 @@ templateShrinkCheck :: String -> String
 templateShrinkCheck var =
   unlines [ "    if(" ++ var ++ ".len < (" ++ var ++ ".capacity / 4)) {"
           ,"        " ++ var ++ ".capacity = " ++ var ++ ".len * 2;"
-          ,"        " ++ var ++ ".data = realloc(" ++ var ++ ".data, sizeof($a) * " ++ var ++ " .capacity);"
+          ,"        " ++ var ++ ".data = CARP_REALLOC(" ++ var ++ ".data, sizeof($a) * " ++ var ++ " .capacity);"
           , "    }"
           ]
 
@@ -95,7 +95,7 @@ templatePushBack =
         ,"    a.len++;"
         ,"    if(a.len > a.capacity) {"
         ,"        a.capacity = a.len * 2;"
-        ,"        a.data = realloc(a.data, sizeof($a) * a.capacity);"
+        ,"        a.data = CARP_REALLOC(a.data, sizeof($a) * a.capacity);"
         ,"    }"
         ,"    (($a*)a.data)[a.len - 1] = value;"
         ,"    return a;"
@@ -117,7 +117,7 @@ templatePushBackBang =
         ,"    aRef->len++;"
         ,"    if(aRef->len > aRef->capacity) {"
         ,"        aRef->capacity = aRef->len * 2;"
-        ,"        aRef->data = realloc(aRef->data, sizeof($a) * aRef->capacity);"
+        ,"        aRef->data = CARP_REALLOC(aRef->data, sizeof($a) * aRef->capacity);"
         ,"    }"
         ,"    (($a*)aRef->data)[aRef->len - 1] = value;"
         ,"}"
