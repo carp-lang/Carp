@@ -10,6 +10,7 @@ import Data.Char (toLower, isUpper)
 import Util
 import Types
 import Obj
+import Path
 
 data Args = Args { sourcePath :: String
                  , prefixToRemove :: String
@@ -23,7 +24,7 @@ main = do parsedArgs <- cmdArgs (Args { sourcePath = def &= argPos 0
                                  &= summary "Carp Header Parse 0.0.1")
           let path = sourcePath parsedArgs
           if path /= ""
-            then do source <- readFile path
+            then do source <- slurp path
                     putStrLn (joinWith "\n" (map pretty (parseHeaderFile path source
                                                          (prefixToRemove parsedArgs)
                                                          (kebabCase parsedArgs))))

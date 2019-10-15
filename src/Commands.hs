@@ -1,14 +1,11 @@
 module Commands where
 
-import System.Directory
 import System.Info (os)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.FilePath (takeDirectory)
-import System.IO
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
 import qualified Data.Map as Map
@@ -25,6 +22,7 @@ import Util
 import Lookup
 import RenderDocs
 import TypeError
+import Path
 
 type CommandCallback = [XObj] -> StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj)
 
@@ -183,7 +181,7 @@ commandCat :: CommandCallback
 commandCat args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "/" ++ "main.c"
+         outMain = outDir </> "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
 
@@ -193,7 +191,8 @@ commandRunExe args =
   do ctx <- get
      let proj = contextProj ctx
          outDir = projectOutDir proj
-         outExe = "\"" ++ outDir ++ pathSeparator ++ projectTitle (contextProj ctx) ++ "\""
+         quoted x = "\"" ++ x ++ "\""
+         outExe = quoted $ outDir </> projectTitle (contextProj ctx)
      if projectCanExecute proj
        then liftIO $ do handle <- spawnCommand outExe
                         exitCode <- waitForProcess handle
@@ -232,10 +231,10 @@ commandBuild shutUp args =
                 incl = projectIncludesToC proj
                 includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                 flags = includeCorePath ++ projectFlags proj
-                outDir = projectOutDir proj ++ pathSeparator
-                outMain = outDir ++ "main.c"
-                outExe = outDir ++ projectTitle proj
-                outLib = outDir ++ projectTitle proj
+                outDir = projectOutDir proj
+                outMain = outDir </> "main.c"
+                outExe = outDir </> projectTitle proj
+                outLib = outDir </> projectTitle proj
                 generateOnly = projectGenerateOnly proj
             liftIO $ createDirectoryIfMissing False outDir
             liftIO $ writeFile outMain (incl ++ okSrc)
@@ -486,7 +485,7 @@ commandAddRelativeInclude [x] =
     XObj (Str file) i@(Just info) t ->
         let compiledFile = infoFile info
         in commandAddInclude RelativeInclude [
-          XObj (Str $ (takeDirectory compiledFile) ++ "/" ++ file) i t
+          XObj (Str $ takeDirectory compiledFile </> file) i t
         ]
     _ ->
       return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
@@ -806,7 +805,7 @@ commandReadFile :: CommandCallback
 commandReadFile [filename] =
   case filename of
     XObj (Str fname) _ _ -> do
-         exceptional <- liftIO $ ((try $ readFile fname) :: (IO (Either IOException String)))
+         exceptional <- liftIO $ ((try $ slurp fname) :: (IO (Either IOException String)))
          case exceptional of
             Right contents ->
               return (Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
