@@ -45,12 +45,7 @@
 )
 
 (defmodule CharRef
-  (defn = [a b]
-    (Char.= @a @b))
-  (defn < [a b]
-    (Char.< @a @b))
-  (defn > [a b]
-    (Char.> @a @b))
+  (NumericRef.register Char)
 )
 
 (defmodule PtrChar

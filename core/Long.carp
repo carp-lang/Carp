@@ -6,12 +6,5 @@
 )
 
 (defmodule LongRef
-  (defn = [a b]
-    (Long.= @a @b))
-
-  (defn < [a b]
-    (Long.< @a @b))
-
-  (defn > [a b]
-    (Long.> @a @b))
+  (NumericRef.register Long)
 )

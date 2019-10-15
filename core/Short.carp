@@ -8,16 +8,5 @@
 )
 
 (defmodule ShortRef
-  (defn = [a b]
-    (Short.= @a @b))
-
-  (defn < [a b]
-    (Short.< @a @b))
-
-  (defn > [a b]
-    (Short.> @a @b))
-
-  (defn + [a b]
-    (Short.+ @a @b))
-
+  (NumericRef.register Short)
 )

@@ -17,5 +17,13 @@
           (list 'register 'to-bytes (list 'λ [t] 'Long))
           (list 'register 'to-floating (list 'λ [t] 'Floating))
           (list 'register 'to-integral (list 'λ [t] 'Integral))
-          ))
-)
+          )))
+
+(defmodule NumericRef
+  (defmacro register [t]
+    (list 'do
+          (list 'defn '= '[a b] (list '= (list 'the t '@a) '@b))
+          (list 'defn '< '[a b] (list '< (list 'the t '@a) '@b))
+          (list 'defn '> '[a b] (list '> (list 'the t '@a) '@b))
+          (list 'defn '+ '[a b] (list '+ (list 'the t '@a) '@b))
+          )))
