@@ -24,7 +24,7 @@ putStrWithColor :: TextColor -> String -> IO ()
 putStrWithColor color str =
   do
     istty <- hSupportsANSIColor stdout
-    putStr $ if istty && platform /= Windows && False then strWithColor color str else str
+    putStr $ if istty && platform /= Windows then strWithColor color str else str
 
 putStrLnWithColor :: TextColor -> String -> IO ()
 putStrLnWithColor color str = putStrWithColor color (str ++ "\n")
