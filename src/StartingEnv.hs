@@ -244,6 +244,7 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "relative-include" 1 commandAddRelativeInclude
                     , addCommand "save-docs-internal" 1 commandSaveDocsInternal
                     , addCommand "read-file" 1 commandReadFile
+                    , addCommand "write-file" 2 commandWriteFile
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
