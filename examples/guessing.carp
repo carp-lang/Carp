@@ -14,7 +14,7 @@
       (println "(Enter q to quit.)\n")
 
       (set! guessing true)
-      (set! answer (the Int (random-between 1 100)))
+      (set! answer (random-between 1 100))
 
       (print "Please enter a number between 1 - 99: ")))
 
