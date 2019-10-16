@@ -108,9 +108,9 @@ commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
                      "title" -> do title <- unwrapStringXObj value
                                    return (proj { projectTitle = title })
                      "output-directory" -> do outDir <- unwrapStringXObj value
-                                              return (proj { projectOutDir = outDir })
+                                              return (proj { projectOutDir = addTrailingPathSeparator outDir })
                      "docs-directory" -> do docsDir <- unwrapStringXObj value
-                                            return (proj { projectDocsDir = docsDir })
+                                            return (proj { projectDocsDir = addTrailingPathSeparator docsDir })
                      "docs-generate-index" ->
                        do docsGenerateIndex <- unwrapBoolXObj value
                           return (proj { projectDocsGenerateIndex = docsGenerateIndex })
