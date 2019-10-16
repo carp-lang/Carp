@@ -18,7 +18,7 @@ configPath :: FilePath -> IO FilePath
 configPath = xdgPath D.XdgConfig
 
 createDirectoryIfMissing :: Bool -> FilePath -> IO ()
-createDirectoryIfMissing b = D.createDirectoryIfMissing b . toNative
+createDirectoryIfMissing createParents = D.createDirectoryIfMissing createParents . toNative
 
 doesFileExist :: FilePath -> IO Bool
 doesFileExist = D.doesFileExist . toNative

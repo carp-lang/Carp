@@ -69,6 +69,7 @@ completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords
 readlineSettings :: Monad m => [String] -> IO (Settings m)
 readlineSettings words = do
   historyFile <- configPath "history"
+  createDirectoryIfMissing True (takeDirectory historyFile)
   return $ Settings {
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] (completeKeywordsAnd words),
     historyFile = Just historyFile,
