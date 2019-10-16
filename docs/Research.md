@@ -19,6 +19,9 @@ https://news.ycombinator.com/item?id=12039268
 
 # OWNERSHIP & BORROWING
 
+- https://gitlab.redox-os.org/redox-os/rust/tree/3b49b27e0cb07c8735b534c3825b491a585ab404/src/librustc_borrowck/borrowck
+- https://rust-lang.github.io/rustc-guide/borrow_check.html
+
 - http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/
 - http://smallcultfollowing.com/babysteps/blog/2016/05/04/non-lexical-lifetimes-based-on-liveness/
 - http://smallcultfollowing.com/babysteps/blog/2016/05/09/non-lexical-lifetimes-adding-the-outlives-relation/
