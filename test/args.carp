@@ -13,6 +13,6 @@
                (System.get-args-len)
                "System.get-args-len works as expected")
   (assert-equal test
-                (make-exe-path "/Untitled")
+                (make-exe-path "Untitled")
                 (System.get-arg 0)
                 "System.get-arg works as expected"))
