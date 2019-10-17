@@ -24,14 +24,31 @@
 ;;         xsref &xs
 ;;         r (Array.nth xsref 0)]
 ;;     (do
-;;       (Array.delete xs)
+;; ;;      (Array.delete xs)
 ;;       (IO.println r))))
 
+;; (defn o []
+;;   (let [b [1 2 3]
+;;         r &b]
+;;     @r))
+
+;; (defn n []
+;;   (let [b [@"DATA"]
+;;         r &b
+;;         n (Array.nth r 0)]
+;;     @n))
+
+;; ;; More 'nth'
+(defn m []
+  (let [b [@"MORE" @"DATA"]
+        n (Array.nth &b 0)]
+    @n))
+
 ;; Lambdas
-(defn l []
-  (let [x @"DATA"
-        r &x
-        f (fn [] (IO.println r))]
-    (do
-      (String.delete x)
-      (f))))
+;; (defn l []
+;;   (let [x @"DATA"
+;;         r &x
+;;         f (fn [] (IO.println r))]
+;;     (do
+;;       (String.delete x)
+;;       (f))))

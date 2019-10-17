@@ -684,9 +684,9 @@ manageMemory typeEnv globalEnv root =
                    --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
-                        mapM_ (addToLifetimesMappingsIfRef False) argList
                         visitedBody <- visit  body
                         result <- unmanage body
+                        mapM_ (addToLifetimesMappingsIfRef False) argList -- TODO: Move to top of 'visit' instead?
                         return $
                           case result of
                             Left e -> Left e
@@ -1031,7 +1031,7 @@ manageMemory typeEnv globalEnv root =
               do m@(MemState _ _ lifetimes) <- get
                  case Map.lookup lt lifetimes of
                    Just existing ->
-                     --trace ("There is already a mapping from the lifetime '" ++ lt ++ "' to " ++ show existing) $
+                     --trace ("There is already a mapping from the lifetime '" ++ lt ++ "' to " ++ show existing ++ ", won't add " ++ show (makeLifetimeMode xobj)) $
                      return ()
                    Nothing ->
                      do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
@@ -1060,7 +1060,7 @@ manageMemory typeEnv globalEnv root =
                                                                         FakeDeleter   { deleterVariable = dv } -> dv == deleterName)
                                             deleters
                      in case matchingDeleters of
-                          [] -> trace ("Can't reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive there.") $
+                          [] -> trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right ())
                           _ ->
                             return (Right ())
@@ -1079,24 +1079,25 @@ manageMemory typeEnv globalEnv root =
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
-          do addToLifetimesMappingsIfRef True expr
-             visitedExpr <- visit expr
+          do visitedExpr <- visit expr
              result <- transferOwnership expr name
+             addToLifetimesMappingsIfRef True expr -- TODO: Move to top of 'visit'?
              return $ case result of
                         Left e -> Left e
                         Right _ -> do okExpr <- visitedExpr
                                       return (name, okExpr)
 
         visitArg :: XObj -> State MemState (Either TypeError XObj)
-        visitArg  xobj@(XObj _ _ (Just t)) =
-          if isManaged typeEnv t
-          then do visitedXObj <- visit  xobj
-                  result <- unmanage xobj
-                  case result of
-                    Left e  -> return (Left e)
-                    Right _ -> return visitedXObj
-          else visit  xobj
-        visitArg  xobj@XObj{} =
+        visitArg xobj@(XObj _ _ (Just t)) =
+          do addToLifetimesMappingsIfRef True xobj
+             if isManaged typeEnv t
+             then do visitedXObj <- visit  xobj
+                     result <- unmanage xobj
+                     case result of
+                       Left e  -> return (Left e)
+                       Right _ -> return visitedXObj
+             else visit  xobj
+        visitArg xobj@XObj{} =
           visit  xobj
 
         createDeleter :: XObj -> Maybe Deleter
