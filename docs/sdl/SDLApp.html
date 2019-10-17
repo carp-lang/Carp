@@ -66,7 +66,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] SDLApp)
+                    (λ [(Ref SDLApp q)] SDLApp)
                 </p>
                 <span>
                     
@@ -86,7 +86,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int, Int] SDLApp)
+                    (λ [(Ref String a), Int, Int] SDLApp)
                 </p>
                 <pre class="args">
                     (create title width height)
@@ -126,7 +126,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] &amp;Int)
+                    (λ [(Ref SDLApp q)] (Ref Int q))
                 </p>
                 <span>
                     
@@ -166,7 +166,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] String)
+                    (λ [(Ref SDLApp q)] String)
                 </p>
                 <span>
                     
@@ -186,7 +186,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), a, (Ref SDL_Event)] a)
+                    (λ [(Ref SDLApp a), b, (Ref SDL_Event c)] b)
                 </p>
                 <pre class="args">
                     (quit-on-esc app state event)
@@ -206,7 +206,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] (Ref (Ptr SDL_Renderer)))
+                    (λ [(Ref SDLApp q)] (Ref (Ptr SDL_Renderer) q))
                 </p>
                 <span>
                     
@@ -226,7 +226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), (λ [(Ref SDLApp), a, (Ref SDL_Event)] a), (λ [a] a), (λ [(Ref SDLApp), (Ptr SDL_Renderer), &amp;a] ()), a] ())
+                    (λ [(Ref SDLApp a), (λ [(Ref SDLApp a), b, (Ref SDL_Event c)] b), (λ [b] b), (λ [(Ref SDLApp a), (Ptr SDL_Renderer), (Ref b d)] ()), b] ())
                 </p>
                 <pre class="args">
                     (run-with-callbacks app event-fn update-fn draw-fn initial-state)
@@ -266,7 +266,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), Int] ())
+                    (λ [(Ref SDLApp q), Int] ())
                 </p>
                 <span>
                     
@@ -306,7 +306,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), (Ptr SDL_Renderer)] ())
+                    (λ [(Ref SDLApp q), (Ptr SDL_Renderer)] ())
                 </p>
                 <span>
                     
@@ -346,7 +346,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp), (Ptr SDL_Window)] ())
+                    (λ [(Ref SDLApp q), (Ptr SDL_Window)] ())
                 </p>
                 <span>
                     
@@ -366,7 +366,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] a)
+                    (λ [(Ref SDLApp a)] b)
                 </p>
                 <pre class="args">
                     (stop app)
@@ -386,7 +386,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] String)
+                    (λ [(Ref SDLApp q)] String)
                 </p>
                 <span>
                     
@@ -406,7 +406,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [Int] Int))] SDLApp)
+                    (λ [SDLApp, (Ref (λ [Int] Int) q)] SDLApp)
                 </p>
                 <span>
                     
@@ -426,7 +426,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Renderer)] (Ptr SDL_Renderer)))] SDLApp)
+                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Renderer)] (Ptr SDL_Renderer)) q)] SDLApp)
                 </p>
                 <span>
                     
@@ -446,7 +446,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Window)] (Ptr SDL_Window)))] SDLApp)
+                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Window)] (Ptr SDL_Window)) q)] SDLApp)
                 </p>
                 <span>
                     
@@ -466,7 +466,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp)] (Ref (Ptr SDL_Window)))
+                    (λ [(Ref SDLApp q)] (Ref (Ptr SDL_Window) q))
                 </p>
                 <span>
                     

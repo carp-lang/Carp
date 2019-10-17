@@ -277,7 +277,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
               tys = map (typeFromPath env) interfacePaths
               tysToPathsDict = zip tys interfacePaths
           in  case filter (matchingSignature actualType) tysToPathsDict of
-                [] -> return $ -- (trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict))) $
+                [] -> return $ --(trace ("No matching signatures for interface lookup of " ++ name ++ " of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict))) $
                                  if allowAmbig
                                  then Right xobj -- No exact match of types
                                  else Left (NoMatchingSignature xobj name actualType tysToPathsDict)
@@ -287,8 +287,9 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                   in  if isTypeGeneric tt then return (Right xobj) else replace theType singlePath
                 severalPaths ->
                     --(trace ("Several matching signatures for interface lookup of '" ++ name ++ "' of type " ++ show actualType ++ " " ++ prettyInfoFromXObj xobj ++ ", options are:\n" ++ joinWith "\n" (map show tysToPathsDict) ++ "\n  Filtered paths are:\n" ++ (joinWith "\n" (map show severalPaths)))) $
-                    case filter (\(tt, _) -> actualType == tt) severalPaths of
-                      []      -> return (Right xobj) -- No exact match of types
+                    case filter (\(tt, _) -> typeEqIgnoreLifetimes actualType tt) severalPaths of
+                      []      -> --trace ("No exact matches for '" ++ show actualType ++ "'") $
+                                 return (Right xobj) -- No exact match of types
                       [(theType, singlePath)] -> replace theType singlePath -- Found an exact match, will ignore any "half matched" functions that might have slipped in.
                       _       -> return (Left (SeveralExactMatches xobj name actualType severalPaths))
               where replace theType singlePath =
@@ -374,7 +375,7 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       error ("Non-deftype found in type env: " ++ show x)
     Nothing ->
       Right []
-concretizeType env (RefTy rt) =
+concretizeType env (RefTy rt _) =
   concretizeType env rt
 concretizeType env (PointerTy pt) =
   concretizeType env pt
@@ -552,21 +553,21 @@ depsForDeleteFunc typeEnv env t =
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy [RefTy t] t)
+  then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy [RefTy t (VarTy "q")] t)
   else []
 
 -- | Helper for finding the 'str' function for a type.
 depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForPrnFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t] StringTy)
+  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t (VarTy "q")] StringTy)
   else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [t] StringTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
 typesStrFunctionType typeEnv memberType =
   if isManaged typeEnv memberType
-  then FuncTy [RefTy memberType] StringTy
+  then FuncTy [RefTy memberType (VarTy "q")] StringTy
   else FuncTy [memberType] StringTy
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
@@ -668,8 +669,8 @@ manageMemory typeEnv globalEnv root =
             [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
               in case defnReturnType of
-                   RefTy _ ->
-                     return (Left (FunctionsCantReturnRefTy xobj funcTy))
+                   -- RefTy _ _ ->
+                   --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
                         visitedBody <- visit  body
@@ -701,8 +702,8 @@ manageMemory typeEnv globalEnv root =
             [letExpr@(XObj Let _ _), XObj (Arr bindings) bindi bindt, body] ->
               let Just letReturnType = t
               in case letReturnType of
-                RefTy _ ->
-                  return (Left (LetCantReturnRefTy xobj letReturnType))
+                -- RefTy _ _ ->
+                --   return (Left (LetCantReturnRefTy xobj letReturnType))
                 _ ->
                   do MemState preDeleters _ <- get
                      visitedBindings <- mapM visitLetBinding (pairwise bindings)
@@ -1123,7 +1124,7 @@ suffixTyVars suffix t =
     FuncTy argTys retTy -> FuncTy (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy)
     StructTy name tyArgs -> StructTy name (fmap (suffixTyVars suffix) tyArgs)
     PointerTy x -> PointerTy (suffixTyVars suffix x)
-    RefTy x -> RefTy (suffixTyVars suffix x)
+    RefTy x lt -> RefTy (suffixTyVars suffix x) (suffixTyVars suffix lt)
     _ -> t
 
 isGlobalFunc :: XObj -> Bool
@@ -1179,7 +1180,7 @@ memberRefDeletion = memberDeletionGeneral "Ref->"
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteCopy typeEnv env memberPairs =
   Template
-   (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+   (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p"))
    (const (toTemplate "$p $NAME($p* pRef)"))
    (const (tokensForCopy typeEnv env memberPairs))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
@@ -1207,7 +1208,7 @@ memberCopy typeEnv env (memberName, memberType) =
 concreteCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteCopyPtr typeEnv env memberPairs =
   Template
-   (FuncTy [RefTy (VarTy "p")] (VarTy "p"))
+   (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p"))
    (const (toTemplate "$p* $NAME($p* pRef)"))
    (const (tokensForCopyPtr typeEnv env memberPairs))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)

@@ -341,7 +341,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float, &amp;Float] Float)
+                    (λ [(Ref Float a), (Ref Float b)] Float)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -476,7 +476,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float] Float)
+                    (λ [(Ref Float unnamed-lifetime)] Float)
                 </p>
                 <span>
                     
@@ -590,7 +590,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Float] String)
+                    (λ [(Ref String unnamed-lifetime), Float] String)
                 </p>
                 <span>
                     
@@ -609,7 +609,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Float, &amp;Int] Float)
+                    (λ [Float, (Ref Int unnamed-lifetime)] Float)
                 </p>
                 <span>
                     
@@ -647,7 +647,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float] Int)
+                    (λ [(Ref Float a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -761,7 +761,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Float, &amp;Float] Float)
+                    (λ [Float, (Ref Float unnamed-lifetime)] Float)
                 </p>
                 <span>
                     

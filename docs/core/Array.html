@@ -151,7 +151,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), (Ref (Array a))] Bool)
+                    (λ [(Ref (Array a) b), (Ref (Array a) b)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -171,7 +171,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Bool)
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Ref (Array a) b)] Bool)
                 </p>
                 <pre class="args">
                     (all? f a)
@@ -211,7 +211,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] Bool)
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Ref (Array a) b)] Bool)
                 </p>
                 <pre class="args">
                     (any? f a)
@@ -251,7 +251,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t)), Int, t] ())
+                    (λ [(Ref (Array t) q), Int, t] ())
                 </p>
                 <span>
                     
@@ -271,7 +271,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t)), Int, t] ())
+                    (λ [(Ref (Array t) q), Int, t] ())
                 </p>
                 <span>
                     
@@ -291,7 +291,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Array a), Int, (Ref (λ [&amp;a] a))] (Array a))
+                    (λ [(Array a), Int, (Ref (λ [(Ref a b)] a) c)] (Array a))
                 </p>
                 <pre class="args">
                     (aupdate a i f)
@@ -311,7 +311,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int, (Ref (λ [&amp;a] a))] ())
+                    (λ [(Ref (Array a) b), Int, (Ref (λ [(Ref a b)] a) c)] ())
                 </p>
                 <pre class="args">
                     (aupdate! a i f)
@@ -331,7 +331,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Array a)))] (Array a))
+                    (λ [(Ref (Array (Array a)) b)] (Array a))
                 </p>
                 <pre class="args">
                     (concat xs)
@@ -351,7 +351,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), &amp;a] Bool)
+                    (λ [(Ref (Array a) b), (Ref a b)] Bool)
                 </p>
                 <pre class="args">
                     (contains? arr el)
@@ -371,7 +371,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Array a))
+                    (λ [(Ref (Array a) q)] (Array a))
                 </p>
                 <span>
                     
@@ -391,7 +391,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] (Array a))
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Ref (Array a) d)] (Array a))
                 </p>
                 <pre class="args">
                     (copy-filter f a)
@@ -412,7 +412,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] b)), (Ref (Array a))] (Array b))
+                    (λ [(Ref (λ [(Ref a b)] c) d), (Ref (Array a) b)] (Array c))
                 </p>
                 <pre class="args">
                     (copy-map f a)
@@ -453,7 +453,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), &amp;a] Int)
+                    (λ [(Ref (Array a) b), (Ref a b)] Int)
                 </p>
                 <pre class="args">
                     (element-count a e)
@@ -473,7 +473,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] Bool)
+                    (λ [(Ref (Array a) b)] Bool)
                 </p>
                 <pre class="args">
                     (empty? a)
@@ -493,7 +493,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Array a)] (Array a))
+                    (λ [(Ref (λ [(Ref a q)] Bool) w), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -513,7 +513,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a] a)), (Array a)] (Array a))
+                    (λ [(Ref (λ [a] a) q), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -533,7 +533,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Array (Pair Int a)))
+                    (λ [(Ref (Array a) b)] (Array (Pair Int a)))
                 </p>
                 <pre class="args">
                     (enumerated xs)
@@ -553,7 +553,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] (Maybe a))
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Ref (Array a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (find f a)
@@ -574,7 +574,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a] Bool)), (Ref (Array a))] (Maybe Int))
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Ref (Array a) b)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (find-index f a)
@@ -595,7 +595,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Maybe a))
+                    (λ [(Ref (Array a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (first a)
@@ -616,7 +616,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), &amp;a] (Maybe Int))
+                    (λ [(Ref (Array a) b), (Ref a b)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (index-of a e)
@@ -637,7 +637,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Maybe a))
+                    (λ [(Ref (Array a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (last a)
@@ -658,7 +658,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t))] Int)
+                    (λ [(Ref (Array t) q)] Int)
                 </p>
                 <span>
                     
@@ -678,7 +678,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Maybe a))
+                    (λ [(Ref (Array a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (maximum xs)
@@ -699,7 +699,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Maybe a))
+                    (λ [(Ref (Array a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (minimum xs)
@@ -720,7 +720,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t)), Int] &amp;t)
+                    (λ [(Ref (Array t) q), Int] (Ref t q))
                 </p>
                 <span>
                     
@@ -760,7 +760,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a) q)] a)
                 </p>
                 <span>
                     
@@ -780,7 +780,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), (Ref (λ [&amp;a] Bool))] Int)
+                    (λ [(Ref (Array a) b), (Ref (λ [(Ref a b)] Bool) c)] Int)
                 </p>
                 <pre class="args">
                     (predicate-count a pred)
@@ -800,7 +800,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int] (Array a))
+                    (λ [(Ref (Array a) b), Int] (Array a))
                 </p>
                 <pre class="args">
                     (prefix-array xs end-index)
@@ -820,7 +820,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] String)
+                    (λ [(Ref (Array a) b)] String)
                 </p>
                 <pre class="args">
                     (prn x)
@@ -859,7 +859,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), a] ())
+                    (λ [(Ref (Array a) q), a] ())
                 </p>
                 <span>
                     
@@ -919,7 +919,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a, &amp;b] a)), a, (Ref (Array b))] a)
+                    (λ [(Ref (λ [a, (Ref b c)] a) d), a, (Ref (Array b) c)] a)
                 </p>
                 <pre class="args">
                     (reduce f x xs)
@@ -944,7 +944,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;a, (Array a)] (Array a))
+                    (λ [(Ref a b), (Array a)] (Array a))
                 </p>
                 <pre class="args">
                     (remove el arr)
@@ -984,7 +984,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, (Ref (λ [] a))] (Array a))
+                    (λ [Int, (Ref (λ [] a) b)] (Array a))
                 </p>
                 <pre class="args">
                     (repeat n f)
@@ -1025,7 +1025,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, &amp;a] (Array a))
+                    (λ [Int, (Ref a b)] (Array a))
                 </p>
                 <pre class="args">
                     (replicate n e)
@@ -1085,7 +1085,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] ())
+                    (λ [(Ref (Array a) b)] ())
                 </p>
                 <pre class="args">
                     (sort! arr)
@@ -1105,7 +1105,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Array a), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                    (λ [(Array a), (Ref (λ [(Ref a b), (Ref a b)] Bool) c)] (Array a))
                 </p>
                 <pre class="args">
                     (sort-by arr f)
@@ -1125,7 +1125,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] ())
+                    (λ [(Ref (Array a) b), (Ref (λ [(Ref a b), (Ref a b)] Bool) c)] ())
                 </p>
                 <pre class="args">
                     (sort-by! arr f)
@@ -1145,7 +1145,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] (Array a))
+                    (λ [(Ref (Array a) b)] (Array a))
                 </p>
                 <pre class="args">
                     (sorted arr)
@@ -1165,7 +1165,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), (Ref (λ [&amp;a, &amp;a] Bool))] (Array a))
+                    (λ [(Ref (Array a) b), (Ref (λ [(Ref a c), (Ref a c)] Bool) d)] (Array a))
                 </p>
                 <pre class="args">
                     (sorted-by arr f)
@@ -1185,7 +1185,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] String)
+                    (λ [(Ref (Array a) q)] String)
                 </p>
                 <span>
                     
@@ -1205,7 +1205,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int, Int] (Array a))
+                    (λ [(Ref (Array a) b), Int, Int] (Array a))
                 </p>
                 <pre class="args">
                     (subarray xs start-index end-index)
@@ -1225,7 +1225,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int] (Array a))
+                    (λ [(Ref (Array a) b), Int] (Array a))
                 </p>
                 <pre class="args">
                     (suffix-array xs start-index)
@@ -1245,7 +1245,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a) b)] a)
                 </p>
                 <pre class="args">
                     (sum xs)
@@ -1265,7 +1265,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Array a)))] Int)
+                    (λ [(Ref (Array (Array a)) b)] Int)
                 </p>
                 <pre class="args">
                     (sum-length xs)
@@ -1305,7 +1305,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a)), Int, Int] ())
+                    (λ [(Ref (Array a) b), Int, Int] ())
                 </p>
                 <pre class="args">
                     (swap! a i j)
@@ -1325,7 +1325,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a) b)] a)
                 </p>
                 <pre class="args">
                     (unsafe-first a)
@@ -1346,7 +1346,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a) b)] a)
                 </p>
                 <pre class="args">
                     (unsafe-last a)
@@ -1387,7 +1387,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [&amp;a, &amp;b] c)), (Ref (Array a)), (Ref (Array b))] (Array c))
+                    (λ [(Ref (λ [(Ref a b), (Ref c d)] e) f), (Ref (Array a) b), (Ref (Array c) d)] (Array e))
                 </p>
                 <pre class="args">
                     (zip f a b)

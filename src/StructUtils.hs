@@ -7,7 +7,7 @@ import Lookup
 import Polymorphism
 
 memberInfo typeEnv memberTy =
-  let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy else memberTy
+  let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
   in (refOrNotRefType, if isManaged typeEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy)
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.

@@ -151,7 +151,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b)), (Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c), (Ref (Result a b) d)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -252,7 +252,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] (Result a b))
+                    (λ [(Ref (Result a b) q)] (Result a b))
                 </p>
                 <span>
                     
@@ -292,7 +292,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (error? a)
@@ -351,7 +351,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Int)
+                    (λ [(Ref (Result a b) q)] Int)
                 </p>
                 <span>
                     
@@ -412,7 +412,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] String)
+                    (λ [(Ref (Result a b) q)] String)
                 </p>
                 <span>
                     
@@ -432,7 +432,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] String)
+                    (λ [(Ref (Result a b) q)] String)
                 </p>
                 <span>
                     
@@ -452,7 +452,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (success? a)

@@ -151,7 +151,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a)), (Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b), (Ref (Maybe a) c)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -231,7 +231,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] (Maybe a))
+                    (λ [(Ref (Maybe a) q)] (Maybe a))
                 </p>
                 <span>
                     
@@ -312,7 +312,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] Int)
+                    (λ [(Ref (Maybe a) q)] Int)
                 </p>
                 <span>
                     
@@ -332,7 +332,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (just? a)
@@ -353,7 +353,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (nothing? a)
@@ -395,7 +395,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] String)
+                    (λ [(Ref (Maybe a) q)] String)
                 </p>
                 <span>
                     
@@ -415,7 +415,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] (Ptr a))
+                    (λ [(Ref (Maybe a) b)] (Ptr a))
                 </p>
                 <pre class="args">
                     (ptr a)
@@ -436,7 +436,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] String)
+                    (λ [(Ref (Maybe a) q)] String)
                 </p>
                 <span>
                     

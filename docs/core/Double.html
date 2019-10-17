@@ -341,7 +341,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Double, &amp;Double] Double)
+                    (λ [(Ref Double a), (Ref Double b)] Double)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -457,7 +457,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Double] Double)
+                    (λ [(Ref Double unnamed-lifetime)] Double)
                 </p>
                 <span>
                     
@@ -590,7 +590,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Double] String)
+                    (λ [(Ref String unnamed-lifetime), Double] String)
                 </p>
                 <span>
                     
@@ -609,7 +609,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Double, &amp;Int] Double)
+                    (λ [Double, (Ref Int unnamed-lifetime)] Double)
                 </p>
                 <span>
                     
@@ -685,7 +685,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Double] Int)
+                    (λ [(Ref Double a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -799,7 +799,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Double, &amp;Double] Double)
+                    (λ [Double, (Ref Double unnamed-lifetime)] Double)
                 </p>
                 <span>
                     

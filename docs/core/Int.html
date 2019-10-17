@@ -342,7 +342,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int, &amp;Int] Int)
+                    (λ [(Ref Int a), (Ref Int b)] Int)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -494,7 +494,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int] Int)
+                    (λ [(Ref Int unnamed-lifetime)] Int)
                 </p>
                 <span>
                     
@@ -551,7 +551,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int] String)
+                    (λ [(Ref String unnamed-lifetime), Int] String)
                 </p>
                 <span>
                     
@@ -590,7 +590,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Int)
+                    (λ [(Ref String unnamed-lifetime)] Int)
                 </p>
                 <span>
                     
@@ -609,7 +609,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int] Int)
+                    (λ [(Ref Int a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -782,7 +782,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int unnamed-lifetime)] Bool)
                 </p>
                 <span>
                     
@@ -802,7 +802,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int unnamed-lifetime)] Bool)
                 </p>
                 <span>
                     
@@ -822,7 +822,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int unnamed-lifetime)] Bool)
                 </p>
                 <span>
                     

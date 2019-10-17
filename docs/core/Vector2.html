@@ -151,7 +151,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -170,7 +170,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] (Vector2 a))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -189,7 +189,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] a)
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -209,7 +209,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -229,7 +229,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] (Vector2 f))
+                    (λ [(Ref (Vector2 f) q)] (Vector2 f))
                 </p>
                 <span>
                     
@@ -269,7 +269,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] a)
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -289,7 +289,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (div a n)
@@ -308,7 +308,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] a)
                 </p>
                 <pre class="args">
                     (dot a b)
@@ -328,7 +328,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b)] a)
                 </p>
                 <pre class="args">
                     (heading a)
@@ -368,7 +368,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b)] a)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -388,7 +388,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b)] a)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -408,7 +408,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a] b), (Ref (Vector2 a))] (Vector2 b))
+                    (λ [(λ [a] b), (Ref (Vector2 a) c)] (Vector2 b))
                 </p>
                 <pre class="args">
                     (map f v)
@@ -427,7 +427,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (mul a n)
@@ -446,7 +446,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b)] (Vector2 a))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -466,7 +466,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -486,7 +486,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -506,7 +506,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] String)
+                    (λ [(Ref (Vector2 f) q)] String)
                 </p>
                 <span>
                     
@@ -545,7 +545,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (rotate a n)
@@ -585,7 +585,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f)), f] ())
+                    (λ [(Ref (Vector2 f) q), f] ())
                 </p>
                 <span>
                     
@@ -625,7 +625,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f)), f] ())
+                    (λ [(Ref (Vector2 f) q), f] ())
                 </p>
                 <span>
                     
@@ -645,7 +645,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] String)
+                    (λ [(Ref (Vector2 f) q)] String)
                 </p>
                 <span>
                     
@@ -665,7 +665,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] (Vector2 a))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -684,7 +684,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
+                    (λ [(Ref (Vector2 a) b)] a)
                 </p>
                 <pre class="args">
                     (sum o)
@@ -703,7 +703,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector2 f), (Ref (λ [f] f))] (Vector2 f))
+                    (λ [(Vector2 f), (Ref (λ [f] f) q)] (Vector2 f))
                 </p>
                 <span>
                     
@@ -723,7 +723,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector2 f), (Ref (λ [f] f))] (Vector2 f))
+                    (λ [(Vector2 f), (Ref (λ [f] f) q)] (Vector2 f))
                 </p>
                 <span>
                     
@@ -743,7 +743,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (vapprox a b)
@@ -763,7 +763,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a)), a] (Vector2 a))
+                    (λ [(Ref (Vector2 a) b), (Ref (Vector2 a) c), a] (Vector2 a))
                 </p>
                 <pre class="args">
                     (vlerp a b amnt)
@@ -783,7 +783,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] a), a, (Ref (Vector2 b))] a)
+                    (λ [(λ [a, b] a), a, (Ref (Vector2 b) c)] a)
                 </p>
                 <pre class="args">
                     (vreduce f i v)
@@ -802,7 +802,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] &amp;f)
+                    (λ [(Ref (Vector2 f) q)] (Ref f q))
                 </p>
                 <span>
                     
@@ -822,7 +822,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] &amp;f)
+                    (λ [(Ref (Vector2 f) q)] (Ref f q))
                 </p>
                 <span>
                     
@@ -861,7 +861,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] c), (Ref (Vector2 a)), (Ref (Vector2 b))] (Vector2 c))
+                    (λ [(λ [a, b] c), (Ref (Vector2 a) d), (Ref (Vector2 b) e)] (Vector2 c))
                 </p>
                 <pre class="args">
                     (zip f a b)

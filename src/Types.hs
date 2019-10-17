@@ -17,6 +17,7 @@ module Types ( TypeMappings
              , consPath
              , doesTypeContainTyVarWithName
              , lambdaEnvTy
+             , typeEqIgnoreLifetimes
              ) where
 
 import qualified Data.Map as Map
@@ -38,13 +39,24 @@ data Ty = IntTy
         | UnitTy
         | ModuleTy
         | PointerTy Ty
-        | RefTy Ty
+        | RefTy Ty Ty -- second Ty is the lifetime
         | StructTy String [Ty] -- the name of the struct, and it's type parameters
         | TypeTy -- the type of types
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
         | InterfaceTy
         deriving (Eq, Ord)
+
+-- Exactly like '==' for Ty, but ignore lifetime parameter
+typeEqIgnoreLifetimes :: Ty -> Ty -> Bool
+typeEqIgnoreLifetimes (RefTy a _) (RefTy b _) = a == b
+typeEqIgnoreLifetimes (FuncTy argsA retA) (FuncTy argsB retB) =
+  all (== True) (zipWith typeEqIgnoreLifetimes argsA argsB) &&
+  typeEqIgnoreLifetimes retA retB
+typeEqIgnoreLifetimes (StructTy a tyVarsA) (StructTy b tyVarsB) =
+  a == b &&
+  all (== True) (zipWith typeEqIgnoreLifetimes tyVarsA tyVarsB)
+typeEqIgnoreLifetimes a b = a == b
 
 data SumTyCase = SumTyCase { caseName :: String
                            , caseMembers :: [(String, Ty)]
@@ -73,13 +85,14 @@ instance Show Ty where
   show (StructTy s [])       = s
   show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"
-  show (RefTy r)             =
-    case r of
-      PointerTy _ -> listView
-      StructTy _ _ -> listView
-      FuncTy _ _ -> listView
-      _ -> "&" ++ show r
-    where listView = "(Ref " ++ show r ++ ")"
+  show (RefTy r lt)          =
+    -- case r of
+    --   PointerTy _ -> listView
+    --   StructTy _ _ -> listView
+    --   FuncTy _ _ -> listView
+    --   _ -> "&" ++ show r
+    -- where listView = "(Ref " ++ show r ++ ")"
+    "(Ref " ++ show r ++ " " ++ show lt ++ ")"
   show MacroTy               = "Macro"
   show DynamicTy             = "Dynamic"
 
@@ -92,9 +105,9 @@ tyToC = tyToCManglePtr False
 
 tyToCLambdaFix :: Ty -> String
 tyToCLambdaFix t@(FuncTy _ _) = "Lambda"
-tyToCLambdaFix (RefTy (FuncTy _ _)) = "Lambda*"
-tyToCLambdaFix (RefTy (RefTy (FuncTy _ _))) = "Lambda**"
-tyToCLambdaFix (RefTy (RefTy (RefTy (FuncTy _ _)))) = "Lambda***" -- | TODO: More cases needed?! What's a better way to do it..?
+tyToCLambdaFix (RefTy (FuncTy _ _) _) = "Lambda*"
+tyToCLambdaFix (RefTy (RefTy (FuncTy _ _) _) _) = "Lambda**"
+tyToCLambdaFix (RefTy (RefTy (RefTy (FuncTy _ _) _) _) _) = "Lambda***" -- | TODO: More cases needed?! What's a better way to do it..?
 tyToCLambdaFix t = tyToCManglePtr False t
 
 tyToCRawFunctionPtrFix :: Ty -> String
@@ -115,7 +128,7 @@ tyToCManglePtr _ (VarTy x)               = x
 tyToCManglePtr _ (FuncTy argTys retTy)   = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
 tyToCManglePtr _ ModuleTy                = error "Can't emit module type."
 tyToCManglePtr b (PointerTy p)           = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
-tyToCManglePtr b (RefTy r)               = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
+tyToCManglePtr b (RefTy r _)               = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
 tyToCManglePtr _ (StructTy s [])         = mangle s
 tyToCManglePtr _ (StructTy s typeArgs)   = mangle s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
 tyToCManglePtr _ TypeTy                  = error "Can't emit the type of types."
@@ -127,7 +140,7 @@ isTypeGeneric (VarTy _) = True
 isTypeGeneric (FuncTy argTys retTy) = any isTypeGeneric argTys || isTypeGeneric retTy
 isTypeGeneric (StructTy _ tyArgs) = any isTypeGeneric tyArgs
 isTypeGeneric (PointerTy p) = isTypeGeneric p
-isTypeGeneric (RefTy r) = isTypeGeneric r
+isTypeGeneric (RefTy r _) = isTypeGeneric r
 isTypeGeneric _ = False
 
 doesTypeContainTyVarWithName :: String -> Ty -> Bool
@@ -135,7 +148,8 @@ doesTypeContainTyVarWithName name (VarTy n) = name == n
 doesTypeContainTyVarWithName name (FuncTy argTys retTy) = any (doesTypeContainTyVarWithName name) argTys || doesTypeContainTyVarWithName name retTy
 doesTypeContainTyVarWithName name (StructTy _ tyArgs) = any (doesTypeContainTyVarWithName name) tyArgs
 doesTypeContainTyVarWithName name (PointerTy p) = doesTypeContainTyVarWithName name p
-doesTypeContainTyVarWithName name (RefTy r) = doesTypeContainTyVarWithName name r
+doesTypeContainTyVarWithName name (RefTy r lt) = doesTypeContainTyVarWithName name r ||
+                                                 doesTypeContainTyVarWithName name lt
 doesTypeContainTyVarWithName _ _ = False
 
 -- | Map type variable names to actual types, eg. t0 => Int, t1 => Float
@@ -220,8 +234,8 @@ unifySignatures v t = Map.fromList (unify v t)
         unify (PointerTy a) (PointerTy b) = unify a b
         unify a@(PointerTy _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
-        unify (RefTy a) (RefTy b) = unify a b
-        unify a@(RefTy _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify (RefTy a ltA) (RefTy b ltB) = unify a b ++ unify ltA ltB
+        unify a@(RefTy _ _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (FuncTy argTysA retTyA) (FuncTy argTysB retTyB) = let argToks = concat (zipWith unify argTysA argTysB)
                                                                     retToks = unify retTyA retTyB
@@ -243,8 +257,8 @@ areUnifiable (StructTy a aArgs) (StructTy b bArgs)
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
-areUnifiable (RefTy a) (RefTy b) = areUnifiable a b
-areUnifiable (RefTy _) _ = False
+areUnifiable (RefTy a ltA) (RefTy b ltB) = areUnifiable a b && areUnifiable ltA ltB
+areUnifiable (RefTy _ _) _ = False
 areUnifiable (FuncTy argTysA retTyA) (FuncTy argTysB retTyB)
   | length argTysA /= length argTysB = False
   | otherwise = let argBools = zipWith areUnifiable argTysA argTysB
@@ -264,12 +278,12 @@ replaceTyVars mappings t =
     (FuncTy argTys retTy) -> FuncTy (map (replaceTyVars mappings) argTys) (replaceTyVars mappings retTy)
     (StructTy name tyArgs) -> StructTy name (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
-    (RefTy x) -> RefTy (replaceTyVars mappings x)
+    (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
     _ -> t
 
 -- | The type of a type's copying function.
 typesCopyFunctionType :: Ty -> Ty
-typesCopyFunctionType memberType = FuncTy [RefTy memberType] memberType
+typesCopyFunctionType memberType = FuncTy [RefTy memberType (VarTy "q")] memberType
 
 -- | The type of a type's deleter function.
 typesDeleterFunctionType :: Ty -> Ty

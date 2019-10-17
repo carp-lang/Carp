@@ -248,7 +248,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Char)
+                    (λ [(Ref Char unnamed-lifetime)] Char)
                 </p>
                 <span>
                     
@@ -267,7 +267,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char] String)
+                    (λ [(Ref String unnamed-lifetime), Char] String)
                 </p>
                 <span>
                     
@@ -305,7 +305,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Int)
+                    (λ [(Ref Char a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -344,7 +344,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Int)
+                    (λ [(Ref Char a)] Int)
                 </p>
                 <pre class="args">
                     (meaning char-ref)

@@ -58,7 +58,7 @@ pointerModule = Env { envBindings = bindings
 templatePointerCopy :: (String, Binder)
 templatePointerCopy = defineTemplate
   (SymPath ["Pointer"] "copy")
-  (FuncTy [RefTy (PointerTy (VarTy "p"))] (PointerTy (VarTy "p")))
+  (FuncTy [RefTy (PointerTy (VarTy "p")) (VarTy "q")] (PointerTy (VarTy "p")))
   "copies a pointer `p`."
   (toTemplate "$p* $NAME ($p** ptrRef)")
   (toTemplate $ unlines ["$DECL {"
@@ -79,7 +79,7 @@ templatePointerEqual = defineTemplate
 -- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
 templatePointerToRef = defineTemplate
   (SymPath ["Pointer"] "to-ref")
-  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p")))
+  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p") (VarTy "q")))
   "converts a pointer to a reference type. The user will have to ensure themselves that this is a safe operation."
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -150,7 +150,7 @@ generateInnerFunctionModule arity =
 generateTemplateFuncCopy :: Ty -> (String, Binder)
 generateTemplateFuncCopy funcTy = defineTemplate
   (SymPath ["Function"] "copy")
-  (FuncTy [RefTy funcTy] (VarTy "a"))
+  (FuncTy [RefTy funcTy (VarTy "q")] (VarTy "a"))
   "copies a function."
   (toTemplate "$a $NAME ($a* ref)")
   (toTemplate $ unlines ["$DECL {"
@@ -186,7 +186,7 @@ generateTemplateFuncDelete funcTy = defineTemplate
 generateTemplateFuncStrOrPrn :: String -> String -> Ty -> (String, Binder)
 generateTemplateFuncStrOrPrn name docs funcTy = defineTemplate
   (SymPath ["Function"] name)
-  (FuncTy [RefTy funcTy] StringTy)
+  (FuncTy [RefTy funcTy (VarTy "q")] StringTy)
   docs
   (toTemplate "String $NAME (Lambda *f)")
   (toTemplate $ unlines ["$DECL {"
@@ -356,7 +356,7 @@ startingTypeEnv = Env { envBindings = bindings
                       , envFunctionNestingLevel = 0
                       }
   where bindings = Map.fromList
-          [ interfaceBinder "copy" (FuncTy [RefTy (VarTy "a")] (VarTy "a"))
+          [ interfaceBinder "copy" (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a"))
             ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
             builtInSymbolInfo
 

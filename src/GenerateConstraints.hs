@@ -172,7 +172,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let theTheConstraint = Constraint (RefTy xobjType) valueType xobj value xobj OrdDeref
+                                let lt = (VarTy "hmm?") -- TODO: Need to generate a unique name here?!
+                                let theTheConstraint = Constraint (RefTy xobjType lt) valueType xobj value xobj OrdDeref
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Break

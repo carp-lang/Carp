@@ -52,8 +52,9 @@ renameVarTys rootType = do n <- get
     rename (PointerTy x) = do x' <- rename x
                               return (PointerTy x')
 
-    rename (RefTy x) = do x' <- rename x
-                          return (RefTy x')
+    rename (RefTy x lt) = do x' <- rename x
+                             lt' <- rename lt
+                             return (RefTy x' lt')
 
     rename x = return x
 
@@ -66,8 +67,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visit env xobj = case obj xobj of
                        (Num t _)          -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
-                       (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
-                       (Pattern _)        -> return (Right (xobj { ty = Just (RefTy PatternTy) }))
+                       (Str _)            -> do lt <- genVarTy
+                                                return (Right (xobj { ty = Just (RefTy StringTy lt) }))
+                       (Pattern _)        -> do lt <- genVarTy
+                                                return (Right (xobj { ty = Just (RefTy PatternTy lt) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
                        Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
                        (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
@@ -313,9 +316,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Ref
         [refExpr@(XObj Ref _ _), value] ->
           do visitedValue <- visit env value
+             lt <- genVarTy
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
-                         return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
+                         return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
 
         -- Deref (error!)
         [XObj Deref _ _, value] ->

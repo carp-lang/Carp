@@ -68,7 +68,7 @@ depthOfType typeEnv visited selfName theType =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       maximum (visitType retTy : fmap visitType argTys)
     visitType (PointerTy p) = visitType p
-    visitType (RefTy r) = visitType r
+    visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1
 
     depthOfStructType :: String -> [Ty] -> Int

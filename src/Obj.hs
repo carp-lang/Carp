@@ -380,12 +380,12 @@ showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder meta xobj) =
-  if metaIsTrue meta "hidden"
+  if False -- metaIsTrue meta "hidden"
   then ""
   else replicate indent ' ' ++ name ++
-       -- " (" ++ show (getPath xobj) ++ ")" ++
+       " (" ++ show (getPath xobj) ++ ")" ++
        " : " ++ showMaybeTy (ty xobj)
-       -- ++ " <" ++ getBinderDescription xobj ++ ">"
+       ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
@@ -414,7 +414,7 @@ replaceGenericTypeSymbols _ xobj = xobj
 tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
 tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
-tyToXObj (RefTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
+tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
 tyToXObj (FuncTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
@@ -613,10 +613,14 @@ xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy)
+     return (RefTy okInnerTy (VarTy "unnamed-lifetime"))
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
+  do okInnerTy <- xobjToTy innerTy
+     okLifetimeTy <- xobjToTy lifetimeTy
+     return (RefTy okInnerTy okLifetimeTy)
 xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '&'
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy)
+     return (RefTy okInnerTy (VarTy "unnamed-lifetime"))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -664,7 +668,7 @@ polymorphicSuffix signature actualType =
                                                                  return (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
             (PointerTy a, PointerTy b) -> visit a b
-            (RefTy a, RefTy b) -> visit a b
+            (RefTy a _, RefTy b _) -> visit a b
             (_, _) -> return []
 
 type VisitedTypes = [Ty]

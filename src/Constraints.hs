@@ -137,9 +137,11 @@ solveOneInternal mappings constraint =
 
     -- Ref types
     -- TODO: This messes up the error message since the constraint is between non-reffed types so the refs don't show in the error message!!!
-    Constraint (RefTy a) (RefTy b) _ _ _ _ ->
+    Constraint (RefTy a ltA) (RefTy b ltB) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
+      in  case solveOneInternal mappings (Constraint a b i1 i2 ctx ord) of
+            Left err -> Left err
+            Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
 
     -- Else
     Constraint aTy bTy _ _ _ _ ->
@@ -177,9 +179,12 @@ checkForConflict mappings constraint name otherTy =
             PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
-        Just (RefTy innerTy) ->
+        Just (RefTy innerTy lifetimeTy) ->
           case otherTy of
-            RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy)
+            RefTy otherInnerTy otherLifetimeTy ->
+              case solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
+                Left err -> Left err
+                Right ok -> solveOneInternal ok (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
