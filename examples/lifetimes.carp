@@ -17,3 +17,21 @@
 ;; A function that takes refs as arguments
 ;; (defn h [r]
 ;;   (IO.println r))
+
+;; Using 'nth' : (Fn [(Ref (Array a) q) Int] (Ref a q))
+;; (defn n []
+;;   (let [xs [@"A" @"B" @"C"]
+;;         xsref &xs
+;;         r (Array.nth xsref 0)]
+;;     (do
+;;       (Array.delete xs)
+;;       (IO.println r))))
+
+;; Lambdas
+(defn l []
+  (let [x @"DATA"
+        r &x
+        f (fn [] (IO.println r))]
+    (do
+      (String.delete x)
+      (f))))

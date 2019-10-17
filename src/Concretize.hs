@@ -1027,11 +1027,17 @@ manageMemory typeEnv globalEnv root =
         addToLifetimesMappingsIfRef :: Bool -> XObj -> State MemState ()
         addToLifetimesMappingsIfRef internal xobj =
           case ty xobj of
-            Just (RefTy _ (VarTy lt)) -> do m@(MemState _ _ lifetimes) <- get
-                                            let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
-                                            put $ --(trace $ "Extended lifetimes mappings at " ++ prettyInfoFromXObj xobj ++ ": " ++ show lifetimes') $
-                                              m { memStateLifetimes = lifetimes' }
-                                            return ()
+            Just (RefTy _ (VarTy lt)) ->
+              do m@(MemState _ _ lifetimes) <- get
+                 case Map.lookup lt lifetimes of
+                   Just existing ->
+                     --trace ("There is already a mapping from the lifetime '" ++ lt ++ "' to " ++ show existing) $
+                     return ()
+                   Nothing ->
+                     do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
+                        put $ --(trace $ "Extended lifetimes mappings at " ++ prettyInfoFromXObj xobj ++ ": " ++ show lifetimes') $
+                          m { memStateLifetimes = lifetimes' }
+                        return ()
             _ -> return ()
             where makeLifetimeMode xobj =
                     if internal then
@@ -1054,15 +1060,20 @@ manageMemory typeEnv globalEnv root =
                                                                         FakeDeleter   { deleterVariable = dv } -> dv == deleterName)
                                             deleters
                      in case matchingDeleters of
-                          [] -> --trace ("Can't reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive there.") $
+                          [] -> trace ("Can't reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive there.") $
                             return (Right ())
                           _ ->
                             return (Right ())
                    Just LifetimeOutsideFunction ->
                      return (Right ())
                    Nothing ->
-                     --trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
-                     return (Right ())
+                     case xobj of
+                       XObj (Sym _ (LookupLocal Capture)) _ _ ->
+                         -- Ignore these for the moment! TODO: FIX!!!
+                         return (Right ())
+                       _ ->
+                         trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
+                         return (Right ())
             _ ->
               return (Right ())
 
