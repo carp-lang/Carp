@@ -57,7 +57,23 @@
 ;;       (String.delete x)
 ;;       (f))))
 
-(defn from-ptr [a]
-  (if (null? a)
-    (Maybe.Nothing)
-    (Maybe.Just @(Pointer.to-ref a))))
+;; (defn from-ptr [a]
+;;   (if (null? a)
+;;     (Maybe.Nothing)
+;;     (Maybe.Just @(Pointer.to-ref a))))
+
+
+;; (defn w []
+;;   (let [a [1 2 3]
+;;         r &a]
+;;     (do
+;;       ;;(Array.delete a)
+;;       (IO.println &(str
+;;                     (Array.nth
+;;                      r
+;;                      0))))))
+
+;; (defn pair-eq [p1 p2]
+;;   (and (= (Pair.a p1) (Pair.a p2))
+;;        (= (Pair.b p1) (Pair.b p2)))
+;;   )
