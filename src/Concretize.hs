@@ -1042,7 +1042,9 @@ manageMemory typeEnv globalEnv root =
             Just notThisType ->
               --trace ("Won't add to mappings! " ++ pretty xobj ++ " : " ++ show notThisType ++ " at " ++ prettyInfoFromXObj xobj) $
               return ()
-            _ -> return ()
+            _ ->
+              --trace ("No type on " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
+              return ()
             where makeLifetimeMode xobj =
                     if internal then
                       LifetimeInsideFunction $
@@ -1066,7 +1068,7 @@ manageMemory typeEnv globalEnv root =
                                                                     )
                                             deleters
                      in case matchingDeleters of
-                          [] -> --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                          [] -> trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)
                           _ ->
                             return (Right xobj)
@@ -1085,8 +1087,8 @@ manageMemory typeEnv globalEnv root =
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
-          do addToLifetimesMappingsIfRef True expr
-             visitedExpr <- visit expr
+          do visitedExpr <- visit expr
+             addToLifetimesMappingsIfRef True expr
              result <- transferOwnership expr name
              return $ case result of
                         Left e -> Left e

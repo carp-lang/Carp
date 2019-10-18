@@ -89,5 +89,14 @@
 ;;         z 123]
 ;;     (Int.+ x y)))
 
-(defn f []
-  &100)
+;; (defn f []
+;;   &100) ;; TODO: Number literals should create prim var deleter too!
+
+(use Map)
+(use Bucket)
+
+(defn put [k v]
+  (fn [b]
+    (let [n (Array.nth &b 0)
+          new-b (Bucket.put @n k v)]
+      (Array.aset b 0 new-b))))

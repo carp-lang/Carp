@@ -128,8 +128,9 @@
   (defn put [m k v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.put @n k v)))))))
+        (let [n (Array.nth &b idx)
+              b2 (Bucket.put @n k v)]
+          (Array.aset b idx b2))))))
 
   (doc put! "Put a a value v into map m, using the key k, in place.")
   (defn put! [m k v]
@@ -160,7 +161,8 @@
               i (Bucket.find n k)]
           (if (<= 0 i)
             ;; currently can't write a Bucket.update that takes f due to bug #347
-            (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
+            (let [new-b (Bucket.set-idx @n i &(~f (Bucket.get-idx n i)))]
+              (Array.aset b idx new-b))
             b))))))
 
   (doc update-with-default "Update value at key k in map with function f. If k doesn't exist in map, set k to (f v).")
@@ -168,10 +170,12 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
         (let [n (Array.nth &b idx)
-              i (Bucket.find n k)]
+              i (Bucket.find n @&k)] ;; Change type signature for Bucket.find to take a ref instead!
           (if (<= 0 i)
-            (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
-            (Array.aset b idx (Bucket.push-back @n k &(~f @&v)))))))))
+            (let [new-b (Bucket.set-idx @n i &(~f (Bucket.get-idx n i)))]
+              (Array.aset b idx new-b))
+            (let [new-b (Bucket.push-back @n k &(~f @&v))]
+              (Array.aset b idx new-b))))))))
 
   (doc length "Get the length of the map m.")
   (defn length [m]
@@ -193,8 +197,9 @@
   (defn remove [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (Array.aset b idx (Bucket.shrink @n k)))))))
+        (let [n (Array.nth &b idx)
+              new-b (Bucket.shrink @n k)]
+          (Array.aset b idx new-b))))))
 
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
@@ -341,10 +346,12 @@
   (defn put [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (if (SetBucket.contains? n k)
+        (let [n (Array.nth &b idx)
+              kk @&k] ;; TODO: Fix this weird lifetime hackery!
+          (if (SetBucket.contains? n kk)
             b
-            (Array.aset b idx (SetBucket.grow n @k))))))))
+            (let [new-b (SetBucket.grow n @kk)]
+              (Array.aset b idx new-b))))))))
 
   (doc put! "Put a a key k into the set s, in place.")
   (defn put! [s k]
@@ -374,8 +381,9 @@
   (defn remove [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.nth &b idx)]
-          (Array.aset b idx (SetBucket.shrink n k)))))))
+        (let [n (Array.nth &b idx)
+              new-b (SetBucket.shrink n k)]
+          (Array.aset b idx new-b))))))
 
   (doc all? "Does the predicate hold for all values in this set?")
   (defn all? [pred set]
