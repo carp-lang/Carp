@@ -2,11 +2,11 @@
 (Project.config "print-ast" true)
 
 ;; ;; Preventing the usage of a reference to a deleted object
-(defn f []
-  (let-do [x @"DATA"
-           r &x]
-    (delete x)
-    (IO.println r)))
+;; (defn f []
+;;   (let-do [x @"DATA"
+;;            r &x]
+;;     (delete x)
+;;     (IO.println r)))
 
 ;; Same as above, but deleting the argument
 ;; (defn g [x]
@@ -77,3 +77,8 @@
 ;;   (and (= (Pair.a p1) (Pair.a p2))
 ;;        (= (Pair.b p1) (Pair.b p2)))
 ;;   )
+
+(defn map-put []
+  (fn [b]
+    (let [n &b]
+      ())))
