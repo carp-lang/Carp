@@ -58,7 +58,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
+  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " -- ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty

@@ -650,17 +650,22 @@ manageMemory typeEnv globalEnv root =
 
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
-          case obj xobj of
-            Lst _ -> visitList xobj
-            Arr _ -> visitArray xobj
-            Str _ -> do manage xobj
-                        addToLifetimesMappingsIfRef False xobj
-                        return (Right xobj)
-            _ ->
-              do checkResult <- checkThatRefTargetIsAlive xobj
-                 case checkResult of
-                   Left err -> return (Left err)
-                   Right () -> return (Right xobj)
+          do r <- case obj xobj of
+                    Lst _ -> visitList xobj
+                    Arr _ -> visitArray xobj
+                    Str _ -> do manage xobj
+                                addToLifetimesMappingsIfRef False xobj
+                                return (Right xobj)
+                    _ ->
+                      return (Right xobj)
+             case r of
+               Right ok -> checkThatRefTargetIsAlive ok
+               Left err -> return (Left err)
+
+              -- do checkResult <- checkThatRefTargetIsAlive xobj
+              --    case checkResult of
+              --      Left err -> return (Left err)
+              --      Right () -> return (Right xobj)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
         visitArray xobj@(XObj (Arr arr) _ _) =
@@ -684,9 +689,9 @@ manageMemory typeEnv globalEnv root =
                    --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
+                        mapM_ (addToLifetimesMappingsIfRef False) argList -- TODO: Move to top of 'visit' instead?
                         visitedBody <- visit  body
                         result <- unmanage body
-                        mapM_ (addToLifetimesMappingsIfRef False) argList -- TODO: Move to top of 'visit' instead?
                         return $
                           case result of
                             Left e -> Left e
@@ -1035,7 +1040,7 @@ manageMemory typeEnv globalEnv root =
                      return ()
                    Nothing ->
                      do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
-                        put $ --(trace $ "Extended lifetimes mappings at " ++ prettyInfoFromXObj xobj ++ ": " ++ show lifetimes') $
+                        put $ --(trace $ "Extended lifetimes mappings with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ": " ++ show lifetimes') $
                           m { memStateLifetimes = lifetimes' }
                         return ()
             _ -> return ()
@@ -1048,7 +1053,7 @@ manageMemory typeEnv globalEnv root =
                     else
                       LifetimeOutsideFunction
 
-        checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError ())
+        checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
           case ty xobj of
             Just (RefTy _ (VarTy lt)) ->
@@ -1061,21 +1066,21 @@ manageMemory typeEnv globalEnv root =
                                             deleters
                      in case matchingDeleters of
                           [] -> trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                            return (Right ())
+                            return (Right xobj)
                           _ ->
-                            return (Right ())
+                            return (Right xobj)
                    Just LifetimeOutsideFunction ->
-                     return (Right ())
+                     return (Right xobj)
                    Nothing ->
                      case xobj of
                        XObj (Sym _ (LookupLocal Capture)) _ _ ->
                          -- Ignore these for the moment! TODO: FIX!!!
-                         return (Right ())
+                         return (Right xobj)
                        _ ->
                          trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
-                         return (Right ())
+                         return (Right xobj)
             _ ->
-              return (Right ())
+              return (Right xobj)
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =

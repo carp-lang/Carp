@@ -27,22 +27,30 @@
 ;; ;;      (Array.delete xs)
 ;;       (IO.println r))))
 
+(macro-log "")
+(macro-log "--------------------------------------------------------------------------------------------------")
+(macro-log "")
+
 ;; (defn o []
 ;;   (let [b [1 2 3]
 ;;         r &b]
 ;;     @r))
 
-;; (defn n []
+;; (defn p []
 ;;   (let [b [@"DATA"]
 ;;         r &b
 ;;         n (Array.nth r 0)]
 ;;     @n))
 
+(defmodule Q
+  (defn eq [a b]
+    (Bool.= @a @b)))
+
 ;; ;; More 'nth'
-(defn m []
-  (let [b [@"MORE" @"DATA"]
-        n (Array.nth &b 0)]
-    @n))
+;; (defn m []
+;;   (let [b [@"MORE" @"DATA"]
+;;         n (Array.nth &b 0)]
+;;     @n))
 
 ;; Lambdas
 ;; (defn l []
