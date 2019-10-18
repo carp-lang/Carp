@@ -128,11 +128,14 @@ data Deleter = ProperDeleter { deleterPath :: SymPath
                              }
              | FakeDeleter { deleterVariable :: String -- used for external types with no delete function
                            }
+             | PrimDeleter { aliveVariable :: String -- used by primitive types (i.e. Int) to signify that the variable is alive
+                           }
              deriving (Eq, Ord)
 
 instance Show Deleter where
   show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
+  show (PrimDeleter var) = "(AlivePrimVar " ++ show var ++ ")"
 
 getInfo i = (infoLine i, infoColumn i, infoFile i)
 

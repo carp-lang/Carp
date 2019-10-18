@@ -78,7 +78,16 @@
 ;;        (= (Pair.b p1) (Pair.b p2)))
 ;;   )
 
-(defn map-put []
-  (fn [b]
-    (let [n &b]
-      ())))
+;; (defn map-put []
+;;   (fn [b]
+;;     (let [n &b]
+;;       ())))
+
+
+;; (defn f [x y]
+;;   (let [s @"hej"
+;;         z 123]
+;;     (Int.+ x y)))
+
+(defn f []
+  &100)

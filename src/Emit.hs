@@ -597,6 +597,8 @@ delete indent i = mapM_ deleterToC (infoDelete i)
   where deleterToC :: Deleter -> State EmitterState ()
         deleterToC FakeDeleter {} =
           return ()
+        deleterToC PrimDeleter {} =
+          return ()
         deleterToC deleter@ProperDeleter{} =
           appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 

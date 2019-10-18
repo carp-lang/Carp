@@ -1041,7 +1041,7 @@ manageMemory typeEnv globalEnv root =
                         return ()
             Just notThisType ->
               --trace ("Won't add to mappings! " ++ pretty xobj ++ " : " ++ show notThisType ++ " at " ++ prettyInfoFromXObj xobj) $
-              (return ())
+              return ()
             _ -> return ()
             where makeLifetimeMode xobj =
                     if internal then
@@ -1056,30 +1056,30 @@ manageMemory typeEnv globalEnv root =
         checkThatRefTargetIsAlive xobj =
           case ty xobj of
             Just (RefTy t (VarTy lt)) ->
-              if isManaged typeEnv t
-              then do MemState deleters _ lifetimeMappings <- get
-                      case Map.lookup lt lifetimeMappings of
-                        Just (LifetimeInsideFunction deleterName) ->
-                          let matchingDeleters = Set.toList $ Set.filter (\case
-                                                                             ProperDeleter { deleterVariable = dv } -> dv == deleterName
-                                                                             FakeDeleter   { deleterVariable = dv } -> dv == deleterName)
-                                                 deleters
-                          in case matchingDeleters of
-                               [] -> trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                                 return (Right xobj)
-                               _ ->
-                                 return (Right xobj)
-                        Just LifetimeOutsideFunction ->
-                          return (Right xobj)
-                        Nothing ->
-                          case xobj of
-                            XObj (Sym _ (LookupLocal Capture)) _ _ ->
-                              -- Ignore these for the moment! TODO: FIX!!!
-                              return (Right xobj)
-                            _ ->
-                              --trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
-                              return (Right xobj)
-              else return (Right xobj)
+              do MemState deleters _ lifetimeMappings <- get
+                 case Map.lookup lt lifetimeMappings of
+                   Just (LifetimeInsideFunction deleterName) ->
+                     let matchingDeleters = Set.toList $ Set.filter (\case
+                                                                        ProperDeleter { deleterVariable = dv } -> dv == deleterName
+                                                                        FakeDeleter   { deleterVariable = dv } -> dv == deleterName
+                                                                        PrimDeleter   { aliveVariable = dv } -> dv == deleterName
+                                                                    )
+                                            deleters
+                     in case matchingDeleters of
+                          [] -> --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                            return (Right xobj)
+                          _ ->
+                            return (Right xobj)
+                   Just LifetimeOutsideFunction ->
+                     return (Right xobj)
+                   Nothing ->
+                     case xobj of
+                       XObj (Sym _ (LookupLocal Capture)) _ _ ->
+                         -- Ignore these for the moment! TODO: FIX!!!
+                         return (Right xobj)
+                       _ ->
+                         --trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
+                         return (Right xobj)
             _ ->
               return (Right xobj)
 
@@ -1113,12 +1113,15 @@ manageMemory typeEnv globalEnv root =
         createDeleter xobj =
           case ty xobj of
             Just t -> let var = varOfXObj xobj
-                      in  if isManaged typeEnv t && not (isExternalType typeEnv t)
-                          then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy) "delete" of
-                                 Just pathOfDeleteFunc -> Just (ProperDeleter pathOfDeleteFunc var)
-                                 Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
-                                            Just (FakeDeleter var)
-                          else Nothing
+                      in  if isExternalType typeEnv t
+                          then Nothing
+                          else if isManaged typeEnv t
+                               then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy) "delete" of
+                                      Just pathOfDeleteFunc ->
+                                        Just (ProperDeleter pathOfDeleteFunc var)
+                                      Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
+                                        Just (FakeDeleter var)
+                               else Just (PrimDeleter var)
             Nothing -> error ("No type, can't manage " ++ show xobj)
 
         manage :: XObj -> State MemState ()
@@ -1138,7 +1141,8 @@ manageMemory typeEnv globalEnv root =
           let var = varOfXObj xobj
           in  Set.toList $ Set.filter (\case
                                                ProperDeleter { deleterVariable = dv } -> dv == var
-                                               FakeDeleter   { deleterVariable = dv } -> dv == var)
+                                               FakeDeleter   { deleterVariable = dv } -> dv == var
+                                               PrimDeleter   { aliveVariable = dv } -> dv == var)
                                       deleters
 
         isSymbolThatCaptures :: XObj -> Bool
@@ -1171,7 +1175,7 @@ manageMemory typeEnv globalEnv root =
               isGlobalVariable = case xobj of
                                    XObj (Sym _ (LookupGlobal _ _)) _ _ -> True
                                    _ -> False
-          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj)
+          in if not isGlobalVariable && not (isGlobalFunc xobj) && isManaged typeEnv t && not (isExternalType typeEnv t) && not (isSymbolThatCaptures xobj) -- TODO: The 'isManaged typeEnv t' boolean check should be removed!
              then do MemState deleters deps lifetimes <- get
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
