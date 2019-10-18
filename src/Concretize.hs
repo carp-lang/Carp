@@ -654,12 +654,13 @@ manageMemory typeEnv globalEnv root =
                     Lst _ -> visitList xobj
                     Arr _ -> visitArray xobj
                     Str _ -> do manage xobj
-                                addToLifetimesMappingsIfRef False xobj
+                                --addToLifetimesMappingsIfRef False xobj
                                 return (Right xobj)
                     _ ->
                       return (Right xobj)
              case r of
-               Right ok -> checkThatRefTargetIsAlive ok
+               Right ok -> do addToLifetimesMappingsIfRef False xobj
+                              checkThatRefTargetIsAlive ok
                Left err -> return (Left err)
 
               -- do checkResult <- checkThatRefTargetIsAlive xobj
@@ -689,7 +690,7 @@ manageMemory typeEnv globalEnv root =
                    --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
-                        mapM_ (addToLifetimesMappingsIfRef False) argList -- TODO: Move to top of 'visit' instead?
+                        --mapM_ (addToLifetimesMappingsIfRef False) argList -- TODO: Move to top of 'visit' instead?
                         visitedBody <- visit  body
                         result <- unmanage body
                         return $
@@ -1084,7 +1085,7 @@ manageMemory typeEnv globalEnv root =
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
-          do addToLifetimesMappingsIfRef True expr -- TODO: Move to top of 'visit'?
+          do --addToLifetimesMappingsIfRef True expr -- TODO: Move to top of 'visit'?
              visitedExpr <- visit expr
              result <- transferOwnership expr name
              return $ case result of
@@ -1102,7 +1103,7 @@ manageMemory typeEnv globalEnv root =
                                      Right _ -> return visitedXObj
                            else visit xobj
              case afterVisit of
-               Right okAfterVisit -> do addToLifetimesMappingsIfRef True okAfterVisit
+               Right okAfterVisit -> do --addToLifetimesMappingsIfRef True okAfterVisit
                                         return (Right okAfterVisit)
                Left err -> return (Left err)
         visitArg xobj@XObj{} =
