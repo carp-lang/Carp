@@ -40,6 +40,7 @@ data Ty = IntTy
         | ModuleTy
         | PointerTy Ty
         | RefTy Ty Ty -- second Ty is the lifetime
+        | StaticLifetimeTy
         | StructTy String [Ty] -- the name of the struct, and it's type parameters
         | TypeTy -- the type of types
         | MacroTy
@@ -93,6 +94,7 @@ instance Show Ty where
     --   _ -> "&" ++ show r
     -- where listView = "(Ref " ++ show r ++ ")"
     "(Ref " ++ show r ++ " " ++ show lt ++ ")"
+  show StaticLifetimeTy      = "StaticLifetime"
   show MacroTy               = "Macro"
   show DynamicTy             = "Dynamic"
 

@@ -79,7 +79,7 @@ templatePointerEqual = defineTemplate
 -- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
 templatePointerToRef = defineTemplate
   (SymPath ["Pointer"] "to-ref")
-  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p") (VarTy "q")))
+  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p") StaticLifetimeTy))
   "converts a pointer to a reference type. The user will have to ensure themselves that this is a safe operation."
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"

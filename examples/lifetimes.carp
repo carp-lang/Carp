@@ -42,10 +42,6 @@
 ;;         n (Array.nth r 0)]
 ;;     @n))
 
-(defmodule Q
-  (defn eq [a b]
-    (Bool.= @a @b)))
-
 ;; ;; More 'nth'
 ;; (defn m []
 ;;   (let [b [@"MORE" @"DATA"]
@@ -60,3 +56,8 @@
 ;;     (do
 ;;       (String.delete x)
 ;;       (f))))
+
+(defn from-ptr [a]
+  (if (null? a)
+    (Maybe.Nothing)
+    (Maybe.Just @(Pointer.to-ref a))))
