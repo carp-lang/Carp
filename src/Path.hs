@@ -20,6 +20,12 @@ configPath = xdgPath D.XdgConfig
 createDirectoryIfMissing :: Bool -> FilePath -> IO ()
 createDirectoryIfMissing createParents = D.createDirectoryIfMissing createParents . toNative
 
+removeDirectoryRecursive :: FilePath -> IO ()
+removeDirectoryRecursive = D.removeDirectoryRecursive . toNative
+
+doesPathExist :: FilePath -> IO Bool
+doesPathExist = D.doesPathExist . toNative
+
 doesFileExist :: FilePath -> IO Bool
 doesFileExist = D.doesFileExist . toNative
 
