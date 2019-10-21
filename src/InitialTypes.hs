@@ -316,7 +316,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Ref
         [refExpr@(XObj Ref _ _), value] ->
           do visitedValue <- visit env value
-             lt <- genVarTy
+             lt <- case value of -- This is to not get lifetime errors when using globals. TODO: Is there a better way?!
+                     XObj (Sym _ (LookupGlobal _ _)) _ _ -> return StaticLifetimeTy
+                     _ -> genVarTy
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
                          return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
