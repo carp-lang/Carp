@@ -688,9 +688,15 @@ manageMemory typeEnv globalEnv root =
                    --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
-                        d <- get
-                        mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
+                        -- Add the captured variables (if any, only happens in lifted lambdas) as fake deleters
+                        -- TODO: Use another kind of Deleter for this case since it's pretty special?
+                        mapM_
+                          (\cap ->
+                              modify (\memState ->
+                                         memState { memStateDeleters = Set.insert (FakeDeleter cap) (memStateDeleters memState) }))
+                          (map getName captures)
                         mapM_ (addToLifetimesMappingsIfRef False) argList
+                        mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
                         visitedBody <- visit  body
                         result <- unmanage body
                         return $
@@ -1074,8 +1080,8 @@ manageMemory typeEnv globalEnv root =
                                             deleters
                      in case matchingDeleters of
                           [] ->
-                            trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                            return (Right xobj)
+                            --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                            return (Left (UsingDeadReference xobj))
                           _ ->
                             -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)

@@ -116,13 +116,13 @@
 
 
 ;; use-ref-in-lambda-after-free
-(defn boo []
-  (let-do [data @"DATA"
-           r &data
-           f (fn []
-               (IO.println (id r)))]
-    ;;(String.delete data)
-    (f)))
+;; (defn boo []
+;;   (let-do [data @"DATA"
+;;            r &data
+;;            f (fn []
+;;                (IO.println (id r)))]
+;;     ;;(String.delete data)
+;;     (f)))
 
 
 
@@ -132,3 +132,10 @@
 ;;            f (fn [] (Array.nth r 1))]
 ;;     ;;(Array.delete data)
 ;;     (println* (f))))
+
+(defn lam []
+  (let [stuff [100 200 300]
+        ;;r &stuff
+        f (fn []
+            (println* (id &stuff)))]
+    (f)))

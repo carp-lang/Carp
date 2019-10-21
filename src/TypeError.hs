@@ -52,6 +52,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidLetBinding [XObj] (XObj, XObj)
                | DuplicateBinding XObj
                | DefinitionsMustBeAtToplevel XObj
+               | UsingDeadReference XObj
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -235,6 +236,9 @@ instance Show TypeError where
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
 
+  show (UsingDeadReference xobj) =
+    "The reference " ++ pretty xobj ++ " isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
   case err of
@@ -353,6 +357,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
+    (UsingDeadReference xobj) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " The reference " ++ pretty xobj ++ " isn't alive."]
 
     _ ->
       [show err]

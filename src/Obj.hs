@@ -271,10 +271,10 @@ pretty = visit 0
             InterfaceSym name -> name -- ++ "§"
             Bol b -> if b then "true" else "false"
             Defn maybeCaptures -> "defn" ++ case maybeCaptures of
-                                              Just captures -> " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+                                              Just captures -> " <" ++ prettyCaptures captures ++ ">"
                                               Nothing -> ""
             Def -> "def"
-            Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+            Fn _ captures -> "fn <" ++ prettyCaptures captures ++ ">"
             If -> "if"
             Match -> "match"
             While -> "while"
@@ -302,6 +302,10 @@ pretty = visit 0
             Break -> "break"
             Interface _ _ -> "interface"
             With -> "with"
+
+prettyCaptures :: Set.Set XObj -> String
+prettyCaptures captures =
+  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
 data EvalError = EvalError String (Maybe Info) FilePathPrintLength deriving (Eq)
 
