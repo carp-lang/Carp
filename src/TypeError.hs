@@ -237,7 +237,7 @@ instance Show TypeError where
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
 
   show (UsingDeadReference xobj) =
-    "The reference " ++ pretty xobj ++ " isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+    "The reference '" ++ pretty xobj ++ "' isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
 
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
@@ -358,7 +358,7 @@ machineReadableErrorStrings fppl err =
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
     (UsingDeadReference xobj) ->
-      [machineReadableInfoFromXObj fppl xobj ++ " The reference " ++ pretty xobj ++ " isn't alive."]
+      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
 
     _ ->
       [show err]
