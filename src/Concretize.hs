@@ -656,6 +656,9 @@ manageMemory typeEnv globalEnv root =
                     Str _ -> do manage xobj
                                 addToLifetimesMappingsIfRef False xobj
                                 return (Right xobj)
+                    Pattern _ -> do manage xobj
+                                    addToLifetimesMappingsIfRef False xobj
+                                    return (Right xobj)
                     _ ->
                       return (Right xobj)
              case r of
