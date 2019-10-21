@@ -814,6 +814,12 @@ isArray :: XObj -> Bool
 isArray (XObj (Arr _) _ _) = True
 isArray _ = False
 
+isLiteral :: XObj -> Bool
+isLiteral (XObj (Num _ _) _ _) = True
+isLiteral (XObj (Chr _) _ _) = True
+isLiteral (XObj (Bol _) _ _) = True
+isLiteral _ = False
+
 -- construct an empty list xobj
 emptyList :: XObj
 emptyList = XObj (Lst []) Nothing Nothing
