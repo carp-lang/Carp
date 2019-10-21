@@ -392,9 +392,9 @@ showBinderIndented indent (name, Binder meta xobj) =
   if False -- metaIsTrue meta "hidden"
   then ""
   else replicate indent ' ' ++ name ++
-       " (" ++ show (getPath xobj) ++ ")" ++
+       -- " (" ++ show (getPath xobj) ++ ")" ++
        " : " ++ showMaybeTy (ty xobj)
-       ++ " <" ++ getBinderDescription xobj ++ ">"
+       -- ++ " <" ++ getBinderDescription xobj ++ ">"
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]

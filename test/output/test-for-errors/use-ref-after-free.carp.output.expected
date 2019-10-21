@@ -1,0 +1,1 @@
+use-ref-after-free.carp:7:17 The reference 'r' isn't alive.
