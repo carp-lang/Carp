@@ -1081,7 +1081,8 @@ manageMemory typeEnv globalEnv root =
                      in case matchingDeleters of
                           [] ->
                             --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                            return (Left (UsingDeadReference xobj))
+                            --return (Right xobj)
+                            return (Left (UsingDeadReference xobj lt))
                           _ ->
                             -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)
@@ -1130,7 +1131,7 @@ manageMemory typeEnv globalEnv root =
           case ty xobj of
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
-                          then Nothing
+                          then Just (FakeDeleter var)
                           else if isManaged typeEnv t
                                then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy) "delete" of
                                       Just pathOfDeleteFunc ->
