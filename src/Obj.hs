@@ -55,7 +55,7 @@ data Obj = Sym SymPath SymbolMode
          | Lst [XObj]
          | Arr [XObj]
          | Dict (Map.Map XObj XObj)
-         | Defn
+         | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
          | Def
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
          | Do
@@ -183,7 +183,7 @@ data XObj = XObj { obj :: Obj
                  } deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
-getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
+getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
 getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
@@ -207,7 +207,7 @@ getSimpleName :: XObj -> String
 getSimpleName xobj = let SymPath _ name = getPath xobj in name
 
 getSimpleNameWithArgs :: XObj -> Maybe String
-getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj (Defn _) _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
     "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
@@ -223,7 +223,7 @@ getSimpleNameWithArgs xobj = Nothing
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
-getPath (XObj (Lst (XObj Defn _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Dynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -242,7 +242,7 @@ getPath x = SymPath [] (pretty x)
 
 -- | Changes the second form (where the name of definitions are stored) in a list of XObj:s.
 setPath :: XObj -> SymPath -> XObj
-setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
+setPath (XObj (Lst (defn@(XObj (Defn _) _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
   XObj (Lst (defn : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st]) i t) newPath =
   XObj (Lst [extr, XObj (Sym newPath Symbol) si st]) i t
@@ -270,7 +270,9 @@ pretty = visit 0
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name -- ++ "§"
             Bol b -> if b then "true" else "false"
-            Defn -> "defn"
+            Defn maybeCaptures -> "defn" ++ case maybeCaptures of
+                                              Just captures -> " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+                                              Nothing -> ""
             Def -> "def"
             Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"

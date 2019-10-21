@@ -23,7 +23,7 @@ setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
 -- | This function does NOT go into function-body scope environments and the like.
 setFullyQualifiedSymbols :: TypeEnv -> Env -> Env -> XObj -> XObj
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) _ _),
                                                  sym@(XObj (Sym (SymPath _ functionName) _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])

@@ -110,7 +110,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
             Sym _ _ -> visitSymbol indent xobj
-            Defn -> error (show (DontVisitObj xobj))
+            (Defn _) -> error (show (DontVisitObj xobj))
             Def -> error (show (DontVisitObj xobj))
             Let -> error (show (DontVisitObj xobj))
             If -> error (show (DontVisitObj xobj))
@@ -180,7 +180,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitList indent (XObj (Lst xobjs) (Just i) t) =
           case xobjs of
             -- Defn
-            [XObj Defn _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Defn _) _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
               case toCMode of
                 Globals ->
                   return ""
@@ -700,7 +700,7 @@ defaliasToDeclaration t path =
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
   case xobjs of
-    [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
+    [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
       let (Just (FuncTy _ retTy)) = t
       in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->

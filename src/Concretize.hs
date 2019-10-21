@@ -55,7 +55,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
     visitList :: Bool -> Level -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
     visitList _ _ _ (XObj (Lst []) _ _) = return (Right [])
 
-    visitList _ Toplevel env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
+    visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath [] "main") _) _ _), args@(XObj (Arr argsArr) _ _), body]) _ _) =
       if not (null argsArr)
       then return $ Left (MainCannotHaveArguments nameSymbol (length argsArr))
       else do concretizeTypeOfXObj typeEnv body
@@ -66,7 +66,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                             then Left (MainCanOnlyReturnUnitOrInt nameSymbol t)
                             else return [defn, nameSymbol, args, okBody]
 
-    visitList _ Toplevel env (XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
+    visitList _ Toplevel env (XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       do mapM_ (concretizeTypeOfXObj typeEnv) argsArr
          let functionEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
              envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) ->
@@ -79,7 +79,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okBody <- visitedBody
                      return [defn, nameSymbol, args, okBody]
 
-    visitList _ Inside env xobj@(XObj (Lst [defn@(XObj Defn _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
+    visitList _ Inside env xobj@(XObj (Lst [defn@(XObj (Defn _) _ _), nameSymbol, args@(XObj (Arr argsArr) _ _), body]) _ t) =
       return (Left (DefinitionsMustBeAtToplevel xobj))
 
     -- | Fn / λ
@@ -119,7 +119,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                 (Just dummyInfo)
                                                 (Just (PointerTy (StructTy environmentTypeName []))) :
                                                 argsArr)) ai at
-                 lambdaCallback = XObj (Lst [XObj Defn (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
+                 lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 
                  -- The lambda will also carry with it a special made struct containing the variables it captures
                  -- (if it captures at least one variable)
@@ -492,7 +492,7 @@ concretizeDefinition allowAmbiguity typeEnv globalEnv visitedDefinitions definit
       newPath = SymPath pathStrings (name ++ suffix)
   in
     case definition of
-      XObj (Lst (XObj Defn _ _ : _)) _ _ ->
+      XObj (Lst (XObj (Defn _) _ _ : _)) _ _ ->
         let withNewPath = setPath definition newPath
             mappings = unifySignatures polyType concreteType
         in case assignTypes mappings withNewPath of
@@ -680,14 +680,16 @@ manageMemory typeEnv globalEnv root =
         visitList :: XObj -> State MemState (Either TypeError XObj)
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
-            [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
+            [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ defnReturnType) = t
+                  captures = fromMaybe [] (fmap Set.toList maybeCaptures)
               in case defnReturnType of
                    -- RefTy _ _ ->
                    --   return (Left (FunctionsCantReturnRefTy xobj funcTy))
                    _ ->
                      do mapM_ manage argList
                         d <- get
+                        mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
                         mapM_ (addToLifetimesMappingsIfRef False) argList
                         visitedBody <- visit  body
                         result <- unmanage body
@@ -1071,19 +1073,22 @@ manageMemory typeEnv globalEnv root =
                                                                     )
                                             deleters
                      in case matchingDeleters of
-                          [] -> trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                          [] ->
+                            trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)
                           _ ->
+                            -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)
                    Just LifetimeOutsideFunction ->
+                     --trace ("Lifetime OUTSIDE function: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
                      return (Right xobj)
                    Nothing ->
                      case xobj of
-                       XObj (Sym _ (LookupLocal Capture)) _ _ ->
-                         -- Ignore these for the moment! TODO: FIX!!!
-                         return (Right xobj)
+                       -- XObj (Sym _ (LookupLocal Capture)) _ _ ->
+                       --   -- Ignore these for the moment! TODO: FIX!!!
+                       --   return (Right xobj)
                        _ ->
-                         --trace ("Failed to find lifetime key '" ++ lt ++ "' in mappings at " ++ prettyInfoFromXObj xobj) $
+                         --trace ("Failed to find lifetime key '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
                          return (Right xobj)
             _ ->
               return (Right xobj)

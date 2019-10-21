@@ -103,6 +103,32 @@
 ;;           new-b (Bucket.put @n k v)]
 ;;       (Array.aset b 0 new-b))))
 
+;; (defn f []
+;;   (let [stuff [100 200 300]]
+;;     (fn [] (copy (Array.nth &stuff 0)))))
 
-(defn f []
-  (= &10 &20))
+;; (defn g []
+;;   (let [stuff [1 2 3]
+;;         r &stuff
+;;         f (fn [] r)]
+;;     (do (Array.delete stuff)
+;;         (f))))
+
+
+;; use-ref-in-lambda-after-free
+(defn boo []
+  (let-do [data @"DATA"
+           r &data
+           f (fn []
+               (IO.println (id r)))]
+    ;;(String.delete data)
+    (f)))
+
+
+
+;; (defn foo []
+;;   (let-do [data [10 20 30]
+;;            r &data
+;;            f (fn [] (Array.nth r 1))]
+;;     ;;(Array.delete data)
+;;     (println* (f))))

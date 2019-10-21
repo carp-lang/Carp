@@ -48,7 +48,7 @@ expand eval env xobj =
         XObj (Instantiate _) _ _ : _ -> return (Right xobj)
         XObj (Deftemplate _) _ _ : _ -> return (Right xobj)
         XObj (Defalias _) _ _ : _ -> return (Right xobj)
-        [defnExpr@(XObj Defn _ _), name, args, body] ->
+        [defnExpr@(XObj (Defn _) _ _), name, args, body] ->
           do expandedBody <- expand eval env body
              return $ do okBody <- expandedBody
                          Right (XObj (Lst [defnExpr, name, args, okBody]) i t)
@@ -169,7 +169,7 @@ expand eval env xobj =
         Just (_, Binder _ (XObj (Lst (XObj (External _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder _ (XObj (Lst (XObj (Instantiate _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder _ (XObj (Lst (XObj (Deftemplate _) _ _ : _)) _ _)) -> return (Right xobj)
-        Just (_, Binder _ (XObj (Lst (XObj Defn _ _ : _)) _ _)) -> return (Right xobj)
+        Just (_, Binder _ (XObj (Lst (XObj (Defn _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder _ (XObj (Lst (XObj Def _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder _ (XObj (Lst (XObj (Defalias _) _ _ : _)) _ _)) -> return (Right xobj)
         Just (_, Binder _ found) -> return (Right found) -- use the found value

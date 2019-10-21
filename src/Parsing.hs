@@ -216,7 +216,7 @@ symbol = do i <- createInfo
                           i Nothing)
             else
               case last segments of
-                "defn" -> return (XObj Defn i Nothing)
+                "defn" -> return (XObj (Defn Nothing) i Nothing)
                 "def" -> return (XObj Def i Nothing)
                 -- TODO: What about the other def- forms?
                 "do" -> return (XObj Do i Nothing)

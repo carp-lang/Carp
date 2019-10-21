@@ -147,7 +147,7 @@ eval env xobj =
                    _ -> return (makeEvalError ctx Nothing ("`if` condition contains non-boolean value: " ++ pretty okCondition) (info okCondition))
                Left err -> return (Left err)
 
-        [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
+        [defnExpr@(XObj (Defn _) _ _), name, args@(XObj (Arr a) _ _), body] ->
             case obj name of
               (Sym (SymPath [] _) _) ->
                   if all isUnqualifiedSym a
@@ -155,10 +155,10 @@ eval env xobj =
                   else return (makeEvalError ctx Nothing ("`defn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
               _                      -> return (makeEvalError ctx Nothing ("`defn` identifiers must be unqualified symbols, but it got `" ++ pretty name ++ "`") (info xobj))
 
-        [defnExpr@(XObj Defn _ _), name, invalidArgs, _] ->
+        [defnExpr@(XObj (Defn _) _ _), name, invalidArgs, _] ->
             return (makeEvalError ctx Nothing ("`defn` requires an array of symbols as argument list, but it got `" ++ pretty invalidArgs ++ "`") (info xobj))
 
-        (defnExpr@(XObj Defn _ _) : _) ->
+        (defnExpr@(XObj (Defn _) _ _) : _) ->
             return (makeEvalError ctx Nothing ("I didn’t understand the `defn` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `defn` needs to follow the form `(defn name [arg] body)`.") Nothing)
 
         [defExpr@(XObj Def _ _), name, expr] ->
@@ -594,7 +594,7 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
 registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
 registerDefnOrDefInInterfaceIfNeeded ctx xobj =
   case xobj of
-    XObj (Lst [XObj Defn _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
+    XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
       registerInInterfaceIfNeeded ctx path t
     XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
@@ -1265,7 +1265,7 @@ printC xobj =
 executeFunctionAsMain :: Context -> XObj -> StateT Context IO (Either EvalError XObj)
 executeFunctionAsMain ctx expression =
   let fppl = projectFilePathPrintLength (contextProj ctx)
-      tempMainFunction x = XObj (Lst [XObj Defn (Just dummyInfo) Nothing
+      tempMainFunction x = XObj (Lst [XObj (Defn Nothing) (Just dummyInfo) Nothing
                                      ,XObj (Sym (SymPath [] "main") Symbol) (Just dummyInfo) Nothing
                                      ,XObj (Arr []) (Just dummyInfo) Nothing
                                      ,case ty x of

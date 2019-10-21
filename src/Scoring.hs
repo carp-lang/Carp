@@ -98,7 +98,7 @@ scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst (XObj (External _) _ _ 
   (0, binder)
 scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Def  _ _, XObj (Sym path Symbol) _ _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Defn _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj (Defn _) _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
   (0, binder)

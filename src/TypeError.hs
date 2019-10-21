@@ -77,7 +77,7 @@ instance Show TypeError where
     matches (keysInEnvEditDistance symPath env 3)
     where matches [] = "Maybe you forgot to define it?"
           matches x = "Maybe you wanted one of the following?\n    " ++ joinWith "\n    " (map (show . SymPath p) x)
-  show (InvalidObj Defn xobj) =
+  show (InvalidObj (Defn _) xobj) =
     "I didn’t understand the function definition at " ++
     prettyInfoFromXObj xobj ++
     ".\n\nIs it valid?  Every `defn` needs to follow the form `(defn name [arg] body)`."
@@ -253,7 +253,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
     (SymbolMissingType xobj env) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
-    (InvalidObj Defn xobj) ->
+    (InvalidObj (Defn _) xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid function definition."]
     (InvalidObj If xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid if-statement."]

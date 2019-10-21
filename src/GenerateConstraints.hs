@@ -28,7 +28,7 @@ genConstraints typeEnv root = fmap sort (gen root)
           case obj xobj of
             Lst lst -> case lst of
                            -- Defn
-                           [XObj Defn _ _, _, XObj (Arr args) _ _, body] ->
+                           [XObj (Defn _) _ _, _, XObj (Arr args) _ _, body] ->
                              genF xobj args body
 
                            -- Fn

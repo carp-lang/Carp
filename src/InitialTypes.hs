@@ -80,7 +80,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Sym symPath _)    -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
-                       Defn               -> return (Left (InvalidObj Defn xobj))
+                       e@(Defn _)         -> return (Left (InvalidObj e xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
                        e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
@@ -165,7 +165,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
         -- Defn
-        [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
+        [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              let funcTy = Just (FuncTy argTypes returnType)
                  typedNameSymbol = nameSymbol { ty = funcTy }
@@ -177,8 +177,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          okArgs <- sequence visitedArgs
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
-        [XObj Defn _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
-        XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
+        [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
+        (XObj defn@(Defn _) _ _) : _  -> return (Left (InvalidObj defn xobj))
 
         -- Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
