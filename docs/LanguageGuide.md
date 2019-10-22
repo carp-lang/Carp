@@ -3,7 +3,7 @@
 ### Introduction
 
 Carp borrows its looks from Clojure but the runtime semantics are much closer to those of ML or Rust.
-Types are inferred but can be annoted for readability using the ```the``` keyword (see below).
+Types are inferred but can be annotated for readability using the ```the``` keyword (see below).
 
 Memory management is handled by static analysis, a value is owned by the function where it was created.
 When a value is returned or passed to another function the initial function will give up ownership of it
