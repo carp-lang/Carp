@@ -18,15 +18,6 @@
 ;; (defn h [r]
 ;;   (IO.println r))
 
-;; Using 'nth' : (Fn [(Ref (Array a) q) Int] (Ref a q))
-;; (defn n []
-;;   (let [xs [@"A" @"B" @"C"]
-;;         xsref &xs
-;;         r (Array.nth xsref 0)]
-;;     (do
-;; ;;      (Array.delete xs)
-;;       (IO.println r))))
-
 (macro-log "")
 (macro-log "--------------------------------------------------------------------------------------------------")
 (macro-log "")
@@ -148,11 +139,13 @@
 ;;         r)))
 
 
-(use Array)
-(deftype Snake [body (Array Int)])
 
-(defn grow [snake]
-  (let [b (Snake.body &snake)]
-    (Snake.set-body snake (push-back @b 0))))
+;; Problematic order of arguments, the variable 'b' will depend on 'snake', which is consumed first in the call to Snake.set-body
+;; (use Array)
+;; (deftype Snake [body (Array Int)])
+
+;; (defn grow [snake]
+;;   (let [b (Snake.body &snake)]
+;;     (Snake.set-body snake (push-back @b 0))))
 
 ;;(unsafe-last b)

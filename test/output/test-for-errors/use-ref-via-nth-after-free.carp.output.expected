@@ -1,0 +1,1 @@
+use-ref-via-nth-after-free.carp:9:19 The reference 'q' isn't alive.
