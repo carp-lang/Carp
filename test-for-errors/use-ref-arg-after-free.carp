@@ -1,0 +1,6 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f [x]
+  (let-do [r &x]
+    (delete x)
+    (IO.println r)))
