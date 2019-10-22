@@ -190,7 +190,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q)] (Ref (Array (Bucket a b)) q))
+                    (λ [(Ref (Map a b) c)] (Ref (Array (Bucket a b)) c))
                 </p>
                 <span>
                     
@@ -230,7 +230,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q)] (Map a b))
+                    (λ [(Ref (Map a b) c)] (Map a b))
                 </p>
                 <span>
                     
@@ -530,7 +530,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q)] (Ref Int q))
+                    (λ [(Ref (Map a b) c)] (Ref Int c))
                 </p>
                 <span>
                     
@@ -550,7 +550,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q)] String)
+                    (λ [(Ref (Map a b) c)] String)
                 </p>
                 <span>
                     
@@ -670,7 +670,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q), (Array (Bucket a b))] ())
+                    (λ [(Ref (Map a b) c), (Array (Bucket a b))] ())
                 </p>
                 <span>
                     
@@ -710,7 +710,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) q), Int] ())
+                    (λ [(Ref (Map a b) c), Int] ())
                 </p>
                 <span>
                     
@@ -790,7 +790,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref (λ [(Array (Bucket a b))] (Array (Bucket a b))) q)] (Map a b))
+                    (λ [(Map a b), (Ref (λ [(Array (Bucket a b))] (Array (Bucket a b))) c)] (Map a b))
                 </p>
                 <span>
                     
@@ -810,7 +810,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref (λ [Int] Int) q)] (Map a b))
+                    (λ [(Map a b), (Ref (λ [Int] Int) c)] (Map a b))
                 </p>
                 <span>
                     

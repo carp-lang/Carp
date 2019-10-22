@@ -191,7 +191,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [Int] (Array t))
+                    (λ [Int] (Array a))
                 </p>
                 <span>
                     
@@ -231,7 +231,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Array t), Int, t] (Array t))
+                    (λ [(Array a), Int, a] (Array a))
                 </p>
                 <span>
                     
@@ -251,7 +251,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t) q), Int, t] ())
+                    (λ [(Ref (Array a) b), Int, a] ())
                 </p>
                 <span>
                     
@@ -271,7 +271,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t) q), Int, t] ())
+                    (λ [(Ref (Array a) b), Int, a] ())
                 </p>
                 <span>
                     
@@ -371,7 +371,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) q)] (Array a))
+                    (λ [(Ref (Array a) b)] (Array a))
                 </p>
                 <span>
                     
@@ -493,7 +493,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [(Ref a q)] Bool) w), (Array a)] (Array a))
+                    (λ [(Ref (λ [(Ref a b)] Bool) c), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -513,7 +513,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (λ [a] a) q), (Array a)] (Array a))
+                    (λ [(Ref (λ [a] a) b), (Array a)] (Array a))
                 </p>
                 <span>
                     
@@ -658,7 +658,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t) q)] Int)
+                    (λ [(Ref (Array a) b)] Int)
                 </p>
                 <span>
                     
@@ -720,7 +720,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array t) q), Int] (Ref t q))
+                    (λ [(Ref (Array a) b), Int] (Ref a b))
                 </p>
                 <span>
                     
@@ -760,7 +760,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) q)] a)
+                    (λ [(Ref (Array a) b)] a)
                 </p>
                 <span>
                     
@@ -859,7 +859,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) q), a] ())
+                    (λ [(Ref (Array a) b), a] ())
                 </p>
                 <span>
                     
@@ -899,7 +899,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Array t)] (Ptr t))
+                    (λ [(Array a)] (Ptr a))
                 </p>
                 <span>
                     
@@ -1185,7 +1185,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) q)] String)
+                    (λ [(Ref (Array a) b)] String)
                 </p>
                 <span>
                     
