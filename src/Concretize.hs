@@ -1082,7 +1082,7 @@ manageMemory typeEnv globalEnv root =
                           [] ->
                             --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             --return (Right xobj)
-                            return (Left (UsingDeadReference xobj lt))
+                            return (Left (UsingDeadReference xobj deleterName))
                           _ ->
                             -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                             return (Right xobj)
