@@ -133,9 +133,26 @@
 ;;     ;;(Array.delete data)
 ;;     (println* (f))))
 
-(defn lam []
-  (let [stuff [100 200 300]
-        ;;r &stuff
-        f (fn []
-            (println* (id &stuff)))]
-    (f)))
+;; (defn lam []
+;;   (let [stuff [100 200 300]
+;;         ;;r &stuff
+;;         f (fn []
+;;             (println* (id &stuff)))]
+;;     (f)))
+
+
+;; Add test for this!!!
+;; (defn invalid-use [xs]
+;;   (let [r &xs]
+;;     (do (delete xs)
+;;         r)))
+
+
+(use Array)
+(deftype Snake [body (Array Int)])
+
+(defn grow [snake]
+  (let [b (Snake.body &snake)]
+    (Snake.set-body snake (push-back @b 0))))
+
+;;(unsafe-last b)
