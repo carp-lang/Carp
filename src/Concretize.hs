@@ -1076,6 +1076,7 @@ manageMemory typeEnv globalEnv root =
                                                                         ProperDeleter { deleterVariable = dv } -> dv == deleterName
                                                                         FakeDeleter   { deleterVariable = dv } -> dv == deleterName
                                                                         PrimDeleter   { aliveVariable = dv } -> dv == deleterName
+                                                                        RefDeleter    { refVariable = dv } -> dv == deleterName
                                                                     )
                                             deleters
                      in case matchingDeleters of
@@ -1129,6 +1130,7 @@ manageMemory typeEnv globalEnv root =
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
           case ty xobj of
+            Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
                           then Just (FakeDeleter var)
@@ -1159,7 +1161,9 @@ manageMemory typeEnv globalEnv root =
           in  Set.toList $ Set.filter (\case
                                                ProperDeleter { deleterVariable = dv } -> dv == var
                                                FakeDeleter   { deleterVariable = dv } -> dv == var
-                                               PrimDeleter   { aliveVariable = dv } -> dv == var)
+                                               PrimDeleter   { aliveVariable = dv } -> dv == var
+                                               RefDeleter    { refVariable = dv } -> dv == var
+                                      )
                                       deleters
 
         isSymbolThatCaptures :: XObj -> Bool
