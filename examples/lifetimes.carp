@@ -14,9 +14,11 @@
 ;;     (delete (the String x))
 ;;     (IO.println r)))
 
-(defn dangling []
-  (let [b [1 2 3]]
-    &b))
+;; A function accepting two refs and returning one of them
+;; (defn two-refs [x a b]
+;;   (if x
+;;     (the (Ref t q) a)
+;;     (the (Ref t w) b)))
 
 ;; Lambdas
 ;; (defn l []
@@ -91,3 +93,20 @@
 ;;     (Snake.set-body snake (push-back @b 0))))
 
 ;;(unsafe-last b)
+
+
+;; (defn dangling []
+;;   (let [b [1 2 3]
+;;         ;;r &b
+;;         ]
+;;     ;;r
+;;     &b
+;;     ))
+
+
+
+(defn unique []
+  (let [r1 (the &String "DATA")
+        r2 (the &String "DATA") ;; should get another lifetime variable than r1
+        r3 "DATA"]
+    ()))

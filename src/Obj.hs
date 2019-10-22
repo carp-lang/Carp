@@ -620,16 +620,16 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
      return (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
-xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) _ _) =
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) i _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy "unnamed-lifetime"))
+     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      okLifetimeTy <- xobjToTy lifetimeTy
      return (RefTy okInnerTy okLifetimeTy)
-xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '&'
+xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) = -- This enables parsing of '&'
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy (VarTy "unnamed-lifetime"))
+     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -649,6 +649,12 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
        (VarTy n) -> return (StructTy n okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
+
+makeTypeVariableNameFromInfo :: Maybe Info -> String
+makeTypeVariableNameFromInfo (Just i) =
+  "tyvar-from-info-" ++ show (infoIdentifier i) ++ "_" ++ show (infoLine i) ++ "_" ++ show (infoColumn i)
+makeTypeVariableNameFromInfo Nothing =
+  error "unnamed-typevariable"
 
 -- | Generates the suffix added to polymorphic functions when they are instantiated.
 --   For example                (defn id [x] x) : t -> t
