@@ -1,7 +1,7 @@
 (Debug.sanitize-addresses)
 (Project.config "print-ast" true)
 
-;; ;; Preventing the usage of a reference to a deleted object
+;; Preventing the usage of a reference to a deleted object
 ;; (defn f []
 ;;   (let-do [x @"DATA"
 ;;            r &x]
@@ -14,30 +14,9 @@
 ;;     (delete (the String x))
 ;;     (IO.println r)))
 
-;; A function that takes refs as arguments
-;; (defn h [r]
-;;   (IO.println r))
-
-(macro-log "")
-(macro-log "--------------------------------------------------------------------------------------------------")
-(macro-log "")
-
-;; (defn o []
-;;   (let [b [1 2 3]
-;;         r &b]
-;;     @r))
-
-;; (defn p []
-;;   (let [b [@"DATA"]
-;;         r &b
-;;         n (Array.nth r 0)]
-;;     @n))
-
-;; ;; More 'nth'
-;; (defn m []
-;;   (let [b [@"MORE" @"DATA"]
-;;         n (Array.nth &b 0)]
-;;     @n))
+(defn dangling []
+  (let [b [1 2 3]]
+    &b))
 
 ;; Lambdas
 ;; (defn l []
@@ -52,17 +31,6 @@
 ;;   (if (null? a)
 ;;     (Maybe.Nothing)
 ;;     (Maybe.Just @(Pointer.to-ref a))))
-
-
-;; (defn w []
-;;   (let [a [1 2 3]
-;;         r &a]
-;;     (do
-;;       ;;(Array.delete a)
-;;       (IO.println &(str
-;;                     (Array.nth
-;;                      r
-;;                      0))))))
 
 ;; (defn pair-eq [p1 p2]
 ;;   (and (= (Pair.a p1) (Pair.a p2))
@@ -80,30 +48,11 @@
 ;;         z 123]
 ;;     (Int.+ x y)))
 
+
+
 ;; (defn f []
 ;;   &100) ;; TODO: Number literals should create prim var deleter too!
 
-
-
-;; (use Map)
-;; (use Bucket)
-
-;; (defn put [k v]
-;;   (fn [b]
-;;     (let [n (Array.nth &b 0)
-;;           new-b (Bucket.put @n k v)]
-;;       (Array.aset b 0 new-b))))
-
-;; (defn f []
-;;   (let [stuff [100 200 300]]
-;;     (fn [] (copy (Array.nth &stuff 0)))))
-
-;; (defn g []
-;;   (let [stuff [1 2 3]
-;;         r &stuff
-;;         f (fn [] r)]
-;;     (do (Array.delete stuff)
-;;         (f))))
 
 
 ;; use-ref-in-lambda-after-free
@@ -130,13 +79,6 @@
 ;;         f (fn []
 ;;             (println* (id &stuff)))]
 ;;     (f)))
-
-
-;; Add test for this!!!
-;; (defn invalid-use [xs]
-;;   (let [r &xs]
-;;     (do (delete xs)
-;;         r)))
 
 
 
