@@ -105,8 +105,30 @@
 
 
 
-(defn unique []
-  (let [r1 (the &String "DATA")
-        r2 (the &String "DATA") ;; should get another lifetime variable than r1
-        r3 "DATA"]
-    ()))
+;; (defn unique []
+;;   (let [r1 (the &String "DATA")
+;;         r2 (the &String "DATA") ;; should get another lifetime variable than r1
+;;         r3 "DATA"]
+;;     ()))
+
+
+;; (defn fool [s1 s2]
+;;   (let [r1 (the (Ref String Static) s1)
+;;         r2 (the (Ref String b) s2)]
+;;     (do
+;;       (if (= r1 r2) () ())
+;;       ;;(delete s1)
+;;       ;;(= r1 r2)
+;;       ;;()
+;;       r2)))
+
+(defn magic []
+  (let [s @"DATA"]
+    &s)) ;; shouldn't work either
+
+(defn simple-fool []
+  (let [r (magic) ;; 'magic' returns (Ref String a)
+        static (the (Ref String Static) "")]
+    (do
+      (if (= r static) () ()) ;; shouldn't just be possible to trick 'r' that its lifetime is Static
+      ())))
