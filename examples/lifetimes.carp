@@ -122,13 +122,22 @@
 ;;       ;;()
 ;;       r2)))
 
-(defn magic []
-  (let [s @"DATA"]
-    &s)) ;; shouldn't work either
 
-(defn simple-fool []
-  (let [r (magic) ;; 'magic' returns (Ref String a)
-        static (the (Ref String Static) "")]
-    (do
-      (if (= r static) () ()) ;; shouldn't just be possible to trick 'r' that its lifetime is Static
-      ())))
+;; This should be detected as an error too:
+;; (defn f [s]
+;;   (let [r &s]
+;;     r))
+;;(f @"hej")
+
+
+
+;; (defn magic []
+;;   (let [s @"DATA"]
+;;     &s)) ;; shouldn't work either
+
+;; (defn simple-fool []
+;;   (let [r (magic) ;; 'magic' returns (Ref String a)
+;;         static (the (Ref String Static) "")]
+;;     (do
+;;       (if (= r static) () ()) ;; shouldn't just be possible to trick 'r' that its lifetime is Static
+;;       ())))
