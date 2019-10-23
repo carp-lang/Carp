@@ -142,8 +142,7 @@
 ;;       (if (= r static) () ()) ;; shouldn't just be possible to trick 'r' that its lifetime is Static
 ;;       ())))
 
-(defn first [xs]
-  (Array.nth xs 0))
+;; (defn first [xs]
+;;   (Array.nth xs 0))
 
-(defn f [x]
-  (fn [] (IO.println x)))
+(defn f [x] (fn [] (IO.println x)))

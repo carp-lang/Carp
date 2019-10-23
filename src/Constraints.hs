@@ -24,6 +24,7 @@ data ConstraintOrder = OrdNo
                      | OrdFuncAppRet
                      | OrdArrHead
                      | OrdArg
+                     | OrdCapture
                      | OrdDefnBody
                      | OrdDefExpr
                      | OrdLetBind
