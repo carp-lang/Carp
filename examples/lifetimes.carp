@@ -145,4 +145,11 @@
 ;; (defn first [xs]
 ;;   (Array.nth xs 0))
 
-(defn f [x] (fn [] (IO.println x)))
+;;(defn f [x] (fn [] (IO.println x)))
+
+(defn g []
+  (let-do [s @"DATA"
+           r &s
+           f (fn [] (IO.println r))]
+    ;;(delete s)
+    (f)))

@@ -570,7 +570,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref b d)] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref b c)] (Map a b))
                 </p>
                 <pre class="args">
                     (put m k v)
@@ -770,7 +770,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) e)] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) c)] (Map a b))
                 </p>
                 <pre class="args">
                     (update m k f)
@@ -830,7 +830,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) e), b] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) c), b] (Map a b))
                 </p>
                 <pre class="args">
                     (update-with-default m k f v)

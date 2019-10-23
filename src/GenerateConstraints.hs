@@ -31,10 +31,10 @@ genConstraints typeEnv root = fmap sort (gen root)
                                   (zipWith (\captureTy captureObj ->
                                                 case captureTy of
                                                   RefTy _ refLt ->
-                                                    trace ("Generated constraint between " ++ show lifetimeTy ++ " and " ++ show refLt) $
+                                                    --trace ("Generated constraint between " ++ show lifetimeTy ++ " and " ++ show refLt) $
                                                     Just (Constraint lifetimeTy refLt captureObj xobj xobj OrdCapture)
                                                   _ ->
-                                                    trace ("Did not generate constraint for captured variable " ++ show captureObj) $
+                                                    --trace ("Did not generate constraint for captured variable " ++ show captureObj) $
                                                     Nothing)
                                       (List.map forceTy captureList)
                                       captureList)
@@ -44,11 +44,11 @@ genConstraints typeEnv root = fmap sort (gen root)
             Lst lst -> case lst of
                            -- Defn
                            [XObj (Defn captures) _ _, _, XObj (Arr args) _ _, body] ->
-                             genF xobj args body (fromMaybe Set.empty (trace ("Captures of " ++ getName xobj ++ ": " ++ show captures) captures))
+                             genF xobj args body (fromMaybe Set.empty captures)
 
                            -- Fn
                            [XObj (Fn _ captures) _ _, XObj (Arr args) _ _, body] ->
-                             genF xobj args body (trace ("Captures of " ++ getName xobj ++ ": " ++ show captures) captures)
+                             genF xobj args body captures
 
                            -- Def
                            [XObj Def _ _, _, expr] ->

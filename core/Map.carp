@@ -346,13 +346,13 @@
   (defn put [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))
           ;; The lifetime system really doesn't like this function, had to put in a bunch of copying to make it compile:
-          k-copy @k ;; HACK!
-          k-ref &k-copy] ;; HACK!
+          ]
       (update-buckets s &(fn [b]
         (let [n (Array.nth &b idx)]
-          (if (SetBucket.contains? n k-ref) ;; HACK!
+          (if (SetBucket.contains? n k)
             b
-            (let [new-b (SetBucket.grow n @&k-copy)] ;; HACK!
+            (let [new-k @k
+                  new-b (SetBucket.grow n new-k)] ;; HACK!
               (Array.aset b idx new-b))))))))
 
   (doc put! "Put a a key k into the set s, in place.")

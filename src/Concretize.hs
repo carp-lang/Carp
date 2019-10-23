@@ -1068,38 +1068,44 @@ manageMemory typeEnv globalEnv root =
         checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
           case ty xobj of
-            Just (RefTy t (VarTy lt)) ->
-              do MemState deleters _ lifetimeMappings <- get
-                 case Map.lookup lt lifetimeMappings of
-                   Just (LifetimeInsideFunction deleterName) ->
-                     let matchingDeleters = Set.toList $ Set.filter (\case
-                                                                        ProperDeleter { deleterVariable = dv } -> dv == deleterName
-                                                                        FakeDeleter   { deleterVariable = dv } -> dv == deleterName
-                                                                        PrimDeleter   { aliveVariable = dv } -> dv == deleterName
-                                                                        RefDeleter    { refVariable = dv } -> dv == deleterName
-                                                                    )
-                                            deleters
-                     in case matchingDeleters of
-                          [] ->
-                            --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                            --return (Right xobj)
-                            return (Left (UsingDeadReference xobj deleterName))
-                          _ ->
-                            -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
-                            return (Right xobj)
-                   Just LifetimeOutsideFunction ->
-                     --trace ("Lifetime OUTSIDE function: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
-                     return (Right xobj)
-                   Nothing ->
-                     case xobj of
-                       -- XObj (Sym _ (LookupLocal Capture)) _ _ ->
-                       --   -- Ignore these for the moment! TODO: FIX!!!
-                       --   return (Right xobj)
-                       _ ->
-                         --trace ("Failed to find lifetime key '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
-                         return (Right xobj)
+            Just (RefTy _ (VarTy lt)) ->
+              performCheck lt
+            Just (FuncTy (VarTy lt) _ _) ->
+              performCheck lt
             _ ->
               return (Right xobj)
+
+          where performCheck :: String -> State MemState (Either TypeError XObj)
+                performCheck lt =
+                  do MemState deleters _ lifetimeMappings <- get
+                     case Map.lookup lt lifetimeMappings of
+                       Just (LifetimeInsideFunction deleterName) ->
+                         let matchingDeleters = Set.toList $ Set.filter (\case
+                                                                            ProperDeleter { deleterVariable = dv } -> dv == deleterName
+                                                                            FakeDeleter   { deleterVariable = dv } -> dv == deleterName
+                                                                            PrimDeleter   { aliveVariable = dv } -> dv == deleterName
+                                                                            RefDeleter    { refVariable = dv } -> dv == deleterName
+                                                                        )
+                                                deleters
+                         in case matchingDeleters of
+                              [] ->
+                                --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                                --return (Right xobj)
+                                return (Left (UsingDeadReference xobj deleterName))
+                              _ ->
+                                -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                                return (Right xobj)
+                       Just LifetimeOutsideFunction ->
+                         --trace ("Lifetime OUTSIDE function: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
+                         return (Right xobj)
+                       Nothing ->
+                         case xobj of
+                           -- XObj (Sym _ (LookupLocal Capture)) _ _ ->
+                           --   -- Ignore these for the moment! TODO: FIX!!!
+                           --   return (Right xobj)
+                           _ ->
+                             --trace ("Failed to find lifetime key '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
+                             return (Right xobj)
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =
