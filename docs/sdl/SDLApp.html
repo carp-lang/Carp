@@ -226,7 +226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp a), (λ [(Ref SDLApp a), b, (Ref SDL_Event c)] b), (λ [b] b), (λ [(Ref SDLApp a), (Ptr SDL_Renderer), (Ref b d)] ()), b] ())
+                    (λ [(Ref SDLApp a), ((λ b) [(Ref SDLApp a), c, (Ref SDL_Event d)] c), ((λ e) [c] c), ((λ e) [(Ref SDLApp a), (Ptr SDL_Renderer), (Ref c f)] ()), c] ())
                 </p>
                 <pre class="args">
                     (run-with-callbacks app event-fn update-fn draw-fn initial-state)
@@ -406,7 +406,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [Int] Int) a)] SDLApp)
+                    (λ [SDLApp, (Ref ((λ a) [Int] Int) b)] SDLApp)
                 </p>
                 <span>
                     
@@ -426,7 +426,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Renderer)] (Ptr SDL_Renderer)) a)] SDLApp)
+                    (λ [SDLApp, (Ref ((λ a) [(Ptr SDL_Renderer)] (Ptr SDL_Renderer)) b)] SDLApp)
                 </p>
                 <span>
                     
@@ -446,7 +446,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [SDLApp, (Ref (λ [(Ptr SDL_Window)] (Ptr SDL_Window)) a)] SDLApp)
+                    (λ [SDLApp, (Ref ((λ a) [(Ptr SDL_Window)] (Ptr SDL_Window)) b)] SDLApp)
                 </p>
                 <span>
                     

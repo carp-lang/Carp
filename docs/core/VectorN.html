@@ -645,7 +645,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), (Ref (λ [Int] Int) b)] (VectorN a))
+                    (λ [(VectorN a), (Ref ((λ b) [Int] Int) c)] (VectorN a))
                 </p>
                 <span>
                     
@@ -665,7 +665,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(VectorN a), (Ref (λ [(Array a)] (Array a)) b)] (VectorN a))
+                    (λ [(VectorN a), (Ref ((λ b) [(Array a)] (Array a)) c)] (VectorN a))
                 </p>
                 <span>
                     
@@ -744,7 +744,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] c), (Ref (VectorN a) d), (Ref (VectorN b) e)] (Maybe (VectorN c)))
+                    (λ [((λ a) [b, c] d), (Ref (VectorN b) e), (Ref (VectorN c) f)] (Maybe (VectorN d)))
                 </p>
                 <pre class="args">
                     (zip f a b)
@@ -763,7 +763,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(λ [a, b] c), (Ref (Array a) d), (Ref (Array b) e)] (VectorN c))
+                    (λ [((λ a) [b, c] d), (Ref (Array b) e), (Ref (Array c) f)] (VectorN d))
                 </p>
                 <pre class="args">
                     (zip- f a b)
