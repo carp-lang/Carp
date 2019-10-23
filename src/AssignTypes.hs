@@ -60,8 +60,8 @@ beautifyTypeVariables root =
   in  assignTypes mappings root
 
 typeVariablesInOrderOfAppearance :: Ty -> [Ty]
-typeVariablesInOrderOfAppearance (FuncTy argTys retTy) =
-  concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy
+typeVariablesInOrderOfAppearance (FuncTy ltTy argTys retTy) =
+  typeVariablesInOrderOfAppearance ltTy ++ concatMap typeVariablesInOrderOfAppearance argTys ++ typeVariablesInOrderOfAppearance retTy
 typeVariablesInOrderOfAppearance (StructTy _ typeArgs) =
   concatMap typeVariablesInOrderOfAppearance typeArgs
 typeVariablesInOrderOfAppearance (RefTy innerTy lifetimeTy) =

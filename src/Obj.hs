@@ -429,7 +429,8 @@ tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
 tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
 tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy StaticLifetimeTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy lt argTys returnTy) = XObj (Lst [(XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, tyToXObj lt]) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -644,7 +645,12 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) a
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy okArgTys okRetTy)
+     return (FuncTy StaticLifetimeTy okArgTys okRetTy)
+xobjToTy (XObj (Lst [XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, lifetime]) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
+  do okLifetime <- xobjToTy lifetime
+     okArgTys <- mapM xobjToTy argTys
+     okRetTy <- xobjToTy retTy
+     return (FuncTy StaticLifetimeTy okArgTys okRetTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
@@ -683,9 +689,9 @@ polymorphicSuffix signature actualType =
                                      then return []
                                      else do put (a : visitedTypeVariables) -- now it's visited
                                              return [tyToC b]
-            (FuncTy argTysA retTyA, FuncTy argTysB retTyB) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
-                                                                 visitedRets <- visit retTyA retTyB
-                                                                 return (visitedArgs ++ visitedRets)
+            (FuncTy _ argTysA retTyA, FuncTy _ argTysB retTyB) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
+                                                                     visitedRets <- visit retTyA retTyB
+                                                                     return (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
             (PointerTy a, PointerTy b) -> visit a b
             (RefTy a _, RefTy b _) -> visit a b

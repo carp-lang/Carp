@@ -36,9 +36,10 @@ renameVarTys rootType = do n <- get
                            return result
   where
     rename :: Ty -> State (Integer, Map.Map String Ty) Ty
-    rename (FuncTy argTys retTy) = do argTys' <- mapM rename argTys
-                                      retTy' <- rename retTy
-                                      return (FuncTy argTys' retTy')
+    rename (FuncTy ltTy argTys retTy) = do ltTy' <- rename ltTy
+                                           argTys' <- mapM rename argTys
+                                           retTy' <- rename retTy
+                                           return (FuncTy ltTy' argTys' retTy')
     rename (VarTy v) = do (n, mappings) <- get
                           case Map.lookup v mappings of
                             Just found -> return found
@@ -72,7 +73,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Pattern _)        -> do lt <- genVarTy
                                                 return (Right (xobj { ty = Just (RefTy PatternTy lt) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
-                       Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
+                       Break              -> return (Right (xobj { ty = Just (FuncTy StaticLifetimeTy [] UnitTy)}))
                        (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
@@ -167,7 +168,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Defn
         [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
-             let funcTy = Just (FuncTy argTypes returnType)
+             let funcTy = Just (FuncTy StaticLifetimeTy argTypes returnType)
                  typedNameSymbol = nameSymbol { ty = funcTy }
                  -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
                  envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
@@ -183,7 +184,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
-             let funcTy = Just (FuncTy argTypes returnType)
+             lt <- genVarTy
+             let funcTy = Just (FuncTy lt argTypes returnType)
              visitedBody <- visit funcScopeEnv body
              visitedArgs <- mapM (visit funcScopeEnv) argList
              return $ do okBody <- visitedBody

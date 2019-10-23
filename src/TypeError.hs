@@ -372,8 +372,9 @@ recursiveLookupTy mappings t = case t of
                                  (RefTy r lt) -> RefTy (recursiveLookupTy mappings r) (recursiveLookupTy mappings lt)
                                  (PointerTy p) -> PointerTy (recursiveLookupTy mappings p)
                                  (StructTy n innerTys) -> StructTy n (map (recursiveLookupTy mappings) innerTys)
-                                 (FuncTy argTys retTy) -> FuncTy (map (recursiveLookupTy mappings) argTys)
-                                                                 (recursiveLookupTy mappings retTy)
+                                 (FuncTy ltTy argTys retTy) -> FuncTy (recursiveLookupTy mappings ltTy)
+                                                                      (map (recursiveLookupTy mappings) argTys)
+                                                                      (recursiveLookupTy mappings retTy)
                                  _ -> t
 
 showTypeFromXObj :: TypeMappings -> XObj -> String

@@ -20,7 +20,7 @@ genConstraints typeEnv root = fmap sort (gen root)
          do insideBodyConstraints <- gen body
             xobjType <- toEither (ty xobj) (DefnMissingType xobj)
             bodyType <- toEither (ty body) (ExpressionMissingType xobj)
-            let (FuncTy argTys retTy) = xobjType
+            let (FuncTy _ argTys retTy) = xobjType
                 bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
                 argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
             return (bodyConstr : argConstrs ++ insideBodyConstraints)
@@ -186,7 +186,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 insideArgsConstraints <- fmap join (mapM gen args)
                                 funcTy <- toEither (ty func) (ExpressionMissingType func)
                                 case funcTy of
-                                  (FuncTy argTys retTy) ->
+                                  (FuncTy _ argTys retTy) ->
                                     if length args /= length argTys then
                                       Left (WrongArgCount func (length argTys) (length args))
                                     else
@@ -202,7 +202,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                           retConstraint = Constraint xobjTy retTy xobj func xobj OrdFuncAppRet
                                       in  return (retConstraint : funcConstraints ++ argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
-                                    let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
+                                    let fabricatedFunctionType = FuncTy (VarTy "what?!") (map forceTy args) (forceTy xobj)
                                         expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : funcConstraints ++ insideArgsConstraints)

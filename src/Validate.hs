@@ -43,7 +43,7 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     StringTy  -> return ()
     PatternTy -> return ()
     CharTy    -> return ()
-    FuncTy _ _ -> return ()
+    FuncTy _ _ _ -> return ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
                           return ()
     StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj

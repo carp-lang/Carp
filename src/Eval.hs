@@ -733,8 +733,8 @@ deftypeInternal nameXObj typeName typeVariableXObjs rest =
              in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
                    let ctxWithInterfaceRegistrations =
                          foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
-                               [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy)
-                               ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy)]
+                               [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy StaticLifetimeTy [RefTy structTy (VarTy "q")] StringTy)
+                               ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy StaticLifetimeTy [RefTy structTy (VarTy "q")] structTy)]
                    case ctxWithInterfaceRegistrations of
                      Left err -> liftIO (putStrLnWithColor Red err)
                      Right ok -> put ok
@@ -1276,7 +1276,7 @@ executeFunctionAsMain ctx expression =
                                                              XObj (Lst [XObj Ref (Just dummyInfo) Nothing, x])
                                                                    (Just dummyInfo) (Just UnitTy)])
                                                        (Just dummyInfo) (Just UnitTy)
-                                     ]) (Just dummyInfo) (Just (FuncTy [] UnitTy))
+                                     ]) (Just dummyInfo) (Just (FuncTy StaticLifetimeTy [] UnitTy))
   in  do r <- annotateWithinContext False expression
          case r of
            Right (annXObj, annDeps) ->

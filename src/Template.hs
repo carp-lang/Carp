@@ -72,8 +72,8 @@ concretizeTypesInToken mappings cName decl token =
 -- | The code needed to correctly call a lambda from C.
 templateCodeForCallingLambda :: String -> Ty -> [String] -> String
 templateCodeForCallingLambda functionName t args =
-  let FuncTy argTys retTy = t
-      castToFnWithEnv = tyToCast (FuncTy (lambdaEnvTy : argTys) retTy)
+  let FuncTy lt argTys retTy = t
+      castToFnWithEnv = tyToCast (FuncTy lt (lambdaEnvTy : argTys) retTy)
       castToFn = tyToCast t
   in
     functionName ++ ".env ? " ++
@@ -84,7 +84,7 @@ templateCodeForCallingLambda functionName t args =
 -- | Must cast a lambda:s .callback member to the correct type to be able to call it.
 tyToCast :: Ty -> String
 tyToCast t =
-  let FuncTy argTys retTy = t
+  let FuncTy _ argTys retTy = t
   in  "§(Fn [" ++ joinWithSpace (map show argTys) ++ "] " ++ show retTy ++ ")" -- Note! The '§' means that the emitted type will be "raw" and not converted to 'Lambda'.
 
 ----------------------------------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ tyToCast t =
 templateNoop :: (String, Binder)
 templateNoop = defineTemplate
   (SymPath [] "noop")
-  (FuncTy [PointerTy (VarTy "a")] UnitTy)
+  (FuncTy StaticLifetimeTy [PointerTy (VarTy "a")] UnitTy)
   "accepts a pointer and will do nothing with it."
   (toTemplate "void $NAME ($a* a)")
   (toTemplate "$DECL { }")

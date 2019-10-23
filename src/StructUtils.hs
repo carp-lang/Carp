@@ -8,7 +8,7 @@ import Polymorphism
 
 memberInfo typeEnv memberTy =
   let refOrNotRefType = if isManaged typeEnv memberTy then RefTy memberTy (VarTy "w") else memberTy -- OBS! The VarTy "w" here is dubious
-  in (refOrNotRefType, if isManaged typeEnv memberTy then "&" else "", FuncTy [refOrNotRefType] StringTy)
+  in (refOrNotRefType, if isManaged typeEnv memberTy then "&" else "", FuncTy StaticLifetimeTy [refOrNotRefType] StringTy)
 
 -- | Generate C code for converting a member variable to a string and appending it to a buffer.
 memberPrn :: TypeEnv -> Env -> (String, Ty) -> String

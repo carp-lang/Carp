@@ -186,7 +186,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   return ""
                 _ ->
                   do let innerIndent = indent + indentAmount
-                         Just (FuncTy _ retTy) = t
+                         Just (FuncTy _ _ retTy) = t
                          defnDecl = defnToDeclaration meta path argList retTy
                      appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
@@ -501,7 +501,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy _ argTys retTy = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callFunction)
@@ -513,7 +513,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
             func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
               do argListAsC <- createArgList indent (mode == ExternalCode) args
-                 let Just (FuncTy _ retTy) = ty func
+                 let Just (FuncTy _ _ retTy) = ty func
                      funcToCall = pathToC path
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
@@ -532,7 +532,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy _ argTys retTy = funcTy
                      castToFn =
                        if unwrapLambdas
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
@@ -695,15 +695,15 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
-    (FuncTy argTys retTy) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
-                             intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
+    (FuncTy _ argTys retTy) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
+                               intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
   case xobjs of
     [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
-      let (Just (FuncTy _ retTy)) = t
+      let (Just (FuncTy _ _ retTy)) = t
       in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
