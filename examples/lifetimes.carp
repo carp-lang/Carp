@@ -147,9 +147,18 @@
 
 ;;(defn f [x] (fn [] (IO.println x)))
 
-(defn g []
-  (let-do [s @"DATA"
-           r &s
-           f (fn [] (IO.println r))]
-    ;;(delete s)
-    (f)))
+
+
+;; (defn g []
+;;   (let-do [s @"DATA"
+;;            r &s
+;;            f (fn [] (IO.println r))]
+;;     ;;(delete s)
+;;     ;;(f)
+;;     f))
+
+
+
+;; (defn ok [r]
+;;   (let-do [f (fn [] (IO.println r))]
+;;     f))
