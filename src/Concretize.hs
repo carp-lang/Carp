@@ -654,7 +654,7 @@ manageMemory typeEnv globalEnv root =
                     Lst _ -> visitList xobj
                     Arr _ -> visitArray xobj
                     Str _ -> do manage xobj
-                                addToLifetimesMappingsIfRef False xobj
+                                addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here?
                                 return (Right xobj)
                     Pattern _ -> do manage xobj
                                     addToLifetimesMappingsIfRef False xobj

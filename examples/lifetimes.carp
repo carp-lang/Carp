@@ -163,12 +163,13 @@
 ;;   (let-do [f (fn [] (IO.println r))]
 ;;     f))
 
+(deftype Blah [])
 
 (defn trick []
-  (let[s1 @"DATA1"
+  (let[s1 (Blah.init)
        r1 &s1
-       g (let [s2 @"DATA2"
-          r2 &s2
+       g (let [s2 (Blah.init)
+               r2 &s2
                f (fn [] (println* r1 r2))]
            f)]
     (g) ;; shouldn't work because 's2' has been deleted and 'r2' is thus a dead reference
