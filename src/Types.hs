@@ -27,6 +27,7 @@ import Util
 -- | Carp types.
 data Ty = IntTy
         | LongTy
+        | ByteTy
         | BoolTy
         | FloatTy
         | DoubleTy
@@ -60,6 +61,7 @@ instance Show Ty where
   show FloatTy               = "Float"
   show DoubleTy              = "Double"
   show LongTy                = "Long"
+  show ByteTy                = "Byte"
   show BoolTy                = "Bool"
   show StringTy              = "String"
   show PatternTy             = "Pattern"
@@ -107,6 +109,7 @@ tyToCManglePtr _ BoolTy                  = "bool"
 tyToCManglePtr _ FloatTy                 = "float"
 tyToCManglePtr _ DoubleTy                = "double"
 tyToCManglePtr _ LongTy                  = "long"
+tyToCManglePtr _ ByteTy                  = "uint8_t"
 tyToCManglePtr _ StringTy                = "String"
 tyToCManglePtr _ PatternTy               = "Pattern"
 tyToCManglePtr _ CharTy                  = "char"

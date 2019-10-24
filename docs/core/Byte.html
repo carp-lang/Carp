@@ -141,10 +141,105 @@
                 </div>
             </div>
             <h1>
-                Vector2
+                Byte
             </h1>
             <div class="module-description">
                 
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#*">
+                    <h3 id="*">
+                        *
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#+">
+                    <h3 id="+">
+                        +
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#-">
+                    <h3 id="-">
+                        -
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#/">
+                    <h3 id="/">
+                        /
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#&lt;">
+                    <h3 id="&lt;">
+                        &lt;
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Bool)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
             </div>
             <div class="binder">
                 <a class="anchor" href="#=">
@@ -153,75 +248,187 @@
                     </h3>
                 </a>
                 <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Bool)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#&gt;">
+                    <h3 id="&gt;">
+                        &gt;
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Bool)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#add-ref">
+                    <h3 id="add-ref">
+                        add-ref
+                    </h3>
+                </a>
+                <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [&amp;Byte, &amp;Byte] Byte)
                 </p>
                 <pre class="args">
-                    (= a b)
+                    (add-ref x y)
                 </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#add">
-                    <h3 id="add">
-                        add
+                <a class="anchor" href="#bit-and">
+                    <h3 id="bit-and">
+                        bit-and
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
+                    (λ [Byte, Byte] Byte)
                 </p>
-                <pre class="args">
-                    (add a b)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#angle-between">
-                    <h3 id="angle-between">
-                        angle-between
+                <a class="anchor" href="#bit-not">
+                    <h3 id="bit-not">
+                        bit-not
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
+                    (λ [Byte] Byte)
                 </p>
-                <pre class="args">
-                    (angle-between a b)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
-                    <p>Get the angle between two vectors a and b.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#anti-parallel?">
-                    <h3 id="anti-parallel?">
-                        anti-parallel?
+                <a class="anchor" href="#bit-or">
+                    <h3 id="bit-or">
+                        bit-or
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-shift-left">
+                    <h3 id="bit-shift-left">
+                        bit-shift-left
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-shift-right">
+                    <h3 id="bit-shift-right">
+                        bit-shift-right
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-xor">
+                    <h3 id="bit-xor">
+                        bit-xor
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#clamp">
+                    <h3 id="clamp">
+                        clamp
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
+                    (λ [a, a, a] a)
                 </p>
                 <pre class="args">
-                    (anti-parallel? a b)
+                    (clamp min max val)
                 </pre>
                 <p class="doc">
-                    <p>Check whether the two vectors a and b are anti-parallel.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -231,412 +438,187 @@
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] (Vector2 f))
+                    (λ [&amp;Byte] Byte)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>copies the <code>Vector2</code>.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#delete">
-                    <h3 id="delete">
-                        delete
+                <a class="anchor" href="#dec">
+                    <h3 id="dec">
+                        dec
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Vector2 f)] ())
+                    (λ [Byte] Byte)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>deletes a <code>Vector2</code>. Should usually not be called manually.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#dist">
-                    <h3 id="dist">
-                        dist
+                <a class="anchor" href="#even?">
+                    <h3 id="even?">
+                        even?
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
+                    (λ [Byte] Bool)
                 </p>
                 <pre class="args">
-                    (dist a b)
-                </pre>
-                <p class="doc">
-                    <p>Get the distance between the vectors a and b.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#div">
-                    <h3 id="div">
-                        div
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
-                </p>
-                <pre class="args">
-                    (div a n)
+                    (even? a)
                 </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#dot">
-                    <h3 id="dot">
-                        dot
+                <a class="anchor" href="#format">
+                    <h3 id="format">
+                        format
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] a)
-                </p>
-                <pre class="args">
-                    (dot a b)
-                </pre>
-                <p class="doc">
-                    <p>Get the dot product of the two vectors x and y.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#heading">
-                    <h3 id="heading">
-                        heading
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
-                </p>
-                <pre class="args">
-                    (heading a)
-                </pre>
-                <p class="doc">
-                    <p>Get the heading of the vector a.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#init">
-                    <h3 id="init">
-                        init
-                    </h3>
-                </a>
-                <div class="description">
-                    template
-                </div>
-                <p class="sig">
-                    (λ [f, f] (Vector2 f))
+                    (λ [&amp;String, Byte] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>creates a <code>Vector2</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#mag">
-                    <h3 id="mag">
-                        mag
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
-                </p>
-                <pre class="args">
-                    (mag o)
-                </pre>
-                <p class="doc">
-                    <p>Get the magnitude of a vector.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#mag-sq">
-                    <h3 id="mag-sq">
-                        mag-sq
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
-                </p>
-                <pre class="args">
-                    (mag-sq o)
-                </pre>
-                <p class="doc">
-                    <p>Get the squared magnitude of a vector.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#map">
-                    <h3 id="map">
-                        map
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(λ [a] b), (Ref (Vector2 a))] (Vector2 b))
-                </p>
-                <pre class="args">
-                    (map f v)
-                </pre>
-                <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#mul">
-                    <h3 id="mul">
-                        mul
+                <a class="anchor" href="#from-int">
+                    <h3 id="from-int">
+                        from-int
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
-                </p>
-                <pre class="args">
-                    (mul a n)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#normalize">
-                    <h3 id="normalize">
-                        normalize
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a))] (Vector2 a))
-                </p>
-                <pre class="args">
-                    (normalize o)
-                </pre>
-                <p class="doc">
-                    <p>Normalize a vector.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#parallel?">
-                    <h3 id="parallel?">
-                        parallel?
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
-                </p>
-                <pre class="args">
-                    (parallel? a b)
-                </pre>
-                <p class="doc">
-                    <p>Check whether the two vectors a and b are parallel.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#perpendicular?">
-                    <h3 id="perpendicular?">
-                        perpendicular?
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
-                </p>
-                <pre class="args">
-                    (perpendicular? a b)
-                </pre>
-                <p class="doc">
-                    <p>Check whether the two vectors a and b are perpendicular.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#prn">
-                    <h3 id="prn">
-                        prn
-                    </h3>
-                </a>
-                <div class="description">
-                    template
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 f))] String)
+                    (λ [Int] Byte)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>converts a <code>Vector2</code> to a string.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#random">
-                    <h3 id="random">
-                        random
+                <a class="anchor" href="#from-string">
+                    <h3 id="from-string">
+                        from-string
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#inc">
+                    <h3 id="inc">
+                        inc
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#mod">
+                    <h3 id="mod">
+                        mod
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#odd?">
+                    <h3 id="odd?">
+                        odd?
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Vector2 a))
+                    (λ [Byte] Bool)
                 </p>
                 <pre class="args">
-                    (random)
+                    (odd? a)
                 </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#rotate">
-                    <h3 id="rotate">
-                        rotate
+                <a class="anchor" href="#pow">
+                    <h3 id="pow">
+                        pow
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a)), a] (Vector2 a))
+                    (λ [Byte, Byte] Byte)
                 </p>
                 <pre class="args">
-                    (rotate a n)
+                    (pow x y)
                 </pre>
                 <p class="doc">
-                    <p>Rotate the vector a by the radians n.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-x">
-                    <h3 id="set-x">
-                        set-x
-                    </h3>
-                </a>
-                <div class="description">
-                    template
-                </div>
-                <p class="sig">
-                    (λ [(Vector2 f), f] (Vector2 f))
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>x</code> property of a <code>Vector2</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-x!">
-                    <h3 id="set-x!">
-                        set-x!
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 f)), f] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>x</code> property of a <code>Vector2</code> in place.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-y">
-                    <h3 id="set-y">
-                        set-y
-                    </h3>
-                </a>
-                <div class="description">
-                    template
-                </div>
-                <p class="sig">
-                    (λ [(Vector2 f), f] (Vector2 f))
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>y</code> property of a <code>Vector2</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#set-y!">
-                    <h3 id="set-y!">
-                        set-y!
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 f)), f] ())
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>sets the <code>y</code> property of a <code>Vector2</code> in place.</p>
+                    <p>Raise x to the power of y.</p>
 
                 </p>
             </div>
@@ -647,194 +629,35 @@
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 f))] String)
+                    (λ [Byte] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>converts a <code>Vector2</code> to a string.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#sub">
-                    <h3 id="sub">
-                        sub
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] (Vector2 a))
-                </p>
-                <pre class="args">
-                    (sub a b)
-                </pre>
-                <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#sum">
-                    <h3 id="sum">
-                        sum
+                <a class="anchor" href="#to-int">
+                    <h3 id="to-int">
+                        to-int
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector2 a))] a)
-                </p>
-                <pre class="args">
-                    (sum o)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#update-x">
-                    <h3 id="update-x">
-                        update-x
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Vector2 f), (Ref (λ [f] f))] (Vector2 f))
+                    (λ [Byte] Int)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>updates the <code>x</code> property of a <code>Vector2</code> using a function <code>f</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#update-y">
-                    <h3 id="update-y">
-                        update-y
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Vector2 f), (Ref (λ [f] f))] (Vector2 f))
-                </p>
-                <span>
                     
-                </span>
-                <p class="doc">
-                    <p>updates the <code>y</code> property of a <code>Vector2</code> using a function <code>f</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#vapprox">
-                    <h3 id="vapprox">
-                        vapprox
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a))] Bool)
-                </p>
-                <pre class="args">
-                    (vapprox a b)
-                </pre>
-                <p class="doc">
-                    <p>Check whether the vectors a and b are approximately equal.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#vlerp">
-                    <h3 id="vlerp">
-                        vlerp
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 a)), (Ref (Vector2 a)), a] (Vector2 a))
-                </p>
-                <pre class="args">
-                    (vlerp a b amnt)
-                </pre>
-                <p class="doc">
-                    <p>Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#vreduce">
-                    <h3 id="vreduce">
-                        vreduce
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(λ [a, b] a), a, (Ref (Vector2 b))] a)
-                </p>
-                <pre class="args">
-                    (vreduce f i v)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#x">
-                    <h3 id="x">
-                        x
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 f))] &amp;f)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>gets the <code>x</code> property of a <code>Vector2</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#y">
-                    <h3 id="y">
-                        y
-                    </h3>
-                </a>
-                <div class="description">
-                    instantiate
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector2 f))] &amp;f)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    <p>gets the <code>y</code> property of a <code>Vector2</code>.</p>
-
                 </p>
             </div>
             <div class="binder">
@@ -847,29 +670,10 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Vector2 a))
+                    (λ [] Byte)
                 </p>
                 <pre class="args">
                     (zero)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#zip">
-                    <h3 id="zip">
-                        zip
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(λ [a, b] c), (Ref (Vector2 a)), (Ref (Vector2 b))] (Vector2 c))
-                </p>
-                <pre class="args">
-                    (zip f a b)
                 </pre>
                 <p class="doc">
                     

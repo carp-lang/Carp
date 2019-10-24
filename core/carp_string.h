@@ -243,6 +243,24 @@ long Long_from_MINUS_string(const String *s) {
     return atol(*s);
 }
 
+String Byte_str(uint8_t x) {
+    int size = snprintf(NULL, 0, "%ub", x)+1;
+    String buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, "%ub", x);
+    return buffer;
+}
+
+String Byte_format(const String* str, uint8_t x) {
+    int size = snprintf(NULL, 0, *str, x)+1;
+    String buffer = CARP_MALLOC(size);
+    snprintf(buffer, size, *str, x);
+    return buffer;
+}
+
+uint8_t Byte_from_MINUS_string(const String *s) {
+    return atoi(*s);
+}
+
 int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {
     /* Return index of first occurrence of `c` in `s` AFTER index i
      * Returns -1 if not found

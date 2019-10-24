@@ -179,6 +179,12 @@
   (register from-string (λ [&String] Int))
 )
 
+(defmodule Byte
+  (register str (Fn [Byte] String))
+  (register format (Fn [&String Byte] String))
+  (register from-string (λ [&String] Byte))
+)
+
 (defmodule Float
   (register str (Fn [Float] String))
   (register format (Fn [&String Float] String))
