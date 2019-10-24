@@ -1248,18 +1248,20 @@ commandC [xobj] =
          case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
            Left err -> return (Left (EvalError (show err) (info xobj)))
            Right (annXObj, annDeps) ->
-             do liftIO (printC annXObj)
-                liftIO (mapM printC annDeps)
+             do let cXObj = printC annXObj
+                    cDeps = concatMap printC annDeps
+                    c = cDeps ++ cXObj
+                liftIO (putStr c)
                 return dynamicNil
 
 -- | Helper function for commandC
-printC :: XObj -> IO ()
+printC :: XObj -> String
 printC xobj =
   case checkForUnresolvedSymbols xobj of
     Left e ->
-      putStrLnWithColor Red (show e ++ ", can't print resulting code.\n")
+      strWithColor Red (show e ++ ", can't print resulting code.\n")
     Right _ ->
-      putStrLnWithColor Green (toC All (Binder emptyMeta xobj))
+      strWithColor Green (toC All (Binder emptyMeta xobj))
 
 -- | This allows execution of calls to non-dynamic functions (defined with 'defn') to be run from the REPL
 executeFunctionAsMain :: Context -> XObj -> StateT Context IO (Either EvalError XObj)
