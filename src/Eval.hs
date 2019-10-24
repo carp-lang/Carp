@@ -1124,8 +1124,9 @@ commandLoad [xobj@(XObj (Str path) i _)] =
             machineReadableInfoFromXObj (fppl ctx) xobj ++ " I can't find a file named: '" ++ path ++ "'"
           _ -> "I can't find a file named: '" ++ path ++ "'") ++
         "\n\nIf you tried loading an external package, try appending a version string (like `@master`)") (info xobj)
-    invalidPathWith ctx path stderr =
-      Left $ EvalError
+    invalidPathWith ctx path stderr cleanup cleanupPath = do
+      _ <- liftIO $ when cleanup (removeDirectoryRecursive cleanupPath)
+      return $ Left $ EvalError
         ((case contextExecMode ctx of
           Check ->
             machineReadableInfoFromXObj (fppl ctx) xobj ++ " I can't find a file named: '" ++ path ++ "'"
@@ -1156,6 +1157,8 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       let proj = contextProj ctx
       fpath <- liftIO $ cachePath $ projectLibDir proj </> fromURL path </> toCheckout
       cur <- liftIO getCurrentDirectory
+      pathExists <- liftIO $ doesPathExist fpath
+      let cleanup = not pathExists
       _ <- liftIO $ createDirectoryIfMissing True $ fpath
       _ <- liftIO $ setCurrentDirectory fpath
       (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
@@ -1168,14 +1171,14 @@ commandLoad [xobj@(XObj (Str path) i _)] =
         case x0 of
           ExitFailure _ -> do
             _ <- liftIO $ setCurrentDirectory cur
-            return $ invalidPathWith ctx path stderr0
+            invalidPathWith ctx path stderr0 cleanup fpath
           ExitSuccess -> do
             (x1, _, stderr1) <- liftIO $ readProcessWithExitCode "git" ["checkout", toCheckout] ""
             _ <- liftIO $ setCurrentDirectory cur
             case x1 of
               ExitSuccess -> doGitLoad path fpath
               ExitFailure _ ->
-                  return $ invalidPathWith ctx path stderr1
+                  invalidPathWith ctx path stderr1 cleanup fpath
     doGitLoad path fpath =
       let fName = last (splitOn "/" path)
           realName' = if ".git" `isSuffixOf` fName
