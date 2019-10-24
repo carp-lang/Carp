@@ -38,6 +38,7 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     IntTy     -> return ()
     FloatTy   -> return ()
     DoubleTy  -> return ()
+    ByteTy    -> return ()
     LongTy    -> return ()
     BoolTy    -> return ()
     StringTy  -> return ()
