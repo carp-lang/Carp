@@ -21,6 +21,7 @@ import Util
 import Path
 import AssignTypes (typeVariablesInOrderOfAppearance)
 
+-- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-
 -- This might be a duplicate with the work in a PR by @jacereda
 beautifyType :: Ty -> Ty
 beautifyType t =
