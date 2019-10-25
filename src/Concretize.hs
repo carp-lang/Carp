@@ -634,6 +634,11 @@ data MemState = MemState
                 , memStateLifetimes :: Map.Map String LifetimeMode
                 } deriving Show
 
+prettyLifetimeMappings :: Map.Map String (Set.Set LifetimeMode) -> String
+prettyLifetimeMappings mappings =
+  joinWith "\n" (map prettyMapping (Map.toList mappings))
+  where prettyMapping (key, value) = "  " ++ key ++ " => " ++ joinWithComma (map show (Set.toList value))
+
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
 -- | the code emitter can access them and insert calls to destructors.
@@ -1047,7 +1052,7 @@ manageMemory typeEnv globalEnv root =
                      return ()
                    Nothing ->
                      do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
-                        put $ --(trace $ "Extended lifetimes mappings with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ": " ++ show lifetimes') $
+                        put $ --(trace $ "Extended lifetimes mappings with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ": " ++ prettyLifetimeMappings lifetimes') $
                           m { memStateLifetimes = lifetimes' }
                         return ()
             Just notThisType ->
@@ -1089,11 +1094,11 @@ manageMemory typeEnv globalEnv root =
                                                 deleters
                          in case matchingDeleters of
                               [] ->
-                                --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                                --trace ("Can't use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                                 --return (Right xobj)
                                 return (Left (UsingDeadReference xobj deleterName))
                               _ ->
-                                -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ show lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                                -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                                 return (Right xobj)
                        Just LifetimeOutsideFunction ->
                          --trace ("Lifetime OUTSIDE function: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
