@@ -163,12 +163,12 @@
 ;;   (let-do [f (fn [] (IO.println r))]
 ;;     f))
 
-(deftype Blah [])
+(deftype Blah [x Int])
 
 (defn trick []
-  (let[s1 (Blah.init)
+  (let[s1 (Blah.init 100)
        r1 &s1
-       g (let [s2 (Blah.init)
+       g (let [s2 (Blah.init 200)
                r2 &s2
                f (fn [] (println* r1 r2))]
            f)]
