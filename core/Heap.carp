@@ -22,9 +22,9 @@
     (defn max-of-three-until! [heap i len ord]
         (let-do [lchild-i (lchild i)
                  rchild-i (rchild i)]
-                 (when (and (< lchild-i len) (ord (Array.nth heap lchild-i) (Array.nth heap i)))
+                 (when (and (< lchild-i len) (~ord (Array.nth heap lchild-i) (Array.nth heap i)))
                        (set! i lchild-i))
-                 (when (and (< rchild-i len) (ord (Array.nth heap rchild-i) (Array.nth heap i)))
+                 (when (and (< rchild-i len) (~ord (Array.nth heap rchild-i) (Array.nth heap i)))
                        (set! i rchild-i))
                  i))
 
@@ -33,7 +33,7 @@
 
     (defn push-down-until! [heap i len ord]
         (while true
-               (let [challenger (max-of-three-until! heap i len @ord)]
+               (let [challenger (max-of-three-until! heap i len ord)]
                     (if (= challenger i)
                         (break)
                         (do
@@ -48,7 +48,7 @@
             (let [elem (Array.nth heap i)
                   parent-i (Heap.parent i)
                   parent-elem (Array.nth heap parent-i)]
-                 (if (not (ord elem parent-elem))
+                 (if (not (~ord elem parent-elem))
                      (break)
                      (do (Array.swap! heap i parent-i)
                          (set! i parent-i))))))
@@ -61,7 +61,7 @@
     (defn heapify! [arr ord]
         (let [len (Array.length arr)]
             (for [i 1 len]
-                (push-up! arr i @ord))))
+                (push-up! arr i ord))))
 
     (doc push! "Insert a new item onto the heap.")
     (defn push! [heap item ord]
@@ -92,7 +92,7 @@
         (Heap.push-down-until! heap i len &ord))
 
     (defn push-up! [heap i]
-        (Heap.push-up! heap i ord))
+        (Heap.push-up! heap i &ord))
 
     (doc peek "Returns minimum item on min-heap.")
     (defn peek [heap]
@@ -104,7 +104,7 @@
 
     (doc push! "Insert a new element onto the min-heap.")
     (defn push! [heap item]
-        (Heap.push! heap item ord))
+        (Heap.push! heap item &ord))
 
     (doc pop! "Remove and return the first item in the min-heap.")
     (defn pop! [heap]
@@ -123,7 +123,7 @@
         (Heap.push-down-until! heap i len &ord))
 
     (defn push-up! [heap i]
-        (Heap.push-up! heap i ord))
+        (Heap.push-up! heap i &ord))
 
     (doc peek "Returns maximum first item on max-heap.")
     (defn peek [heap]
@@ -135,7 +135,7 @@
 
     (doc push! "Insert a new element onto the max-heap.")
     (defn push! [heap item]
-        (Heap.push! heap item ord))
+        (Heap.push! heap item &ord))
 
     (doc pop! "Remove and return the first item in the max-heap.")
     (defn pop! [heap]
