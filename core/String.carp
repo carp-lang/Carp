@@ -29,10 +29,11 @@
 
   (doc repeat "Returns a new string which is `inpt` repeated `n` times.")
   (defn repeat [n inpt]
-    (let [str @""]
+    (let [l (length inpt)
+          str (String.allocate (* n l) \0)]
       (do
         (for [i 0 n]
-          (set! str (append &str inpt)))
+          (string-set-at! &str (* i l) inpt))
         str)))
 
   (doc pad-left "Pads the left of a string with len bytes using the padding pad.")
