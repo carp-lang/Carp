@@ -49,7 +49,7 @@
                 "repeat-indexed works as expected")
   (assert-equal test
                 1
-                (unsafe-first &[1 2 3])
+                @(unsafe-first &[1 2 3])
                 "unsafe-first works as expected")
   (assert-equal test
                 &(Maybe.Just 1)
@@ -61,7 +61,7 @@
                 "first works as expected on empty array")
   (assert-equal test
                 \c
-                (unsafe-last &[\a \b \c])
+                @(unsafe-last &[\a \b \c])
                 "unsafe-last works as expected")
   (assert-equal test
                 &(Maybe.Just \c)
