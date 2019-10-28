@@ -634,10 +634,10 @@ data MemState = MemState
                 , memStateLifetimes :: Map.Map String LifetimeMode
                 } deriving Show
 
-prettyLifetimeMappings :: Map.Map String (Set.Set LifetimeMode) -> String
+prettyLifetimeMappings :: Map.Map String LifetimeMode -> String
 prettyLifetimeMappings mappings =
   joinWith "\n" (map prettyMapping (Map.toList mappings))
-  where prettyMapping (key, value) = "  " ++ key ++ " => " ++ joinWithComma (map show (Set.toList value))
+  where prettyMapping (key, value) = "  " ++ key ++ " => " ++ show value
 
 -- | Find out what deleters are needed and where in an XObj.
 -- | Deleters will be added to the info field on XObj so that
@@ -1048,11 +1048,11 @@ manageMemory typeEnv globalEnv root =
               do m@(MemState _ _ lifetimes) <- get
                  case Map.lookup lt lifetimes of
                    Just existing ->
-                     --trace ("There is already a mapping from the lifetime '" ++ lt ++ "' to " ++ show existing ++ ", won't add " ++ show (makeLifetimeMode xobj)) $
+                     --trace ("\nThere is already a mapping for '" ++ pretty xobj ++ "' from the lifetime '" ++ lt ++ "' to " ++ show existing ++ ", won't add " ++ show (makeLifetimeMode xobj)) $
                      return ()
                    Nothing ->
                      do let lifetimes' = Map.insert lt (makeLifetimeMode xobj) lifetimes
-                        put $ --(trace $ "Extended lifetimes mappings with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ": " ++ prettyLifetimeMappings lifetimes') $
+                        put $ --(trace $ "\nExtended lifetimes mappings for '" ++ pretty xobj ++ "' with " ++ show lt ++ " => " ++ show (makeLifetimeMode xobj) ++ " at " ++ prettyInfoFromXObj xobj ++ ":\n" ++ prettyLifetimeMappings lifetimes') $
                           m { memStateLifetimes = lifetimes' }
                         return ()
             Just notThisType ->
