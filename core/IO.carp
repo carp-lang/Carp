@@ -13,7 +13,7 @@
   (doc errorln "prints a string ref to stderr, appends a newline.")
   (register errorln (Fn [(Ref String)] ()))
   (doc error "prints a string ref to stderr, does not append a newline.")
-  (register print (Fn [(Ref String)] ()))
+  (register error (Fn [(Ref String)] ()))
   (doc get-line "gets a line from stdin.")
   (register get-line (Fn [] String))
   (doc get-char "gets a character from stdin.")
