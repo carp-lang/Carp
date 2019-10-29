@@ -95,14 +95,14 @@
 ;;(unsafe-last b)
 
 
-;; (defn dangling []
-;;   (let [b [1 2 3]
-;;         ;;r &b
-;;         ]
-;;     ;;r
-;;     &b
-;;     ))
+;; (defn dangling-1 []
+;;   (let [b [1 2 3]]
+;;     &b))
 
+;; (defn dangling-2 []
+;;   (let [b [1 2 3]
+;;         r &b]
+;;     r))
 
 
 ;; (defn unique []
@@ -163,14 +163,16 @@
 ;;   (let-do [f (fn [] (IO.println r))]
 ;;     f))
 
-(deftype Blah [x Int])
 
-(defn trick []
-  (let[s1 (Blah.init 100)
-       r1 &s1
-       g (let [s2 (Blah.init 200)
-               r2 &s2
-               f (fn [] (println* r1 r2))]
-           f)]
-    (g) ;; shouldn't work because 's2' has been deleted and 'r2' is thus a dead reference
-    ))
+
+;; (deftype Blah [x Int])
+
+;; (defn trick []
+;;   (let[s1 (Blah.init 100)
+;;        r1 &s1
+;;        g (let [s2 (Blah.init 200)
+;;                r2 &s2
+;;                f (fn [] (println* r1 r2))]
+;;            f)]
+;;     (g) ;; shouldn't work because 's2' has been deleted and 'r2' is thus a dead reference
+;;     ))
