@@ -656,7 +656,12 @@ manageMemory typeEnv globalEnv root =
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
           do r <- case obj xobj of
-                    Lst _ -> visitList xobj
+                    Lst _ -> do visitList xobj
+                                -- res <- visitList xobj
+                                -- case res of
+                                --   Right ok -> do addToLifetimesMappingsIfRef True ok
+                                --                  return res
+                                --   Left err -> return (Left err)
                     Arr _ -> visitArray xobj
                     Str _ -> do manage xobj
                                 addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here?
@@ -667,7 +672,9 @@ manageMemory typeEnv globalEnv root =
                     _ ->
                       return (Right xobj)
              case r of
-               Right ok -> checkThatRefTargetIsAlive ok
+               Right ok -> do MemState _ _ m <- get
+                              checkThatRefTargetIsAlive $ --trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
+                                ok
                Left err -> return (Left err)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
@@ -1109,7 +1116,7 @@ manageMemory typeEnv globalEnv root =
                            --   -- Ignore these for the moment! TODO: FIX!!!
                            --   return (Right xobj)
                            _ ->
-                             --trace ("Failed to find lifetime key '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
+                             --trace ("Failed to find lifetime key (when checking) '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
                              return (Right xobj)
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
