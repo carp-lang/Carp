@@ -758,11 +758,17 @@ Pattern Pattern_copy(Pattern *p) {
     return (Pattern)memcpy(ptr, *p, len);
 }
 
-void Pattern_delete(Pattern p) { CARP_FREE(p); }
+void Pattern_delete(Pattern p) {
+    CARP_FREE(p);
+}
 
-Pattern Pattern_init(String *p) { return Pattern_copy(p); }
+Pattern Pattern_init(String *p) {
+    return Pattern_copy(p);
+}
 
-String Pattern_str(Pattern *p) { return Pattern_copy(p); }
+String Pattern_str(Pattern *p) {
+    return Pattern_copy(p);
+}
 
 String Pattern_prn(Pattern *p) {
     int n = strlen(*p) + 4;
@@ -771,4 +777,6 @@ String Pattern_prn(Pattern *p) {
     return buffer;
 }
 
-bool Pattern__EQ_(Pattern *a, Pattern *b) { return strcmp(*a, *b) == 0; }
+bool Pattern__EQ_(Pattern *a, Pattern *b) {
+    return strcmp(*a, *b) == 0;
+}

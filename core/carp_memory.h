@@ -5,13 +5,17 @@ bool log_memory_balance = false;
 
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
-    if (log_memory_balance) { printf("MALLOC: %p (%ld bytes)\n", ptr, size); }
+    if (log_memory_balance) {
+        printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+    }
     malloc_balance_counter++;
     return ptr;
 }
 
 void logged_free(void *ptr) {
-    if (log_memory_balance) { printf("FREE: %p\n", ptr); }
+    if (log_memory_balance) {
+        printf("FREE: %p\n", ptr);
+    }
     free(ptr);
     malloc_balance_counter--;
     /* if(malloc_balance_counter == 0) { */
@@ -31,7 +35,9 @@ void Debug_log_MINUS_memory_MINUS_balance_BANG_(bool value) {
 #define CARP_FREE(ptr) logged_free(ptr)
 #define CARP_REALLOC(ptr, size) realloc(ptr, size)
 
-long Debug_memory_MINUS_balance() { return malloc_balance_counter; }
+long Debug_memory_MINUS_balance() {
+    return malloc_balance_counter;
+}
 
 void Debug_reset_MINUS_memory_MINUS_balance_BANG_() {
     malloc_balance_counter = 0;

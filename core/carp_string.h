@@ -11,7 +11,9 @@ String String_allocate(int len, char byte) {
     return ptr;
 }
 
-void String_delete(String s) { CARP_FREE(s); }
+void String_delete(String s) {
+    CARP_FREE(s);
+}
 
 void String_string_MINUS_set_BANG_(String *s, int i, char ch) {
     CHK_INDEX(i, strlen(*s));
@@ -82,11 +84,17 @@ String String_append(const String *a, const String *b) {
     return buffer;
 }
 
-int String_length(const String *s) { return strlen(*s); }
+int String_length(const String *s) {
+    return strlen(*s);
+}
 
-char *String_cstr(const String *s) { return *s; }
+char *String_cstr(const String *s) {
+    return *s;
+}
 
-String String_str(const String *s) { return String_copy(s); }
+String String_str(const String *s) {
+    return String_copy(s);
+}
 
 String String_prn(const String *s) {
     int n = strlen(*s) + 4;
@@ -95,7 +103,9 @@ String String_prn(const String *s) {
     return buffer;
 }
 
-char String_char_MINUS_at(const String *s, int i) { return (*s)[i]; }
+char String_char_MINUS_at(const String *s, int i) {
+    return (*s)[i];
+}
 
 String String_format(const String *str, const String *s) {
     int size = snprintf(NULL, 0, *str, *s) + 1;
@@ -211,7 +221,9 @@ String Int_format(const String *str, int x) {
     return buffer;
 }
 
-int Int_from_MINUS_string(const String *s) { return atoi(*s); }
+int Int_from_MINUS_string(const String *s) {
+    return atoi(*s);
+}
 
 String Long_str(long x) {
     int size = snprintf(NULL, 0, "%ldl", x) + 1;
@@ -227,7 +239,9 @@ String Long_format(const String *str, long x) {
     return buffer;
 }
 
-long Long_from_MINUS_string(const String *s) { return atol(*s); }
+long Long_from_MINUS_string(const String *s) {
+    return atol(*s);
+}
 
 int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {
     /* Return index of first occurrence of `c` in `s` AFTER index i
@@ -236,7 +250,9 @@ int String_index_MINUS_of_MINUS_from(const String *s, char c, int i) {
     ++i;  // skip first character as we want AFTER i
     int len = strlen(*s);
     for (; i < len; ++i) {
-        if (c == (*s)[i]) { return i; }
+        if (c == (*s)[i]) {
+            return i;
+        }
     }
     return -1;
 }

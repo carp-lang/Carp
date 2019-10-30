@@ -3,8 +3,8 @@ BasedOnStyle: Google
 AlignEscapedNewlinesLeft: 'true'
 AlignTrailingComments: 'true'
 AllowAllParametersOfDeclarationOnNextLine: 'true'
-AllowShortBlocksOnASingleLine: 'true'
-AllowShortFunctionsOnASingleLine: All
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: 'true'
 AllowShortLoopsOnASingleLine: 'true'
 BinPackParameters: 'true'
