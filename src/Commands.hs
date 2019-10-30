@@ -805,7 +805,7 @@ commandReadFile :: CommandCallback
 commandReadFile [filename] =
   case filename of
     XObj (Str fname) _ _ -> do
-         exceptional <- liftIO $ ((try $ slurp fname) :: (IO (Either IOException String)))
+         exceptional <- liftIO ((try $ slurp fname) :: (IO (Either IOException String)))
          case exceptional of
             Right contents ->
               return (Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
@@ -817,10 +817,10 @@ commandReadFile [filename] =
 commandWriteFile :: CommandCallback
 commandWriteFile [filename, contents] =
   case filename of
-    XObj (Str fname) _ _ -> do
+    XObj (Str fname) _ _ ->
       case contents of
         XObj (Str s) _ _ -> do
-         exceptional <- liftIO $ ((try $ writeFile fname s) :: (IO (Either IOException ())))
+         exceptional <- liftIO ((try $ writeFile fname s) :: (IO (Either IOException ())))
          case exceptional of
             Right () -> return dynamicNil
             Left _ ->

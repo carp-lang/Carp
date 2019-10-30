@@ -110,7 +110,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
                  SymPath path name = rootDefinitionPath
-                 lambdaPath = SymPath path ("_Lambda_" ++ (lambdaToCName name (envFunctionNestingLevel envWithArgs)) ++ "_" ++ show (infoIdentifier ii))
+                 lambdaPath = SymPath path ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
                  lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args

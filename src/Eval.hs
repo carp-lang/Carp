@@ -260,7 +260,7 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `type`: " ++ pretty xobj) (info xobj))
 
-        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] -> do
+        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] ->
             specialCommandMetaSet path key value
         XObj (Sym (SymPath [] "meta-set!") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `meta-set!`: " ++ pretty xobj) (info xobj))
@@ -846,7 +846,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
                       ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
                       put (popModulePath ctxAfterModuleAdditions)
                       return dynamicNil -- TODO: propagate errors...
-                 Just (_, Binder existingMeta (XObj (Lst [(XObj DocStub _ _), _]) _ _)) ->
+                 Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
                    defineIt existingMeta
                  Just (_, Binder _ x) ->
                    return (makeEvalError ctx Nothing ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
@@ -1159,7 +1159,7 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       cur <- liftIO getCurrentDirectory
       pathExists <- liftIO $ doesPathExist fpath
       let cleanup = not pathExists
-      _ <- liftIO $ createDirectoryIfMissing True $ fpath
+      _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
       (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
       if txt == "HEAD\n"

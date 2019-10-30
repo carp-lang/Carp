@@ -315,12 +315,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        zipWithM_ (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
-                       caseExprRetVal <- visit indent' caseExpr
-                       when isNotVoid $
-                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                       let Just caseLhsInfo' = caseLhsInfo
-                       delete indent' caseLhsInfo'
-                       appendToSrc (addIndent indent ++ "}\n")
+                       emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
@@ -330,6 +325,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
+                       emitCaseEnd caseLhsInfo caseExpr
+                  emitCaseEnd caseLhsInfo caseExpr = do
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
