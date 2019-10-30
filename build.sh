@@ -7,3 +7,7 @@ then
 	cabal build
     fi
 fi
+if which clang-format > /dev/null || false
+then
+  clang-format -i core/*.h
+fi

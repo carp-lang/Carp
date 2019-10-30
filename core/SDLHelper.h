@@ -7,27 +7,17 @@ SDL_Event SDL_Event_init() {
     return e;
 }
 
-int SDL_Event_type(SDL_Event *e) {
-    return e->type;
-}
+int SDL_Event_type(SDL_Event *e) { return e->type; }
 
-SDL_Keycode SDL_Event_keycode(SDL_Event *e) {
-    return e->key.keysym.sym;
-}
+SDL_Keycode SDL_Event_keycode(SDL_Event *e) { return e->key.keysym.sym; }
 
-bool SDL_Event__EQ_(SDL_EventType a, SDL_EventType b) {
-    return a == b;
-}
+bool SDL_Event__EQ_(SDL_EventType a, SDL_EventType b) { return a == b; }
 
-SDL_Event SDL_Event_copy(SDL_Event *e) {
-    return *e;
-}
+SDL_Event SDL_Event_copy(SDL_Event *e) { return *e; }
 
 // Keycode
 
-SDL_Keycode SDL_Keycode_copy(SDL_Keycode* a) {
-    return *a;
-}
+SDL_Keycode SDL_Keycode_copy(SDL_Keycode *a) { return *a; }
 
 String SDL_Keycode_str(SDL_Keycode a) {
     char *buffer = CARP_MALLOC(32);
@@ -70,26 +60,14 @@ SDL_Color SDL_rgba(int r, int g, int b, int a) {
     return p;
 }
 
-int SDL_Color_r(SDL_Color *col) {
-    return (int)(col->r);
-}
+int SDL_Color_r(SDL_Color *col) { return (int)(col->r); }
 
-int SDL_Color_g(SDL_Color *col) {
-    return (int)(col->g);
-}
+int SDL_Color_g(SDL_Color *col) { return (int)(col->g); }
 
-int SDL_Color_b(SDL_Color *col) {
-    return (int)(col->b);
-}
+int SDL_Color_b(SDL_Color *col) { return (int)(col->b); }
 
-int SDL_Color_a(SDL_Color *col) {
-    return (int)(col->a);
-}
+int SDL_Color_a(SDL_Color *col) { return (int)(col->a); }
 
-void* SDL_SurfacePixels(SDL_Surface* s) {
-  return s->pixels;
-}
+void *SDL_SurfacePixels(SDL_Surface *s) { return s->pixels; }
 
-int SDL_SurfacePitch(SDL_Surface* s) {
-  return s->pitch;
-}
+int SDL_SurfacePitch(SDL_Surface *s) { return s->pitch; }
