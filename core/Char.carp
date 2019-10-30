@@ -10,18 +10,19 @@
 
   (doc meaning "converts a numerical char into the appropriate number (e.g. from `\1` to `1`).")
   (defn meaning [char-ref]
-    (cond
-      (= @char-ref \0) 0
-      (= @char-ref \1) 1
-      (= @char-ref \2) 2
-      (= @char-ref \3) 3
-      (= @char-ref \4) 4
-      (= @char-ref \5) 5
-      (= @char-ref \6) 6
-      (= @char-ref \7) 7
-      (= @char-ref \8) 8
-      (= @char-ref \9) 9
-      -1))
+    (let [c @char-ref]
+      (case c
+        \0 0
+        \1 1
+        \2 2
+        \3 3
+        \4 4
+        \5 5
+        \6 6
+        \7 7
+        \8 8
+        \9 9
+        -1)))
 
   (doc lower-case? "tests whether a character is lower case.")
   (defn lower-case? [c]
