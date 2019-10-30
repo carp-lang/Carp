@@ -52,7 +52,17 @@ pointerModule = Env { envBindings = bindings
                     , envUseModules = []
                     , envMode = ExternalEnv
                     , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templatePointerCopy, templatePointerEqual, templatePointerToRef ]
+  where bindings = Map.fromList [ templatePointerCopy
+                                , templatePointerEqual
+                                , templatePointerToRef
+                                , templatePointerAdd
+                                , templatePointerSub
+                                , templatePointerMul
+                                , templatePointerDiv
+                                , templatePointerWidth
+                                , templatePointerToLong
+                                , templatePointerFromLong
+                                ]
 
 -- | A template function for copying (= deref:ing) any pointer.
 templatePointerCopy :: (String, Binder)
@@ -87,6 +97,76 @@ templatePointerToRef = defineTemplate
                         ,"}"])
   (const [])
 
+templatePointerAdd = defineTemplate
+  (SymPath ["Pointer"] "add")
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  "adds a long integer value to a pointer."
+  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p + x;"
+                        ,"}"])
+  (const [])
+
+templatePointerSub = defineTemplate
+  (SymPath ["Pointer"] "sub")
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  "subtracts a long integer value from a pointer."
+  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p - x;"
+                        ,"}"])
+  (const [])
+
+templatePointerMul = defineTemplate
+  (SymPath ["Pointer"] "mul")
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  "multiplies a pointer by a long integer."
+  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p * x;"
+                        ,"}"])
+  (const [])
+
+templatePointerDiv = defineTemplate
+  (SymPath ["Pointer"] "div")
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  "divides a pointer by a long integer."
+  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return p / x;"
+                        ,"}"])
+  (const [])
+
+templatePointerWidth = defineTemplate
+  (SymPath ["Pointer"] "width")
+  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  "gets the byte size of a pointer."
+  (toTemplate "long $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return sizeof(*p);"
+                        ,"}"])
+  (const [])
+
+templatePointerToLong = defineTemplate
+  (SymPath ["Pointer"] "to-long")
+  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  "converts a pointer to a long integer."
+  (toTemplate "long $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return (long)p;"
+                        ,"}"])
+  (const [])
+
+templatePointerFromLong = defineTemplate
+  (SymPath ["Pointer"] "from-int")
+  (FuncTy [LongTy] (PointerTy (VarTy "p")))
+  "converts a long integer to a pointer."
+  (toTemplate "$p* $NAME (long p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return ($p*)p;"
+                        ,"}"])
+  (const [])
+
 -- | The System module contains functions for various OS related things like timing and process control.
 systemModule :: Env
 systemModule = Env { envBindings = bindings
@@ -96,6 +176,7 @@ systemModule = Env { envBindings = bindings
                    , envMode = ExternalEnv
                    , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ templateExit ]
+
 
 -- | A template function for exiting.
 templateExit :: (String, Binder)
