@@ -136,7 +136,7 @@ templatePointerToLong = defineTemplate
   (const [])
 
 templatePointerFromLong = defineTemplate
-  (SymPath ["Pointer"] "from-int")
+  (SymPath ["Pointer"] "from-long")
   (FuncTy [LongTy] (PointerTy (VarTy "p")))
   "converts a long integer to a pointer."
   (toTemplate "$p* $NAME (long p)")
