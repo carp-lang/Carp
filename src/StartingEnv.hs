@@ -57,8 +57,6 @@ pointerModule = Env { envBindings = bindings
                                 , templatePointerToRef
                                 , templatePointerAdd
                                 , templatePointerSub
-                                , templatePointerMul
-                                , templatePointerDiv
                                 , templatePointerWidth
                                 , templatePointerToLong
                                 , templatePointerFromLong
@@ -114,26 +112,6 @@ templatePointerSub = defineTemplate
   (toTemplate "$p* $NAME ($p *p, long x)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p - x;"
-                        ,"}"])
-  (const [])
-
-templatePointerMul = defineTemplate
-  (SymPath ["Pointer"] "mul")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
-  "multiplies a pointer by a long integer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p * x;"
-                        ,"}"])
-  (const [])
-
-templatePointerDiv = defineTemplate
-  (SymPath ["Pointer"] "div")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
-  "divides a pointer by a long integer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
-  (toTemplate $ unlines ["$DECL {"
-                        ,"    return p / x;"
                         ,"}"])
   (const [])
 
