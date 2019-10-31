@@ -56,14 +56,14 @@
              l (Array.length (Bucket.entries b))
              es (entries b)]
       (for [i 0 l]
-        (when (= (Pair.a (Array.nth es i)) k)
+        (when (= (Pair.a (Array.unsafe-nth es i)) k)
           (do
             (set! ret i)
             (break))))
       ret))
 
   (defn get-idx [b i]
-    @(Pair.b (Array.nth (entries b) i)))
+    @(Pair.b (Array.unsafe-nth (entries b) i)))
 
   (defn set-idx [b i val]
     (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b @p @val)))
@@ -83,7 +83,7 @@
     (let [i (find b k)]
       (if (<= 0 i)
         ;; The call to copy ('@') here is annoying - had to add it since sumtypes can't contain refs for now:
-        (Maybe.Just @(Pair.b (Array.nth (entries b) i)))
+        (Maybe.Just @(Pair.b (Array.unsafe-nth (entries b) i)))
         (Maybe.Nothing))))
 
   (defn put [b k v]
@@ -98,7 +98,7 @@
   (defn remove [entries k]
     (let-do [nentries (the (Array (Pair a b)) [])]
       (for [i 0 (Array.length entries)]
-        (let [e (Array.nth entries i)]
+        (let [e (Array.unsafe-nth entries i)]
           (unless (= (Pair.a e) k)
              (set! nentries (Array.push-back nentries @e)))))
       nentries))
@@ -128,20 +128,20 @@
   (defn put [m k v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
+        (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (Bucket.put @n k v)))))))
 
   (doc put! "Put a a value v into map m, using the key k, in place.")
   (defn put! [m k v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))
           b (buckets m)
-          n (Array.nth b idx)]
+          n (Array.unsafe-nth b idx)]
       (Array.aset! b idx (Bucket.put @n k v))))
 
   (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
   (defn get-with-default [m k default-value]
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
-      (Bucket.get (Array.nth (buckets m) idx) k default-value)))
+      (Bucket.get (Array.unsafe-nth (buckets m) idx) k default-value)))
 
   (doc get "Get the value for the key k from map m. If it isn’t found, a zero element for the value type is returned.")
   (defn get [m k]
@@ -150,13 +150,13 @@
   (doc get-maybe "Get the value for the key k from map m. It returns a Maybe type, meaning that if nothing is found, Nothing is returned.")
   (defn get-maybe [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
-      (Bucket.get-maybe (Array.nth (buckets m) idx) k)))
+      (Bucket.get-maybe (Array.unsafe-nth (buckets m) idx) k)))
 
   (doc update "Update value at key k in map with function f, if it exists.")
   (defn update [m k f]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)
+        (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
           (if (<= 0 i)
             ;; currently can't write a Bucket.update that takes f due to bug #347
@@ -167,7 +167,7 @@
   (defn update-with-default [m k f v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)
+        (let [n (Array.unsafe-nth &b idx)
               i (Bucket.find n k)]
           (if (<= 0 i)
             (Array.aset b idx (Bucket.set-idx @n i &(~f (Bucket.get-idx n i))))
@@ -177,7 +177,7 @@
   (defn length [m]
     (let-do [c 0]
       (for [i 0 @(n-buckets m)]
-        (set! c (+ c (Array.length (Bucket.entries (Array.nth (buckets m) i))))))
+        (set! c (+ c (Array.length (Bucket.entries (Array.unsafe-nth (buckets m) i))))))
       c))
 
   (doc empty? "Check whether the map m is empty.")
@@ -187,24 +187,24 @@
   (doc contains? "Check whether the map m contains the key k.")
   (defn contains? [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))]
-      (Bucket.contains? (Array.nth (buckets m) idx) k)))
+      (Bucket.contains? (Array.unsafe-nth (buckets m) idx) k)))
 
   (doc remove "Remove the value under the key k from the map m.")
   (defn remove [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.nth &b idx)]
+        (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (Bucket.shrink @n k)))))))
 
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
     (let-do [ret true]
       (for [i 0 @(n-buckets m)]
-        (let [bucket (Array.nth (buckets m) i)
+        (let [bucket (Array.unsafe-nth (buckets m) i)
               len (Array.length (Bucket.entries bucket))
               entries (Bucket.entries bucket)]
           (for [j 0 len]
-            (let [e (Array.nth entries j)]
+            (let [e (Array.unsafe-nth entries j)]
               (unless (~pred (Pair.a e) (Pair.b e))
                 (set! ret false))))))
       ret))
@@ -217,22 +217,22 @@
   (doc for-each "Execute the binary function f for all keys and values in the map m.")
   (defn for-each [m f]
     (for [i 0 @(n-buckets m)]
-      (let [bucket (Array.nth (buckets m) i)
+      (let [bucket (Array.unsafe-nth (buckets m) i)
             len (Array.length (Bucket.entries bucket))
             entries (Bucket.entries bucket)]
         (for [j 0 len]
-          (let [e (Array.nth entries j)]
+          (let [e (Array.unsafe-nth entries j)]
             (~f (Pair.a e) (Pair.b e)))))))
 
   (doc endo-map "Transform values of the given map in place. f gets two arguments, key and value, and should return new value")
   (defn endo-map [f m]
     (do
       (for [i 0 @(n-buckets &m)]
-        (let [bucket (Array.nth (buckets &m) i)
+        (let [bucket (Array.unsafe-nth (buckets &m) i)
               len (Array.length (Bucket.entries bucket))
               entries (Bucket.entries bucket)]
           (for [j 0 len]
-            (let [e (Array.nth entries j)]
+            (let [e (Array.unsafe-nth entries j)]
               (Array.aset! entries j (Pair.init @(Pair.a e)
                                                 (~f (Pair.a e) (Pair.b e))))))))
       m))
@@ -241,11 +241,11 @@
   (defn kv-reduce [f init m]
     (do
       (for [i 0 @(n-buckets m)]
-        (let [bucket (Array.nth (buckets m) i)
+        (let [bucket (Array.unsafe-nth (buckets m) i)
               len (Array.length (Bucket.entries bucket))
               entries (Bucket.entries bucket)]
           (for [j 0 len]
-            (let [e (Array.nth entries j)]
+            (let [e (Array.unsafe-nth entries j)]
               (set! init (~f init (Pair.a e) (Pair.b e)))))))
       init))
 
@@ -265,7 +265,7 @@
   (defn from-array [a]
     (let-do [m (create)]
       (for [i 0 (Array.length a)]
-        (let [e (Array.nth a i)
+        (let [e (Array.unsafe-nth a i)
               k (Pair.a e)
               v (Pair.b e)]
           (set! m (put m k v))))
@@ -303,7 +303,7 @@
              es (entries b)
              l (Array.length es)]
       (for [i 0 l]
-        (when (= (Array.nth es i) k)
+        (when (= (Array.unsafe-nth es i) k)
           (do
             (set! e true)
             (break))))
@@ -312,7 +312,7 @@
   (defn remove [entries k]
     (let-do [nentries []]
       (for [i 0 (Array.length entries)]
-        (let [e (Array.nth entries i)]
+        (let [e (Array.unsafe-nth entries i)]
           (unless (= e k)
              (set! nentries (Array.push-back nentries @e)))))
       nentries))
@@ -341,7 +341,7 @@
   (defn put [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.nth &b idx)]
+        (let [n (Array.unsafe-nth &b idx)]
           (if (SetBucket.contains? n k)
             b
             (Array.aset b idx (SetBucket.grow n @k))))))))
@@ -350,7 +350,7 @@
   (defn put! [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets s))
           b (buckets s)
-          n (Array.nth b idx)]
+          n (Array.unsafe-nth b idx)]
       (when (not (SetBucket.contains? n k))
         (Array.aset! b idx (SetBucket.grow n @k)))))
 
@@ -358,7 +358,7 @@
   (defn length [s]
     (let-do [c 0]
       (for [i 0 @(n-buckets s)]
-        (set! c (+ c (Array.length (SetBucket.entries (Array.nth (buckets s) i))))))
+        (set! c (+ c (Array.length (SetBucket.entries (Array.unsafe-nth (buckets s) i))))))
       c))
 
   (doc empty? "Check whether the set s is empty.")
@@ -368,13 +368,13 @@
   (doc contains? "Check whether the set s contains the key k.")
   (defn contains? [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets s))]
-      (SetBucket.contains? (Array.nth (buckets s) idx) k)))
+      (SetBucket.contains? (Array.unsafe-nth (buckets s) idx) k)))
 
   (doc remove "Remove the key k from the set s.")
   (defn remove [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.nth &b idx)]
+        (let [n (Array.unsafe-nth &b idx)]
           (Array.aset b idx (SetBucket.shrink n k)))))))
 
   (doc all? "Does the predicate hold for all values in this set?")
@@ -399,18 +399,18 @@
   (doc for-each "Execute the unary function f for each element in the set s.")
   (defn for-each [s f]
     (for [i 0 @(n-buckets s)]
-      (let [bucket (Array.nth (buckets s) i)
+      (let [bucket (Array.unsafe-nth (buckets s) i)
             len (Array.length (SetBucket.entries bucket))
             entries (SetBucket.entries bucket)]
         (for [j 0 len]
-          (let [e (Array.nth entries j)]
+          (let [e (Array.unsafe-nth entries j)]
             (~f e))))))
 
   (doc from-array "Create a set from the values in array a.")
   (defn from-array [a]
     (let-do [s (create)]
       (for [i 0 (Array.length a)]
-        (let [e (Array.nth a i)]
+        (let [e (Array.unsafe-nth a i)]
           (set! s (put s e))))
       s))
 
@@ -418,11 +418,11 @@
   (defn reduce [f init s]
     (do
       (for [i 0 @(n-buckets s)]
-        (let [bucket (Array.nth (buckets s) i)
+        (let [bucket (Array.unsafe-nth (buckets s) i)
               len (Array.length (SetBucket.entries bucket))
               entries (SetBucket.entries bucket)]
           (for [j 0 len]
-            (let [e (Array.nth entries j)]
+            (let [e (Array.unsafe-nth entries j)]
               (set! init (~f init e))))))
       init))
 

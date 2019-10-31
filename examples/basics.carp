@@ -127,7 +127,7 @@
 
 (defn get-last-string [xs] ;; Should be generic preferably...
   (let [i (dec (Array.length &xs))]
-    (String.copy (Array.nth &xs i))))
+    (String.copy (Array.unsafe-nth &xs i))))
 
 (defn print-last-string []
   (println &(get-last-string [(String.copy "NO") (String.copy "NO") (String.copy "YES")])))
@@ -196,7 +196,7 @@
 
 (defn resolve-correctly []
   (let [words (words "a bb ccc dddd eeeee")]
-    (println* (nth &words 2))))
+    (println* (unsafe-nth &words 2))))
 
 (defn main []
   ; here we always use the same seed for determinism, for simple random

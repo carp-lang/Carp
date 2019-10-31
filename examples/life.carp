@@ -29,7 +29,7 @@
 (defn handle-mouse [world]
   (let [mouse &(MouseState.get)
         index (+ (/ @(x mouse) 10) (* (/ @(y mouse) 10) width))]
-    (aset! world index (not @(nth world index)))))
+    (aset! world index (not @(unsafe-nth world index)))))
 
 (defn handle-events [app rend world play]
   (let [event (init)
@@ -56,7 +56,7 @@
       (for [x 0 width]
         (let [square (rect (* x 10) (* y 10) 9 9)]
           (do
-            (if @(nth world (cell-index x y))
+            (if @(unsafe-nth world (cell-index x y))
               (set-render-draw-color rend 255 255 255 255)
               (set-render-draw-color rend 50 50 50 255))
             (render-fill-rect rend (address square))
@@ -69,7 +69,7 @@
     (< (dec width) x) 0
     (< y 0) 0
     (< (dec height) y) 0
-    (if @(nth world (cell-index x y))
+    (if @(unsafe-nth world (cell-index x y))
       1
       0)))
 
@@ -96,7 +96,7 @@
                      (< total 2) false
                      (= total 3) true
                      (> total 3) false
-                     @(nth world i))]
+                     @(unsafe-nth world i))]
       (aset! newWorld i newState))))
 
 (defn flip []
