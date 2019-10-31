@@ -12,6 +12,8 @@
 (system-include "carp_stdbool.h")
 (system-include "core.h")
 (system-include "carp_memory.h")
+(system-include "sys/wait.h")
+(system-include "unistd.h")
 
 (load "Interfaces.carp")
 (load "Bool.carp")
