@@ -298,8 +298,16 @@ The trailing elements of the longer array will be discarded.")
   (doc enumerated "creates a new array of `Pair`s where the first position is the index and the second position is the element from the original array `xs`.")
   (defn enumerated [xs]
     (zip &Pair.init-from-refs
-         &(range 0 (length xs) 1) ;; Inefficient, creates a temporary array.
+         &(range 0 (length xs) 1) ; Inefficient, creates a temporary array.
          xs))
+
+  (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
+
+If the `index` is out of bounds, return `Maybe.Nothing`")
+  (defn nth [arr index]
+  (if (and (>= index 0) (< index (length arr)))
+    (Maybe.Just @(unsafe-nth a i)) ; the copy will go away with lifetimes
+    (Maybe.Nothing)))
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
   (defn remove [el arr]
