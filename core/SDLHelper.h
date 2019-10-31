@@ -25,7 +25,7 @@ SDL_Event SDL_Event_copy(SDL_Event *e) {
 
 // Keycode
 
-SDL_Keycode SDL_Keycode_copy(SDL_Keycode* a) {
+SDL_Keycode SDL_Keycode_copy(SDL_Keycode *a) {
     return *a;
 }
 
@@ -86,10 +86,10 @@ int SDL_Color_a(SDL_Color *col) {
     return (int)(col->a);
 }
 
-void* SDL_SurfacePixels(SDL_Surface* s) {
-  return s->pixels;
+void *SDL_SurfacePixels(SDL_Surface *s) {
+    return s->pixels;
 }
 
-int SDL_SurfacePitch(SDL_Surface* s) {
-  return s->pitch;
+int SDL_SurfacePitch(SDL_Surface *s) {
+    return s->pitch;
 }

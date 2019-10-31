@@ -1,15 +1,33 @@
 const float CARP_FLT_MAX = FLT_MAX;
 
-float Float__PLUS_(float x, float y) { return x + y; }
-float Float__MINUS_(float x, float y) { return x - y; }
-float Float__MUL_(float x, float y) { return x * y; }
-float Float__DIV_(float x, float y) { return x / y; }
-bool Float__LT_(float x, float y) { return x < y; }
-bool Float__GT_(float x, float y) { return x > y; }
-bool Float__EQ_(float x, float y) { return x == y; }
-float Float_neg(float x) { return -x; }
+float Float__PLUS_(float x, float y) {
+    return x + y;
+}
+float Float__MINUS_(float x, float y) {
+    return x - y;
+}
+float Float__MUL_(float x, float y) {
+    return x * y;
+}
+float Float__DIV_(float x, float y) {
+    return x / y;
+}
+bool Float__LT_(float x, float y) {
+    return x < y;
+}
+bool Float__GT_(float x, float y) {
+    return x > y;
+}
+bool Float__EQ_(float x, float y) {
+    return x == y;
+}
+float Float_neg(float x) {
+    return -x;
+}
 
-float Float_copy(const float *x) { return *x; }
+float Float_copy(const float* x) {
+    return *x;
+}
 
 int Float_to_MINUS_int(float x) {
     return (int)x;
@@ -89,7 +107,7 @@ float Float_log10(float x) {
     return log10f(x);
 }
 
-float Float_modf(float x, float * integer) {
+float Float_modf(float x, float* integer) {
     return modff(x, integer);
 }
 
