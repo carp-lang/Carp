@@ -176,7 +176,7 @@ templateNth :: (String, Binder)
 templateNth =
   let t = VarTy "t"
   in defineTemplate
-  (SymPath ["Array"] "nth")
+  (SymPath ["Array"] "unsafe-nth")
   (FuncTy [RefTy (StructTy "Array" [t]), IntTy] (RefTy t))
   "gets a reference to the `n`th element from an array `a`."
   (toTemplate "$t* $NAME (Array *aRef, int n)")
