@@ -304,9 +304,9 @@ The trailing elements of the longer array will be discarded.")
   (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
 
 If the `index` is out of bounds, return `Maybe.Nothing`")
-  (defn nth [arr index]
-  (if (and (>= index 0) (< index (length arr)))
-    (Maybe.Just @(unsafe-nth a i)) ; the copy will go away with lifetimes
+  (defn nth [xs index]
+  (if (and (>= index 0) (< index (length xs)))
+    (Maybe.Just @(unsafe-nth xs index)) ; the copy will go away with lifetimes
     (Maybe.Nothing)))
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
