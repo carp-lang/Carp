@@ -32,7 +32,7 @@
     (let [ptr (IO.fopen filename mode)]
       (if (null? ptr)
         (do
-          (Result.Error (fmt "File %s could not be opened" filename)))
+          (Result.Error System.errno))
         (Result.Success ptr))))
 
   (doc fclose "closes a file pointer.")
