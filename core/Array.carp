@@ -14,7 +14,7 @@ It will sum the previous sum with each new value, starting at `0`.")
     (let [total x]
       (do
         (for [i 0 (length xs)]
-          (set! total (~f total (nth xs i))))
+          (set! total (~f total (unsafe-nth xs i))))
         total)))
 
   (doc empty? "checks whether the array `a` is empty.")
@@ -25,7 +25,7 @@ It will sum the previous sum with each new value, starting at `0`.")
   (defn any? [f a]
     (let-do [res false]
       (for [i 0 (length a)]
-        (when (~f (nth a i))
+        (when (~f (unsafe-nth a i))
           (do
             (set! res true)
             (break))))
@@ -35,7 +35,7 @@ It will sum the previous sum with each new value, starting at `0`.")
   (defn all? [f a]
     (let-do [res true]
       (for [i 0 (length a)]
-        (when (not (~f (nth a i)))
+        (when (not (~f (unsafe-nth a i)))
           (do
             (set! res false)
             (break))))
@@ -47,9 +47,9 @@ If it doesn’t find an element, `Nothing` will be returned.")
   (defn find [f a]
     (let-do [res (Maybe.Nothing)]
       (for [i 0 (length a)]
-        (when (~f (nth a i))
+        (when (~f (unsafe-nth a i))
           (do
-            (set! res (Maybe.Just @(nth a i)))
+            (set! res (Maybe.Just @(unsafe-nth a i)))
             (break))))
       res))
 
@@ -59,7 +59,7 @@ If it doesn’t find an index, `Nothing` will be returned.")
   (defn find-index [f a]
     (let-do [ret (Maybe.Nothing)]
       (for [i 0 (length a)]
-        (when (~f (nth a i))
+        (when (~f (unsafe-nth a i))
           (do
             (set! ret (Maybe.Just i))
             (break))))
@@ -69,7 +69,7 @@ If it doesn’t find an index, `Nothing` will be returned.")
 
 Generates a runtime error if the array is empty.")
   (defn unsafe-first [a]
-    @(Array.nth a 0))
+    @(Array.unsafe-nth a 0))
 
   (doc first "takes the first element of an array and returns a `Just`.
 
@@ -77,13 +77,13 @@ Returns `Nothing` if the array is empty.")
   (defn first [a]
     (if (empty? a)
       (Maybe.Nothing)
-      (Maybe.Just @(Array.nth a 0))))
+      (Maybe.Just @(Array.unsafe-nth a 0))))
 
   (doc unsafe-last "takes the last element of an array.
 
 Generates a runtime error if the array is empty.")
   (defn unsafe-last [a]
-    @(Array.nth a (Int.dec (Array.length a))))
+    @(Array.unsafe-nth a (Int.dec (Array.length a))))
 
 
   (doc last "takes the last element of an array and returns a `Just`.
@@ -92,7 +92,7 @@ Returns `Nothing` if the array is empty.")
   (defn last [a]
     (if (empty? a)
       (Maybe.Nothing)
-      (Maybe.Just @(Array.nth a (Int.dec (Array.length a))))))
+      (Maybe.Just @(Array.unsafe-nth a (Int.dec (Array.length a))))))
 
   (doc = "compares two arrays.")
   (defn = [a b]
@@ -100,7 +100,7 @@ Returns `Nothing` if the array is empty.")
       false
       (let-do [eq true]
         (for [i 0 (length a)]
-          (when (/= (nth a i) (nth b i))
+          (when (/= (unsafe-nth a i) (unsafe-nth b i))
             (do
               (set! eq false)
               (break))))
@@ -112,10 +112,10 @@ If the array is empty, it returns `Nothing`.")
   (defn maximum [xs]
     (if (empty? xs)
       (Maybe.Nothing)
-      (let-do [result (nth xs 0)
+      (let-do [result (unsafe-nth xs 0)
                n (length xs)]
         (for [i 1 n]
-          (let [x (nth xs i)]
+          (let [x (unsafe-nth xs i)]
             (when (< result x)
               (set! result x))))
         (Maybe.Just @result))))
@@ -126,10 +126,10 @@ If the array is empty, returns `Nothing`")
   (defn minimum [xs]
     (if (empty? xs)
       (Maybe.Nothing)
-      (let-do [result (nth xs 0)
+      (let-do [result (unsafe-nth xs 0)
              n (length xs)]
         (for [i 1 n]
-          (let [x (nth xs i)]
+          (let [x (unsafe-nth xs i)]
             (when (> result x)
               (set! result x))))
         (Maybe.Just @result))))
@@ -142,7 +142,7 @@ If the array is empty, returns `Nothing`")
   (defn subarray [xs start-index end-index]
     (let-do [result []]
       (for [i start-index end-index]
-        (set! result (push-back result @(nth xs i))))
+        (set! result (push-back result @(unsafe-nth xs i))))
       result))
 
   (doc prefix-array "gets a prefix array to `end-index`.")
@@ -158,8 +158,8 @@ If the array is empty, returns `Nothing`")
     (let-do [i 0
              j (Int.dec (length &a))]
       (while (Int.< i j)
-        (let-do [tmp @(nth &a i)]
-          (aset! &a i @(nth &a j))
+        (let-do [tmp @(unsafe-nth &a i)]
+          (aset! &a i @(unsafe-nth &a j))
           (set! i (Int.inc i))
           (aset! &a j tmp)
           (set! j (Int.dec j))))
@@ -171,7 +171,7 @@ If the element is not found, returns `Nothing`")
   (defn index-of [a e]
     (let-do [idx (Maybe.Nothing)]
       (for [i 0 (length a)]
-        (when (= (nth a i) e)
+        (when (= (unsafe-nth a i) e)
           (do
             (set! idx (Maybe.Just i))
             (break))))
@@ -181,36 +181,36 @@ If the element is not found, returns `Nothing`")
   (defn element-count [a e]
     (let-do [c 0]
       (for [i 0 (length a)]
-        (when (= e (nth a i)) (set! c (Int.inc c))))
+        (when (= e (unsafe-nth a i)) (set! c (Int.inc c))))
       c))
 
   (doc predicate-count "counts the number of elements satisfying the predicate function `pred` in an array.")
   (defn predicate-count [a pred]
     (let-do [c 0]
       (for [i 0 (length a)]
-        (when (~pred (nth a i))
+        (when (~pred (unsafe-nth a i))
           (set! c (Int.inc c))))
       c))
 
   (doc aupdate "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f`.")
   (defn aupdate [a i f]
-    (let [new-value (~f (nth &a i))]
+    (let [new-value (~f (unsafe-nth &a i))]
       (aset a i new-value)))
 
   (doc aupdate! "transmutes (i.e. updates) the element at index `i` of an array `a` using the function `f` in place.")
   (defn aupdate! [a i f]
-    (aset! a i (~f (nth a i))))
+    (aset! a i (~f (unsafe-nth a i))))
 
   (doc swap "swaps the indices `i` and `j` of an array `a`.")
   (defn swap [a i j]
-    (let [x @(nth &a i)
-          y @(nth &a j)]
+    (let [x @(unsafe-nth &a i)
+          y @(unsafe-nth &a j)]
       (aset (aset a i y) j x)))
 
   (doc swap! "swaps the indices `i` and `j` of an array `a` in place.")
   (defn swap! [a i j]
-    (let-do [x @(nth a i)
-             y @(nth a j)]
+    (let-do [x @(unsafe-nth a i)
+             y @(unsafe-nth a j)]
       (aset! a i y)
       (aset! a j x)))
 
@@ -254,7 +254,7 @@ This function copies the array. If you don’t want that, use [`endo-map`](#endo
   (defn copy-map [f a]
     (let-do [na (allocate (length a))]
       (for [i 0 (length a)]
-        (aset-uninitialized! &na i (~f (nth a i))))
+        (aset-uninitialized! &na i (~f (unsafe-nth a i))))
       na))
 
   (doc zip "maps over two arrays using a function `f` that takes two arguments. It will produces a new array with the length of the shorter input.
@@ -264,7 +264,7 @@ The trailing elements of the longer array will be discarded.")
     (let-do [l (Int.min (length a) (length b))
              na (allocate l)]
       (for [i 0 l]
-        (aset-uninitialized! &na i (~f (nth a i) (nth b i))))
+        (aset-uninitialized! &na i (~f (unsafe-nth a i) (unsafe-nth b i))))
       na))
 
   (doc sum-length "returns the sum of lengths from a nested array `xs`.")
@@ -272,7 +272,7 @@ The trailing elements of the longer array will be discarded.")
     (let-do [sum 0
              lxs (Array.length xs)]
       (for [i 0 lxs]
-        (set! sum (+ sum (Array.length (Array.nth xs i)))))
+        (set! sum (+ sum (Array.length (Array.unsafe-nth xs i)))))
       sum))
 
   (doc zero "returns the empty array.")
@@ -288,18 +288,26 @@ The trailing elements of the longer array will be discarded.")
              lxs (Array.length xs)
              result (Array.allocate (sum-length xs))]
       (for [i 0 lxs]
-        (let-do [arr (Array.nth xs i)
+        (let-do [arr (Array.unsafe-nth xs i)
                  len (Array.length arr)]
           (for [k 0 len]
-            (aset-uninitialized! &result (+ j k) @(Array.nth arr k)))
+            (aset-uninitialized! &result (+ j k) @(Array.unsafe-nth arr k)))
           (set! j (+ j len))))
       result))
 
   (doc enumerated "creates a new array of `Pair`s where the first position is the index and the second position is the element from the original array `xs`.")
   (defn enumerated [xs]
     (zip &Pair.init-from-refs
-         &(range 0 (length xs) 1) ;; Inefficient, creates a temporary array.
+         &(range 0 (length xs) 1) ; Inefficient, creates a temporary array.
          xs))
+
+  (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
+
+If the `index` is out of bounds, return `Maybe.Nothing`")
+  (defn nth [xs index]
+  (if (and (>= index 0) (< index (length xs)))
+    (Maybe.Just @(unsafe-nth xs index)) ; the copy will go away with lifetimes
+    (Maybe.Nothing)))
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
   (defn remove [el arr]
@@ -312,7 +320,7 @@ The trailing elements of the longer array will be discarded.")
       ;;(assert (<= 0 i))
       ;;(assert (< i (Array.length &arr)))
       (for [j i (Int.dec (Array.length &arr))]
-        (aset! &arr j @(nth &arr (inc j))))
+        (aset! &arr j @(unsafe-nth &arr (inc j))))
       (pop-back arr)))
 
    (doc copy-filter "filters the elements in an array.
@@ -324,7 +332,7 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
   (defn contains? [arr el]
     (let-do [result false]
       (for [i 0 (Array.length arr)]
-        (when (= el (Array.nth arr i))
+        (when (= el (Array.unsafe-nth arr i))
           (do
             (set! result true)
             (break))))

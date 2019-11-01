@@ -89,7 +89,7 @@
     (let-do [sum 0
              lstrings (Array.length strings)]
       (for [i 0 lstrings]
-        (set! sum (+ sum (String.length (Array.nth strings i)))))
+        (set! sum (+ sum (String.length (Array.unsafe-nth strings i)))))
       sum))
 
   (doc concat "Returns a new string which is the concatenation of the provided `strings`.")
@@ -102,7 +102,7 @@
              lstrings (Array.length strings)
              result (String.allocate (sum-length strings) \ )]
       (for [i 0 lstrings]
-        (let-do [str (Array.nth strings i)
+        (let-do [str (Array.unsafe-nth strings i)
                  len (String.length str)]
           (string-set-at! &result j str)
           (set! j (+ j len))))
@@ -117,7 +117,7 @@
              seps-size (* num-seps sep-length)
              result (String.allocate (+ seps-size (sum-length strings)) \ )]
       (for [i 0 lstrings]
-        (let-do [str (Array.nth strings i)
+        (let-do [str (Array.unsafe-nth strings i)
                  len (String.length str)]
           (when (> i 0)
             (do
@@ -135,7 +135,7 @@
              sep-length (max 0 (- lstrings 1))
              result (String.allocate (+ sep-length (sum-length strings)) \ )]
       (for [i 0 lstrings]
-        (let-do [str (Array.nth strings i)
+        (let-do [str (Array.unsafe-nth strings i)
                  len (String.length str)]
           (when (> i 0)
             (do

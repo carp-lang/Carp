@@ -22,9 +22,9 @@
     (defn max-of-three-until! [heap i len ord]
         (let-do [lchild-i (lchild i)
                  rchild-i (rchild i)]
-                 (when (and (< lchild-i len) (~ord (Array.nth heap lchild-i) (Array.nth heap i)))
+                 (when (and (< lchild-i len) (~ord (Array.unsafe-nth heap lchild-i) (Array.unsafe-nth heap i)))
                        (set! i lchild-i))
-                 (when (and (< rchild-i len) (~ord (Array.nth heap rchild-i) (Array.nth heap i)))
+                 (when (and (< rchild-i len) (~ord (Array.unsafe-nth heap rchild-i) (Array.unsafe-nth heap i)))
                        (set! i rchild-i))
                  i))
 
@@ -45,9 +45,9 @@
 
     (defn push-up! [heap i ord]
         (while (/= i 0)
-            (let [elem (Array.nth heap i)
+            (let [elem (Array.unsafe-nth heap i)
                   parent-i (Heap.parent i)
-                  parent-elem (Array.nth heap parent-i)]
+                  parent-elem (Array.unsafe-nth heap parent-i)]
                  (if (not (~ord elem parent-elem))
                      (break)
                      (do (Array.swap! heap i parent-i)

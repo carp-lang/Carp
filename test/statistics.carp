@@ -9,7 +9,7 @@
     (let [res true]
       (do
         (for [i 0 (Array.length a)]
-          (if (not (Double.= @(Array.nth a i) @(Array.nth b i)))
+          (if (not (Double.= @(Array.unsafe-nth a i) @(Array.unsafe-nth b i)))
             (set! res false)
             ()))
         res))))
@@ -20,7 +20,7 @@
     (let [res true]
       (do
         (for [i 0 (Array.length a)]
-          (if (not (Double.approx @(Array.nth a i) @(Array.nth b i)))
+          (if (not (Double.approx @(Array.unsafe-nth a i) @(Array.unsafe-nth b i)))
             (set! res false)
             ()))
         res))))

@@ -97,13 +97,13 @@ If you want to replace all occurrences of the pattern, use `-1`.")
              lidx (Array.length &idx)
              result (Array.allocate (Int.inc lidx))]
       (Array.aset-uninitialized! &result 0
-        (substring s 0 (if (> lidx 0) @(Array.nth &idx 0) (length s))))
+        (substring s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
       (for [i 0 (Int.dec (Array.length &idx))]
         (Array.aset-uninitialized! &result (Int.inc i)
-          (substring s (Int.inc @(Array.nth &idx i)) @(Array.nth &idx (Int.inc i)))))
+          (substring s (Int.inc @(Array.unsafe-nth &idx i)) @(Array.unsafe-nth &idx (Int.inc i)))))
       (when (> lidx 0)
         (Array.aset-uninitialized! &result lidx
-          (suffix-string s (Int.inc @(Array.nth &idx (Int.dec lidx))))))
+          (suffix-string s (Int.inc @(Array.unsafe-nth &idx (Int.dec lidx))))))
       result))
 
   (doc words "splits a string into words.")

@@ -52,9 +52,9 @@ It is the inverse of [`just?`](#just?).")
           (Nothing) false
           (Just y) (= x y))))
 
-  (doc ptr "Creates a `(Ptr a)` from a `(Maybe a)`. If the `Maybe` was
+  (doc unsafe-ptr "Creates a `(Ptr a)` from a `(Maybe a)`. If the `Maybe` was
 `Nothing`, this function will return a `NULL` value.")
-  (defn ptr [a]
+  (defn unsafe-ptr [a]
     (the (Ptr a) (Unsafe.coerce
       (match @a
         (Nothing) NULL
