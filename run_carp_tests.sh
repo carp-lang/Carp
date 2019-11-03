@@ -27,14 +27,26 @@ fi
 # Actual tests (using the test suite)
 for f in ./test/*.carp; do
     echo $f
-   ./carp.sh -x --log-memory $f
+    ./carp.sh -x --log-memory $f
     echo
 done
 
 # Test for correct error messages when doing "carp --check" on the source.
 for f in ./test-for-errors/*.carp; do
     echo $f
-   ./test/check.sh $f
+    ./test/check.sh $f
+    echo
+done
+
+for f in ./test-for-exceptions/*.carp; do
+    echo $f
+    ./test/test-exceptions.sh $f
+    echo
+done
+
+for f in ./test-for-exceptions/*.carp; do
+    echo $f
+    ./test/test-exceptions.sh $f
     echo
 done
 

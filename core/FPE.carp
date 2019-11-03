@@ -1,0 +1,12 @@
+(defmodule FPE
+  (relative-include "fpe.h")
+
+  (register division-by-zero Int "FE_DIVBYZERO")
+  (register inexact Int "FE_INEXACT")
+  (register invalid Int "FE_INVALID")
+  (register overflow Int "FE_OVERFLOW")
+  (register underflow Int "FE_UNDERFLOW")
+  (register denormal-operand Int "FE_DENORMALOPERAND")
+
+  (register enable-exceptions (Fn [Int] ()) "enable_exceptions")
+  )

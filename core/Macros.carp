@@ -636,6 +636,9 @@
 (defmacro or* [:rest forms]
   (build-vararg 'or forms))
 
+(defmacro sum* [:rest forms]
+  (build-vararg '+ forms))
+
 (defndynamic build-str* [forms]
   (if (= (length forms) 0)
     (list "")

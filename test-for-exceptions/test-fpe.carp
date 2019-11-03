@@ -1,0 +1,9 @@
+(load "FPE.carp")
+(defn main []
+  (do
+    (FPE.enable-exceptions (sum*
+                            FPE.division-by-zero
+                            FPE.invalid
+                            FPE.overflow
+                            ))
+    (if (< (/ 1.0 (- (from-int (System.get-args-len)) 1.0)) 0.0) 1 0)))
