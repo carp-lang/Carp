@@ -76,7 +76,8 @@ and other static analysis. The first three of them are also available in dynamic
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
 (while <expression> <body>) ;; Loop until expression is false
-(match <expression> <case1> <expression1> <case2> <expression2> ...) ;; Pattern matches <expression> against a set of sumtype constructors
+(with <module> <expr1> <expr2> ...) ;; Locally scoped `use` statement where all expressions after it will look up symbols in the <module>
+(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches <expression> against a set of sumtype constructors
 (ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
