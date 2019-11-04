@@ -219,21 +219,26 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
 ```
 
-### Enums / Algebraic types
+### Sumtypes
 ```clojure
 (deftype (Either a b)
-  (Left a)
-  (Right b))
+  (Left [a])
+  (Right [b]))
 
 ;; A Variant can be created with the same syntax as call expression
+(Either.Left 10)
+(Either.Right 11)
+
+;; Or use `use` statement
+(use Either)
 (Left 10)
 (Right 11)
 
 ;; You can use pattern matching to extract values in a safe way
 (defn get [either]
   (match either
-    (Left a) a
-    (Right b) b))
+    (Either.Left a) a
+    (Either.Right b) b))
 ```
 
 ### C Interop
