@@ -27,6 +27,9 @@ For Flycheck:
 
 To start an interactive session, make sure `carp` is in your path (inside Emacs) and execute `M-x run-carp`.
 
+# Atom
+[language-carp](https://atom.io/packages/language-carp) offers both TextMate and Tree-sitter, where tree-siiter grammar is more powerful
+
 ## Other editors
 Clojure syntax highlighting works very well with Carp since it uses the same symbols for most things.
 If you have written an editor mode, please tell us and it will be added here!
