@@ -220,12 +220,26 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 ```
 
 ### Sumtypes
+There are two ways to define `sumtypes`:
+
+**Enumeration:**
+```clojure
+(deftype MyEnum
+  Kind1
+  Kind2
+  Kind3)
+```
+
+**Data:**
 ```clojure
 (deftype (Either a b)
   (Left [a])
   (Right [b]))
+```
 
-;; A Variant can be created with the same syntax as call expression
+A Variant can be created with the same syntax as call expression
+```clojure
+(MyEnum.Kind1)
 (Either.Left 10)
 (Either.Right 11)
 
@@ -234,11 +248,24 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 (Left 10)
 (Right 11)
 
-;; You can use pattern matching to extract values in a safe way
+(use MyEnum)
+(Kind1)
+(Kind2)
+(Kind3)
+```
+
+You can use pattern matching to extract values in a safe way
+```clojure
 (defn get [either]
   (match either
     (Either.Left a) a
     (Either.Right b) b))
+
+(with MyEnum
+  ;; You can give a generic "otherwise" statement as well
+  (match myenum
+    (Kind1) (logic1)
+    _ (logic-other)))
 ```
 
 ### C Interop
