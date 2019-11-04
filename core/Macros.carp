@@ -342,3 +342,12 @@ The expression must be evaluable at compile time.")
 (doc gensym "generates symbols dynamically as needed.")
 (defndynamic gensym []
   (gensym-with 'gensym-generated))
+
+(defndynamic make-enum-constructors [constructors]
+  (if (= (length constructors) 0)
+    ()
+    (cons (list (car constructors) [])
+          (make-enum-constructors (cdr constructors)))))
+
+(defmacro enum [name :rest constructors]
+  (cons 'deftype (cons name (make-enum-constructors constructors))))
