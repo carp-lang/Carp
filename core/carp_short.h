@@ -4,6 +4,6 @@ typedef short Short;
 #undef T
 
 String Short_str(Short x) {
-  String Int_str(int);
-  return Int_str(x);
+    String Int_str(int);
+    return Int_str(x);
 }

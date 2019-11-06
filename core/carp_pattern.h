@@ -87,9 +87,7 @@ String Pattern_internal_classend(PatternMatchState *ms, String p) {
             } while (*p != ']');
             return p + 1;
         }
-        default: {
-            return p;
-        }
+        default: { return p; }
     }
 }
 
