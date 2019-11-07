@@ -25,7 +25,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 10.0    ;; Double
 true    ;; Bool
 "hello" ;; &String
-\#"hello" ;; &Pattern
+#"hello" ;; &Pattern
 \e      ;; Char
 [1 2 3] ;; (Array Int)
 {1 1.0 2 2.0} ;; (Map Int Double)
@@ -61,6 +61,7 @@ foo ; symbol
 (definterface interface-name (Fn [<t1> <t2>] <return>)) ;; Define a generic function that can have multiple implementations
 (def variable-name value) ;; Define a global variable (only handles primitive constants for the moment)
 (defmacro <name> [<arg1> <arg2> ...] <macro-body>) ;; Define a macro, its argument will not be evaluated when called
+(defdynamic <name> <value>) ;; A variable that can only be used at the REPL or during compilation
 (defndynamic <name> [<arg1> <arg2> ...] <function-body>) ;; A function that can only be used at the REPL or during compilation
 (defmodule <name> <definition1> <definition2> ...) ;; The main way to organize your program into smaller parts
 ```
@@ -75,6 +76,9 @@ and other static analysis. The first three of them are also available in dynamic
 (do <expr1> <expr2> ... <return-expression>) ;; Perform side-effecting functions, then return a value
 (if <expression> <true-branch> <false-branch>) ;; Branching
 (while <expression> <body>) ;; Loop until expression is false
+(use <module>) ;; Brings all symbols inside <module> into the scope
+(with <module> <expr1> <expr2> ...) ;; Locally scoped `use` statement where all expressions after it will look up symbols in the <module>
+(match <expression> <case1> <expr1> <case2> <expr2> ...) ;; Pattern matches <expression> against a set of sumtype constructors
 (ref <expression>) ;; Borrow an owned value
 (address <expression>) ;; Takes the memory address of a value, returns a C-style pointer
 (set! <variable> <expression>) ;; Mutate a variable
@@ -172,17 +176,17 @@ When you `use` a module, its declarations are brought into the current scope. If
 ```clojure
 (use String)
 
-;; Only the `String` module is used in the global scope, 
+;; Only the `String` module is used in the global scope,
 ;; so we can refer to `length` without a module qualifier.
 (defn f [x]
   (length x))
 
 (defmodule Foo
   (use Array)
-  ;; Since the the `String` module is used in the global scope, 
-  ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length` 
+  ;; Since the the `String` module is used in the global scope,
+  ;; and the Foo module `use`s `Array`, we again need to qualify calls to `length`
   ;; to disambiguite which declaration we're referring to.
-  (defn g [xs] 
+  (defn g [xs]
     (Array.length xs)))
 ```
 
@@ -190,15 +194,15 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 
 ```clojure
 (defmodule Foo
-  ;; we need to use a module qualifier here, 
+  ;; we need to use a module qualifier here,
   ;; since there's no call to `use` in the `Foo` module scope.
-  (defn f [x] 
+  (defn f [x]
     (String.length x))
-    
-    ;; Using the `with` form, we can reference the module's declarations 
+
+    ;; Using the `with` form, we can reference the module's declarations
     ;; unqualified in all the forms contained in the `with`'s scope.
     (with String
-      (defn g [x] 
+      (defn g [x]
         (length x)))
 )
 ```
@@ -215,6 +219,55 @@ Sometimes, it's more convenient to bring a module's declarations into scope only
 (Vector2.set-x my-pos 30) ;; => (Vector2 30 20)
 (Vector2.set-x! &my-pos 30) ;; => Will update the vector my-pos in place and return ()
 (Vector2.update-x my-pos inc) ;; => (Vector2 11 20)
+```
+
+### Sumtypes
+There are two ways to define `sumtypes`:
+
+**Enumeration:**
+```clojure
+(deftype MyEnum
+  Kind1
+  Kind2
+  Kind3)
+```
+
+**Data:**
+```clojure
+(deftype (Either a b)
+  (Left [a])
+  (Right [b]))
+```
+
+A Variant can be created with the same syntax as call expression
+```clojure
+(MyEnum.Kind1)
+(Either.Left 10)
+(Either.Right 11)
+
+;; Or use `use` statement
+(use Either)
+(Left 10)
+(Right 11)
+
+(use MyEnum)
+(Kind1)
+(Kind2)
+(Kind3)
+```
+
+You can use pattern matching to extract values in a safe way
+```clojure
+(defn get [either]
+  (match either
+    (Either.Left a) a
+    (Either.Right b) b))
+
+(with MyEnum
+  ;; You can give a generic "otherwise" statement as well
+  (match myenum
+    (Kind1) (logic1)
+    _ (logic-other)))
 ```
 
 ### C Interop
