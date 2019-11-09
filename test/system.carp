@@ -1,0 +1,19 @@
+(load "Test.carp")
+
+(use-all Test IO Result)
+
+(defn open-existing-file? [filename]
+  (let [f (open-file filename "r")]
+    (match f
+           (Error _) false
+           (Success x) (do
+                         (fclose x)
+                         true))))
+
+(deftest test
+  (assert-true test
+               (error? &(open-file "asfasdfafs.txt" "r"))
+               "An error is given when the file doesn't exist")
+  (assert-true test
+               (open-existing-file? "test/system.carp")
+               "files that exist are opened properly"))
