@@ -296,6 +296,6 @@
                 "remove-nth works")
   (assert-equal test
                 &[1.0 1.5 2.0 2.5]
-                &(map-> 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
-                "map-> works")
+                &(unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
+                "unreduce works")
 )

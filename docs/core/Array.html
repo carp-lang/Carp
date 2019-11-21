@@ -669,33 +669,6 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#map-&gt;">
-                    <h3 id="map-&gt;">
-                        map-&gt;
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [a, (Ref (λ [a] Bool)), (Ref (λ [a] a))] (Array a))
-                </p>
-                <pre class="args">
-                    (map-&gt; start test step)
-                </pre>
-                <p class="doc">
-                    <p>creates an array by producing values using <code>step</code> until they no
-longer satisfy <code>test</code>. The initial value is <code>start</code>.</p>
-<p>Example:</p>
-<pre><code>; if we didn’t have Array.range, we could define it like this:
-(defn range [start end step]
-  (map-&gt; start &amp;(fn [x] (&lt; x (+ step end))) &amp;(fn [x] (+ x step)))
-)
-</code></pre>
-
-                </p>
-            </div>
-            <div class="binder">
                 <a class="anchor" href="#maximum">
                     <h3 id="maximum">
                         maximum
@@ -1340,6 +1313,33 @@ longer satisfy <code>test</code>. The initial value is <code>start</code>.</p>
                 </pre>
                 <p class="doc">
                     <p>swaps the indices <code>i</code> and <code>j</code> of an array <code>a</code> in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unreduce">
+                    <h3 id="unreduce">
+                        unreduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [a, (Ref (λ [a] Bool)), (Ref (λ [a] a))] (Array a))
+                </p>
+                <pre class="args">
+                    (unreduce start test step)
+                </pre>
+                <p class="doc">
+                    <p>creates an array by producing values using <code>step</code> until they
+no longer satisfy <code>test</code>. The initial value is <code>start</code>.</p>
+<p>Example:</p>
+<pre><code>; if we didn’t have Array.range, we could define it like this:
+(defn range [start end step]
+  (unreduce start &amp;(fn [x] (&lt; x (+ step end))) &amp;(fn [x] (+ x step)))
+)
+</code></pre>
 
                 </p>
             </div>

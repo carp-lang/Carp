@@ -257,17 +257,17 @@ This function copies the array. If you don’t want that, use [`endo-map`](#endo
         (aset-uninitialized! &na i (~f (unsafe-nth a i))))
       na))
 
-  (doc map-> "creates an array by producing values using `step` until they no
-longer satisfy `test`. The initial value is `start`.
+  (doc unreduce "creates an array by producing values using `step` until they
+no longer satisfy `test`. The initial value is `start`.
 
 Example:
 ```
 ; if we didn’t have Array.range, we could define it like this:
 (defn range [start end step]
-  (map-> start &(fn [x] (< x (+ step end))) &(fn [x] (+ x step)))
+  (unreduce start &(fn [x] (< x (+ step end))) &(fn [x] (+ x step)))
 )
 ```")
-  (defn map-> [start test step]
+  (defn unreduce [start test step]
     (let-do [elem start
              acc []]
       (while-do (~test elem)
