@@ -342,3 +342,8 @@ The expression must be evaluable at compile time.")
 (doc gensym "generates symbols dynamically as needed.")
 (defndynamic gensym []
   (gensym-with 'gensym-generated))
+
+(doc until "executes `body` until the condition `cnd` is true.")
+(defmacro until [cnd body]
+  (list 'while (list 'not cnd)
+    body))
