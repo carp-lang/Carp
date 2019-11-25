@@ -1,0 +1,38 @@
+(load "Test.carp")
+
+(use-all Test Pointer)
+
+; we go to the middle of a chunk of 10 safe elements
+(def x (add (Array.raw (the (Array Int) (Array.allocate 10))) 5l))
+(def xa (to-long x))
+(def w (width x))
+
+; these tests are sadly a little unsafe
+(deftest test
+  (assert-equal test
+                1l
+                ; we assume that the width of a char is 1
+                (width (Array.raw (the (Array Char) [])))
+                "Pointer.width works as expected"
+  )
+  (assert-equal test
+                (+ xa (* 3l w))
+                (to-long (add x 3l))
+                "Pointer.add works as expected"
+  )
+  (assert-equal test
+                (- xa (* 3l w))
+                (to-long (sub x 3l))
+                "Pointer.sub works as expected"
+  )
+  (assert-equal test
+                (+ xa w)
+                (to-long (inc x))
+                "Pointer.inc works as expected"
+  )
+  (assert-equal test
+                (- xa w)
+                (to-long (dec x))
+                "Pointer.dec works as expected"
+  )
+)
