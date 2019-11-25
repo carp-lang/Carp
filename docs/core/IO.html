@@ -394,7 +394,7 @@
                     
                 </span>
                 <p class="doc">
-                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.</p>
+                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.</p>
 
                 </p>
             </div>
@@ -519,6 +519,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#open-file">
+                    <h3 id="open-file">
+                        open-file
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [&amp;String, &amp;String] (Result (Ptr FILE) Int))
+                </p>
+                <pre class="args">
+                    (open-file filename mode)
+                </pre>
+                <p class="doc">
+                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a Result type that contains an error string or a file pointer.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#print">
                     <h3 id="print">
                         print
@@ -568,7 +588,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Result String String))
+                    (λ [&amp;String] (Result String Int))
                 </p>
                 <pre class="args">
                     (read-&gt;EOF filename)
