@@ -35,6 +35,7 @@
 (load "System.carp")
 (load "Pattern.carp")
 (load "Debug.carp")
+(load "Pointer.carp")
 (load "Format.carp")
 (load "Random.carp")
 (load "Map.carp")
