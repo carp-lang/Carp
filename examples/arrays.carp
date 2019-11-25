@@ -7,8 +7,8 @@
         c (Array.aset b 1 (fn [] @"World"))
     ]
     (do
-        (println* (@(Array.nth &c 0)))
-        (println* (@(Array.nth &c 1))))))
+        (println* (@(Array.unsafe-nth &c 0)))
+        (println* (@(Array.unsafe-nth &c 1))))))
 
 (defn ex2 []
     (let [a (Array.allocate 2)
@@ -16,8 +16,8 @@
         c (Array.aset b 1 (fn [s] (String.append s "World")))
     ]
     (do
-        (println* (@(Array.nth &c 0) " World"))
-        (println* (@(Array.nth &c 1) "Hello ")))))
+        (println* (@(Array.unsafe-nth &c 0) " World"))
+        (println* (@(Array.unsafe-nth &c 1) "Hello ")))))
 
 (defn main []
     (do

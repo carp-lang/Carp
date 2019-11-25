@@ -219,8 +219,8 @@
     (let [total (Array.allocate (Array.length a))]
       (do
         (for [i 0 (Array.length a)]
-          (Array.aset-uninitialized! &total i (f @(Array.nth a i)
-                                                 @(Array.nth b i))))
+          (Array.aset-uninitialized! &total i (f @(Array.unsafe-nth a i)
+                                                 @(Array.unsafe-nth b i))))
         (init (Array.length a) total))))
 
   (defn zip [f a b]

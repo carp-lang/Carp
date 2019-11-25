@@ -348,7 +348,7 @@
 
 (defn lambda-3 []
   (let-do [stuff [100 200 300]
-        f (fn [n] (copy (nth &stuff n)))]
+        f (fn [n] (copy (unsafe-nth &stuff n)))]
     (assert (= 100 (f 0)))
     (assert (= 200 (f 1)))
     (assert (= 300 (f 2)))))

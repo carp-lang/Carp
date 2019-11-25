@@ -737,10 +737,12 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
 toDeclaration _ = error "Missing case."
 
 paramListToC :: [XObj] -> String
-paramListToC xobjs = intercalate ", " (map getParam xobjs)
+paramListToC xobjs = intercalate ", " (map getParam (filter notUnit xobjs))
   where getParam :: XObj -> String
         getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToCLambdaFix t ++ " " ++ mangle name
         getParam invalid = error (show (InvalidParameter invalid))
+        notUnit (XObj _ _ (Just UnitTy)) = False
+        notUnit _ = True
 
 projectIncludesToC :: Project -> String
 projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"

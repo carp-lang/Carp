@@ -406,27 +406,6 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#ptr">
-                    <h3 id="ptr">
-                        ptr
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Maybe a) b)] (Ptr a))
-                </p>
-                <pre class="args">
-                    (ptr a)
-                </pre>
-                <p class="doc">
-                    <p>Creates a <code>(Ptr a)</code> from a <code>(Maybe a)</code>. If the <code>Maybe</code> was
-<code>Nothing</code>, this function will return a <code>NULL</code> value.</p>
-
-                </p>
-            </div>
-            <div class="binder">
                 <a class="anchor" href="#str">
                     <h3 id="str">
                         str
@@ -484,6 +463,27 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                 </pre>
                 <p class="doc">
                     <p>is an unsafe unwrapper that will get the value from a <code>Just</code>. If <code>a</code> is <code>Nothing</code>, a runtime error will be generated.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-ptr">
+                    <h3 id="unsafe-ptr">
+                        unsafe-ptr
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Maybe a) b)] (Ptr a))
+                </p>
+                <pre class="args">
+                    (unsafe-ptr a)
+                </pre>
+                <p class="doc">
+                    <p>Creates a <code>(Ptr a)</code> from a <code>(Maybe a)</code>. If the <code>Maybe</code> was
+<code>Nothing</code>, this function will return a <code>NULL</code> value.</p>
 
                 </p>
             </div>

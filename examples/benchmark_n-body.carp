@@ -52,7 +52,7 @@
 (defn reduce-pz [t b] (+ @t (* (Planet.vz b) (Planet.mass b))))
 
 (defn offset_momentum [bodies]
-  (let [b (nth bodies 0)
+  (let [b (unsafe-nth bodies 0)
         px (reduce reduce-px 0.0 bodies)
         py (reduce reduce-py 0.0 bodies)
         pz (reduce reduce-pz 0.0 bodies)]
@@ -66,14 +66,14 @@
 (defn energy [bodies]
   (let-do [e 0.0]
     (for [i 0 (length bodies)]
-      (let-do [b (nth bodies i)]
+      (let-do [b (unsafe-nth bodies i)]
           (set! e (+ e (* 0.5 (* (Planet.mass b)
                                   (+ (ipow (Planet.vx b) 2)
                                      (+ (ipow (Planet.vy b) 2)
                                         (ipow (Planet.vz b) 2)))))))
 
           (for [j (+ i 1) (length bodies)]
-            (let [b2 (nth bodies j)
+            (let [b2 (unsafe-nth bodies j)
                   dx (- (Planet.x b) (Planet.x b2))
                   dy (- (Planet.y b) (Planet.y b2))
                   dz (- (Planet.z b) (Planet.z b2))
@@ -83,7 +83,7 @@
 
 
 (defn update-planet [i bodies dt]
-  (let [b (nth bodies i)]
+  (let [b (unsafe-nth bodies i)]
     (do
       (Planet.set-x! b (+ (Planet.x b) (* dt (Planet.vx b))))
       (Planet.set-y! b (+ (Planet.y b) (* dt (Planet.vy b))))
@@ -92,9 +92,9 @@
 (defn advance [bodies dt]
   (do
     (for [i 0 (length bodies)]
-      (let [b (nth bodies i)]
+      (let [b (unsafe-nth bodies i)]
         (for [j (+ i 1) (length bodies)]
-          (let [b2 (nth bodies j)
+          (let [b2 (unsafe-nth bodies j)
                 dx (- (Planet.x b) (Planet.x b2))
                 dy (- (Planet.y b) (Planet.y b2))
                 dz (- (Planet.z b) (Planet.z b2))

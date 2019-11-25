@@ -31,7 +31,7 @@
 (defn draw-snake [rend snake]
   (let [body-length (length (body snake))]
     (for [i 0 body-length]
-      (let [part (nth (body snake) i)
+      (let [part (unsafe-nth (body snake) i)
             x (* grid-size (to-int @(Vector2.x part)))
             y (* grid-size (to-int @(Vector2.y part)))]
         (if (= i 0)
@@ -92,7 +92,7 @@
      (let [i (- (length body) 2)]
        (while (> i -1)
          (do
-           (aset! body (inc i) @(nth body i))
+           (aset! body (inc i) @(unsafe-nth body i))
            (set! i (dec i)))))
     @body))
 
@@ -141,7 +141,7 @@
 (defn tick [world]
   (let [s (Snake.set-dir @(World.snake world) input-dir)
         b (Snake.body &s)
-        new-head (move @(nth b 0) @(dir &s))
+        new-head (move @(unsafe-nth b 0) @(dir &s))
         new-body (aset (shift-body b) 0 new-head)
         new-snake (Snake.set-body s new-body)
         world-after-snake-move (World.set-snake @world new-snake)

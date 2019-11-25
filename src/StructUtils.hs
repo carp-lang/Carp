@@ -23,9 +23,8 @@ memberPrn typeEnv env (memberName, memberTy) =
                   ]
         Nothing ->
           if isExternalType typeEnv memberTy
-          then unlines [ "  tempsize = snprintf(NULL, 0, \"%p\", p->" ++ memberName ++ ");"
-                       , "  temp = malloc(tempsize);"
-                       , "  snprintf(temp, tempsize, \"%p\", p->" ++ memberName ++ ");"
+          then unlines [ "  temp = malloc(11);"
+                       , "  snprintf(temp, 11, \"<external>\");"
                        , "  snprintf(bufferPtr, size, \"%s \", temp);"
                        , "  bufferPtr += strlen(temp) + 1;"
                        , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
@@ -44,7 +43,7 @@ memberPrnSize typeEnv env (memberName, memberTy) =
                  ]
        Nothing ->
          if isExternalType typeEnv memberTy
-         then unlines ["  size +=  snprintf(NULL, 0, \"%p \", p->" ++ memberName ++ ");"
+         then unlines ["  size +=  11;"
                       ,"  if(temp) { CARP_FREE(temp); temp = NULL; }"
                       ]
          else "  // Failed to find str function for " ++ memberName ++ " : " ++ show memberTy ++ "\n"

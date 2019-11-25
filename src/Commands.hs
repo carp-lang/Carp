@@ -724,6 +724,12 @@ commandSymFrom [XObj (Bol b) i t] = return $ Right $ XObj (sFrom_ (show b)) i t
 commandSymFrom [x] =
   return $ Left (EvalError ("Can’t call `from` with " ++ pretty x) (info x))
 
+commandSymStr :: CommandCallback
+commandSymStr [XObj (Sym s _) i _] =
+  return $ Right $ XObj (Str (show s)) i (Just StringTy)
+commandSymStr [x] =
+  return $ Left (EvalError ("Can’t call `str` with " ++ pretty x) (info x))
+
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
 
 simpleFromNum (Num IntTy num) = show (round num :: Int)

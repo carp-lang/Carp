@@ -147,6 +147,11 @@ eval env xobj =
                    _ -> return (makeEvalError ctx Nothing ("`if` condition contains non-boolean value: " ++ pretty okCondition) (info okCondition))
                Left err -> return (Left err)
 
+        [XObj (Fn _ _) _ _, args@(XObj (Arr a) _ _), _] ->
+            if all isUnqualifiedSym a
+            then return (Right listXObj)
+            else return (makeEvalError ctx Nothing ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
+
         [defnExpr@(XObj (Defn _) _ _), name, args@(XObj (Arr a) _ _), body] ->
             case obj name of
               (Sym (SymPath [] _) _) ->

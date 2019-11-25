@@ -151,7 +151,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref (Array a) b)] Bool)
+                    (λ [(Ref (Array a) StaticLifetime), (Ref (Array a) StaticLifetime)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -171,7 +171,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c)] Bool) d), (Ref (Array b) c)] Bool)
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime)] Bool) c), (Ref (Array b) StaticLifetime)] Bool)
                 </p>
                 <pre class="args">
                     (all? f a)
@@ -211,7 +211,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c)] Bool) d), (Ref (Array b) c)] Bool)
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime)] Bool) c), (Ref (Array b) StaticLifetime)] Bool)
                 </p>
                 <pre class="args">
                     (any? f a)
@@ -291,7 +291,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Array a), Int, (Ref ((λ b) [(Ref a c)] a) d)] (Array a))
+                    (λ [(Array a), Int, (Ref ((λ b) [(Ref a StaticLifetime)] a) c)] (Array a))
                 </p>
                 <pre class="args">
                     (aupdate a i f)
@@ -311,7 +311,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int, (Ref ((λ c) [(Ref a b)] a) d)] ())
+                    (λ [(Ref (Array a) StaticLifetime), Int, (Ref ((λ b) [(Ref a StaticLifetime)] a) c)] ())
                 </p>
                 <pre class="args">
                     (aupdate! a i f)
@@ -331,7 +331,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Array a)) b)] (Array a))
+                    (λ [(Ref (Array (Array a)) StaticLifetime)] (Array a))
                 </p>
                 <pre class="args">
                     (concat xs)
@@ -351,7 +351,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref a b)] Bool)
+                    (λ [(Ref (Array a) StaticLifetime), (Ref a StaticLifetime)] Bool)
                 </p>
                 <pre class="args">
                     (contains? arr el)
@@ -412,7 +412,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c)] d) e), (Ref (Array b) c)] (Array d))
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime)] c) d), (Ref (Array b) StaticLifetime)] (Array c))
                 </p>
                 <pre class="args">
                     (copy-map f a)
@@ -453,7 +453,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref a b)] Int)
+                    (λ [(Ref (Array a) StaticLifetime), (Ref a StaticLifetime)] Int)
                 </p>
                 <pre class="args">
                     (element-count a e)
@@ -533,7 +533,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] (Array (Pair Int a)))
+                    (λ [(Ref (Array a) StaticLifetime)] (Array (Pair Int a)))
                 </p>
                 <pre class="args">
                     (enumerated xs)
@@ -553,7 +553,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c)] Bool) d), (Ref (Array b) c)] (Maybe b))
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime)] Bool) c), (Ref (Array b) StaticLifetime)] (Maybe b))
                 </p>
                 <pre class="args">
                     (find f a)
@@ -574,7 +574,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c)] Bool) d), (Ref (Array b) c)] (Maybe Int))
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime)] Bool) c), (Ref (Array b) StaticLifetime)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (find-index f a)
@@ -595,7 +595,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] (Maybe a))
+                    (λ [(Ref (Array a) StaticLifetime)] (Maybe a))
                 </p>
                 <pre class="args">
                     (first a)
@@ -616,7 +616,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref a b)] (Maybe Int))
+                    (λ [(Ref (Array a) StaticLifetime), (Ref a StaticLifetime)] (Maybe Int))
                 </p>
                 <pre class="args">
                     (index-of a e)
@@ -637,7 +637,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] (Maybe a))
+                    (λ [(Ref (Array a) StaticLifetime)] (Maybe a))
                 </p>
                 <pre class="args">
                     (last a)
@@ -678,7 +678,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] (Maybe a))
+                    (λ [(Ref (Array a) StaticLifetime)] (Maybe a))
                 </p>
                 <pre class="args">
                     (maximum xs)
@@ -699,7 +699,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] (Maybe a))
+                    (λ [(Ref (Array a) StaticLifetime)] (Maybe a))
                 </p>
                 <pre class="args">
                     (minimum xs)
@@ -717,16 +717,17 @@
                     </h3>
                 </a>
                 <div class="description">
-                    template
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int] (Ref a b))
+                    (λ [(Ref (Array a) StaticLifetime), Int] (Maybe a))
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (nth xs index)
+                </pre>
                 <p class="doc">
-                    <p>gets a reference to the <code>n</code>th element from an array <code>a</code>.</p>
+                    <p>gets a reference to the <code>n</code>th element from an array <code>arr</code> wrapped on a <code>Maybe</code>.</p>
+<p>If the <code>index</code> is out of bounds, return <code>Maybe.Nothing</code></p>
 
                 </p>
             </div>
@@ -780,7 +781,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref ((λ c) [(Ref a b)] Bool) d)] Int)
+                    (λ [(Ref (Array a) StaticLifetime), (Ref ((λ b) [(Ref a StaticLifetime)] Bool) c)] Int)
                 </p>
                 <pre class="args">
                     (predicate-count a pred)
@@ -800,7 +801,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int] (Array a))
+                    (λ [(Ref (Array a) StaticLifetime), Int] (Array a))
                 </p>
                 <pre class="args">
                     (prefix-array xs end-index)
@@ -919,7 +920,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [b, (Ref c d)] b) e), b, (Ref (Array c) d)] b)
+                    (λ [(Ref ((λ a) [b, (Ref c StaticLifetime)] b) d), b, (Ref (Array c) StaticLifetime)] b)
                 </p>
                 <pre class="args">
                     (reduce f x xs)
@@ -1085,7 +1086,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] ())
+                    (λ [(Ref (Array a) StaticLifetime)] ())
                 </p>
                 <pre class="args">
                     (sort! arr)
@@ -1105,7 +1106,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Array a), (Ref ((λ b) [(Ref a c), (Ref a c)] Bool) d)] (Array a))
+                    (λ [(Array a), (Ref ((λ b) [(Ref a StaticLifetime), (Ref a StaticLifetime)] Bool) c)] (Array a))
                 </p>
                 <pre class="args">
                     (sort-by arr f)
@@ -1125,7 +1126,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref ((λ c) [(Ref a b), (Ref a b)] Bool) d)] ())
+                    (λ [(Ref (Array a) StaticLifetime), (Ref ((λ b) [(Ref a StaticLifetime), (Ref a StaticLifetime)] Bool) c)] ())
                 </p>
                 <pre class="args">
                     (sort-by! arr f)
@@ -1165,7 +1166,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), (Ref ((λ c) [(Ref a d), (Ref a d)] Bool) e)] (Array a))
+                    (λ [(Ref (Array a) b), (Ref ((λ c) [(Ref a StaticLifetime), (Ref a StaticLifetime)] Bool) d)] (Array a))
                 </p>
                 <pre class="args">
                     (sorted-by arr f)
@@ -1205,7 +1206,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int, Int] (Array a))
+                    (λ [(Ref (Array a) StaticLifetime), Int, Int] (Array a))
                 </p>
                 <pre class="args">
                     (subarray xs start-index end-index)
@@ -1225,7 +1226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int] (Array a))
+                    (λ [(Ref (Array a) StaticLifetime), Int] (Array a))
                 </p>
                 <pre class="args">
                     (suffix-array xs start-index)
@@ -1245,7 +1246,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] a)
+                    (λ [(Ref (Array a) StaticLifetime)] a)
                 </p>
                 <pre class="args">
                     (sum xs)
@@ -1265,7 +1266,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Array a)) b)] Int)
+                    (λ [(Ref (Array (Array a)) StaticLifetime)] Int)
                 </p>
                 <pre class="args">
                     (sum-length xs)
@@ -1305,7 +1306,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int, Int] ())
+                    (λ [(Ref (Array a) StaticLifetime), Int, Int] ())
                 </p>
                 <pre class="args">
                     (swap! a i j)
@@ -1325,7 +1326,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] a)
+                    (λ [(Ref (Array a) StaticLifetime)] a)
                 </p>
                 <pre class="args">
                     (unsafe-first a)
@@ -1346,7 +1347,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b)] a)
+                    (λ [(Ref (Array a) StaticLifetime)] a)
                 </p>
                 <pre class="args">
                     (unsafe-last a)
@@ -1354,6 +1355,26 @@
                 <p class="doc">
                     <p>takes the last element of an array.</p>
 <p>Generates a runtime error if the array is empty.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-nth">
+                    <h3 id="unsafe-nth">
+                        unsafe-nth
+                    </h3>
+                </a>
+                <div class="description">
+                    template
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a) StaticLifetime), Int] (Ref a StaticLifetime))
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>gets a reference to the <code>n</code>th element from an array <code>a</code>.</p>
 
                 </p>
             </div>
@@ -1387,7 +1408,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b c), (Ref d e)] f) g), (Ref (Array b) c), (Ref (Array d) e)] (Array f))
+                    (λ [(Ref ((λ a) [(Ref b StaticLifetime), (Ref c StaticLifetime)] d) e), (Ref (Array b) StaticLifetime), (Ref (Array c) StaticLifetime)] (Array d))
                 </p>
                 <pre class="args">
                     (zip f a b)

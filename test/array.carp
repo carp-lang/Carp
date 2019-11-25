@@ -116,13 +116,21 @@
                 &(suffix-array &(range 1 10 1) 7)
                 "suffix-array works as expected")
   (assert-equal test
-                5
-                @(nth &a 5)
+                &(Maybe.Nothing)
+                &(nth &a 100)
                 "nth works as expected")
   (assert-equal test
-                &[1 2 3]
-                (nth &(nested) 0)
+                &(Maybe.Just 0)
+                &(nth &a 0)
                 "nth works as expected")
+  (assert-equal test
+                5
+                @(unsafe-nth &a 5)
+                "unsafe-nth works as expected")
+  (assert-equal test
+                &[1 2 3]
+                (unsafe-nth &(nested) 0)
+                "unsafe-nth works as expected")
   (assert-equal test
                 &[10 11 12 13 14 15]
                 &(range 10 15 1)

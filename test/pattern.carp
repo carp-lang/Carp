@@ -70,7 +70,7 @@
                 "matches? works as exptected on tabs special case")
   (assert-equal test
                 &[@"3" @"4"]
-                (Array.nth &(global-match #"(\d)-(\d)" "1-2 2-3 3-4 4-5") 2)
+                (Array.unsafe-nth &(global-match #"(\d)-(\d)" "1-2 2-3 3-4 4-5") 2)
                 "global-match works as expected")
   (assert-equal test
                 "1-2"

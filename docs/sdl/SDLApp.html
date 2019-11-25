@@ -226,7 +226,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref SDLApp a), ((λ b) [(Ref SDLApp a), c, (Ref SDL_Event d)] c), ((λ e) [c] c), ((λ e) [(Ref SDLApp a), (Ptr SDL_Renderer), (Ref c f)] ()), c] ())
+                    (λ [(Ref SDLApp a), ((λ b) [(Ref SDLApp a), c, (Ref SDL_Event StaticLifetime)] c), ((λ d) [c] c), ((λ d) [(Ref SDLApp a), (Ptr SDL_Renderer), (Ref c e)] ()), c] ())
                 </p>
                 <pre class="args">
                     (run-with-callbacks app event-fn update-fn draw-fn initial-state)

@@ -154,7 +154,7 @@
   (list 'let ['xs xs
               'len (list 'Array.length 'xs)]
         (list 'for ['i 0 'len]
-              (list 'let [var (list 'Array.nth 'xs 'i)]
+              (list 'let [var (list 'Array.unsafe-nth 'xs 'i)]
                     expr))))
 
 (defmacro foreach [binding expr]
