@@ -16,7 +16,7 @@ import ToTemplate
 instanceBinder :: SymPath -> Ty -> Template -> String -> (String, Binder)
 instanceBinder path@(SymPath _ name) actualType template docs =
   let (x, _) = instantiateTemplate path actualType template
-      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = MetaData (Map.insert "doc" docObj Map.empty)
   in  (name, Binder meta x)
 
@@ -24,7 +24,7 @@ instanceBinder path@(SymPath _ name) actualType template docs =
 instanceBinderWithDeps :: SymPath -> Ty -> Template -> String -> ((String, Binder), [XObj])
 instanceBinderWithDeps path@(SymPath _ name) actualType template docs =
   let (x, deps) = instantiateTemplate path actualType template
-      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = MetaData (Map.insert "doc" docObj Map.empty)
   in  ((name, Binder meta x), deps)
 
@@ -45,7 +45,7 @@ defineTemplate path t docs declaration definition depsFunc =
       template = Template t (const declaration) (const definition) depsFunc
       i = Info 0 0 (show path ++ ".template") Set.empty 0
       defLst = [XObj (Deftemplate (TemplateCreator (\_ _ -> template))) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = MetaData (Map.insert "doc" docObj Map.empty)
   in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
@@ -55,7 +55,7 @@ defineTypeParameterizedTemplate templateCreator path t docs =
   let (SymPath _ name) = path
       i = Info 0 0 (show path ++ ".parameterizedTemplate") Set.empty 0
       defLst = [XObj (Deftemplate templateCreator) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]
-      docObj = (XObj (Str docs) (Just dummyInfo) Nothing)
+      docObj = XObj (Str docs) (Just dummyInfo) Nothing
       meta = MetaData (Map.insert "doc" docObj Map.empty)
   in  (name, Binder meta (XObj (Lst defLst) (Just i) (Just t)))
 
