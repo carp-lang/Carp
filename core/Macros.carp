@@ -87,7 +87,7 @@
           (cxr (cons (- (car x) 1) (cdr x)) pair)))))
 
   (defndynamic nthcdr [n pair]
-    (cxr (list n 'd) pair))
+    (cxr (list (+ n 1) 'd) pair))
 
   (defndynamic nthcar [n pair]
     (cxr (list 1 'a n 'd) pair))
