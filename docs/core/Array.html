@@ -1322,6 +1322,33 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#unreduce">
+                    <h3 id="unreduce">
+                        unreduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [a, (Ref (λ [a] Bool)), (Ref (λ [a] a))] (Array a))
+                </p>
+                <pre class="args">
+                    (unreduce start test step)
+                </pre>
+                <p class="doc">
+                    <p>creates an array by producing values using <code>step</code> until they
+no longer satisfy <code>test</code>. The initial value is <code>start</code>.</p>
+<p>Example:</p>
+<pre><code>; if we didn’t have Array.range, we could define it like this:
+(defn range [start end step]
+  (unreduce start &amp;(fn [x] (&lt; x (+ step end))) &amp;(fn [x] (+ x step)))
+)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#unsafe-first">
                     <h3 id="unsafe-first">
                         unsafe-first
