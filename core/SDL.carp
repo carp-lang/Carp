@@ -5,17 +5,16 @@
 (not-on-windows
   (add-pkg "sdl2"))
 
-(defmodule SDL
-  (defmodule Windows
-    (defdynamic header-path "C:\\SDL2-2.0.9\\include")
-    (defdynamic library-path "C:\\SDL2-2.0.9\\lib\\x86\\")))
+;; Only define these if they're not already defined (allows the user to pre-define them before including SDL.carp)
+(defdynamic-once sdl-windows-header-path "C:\\SDL2-2.0.9\\include")
+(defdynamic-once sdl-windows-library-path "C:\\SDL2-2.0.9\\lib\\x86\\")
 
 (windows-only
   ;; Note - you'll still need the SDL2.dll to be able to run the executable
   (add-cflag "-DSDL_MAIN_HANDLED")
   (add-cflag "-Wno-pragma-pack")
-  (add-cflag (str "-I" SDL.Windows.header-path))
-  (add-lib (str "/link " SDL.Windows.library-path "SDL2.lib " SDL.Windows.library-path "SDL2main.lib")))
+  (add-cflag (str "-I" sdl-windows-header-path))
+  (add-lib (str "/link " sdl-windows-library-path "SDL2.lib "))) ;; sdl-windows-library-path "SDL2main.lib")))
 
 ;; Types
 (register-type SDL_Keycode)
