@@ -148,8 +148,8 @@
       (list
        'let (array variable from)
        (list
-	'while (list (if (< step (- step step)) '> '<) variable to)
-	(list
+        'while (list (if (< step (- step step)) '> '<) variable to)
+        (list
          'do
          (if (= (length body) 0)
            ()
@@ -366,3 +366,9 @@ The expression must be evaluable at compile time.")
 (defmacro until [cnd body]
   (list 'while (list 'not cnd)
     body))
+
+(doc defdynamic-once "creates a dynamic variable and sets its value if it's not already defined.")
+(defmacro defdynamic-once [var expr]
+  (list 'if (list 'defined? var)
+        ()
+        (list 'defdynamic var expr)))

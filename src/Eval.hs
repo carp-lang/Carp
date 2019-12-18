@@ -289,6 +289,13 @@ eval env xobj =
         XObj (Sym (SymPath [] "use") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `use`: " ++ pretty xobj) (info xobj))
 
+        [XObj (Sym (SymPath [] "defined?") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
+          case lookupInEnv path env of
+            Just found -> return (Right trueXObj)
+            Nothing -> return (Right falseXObj)
+        XObj (Sym (SymPath [] "defined?") _) _ _ : _ ->
+          return (makeEvalError ctx Nothing ("Invalid args to `defined?`: " ++ pretty xobj) (info xobj))
+
         XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
           specialCommandWith xobj path forms
         XObj With _ _ : _ ->
