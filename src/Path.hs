@@ -2,11 +2,14 @@ module Path where
 import Debug.Trace
 import qualified System.Directory as D
 import qualified System.FilePath.Posix as FP
+import qualified System.FilePath.Windows as FPW
 import qualified System.IO as IO
 import Util
 
 (</>) :: FilePath -> FilePath -> FilePath
-(</>) = (FP.</>)
+(</>) = case platform of
+          Windows -> (FPW.</>)
+          _ -> (FP.</>)
 
 cachePath :: FilePath -> IO FilePath
 cachePath = xdgPath D.XdgCache
