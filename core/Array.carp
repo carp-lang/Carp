@@ -6,7 +6,7 @@ As an example, consider this definition of `sum` based on `reduce`:
 
 ```
 (defn sum [x]
-  (reduce + 0 x))
+  (reduce &(fn [x y] (+ x @y)) 0 x))
 ```
 
 It will sum the previous sum with each new value, starting at `0`.")
