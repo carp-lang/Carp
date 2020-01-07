@@ -934,7 +934,7 @@
                     <p>will reduce an array <code>xs</code> into a single value using a function <code>f</code> that takes the reduction thus far and the next value. The initial reduction value is <code>x</code>.</p>
 <p>As an example, consider this definition of <code>sum</code> based on <code>reduce</code>:</p>
 <pre><code>(defn sum [x]
-  (reduce + 0 x))
+  (reduce &amp;(fn [x y] (+ x @y)) 0 x))
 </code></pre>
 <p>It will sum the previous sum with each new value, starting at <code>0</code>.</p>
 
