@@ -216,7 +216,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (λ [a] (Result c b))] (Result c b))
+                    (λ [(Result a b), (Ref (λ [a] (Result c b)))] (Result c b))
                 </p>
                 <pre class="args">
                     (and-then a f)
@@ -237,7 +237,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (λ [a] c), (λ [b] d)] (Result c d))
+                    (λ [(Result a b), (Ref (λ [a] c)), (Ref (λ [b] d))] (Result c d))
                 </p>
                 <pre class="args">
                     (apply a success-f error-f)
@@ -376,7 +376,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (λ [a] c)] (Result c b))
+                    (λ [(Result a b), (Ref (λ [a] c))] (Result c b))
                 </p>
                 <pre class="args">
                     (map a f)
@@ -396,7 +396,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (λ [b] (Result a c))] (Result a c))
+                    (λ [(Result a b), (Ref (λ [b] (Result a c)))] (Result a c))
                 </p>
                 <pre class="args">
                     (or-else a f)
@@ -539,7 +539,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (λ [b] a)] a)
+                    (λ [(Result a b), (Ref (λ [b] a))] a)
                 </p>
                 <pre class="args">
                     (unwrap-or-else a f)
