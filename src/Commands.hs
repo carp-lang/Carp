@@ -656,7 +656,10 @@ commandCharAt :: CommandCallback
 commandCharAt [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
-      Right (XObj (Chr (s !! (round n :: Int))) (Just dummyInfo) (Just IntTy))
+      let i = (round n :: Int)
+      in if length s > i
+         then Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy))
+         else Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (info a))
     _ ->
       Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
