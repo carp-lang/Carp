@@ -93,7 +93,7 @@ char *String_cstr(const String *s) {
 }
 
 String String_from_MINUS_cstr(char *s) {
-    return s;
+    return String_copy(&s);
 }
 
 String String_str(const String *s) {
