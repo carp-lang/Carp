@@ -10,6 +10,7 @@
   (register copy       (Fn [&String] String))
   (register length     (Fn [&String] Int))
   (register cstr       (Fn [&String] (Ptr Char)))
+  (register from-cstr  (Fn [(Ptr Char)] String))
   (register str        (Fn [&String] String))
   (register prn        (Fn [&String] String))
   (register index-of   (Fn [&String Char] Int))
