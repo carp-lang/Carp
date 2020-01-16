@@ -372,3 +372,13 @@ The expression must be evaluable at compile time.")
   (list 'if (list 'defined? var)
         ()
         (list 'defdynamic var expr)))
+
+(defndynamic comp-internal [sym fns]
+  (if (= (length fns) 0)
+    sym
+    (list (car fns) (comp-internal sym (cdr fns)))))
+
+(doc comp "composes the functions `fns` into one `fn`.")
+(defmacro comp [:rest fns]
+  (let [x (gensym)]
+    (list 'fn [x] (comp-internal x fns))))
