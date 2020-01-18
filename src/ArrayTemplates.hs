@@ -198,6 +198,15 @@ templateRaw = defineTemplate
   (toTemplate "$DECL { return a.data; }")
   (\(FuncTy [arrayType] _) -> [])
 
+templateUnsafeRaw :: (String, Binder)
+templateUnsafeRaw = defineTemplate
+  (SymPath ["Array"] "unsafe-raw")
+  (FuncTy [RefTy (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")))
+  "returns an array `a` as a raw pointer—useful for interacting with C."
+  (toTemplate "$t* $NAME (Array* a)")
+  (toTemplate "$DECL { return a->data; }")
+  (\(FuncTy [RefTy arrayType] _) -> [])
+
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "aset"

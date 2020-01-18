@@ -31,6 +31,7 @@ arrayModule = Env { envBindings = bindings
                                 , templateEMap
                                 , templateEFilter
                                 , templateRaw
+                                , templateUnsafeRaw
                                 , templateAset
                                 , templateAsetBang
                                 , templateAsetUninitializedBang
