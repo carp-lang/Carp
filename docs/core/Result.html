@@ -387,6 +387,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#map-error">
+                    <h3 id="map-error">
+                        map-error
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Result a b), (Ref (λ [b] c))] (Result a c))
+                </p>
+                <pre class="args">
+                    (map-error a f)
+                </pre>
+                <p class="doc">
+                    <p>takes a <code>Result</code> and applies a function <code>f</code> to it if it is an <code>Error</code> type, and wraps it back up. In the case that it is a <code>Success</code>, it is returned as is.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#or-else">
                     <h3 id="or-else">
                         or-else

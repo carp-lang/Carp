@@ -39,6 +39,15 @@
                 "map works with Success"
   )
   (assert-true test
+               (success? &(map-error (Success @"hi") &Int.inc))
+               "map-error works with Success"
+  )
+  (assert-equal test
+                &(Error 2)
+                &(map-error (the (Result String Int) (Error 1)) &Int.inc)
+                "map-error works with Error"
+  )
+  (assert-true test
                (error? &(and-then (Error @"hi") &(fn [x] (Success (Int.inc x)))))
                "and-then works with Error"
   )
