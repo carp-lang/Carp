@@ -15,6 +15,12 @@
       (Success x) (Success (~f x))
       (Error x) (Error x)))
 
+  (doc map-error "takes a `Result` and applies a function `f` to it if it is an `Error` type, and wraps it back up. In the case that it is a `Success`, it is returned as is.")
+  (defn map-error [a f]
+    (match a
+      (Success x) (Success x)
+      (Error x) (Error (~f x))))
+
   (doc and-then "takes a `Result` and applies a function `f` to it if it is a `Success` type. In the case that it is an `Error`, it is returned as is.
 
 It is thus quite similar to [`map`](#map), but it will unwrap the value.")
