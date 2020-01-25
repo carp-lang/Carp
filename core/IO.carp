@@ -71,4 +71,13 @@
                                  (set! r (Array.push-back r c)))
                                (IO.fclose f)
                                (Result.Success (String.from-chars &r)))))))
+
+  (private getenv-)
+  (hidden getenv-)
+  (register getenv- (Fn [String] (Ptr Char)) "getenv")
+  (defn getenv [s]
+    (let [e (getenv- s)]
+      (if (null? e)
+        (Maybe.Nothing)
+        (Maybe.Just (from-cstr e)))))
 )

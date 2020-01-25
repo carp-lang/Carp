@@ -1,0 +1,14 @@
+(load "Test.carp")
+(use-all IO Test)
+
+(deftest test
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(IO.getenv @"thisdoesnotexist")
+                "getenv works on non-existant variable"
+  )
+  (assert-true test
+               (Maybe.just? &(IO.getenv @"PATH"))
+               "getenv works on existant variable"
+  )
+)
