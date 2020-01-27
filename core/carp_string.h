@@ -76,11 +76,8 @@ bool String__LT_(const String *a, const String *b) {
 }
 
 String String_append(const String *a, const String *b) {
-    int la = strlen(*a);
-    int lb = strlen(*b);
-    int total = la + lb + 1;
-    String buffer = CARP_MALLOC(total);
-    snprintf(buffer, total, "%s%s", *a, *b);
+    String buffer;
+    asprintf(&buffer, "%s%s", *a, *b);
     return buffer;
 }
 
@@ -101,9 +98,8 @@ String String_str(const String *s) {
 }
 
 String String_prn(const String *s) {
-    int n = strlen(*s) + 4;
-    String buffer = CARP_MALLOC(n);
-    snprintf(buffer, n, "@\"%s\"", *s);
+    String buffer;
+    asprintf(&buffer, "@\"%s\"", *s);
     return buffer;
 }
 
@@ -112,9 +108,8 @@ char String_char_MINUS_at(const String *s, int i) {
 }
 
 String String_format(const String *str, const String *s) {
-    int size = snprintf(NULL, 0, *str, *s) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, *s);
+    String buffer;
+    asprintf(&buffer, *str, *s);
     return buffer;
 }
 
@@ -158,70 +153,62 @@ String Bool_str(bool b) {
 }
 
 String Bool_format(const String *str, bool b) {
-    int size = snprintf(NULL, 0, *str, b) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, b);
+    String buffer;
+    asprintf(&buffer, *str, b);
     return buffer;
 }
 
 String Char_str(char c) {
-    String buffer = CARP_MALLOC(2);
-    snprintf(buffer, 2, "%c", c);
+    String buffer;
+    asprintf(&buffer, "%c", c);
     return buffer;
 }
 
 String Char_prn(char c) {
-    String buffer = CARP_MALLOC(3);
-    snprintf(buffer, 3, "\\%c", c);
+    String buffer;
+    asprintf(&buffer, "\\%c", c);
     return buffer;
 }
 
 String Char_format(const String *str, char b) {
-    int size = snprintf(NULL, 0, *str, b) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, b);
+    String buffer;
+    asprintf(&buffer, *str, b);
     return buffer;
 }
 
 String Double_str(double x) {
-    int size = snprintf(NULL, 0, "%g", x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%g", x);
+    String buffer;
+    asprintf(&buffer, "%g", x);
     return buffer;
 }
 
 String Double_format(const String *s, double x) {
-    int size = snprintf(NULL, 0, *s, x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *s, x);
+    String buffer;
+    asprintf(&buffer, *s, x);
     return buffer;
 }
 
 String Float_str(float x) {
-    int size = snprintf(NULL, 0, "%gf", x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%gf", x);
+    String buffer;
+    asprintf(&buffer, "%gf", x);
     return buffer;
 }
 
 String Float_format(const String *str, float x) {
-    int size = snprintf(NULL, 0, *str, x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
+    String buffer;
+    asprintf(&buffer, *str, x);
     return buffer;
 }
 
 String Int_str(int x) {
-    int size = snprintf(NULL, 0, "%d", x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%d", x);
+    String buffer;
+    asprintf(&buffer, "%d", x);
     return buffer;
 }
 
 String Int_format(const String *str, int x) {
-    int size = snprintf(NULL, 0, *str, x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
+    String buffer;
+    asprintf(&buffer, *str, x);
     return buffer;
 }
 
@@ -230,16 +217,14 @@ int Int_from_MINUS_string(const String *s) {
 }
 
 String Long_str(long x) {
-    int size = snprintf(NULL, 0, "%ldl", x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%ldl", x);
+    String buffer;
+    asprintf(&buffer, "%ldl", x);
     return buffer;
 }
 
 String Long_format(const String *str, long x) {
-    int size = snprintf(NULL, 0, *str, x) + 1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
+    String buffer;
+    asprintf(&buffer, *str, x);
     return buffer;
 }
 
@@ -248,16 +233,14 @@ long Long_from_MINUS_string(const String *s) {
 }
 
 String Byte_str(uint8_t x) {
-    int size = snprintf(NULL, 0, "%ub", x)+1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "%ub", x);
+    String buffer;
+    asprintf(&buffer, "%ub", x);
     return buffer;
 }
 
 String Byte_format(const String* str, uint8_t x) {
-    int size = snprintf(NULL, 0, *str, x)+1;
-    String buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, *str, x);
+    String buffer;
+    asprintf(&buffer, *str, x);
     return buffer;
 }
 
