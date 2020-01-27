@@ -1,0 +1,61 @@
+(system-include "carp_byte.h")
+
+(defmodule Byte
+  (register + (λ [Byte Byte] Byte))
+  (register - (λ [Byte Byte] Byte))
+  (register * (λ [Byte Byte] Byte))
+  (register / (λ [Byte Byte] Byte))
+  (register < (λ [Byte Byte] Bool))
+  (register > (λ [Byte Byte] Bool))
+  (register = (λ [Byte Byte] Bool))
+  (register mod (λ [Byte Byte] Byte))
+  (register bit-shift-left (λ [Byte Byte] Byte))
+  (register bit-shift-right (λ [Byte Byte] Byte))
+  (register bit-and (λ [Byte Byte] Byte))
+  (register bit-or (λ [Byte Byte] Byte))
+  (register bit-xor (λ [Byte Byte] Byte))
+  (register bit-not (λ [Byte] Byte))
+  (register inc (λ [Byte] Byte))
+  (register dec (λ [Byte] Byte))
+  (register copy (λ [&Byte] Byte))
+  (register to-int (λ [Byte] Int))
+  (register from-int (λ [Int] Byte))
+
+  (defn even? [a] (= (mod a 2b) 0b))
+  (defn odd? [a] (not (even? a)))
+
+  (defn zero [] 0b)
+
+  (defn add-ref [x y]
+    (Byte.+ @x @y))
+
+  ;; Move to generic math module?
+  (defn clamp [min, max, val]
+    (if (> val max)
+      max
+      (if (< val min)
+        min
+        val)))
+
+  (doc pow "Raise x to the power of y.")
+  (defn pow [x y]
+    (let-do [r 1b]
+      (while (/= y 0b)
+        (do
+          (when (/= (bit-and y 1b) 0b)
+            (set! r (* r x)))
+          (set! y (/ y 2b))
+          (set! x (* x x))))
+      r))
+)
+
+(defmodule ByteRef
+  (defn = [a b]
+    (Byte.= @a @b))
+
+  (defn < [a b]
+    (Byte.< @a @b))
+
+  (defn > [a b]
+    (Byte.> @a @b))
+)

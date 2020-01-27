@@ -257,6 +257,7 @@ pretty = visit 0
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
+            Num ByteTy num -> show num
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
             Num _ _ -> error "Invalid number type."
@@ -600,6 +601,7 @@ xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
 xobjToTy (XObj (Sym (SymPath _ "Double") _) _ _) = Just DoubleTy
 xobjToTy (XObj (Sym (SymPath _ "Long") _) _ _) = Just LongTy
+xobjToTy (XObj (Sym (SymPath _ "Byte") _) _ _) = Just ByteTy
 xobjToTy (XObj (Sym (SymPath _ "String") _) _ _) = Just StringTy
 xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy

@@ -29,6 +29,10 @@
   (defn hash [k] (to-int (the Char @k)))
 )
 
+(defmodule Byte
+  (defn hash [k] (to-int (the Byte @k)))
+)
+
 (defmodule Float
   (defn hash [k] (to-bytes @k))
 )

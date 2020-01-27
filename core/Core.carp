@@ -27,6 +27,7 @@
 (load "Result.carp")
 (load "Dynamic.carp")
 (load "Format.carp")
+(load "Byte.carp")
 (load "Int.carp")
 (load "Long.carp")
 (load "Double.carp")

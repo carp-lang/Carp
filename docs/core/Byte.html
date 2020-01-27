@@ -137,19 +137,90 @@
                                 Result
                             </a>
                         </li>
-                        <li>
-                            <a href="Pointer.html">
-                                Pointer
-                            </a>
-                        </li>
                     </ul>
                 </div>
             </div>
             <h1>
-                Char
+                Byte
             </h1>
             <div class="module-description">
                 
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#*">
+                    <h3 id="*">
+                        *
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#+">
+                    <h3 id="+">
+                        +
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#-">
+                    <h3 id="-">
+                        -
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#/">
+                    <h3 id="/">
+                        /
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
             </div>
             <div class="binder">
                 <a class="anchor" href="#&lt;">
@@ -161,7 +232,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Char, Char] Bool)
+                    (λ [Byte, Byte] Bool)
                 </p>
                 <span>
                     
@@ -180,7 +251,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Char, Char] Bool)
+                    (λ [Byte, Byte] Bool)
                 </p>
                 <span>
                     
@@ -199,7 +270,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Char, Char] Bool)
+                    (λ [Byte, Byte] Bool)
                 </p>
                 <span>
                     
@@ -209,43 +280,155 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#alpha?">
-                    <h3 id="alpha?">
-                        alpha?
+                <a class="anchor" href="#add-ref">
+                    <h3 id="add-ref">
+                        add-ref
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char] Bool)
+                    (λ [&amp;Byte, &amp;Byte] Byte)
                 </p>
                 <pre class="args">
-                    (alpha? c)
+                    (add-ref x y)
                 </pre>
                 <p class="doc">
-                    <p>tests whether a character is alphabetical.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#alphanum?">
-                    <h3 id="alphanum?">
-                        alphanum?
+                <a class="anchor" href="#bit-and">
+                    <h3 id="bit-and">
+                        bit-and
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-not">
+                    <h3 id="bit-not">
+                        bit-not
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-or">
+                    <h3 id="bit-or">
+                        bit-or
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-shift-left">
+                    <h3 id="bit-shift-left">
+                        bit-shift-left
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-shift-right">
+                    <h3 id="bit-shift-right">
+                        bit-shift-right
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#bit-xor">
+                    <h3 id="bit-xor">
+                        bit-xor
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#clamp">
+                    <h3 id="clamp">
+                        clamp
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char] Bool)
+                    (λ [a, a, a] a)
                 </p>
                 <pre class="args">
-                    (alphanum? c)
+                    (clamp min max val)
                 </pre>
                 <p class="doc">
-                    <p>tests whether a character is alphanumerical.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -258,11 +441,49 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Char)
+                    (λ [&amp;Byte] Byte)
                 </p>
                 <span>
                     
                 </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#dec">
+                    <h3 id="dec">
+                        dec
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [Byte] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#even?">
+                    <h3 id="even?">
+                        even?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Byte] Bool)
+                </p>
+                <pre class="args">
+                    (even? a)
+                </pre>
                 <p class="doc">
                     
                 </p>
@@ -277,7 +498,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char] String)
+                    (λ [&amp;String, Byte] String)
                 </p>
                 <span>
                     
@@ -296,7 +517,26 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int] Char)
+                    (λ [Int] Byte)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#from-string">
+                    <h3 id="from-string">
+                        from-string
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [&amp;String] Byte)
                 </p>
                 <span>
                     
@@ -315,7 +555,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Int)
+                    (λ [&amp;Byte] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -325,62 +565,79 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#lower-case?">
-                    <h3 id="lower-case?">
-                        lower-case?
+                <a class="anchor" href="#inc">
+                    <h3 id="inc">
+                        inc
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [Char] Bool)
+                    (λ [Byte] Byte)
                 </p>
-                <pre class="args">
-                    (lower-case? c)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
-                    <p>tests whether a character is lower case.</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#meaning">
-                    <h3 id="meaning">
-                        meaning
+                <a class="anchor" href="#mod">
+                    <h3 id="mod">
+                        mod
                     </h3>
                 </a>
                 <div class="description">
-                    defn
+                    external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Char] Int)
+                    (λ [Byte, Byte] Byte)
                 </p>
-                <pre class="args">
-                    (meaning char-ref)
-                </pre>
+                <span>
+                    
+                </span>
                 <p class="doc">
-                    <p>converts a numerical char into the appropriate number (e.g. from <code>\1</code> to <code>1</code>).</p>
-
+                    
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#num?">
-                    <h3 id="num?">
-                        num?
+                <a class="anchor" href="#odd?">
+                    <h3 id="odd?">
+                        odd?
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char] Bool)
+                    (λ [Byte] Bool)
                 </p>
                 <pre class="args">
-                    (num? c)
+                    (odd? a)
                 </pre>
                 <p class="doc">
-                    <p>tests whether a character is numerical.</p>
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#pow">
+                    <h3 id="pow">
+                        pow
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [Byte, Byte] Byte)
+                </p>
+                <pre class="args">
+                    (pow x y)
+                </pre>
+                <p class="doc">
+                    <p>Raise x to the power of y.</p>
 
                 </p>
             </div>
@@ -391,14 +648,14 @@
                     </h3>
                 </a>
                 <div class="description">
-                    external
+                    defn
                 </div>
                 <p class="sig">
-                    (λ [Char] String)
+                    (λ [Byte] String)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (prn x)
+                </pre>
                 <p class="doc">
                     
                 </p>
@@ -413,7 +670,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] Char)
+                    (λ [] Byte)
                 </p>
                 <pre class="args">
                     (random)
@@ -432,10 +689,10 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char, Char] Char)
+                    (λ [Byte, Byte] Byte)
                 </p>
                 <pre class="args">
-                    (random-between a b)
+                    (random-between lower upper)
                 </pre>
                 <p class="doc">
                     
@@ -451,7 +708,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Char] String)
+                    (λ [Byte] String)
                 </p>
                 <span>
                     
@@ -470,33 +727,13 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Char] Int)
+                    (λ [Byte] Int)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
                     
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#upper-case?">
-                    <h3 id="upper-case?">
-                        upper-case?
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [Char] Bool)
-                </p>
-                <pre class="args">
-                    (upper-case? c)
-                </pre>
-                <p class="doc">
-                    <p>tests whether a character is upper case.</p>
-
                 </p>
             </div>
             <div class="binder">
@@ -509,7 +746,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] a)
+                    (λ [] Byte)
                 </p>
                 <pre class="args">
                     (zero)
