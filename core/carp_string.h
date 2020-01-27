@@ -80,7 +80,9 @@ String String_append(const String *a, const String *b) {
     int lb = strlen(*b);
     int total = la + lb + 1;
     String buffer = CARP_MALLOC(total);
-    sprintf(buffer, "%s%s", *a, *b);
+    memcpy(buffer, *a, la);
+    memcpy(buffer+la, *b, lb);
+    buffer[la+lb] = '\0';
     return buffer;
 }
 
