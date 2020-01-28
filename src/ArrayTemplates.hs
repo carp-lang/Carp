@@ -428,7 +428,7 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  String buffer = CARP_MALLOC(size);\n"
   , TokC   "  String bufferPtr = buffer;\n"
   , TokC   "\n"
-  , TokC   "  snprintf(buffer, size, \"[\");\n"
+  , TokC   "  sprintf(buffer, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"
   , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
@@ -436,7 +436,7 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  }\n"
   , TokC   "\n"
   , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
-  , TokC   "  snprintf(bufferPtr, size, \"]\");\n"
+  , TokC   "  sprintf(bufferPtr, \"]\");\n"
   , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
@@ -469,7 +469,7 @@ insideArrayStr typeEnv env t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "    snprintf(bufferPtr, size, \"%s \", temp);"
+                  , "    sprintf(bufferPtr, \"%s \", temp);"
                   , "    bufferPtr += strlen(temp) + 1;"
                   , "    if(temp) {"
                   , "      CARP_FREE(temp);"
