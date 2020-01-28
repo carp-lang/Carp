@@ -248,14 +248,14 @@ long Long_from_MINUS_string(const String *s) {
 }
 
 String Byte_str(uint8_t x) {
-    int size = snprintf(NULL, 0, "%ub", x)+1;
+    int size = snprintf(NULL, 0, "%ub", x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, "%ub", x);
     return buffer;
 }
 
-String Byte_format(const String* str, uint8_t x) {
-    int size = snprintf(NULL, 0, *str, x)+1;
+String Byte_format(const String *str, uint8_t x) {
+    int size = snprintf(NULL, 0, *str, x) + 1;
     String buffer = CARP_MALLOC(size);
     snprintf(buffer, size, *str, x);
     return buffer;
