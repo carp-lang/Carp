@@ -44,8 +44,7 @@
   (defn alphanum? [c]
     (or (alpha? c) (num? c)))
 
-  (defn zero []
-    (from-int 0))
+  (defn zero [] (the Char (from-int 0)))
 )
 
 (defmodule CharRef
