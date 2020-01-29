@@ -1097,7 +1097,7 @@ manageMemory typeEnv globalEnv root =
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
                        [_] -> return (return ())
-                       _ -> error "Too many variables with the same name in set."
+                       _ -> error $ "Too many variables with the same name in set (was looking for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ")"
              else return (return ())
 
         transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())
