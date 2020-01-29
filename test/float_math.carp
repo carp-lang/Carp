@@ -107,4 +107,10 @@
                 0
                 (to-bytes 0.0f)
                 "to-bytes works as expected II"
-  ))
+  )
+  (assert-equal test
+                10.3f
+                (from-string "10.3")
+                "from-string works as expected"
+  )
+)

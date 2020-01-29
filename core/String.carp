@@ -189,6 +189,7 @@
 (defmodule Float
   (register str (Fn [Float] String))
   (register format (Fn [&String Float] String))
+  (register from-string (λ [&String] Float))
 )
 
 (defmodule Long
@@ -200,6 +201,7 @@
 (defmodule Double
   (register str (Fn [Double] String))
   (register format (Fn [&String Double] String))
+  (register from-string (λ [&String] Double))
 )
 
 (defmodule Char

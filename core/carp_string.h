@@ -199,6 +199,10 @@ String Double_format(const String *s, double x) {
     return buffer;
 }
 
+double Double_from_MINUS_string(const String *s) {
+    return strtod(*s, NULL);
+}
+
 String Float_str(float x) {
     int size = snprintf(NULL, 0, "%gf", x) + 1;
     String buffer = CARP_MALLOC(size);
@@ -211,6 +215,10 @@ String Float_format(const String *str, float x) {
     String buffer = CARP_MALLOC(size);
     sprintf(buffer, *str, x);
     return buffer;
+}
+
+float Float_from_MINUS_string(const String *s) {
+    return strtof(*s, NULL);
 }
 
 String Int_str(int x) {
