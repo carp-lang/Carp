@@ -109,6 +109,9 @@
         acc
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
+  (defndynamic list-to-array [lst]
+    (list-to-array-internal lst []))
+
   (defndynamic collect-into-internal [xs acc f]
     (if (= 0 (length xs))
         acc
