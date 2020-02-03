@@ -303,6 +303,15 @@ eval env xobj =
 
         f:args -> do evaledF <- eval env f
                      case evaledF of
+                       Right (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) -> do
+                         case checkMatchingNrOfArgs ctx fppl f params args of
+                           Left err -> return (Left err)
+                           Right () ->
+                             do evaledArgs <- fmap sequence (mapM (eval env) args)
+                                case evaledArgs of
+                                  Right okArgs -> apply env body params okArgs
+                                  Left err -> return (Left err)
+
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
                          case checkMatchingNrOfArgs ctx fppl f params args of
                            Left err -> return (Left err)
