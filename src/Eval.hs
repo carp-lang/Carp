@@ -147,9 +147,9 @@ eval env xobj =
                    _ -> return (makeEvalError ctx Nothing ("`if` condition contains non-boolean value: " ++ pretty okCondition) (info okCondition))
                Left err -> return (Left err)
 
-        [XObj (Fn _ _) _ _, args@(XObj (Arr a) _ _), _] ->
+        [XObj (Fn b c _) d e, args@(XObj (Arr a) _ _), f] ->
             if all isUnqualifiedSym a
-            then return (Right listXObj)
+            then return (Right (XObj (Lst [XObj (Fn b c (FEnv env)) d e, args, f]) i t))
             else return (makeEvalError ctx Nothing ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
 
         [defnExpr@(XObj Defn _ _), name, args@(XObj (Arr a) _ _), body] ->
@@ -303,13 +303,13 @@ eval env xobj =
 
         f:args -> do evaledF <- eval env f
                      case evaledF of
-                       Right (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) -> do
+                       Right (XObj (Lst [XObj (Fn _ _ (FEnv e)) _ _, XObj (Arr params) _ _, body]) _ _) -> do
                          case checkMatchingNrOfArgs ctx fppl f params args of
                            Left err -> return (Left err)
                            Right () ->
                              do evaledArgs <- fmap sequence (mapM (eval env) args)
                                 case evaledArgs of
-                                  Right okArgs -> apply env body params okArgs
+                                  Right okArgs -> apply e body params okArgs
                                   Left err -> return (Left err)
 
                        Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->

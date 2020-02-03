@@ -57,7 +57,7 @@ data Obj = Sym SymPath SymbolMode
          | Dict (Map.Map XObj XObj)
          | Defn
          | Def
-         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
+         | Fn (Maybe SymPath) (Set.Set XObj) FnEnv -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
          | Do
          | Let
          | While
@@ -270,7 +270,7 @@ pretty = visit 0
             Bol b -> if b then "true" else "false"
             Defn -> "defn"
             Def -> "def"
-            Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+            Fn _ captures _ -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
             If -> "if"
             Match -> "match"
             While -> "while"
@@ -437,6 +437,14 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envMode :: EnvMode
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
+
+-- Could be (Maybe Env), but we have to get rid of equality
+data FnEnv = None
+           | FEnv Env
+  deriving (Show)
+
+instance Eq FnEnv where
+  _ == _ = True
 
 newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
 
