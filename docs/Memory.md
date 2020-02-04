@@ -94,7 +94,7 @@ If-statements are kind of tricky in regards to memory management:
       manage)))
 ```
 
-The 'manage-me' variable is the return value in the second branch, but should get freed if "Too short" is returned.
+The 'manage' variable is the return value in the second branch, but should get freed if "Too short" is returned.
 The output is a somewhat noisy C program:
 ```C
 string say_MINUS_what(string text) {
