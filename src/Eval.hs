@@ -1175,7 +1175,9 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       _ <- liftIO $ setCurrentDirectory fpath
       (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
       if txt == "HEAD\n"
-      then doGitLoad path fpath
+      then do
+        _ <- liftIO $ setCurrentDirectory cur
+        doGitLoad path fpath
       else do
         _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
         _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
@@ -1189,8 +1191,7 @@ commandLoad [xobj@(XObj (Str path) i _)] =
             _ <- liftIO $ setCurrentDirectory cur
             case x1 of
               ExitSuccess -> doGitLoad path fpath
-              ExitFailure _ ->
-                  invalidPathWith ctx path stderr1 cleanup fpath
+              ExitFailure _ -> invalidPathWith ctx path stderr1 cleanup fpath
     doGitLoad path fpath =
       let fName = last (splitOn "/" path)
           realName' = if ".git" `isSuffixOf` fName
