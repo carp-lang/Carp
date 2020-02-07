@@ -92,6 +92,8 @@
   (defndynamic nthcar [n pair]
     (cxr (list 1 'a n 'd) pair))
 
+  (private eval-internal)
+  (hidden eval-internal)
   (defndynamic eval-internal [form]
     (list 'do
           (list 'defn 'main [] (list 'IO.println* form))
@@ -109,6 +111,8 @@
         acc
         (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
 
+  (private collect-into-internal)
+  (hidden collect-into-internal)
   (defndynamic collect-into-internal [xs acc f]
     (if (= 0 (length xs))
         acc
