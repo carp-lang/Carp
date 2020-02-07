@@ -119,6 +119,16 @@
   (defndynamic collect-into [xs f]
     (list 'quote
       (collect-into-internal xs (f) f)))
+
+  (private reverse-internal)
+  (hidden reverse-internal)
+  (defndynamic reverse-internal [lst accum]
+    (if (not (= 0 (length lst)))
+      (reverse-internal (cdr lst) (cons (car lst) accum))
+      accum))
+
+  (defndynamic reverse [lst]
+    (reverse-internal lst ()))
   )
 
 (defndynamic cond-internal [xs]
