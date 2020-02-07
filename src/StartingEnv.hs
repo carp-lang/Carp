@@ -98,7 +98,7 @@ templatePointerToRef = defineTemplate
 
 templatePointerAdd = defineTemplate
   (SymPath ["Pointer"] "add")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  (FuncTy StaticLifetimeTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
   "adds a long integer value to a pointer."
   (toTemplate "$p* $NAME ($p *p, long x)")
   (toTemplate $ unlines ["$DECL {"
@@ -108,7 +108,7 @@ templatePointerAdd = defineTemplate
 
 templatePointerSub = defineTemplate
   (SymPath ["Pointer"] "sub")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  (FuncTy StaticLifetimeTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
   "subtracts a long integer value from a pointer."
   (toTemplate "$p* $NAME ($p *p, long x)")
   (toTemplate $ unlines ["$DECL {"
@@ -118,7 +118,7 @@ templatePointerSub = defineTemplate
 
 templatePointerWidth = defineTemplate
   (SymPath ["Pointer"] "width")
-  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  (FuncTy StaticLifetimeTy [PointerTy (VarTy "p")] LongTy)
   "gets the byte size of a pointer."
   (toTemplate "long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -128,7 +128,7 @@ templatePointerWidth = defineTemplate
 
 templatePointerToLong = defineTemplate
   (SymPath ["Pointer"] "to-long")
-  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  (FuncTy StaticLifetimeTy [PointerTy (VarTy "p")] LongTy)
   "converts a pointer to a long integer."
   (toTemplate "long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -138,7 +138,7 @@ templatePointerToLong = defineTemplate
 
 templatePointerFromLong = defineTemplate
   (SymPath ["Pointer"] "from-long")
-  (FuncTy [LongTy] (PointerTy (VarTy "p")))
+  (FuncTy StaticLifetimeTy [LongTy] (PointerTy (VarTy "p")))
   "converts a long integer to a pointer."
   (toTemplate "$p* $NAME (long p)")
   (toTemplate $ unlines ["$DECL {"

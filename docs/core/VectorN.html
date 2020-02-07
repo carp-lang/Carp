@@ -161,7 +161,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] Bool)
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -180,7 +180,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe (VectorN a)))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -199,7 +199,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe a))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe a))
                 </p>
                 <pre class="args">
                     (angle-between a b)
@@ -219,7 +219,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe Bool))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -279,7 +279,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe a))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
                 </p>
                 <pre class="args">
                     (dist a b)
@@ -299,7 +299,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), a] (VectorN a))
+                    (λ [(Ref (VectorN a) b), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (div a n)
@@ -318,7 +318,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe a))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe a))
                 </p>
                 <pre class="args">
                     (dot x y)
@@ -358,7 +358,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime)] a)
+                    (λ [(Ref (VectorN a) b)] a)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -378,7 +378,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime)] a)
+                    (λ [(Ref (VectorN a) b)] a)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -398,7 +398,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), a] (VectorN a))
+                    (λ [(Ref (VectorN a) b), a] (VectorN a))
                 </p>
                 <pre class="args">
                     (mul a n)
@@ -437,7 +437,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime)] (VectorN a))
+                    (λ [(Ref (VectorN a) b)] (VectorN a))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -457,7 +457,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe Bool))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -477,7 +477,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe Bool))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) b)] (Maybe Bool))
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -636,7 +636,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime)] (Maybe (VectorN a)))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c)] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (sub a b)
@@ -715,7 +715,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (VectorN a) StaticLifetime), (Ref (VectorN a) StaticLifetime), a] (Maybe (VectorN a)))
+                    (λ [(Ref (VectorN a) b), (Ref (VectorN a) c), a] (Maybe (VectorN a)))
                 </p>
                 <pre class="args">
                     (vlerp a b amnt)
@@ -754,7 +754,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [((λ a) [b, c] d), (Ref (VectorN b) StaticLifetime), (Ref (VectorN c) StaticLifetime)] (Maybe (VectorN d)))
+                    (λ [((λ a) [b, c] d), (Ref (VectorN b) e), (Ref (VectorN c) f)] (Maybe (VectorN d)))
                 </p>
                 <pre class="args">
                     (zip f a b)
@@ -773,7 +773,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [((λ a) [b, c] d), (Ref (Array b) StaticLifetime), (Ref (Array c) StaticLifetime)] (VectorN d))
+                    (λ [((λ a) [b, c] d), (Ref (Array b) e), (Ref (Array c) f)] (VectorN d))
                 </p>
                 <pre class="args">
                     (zip- f a b)

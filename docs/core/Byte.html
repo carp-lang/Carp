@@ -294,7 +294,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Byte, &amp;Byte] Byte)
+                    (λ [(Ref Byte a), (Ref Byte b)] Byte)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -446,7 +446,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Byte] Byte)
+                    (λ [(Ref Byte a)] Byte)
                 </p>
                 <span>
                     
@@ -503,7 +503,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Byte] String)
+                    (λ [(Ref String a), Byte] String)
                 </p>
                 <span>
                     
@@ -541,7 +541,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Byte)
+                    (λ [(Ref String a)] Byte)
                 </p>
                 <span>
                     
@@ -560,7 +560,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Byte] Int)
+                    (λ [(Ref Byte a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)

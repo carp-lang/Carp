@@ -161,7 +161,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref (Map a b) StaticLifetime)] Bool)
+                    (λ [(Ref (Map a b) c), (Ref (Map a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (= m1 m2)
@@ -180,7 +180,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b StaticLifetime), (Ref c StaticLifetime)] Bool) d), (Ref (Map b c) StaticLifetime)] Bool)
+                    (λ [(Ref ((λ a) [(Ref b c), (Ref d c)] Bool) e), (Ref (Map b d) c)] Bool)
                 </p>
                 <pre class="args">
                     (all? pred m)
@@ -220,7 +220,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref a StaticLifetime)] Bool)
+                    (λ [(Ref (Map a b) c), (Ref a c)] Bool)
                 </p>
                 <pre class="args">
                     (contains? m k)
@@ -340,7 +340,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [(Ref b StaticLifetime), (Ref c StaticLifetime)] c) d), (Map b c)] (Map b c))
+                    (λ [(Ref ((λ a) [(Ref b c), (Ref d c)] d) e), (Map b d)] (Map b d))
                 </p>
                 <pre class="args">
                     (endo-map f m)
@@ -360,7 +360,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref ((λ c) [(Ref a StaticLifetime), (Ref b StaticLifetime)] ()) d)] ())
+                    (λ [(Ref (Map a b) c), (Ref ((λ d) [(Ref a c), (Ref b c)] ()) e)] ())
                 </p>
                 <pre class="args">
                     (for-each m f)
@@ -380,7 +380,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array (Pair a b)) StaticLifetime)] (Map a b))
+                    (λ [(Ref (Array (Pair a b)) c)] (Map a b))
                 </p>
                 <pre class="args">
                     (from-array a)
@@ -400,7 +400,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref a StaticLifetime)] b)
+                    (λ [(Ref (Map a b) c), (Ref a c)] b)
                 </p>
                 <pre class="args">
                     (get m k)
@@ -420,7 +420,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref a StaticLifetime)] (Maybe b))
+                    (λ [(Ref (Map a b) c), (Ref a c)] (Maybe b))
                 </p>
                 <pre class="args">
                     (get-maybe m k)
@@ -440,7 +440,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref a StaticLifetime), (Ref b c)] b)
+                    (λ [(Ref (Map a b) c), (Ref a c), (Ref b d)] b)
                 </p>
                 <pre class="args">
                     (get-with-default m k default-value)
@@ -480,7 +480,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] (Array a))
+                    (λ [(Ref (Map a b) c)] (Array a))
                 </p>
                 <pre class="args">
                     (keys m)
@@ -500,7 +500,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref ((λ a) [b, (Ref c StaticLifetime), (Ref d StaticLifetime)] b) e), b, (Ref (Map c d) StaticLifetime)] b)
+                    (λ [(Ref ((λ a) [b, (Ref c d), (Ref e d)] b) f), b, (Ref (Map c e) d)] b)
                 </p>
                 <pre class="args">
                     (kv-reduce f init m)
@@ -520,7 +520,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] Int)
+                    (λ [(Ref (Map a b) c)] Int)
                 </p>
                 <pre class="args">
                     (length m)
@@ -580,7 +580,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a StaticLifetime), (Ref b StaticLifetime)] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref b c)] (Map a b))
                 </p>
                 <pre class="args">
                     (put m k v)
@@ -600,7 +600,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime), (Ref a StaticLifetime), (Ref b c)] ())
+                    (λ [(Ref (Map a b) c), (Ref a c), (Ref b d)] ())
                 </p>
                 <pre class="args">
                     (put! m k v)
@@ -620,7 +620,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a StaticLifetime)] (Map a b))
+                    (λ [(Map a b), (Ref a c)] (Map a b))
                 </p>
                 <pre class="args">
                     (remove m k)
@@ -640,7 +640,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] (Map b a))
+                    (λ [(Ref (Map a b) c)] (Map b a))
                 </p>
                 <pre class="args">
                     (reverse m)
@@ -740,7 +740,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] String)
+                    (λ [(Ref (Map a b) c)] String)
                 </p>
                 <pre class="args">
                     (str m)
@@ -760,7 +760,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] (Array (Pair a b)))
+                    (λ [(Ref (Map a b) c)] (Array (Pair a b)))
                 </p>
                 <pre class="args">
                     (to-array m)
@@ -780,7 +780,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a StaticLifetime), (Ref ((λ c) [b] b) StaticLifetime)] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) c)] (Map a b))
                 </p>
                 <pre class="args">
                     (update m k f)
@@ -840,7 +840,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Map a b), (Ref a StaticLifetime), (Ref ((λ c) [b] b) StaticLifetime), b] (Map a b))
+                    (λ [(Map a b), (Ref a c), (Ref ((λ d) [b] b) c), b] (Map a b))
                 </p>
                 <pre class="args">
                     (update-with-default m k f v)
@@ -860,7 +860,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Map a b) StaticLifetime)] (Array b))
+                    (λ [(Ref (Map a b) c)] (Array b))
                 </p>
                 <pre class="args">
                     (vals m)

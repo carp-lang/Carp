@@ -149,7 +149,7 @@
                 IO
             </h1>
             <div class="module-description">
-
+                
             </div>
             <div class="binder">
                 <a class="anchor" href="#EOF">
@@ -164,7 +164,7 @@
                     Char
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>the End-Of-File character as a literal.</p>
@@ -184,10 +184,10 @@
                     Int
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -203,10 +203,10 @@
                     Int
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -222,10 +222,10 @@
                     Int
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -281,7 +281,7 @@
                     (λ [(Ref String a)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>prints a string ref to stderr, does not append a newline.</p>
@@ -301,7 +301,7 @@
                     (λ [(Ref String a)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>prints a string ref to stderr, appends a newline.</p>
@@ -321,7 +321,7 @@
                     (λ [Int] a)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>exit the current program with a return code.</p>
@@ -341,7 +341,7 @@
                     (λ [(Ptr FILE)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>closes a file pointer.</p>
@@ -361,7 +361,7 @@
                     (λ [(Ptr FILE)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>flushes a file pointer (i.e. commits every write).</p>
@@ -381,7 +381,7 @@
                     (λ [(Ptr FILE)] Char)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>gets a character from a file pointer.</p>
@@ -401,7 +401,7 @@
                     (λ [(Ref String a), (Ref String b)] (Ptr FILE))
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.</p>
@@ -421,7 +421,7 @@
                     (λ [a, Int, Int, (Ptr FILE)] Int)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>reads from a file pointer into a pointer.</p>
@@ -441,7 +441,7 @@
                     (λ [(Ptr FILE), Int, Int] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>sets the position indicator of a file.</p>
@@ -461,7 +461,7 @@
                     (λ [(Ptr FILE)] Int)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>gets the position indicator of a file.</p>
@@ -481,7 +481,7 @@
                     (λ [a, Int, Int, (Ptr FILE)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>writes to a file pointer.</p>
@@ -501,7 +501,7 @@
                     (λ [] Char)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>gets a character from stdin.</p>
@@ -521,7 +521,7 @@
                     (λ [] String)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>gets a line from stdin.</p>
@@ -544,7 +544,7 @@
                     (getenv s)
                 </pre>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -557,7 +557,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] (Result (Ptr FILE) Int))
+                    (λ [(Ref String a), (Ref String b)] (Result (Ptr FILE) Int))
                 </p>
                 <pre class="args">
                     (open-file filename mode)
@@ -580,7 +580,7 @@
                     (λ [(Ref String a)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>prints a string ref to stdout, does not append a newline.</p>
@@ -600,7 +600,7 @@
                     (λ [(Ref String a)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>prints a string ref to stdout, appends a newline.</p>
@@ -617,7 +617,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Result String Int))
+                    (λ [(Ref String a)] (Result String Int))
                 </p>
                 <pre class="args">
                     (read-&gt;EOF filename)
@@ -640,7 +640,7 @@
                     (λ [(Ref String a)] String)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>returns the contents of a file passed as argument as a string.</p>
@@ -660,7 +660,7 @@
                     (λ [(Ptr FILE)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>rewinds a file pointer (i.e. puts input and output stream to beginning).</p>
@@ -680,10 +680,10 @@
                     (Ptr FILE)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -699,10 +699,10 @@
                     (Ptr FILE)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -718,10 +718,10 @@
                     (Ptr FILE)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -737,7 +737,7 @@
                     (λ [String] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>unlinks a file (i.e. deletes it).</p>

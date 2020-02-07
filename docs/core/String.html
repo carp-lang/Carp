@@ -374,7 +374,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array String) StaticLifetime)] String)
+                    (λ [(Ref (Array String) a)] String)
                 </p>
                 <pre class="args">
                     (concat strings)
@@ -667,7 +667,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref String a), (Ref (Array String) StaticLifetime)] String)
+                    (λ [(Ref String a), (Ref (Array String) b)] String)
                 </p>
                 <pre class="args">
                     (join sep strings)
@@ -687,7 +687,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char, (Ref (Array String) StaticLifetime)] String)
+                    (λ [Char, (Ref (Array String) a)] String)
                 </p>
                 <pre class="args">
                     (join-with-char sep strings)
@@ -1060,7 +1060,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array String) StaticLifetime)] Int)
+                    (λ [(Ref (Array String) a)] Int)
                 </p>
                 <pre class="args">
                     (sum-length strings)

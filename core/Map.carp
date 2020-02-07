@@ -144,8 +144,9 @@
   (defn put [m k v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (Bucket.put @n k v)))))))
+                           (let [n (Array.unsafe-nth &b idx)
+                                 new-b (Bucket.put @n k v)]
+                             (Array.aset b idx new-b))))))
 
   (doc put! "Put a a value v into map m, using the key k, in place.")
   (defn put! [m k v]
@@ -212,8 +213,9 @@
   (defn remove [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (Bucket.shrink @n k)))))))
+                           (let [n (Array.unsafe-nth &b idx)
+                                 new-b (Bucket.shrink @n k)]
+                             (Array.aset b idx new-b))))))
 
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
@@ -400,8 +402,9 @@
   (defn remove [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (SetBucket.shrink n k)))))))
+                           (let [n (Array.unsafe-nth &b idx)
+                                 new-b (SetBucket.shrink n k)]
+                             (Array.aset b idx new-b))))))
 
   (doc all? "Does the predicate hold for all values in this set?")
   (defn all? [pred set]

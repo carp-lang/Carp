@@ -149,7 +149,7 @@
                 Result
             </h1>
             <div class="module-description">
-
+                
             </div>
             <div class="binder">
                 <a class="anchor" href="#=">
@@ -184,7 +184,7 @@
                     (λ [a] (Result b a))
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>creates a <code>Error</code>.</p>
@@ -204,7 +204,7 @@
                     (λ [a] (Result a b))
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>creates a <code>Success</code>.</p>
@@ -221,7 +221,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] (Result c b)))] (Result c b))
+                    (λ [(Result a b), (Ref ((λ c) [a] (Result d b)) e)] (Result d b))
                 </p>
                 <pre class="args">
                     (and-then a f)
@@ -242,7 +242,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c)), (Ref (λ [b] d))] (Result c d))
+                    (λ [(Result a b), (Ref ((λ c) [a] d) e), (Ref ((λ c) [b] f) g)] (Result d f))
                 </p>
                 <pre class="args">
                     (apply a success-f error-f)
@@ -265,7 +265,7 @@
                     (λ [(Ref (Result a b) c)] (Result a b))
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>copies a <code>(Result a b)</code>.</p>
@@ -285,7 +285,7 @@
                     (λ [(Result a b)] ())
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>deletes a <code>(Result a b)</code>. Should usually not be called manually.</p>
@@ -308,7 +308,7 @@
                     (error? a)
                 </pre>
                 <p class="doc">
-
+                    
                 </p>
             </div>
             <div class="binder">
@@ -364,7 +364,7 @@
                     (λ [(Ref (Result a b) c)] Int)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>Gets the tag from a <code>Result</code>.</p>
@@ -381,7 +381,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c))] (Result c b))
+                    (λ [(Result a b), (Ref ((λ c) [a] d) e)] (Result d b))
                 </p>
                 <pre class="args">
                     (map a f)
@@ -401,7 +401,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] c))] (Result a c))
+                    (λ [(Result a b), (Ref ((λ c) [b] d) e)] (Result a d))
                 </p>
                 <pre class="args">
                     (map-error a f)
@@ -421,11 +421,7 @@
                     defn
                 </div>
                 <p class="sig">
-<<<<<<< HEAD
-                    (λ [(Result a b), ((λ c) [b] (Result a d))] (Result a d))
-=======
-                    (λ [(Result a b), (Ref (λ [b] (Result a c)))] (Result a c))
->>>>>>> master
+                    (λ [(Result a b), (Ref ((λ c) [b] (Result a d)) e)] (Result a d))
                 </p>
                 <pre class="args">
                     (or-else a f)
@@ -449,7 +445,7 @@
                     (λ [(Ref (Result a b) c)] String)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>stringifies a <code>&quot;Result&quot;</code>.</p>
@@ -469,7 +465,7 @@
                     (λ [(Ref (Result a b) c)] String)
                 </p>
                 <span>
-
+                    
                 </span>
                 <p class="doc">
                     <p>stringifies a <code>&quot;Result&quot;</code>.</p>
@@ -568,11 +564,7 @@
                     defn
                 </div>
                 <p class="sig">
-<<<<<<< HEAD
-                    (λ [(Result a b), ((λ c) [b] a)] a)
-=======
-                    (λ [(Result a b), (Ref (λ [b] a))] a)
->>>>>>> master
+                    (λ [(Result a b), (Ref ((λ c) [b] a) d)] a)
                 </p>
                 <pre class="args">
                     (unwrap-or-else a f)

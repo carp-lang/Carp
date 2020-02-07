@@ -177,7 +177,7 @@ templateNth =
   let t = VarTy "t"
   in defineTemplate
   (SymPath ["Array"] "unsafe-nth")
-  (FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [t]) StaticLifetimeTy, IntTy] (RefTy t StaticLifetimeTy))
+  (FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [t]) (VarTy "q"), IntTy] (RefTy t (VarTy "q")))
   "gets a reference to the `n`th element from an array `a`."
   (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
@@ -201,11 +201,11 @@ templateRaw = defineTemplate
 templateUnsafeRaw :: (String, Binder)
 templateUnsafeRaw = defineTemplate
   (SymPath ["Array"] "unsafe-raw")
-  (FuncTy [RefTy (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")))
+  (FuncTy StaticLifetimeTy [RefTy (VarTy "q") (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")))
   "returns an array `a` as a raw pointer—useful for interacting with C."
   (toTemplate "$t* $NAME (Array* a)")
   (toTemplate "$DECL { return a->data; }")
-  (\(FuncTy [RefTy arrayType] _) -> [])
+  (\(FuncTy _ [RefTy arrayType _] _) -> [])
 
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t docs
