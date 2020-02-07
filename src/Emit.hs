@@ -200,7 +200,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ""
 
             -- Fn / λ
-            [XObj (Fn name set) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn name set _) _ _, XObj (Arr argList) _ _, body] ->
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name

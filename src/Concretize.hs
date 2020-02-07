@@ -83,7 +83,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
       return (Left (DefinitionsMustBeAtToplevel xobj))
 
     -- | Fn / λ
-    visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
+    visitList allowAmbig _ env (XObj (Lst [XObj (Fn _ _ _) fni fnt, args@(XObj (Arr argsArr) ai at), body]) i t) =
       -- The basic idea of this function is to first visit the body of the lambda ("in place"),
       -- then take the resulting body and put into a separate function 'defn' with a new name
       -- in the global scope. That function definition will be set as the lambdas '.callback' in
@@ -158,7 +158,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                  modify (deleterDeps ++)
                                  modify (copyFn :)
                                  modify (copyDeps ++)
-                       return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars)) fni fnt, args, okBody])
+                       return (Right [XObj (Fn (Just lambdaPath) (Set.fromList capturedVars) (FEnv env)) fni fnt, args, okBody])
            Left err ->
              return (Left err)
 
@@ -314,7 +314,7 @@ collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
     visit xobj =
       case obj xobj of
         -- don't peek inside lambdas, trust their capture lists:
-        (Lst [XObj (Fn _ captures) _ _, _, _]) -> Set.toList captures
+        (Lst [XObj (Fn _ captures _ ) _ _, _, _]) -> Set.toList captures
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
         (Sym path (LookupLocal Capture)) -> [xobj]
@@ -719,7 +719,7 @@ manageMemory typeEnv globalEnv root =
                                  return (XObj (Lst [defn, nameSymbol, args, okBody]) i t)
 
             -- Fn / λ (Lambda)
-            [fn@(XObj (Fn _ captures) _ _), args@(XObj (Arr argList) _ _), body] ->
+            [fn@(XObj (Fn _ captures _) _ _), args@(XObj (Arr argList) _ _), body] ->
               let Just funcTy@(FuncTy _ _ fnReturnType) = t
               in  do manage xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
                      mapM_ unmanage captures
