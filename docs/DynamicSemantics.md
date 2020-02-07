@@ -33,6 +33,8 @@ This document will help us rewrite Carp's dynamic evaluator (defined in Eval.hs)
 ## 0. Terms used in this document
 * form : Any valid Carp data struture as represented in text.
 * top level : Any form that isn't embedded in another form.
+* Static Carp : The compiled version of the Carp langauge
+* Dynamic Carp : The interpreted, funcitonal, GC'ed version of the Carp langauge
 
 ## 1. Scoping Rules
 Related issues:
@@ -41,6 +43,8 @@ Related issues:
 Questions:
 * How does Carp figure out what the definition of the symbol X is?
 * How do you set the value for symbol X?
+* Are there any reserved names?
+* What is a keyword?
 ### 1.1 Global Variables
 Questions:
 * Are global variables mutable?
@@ -66,3 +70,16 @@ Questions:
 * When are symbols evaluated?
 * When are forms evaluated?
 * Are forms evaluated left-to-right or right-to-left?
+* How does error reporting work?
+
+### 2.1 Macros
+Questions:
+* What is a macro?
+* What functions are available at macro-expansion time?
+* What is quasi-quoting and what is its syntax?
+* What is splicing, and what is its syntax?
+
+### 2.2 REPL
+Questions:
+* How does the REPL know when to evalutate something in the dynamic or static context?
+* When does it decide to run the given code in the dynamic or static context?
