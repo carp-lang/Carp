@@ -129,6 +129,42 @@
 
   (defndynamic reverse [lst]
     (reverse-internal lst ()))
+
+  (doc plist-get "Return the value of the item pointed to by `key`. Returns `()` if not found.")
+  (defndynamic plist-get [plist key]
+    (if (not (= 0 (length plist)))
+      (if (= (car plist) key)
+        (car (cdr plist))
+        (plist-get (cdr (cdr plist)) key))
+      ()))
+
+  (private plist-remove-internal)
+  (hidden plist-remove-internal)
+  (defndynamic plist-remove-internal [plist key accum]
+    (if (not (= 0 (length plist)))
+      (if (= (car plist) key)
+        (append (reverse accum) (cdr (cdr plist)))
+        (plist-remove-internal (cdr (cdr plist)) key (Dynamic.cons (cadr plist) (cons (car plist) accum))))
+      ()))
+
+  (doc plist-remove "Return a new plist with the given key and its corresponding item removed")
+  (defndynamic plist-remove [plist key]
+    (plist-remove-internal plist key ()))
+
+  (private plist-set-internal)
+  (hidden plist-set-internal)
+  (defndynamic plist-set-internal [plist key item accum]
+    (if (not (= 0 (length plist)))
+      (if (= (car plist) key)
+        (append (reverse (cons item (cons key accum))) (cdr (cdr plist)))
+        (plist-set-internal (cdr (cdr plist)) key item
+                          (Dynamic.cons (cadr plist) (cons (car plist) accum))))
+      (reverse (Dynamic.cons item (Dynamic.cons key accum)))))
+
+  (doc plist-set "Return a new plist with the given item and key added.
+If the key already exists, overwrite the old item.")
+  (defndynamic plist-set [plist key item]
+    (plist-set-internal plist key item ()))
   )
 
 (defndynamic cond-internal [xs]
