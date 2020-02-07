@@ -17,13 +17,13 @@ import Lookup
 -- | "Endofunctor Map"
 templateEMap :: (String, Binder)
 templateEMap =
-  let fTy = FuncTy (VarTy "fq") [VarTy "a"] (VarTy "a")
+  let fTy = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
       aTy = StructTy "Array" [VarTy "a"]
       bTy = StructTy "Array" [VarTy "a"]
       elem = "((($a*)a.data)[i])"
   in  defineTemplate
       (SymPath ["Array"] "endo-map")
-      (FuncTy StaticLifetimeTy [RefTy fTy (VarTy "q"), aTy] bTy)
+      (FuncTy [RefTy fTy (VarTy "q"), aTy] bTy StaticLifetimeTy)
       "applies a function `f` to an array `a`. The type of the elements cannot change."
       (toTemplate "Array $NAME(Lambda *f, Array a)") -- Lambda used to be $(Fn [a] a)
       (toTemplate $ unlines
@@ -34,8 +34,8 @@ templateEMap =
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy _ [RefTy t@(FuncTy _ fArgTys fRetTy) _, arrayType] _) ->
-         [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy StaticLifetimeTy (lambdaEnvTy : fArgTys) fRetTy)])
+      (\(FuncTy [RefTy t@(FuncTy fArgTys fRetTy _) _, arrayType] _ _) ->
+         [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)])
 
 templateShrinkCheck :: String -> String
 templateShrinkCheck var =
@@ -49,10 +49,10 @@ templateShrinkCheck var =
 templateEFilter :: (String, Binder)
 templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
   where
-    fTy = FuncTy (VarTy "fq") [RefTy (VarTy "a") (VarTy "q")] BoolTy
+    fTy = FuncTy [RefTy (VarTy "a") (VarTy "q")] BoolTy (VarTy "fq")
     aTy = StructTy "Array" [VarTy "a"]
     path = SymPath ["Array"] "endo-filter"
-    t = FuncTy StaticLifetimeTy [RefTy fTy (VarTy "w"), aTy] aTy
+    t = FuncTy [RefTy fTy (VarTy "w"), aTy] aTy StaticLifetimeTy
     docs = "filters array members using a function. This function takes ownership."
     elem = "&((($a*)a.data)[i])"
     templateCreator = TemplateCreator $
@@ -60,7 +60,7 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
         Template
         t
         (const (toTemplate "Array $NAME(Lambda *predicate, Array a)")) -- Lambda used to be $(Fn [(Ref a)] Bool)
-        (\(FuncTy _ [RefTy (FuncTy _ [RefTy insideTy _] BoolTy) _, _] _) ->
+        (\(FuncTy [RefTy (FuncTy [RefTy insideTy _] BoolTy _) _, _] _ _) ->
            toTemplate $ unlines $
             let deleter = insideArrayDeletion typeEnv env insideTy
             in ["$DECL { "
@@ -77,8 +77,8 @@ templateEFilter = defineTypeParameterizedTemplate templateCreator path t docs
                , "    return a;"
                , "}"
                ])
-        (\(FuncTy _ [RefTy ft@(FuncTy _ fArgTys@[RefTy insideType _] BoolTy) _, arrayType] _) ->
-           [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy StaticLifetimeTy (lambdaEnvTy : fArgTys) BoolTy)] ++
+        (\(FuncTy [RefTy ft@(FuncTy fArgTys@[RefTy insideType _] BoolTy _) _, arrayType] _ _) ->
+           [defineFunctionTypeAlias ft, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) BoolTy StaticLifetimeTy)] ++
             depsForDeleteFunc typeEnv env insideType)
 
 templatePushBack :: (String, Binder)
@@ -87,7 +87,7 @@ templatePushBack =
       valTy = VarTy "a"
   in  defineTemplate
       (SymPath ["Array"] "push-back")
-      (FuncTy StaticLifetimeTy [aTy, valTy] aTy)
+      (FuncTy [aTy, valTy] aTy StaticLifetimeTy)
       "adds an element `value` to the end of an array `a`."
       (toTemplate "Array $NAME(Array a, $a value)")
       (toTemplate $ unlines
@@ -101,7 +101,7 @@ templatePushBack =
         ,"    return a;"
         ,"}"
         ])
-      (\(FuncTy _ [arrayType, _] _) -> [])
+      (\(FuncTy [arrayType, _] _ _) -> [])
 
 templatePushBackBang :: (String, Binder)
 templatePushBackBang =
@@ -109,7 +109,7 @@ templatePushBackBang =
       valTy = VarTy "a"
   in  defineTemplate
       (SymPath ["Array"] "push-back!")
-      (FuncTy StaticLifetimeTy [aTy, valTy] UnitTy)
+      (FuncTy [aTy, valTy] UnitTy StaticLifetimeTy)
       "adds an element `value` to the end of an array `a` in-place."
       (toTemplate "void $NAME(Array *aRef, $a value)")
       (toTemplate $ unlines
@@ -122,20 +122,20 @@ templatePushBackBang =
         ,"    (($a*)aRef->data)[aRef->len - 1] = value;"
         ,"}"
         ])
-      (\(FuncTy _ [arrayType, _] _) -> [])
+      (\(FuncTy [arrayType, _] _ _) -> [])
 
 templatePopBack :: (String, Binder)
 templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "pop-back"
         aTy = StructTy "Array" [VarTy "a"]
-        t = FuncTy StaticLifetimeTy [aTy] aTy
+        t = FuncTy [aTy] aTy StaticLifetimeTy
         docs = "removes the last element of an array and returns the new array."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "Array $NAME(Array a)"))
-            (\(FuncTy _ [arrayType@(StructTy _ [insideTy])] _) ->
+            (\(FuncTy [arrayType@(StructTy _ [insideTy])] _ _) ->
                let deleteElement = insideArrayDeletion typeEnv env insideTy
                in toTemplate (unlines
                                ["$DECL { "
@@ -146,7 +146,7 @@ templatePopBack = defineTypeParameterizedTemplate templateCreator path t docs
                                ,"  return a;"
                                ,"}"
                                ]))
-            (\(FuncTy _ [arrayType@(StructTy _ [insideTy])] _) ->
+            (\(FuncTy [arrayType@(StructTy _ [insideTy])] _ _) ->
                depsForDeleteFunc typeEnv env arrayType ++
                depsForCopyFunc typeEnv env insideTy
             )
@@ -157,7 +157,7 @@ templatePopBackBang =
       valTy = VarTy "a"
   in  defineTemplate
       (SymPath ["Array"] "pop-back!")
-      (FuncTy StaticLifetimeTy [aTy] (VarTy "a"))
+      (FuncTy [aTy] (VarTy "a") StaticLifetimeTy)
       "removes an element `value` from the end of an array `a` in-place and returns it."
       (toTemplate "$a $NAME(Array *aRef)")
       (toTemplate $ unlines
@@ -169,7 +169,7 @@ templatePopBackBang =
          ,"  return ret;"
          ,"}"
         ])
-      (\(FuncTy _ [arrayType] _) -> [])
+      (\(FuncTy [arrayType] _ _) -> [])
 
 
 templateNth :: (String, Binder)
@@ -177,7 +177,7 @@ templateNth =
   let t = VarTy "t"
   in defineTemplate
   (SymPath ["Array"] "unsafe-nth")
-  (FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [t]) (VarTy "q"), IntTy] (RefTy t (VarTy "q")))
+  (FuncTy [RefTy (StructTy "Array" [t]) (VarTy "q"), IntTy] (RefTy t (VarTy "q")) StaticLifetimeTy)
   "gets a reference to the `n`th element from an array `a`."
   (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
@@ -186,38 +186,38 @@ templateNth =
                         ,"    assert(n < a.len);"
                         ,"    return &((($t*)a.data)[n]);"
                         ,"}"])
-  (\(FuncTy _ [RefTy arrayType _, _] _) ->
+  (\(FuncTy [RefTy arrayType _, _] _ _) ->
      [])
 
 templateRaw :: (String, Binder)
 templateRaw = defineTemplate
   (SymPath ["Array"] "raw")
-  (FuncTy StaticLifetimeTy [StructTy "Array" [VarTy "t"]] (PointerTy (VarTy "t")))
+  (FuncTy [StructTy "Array" [VarTy "t"]] (PointerTy (VarTy "t")) StaticLifetimeTy)
   "returns an array `a` as a raw pointer—useful for interacting with C."
   (toTemplate "$t* $NAME (Array a)")
   (toTemplate "$DECL { return a.data; }")
-  (\(FuncTy _ [arrayType] _) -> [])
+  (\(FuncTy [arrayType] _ _) -> [])
 
 templateUnsafeRaw :: (String, Binder)
 templateUnsafeRaw = defineTemplate
   (SymPath ["Array"] "unsafe-raw")
-  (FuncTy StaticLifetimeTy [RefTy (VarTy "q") (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")))
+  (FuncTy [RefTy (VarTy "q") (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")) StaticLifetimeTy)
   "returns an array `a` as a raw pointer—useful for interacting with C."
   (toTemplate "$t* $NAME (Array* a)")
   (toTemplate "$DECL { return a->data; }")
-  (\(FuncTy _ [RefTy arrayType _] _) -> [])
+  (\(FuncTy [RefTy arrayType _] _ _) -> [])
 
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "aset"
-        t = FuncTy StaticLifetimeTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"])
+        t = FuncTy [StructTy "Array" [VarTy "t"], IntTy, VarTy "t"] (StructTy "Array" [VarTy "t"]) StaticLifetimeTy
         docs = "sets an array element at the index `n` to a new value."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (\_ -> toTemplate "Array $NAME (Array a, int n, $t newValue)")
-            (\(FuncTy _ [_, _, insideTy] _) ->
+            (\(FuncTy [_, _, insideTy] _ _) ->
                let deleter = insideArrayDeletion typeEnv env insideTy
                in  toTemplate $ unlines ["$DECL {"
                                         ,"    assert(n >= 0);"
@@ -226,20 +226,20 @@ templateAset = defineTypeParameterizedTemplate templateCreator path t docs
                                         ,"    (($t*)a.data)[n] = newValue;"
                                         ,"    return a;"
                                         ,"}"])
-            (\(FuncTy _ [_, _, insideTy] _) ->
+            (\(FuncTy [_, _, insideTy] _ _) ->
                 depsForDeleteFunc typeEnv env insideTy)
 
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "aset!"
-        t = FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
         docs = "sets an array element at the index `n` to a new value in place."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "void $NAME (Array *aRef, int n, $t newValue)"))
-            (\(FuncTy _ [_, _, insideTy] _) ->
+            (\(FuncTy [_, _, insideTy] _ _) ->
                let deleter = insideArrayDeletion typeEnv env insideTy
                in  (toTemplate $ unlines ["$DECL {"
                                          ,"    Array a = *aRef;"
@@ -248,7 +248,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
                                          ,     deleter "n"
                                          ,"    (($t*)a.data)[n] = newValue;"
                                          ,"}"]))
-            (\(FuncTy _ [RefTy arrayType _, _, _] _) ->
+            (\(FuncTy [RefTy arrayType _, _, _] _ _) ->
                depsForDeleteFunc typeEnv env arrayType)
 
 -- | This function can set uninitialized memory in an array (used together with 'allocate').
@@ -256,7 +256,7 @@ templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
 templateAsetUninitializedBang :: (String, Binder)
 templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "aset-uninitialized!"
-        t = FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
         docs = "sets an uninitialized array member. The old member will not be deleted."
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -274,7 +274,7 @@ templateAsetUninitializedBang = defineTypeParameterizedTemplate templateCreator 
 templateLength :: (String, Binder)
 templateLength = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "length"
-        t = FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q")] IntTy
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
         docs = "gets the length of the array."
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -282,20 +282,20 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
             t
             (const (toTemplate "int $NAME (Array *a)"))
             (const (toTemplate "$DECL { return (*a).len; }"))
-            (\(FuncTy _ [RefTy arrayType _] _) ->
+            (\(FuncTy [RefTy arrayType _] _ _) ->
               depsForDeleteFunc typeEnv env arrayType)
 
 templateAllocate :: (String, Binder)
 templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "allocate"
-        t = FuncTy StaticLifetimeTy [IntTy] (StructTy "Array" [VarTy "t"])
+        t = FuncTy [IntTy] (StructTy "Array" [VarTy "t"]) StaticLifetimeTy
         docs = "allocates an uninitialized array. You can initialize members using [`aset-uninitialized`](#aset-uninitialized)."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "Array $NAME (int n)"))
-            (\(FuncTy _ [_] arrayType) ->
+            (\(FuncTy [_] arrayType _) ->
                toTemplate $ unlines (["$DECL {"
                                          ,"    Array a;"
                                          ,"    a.len = n;"
@@ -304,24 +304,24 @@ templateAllocate = defineTypeParameterizedTemplate templateCreator path t docs
                                          ++ initTy arrayType ++
                                         ["    return a;"
                                          ,"}"]))
-            (\(FuncTy _ [_] arrayType) ->
+            (\(FuncTy [_] arrayType _) ->
                depsForDeleteFunc typeEnv env arrayType)
 
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "delete"
-        t = FuncTy StaticLifetimeTy [StructTy "Array" [VarTy "a"]] UnitTy
+        t = FuncTy [StructTy "Array" [VarTy "a"]] UnitTy StaticLifetimeTy
         docs = "deletes an array. This function should usually not be called manually."
         templateCreator = TemplateCreator $
           \typeEnv env ->
              Template
              t
              (const (toTemplate "void $NAME (Array a)"))
-             (\(FuncTy _ [arrayType] UnitTy) ->
+             (\(FuncTy [arrayType] UnitTy _) ->
                 [TokDecl, TokC "{\n"] ++
                 deleteTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy _ [arrayType@(StructTy "Array" [insideType])] UnitTy) ->
+             (\(FuncTy [arrayType@(StructTy "Array" [insideType])] UnitTy _) ->
                 depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
@@ -361,14 +361,14 @@ insideArrayDeletion typeEnv env t indexer =
 templateCopyArray :: (String, Binder)
 templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "copy"
-        t = FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [VarTy "a"]) (VarTy "q")] (StructTy "Array" [VarTy "a"])
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "a"]) (VarTy "q")] (StructTy "Array" [VarTy "a"]) StaticLifetimeTy
         docs = "copies an array."
         templateCreator = TemplateCreator $
           \typeEnv env ->
              Template
              t
              (const (toTemplate "Array $NAME (Array* a)"))
-             (\(FuncTy _ [RefTy arrayType _] _) ->
+             (\(FuncTy [RefTy arrayType _] _ _) ->
                 [TokDecl, TokC "{\n"] ++
                 [TokC "    Array copy;\n"] ++
                 [TokC "    copy.len = a->len;\n"] ++
@@ -378,7 +378,7 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
                 [TokC "    return copy;\n"] ++
                 [TokC "}\n"])
              (\case
-                 (FuncTy _ [RefTy arrayType@(StructTy "Array" [insideType]) _] _) ->
+                 (FuncTy [RefTy arrayType@(StructTy "Array" [insideType]) _] _ _) ->
                    depsForCopyFunc typeEnv env insideType ++
                    depsForDeleteFunc typeEnv env arrayType
                  err ->
@@ -419,14 +419,14 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
              Template
              t
              (const (toTemplate "String $NAME (Array* a)"))
-             (\(FuncTy _ [RefTy arrayType _] StringTy) ->
+             (\(FuncTy [RefTy arrayType _] StringTy _) ->
                 [TokDecl, TokC " {\n"] ++
                 strTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy _ [RefTy arrayType@(StructTy "Array" [insideType]) _] StringTy) ->
+             (\(FuncTy [RefTy arrayType@(StructTy "Array" [insideType]) _] StringTy _) ->
                 depsForPrnFunc typeEnv env insideType)
         path = SymPath ["Array"] "str"
-        t = FuncTy StaticLifetimeTy [RefTy (StructTy "Array" [VarTy "a"]) (VarTy "q")] StringTy
+        t = FuncTy [RefTy (StructTy "Array" [VarTy "a"]) (VarTy "q")] StringTy StaticLifetimeTy
         docs = "converts an array to a string."
 
 -- | TODO: move this into the templateStrArray function?

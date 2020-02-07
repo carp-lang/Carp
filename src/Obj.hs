@@ -403,7 +403,11 @@ showBinderIndented indent (name, Binder meta xobj) =
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
-memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
+memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJustWithErrorMessage (xobjToTy t) ("Failed to convert " ++ show t ++ "\nPRETTY: " ++ pretty t ++ " from xobj to type."))) (pairwise xobjs)
+
+fromJustWithErrorMessage :: Maybe Ty -> String -> Ty
+fromJustWithErrorMessage (Just x) _ = x
+fromJustWithErrorMessage Nothing msg = error msg
 
 replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
 replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
@@ -430,8 +434,8 @@ tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
 tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
 tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
-tyToXObj (FuncTy StaticLifetimeTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
-tyToXObj (FuncTy lt argTys returnTy) = XObj (Lst [(XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, tyToXObj lt]) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -655,12 +659,12 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) a
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy StaticLifetimeTy okArgTys okRetTy)
-xobjToTy (XObj (Lst [XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, lifetime]) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
-  do okLifetime <- xobjToTy lifetime
-     okArgTys <- mapM xobjToTy argTys
+     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
+  do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy StaticLifetimeTy okArgTys okRetTy)
+     okLifetime <- xobjToTy lifetime
+     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
@@ -699,7 +703,7 @@ polymorphicSuffix signature actualType =
                                      then return []
                                      else do put (a : visitedTypeVariables) -- now it's visited
                                              return [tyToC b]
-            (FuncTy _ argTysA retTyA, FuncTy _ argTysB retTyB) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
+            (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
                                                                      visitedRets <- visit retTyA retTyB
                                                                      return (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)

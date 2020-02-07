@@ -546,29 +546,29 @@ depsOfPolymorphicFunction typeEnv env visitedDefinitions functionName functionTy
 depsForDeleteFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForDeleteFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy StaticLifetimeTy [t] UnitTy)
+  then depsOfPolymorphicFunction typeEnv env [] "delete" (FuncTy [t] UnitTy StaticLifetimeTy)
   else []
 
 -- | Helper for finding the 'copy' function for a type.
 depsForCopyFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForCopyFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy StaticLifetimeTy [RefTy t (VarTy "q")] t)
+  then depsOfPolymorphicFunction typeEnv env [] "copy" (FuncTy [RefTy t (VarTy "q")] t StaticLifetimeTy)
   else []
 
 -- | Helper for finding the 'str' function for a type.
 depsForPrnFunc :: TypeEnv -> Env -> Ty -> [XObj]
 depsForPrnFunc typeEnv env t =
   if isManaged typeEnv t
-  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy StaticLifetimeTy [RefTy t (VarTy "q")] StringTy)
-  else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy StaticLifetimeTy [t] StringTy)
+  then depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [RefTy t (VarTy "q")] StringTy StaticLifetimeTy)
+  else depsOfPolymorphicFunction typeEnv env [] "prn" (FuncTy [t] StringTy StaticLifetimeTy)
 
 -- | The type of a type's str function.
 typesStrFunctionType :: TypeEnv -> Ty -> Ty
 typesStrFunctionType typeEnv memberType =
   if isManaged typeEnv memberType
-  then FuncTy StaticLifetimeTy [RefTy memberType (VarTy "q")] StringTy
-  else FuncTy StaticLifetimeTy [memberType] StringTy
+  then FuncTy [RefTy memberType (VarTy "q")] StringTy StaticLifetimeTy
+  else FuncTy [memberType] StringTy StaticLifetimeTy
 
 -- | The various results when trying to find a function using 'findFunctionForMember'.
 data FunctionFinderResult = FunctionFound String
@@ -693,7 +693,7 @@ manageMemory typeEnv globalEnv root =
         visitList xobj@(XObj (Lst lst) i t) =
           case lst of
             [defn@(XObj (Defn maybeCaptures) _ _), nameSymbol@(XObj (Sym _ _) _ _), args@(XObj (Arr argList) _ _), body] ->
-              let Just funcTy@(FuncTy _ _ defnReturnType) = t
+              let Just funcTy@(FuncTy _ defnReturnType _) = t
                   captures = fromMaybe [] (fmap Set.toList maybeCaptures)
               in case defnReturnType of
                    -- RefTy _ _ ->
@@ -720,7 +720,7 @@ manageMemory typeEnv globalEnv root =
 
             -- Fn / λ (Lambda)
             [fn@(XObj (Fn _ captures _) _ _), args@(XObj (Arr argList) _ _), body] ->
-              let Just funcTy@(FuncTy _ _ fnReturnType) = t
+              let Just funcTy@(FuncTy _ fnReturnType _) = t
               in  do manage xobj -- manage inner lambdas but leave their bodies unvisited, they will be visited in the lifted version...
                      mapM_ unmanage captures
                      return (Right (XObj (Lst [fn, args, body]) i t))
@@ -1089,7 +1089,7 @@ manageMemory typeEnv globalEnv root =
           case ty xobj of
             Just (RefTy _ (VarTy lt)) ->
               performCheck lt
-            Just (FuncTy (VarTy lt) _ _) ->
+            Just (FuncTy _ _ (VarTy lt)) ->
               performCheck lt
             _ ->
               return (Right xobj)
@@ -1169,7 +1169,7 @@ manageMemory typeEnv globalEnv root =
                       in  if isExternalType typeEnv t
                           then Just (FakeDeleter var)
                           else if isManaged typeEnv t
-                               then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy StaticLifetimeTy [t] UnitTy) "delete" of
+                               then case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                                       Just pathOfDeleteFunc ->
                                         Just (ProperDeleter pathOfDeleteFunc var)
                                       Nothing -> --trace ("Found no delete function for " ++ var ++ " : " ++ (showMaybeTy (ty xobj)))
@@ -1258,7 +1258,7 @@ suffixTyVars :: String -> Ty -> Ty
 suffixTyVars suffix t =
   case t of
     VarTy key -> VarTy (key ++ suffix)
-    FuncTy ltTy argTys retTy -> FuncTy (suffixTyVars suffix ltTy) (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy)
+    FuncTy argTys retTy ltTy -> FuncTy (map (suffixTyVars suffix) argTys) (suffixTyVars suffix retTy) (suffixTyVars suffix ltTy)
     StructTy name tyArgs -> StructTy name (fmap (suffixTyVars suffix) tyArgs)
     PointerTy x -> PointerTy (suffixTyVars suffix x)
     RefTy x lt -> RefTy (suffixTyVars suffix x) (suffixTyVars suffix lt)
@@ -1281,7 +1281,7 @@ data AllocationMode = StackAlloc | HeapAlloc
 concreteDelete :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteDelete typeEnv env members =
   Template
-   (FuncTy StaticLifetimeTy [VarTy "p"] UnitTy)
+   (FuncTy [VarTy "p"] UnitTy StaticLifetimeTy)
    (const (toTemplate "void $NAME($p p)"))
    (const (toTemplate $ unlines [ "$DECL {"
                                 , joinWith "\n" (map (memberDeletion typeEnv env) members)
@@ -1293,7 +1293,7 @@ concreteDelete typeEnv env members =
 concreteDeleteTakePtr :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteDeleteTakePtr typeEnv env members =
   Template
-   (FuncTy StaticLifetimeTy [PointerTy (VarTy "p")] UnitTy)
+   (FuncTy [PointerTy (VarTy "p")] UnitTy StaticLifetimeTy)
    (const (toTemplate "void $NAME($p* p)"))
    (const (toTemplate $ unlines [ "$DECL {"
                                 , joinWith "\n" (map (memberDeletionGeneral "->" typeEnv env) members)
@@ -1317,7 +1317,7 @@ memberRefDeletion = memberDeletionGeneral "Ref->"
 concreteCopy :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteCopy typeEnv env memberPairs =
   Template
-   (FuncTy StaticLifetimeTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p"))
+   (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy)
    (const (toTemplate "$p $NAME($p* pRef)"))
    (const (tokensForCopy typeEnv env memberPairs))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)
@@ -1345,7 +1345,7 @@ memberCopy typeEnv env (memberName, memberType) =
 concreteCopyPtr :: TypeEnv -> Env -> [(String, Ty)] -> Template
 concreteCopyPtr typeEnv env memberPairs =
   Template
-   (FuncTy StaticLifetimeTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p"))
+   (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy)
    (const (toTemplate "$p* $NAME($p* pRef)"))
    (const (tokensForCopyPtr typeEnv env memberPairs))
    (\_ -> concatMap (depsOfPolymorphicFunction typeEnv env [] "copy" . typesCopyFunctionType)

@@ -437,7 +437,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [((λ a) [b] c), (Ref (Vector3 b) d)] (Vector3 c))
+                    (λ [(λ [a] b c), (Ref (Vector3 a) d)] (Vector3 b))
                 </p>
                 <pre class="args">
                     (map f v)
@@ -771,7 +771,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref ((λ b) [a] a) c)] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -791,7 +791,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref ((λ b) [a] a) c)] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -811,7 +811,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref ((λ b) [a] a) c)] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -871,7 +871,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [((λ a) [b, c] b), b, (Ref (Vector3 c) d)] b)
+                    (λ [(λ [a, b] a c), a, (Ref (Vector3 b) d)] a)
                 </p>
                 <pre class="args">
                     (vreduce f i v)
@@ -969,7 +969,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [((λ a) [b, c] d), (Ref (Vector3 b) e), (Ref (Vector3 c) f)] (Vector3 d))
+                    (λ [(λ [a, b] c d), (Ref (Vector3 a) e), (Ref (Vector3 b) f)] (Vector3 c))
                 </p>
                 <pre class="args">
                     (zip f a b)

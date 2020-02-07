@@ -64,7 +64,7 @@ depthOfType typeEnv visited selfName theType =
   where
     visitType :: Ty -> Int
     visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
-    visitType (FuncTy ltTy argTys retTy) =
+    visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
       maximum (visitType ltTy : visitType retTy : fmap visitType argTys)
     visitType (PointerTy p) = visitType p

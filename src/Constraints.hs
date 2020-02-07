@@ -124,7 +124,7 @@ solveOneInternal mappings constraint =
       else Left (UnificationFailure constraint mappings)
 
     -- Func types
-    Constraint (FuncTy ltA argsA retA) (FuncTy ltB argsB retB) _ _ _ _ ->
+    Constraint (FuncTy argsA retA ltA) (FuncTy argsB retB ltB) _ _ _ _ ->
       if length argsA == length argsB
       then let (Constraint _ _ i1 i2 ctx ord) = constraint
                res = foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip (retA : argsA)
@@ -172,9 +172,9 @@ checkForConflict mappings constraint name otherTy =
                                                    foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
-        Just (FuncTy lifetimeTy argTys retTy) ->
+        Just (FuncTy argTys retTy lifetimeTy) ->
           case otherTy of
-            FuncTy otherLifetimeTy otherArgTys otherRetTy ->
+            FuncTy otherArgTys otherRetTy otherLifetimeTy ->
               do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
                  case solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
                    Right ok -> solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
@@ -219,7 +219,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
         fullResolve x@(VarTy var) =
           case recursiveLookup mappings var of
             Just (StructTy name varTys) -> StructTy name (map (fullLookup Set.empty) varTys)
-            Just (FuncTy ltTy argTys retTy) -> FuncTy (fullLookup Set.empty ltTy) (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy)
+            Just (FuncTy argTys retTy ltTy) -> FuncTy (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy) (fullLookup Set.empty ltTy)
             Just found -> found
             Nothing -> x -- still not found, must be a generic variable
         fullResolve x = x
@@ -234,7 +234,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
         fullLookup visited structTy@(StructTy name vs) =
           let newVisited = Set.insert structTy visited
           in  StructTy name (map (fullLookup newVisited) vs)
-        fullLookup visited funcTy@(FuncTy ltTy argTys retTy) =
+        fullLookup visited funcTy@(FuncTy argTys retTy ltTy) =
           let newVisited = Set.insert funcTy visited
-          in  FuncTy (fullLookup newVisited ltTy) (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy)
+          in  FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy) (fullLookup newVisited ltTy)
         fullLookup visited x = x
