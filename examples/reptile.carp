@@ -109,9 +109,8 @@
 
 (defn grow [snake]
   (let [new-snake (Snake.update-freeze snake &inc2)
-        b (Snake.body &new-snake)
-        new-b (push-back @b (unsafe-last b))]
-    (Snake.set-body new-snake new-b)))
+        b (Snake.body &new-snake)]
+    (Snake.set-body new-snake (push-back @b (unsafe-last b)))))
 
 (defn update-after-kill [world]
   (let [s (World.snake &world)

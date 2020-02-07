@@ -993,17 +993,24 @@ manageMemory typeEnv globalEnv root =
             XObj (Lst [deref@(XObj Deref _ _), f]) xi xt : args ->
               do -- Do not visit f in this case, we don't want to manage it's memory since it is a ref!
                  visitedArgs <- sequence <$> mapM visitArg args
-                 manage xobj
-                 return $ do okArgs <- visitedArgs
-                             Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
+                 case visitedArgs of
+                   Left err -> return (Left err)
+                   Right args ->
+                     do unmanagedArgs <- sequence <$> mapM unmanageArg args
+                        manage xobj
+                        return $ do okArgs <- unmanagedArgs
+                                    Right (XObj (Lst (XObj (Lst [deref, f]) xi xt : okArgs)) i t)
 
             f : args ->
               do visitedF <- visit  f
                  visitedArgs <- sequence <$> mapM visitArg args
-                 manage xobj
-                 return $ do okF <- visitedF
-                             okArgs <- visitedArgs
-                             Right (XObj (Lst (okF : okArgs)) i t)
+                 case visitedArgs of
+                   Left err -> return (Left err)
+                   Right args -> do unmanagedArgs <- sequence <$> mapM unmanageArg args
+                                    manage xobj
+                                    return $ do okF <- visitedF
+                                                okArgs <- unmanagedArgs
+                                                Right (XObj (Lst (okF : okArgs)) i t)
 
             [] -> return (Right xobj)
         visitList _ = error "Must visit list."
@@ -1133,10 +1140,8 @@ manageMemory typeEnv globalEnv root =
         visitArg xobj@(XObj _ _ (Just t)) =
           do afterVisit <- if isManaged typeEnv t
                            then do visitedXObj <- visit  xobj
-                                   result <- unmanage xobj
-                                   case result of
-                                     Left e  -> return (Left e)
-                                     Right _ -> return visitedXObj
+                                   --result <- unmanage xobj
+                                   return visitedXObj
                            else visit xobj
              case afterVisit of
                Right okAfterVisit -> do addToLifetimesMappingsIfRef True okAfterVisit
@@ -1144,6 +1149,17 @@ manageMemory typeEnv globalEnv root =
                Left err -> return (Left err)
         visitArg xobj@XObj{} =
           visit  xobj
+
+        unmanageArg :: XObj -> State MemState (Either TypeError XObj)
+        unmanageArg xobj@(XObj _ _ (Just t)) =
+          do if isManaged typeEnv t
+               then do r <- unmanage xobj
+                       case r of
+                         Left err -> return (Left err)
+                         Right () -> return (Right xobj)
+               else return (Right xobj)
+        unmanageArg xobj@XObj{} =
+          return (Right xobj)
 
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
