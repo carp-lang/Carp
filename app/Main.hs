@@ -25,7 +25,7 @@ defaultProject =
           , projectEchoC = False
           , projectLibDir = "libs"
           , projectCarpDir = "."
-          , projectOutDir = "out/"
+          , projectOutDir = "out"
           , projectDocsDir = "docs"
           , projectDocsLogo = ""
           , projectDocsPrelude = ""
@@ -57,31 +57,30 @@ main = do setLocaleEncoding utf8
               noCore = NoCore `elem` otherOptions
               optimize = Optimize `elem` otherOptions
               generateOnly = GenerateOnly `elem` otherOptions
-              projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
-                                                                  (if optimize then ["-O3 -D NDEBUG"] else []) ++
-                                                                  (projectCFlags defaultProject),
+              projectWithFiles = defaultProject { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
+                                                                  ["-O3 -D NDEBUG" | optimize] ++
+                                                                  projectCFlags defaultProject,
                                                   projectCore = not noCore,
                                                   projectGenerateOnly = generateOnly}
               noArray = False
-              coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
+              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir projectWithCarpDir)
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
               projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
-              startingContext = (Context
+              startingContext = Context
                                  (startingGlobalEnv noArray)
                                  (TypeEnv startingTypeEnv)
                                   []
                                   projectWithCustomPrompt
                                   ""
-                                  execMode)
+                                  execMode
           context <- loadFiles startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
           context' <- if hasProfile
                       then loadFiles context [carpProfile]
-                      else do --putStrLn ("No '" ++ carpProfile ++ "' found.")
-                              return context
+                      else return context
           finalContext <- loadFiles context' argFilesToLoad
           settings <- readlineSettings (bindingNames $ contextGlobalEnv finalContext)
           case execMode of
@@ -99,7 +98,7 @@ main = do setLocaleEncoding utf8
             BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
-            Check -> do return ()
+            Check -> return ()
 
 -- | Options for how to run the compiler.
 data OtherOptions = NoCore

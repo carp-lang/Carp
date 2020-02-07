@@ -6,21 +6,27 @@
   (doc apply "takes a `Result` `a` and applies functions to them, one in the case that it is an `Error`, one in the case that it is a `Success`.")
   (defn apply [a success-f error-f]
     (match a
-      (Success x) (Success (success-f x))
-      (Error x) (Error (error-f x))))
+      (Success x) (Success (~success-f x))
+      (Error x) (Error (~error-f x))))
 
   (doc map "takes a `Result` and applies a function `f` to it if it is a `Success` type, and wraps it back up. In the case that it is an `Error`, it is returned as is.")
   (defn map [a f]
     (match a
-      (Success x) (Success (f x))
+      (Success x) (Success (~f x))
       (Error x) (Error x)))
+
+  (doc map-error "takes a `Result` and applies a function `f` to it if it is an `Error` type, and wraps it back up. In the case that it is a `Success`, it is returned as is.")
+  (defn map-error [a f]
+    (match a
+      (Success x) (Success x)
+      (Error x) (Error (~f x))))
 
   (doc and-then "takes a `Result` and applies a function `f` to it if it is a `Success` type. In the case that it is an `Error`, it is returned as is.
 
 It is thus quite similar to [`map`](#map), but it will unwrap the value.")
   (defn and-then [a f]
     (match a
-      (Success x) (f x)
+      (Success x) (~f x)
       (Error x) (Error x)))
 
   (doc unwrap-or-zero "takes a `Result` and either unwraps it if it is a `Success`, or calls `zero`. `zero` must be defined on the `Success` type.")
@@ -35,13 +41,13 @@ It is the inverse of [`and-then`](#and-then).")
   (defn or-else [a f]
     (match a
       (Success x) (Success x)
-      (Error x) (f x)))
+      (Error x) (~f x)))
 
   (doc unwrap-or-else "takes a `Result` and either unwraps it if it is a `Success`, or calls a function `f` on the value contained in the `Error`.")
   (defn unwrap-or-else [a f]
     (match a
       (Success x) x
-      (Error x) (f x)))
+      (Error x) (~f x)))
 
   (doc unsafe-from-success "is an unsafe unwrapper that will get the value from a `Success`. If `a` is an `Error`, a runtime error will be generated.")
   (defn unsafe-from-success [a]

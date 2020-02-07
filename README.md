@@ -47,7 +47,7 @@ The Carp REPL has built-in documentation, run ```(help)``` to access it!
     (SDLApp.run-with-callbacks &app SDLApp.quit-on-esc tick draw state)))
 ```
 
-To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config.
+To build this example, save it to a file called 'example.carp' and load it with ```(load "example.carp")```, then execute ```(build)``` to build an executable, and ```(run)``` to start. The external dependencies are SDL2 and pkg-config. On macOS Catalina libiconv is also required.
 
 ### Language Designer & Lead Developer
 [Erik Svedäng](http://www.eriksvedang.com) ([@e_svedang](https://twitter.com/e_svedang))
@@ -72,7 +72,7 @@ Are you missing from the contributors list? Please send a pull request!
 
 ## License
 
-Copyright 2016 - 2019 Erik Svedäng
+Copyright 2016 - 2020 Erik Svedäng
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -139,7 +149,7 @@
                 Array
             </h1>
             <div class="module-description">
-                
+
             </div>
             <div class="binder">
                 <a class="anchor" href="#=">
@@ -194,7 +204,7 @@
                     (λ [Int] (Array a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>allocates an uninitialized array. You can initialize members using <a href="#aset-uninitialized"><code>aset-uninitialized</code></a>.</p>
@@ -234,7 +244,7 @@
                     (λ [(Array a), Int, a] (Array a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>sets an array element at the index <code>n</code> to a new value.</p>
@@ -254,7 +264,7 @@
                     (λ [(Ref (Array a) b), Int, a] ())
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>sets an array element at the index <code>n</code> to a new value in place.</p>
@@ -274,7 +284,7 @@
                     (λ [(Ref (Array a) b), Int, a] ())
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>sets an uninitialized array member. The old member will not be deleted.</p>
@@ -374,7 +384,7 @@
                     (λ [(Ref (Array a) b)] (Array a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>copies an array.</p>
@@ -436,7 +446,7 @@
                     (λ [(Array a)] ())
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>deletes an array. This function should usually not be called manually.</p>
@@ -496,7 +506,7 @@
                     (λ [(Ref ((λ a) [(Ref b c)] Bool) d), (Array b)] (Array b))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>filters array members using a function. This function takes ownership.</p>
@@ -516,7 +526,7 @@
                     (λ [(Ref ((λ a) [b] b) c), (Array b)] (Array b))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>applies a function <code>f</code> to an array <code>a</code>. The type of the elements cannot change.</p>
@@ -661,7 +671,7 @@
                     (λ [(Ref (Array a) b)] Int)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>gets the length of the array.</p>
@@ -720,7 +730,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) StaticLifetime), Int] (Maybe a))
+                    (λ [(Ref (Array a)), Int] (Maybe a))
                 </p>
                 <pre class="args">
                     (nth xs index)
@@ -744,7 +754,7 @@
                     (λ [(Array a)] (Array a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>removes the last element of an array and returns the new array.</p>
@@ -764,7 +774,7 @@
                     (λ [(Ref (Array a) b)] a)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>removes an element <code>value</code> from the end of an array <code>a</code> in-place and returns it.</p>
@@ -827,7 +837,7 @@
                     (prn x)
                 </pre>
                 <p class="doc">
-                    
+
                 </p>
             </div>
             <div class="binder">
@@ -843,7 +853,7 @@
                     (λ [(Array a), a] (Array a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>adds an element <code>value</code> to the end of an array <code>a</code>.</p>
@@ -863,7 +873,7 @@
                     (λ [(Ref (Array a) b), a] ())
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>adds an element <code>value</code> to the end of an array <code>a</code> in-place.</p>
@@ -903,7 +913,7 @@
                     (λ [(Array a)] (Ptr a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>returns an array <code>a</code> as a raw pointer—useful for interacting with C.</p>
@@ -929,7 +939,7 @@
                     <p>will reduce an array <code>xs</code> into a single value using a function <code>f</code> that takes the reduction thus far and the next value. The initial reduction value is <code>x</code>.</p>
 <p>As an example, consider this definition of <code>sum</code> based on <code>reduce</code>:</p>
 <pre><code>(defn sum [x]
-  (reduce + 0 x))
+  (reduce &amp;(fn [x y] (+ x @y)) 0 x))
 </code></pre>
 <p>It will sum the previous sum with each new value, starting at <code>0</code>.</p>
 
@@ -1189,7 +1199,7 @@
                     (λ [(Ref (Array a) b)] String)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>converts an array to a string.</p>
@@ -1317,6 +1327,33 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#unreduce">
+                    <h3 id="unreduce">
+                        unreduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [a, (Ref (λ [a] Bool)), (Ref (λ [a] a))] (Array a))
+                </p>
+                <pre class="args">
+                    (unreduce start test step)
+                </pre>
+                <p class="doc">
+                    <p>creates an array by producing values using <code>step</code> until they
+no longer satisfy <code>test</code>. The initial value is <code>start</code>.</p>
+<p>Example:</p>
+<pre><code>; if we didn’t have Array.range, we could define it like this:
+(defn range [start end step]
+  (unreduce start &amp;(fn [x] (&lt; x (+ step end))) &amp;(fn [x] (+ x step)))
+)
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#unsafe-first">
                     <h3 id="unsafe-first">
                         unsafe-first
@@ -1368,10 +1405,10 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) StaticLifetime), Int] (Ref a StaticLifetime))
+                    (λ [(Ref (Array t)), Int] &amp;t)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>gets a reference to the <code>n</code>th element from an array <code>a</code>.</p>

@@ -17,15 +17,15 @@ memberPrn typeEnv env (memberName, memberTy) =
    in case nameOfPolymorphicFunction typeEnv env strFuncType "prn" of
         Just strFunctionPath ->
           unlines ["  temp = " ++ pathToC strFunctionPath ++ "(" ++ maybeTakeAddress ++ "p->" ++ memberName ++ ");"
-                  , "  snprintf(bufferPtr, size, \"%s \", temp);"
+                  , "  sprintf(bufferPtr, \"%s \", temp);"
                   , "  bufferPtr += strlen(temp) + 1;"
                   , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                   ]
         Nothing ->
           if isExternalType typeEnv memberTy
           then unlines [ "  temp = malloc(11);"
-                       , "  snprintf(temp, 11, \"<external>\");"
-                       , "  snprintf(bufferPtr, size, \"%s \", temp);"
+                       , "  sprintf(temp, \"<external>\");"
+                       , "  sprintf(bufferPtr, \"%s \", temp);"
                        , "  bufferPtr += strlen(temp) + 1;"
                        , "  if(temp) { CARP_FREE(temp); temp = NULL; }"
                        ]

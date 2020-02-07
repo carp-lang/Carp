@@ -198,6 +198,15 @@ templateRaw = defineTemplate
   (toTemplate "$DECL { return a.data; }")
   (\(FuncTy _ [arrayType] _) -> [])
 
+templateUnsafeRaw :: (String, Binder)
+templateUnsafeRaw = defineTemplate
+  (SymPath ["Array"] "unsafe-raw")
+  (FuncTy [RefTy (StructTy "Array" [VarTy "t"])] (PointerTy (VarTy "t")))
+  "returns an array `a` as a raw pointer—useful for interacting with C."
+  (toTemplate "$t* $NAME (Array* a)")
+  (toTemplate "$DECL { return a->data; }")
+  (\(FuncTy [RefTy arrayType] _) -> [])
+
 templateAset :: (String, Binder)
 templateAset = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["Array"] "aset"
@@ -377,10 +386,20 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
 
 copyTy :: TypeEnv -> Env -> Ty -> [Token]
 copyTy typeEnv env (StructTy "Array" [innerType]) =
-  [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
-  , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
-  , TokC   "    }\n"
-  ]
+  if isManaged
+  then
+    [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
+    , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
+    , TokC   "    }\n"
+    ]
+  else
+    [TokC "    memcpy(copy.data, a->data, sizeof(", TokTy (VarTy "a") Normal, TokC ") * a->len);\n"]
+  where isManaged =
+          case findFunctionForMember typeEnv env "delete"
+               (typesDeleterFunctionType innerType) ("Inside array.", innerType) of
+            FunctionFound _ -> True
+            FunctionNotFound msg -> False
+            FunctionIgnored -> False
 copyTy _ _ _ = []
 
 -- | The "memberCopy" and "memberDeletion" functions in Deftype are very similar!
@@ -419,7 +438,7 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  String buffer = CARP_MALLOC(size);\n"
   , TokC   "  String bufferPtr = buffer;\n"
   , TokC   "\n"
-  , TokC   "  snprintf(buffer, size, \"[\");\n"
+  , TokC   "  sprintf(buffer, \"[\");\n"
   , TokC   "  bufferPtr += 1;\n"
   , TokC   "\n"
   , TokC   "  for(int i = 0; i < a->len; i++) {\n"
@@ -427,7 +446,7 @@ strTy typeEnv env (StructTy "Array" [innerType]) =
   , TokC   "  }\n"
   , TokC   "\n"
   , TokC   "  if(a->len > 0) { bufferPtr -= 1; }\n"
-  , TokC   "  snprintf(bufferPtr, size, \"]\");\n"
+  , TokC   "  sprintf(bufferPtr, \"]\");\n"
   , TokC   "  return buffer;\n"
   ]
 strTy _ _ _ = []
@@ -460,7 +479,7 @@ insideArrayStr typeEnv env t =
     FunctionFound functionFullName ->
       let takeAddressOrNot = if isManaged typeEnv t then "&" else ""
       in  unlines [ "  temp = " ++ functionFullName ++ "(" ++ takeAddressOrNot ++ "((" ++ tyToC t ++ "*)a->data)[i]);"
-                  , "    snprintf(bufferPtr, size, \"%s \", temp);"
+                  , "    sprintf(bufferPtr, \"%s \", temp);"
                   , "    bufferPtr += strlen(temp) + 1;"
                   , "    if(temp) {"
                   , "      CARP_FREE(temp);"

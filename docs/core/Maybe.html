@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -139,7 +149,7 @@
                 Maybe
             </h1>
             <div class="module-description">
-                
+
             </div>
             <div class="binder">
                 <a class="anchor" href="#=">
@@ -174,7 +184,7 @@
                     (λ [a] (Maybe a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>creates a <code>Just</code>.</p>
@@ -194,7 +204,7 @@
                     (λ [] (Maybe a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>creates a <code>Nothing</code>.</p>
@@ -211,7 +221,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a), ((λ b) [a] c)] (Maybe c))
+                    (λ [(Maybe a), (Ref (λ [a] b))] (Maybe b))
                 </p>
                 <pre class="args">
                     (apply a f)
@@ -234,7 +244,7 @@
                     (λ [(Ref (Maybe a) b)] (Maybe a))
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>copies a <code>(Maybe a)</code>.</p>
@@ -254,7 +264,7 @@
                     (λ [(Maybe a)] ())
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>deletes a <code>(Maybe a)</code>. Should usually not be called manually.</p>
@@ -315,7 +325,7 @@
                     (λ [(Ref (Maybe a) b)] Int)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>Gets the tag from a <code>Maybe</code>.</p>
@@ -398,7 +408,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     (λ [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>stringifies a <code>&quot;Maybe&quot;</code>.</p>
@@ -418,7 +428,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     (λ [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
-                    
+
                 </span>
                 <p class="doc">
                     <p>stringifies a <code>&quot;Maybe&quot;</code>.</p>
@@ -476,7 +486,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a) b)] (Ptr a))
+                    (λ [(Ref (Maybe a))] (Ptr a))
                 </p>
                 <pre class="args">
                     (unsafe-ptr a)

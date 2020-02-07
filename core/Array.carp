@@ -6,7 +6,7 @@ As an example, consider this definition of `sum` based on `reduce`:
 
 ```
 (defn sum [x]
-  (reduce + 0 x))
+  (reduce &(fn [x y] (+ x @y)) 0 x))
 ```
 
 It will sum the previous sum with each new value, starting at `0`.")
@@ -256,6 +256,24 @@ This function copies the array. If you don’t want that, use [`endo-map`](#endo
       (for [i 0 (length a)]
         (aset-uninitialized! &na i (~f (unsafe-nth a i))))
       na))
+
+  (doc unreduce "creates an array by producing values using `step` until they
+no longer satisfy `test`. The initial value is `start`.
+
+Example:
+```
+; if we didn’t have Array.range, we could define it like this:
+(defn range [start end step]
+  (unreduce start &(fn [x] (< x (+ step end))) &(fn [x] (+ x step)))
+)
+```")
+  (defn unreduce [start test step]
+    (let-do [elem start
+             acc []]
+      (while-do (~test elem)
+        (push-back! &acc elem)
+        (set! elem (~step elem)))
+      acc))
 
   (doc zip "maps over two arrays using a function `f` that takes two arguments. It will produces a new array with the length of the shorter input.
 

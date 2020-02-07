@@ -311,11 +311,11 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
                         , "  String buffer = CARP_MALLOC(size);"
                         , "  String bufferPtr = buffer;"
                         , ""
-                        , "  snprintf(bufferPtr, size, \"(%s \", \"" ++ typeName ++ "\");"
+                        , "  sprintf(bufferPtr, \"(%s \", \"" ++ typeName ++ "\");"
                         , "  bufferPtr += strlen(\"" ++ typeName ++ "\") + 2;\n"
                         , joinWith "\n" (map (memberPrn typeEnv env) memberPairs)
                         , "  bufferPtr--;"
-                        , "  snprintf(bufferPtr, size, \")\");"
+                        , "  sprintf(bufferPtr, \")\");"
                         , "  return buffer;"
                         , "}"]
 

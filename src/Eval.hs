@@ -265,7 +265,7 @@ eval env xobj =
         XObj (Sym (SymPath [] "type") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `type`: " ++ pretty xobj) (info xobj))
 
-        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] -> do
+        [XObj (Sym (SymPath [] "meta-set!") _) _ _, target@(XObj (Sym path @(SymPath _ name) _) _ _), XObj (Str key) _ _, value] ->
             specialCommandMetaSet path key value
         XObj (Sym (SymPath [] "meta-set!") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `meta-set!`: " ++ pretty xobj) (info xobj))
@@ -288,6 +288,13 @@ eval env xobj =
           specialCommandUse xobj path
         XObj (Sym (SymPath [] "use") _) _ _ : _ ->
           return (makeEvalError ctx Nothing ("Invalid args to `use`: " ++ pretty xobj) (info xobj))
+
+        [XObj (Sym (SymPath [] "defined?") _) _ _, xobj@(XObj (Sym path _) _ _)] ->
+          case lookupInEnv path env of
+            Just found -> return (Right trueXObj)
+            Nothing -> return (Right falseXObj)
+        XObj (Sym (SymPath [] "defined?") _) _ _ : _ ->
+          return (makeEvalError ctx Nothing ("Invalid args to `defined?`: " ++ pretty xobj) (info xobj))
 
         XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
           specialCommandWith xobj path forms
@@ -851,7 +858,7 @@ specialCommandDefmodule xobj moduleName innerExpressions =
                       ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
                       put (popModulePath ctxAfterModuleAdditions)
                       return dynamicNil -- TODO: propagate errors...
-                 Just (_, Binder existingMeta (XObj (Lst [(XObj DocStub _ _), _]) _ _)) ->
+                 Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
                    defineIt existingMeta
                  Just (_, Binder _ x) ->
                    return (makeEvalError ctx Nothing ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
@@ -1164,11 +1171,13 @@ commandLoad [xobj@(XObj (Str path) i _)] =
       cur <- liftIO getCurrentDirectory
       pathExists <- liftIO $ doesPathExist fpath
       let cleanup = not pathExists
-      _ <- liftIO $ createDirectoryIfMissing True $ fpath
+      _ <- liftIO $ createDirectoryIfMissing True fpath
       _ <- liftIO $ setCurrentDirectory fpath
       (_, txt, _) <- liftIO $ readProcessWithExitCode "git" ["rev-parse", "--abbrev-ref=loose", "HEAD"] ""
       if txt == "HEAD\n"
-      then doGitLoad path fpath
+      then do
+        _ <- liftIO $ setCurrentDirectory cur
+        doGitLoad path fpath
       else do
         _ <- liftIO $ readProcessWithExitCode "git" ["init"] ""
         _ <- liftIO $ readProcessWithExitCode "git" ["remote", "add", "origin", path] ""
@@ -1182,8 +1191,7 @@ commandLoad [xobj@(XObj (Str path) i _)] =
             _ <- liftIO $ setCurrentDirectory cur
             case x1 of
               ExitSuccess -> doGitLoad path fpath
-              ExitFailure _ ->
-                  invalidPathWith ctx path stderr1 cleanup fpath
+              ExitFailure _ -> invalidPathWith ctx path stderr1 cleanup fpath
     doGitLoad path fpath =
       let fName = last (splitOn "/" path)
           realName' = if ".git" `isSuffixOf` fName

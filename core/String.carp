@@ -10,6 +10,7 @@
   (register copy       (Fn [&String] String))
   (register length     (Fn [&String] Int))
   (register cstr       (Fn [&String] (Ptr Char)))
+  (register from-cstr  (Fn [(Ptr Char)] String))
   (register str        (Fn [&String] String))
   (register prn        (Fn [&String] String))
   (register index-of   (Fn [&String Char] Int))
@@ -179,9 +180,16 @@
   (register from-string (λ [&String] Int))
 )
 
+(defmodule Byte
+  (register str (Fn [Byte] String))
+  (register format (Fn [&String Byte] String))
+  (register from-string (λ [&String] Byte))
+)
+
 (defmodule Float
   (register str (Fn [Float] String))
   (register format (Fn [&String Float] String))
+  (register from-string (λ [&String] Float))
 )
 
 (defmodule Long
@@ -193,6 +201,7 @@
 (defmodule Double
   (register str (Fn [Double] String))
   (register format (Fn [&String Double] String))
+  (register from-string (λ [&String] Double))
 )
 
 (defmodule Char
@@ -202,6 +211,7 @@
 )
 
 (defmodule Int (defn prn [x] (Int.str x)))
+(defmodule Byte (defn prn [x] (Byte.str x)))
 (defmodule IntRef
   (defn prn [x] (Int.str @x))
   (defn str [x] (Int.str @x))
@@ -210,6 +220,11 @@
 (defmodule BoolRef
   (defn prn [x] (Bool.str @x))
   (defn str [x] (Bool.str @x)))
+
+(defmodule ByteRef
+  (defn prn [x] (Byte.str @x))
+  (defn str [x] (Byte.str @x))
+  )
 
 (defmodule Long (defn prn [x] (Long.str x)))
 (defmodule Float (defn prn [x] (Float.str x)))

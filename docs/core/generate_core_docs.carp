@@ -13,6 +13,7 @@
 
 (save-docs Dynamic
            Int
+           Byte
            Long
            Bool
            Float
@@ -34,6 +35,7 @@
            Map
            Maybe
            Result
+           Pointer
            )
 
 (quit)

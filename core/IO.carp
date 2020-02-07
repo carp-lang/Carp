@@ -24,8 +24,17 @@
   (register exit (Fn [Int] a))
   (register EOF Char)
   (doc EOF "the End-Of-File character as a literal.")
-  (doc fopen "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.")
+  (doc fopen "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.")
   (register fopen (Fn [&String &String] (Ptr FILE)))
+
+  (doc open-file "opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a Result type that contains an error string or a file pointer.")
+  (defn open-file [filename mode]
+    (let [ptr (IO.fopen filename mode)]
+      (if (null? ptr)
+        (do
+          (Result.Error System.errno))
+        (Result.Success ptr))))
+
   (doc fclose "closes a file pointer.")
   (register fclose (Fn [(Ptr FILE)] ()))
   (doc fgetc "gets a character from a file pointer.")
@@ -51,15 +60,24 @@
 
   (doc read->EOF "reads a file given by name until the End-Of-File character is reached.")
   (defn read->EOF [filename]
-    (let [f (IO.fopen filename "rb")]
-      (if (null? f)
-        (Result.Error (fmt "File “%s” couldn’t be opened!" filename))
-        (let [c (zero)
-              r []]
-          (do
-            (while (do (set! c (IO.fgetc f))
-                       (/= c IO.EOF))
-              (set! r (Array.push-back r c)))
-            (IO.fclose f)
-            (Result.Success (String.from-chars &r)))))))
+    (let [maybe (IO.open-file filename "rb")]
+      (match maybe
+        (Result.Error x) (Result.Error x)
+        (Result.Success f) (let [c (zero)
+                                 r []]
+                             (do
+                               (while (do (set! c (IO.fgetc f))
+                                          (/= c IO.EOF))
+                                 (set! r (Array.push-back r c)))
+                               (IO.fclose f)
+                               (Result.Success (String.from-chars &r)))))))
+
+  (private getenv-)
+  (hidden getenv-)
+  (register getenv- (Fn [String] (Ptr Char)) "getenv")
+  (defn getenv [s]
+    (let [e (getenv- s)]
+      (if (null? e)
+        (Maybe.Nothing)
+        (Maybe.Just (from-cstr e)))))
 )

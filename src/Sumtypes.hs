@@ -200,12 +200,12 @@ strCase typeEnv env concreteStructTy@(StructTy _ typeVariables) theCase =
   let (name, tys, correctedTagName) = namesFromCase theCase concreteStructTy
   in unlines
      [ "  if(p->_tag == " ++ correctedTagName ++ ") {"
-     , "    snprintf(bufferPtr, size, \"(%s \", \"" ++ name ++ "\");"
+     , "    sprintf(bufferPtr, \"(%s \", \"" ++ name ++ "\");"
      , "    bufferPtr += strlen(\"" ++ name ++ "\") + 2;\n"
      , joinWith "\n" (map (memberPrn typeEnv env) (zip (map (\anon -> name ++ "." ++ anon)
                                                        anonMemberNames) tys))
      , "    bufferPtr--;"
-     , "    snprintf(bufferPtr, size, \")\");"
+     , "    sprintf(bufferPtr, \")\");"
      , "  }"
      ]
 

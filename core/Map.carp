@@ -29,6 +29,10 @@
   (defn hash [k] (to-int (the Char @k)))
 )
 
+(defmodule Byte
+  (defn hash [k] (to-int (the Byte @k)))
+)
+
 (defmodule Float
   (defn hash [k] (to-bytes @k))
 )
@@ -69,9 +73,15 @@
     (do (Array.aupdate! (entries &b) i &(fn [p] (Pair.set-b @p @val)))
         b))
 
+  (defn set-idx! [b i val]
+    (Array.aupdate! (entries b) i &(fn [p] (Pair.set-b @p @val))))
+
   (defn push-back [b k v]
     (do (Array.push-back! (entries &b) (Pair.init-from-refs k v))
         b))
+
+  (defn push-back! [b k v]
+    (Array.push-back! (entries b) (Pair.init-from-refs k v)))
 
   (defn get [b k default-value]
     (let [i (find b k)]
@@ -91,6 +101,12 @@
       (if (<= 0 i)
         (set-idx b i v)
         (push-back b k v))))
+
+  (defn put! [b k v]
+    (let [i (find b k)]
+      (if (<= 0 i)
+        (set-idx! b i v)
+        (push-back! b k v))))
 
   (defn contains? [b k]
     (<= 0 (find b k)))
@@ -136,7 +152,7 @@
     (let [idx (Int.positive-mod (hash k) @(n-buckets m))
           b (buckets m)
           n (Array.unsafe-nth b idx)]
-      (Array.aset! b idx (Bucket.put @n k v))))
+      (Bucket.put! n k v)))
 
   (doc get-with-default "Get the value for the key k from map m. If it isn’t found, the default is returned.")
   (defn get-with-default [m k default-value]
@@ -320,6 +336,9 @@
              (set! nentries (Array.push-back nentries @e)))))
       nentries))
 
+  (defn push-back! [b k]
+    (Array.push-back! (entries b) k))
+
   (defn shrink [b k]
     (if (contains? b k)
       (set-entries @b (remove (entries b) k))
@@ -359,7 +378,7 @@
           b (buckets s)
           n (Array.unsafe-nth b idx)]
       (when (not (SetBucket.contains? n k))
-        (Array.aset! b idx (SetBucket.grow n @k)))))
+        (SetBucket.push-back! n @k))))
 
   (doc length "Get the length of set s.")
   (defn length [s]

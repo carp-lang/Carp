@@ -110,7 +110,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                  -- Its name will contain the name of the (normal, non-lambda) function it's contained within,
                  -- plus the identifier of the particular s-expression that defines the lambda.
                  SymPath path name = rootDefinitionPath
-                 lambdaPath = SymPath path ("_Lambda_" ++ (lambdaToCName name (envFunctionNestingLevel envWithArgs)) ++ "_" ++ show (infoIdentifier ii))
+                 lambdaPath = SymPath path ("_Lambda_" ++ lambdaToCName name (envFunctionNestingLevel envWithArgs) ++ "_" ++ show (infoIdentifier ii))
                  lambdaNameSymbol = XObj (Sym lambdaPath Symbol) (Just dummyInfo) Nothing
                  extendedArgs = if null capturedVars
                                 then args
@@ -1219,7 +1219,7 @@ manageMemory typeEnv globalEnv root =
                      case deletersMatchingXObj xobj deleters of
                        [] ->  return (Left (GettingReferenceToUnownedValue xobj))
                        [_] -> return (return ())
-                       _ -> error "Too many variables with the same name in set."
+                       _ -> error $ "Too many variables with the same name in set (was looking for " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj ++ ")"
              else return (return ())
 
         transferOwnership :: XObj -> XObj -> State MemState (Either TypeError ())

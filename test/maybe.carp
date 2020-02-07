@@ -45,12 +45,12 @@
   )
   (assert-equal test
                 2
-                (from (apply (Just 1) Int.inc) 0)
+                (from (apply (Just 1) &Int.inc) 0)
                 "apply works on Just"
   )
   (assert-equal test
                 0
-                (from (apply (the (Maybe Int) (Nothing)) Int.inc) 0)
+                (from (apply (the (Maybe Int) (Nothing)) &Int.inc) 0)
                 "apply works on Nothing"
   )
   (assert-equal test

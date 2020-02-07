@@ -98,6 +98,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             Arr _   -> visitArray indent xobj
             Num IntTy num -> return (show (round num :: Int))
             Num LongTy num -> return (show (round num :: Int) ++ "l")
+            Num ByteTy num -> return (show (round num :: Int))
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)
             Num _ _ -> error "Can't emit invalid number type."
@@ -315,12 +316,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        zipWithM_ (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
-                       caseExprRetVal <- visit indent' caseExpr
-                       when isNotVoid $
-                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                       let Just caseLhsInfo' = caseLhsInfo
-                       delete indent' caseLhsInfo'
-                       appendToSrc (addIndent indent ++ "}\n")
+                       emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
@@ -330,6 +326,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
+                       emitCaseEnd caseLhsInfo caseExpr
+                  emitCaseEnd caseLhsInfo caseExpr = do
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
