@@ -386,10 +386,20 @@ templateCopyArray = defineTypeParameterizedTemplate templateCreator path t docs
 
 copyTy :: TypeEnv -> Env -> Ty -> [Token]
 copyTy typeEnv env (StructTy "Array" [innerType]) =
-  [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
-  , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
-  , TokC   "    }\n"
-  ]
+  if isManaged
+  then
+    [ TokC   "    for(int i = 0; i < a->len; i++) {\n"
+    , TokC $ "    " ++ insideArrayCopying typeEnv env innerType
+    , TokC   "    }\n"
+    ]
+  else
+    [TokC "    memcpy(copy.data, a->data, sizeof(", TokTy (VarTy "a") Normal, TokC ") * a->len);\n"]
+  where isManaged =
+          case findFunctionForMember typeEnv env "delete"
+               (typesDeleterFunctionType innerType) ("Inside array.", innerType) of
+            FunctionFound _ -> True
+            FunctionNotFound msg -> False
+            FunctionIgnored -> False
 copyTy _ _ _ = []
 
 -- | The "memberCopy" and "memberDeletion" functions in Deftype are very similar!
