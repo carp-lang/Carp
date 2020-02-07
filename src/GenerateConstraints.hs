@@ -32,7 +32,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                              genF xobj args body
 
                            -- Fn
-                           [XObj (Fn _ _) _ _, XObj (Arr args) _ _, body] ->
+                           [XObj (Fn _ _ _) _ _, XObj (Arr args) _ _, body] ->
                              genF xobj args body
 
                            -- Def
