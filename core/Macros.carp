@@ -147,7 +147,7 @@
         (plist-remove-internal (cdr (cdr plist)) key (Dynamic.cons (cadr plist) (cons (car plist) accum))))
       ()))
 
-  (doc plist-remove "Return a new plist with the given key and its corresponding item removed")
+  (doc plist-remove "Return a new plist with the given key and its corresponding item removed.")
   (defndynamic plist-remove [plist key]
     (plist-remove-internal plist key ()))
 
