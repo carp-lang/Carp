@@ -304,20 +304,16 @@ init:                     /* using goto's to optimize tail recursion */
                         s = NULL; /* match failed */
                         break;
                     }
-                    case 'n': { /* newline? */
-                        if (*s == '\r') {
-                            if (*(++s) == '\n') s++;
-                        } else if (*s == '\n')
-                            s++;
-                        else
-                            s = NULL;
-                        break;
-                    }
+                    case 'r':   /* carriage return? */
+                    case 'n':   /* newline? */
                     case 't': { /* tab? */
-                        if (*s == '\t')
-                            s++;
-                        else
-                            s = NULL;
+                        char h = *(p + 1);
+                        p += 2;
+                        if (  (*s == '\r' && h == 'r')
+                           || (*s == '\n' && h == 'n')
+                           || (*s == '\t' && h == 't')
+                           ) { s++; goto init; }
+                        else s = NULL;
                         break;
                     }
                     case '0':
