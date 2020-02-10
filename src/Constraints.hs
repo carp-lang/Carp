@@ -24,6 +24,7 @@ data ConstraintOrder = OrdNo
                      | OrdFuncAppRet
                      | OrdArrHead
                      | OrdArg
+                     | OrdCapture
                      | OrdDefnBody
                      | OrdDefExpr
                      | OrdLetBind
@@ -58,7 +59,7 @@ data UnificationFailure = UnificationFailure { unificationFailure ::Constraint
                         deriving (Eq, Show)
 
 instance Show Constraint where
-  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
+  show (Constraint a b xa xb ctx ord) = "{" ++ show a ++ " == " ++ show b ++ " (ord " ++ show ord ++ ")} " -- ++ show (fmap infoLine (info xa)) ++ ", " ++ show (fmap infoLine (info xb)) ++ " in " ++ show ctx
 
 -- Finds the symbol with the "lowest name" (first in alphabetical order)
 recursiveLookup :: TypeMappings -> String -> Maybe Ty
@@ -123,11 +124,14 @@ solveOneInternal mappings constraint =
       else Left (UnificationFailure constraint mappings)
 
     -- Func types
-    Constraint (FuncTy argsA retA) (FuncTy argsB retB) _ _ _ _ ->
+    Constraint (FuncTy argsA retA ltA) (FuncTy argsB retB ltB) _ _ _ _ ->
       if length argsA == length argsB
       then let (Constraint _ _ i1 i2 ctx ord) = constraint
-           in  foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip (retA : argsA)
-                                                                                                     (retB : argsB))
+               res = foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip (retA : argsA)
+                                                                                                          (retB : argsB))
+           in  case res of
+                 Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
+                 Left err -> Left err
       else Left (UnificationFailure constraint mappings)
 
     -- Pointer types
@@ -137,9 +141,11 @@ solveOneInternal mappings constraint =
 
     -- Ref types
     -- TODO: This messes up the error message since the constraint is between non-reffed types so the refs don't show in the error message!!!
-    Constraint (RefTy a) (RefTy b) _ _ _ _ ->
+    Constraint (RefTy a ltA) (RefTy b ltB) _ _ _ _ ->
       let (Constraint _ _ i1 i2 ctx ord) = constraint
-      in  solveOneInternal mappings (Constraint a b i1 i2 ctx ord)
+      in  case solveOneInternal mappings (Constraint a b i1 i2 ctx ord) of
+            Left err -> Left err
+            Right ok -> solveOneInternal ok (Constraint ltA ltB i1 i2 ctx ord)
 
     -- Else
     Constraint aTy bTy _ _ _ _ ->
@@ -166,10 +172,13 @@ checkForConflict mappings constraint name otherTy =
                                                    foldM solveOneInternal mappings (zipWith (mkConstraint OrdStruct xobj1 xobj2 ctx) structTyVars otherTyVars)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
-        Just (FuncTy argTys retTy) ->
+        Just (FuncTy argTys retTy lifetimeTy) ->
           case otherTy of
-            FuncTy otherArgTys otherRetTy -> do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
-                                                solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy)
+            FuncTy otherArgTys otherRetTy otherLifetimeTy ->
+              do m <- foldM solveOneInternal mappings (zipWith (mkConstraint OrdFunc xobj1 xobj2 ctx) argTys otherArgTys)
+                 case solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx retTy otherRetTy) of
+                   Right ok -> solveOneInternal m (mkConstraint OrdFunc xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
+                   Left err -> Left err
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just (PointerTy innerTy) ->
@@ -177,9 +186,12 @@ checkForConflict mappings constraint name otherTy =
             PointerTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdPtr xobj1 xobj2 ctx innerTy otherInnerTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
-        Just (RefTy innerTy) ->
+        Just (RefTy innerTy lifetimeTy) ->
           case otherTy of
-            RefTy otherInnerTy -> solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy)
+            RefTy otherInnerTy otherLifetimeTy ->
+              case solveOneInternal mappings (mkConstraint OrdRef xobj1 xobj2 ctx innerTy otherInnerTy) of
+                Left err -> Left err
+                Right ok -> solveOneInternal ok (mkConstraint OrdRef xobj1 xobj2 ctx lifetimeTy otherLifetimeTy)
             VarTy _ -> Right mappings
             _ -> Left (UnificationFailure constraint mappings)
         Just foundNonVar -> case otherTy of
@@ -207,7 +219,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
         fullResolve x@(VarTy var) =
           case recursiveLookup mappings var of
             Just (StructTy name varTys) -> StructTy name (map (fullLookup Set.empty) varTys)
-            Just (FuncTy argTys retTy) -> FuncTy (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy)
+            Just (FuncTy argTys retTy ltTy) -> FuncTy (map (fullLookup Set.empty) argTys) (fullLookup Set.empty retTy) (fullLookup Set.empty ltTy)
             Just found -> found
             Nothing -> x -- still not found, must be a generic variable
         fullResolve x = x
@@ -222,7 +234,7 @@ resolveFully mappings varName = Right (Map.insert varName (fullResolve (VarTy va
         fullLookup visited structTy@(StructTy name vs) =
           let newVisited = Set.insert structTy visited
           in  StructTy name (map (fullLookup newVisited) vs)
-        fullLookup visited funcTy@(FuncTy argTys retTy) =
+        fullLookup visited funcTy@(FuncTy argTys retTy ltTy) =
           let newVisited = Set.insert funcTy visited
-          in  FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy)
+          in  FuncTy (map (fullLookup newVisited) argTys) (fullLookup newVisited retTy) (fullLookup newVisited ltTy)
         fullLookup visited x = x

@@ -161,7 +161,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b)), (Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c), (Ref (Result a b) d)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -181,7 +181,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [b] (Result a b))
+                    (λ [a] (Result b a))
                 </p>
                 <span>
                     
@@ -221,7 +221,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] (Result c b)))] (Result c b))
+                    (λ [(Result a b), (Ref (λ [a] (Result c b) d) e)] (Result c b))
                 </p>
                 <pre class="args">
                     (and-then a f)
@@ -242,7 +242,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c)), (Ref (λ [b] d))] (Result c d))
+                    (λ [(Result a b), (Ref (λ [a] c d) e), (Ref (λ [b] f d) g)] (Result c f))
                 </p>
                 <pre class="args">
                     (apply a success-f error-f)
@@ -262,7 +262,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] (Result a b))
+                    (λ [(Ref (Result a b) c)] (Result a b))
                 </p>
                 <span>
                     
@@ -302,7 +302,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (error? a)
@@ -361,7 +361,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Int)
+                    (λ [(Ref (Result a b) c)] Int)
                 </p>
                 <span>
                     
@@ -381,7 +381,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [a] c))] (Result c b))
+                    (λ [(Result a b), (Ref (λ [a] c d) e)] (Result c b))
                 </p>
                 <pre class="args">
                     (map a f)
@@ -401,7 +401,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] c))] (Result a c))
+                    (λ [(Result a b), (Ref (λ [b] c d) e)] (Result a c))
                 </p>
                 <pre class="args">
                     (map-error a f)
@@ -421,7 +421,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] (Result a c)))] (Result a c))
+                    (λ [(Result a b), (Ref (λ [b] (Result a c) d) e)] (Result a c))
                 </p>
                 <pre class="args">
                     (or-else a f)
@@ -442,7 +442,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] String)
+                    (λ [(Ref (Result a b) c)] String)
                 </p>
                 <span>
                     
@@ -462,7 +462,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] String)
+                    (λ [(Ref (Result a b) c)] String)
                 </p>
                 <span>
                     
@@ -482,7 +482,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Result a b))] Bool)
+                    (λ [(Ref (Result a b) c)] Bool)
                 </p>
                 <pre class="args">
                     (success? a)
@@ -564,7 +564,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Result a b), (Ref (λ [b] a))] a)
+                    (λ [(Result a b), (Ref (λ [b] a c) d)] a)
                 </p>
                 <pre class="args">
                     (unwrap-or-else a f)

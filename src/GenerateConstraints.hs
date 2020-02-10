@@ -3,7 +3,9 @@ module GenerateConstraints (genConstraints) where
 import Data.List (foldl', sort, zipWith4)
 import Control.Arrow
 import Control.Monad.State
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, fromMaybe)
+import Data.Set as Set
+import Data.List as List
 import Debug.Trace (trace)
 
 import Types
@@ -16,24 +18,37 @@ import Lookup
 -- | Will create a list of type constraints for a form.
 genConstraints :: TypeEnv -> XObj -> Either TypeError [Constraint]
 genConstraints typeEnv root = fmap sort (gen root)
-  where genF xobj args body =
+  where genF xobj args body captures =
          do insideBodyConstraints <- gen body
             xobjType <- toEither (ty xobj) (DefnMissingType xobj)
             bodyType <- toEither (ty body) (ExpressionMissingType xobj)
-            let (FuncTy argTys retTy) = xobjType
+            let (FuncTy argTys retTy lifetimeTy) = xobjType
                 bodyConstr = Constraint retTy bodyType xobj body xobj OrdDefnBody
-                argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (map forceTy args) argTys args
-            return (bodyConstr : argConstrs ++ insideBodyConstraints)
+                argConstrs = zipWith3 (\a b aObj -> Constraint a b aObj xobj xobj OrdArg) (List.map forceTy args) argTys args
+                captureList :: [XObj]
+                captureList = Set.toList captures
+                capturesConstrs = mapMaybe id
+                                  (zipWith (\captureTy captureObj ->
+                                                case captureTy of
+                                                  RefTy _ refLt ->
+                                                    --trace ("Generated constraint between " ++ show lifetimeTy ++ " and " ++ show refLt) $
+                                                    Just (Constraint lifetimeTy refLt captureObj xobj xobj OrdCapture)
+                                                  _ ->
+                                                    --trace ("Did not generate constraint for captured variable " ++ show captureObj) $
+                                                    Nothing)
+                                      (List.map forceTy captureList)
+                                      captureList)
+            return (bodyConstr : argConstrs ++ insideBodyConstraints ++ capturesConstrs)
         gen xobj =
           case obj xobj of
             Lst lst -> case lst of
                            -- Defn
-                           [XObj Defn _ _, _, XObj (Arr args) _ _, body] ->
-                             genF xobj args body
+                           [XObj (Defn captures) _ _, _, XObj (Arr args) _ _, body] ->
+                             genF xobj args body (fromMaybe Set.empty captures)
 
                            -- Fn
-                           [XObj (Fn _ _) _ _, XObj (Arr args) _ _, body] ->
-                             genF xobj args body
+                           [XObj (Fn _ captures _) _ _, XObj (Arr args) _ _, body] ->
+                             genF xobj args body captures
 
                            -- Def
                            [XObj Def _ _, _, expr] ->
@@ -52,7 +67,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                     wholeStatementConstraint = Constraint bodyType xobjTy body xobj xobj OrdLetBody
                                     bindingsConstraints = zipWith (\(symTy, exprTy) (symObj, exprObj) ->
                                                                      Constraint symTy exprTy symObj exprObj xobj OrdLetBind)
-                                                                  (map (forceTy *** forceTy) (pairwise bindings))
+                                                                  (List.map (forceTy *** forceTy) (pairwise bindings))
                                                                   (pairwise bindings)
                                 return (wholeStatementConstraint : insideBodyConstraints ++
                                         bindingsConstraints ++ insideBindingsConstraints)
@@ -172,7 +187,8 @@ genConstraints typeEnv root = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let theTheConstraint = Constraint (RefTy xobjType) valueType xobj value xobj OrdDeref
+                                let lt = (VarTy (makeTypeVariableNameFromInfo (info xobj)))
+                                let theTheConstraint = Constraint (RefTy xobjType lt) valueType xobj value xobj OrdDeref
                                 return (theTheConstraint : insideValueConstraints)
 
                            -- Break
@@ -185,7 +201,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                 insideArgsConstraints <- fmap join (mapM gen args)
                                 funcTy <- toEither (ty func) (ExpressionMissingType func)
                                 case funcTy of
-                                  (FuncTy argTys retTy) ->
+                                  (FuncTy argTys retTy _) ->
                                     if length args /= length argTys then
                                       Left (WrongArgCount func (length argTys) (length args))
                                     else
@@ -193,7 +209,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                             XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName func ++ "'")) Symbol)
                                             (info func) (Just t)
                                           argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
-                                                                    (map forceTy args)
+                                                                    (List.map forceTy args)
                                                                     argTys
                                                                     args
                                                                     [0..]
@@ -201,7 +217,7 @@ genConstraints typeEnv root = fmap sort (gen root)
                                           retConstraint = Constraint xobjTy retTy xobj func xobj OrdFuncAppRet
                                       in  return (retConstraint : funcConstraints ++ argConstraints ++ insideArgsConstraints)
                                   funcVarTy@(VarTy _) ->
-                                    let fabricatedFunctionType = FuncTy (map forceTy args) (forceTy xobj)
+                                    let fabricatedFunctionType = FuncTy (List.map forceTy args) (forceTy xobj) (VarTy "what?!")
                                         expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
                                     in  return (wholeTypeConstraint : funcConstraints ++ insideArgsConstraints)

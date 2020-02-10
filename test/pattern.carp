@@ -61,8 +61,7 @@
                 "matches? works as exptected II")
   (assert-equal test
                 true
-                (and* (matches? #"\n" "\n") (matches? #"\n" "\r")
-                      (matches? #"\n" "\r\n"))
+                (and (matches? #"\n" "\n") (matches? #"\r" "\r"))
                 "matches? works as exptected on newlines special case")
   (assert-equal test
                 true
@@ -84,6 +83,10 @@
                 "sub 2-3 3-4"
                 &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" 1)
                 "substitute works as expected")
+  (assert-equal test
+                &[@"" @"1" @"2" @"3" @""]
+                &(split #"\-\-" "--1--2--3--")
+                "split works as expected")
   (assert-equal test
                 "sub sub sub"
                 &(substitute #"(\d)-(\d)" "1-2 2-3 3-4" "sub" -1)

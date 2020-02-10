@@ -175,11 +175,26 @@ testConstr34 = assertSolution
 
 -- Same as testConstr34, except everything is wrapped in refs
 testConstr35 = assertSolution
-  [Constraint (RefTy (VarTy "a")) (RefTy (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")])) x x x OrdNo
-  ,Constraint (RefTy (StructTy "Array" [(VarTy "a")])) (RefTy (StructTy "Array" [(StructTy "Pair" [(VarTy "x1"), (VarTy "y1")])])) x x x OrdNo]
+  [Constraint (RefTy (VarTy "a") (VarTy "lt0")) (RefTy (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]) (VarTy "lt1")) x x x OrdNo
+  ,Constraint (RefTy (StructTy "Array" [(VarTy "a")]) (VarTy "lt2")) (RefTy (StructTy "Array" [(StructTy "Pair" [(VarTy "x1"), (VarTy "y1")])]) (VarTy "lt3")) x x x OrdNo]
   [("a", (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]))
   ,("x0", (VarTy "x0"))
   ,("y0", (VarTy "y0"))
   ,("x1", (VarTy "x0"))
   ,("y1", (VarTy "y0"))
+  ,("lt0", (VarTy "lt0"))
+  ,("lt1", (VarTy "lt0"))
+  ,("lt2", (VarTy "lt2"))
+  ,("lt3", (VarTy "lt2"))
   ]
+
+-- Ref types with lifetimes
+-- testConstr36 = assertSolution
+--   [Constraint (RefTy (VarTy "a")) (RefTy (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")])) x x x OrdNo
+--   ,Constraint (RefTy (StructTy "Array" [(VarTy "a")])) (RefTy (StructTy "Array" [(StructTy "Pair" [(VarTy "x1"), (VarTy "y1")])])) x x x OrdNo]
+--   [("a", (StructTy "Pair" [(VarTy "x0"), (VarTy "y0")]))
+--   ,("x0", (VarTy "x0"))
+--   ,("y0", (VarTy "y0"))
+--   ,("x1", (VarTy "x0"))
+--   ,("y1", (VarTy "y0"))
+--   ]

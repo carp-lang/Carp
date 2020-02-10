@@ -114,8 +114,9 @@
 
 (defn update-after-kill [world]
   (let [s (World.snake &world)
+        new-s (grow @s)
         new-world (kill-human world)]
-    (World.set-snake new-world (grow @s))))
+    (World.set-snake new-world new-s)))
 
 (defn check-for-kill [world]
   (let [s (World.snake world)

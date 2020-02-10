@@ -111,7 +111,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
             Sym _ _ -> visitSymbol indent xobj
-            Defn -> error (show (DontVisitObj xobj))
+            (Defn _) -> error (show (DontVisitObj xobj))
             Def -> error (show (DontVisitObj xobj))
             Let -> error (show (DontVisitObj xobj))
             If -> error (show (DontVisitObj xobj))
@@ -181,13 +181,13 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitList indent (XObj (Lst xobjs) (Just i) t) =
           case xobjs of
             -- Defn
-            [XObj Defn _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Defn _) _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
               case toCMode of
                 Globals ->
                   return ""
                 _ ->
                   do let innerIndent = indent + indentAmount
-                         Just (FuncTy _ retTy) = t
+                         Just (FuncTy _ retTy _) = t
                          defnDecl = defnToDeclaration meta path argList retTy
                      appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
@@ -200,7 +200,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ""
 
             -- Fn / λ
-            [XObj (Fn name set) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn name set _) _ _, XObj (Arr argList) _ _, body] ->
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name
@@ -499,7 +499,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy argTys retTy _ = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callFunction)
@@ -511,7 +511,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
             func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
               do argListAsC <- createArgList indent (mode == ExternalCode) args
-                 let Just (FuncTy _ retTy) = ty func
+                 let Just (FuncTy _ retTy _) = ty func
                      funcToCall = pathToC path
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
@@ -530,7 +530,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy argTys retTy _ = funcTy
                      castToFn =
                        if unwrapLambdas
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
@@ -594,6 +594,10 @@ delete :: Int -> Info -> State EmitterState ()
 delete indent i = mapM_ deleterToC (infoDelete i)
   where deleterToC :: Deleter -> State EmitterState ()
         deleterToC FakeDeleter {} =
+          return ()
+        deleterToC PrimDeleter {} =
+          return ()
+        deleterToC RefDeleter {} =
           return ()
         deleterToC deleter@ProperDeleter{} =
           appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
@@ -689,15 +693,15 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
-    (FuncTy argTys retTy) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
-                             intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
+    (FuncTy argTys retTy _) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
+                               intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
   case xobjs of
-    [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
-      let (Just (FuncTy _ retTy)) = t
+    [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
+      let (Just (FuncTy _ retTy _)) = t
       in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t

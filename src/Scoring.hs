@@ -64,11 +64,11 @@ depthOfType typeEnv visited selfName theType =
   where
     visitType :: Ty -> Int
     visitType t@(StructTy name varTys) = depthOfStructType (tyToC t) varTys
-    visitType (FuncTy argTys retTy) =
+    visitType (FuncTy argTys retTy ltTy) =
       -- trace ("Depth of args of " ++ show argTys ++ ": " ++ show (map (visitType . Just) argTys))
-      maximum (visitType retTy : fmap visitType argTys)
+      maximum (visitType ltTy : visitType retTy : fmap visitType argTys)
     visitType (PointerTy p) = visitType p
-    visitType (RefTy r) = visitType r
+    visitType (RefTy r lt) = max (visitType r) (visitType lt)
     visitType _ = 1
 
     depthOfStructType :: String -> [Ty] -> Int
@@ -98,7 +98,7 @@ scoreValueBinder globalEnv _ binder@(Binder _ (XObj (Lst (XObj (External _) _ _ 
   (0, binder)
 scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Def  _ _, XObj (Sym path Symbol) _ _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
-scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj Defn _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
+scoreValueBinder globalEnv visited binder@(Binder _ (XObj (Lst [XObj (Defn _) _ _, XObj (Sym path Symbol) _ _, _, body]) _ _)) =
   (scoreBody globalEnv visited body, binder)
 scoreValueBinder _ _ binder =
   (0, binder)

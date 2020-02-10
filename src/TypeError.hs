@@ -52,6 +52,7 @@ data TypeError = SymbolMissingType XObj Env
                | InvalidLetBinding [XObj] (XObj, XObj)
                | DuplicateBinding XObj
                | DefinitionsMustBeAtToplevel XObj
+               | UsingDeadReference XObj String
 
 instance Show TypeError where
   show (SymbolMissingType xobj env) =
@@ -77,7 +78,7 @@ instance Show TypeError where
     matches (keysInEnvEditDistance symPath env 3)
     where matches [] = "Maybe you forgot to define it?"
           matches x = "Maybe you wanted one of the following?\n    " ++ joinWith "\n    " (map (show . SymPath p) x)
-  show (InvalidObj Defn xobj) =
+  show (InvalidObj (Defn _) xobj) =
     "I didn’t understand the function definition at " ++
     prettyInfoFromXObj xobj ++
     ".\n\nIs it valid?  Every `defn` needs to follow the form `(defn name [arg] body)`."
@@ -235,6 +236,9 @@ instance Show TypeError where
   show (DefinitionsMustBeAtToplevel xobj) =
     "I encountered a definition that was not at top level: `" ++ pretty xobj ++ "`"
 
+  show (UsingDeadReference xobj dependsOn) =
+    "The reference '" ++ pretty xobj ++ "' (depending on the variable '" ++ dependsOn ++ "') isn't alive at " ++ prettyInfoFromXObj xobj ++ "."
+
 machineReadableErrorStrings :: FilePathPrintLength -> TypeError -> [String]
 machineReadableErrorStrings fppl err =
   case err of
@@ -253,7 +257,7 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Trying to refer to an undefined symbol '" ++ show symPath ++ "'."]
     (SymbolMissingType xobj env) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Symbol '" ++ getName xobj ++ "' missing type."]
-    (InvalidObj Defn xobj) ->
+    (InvalidObj (Defn _) xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid function definition."]
     (InvalidObj If xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Invalid if-statement."]
@@ -353,6 +357,8 @@ machineReadableErrorStrings fppl err =
       [machineReadableInfoFromXObj fppl xobj ++ " Duplicate binding `" ++ pretty xobj ++ "` inside `let`."]
     (DefinitionsMustBeAtToplevel xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Definition not at top level: `" ++ pretty xobj ++ "`"]
+    (UsingDeadReference xobj dependsOn) ->
+      [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
 
     _ ->
       [show err]
@@ -363,11 +369,12 @@ joinedMachineReadableErrorStrings fppl err = joinWith "\n\n" (machineReadableErr
 recursiveLookupTy :: TypeMappings -> Ty -> Ty
 recursiveLookupTy mappings t = case t of
                                  (VarTy v) -> fromMaybe t (recursiveLookup mappings v)
-                                 (RefTy r) -> RefTy (recursiveLookupTy mappings r)
+                                 (RefTy r lt) -> RefTy (recursiveLookupTy mappings r) (recursiveLookupTy mappings lt)
                                  (PointerTy p) -> PointerTy (recursiveLookupTy mappings p)
                                  (StructTy n innerTys) -> StructTy n (map (recursiveLookupTy mappings) innerTys)
-                                 (FuncTy argTys retTy) -> FuncTy (map (recursiveLookupTy mappings) argTys)
-                                                                 (recursiveLookupTy mappings retTy)
+                                 (FuncTy argTys retTy ltTy) -> FuncTy (map (recursiveLookupTy mappings) argTys)
+                                                                      (recursiveLookupTy mappings retTy)
+                                                                      (recursiveLookupTy mappings ltTy)
                                  _ -> t
 
 showTypeFromXObj :: TypeMappings -> XObj -> String

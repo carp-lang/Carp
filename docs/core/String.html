@@ -161,7 +161,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <span>
                     
@@ -180,7 +180,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <span>
                     
@@ -199,7 +199,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <span>
                     
@@ -237,7 +237,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (alpha? s)
@@ -257,7 +257,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (alphanum? s)
@@ -277,7 +277,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] String)
+                    (λ [(Ref String a), (Ref String b)] String)
                 </p>
                 <span>
                     
@@ -296,7 +296,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int] Char)
+                    (λ [(Ref String a), Int] Char)
                 </p>
                 <span>
                     
@@ -315,7 +315,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Array Char))
+                    (λ [(Ref String a)] (Array Char))
                 </p>
                 <span>
                     
@@ -334,7 +334,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (chomp s)
@@ -354,7 +354,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (collapse-whitespace s)
@@ -374,7 +374,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array String))] String)
+                    (λ [(Ref (Array String) a)] String)
                 </p>
                 <pre class="args">
                     (concat strings)
@@ -394,7 +394,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char] Bool)
+                    (λ [(Ref String a), Char] Bool)
                 </p>
                 <pre class="args">
                     (contains? s c)
@@ -414,7 +414,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char] Int)
+                    (λ [(Ref String a), Char] Int)
                 </p>
                 <pre class="args">
                     (count-char s c)
@@ -434,7 +434,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Ptr Char))
+                    (λ [(Ref String a)] (Ptr Char))
                 </p>
                 <span>
                     
@@ -453,7 +453,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (empty? s)
@@ -473,7 +473,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <pre class="args">
                     (ends-with? s sub)
@@ -493,7 +493,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] String)
+                    (λ [(Ref String a), (Ref String b)] String)
                 </p>
                 <span>
                     
@@ -512,7 +512,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Char))] String)
+                    (λ [(Ref (Array Char) a)] String)
                 </p>
                 <span>
                     
@@ -550,7 +550,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Int)
+                    (λ [(Ref String a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -569,7 +569,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Char)
+                    (λ [(Ref String a)] Char)
                 </p>
                 <pre class="args">
                     (head s)
@@ -589,7 +589,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (hex? s)
@@ -609,7 +609,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <pre class="args">
                     (in? s sub)
@@ -629,7 +629,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char] Int)
+                    (λ [(Ref String a), Char] Int)
                 </p>
                 <span>
                     
@@ -648,7 +648,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Char, Int] Int)
+                    (λ [(Ref String a), Char, Int] Int)
                 </p>
                 <span>
                     
@@ -667,7 +667,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, (Ref (Array String))] String)
+                    (λ [(Ref String a), (Ref (Array String) b)] String)
                 </p>
                 <pre class="args">
                     (join sep strings)
@@ -687,7 +687,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Char, (Ref (Array String))] String)
+                    (λ [Char, (Ref (Array String) a)] String)
                 </p>
                 <pre class="args">
                     (join-with-char sep strings)
@@ -707,7 +707,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Int)
+                    (λ [(Ref String a)] Int)
                 </p>
                 <span>
                     
@@ -726,7 +726,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Array String))
+                    (λ [(Ref String a)] (Array String))
                 </p>
                 <pre class="args">
                     (lines s)
@@ -746,7 +746,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (lower? s)
@@ -766,7 +766,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (num? s)
@@ -786,7 +786,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, Char, &amp;String] String)
+                    (λ [Int, Char, (Ref String a)] String)
                 </p>
                 <pre class="args">
                     (pad-left len pad s)
@@ -806,7 +806,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, Char, &amp;String] String)
+                    (λ [Int, Char, (Ref String a)] String)
                 </p>
                 <pre class="args">
                     (pad-right len pad s)
@@ -826,7 +826,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int] String)
+                    (λ [(Ref String a), Int] String)
                 </p>
                 <pre class="args">
                     (prefix-string s a)
@@ -846,7 +846,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <span>
                     
@@ -884,7 +884,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Int, &amp;String] String)
+                    (λ [Int, (Ref String a)] String)
                 </p>
                 <pre class="args">
                     (repeat n inpt)
@@ -904,7 +904,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (reverse s)
@@ -924,7 +924,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, (Ref (Array Char))] (Array String))
+                    (λ [(Ref String a), (Ref (Array Char) b)] (Array String))
                 </p>
                 <pre class="args">
                     (split-by s separators)
@@ -944,7 +944,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] Bool)
+                    (λ [(Ref String a), (Ref String b)] Bool)
                 </p>
                 <pre class="args">
                     (starts-with? s sub)
@@ -964,7 +964,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <span>
                     
@@ -983,7 +983,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int, Char] ())
+                    (λ [(Ref String a), Int, Char] ())
                 </p>
                 <span>
                     
@@ -1002,7 +1002,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int, &amp;String] ())
+                    (λ [(Ref String a), Int, (Ref String b)] ())
                 </p>
                 <span>
                     
@@ -1021,7 +1021,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int, Int] String)
+                    (λ [(Ref String a), Int, Int] String)
                 </p>
                 <pre class="args">
                     (substring s a b)
@@ -1040,7 +1040,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int] String)
+                    (λ [(Ref String a), Int] String)
                 </p>
                 <pre class="args">
                     (suffix-string s b)
@@ -1060,7 +1060,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array String))] Int)
+                    (λ [(Ref (Array String) a)] Int)
                 </p>
                 <pre class="args">
                     (sum-length strings)
@@ -1080,7 +1080,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <span>
                     
@@ -1099,7 +1099,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (trim s)
@@ -1119,7 +1119,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (trim-left s)
@@ -1139,7 +1139,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <pre class="args">
                     (trim-right s)
@@ -1159,7 +1159,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Bool)
+                    (λ [(Ref String a)] Bool)
                 </p>
                 <pre class="args">
                     (upper? s)
@@ -1179,7 +1179,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Array String))
+                    (λ [(Ref String a)] (Array String))
                 </p>
                 <pre class="args">
                     (words s)

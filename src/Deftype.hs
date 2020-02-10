@@ -77,13 +77,13 @@ templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> 
 templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
-  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p] (RefTy t)) (templateGetter (mangle memberName) t) ("gets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
+  in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p (VarTy "q")] (RefTy t (VarTy "q")) StaticLifetimeTy) (templateGetter (mangle memberName) t) ("gets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
      , if isTypeGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
-       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p) (templateSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
-     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p, t] UnitTy) (templateMutatingSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place.")
+       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p StaticLifetimeTy) (templateSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
+     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy) (templateMutatingSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place.")
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
-                                                            (FuncTy [p, RefTy (FuncTy [t] t)] p)
+                                                            (FuncTy [p, RefTy (FuncTy [t] t (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
                                                             (templateUpdater (mangle memberName))
                                                             ("updates the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` using a function `f`.")
                                                             ]
@@ -92,12 +92,12 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
 templateGetter :: String -> Ty -> Template
 templateGetter member memberTy =
   Template
-    (FuncTy [RefTy (VarTy "p")] (VarTy "t"))
+    (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "t") StaticLifetimeTy)
     (const (toTemplate "$t $NAME($(Ref p) p)"))
     (const $
      let fixForVoidStarMembers =
            if isFunctionType memberTy && not (isTypeGeneric memberTy)
-           then "(" ++ tyToCLambdaFix (RefTy memberTy) ++ ")"
+           then "(" ++ tyToCLambdaFix (RefTy memberTy (VarTy "q")) ++ ")"
            else ""
      in  toTemplate ("$DECL { return " ++ fixForVoidStarMembers ++ "(&(p->" ++ member ++ ")); }\n"))
     (const [])
@@ -108,7 +108,7 @@ templateSetter typeEnv env memberName memberTy =
   let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
   in
   Template
-    (FuncTy [VarTy "p", VarTy "t"] (VarTy "p"))
+    (FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy)
     (const (toTemplate "$p $NAME($p p, $t newValue)"))
     (const (toTemplate (unlines ["$DECL {"
                                 ,callToDelete
@@ -122,23 +122,23 @@ templateSetter typeEnv env memberName memberTy =
 -- | The template for setters of a generic deftype.
 templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
 templateGenericSetter pathStrings originalStructTy@(StructTy typeName _) memberTy memberName =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy) docs
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy StaticLifetimeTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName)
-        t = FuncTy [VarTy "p", VarTy "t"] (VarTy "p")
+        t = FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy
         docs = "sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "$p $NAME($p p, $t newValue)"))
-            (\(FuncTy [_, memberTy] _) ->
+            (\(FuncTy [_, memberTy] _ _) ->
                let callToDelete = memberDeletion typeEnv env (memberName, memberTy)
                in  toTemplate (unlines ["$DECL {"
                                        ,callToDelete
                                        ,"    p." ++ memberName ++ " = newValue;"
                                        ,"    return p;"
                                        ,"}\n"]))
-            (\(FuncTy [_, memberTy] _) ->
+            (\(FuncTy [_, memberTy] _ _) ->
                if isManaged typeEnv memberTy
                then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
                else [])
@@ -148,7 +148,7 @@ templateMutatingSetter :: TypeEnv -> Env -> String -> Ty -> Template
 templateMutatingSetter typeEnv env memberName memberTy =
   let callToDelete = memberRefDeletion typeEnv env (memberName, memberTy)
   in Template
-    (FuncTy [RefTy (VarTy "p"), VarTy "t"] UnitTy)
+    (FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy)
     (const (toTemplate "void $NAME($p* pRef, $t newValue)"))
     (const (toTemplate (unlines ["$DECL {"
                                 ,callToDelete
@@ -161,16 +161,16 @@ templateMutatingSetter typeEnv env memberName memberTy =
 templateUpdater :: String -> Template
 templateUpdater member =
   Template
-    (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t"))] (VarTy "p"))
+    (FuncTy [VarTy "p", RefTy (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) (VarTy "q")] (VarTy "p") StaticLifetimeTy)
     (const (toTemplate "$p $NAME($p p, Lambda *updater)")) -- "Lambda" used to be: $(Fn [t] t)
     (const (toTemplate (unlines ["$DECL {"
-                                ,"    p." ++ member ++ " = " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [VarTy "t"] (VarTy "t")) ["p." ++ member] ++ ";"
+                                ,"    p." ++ member ++ " = " ++ templateCodeForCallingLambda "(*updater)" (FuncTy [VarTy "t"] (VarTy "t") (VarTy "fq")) ["p." ++ member] ++ ";"
                                 ,"    return p;"
                                 ,"}\n"])))
-    (\(FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy)] _) ->
+    (\(FuncTy [_, RefTy t@(FuncTy fArgTys fRetTy _) _] _ _) ->
        if isTypeGeneric fRetTy
        then []
-       else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy)])
+       else [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)])
 
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
@@ -178,7 +178,7 @@ binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs)
   if isTypeGeneric structTy
   then Right (genericInit StackAlloc insidePath structTy membersXObjs)
   else Right $ instanceBinder (SymPath insidePath "init")
-                (FuncTy (initArgListTypes membersXObjs) structTy)
+                (FuncTy (initArgListTypes membersXObjs) structTy StaticLifetimeTy)
                 (concreteInit StackAlloc structTy membersXObjs)
                 ("creates a `" ++ typeName ++ "`.")
 
@@ -190,33 +190,33 @@ initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 concreteInit :: AllocationMode -> Ty -> [XObj] -> Template
 concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) membersXObjs =
   Template
-    (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p"))
-    (\(FuncTy _ concreteStructTy) ->
+    (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
+    (\(FuncTy _ concreteStructTy _) ->
      let mappings = unifySignatures originalStructTy concreteStructTy
          correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
          memberPairs = memberXObjsToPairs correctedMembers
      in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
     (const (tokensForInit allocationMode typeName membersXObjs))
-    (\(FuncTy _ _) -> [])
+    (\(FuncTy _ _ _) -> [])
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
 genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings "init"
-        t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy
+        t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
         docs = "creates a `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
-            (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p"))
-            (\(FuncTy _ concreteStructTy) ->
+            (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
+            (\(FuncTy _ concreteStructTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
             (const (tokensForInit allocationMode typeName membersXObjs))
-            (\(FuncTy _ concreteStructTy) ->
+            (\(FuncTy _ concreteStructTy _) ->
                case concretizeType typeEnv concreteStructTy of
                  Left err -> error (show err ++ ". This error should not crash the compiler - change return type to Either here.")
                  Right ok -> ok
@@ -242,9 +242,9 @@ memberArg (memberName, memberTy) =
 -- | If the type is just a type variable; create a template type variable by appending $ in front of it's name
 templatizeTy :: Ty -> Ty
 templatizeTy (VarTy vt) = VarTy ("$" ++ vt)
-templatizeTy (FuncTy argTys retTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy)
+templatizeTy (FuncTy argTys retTy ltTy) = FuncTy (map templatizeTy argTys) (templatizeTy retTy) (templatizeTy ltTy)
 templatizeTy (StructTy name tys) = StructTy name (map templatizeTy tys)
-templatizeTy (RefTy t) = RefTy (templatizeTy t)
+templatizeTy (RefTy t lt) = RefTy (templatizeTy t) (templatizeTy lt)
 templatizeTy (PointerTy t) = PointerTy (templatizeTy t)
 templatizeTy t = t
 
@@ -254,7 +254,7 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (A
   if isTypeGeneric structTy
   then Right (genericStr insidePath structTy membersXObjs strOrPrn, [])
   else Right (instanceBinderWithDeps (SymPath insidePath strOrPrn)
-              (FuncTy [RefTy structTy] StringTy)
+              (FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy)
               (concreteStr typeEnv env structTy (memberXObjsToPairs membersXObjs) strOrPrn)
               ("converts a `" ++ typeName ++ "` to a string."))
 
@@ -262,11 +262,11 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (A
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
 concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOrPrn =
   Template
-    (FuncTy [RefTy concreteStructTy] StringTy)
-    (\(FuncTy [RefTy structTy] StringTy) -> toTemplate $ "String $NAME(" ++ tyToCLambdaFix structTy ++ " *p)")
-    (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
+    (FuncTy [RefTy concreteStructTy (VarTy "q")] StringTy StaticLifetimeTy)
+    (\(FuncTy [RefTy structTy _] StringTy _) -> toTemplate $ "String $NAME(" ++ tyToCLambdaFix structTy ++ " *p)")
+    (\(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
         tokensForStr typeEnv env typeName memberPairs concreteStructTy)
-    (\ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys)] StringTy) ->
+    (\ft@(FuncTy [RefTy structTy@(StructTy _ concreteMemberTys) (VarTy "q")] StringTy _) ->
        concatMap (depsOfPolymorphicFunction typeEnv env [] "prn" . typesStrFunctionType typeEnv)
                  (filter (\t -> (not . isExternalType typeEnv) t && (not . isFullyGenericType) t)
                   (map snd memberPairs)))
@@ -276,21 +276,21 @@ genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
 genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs strOrPrn =
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings strOrPrn
-        t = FuncTy [RefTy originalStructTy] StringTy
+        t = FuncTy [RefTy originalStructTy (VarTy "q")] StringTy StaticLifetimeTy
         members = memberXObjsToPairs membersXObjs
         docs = "converts a `" ++ typeName ++ "` to a string."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
-            (\(FuncTy [RefTy concreteStructTy] StringTy) ->
+            (\(FuncTy [RefTy concreteStructTy _] StringTy _) ->
                toTemplate $ "String $NAME(" ++ tyToCLambdaFix concreteStructTy ++ " *p)")
-            (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
+            (\(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in tokensForStr typeEnv env typeName memberPairs concreteStructTy)
-            (\ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys)] StringTy) ->
+            (\ft@(FuncTy [RefTy concreteStructTy@(StructTy _ concreteMemberTys) _] StringTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
@@ -339,30 +339,30 @@ binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr
   if isTypeGeneric structTy
   then Right (genericDelete insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "delete")
-             (FuncTy [structTy] UnitTy)
+             (FuncTy [structTy] UnitTy StaticLifetimeTy)
              (concreteDelete typeEnv env (memberXObjsToPairs membersXObjs))
              ("deletes a `" ++ typeName ++"`."))
 
 -- | The template for the 'delete' function of a generic deftype.
 genericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
 genericDelete pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy) docs
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy StaticLifetimeTy) docs
   where path = SymPath pathStrings "delete"
-        t = FuncTy [VarTy "p"] UnitTy
+        t = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
         docs = "deletes a `" ++ typeName ++ "`. Should usually not be called manually."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "void $NAME($p p)"))
-            (\(FuncTy [concreteStructTy] UnitTy) ->
+            (\(FuncTy [concreteStructTy] UnitTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in  (toTemplate $ unlines [ "$DECL {"
                                          , joinWith "\n" (map (memberDeletion typeEnv env) memberPairs)
                                          , "}"]))
-            (\(FuncTy [concreteStructTy] UnitTy) ->
+            (\(FuncTy [concreteStructTy] UnitTy _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
@@ -377,28 +377,28 @@ binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr m
   if isTypeGeneric structTy
   then Right (genericCopy insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "copy")
-              (FuncTy [RefTy structTy] structTy)
+              (FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy)
               (concreteCopy typeEnv env (memberXObjsToPairs membersXObjs))
               ("copies a `" ++ typeName ++ "`."))
 
 -- | The template for the 'copy' function of a generic deftype.
 genericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
 genericCopy pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
-  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy] originalStructTy) docs
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy (VarTy "q")] originalStructTy StaticLifetimeTy) docs
   where path = SymPath pathStrings "copy"
-        t = FuncTy [RefTy (VarTy "p")] (VarTy "p")
+        t = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
         docs = "copies the `" ++ typeName ++ "`."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template
             t
             (const (toTemplate "$p $NAME($p* pRef)"))
-            (\(FuncTy [RefTy concreteStructTy] _) ->
+            (\(FuncTy [RefTy concreteStructTy _] _ _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers
                in tokensForCopy typeEnv env memberPairs)
-            (\(FuncTy [RefTy concreteStructTy] _) ->
+            (\(FuncTy [RefTy concreteStructTy _] _ _) ->
                let mappings = unifySignatures originalStructTy concreteStructTy
                    correctedMembers = replaceGenericTypeSymbolsOnMembers mappings membersXObjs
                    memberPairs = memberXObjsToPairs correctedMembers

@@ -258,7 +258,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [Id, &amp;String] ())
+                    (λ [Id, (Ref String a)] ())
                 </p>
                 <pre class="args">
                     (colorize cid s)
@@ -278,7 +278,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -298,7 +298,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -398,7 +398,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] (Ptr FILE))
+                    (λ [(Ref String a), (Ref String b)] (Ptr FILE))
                 </p>
                 <span>
                     
@@ -557,7 +557,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] (Result (Ptr FILE) Int))
+                    (λ [(Ref String a), (Ref String b)] (Result (Ptr FILE) Int))
                 </p>
                 <pre class="args">
                     (open-file filename mode)
@@ -577,7 +577,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -597,7 +597,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -617,7 +617,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Result String Int))
+                    (λ [(Ref String a)] (Result String Int))
                 </p>
                 <pre class="args">
                     (read-&gt;EOF filename)
@@ -637,7 +637,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <span>
                     

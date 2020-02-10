@@ -1,0 +1,1 @@
+lambda_capturing_ref_that_dies.carp:8:6 The reference 'f' isn't alive.

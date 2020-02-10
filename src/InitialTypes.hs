@@ -36,9 +36,10 @@ renameVarTys rootType = do n <- get
                            return result
   where
     rename :: Ty -> State (Integer, Map.Map String Ty) Ty
-    rename (FuncTy argTys retTy) = do argTys' <- mapM rename argTys
-                                      retTy' <- rename retTy
-                                      return (FuncTy argTys' retTy')
+    rename (FuncTy argTys retTy ltTy) = do ltTy' <- rename ltTy
+                                           argTys' <- mapM rename argTys
+                                           retTy' <- rename retTy
+                                           return (FuncTy argTys' retTy' ltTy')
     rename (VarTy v) = do (n, mappings) <- get
                           case Map.lookup v mappings of
                             Just found -> return found
@@ -52,8 +53,9 @@ renameVarTys rootType = do n <- get
     rename (PointerTy x) = do x' <- rename x
                               return (PointerTy x')
 
-    rename (RefTy x) = do x' <- rename x
-                          return (RefTy x')
+    rename (RefTy x lt) = do x' <- rename x
+                             lt' <- rename lt
+                             return (RefTy x' lt')
 
     rename x = return x
 
@@ -66,10 +68,12 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visit env xobj = case obj xobj of
                        (Num t _)          -> return (Right (xobj { ty = Just t }))
                        (Bol _)            -> return (Right (xobj { ty = Just BoolTy }))
-                       (Str _)            -> return (Right (xobj { ty = Just (RefTy StringTy) }))
-                       (Pattern _)        -> return (Right (xobj { ty = Just (RefTy PatternTy) }))
+                       (Str _)            -> do lt <- genVarTy
+                                                return (Right (xobj { ty = Just (RefTy StringTy lt) }))
+                       (Pattern _)        -> do lt <- genVarTy
+                                                return (Right (xobj { ty = Just (RefTy PatternTy lt) }))
                        (Chr _)            -> return (Right (xobj { ty = Just CharTy }))
-                       Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy)}))
+                       Break              -> return (Right (xobj { ty = Just (FuncTy [] UnitTy StaticLifetimeTy)}))
                        (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
@@ -77,9 +81,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Sym symPath _)    -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
-                       Defn               -> return (Left (InvalidObj Defn xobj))
+                       e@(Defn _)         -> return (Left (InvalidObj e xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
-                       e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
+                       e@(Fn _ _ _)       -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
                        While              -> return (Left (InvalidObj While xobj))
@@ -162,9 +166,9 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
     visitList env xobj@(XObj (Lst xobjs) i _) =
       case xobjs of
         -- Defn
-        [defn@(XObj Defn _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
+        [defn@(XObj (Defn _) _ _), nameSymbol@(XObj (Sym (SymPath _ name) _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
-             let funcTy = Just (FuncTy argTypes returnType)
+             let funcTy = Just (FuncTy argTypes returnType StaticLifetimeTy)
                  typedNameSymbol = nameSymbol { ty = funcTy }
                  -- TODO! After the introduction of 'LookupRecursive' this env shouldn't be needed anymore? (but it is for some reason...)
                  envWithSelf = extendEnv funcScopeEnv name typedNameSymbol
@@ -174,13 +178,14 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          okArgs <- sequence visitedArgs
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
-        [XObj Defn _ _, XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
-        XObj Defn _ _ : _  -> return (Left (InvalidObj Defn xobj))
+        [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
+        (XObj defn@(Defn _) _ _) : _  -> return (Left (InvalidObj defn xobj))
 
         -- Fn
-        [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
+        [fn@(XObj (Fn _ _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
-             let funcTy = Just (FuncTy argTypes returnType)
+             lt <- genVarTy
+             let funcTy = Just (FuncTy argTypes returnType lt)
              visitedBody <- visit funcScopeEnv body
              visitedArgs <- mapM (visit funcScopeEnv) argList
              return $ do okBody <- visitedBody
@@ -188,8 +193,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
                          return final --(trace ("FINAL: " ++ show final) final)
 
-        [XObj (Fn _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
-        XObj fn@(Fn _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
+        [XObj (Fn _ _ _ ) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
+        XObj fn@(Fn _ _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
 
         -- Def
         [def@(XObj Def _ _), nameSymbol, expression]->
@@ -313,9 +318,13 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         -- Ref
         [refExpr@(XObj Ref _ _), value] ->
           do visitedValue <- visit env value
+             lt <- case value of -- This is to not get lifetime errors when using globals. TODO: Is there a better way?!
+                     XObj (Sym _ (LookupGlobal _ _)) _ _ -> return StaticLifetimeTy
+                     _ | isLiteral value -> return StaticLifetimeTy
+                       | otherwise -> genVarTy
              return $ do okValue <- visitedValue
                          let Just valueTy = ty okValue
-                         return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy)))
+                         return (XObj (Lst [refExpr, okValue]) i (Just (RefTy valueTy lt)))
 
         -- Deref (error!)
         [XObj Deref _ _, value] ->

@@ -12,12 +12,23 @@ import Data.Maybe (fromMaybe)
 import Data.Text.Lazy as T
 import Data.Text as Text
 import qualified Data.Map as Map
+import qualified Data.List as List
 import Debug.Trace
 
 import Obj
 import Types
 import Util
 import Path
+import AssignTypes (typeVariablesInOrderOfAppearance)
+
+-- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-
+-- This might be a duplicate with the work in a PR by @jacereda
+beautifyType :: Ty -> Ty
+beautifyType t =
+  let tys = List.nub (typeVariablesInOrderOfAppearance t)
+      mappings = Map.fromList (List.zip (List.map (\(VarTy name) -> name) tys)
+                                        (List.map (VarTy . (:[])) ['a'..]))
+  in replaceTyVars mappings t
 
 saveDocsForEnvs :: Project -> [(SymPath, Binder)] -> IO ()
 saveDocsForEnvs ctx pathsAndEnvBinders =
@@ -119,7 +130,7 @@ binderToHtml (Binder meta xobj) =
       maybeNameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
       typeSignature = case ty xobj of
-                 Just t -> show t
+                 Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
                  Nothing -> ""
       metaMap = getMeta meta
       docString = case Map.lookup "doc" metaMap of

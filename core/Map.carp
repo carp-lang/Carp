@@ -144,8 +144,8 @@
   (defn put [m k v]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (Bucket.put @n k v)))))))
+                           (let [n (Array.unsafe-nth &b idx)]
+                             (Array.aset b idx (Bucket.put @n k v)))))))
 
   (doc put! "Put a a value v into map m, using the key k, in place.")
   (defn put! [m k v]
@@ -209,8 +209,8 @@
   (defn remove [m k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &m))]
       (update-buckets m &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (Bucket.shrink @n k)))))))
+                           (let [n (Array.unsafe-nth &b idx)]
+                             (Array.aset b idx (Bucket.shrink @n k)))))))
 
   (doc all? "Do all key-value pairs pass the given predicate (of two arguments)?")
   (defn all? [pred m]
@@ -358,12 +358,15 @@
 
   (doc put "Put a a key k into the set s.")
   (defn put [s k]
-    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
+    (let [idx (Int.positive-mod (hash k) @(n-buckets &s))
+          ;; The lifetime system really doesn't like this function, had to put in a bunch of copying to make it compile:
+          ]
       (update-buckets s &(fn [b]
         (let [n (Array.unsafe-nth &b idx)]
           (if (SetBucket.contains? n k)
             b
-            (Array.aset b idx (SetBucket.grow n @k))))))))
+            (let [new-k @k] ;; HACK!
+              (Array.aset b idx (SetBucket.grow n new-k)))))))))
 
   (doc put! "Put a a key k into the set s, in place.")
   (defn put! [s k]
@@ -393,8 +396,8 @@
   (defn remove [s k]
     (let [idx (Int.positive-mod (hash k) @(n-buckets &s))]
       (update-buckets s &(fn [b]
-        (let [n (Array.unsafe-nth &b idx)]
-          (Array.aset b idx (SetBucket.shrink n k)))))))
+                           (let [n (Array.unsafe-nth &b idx)]
+                             (Array.aset b idx (SetBucket.shrink n k)))))))
 
   (doc all? "Does the predicate hold for all values in this set?")
   (defn all? [pred set]

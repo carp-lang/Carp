@@ -67,7 +67,7 @@ pointerModule = Env { envBindings = bindings
 templatePointerCopy :: (String, Binder)
 templatePointerCopy = defineTemplate
   (SymPath ["Pointer"] "copy")
-  (FuncTy [RefTy (PointerTy (VarTy "p"))] (PointerTy (VarTy "p")))
+  (FuncTy [RefTy (PointerTy (VarTy "p")) (VarTy "q")] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "copies a pointer `p`."
   (toTemplate "$p* $NAME ($p** ptrRef)")
   (toTemplate $ unlines ["$DECL {"
@@ -77,7 +77,7 @@ templatePointerCopy = defineTemplate
 
 templatePointerEqual = defineTemplate
   (SymPath ["Pointer"] "eq")
-  (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy)
+  (FuncTy [PointerTy (VarTy "p"), PointerTy (VarTy "p")] BoolTy StaticLifetimeTy)
   "checks two pointers for equality."
   (toTemplate "bool $NAME ($p *p1, $p *p2)")
   (toTemplate $ unlines ["$DECL {"
@@ -88,7 +88,7 @@ templatePointerEqual = defineTemplate
 -- | A template function for converting pointers to ref (it's up to the user of this function to make sure that is a safe operation).
 templatePointerToRef = defineTemplate
   (SymPath ["Pointer"] "to-ref")
-  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p")))
+  (FuncTy [PointerTy (VarTy "p")] (RefTy (VarTy "p") StaticLifetimeTy) StaticLifetimeTy)
   "converts a pointer to a reference type. The user will have to ensure themselves that this is a safe operation."
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -98,7 +98,7 @@ templatePointerToRef = defineTemplate
 
 templatePointerAdd = defineTemplate
   (SymPath ["Pointer"] "add")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "adds a long integer value to a pointer."
   (toTemplate "$p* $NAME ($p *p, long x)")
   (toTemplate $ unlines ["$DECL {"
@@ -108,7 +108,7 @@ templatePointerAdd = defineTemplate
 
 templatePointerSub = defineTemplate
   (SymPath ["Pointer"] "sub")
-  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")))
+  (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "subtracts a long integer value from a pointer."
   (toTemplate "$p* $NAME ($p *p, long x)")
   (toTemplate $ unlines ["$DECL {"
@@ -118,7 +118,7 @@ templatePointerSub = defineTemplate
 
 templatePointerWidth = defineTemplate
   (SymPath ["Pointer"] "width")
-  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "gets the byte size of a pointer."
   (toTemplate "long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -128,7 +128,7 @@ templatePointerWidth = defineTemplate
 
 templatePointerToLong = defineTemplate
   (SymPath ["Pointer"] "to-long")
-  (FuncTy [PointerTy (VarTy "p")] LongTy)
+  (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "converts a pointer to a long integer."
   (toTemplate "long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
@@ -138,7 +138,7 @@ templatePointerToLong = defineTemplate
 
 templatePointerFromLong = defineTemplate
   (SymPath ["Pointer"] "from-long")
-  (FuncTy [LongTy] (PointerTy (VarTy "p")))
+  (FuncTy [LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "converts a long integer to a pointer."
   (toTemplate "$p* $NAME (long p)")
   (toTemplate $ unlines ["$DECL {"
@@ -161,7 +161,7 @@ systemModule = Env { envBindings = bindings
 templateExit :: (String, Binder)
 templateExit = defineTemplate
   (SymPath ["System"] "exit")
-  (FuncTy [IntTy] (VarTy "a"))
+  (FuncTy [IntTy] (VarTy "a") StaticLifetimeTy)
   "exits the program."
   (toTemplate "$a $NAME (int code)")
   (toTemplate $ unlines ["$DECL {"
@@ -198,7 +198,7 @@ generateInnerFunctionModule arity =
   where
     alphabet = ['d'..'y']
     charToTyName c = [c]
-    funcTy = FuncTy (take arity (map (VarTy . charToTyName) alphabet)) (VarTy "z")
+    funcTy = FuncTy (take arity (map (VarTy . charToTyName) alphabet)) (VarTy "z") StaticLifetimeTy
     bindings = Map.fromList [ generateTemplateFuncCopy funcTy
                             , generateTemplateFuncDelete funcTy
                             , generateTemplateFuncStrOrPrn "str" "converts a function to a string." funcTy
@@ -210,7 +210,7 @@ generateInnerFunctionModule arity =
 generateTemplateFuncCopy :: Ty -> (String, Binder)
 generateTemplateFuncCopy funcTy = defineTemplate
   (SymPath ["Function"] "copy")
-  (FuncTy [RefTy funcTy] (VarTy "a"))
+  (FuncTy [RefTy funcTy (VarTy "q")] (VarTy "a") StaticLifetimeTy)
   "copies a function."
   (toTemplate "$a $NAME ($a* ref)")
   (toTemplate $ unlines ["$DECL {"
@@ -231,7 +231,7 @@ generateTemplateFuncCopy funcTy = defineTemplate
 generateTemplateFuncDelete :: Ty -> (String, Binder)
 generateTemplateFuncDelete funcTy = defineTemplate
   (SymPath ["Function"] "delete")
-  (FuncTy [funcTy] UnitTy)
+  (FuncTy [funcTy] UnitTy StaticLifetimeTy)
   "deletes a function."
   (toTemplate "void $NAME (Lambda f)")
   (toTemplate $ unlines ["$DECL {"
@@ -246,7 +246,7 @@ generateTemplateFuncDelete funcTy = defineTemplate
 generateTemplateFuncStrOrPrn :: String -> String -> Ty -> (String, Binder)
 generateTemplateFuncStrOrPrn name docs funcTy = defineTemplate
   (SymPath ["Function"] name)
-  (FuncTy [RefTy funcTy] StringTy)
+  (FuncTy [RefTy funcTy (VarTy "q")] StringTy StaticLifetimeTy)
   docs
   (toTemplate "String $NAME (Lambda *f)")
   (toTemplate $ unlines ["$DECL {"
@@ -357,7 +357,7 @@ dynamicProjectModule = Env { envBindings = bindings
 templateEnumToInt :: (String, Binder)
 templateEnumToInt = defineTemplate
   (SymPath [] "enum-to-int")
-  (FuncTy [VarTy "a"] IntTy)
+  (FuncTy [VarTy "a"] IntTy StaticLifetimeTy)
   "converts an enum `e` to an integer."
   (toTemplate "int $NAME ($a e)")
   (toTemplate $ unlines ["$DECL {"
@@ -379,7 +379,7 @@ unsafeModule = Env { envBindings = bindings
 templateCoerce :: (String, Binder)
 templateCoerce = defineTemplate
   (SymPath ["Unsafe"] "coerce")
-  (FuncTy [VarTy "b"] (VarTy "a"))
+  (FuncTy [VarTy "b"] (VarTy "a") StaticLifetimeTy)
   "coerces a value of type b to a value of type a."
   (toTemplate "$a $NAME ($b b)")
   (toTemplate $ unlines ["$DECL {"
@@ -417,15 +417,15 @@ startingTypeEnv = Env { envBindings = bindings
                       , envFunctionNestingLevel = 0
                       }
   where bindings = Map.fromList
-          [ interfaceBinder "copy" (FuncTy [RefTy (VarTy "a")] (VarTy "a"))
+          [ interfaceBinder "copy" (FuncTy [RefTy (VarTy "a") (VarTy "q")] (VarTy "a") StaticLifetimeTy)
             ([SymPath ["Array"] "copy", SymPath ["Pointer"] "copy"] ++ registerFunctionFunctionsWithInterface "copy")
             builtInSymbolInfo
 
-          , interfaceBinder "str" (FuncTy [VarTy "a"] StringTy)
+          , interfaceBinder "str" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
             (SymPath ["Array"] "str" : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo
 
-          , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy)
+          , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
             (registerFunctionFunctionsWithInterface "prn")
             builtInSymbolInfo
           ]

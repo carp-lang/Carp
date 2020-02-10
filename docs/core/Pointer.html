@@ -161,7 +161,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p), Long] (Ptr p))
+                    (λ [(Ptr a), Long] (Ptr a))
                 </p>
                 <span>
                     
@@ -181,7 +181,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Ptr p))] (Ptr p))
+                    (λ [(Ref (Ptr a) b)] (Ptr a))
                 </p>
                 <span>
                     
@@ -220,7 +220,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p), (Ptr p)] Bool)
+                    (λ [(Ptr a), (Ptr a)] Bool)
                 </p>
                 <span>
                     
@@ -240,7 +240,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [Long] (Ptr p))
+                    (λ [Long] (Ptr a))
                 </p>
                 <span>
                     
@@ -279,7 +279,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p), Long] (Ptr p))
+                    (λ [(Ptr a), Long] (Ptr a))
                 </p>
                 <span>
                     
@@ -299,7 +299,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p)] Long)
+                    (λ [(Ptr a)] Long)
                 </p>
                 <span>
                     
@@ -319,7 +319,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p)] &amp;p)
+                    (λ [(Ptr a)] (Ref a StaticLifetime))
                 </p>
                 <span>
                     
@@ -339,7 +339,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ptr p)] Long)
+                    (λ [(Ptr a)] Long)
                 </p>
                 <span>
                     

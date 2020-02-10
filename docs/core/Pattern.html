@@ -161,7 +161,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;Pattern] Bool)
+                    (λ [(Ref Pattern a), (Ref Pattern b)] Bool)
                 </p>
                 <span>
                     
@@ -180,7 +180,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern] Pattern)
+                    (λ [(Ref Pattern a)] Pattern)
                 </p>
                 <span>
                     
@@ -199,7 +199,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] Int)
+                    (λ [(Ref Pattern a), (Ref String b)] Int)
                 </p>
                 <span>
                     
@@ -220,7 +220,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] (Array Int))
+                    (λ [(Ref Pattern a), (Ref String b)] (Array Int))
                 </p>
                 <span>
                     
@@ -241,7 +241,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Char))] Pattern)
+                    (λ [(Ref (Array Char) a)] Pattern)
                 </p>
                 <pre class="args">
                     (from-chars chars)
@@ -261,7 +261,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] (Array (Array String)))
+                    (λ [(Ref Pattern a), (Ref String b)] (Array (Array String)))
                 </p>
                 <span>
                     
@@ -301,7 +301,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Pattern)
+                    (λ [(Ref String a)] Pattern)
                 </p>
                 <span>
                     
@@ -320,7 +320,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] (Array String))
+                    (λ [(Ref Pattern a), (Ref String b)] (Array String))
                 </p>
                 <span>
                     
@@ -341,7 +341,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] String)
+                    (λ [(Ref Pattern a), (Ref String b)] String)
                 </p>
                 <span>
                     
@@ -362,7 +362,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String] Bool)
+                    (λ [(Ref Pattern a), (Ref String b)] Bool)
                 </p>
                 <pre class="args">
                     (matches? pat s)
@@ -382,7 +382,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern] String)
+                    (λ [(Ref Pattern a)] String)
                 </p>
                 <span>
                     
@@ -421,7 +421,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern] String)
+                    (λ [(Ref Pattern a)] String)
                 </p>
                 <span>
                     
@@ -440,7 +440,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Pattern, &amp;String, &amp;String, Int] String)
+                    (λ [(Ref Pattern a), (Ref String b), (Ref String c), Int] String)
                 </p>
                 <span>
                     
