@@ -304,19 +304,17 @@ init:                     /* using goto's to optimize tail recursion */
                         s = NULL; /* match failed */
                         break;
                     }
-                    case 'n': { /* newline? */
-                        if (*s == '\r') {
-                            if (*(++s) == '\n') s++;
-                        } else if (*s == '\n')
-                            s++;
-                        else
-                            s = NULL;
-                        break;
-                    }
+                    case 'r':   /* carriage return? */
+                    case 'n':   /* newline? */
                     case 't': { /* tab? */
-                        if (*s == '\t')
+                        char h = *(p + 1);
+                        p += 2;
+                        if ((*s == '\r' && h == 'r') ||
+                            (*s == '\n' && h == 'n') ||
+                            (*s == '\t' && h == 't')) {
                             s++;
-                        else
+                            goto init;
+                        } else
                             s = NULL;
                         break;
                     }
@@ -428,7 +426,7 @@ Array Pattern_internal_push_onecapture(PatternMatchState *ms, int i, String s,
     if (i >= ms->level) {
         if (!i)
             return Array_push_String(captures, s, i,
-                                     ms->capture[i].len); /* add whole match */
+                                     e - s); /* add whole match */
         else
             carp_regerror("invalid capture index %cd", C_ESC, i + 1);
     } else {
