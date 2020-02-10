@@ -41,10 +41,11 @@ Related issues:
 * https://github.com/carp-lang/Carp/issues/659
 
 Questions:
-* How does Carp figure out what the definition of the symbol X is?
+* How does Carp figure out what the value of the symbol X is?
 * How do you set the value for symbol X?
 * Are there any reserved names?
 * What is a keyword?
+* Are there different namespaces for dynamic and static Carp?
 ### 1.1 Global Variables
 Questions:
 * Are global variables mutable?
@@ -83,3 +84,12 @@ Questions:
 Questions:
 * How does the REPL know when to evalutate something in the dynamic or static context?
 * When does it decide to run the given code in the dynamic or static context?
+
+## 3. Types
+Issues:
+* [#560 Add Reflection Module Proposal](https://github.com/carp-lang/Carp/issues/560)
+
+Questions:
+* What types are available?
+* When is a form typechecked?
+* How do you refer to a specific type? Are types [first class citizens](https://en.wikipedia.org/wiki/First-class_citizen)?
