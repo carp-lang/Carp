@@ -817,9 +817,9 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#prefix-string">
-                    <h3 id="prefix-string">
-                        prefix-string
+                <a class="anchor" href="#prefix">
+                    <h3 id="prefix">
+                        prefix
                     </h3>
                 </a>
                 <div class="description">
@@ -829,7 +829,7 @@
                     (λ [(Ref String a), Int] String)
                 </p>
                 <pre class="args">
-                    (prefix-string s a)
+                    (prefix s a)
                 </pre>
                 <p class="doc">
                     <p>Return the first <code>a</code> characters of the string <code>s</code>.</p>
@@ -912,6 +912,25 @@
                 <p class="doc">
                     <p>Produce a new string which is <code>s</code> reversed.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#slice">
+                    <h3 id="slice">
+                        slice
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref String a), Int, Int] String)
+                </p>
+                <pre class="args">
+                    (slice s a b)
+                </pre>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -1012,28 +1031,9 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#substring">
-                    <h3 id="substring">
-                        substring
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref String a), Int, Int] String)
-                </p>
-                <pre class="args">
-                    (substring s a b)
-                </pre>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#suffix-string">
-                    <h3 id="suffix-string">
-                        suffix-string
+                <a class="anchor" href="#suffix">
+                    <h3 id="suffix">
+                        suffix
                     </h3>
                 </a>
                 <div class="description">
@@ -1043,7 +1043,7 @@
                     (λ [(Ref String a), Int] String)
                 </p>
                 <pre class="args">
-                    (suffix-string s b)
+                    (suffix s b)
                 </pre>
                 <p class="doc">
                     <p>Return the last <code>b</code> characters of the string <code>s</code>.</p>

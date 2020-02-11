@@ -802,19 +802,19 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#prefix-array">
-                    <h3 id="prefix-array">
-                        prefix-array
+                <a class="anchor" href="#prefix">
+                    <h3 id="prefix">
+                        prefix
                     </h3>
                 </a>
                 <div class="description">
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a) b), Int] (Array a))
+                    (λ [(Ref a b), Int] a)
                 </p>
                 <pre class="args">
-                    (prefix-array xs end-index)
+                    (prefix xs end-index)
                 </pre>
                 <p class="doc">
                     <p>gets a prefix array to <code>end-index</code>.</p>
@@ -1067,6 +1067,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#slice">
+                    <h3 id="slice">
+                        slice
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Array a) b), Int, Int] (Array a))
+                </p>
+                <pre class="args">
+                    (slice xs start-index end-index)
+                </pre>
+                <p class="doc">
+                    <p>gets a subarray from <code>start-index</code> to <code>end-index</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#sort">
                     <h3 id="sort">
                         sort
@@ -1207,29 +1227,9 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#subarray">
-                    <h3 id="subarray">
-                        subarray
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Array a) b), Int, Int] (Array a))
-                </p>
-                <pre class="args">
-                    (subarray xs start-index end-index)
-                </pre>
-                <p class="doc">
-                    <p>gets a subarray from <code>start-index</code> to <code>end-index</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#suffix-array">
-                    <h3 id="suffix-array">
-                        suffix-array
+                <a class="anchor" href="#suffix">
+                    <h3 id="suffix">
+                        suffix
                     </h3>
                 </a>
                 <div class="description">
@@ -1239,7 +1239,7 @@
                     (λ [(Ref (Array a) b), Int] (Array a))
                 </p>
                 <pre class="args">
-                    (suffix-array xs start-index)
+                    (suffix xs start-index)
                 </pre>
                 <p class="doc">
                     <p>gets a suffix array from <code>start-index</code>.</p>

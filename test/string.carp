@@ -84,16 +84,16 @@
                 "from-chars works as expected")
   (assert-equal test
                 "edan"
-                &(substring "svedang" 2 6)
-                "substring works as expected")
+                &(slice "svedang" 2 6)
+                "slice works as expected")
   (assert-equal test
                 "sved"
-                &(prefix-string "svedang" 4)
-                "prefix-string works as expected")
+                &(prefix "svedang" 4)
+                "prefix works as expected")
   (assert-equal test
                 "dang"
-                &(suffix-string "svedang" 3)
-                "suffix-string works as expected")
+                &(suffix "svedang" 3)
+                "suffix works as expected")
   (assert-true test
                (ends-with? "heller" "ler")
                "ends-with? works as expected")

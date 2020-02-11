@@ -138,20 +138,20 @@ If the array is empty, returns `Nothing`")
   (defn sum [xs]
     (Array.reduce &(fn [x y] (+ x @y)) (zero) xs))
 
-  (doc subarray "gets a subarray from `start-index` to `end-index`.")
-  (defn subarray [xs start-index end-index]
+  (doc slice "gets a subarray from `start-index` to `end-index`.")
+  (defn slice [xs start-index end-index]
     (let-do [result []]
       (for [i start-index end-index]
         (set! result (push-back result @(unsafe-nth xs i))))
       result))
 
-  (doc prefix-array "gets a prefix array to `end-index`.")
-  (defn prefix-array [xs end-index]
-    (subarray xs 0 end-index))
+  (doc prefix "gets a prefix array to `end-index`.")
+  (defn prefix [xs end-index]
+    (slice xs 0 end-index))
 
-  (doc suffix-array "gets a suffix array from `start-index`.")
-  (defn suffix-array [xs start-index]
-    (subarray xs start-index (length xs)))
+  (doc suffix "gets a suffix array from `start-index`.")
+  (defn suffix [xs start-index]
+    (slice xs start-index (length xs)))
 
   (doc reverse "reverses an array.")
   (defn reverse [a]
