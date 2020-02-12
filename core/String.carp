@@ -85,9 +85,6 @@
           lsub (length sub)]
       (and (>= ls lsub) (= sub &(suffix s (- ls lsub))))))
 
-  (defn ends-with? [s sub]
-    (= sub &(suffix s (- (length s) (length sub)))))
-
   (doc zero "The empty string.")
   (defn zero [] @"")
 
