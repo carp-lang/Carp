@@ -76,9 +76,15 @@
 
   (doc starts-with? "Check if the string `s` begins with the string `sub`.")
   (defn starts-with? [s sub]
-    (= sub &(prefix s (length sub))))
+    (let [ls (length sub)]
+      (and (>= (length s) ls) (= sub &(prefix s ls)))))
 
   (doc ends-with? "Check if the string `s` ends with the string `sub`.")
+  (defn ends-with? [s sub]
+    (let [ls (length s)
+          lsub (length sub)]
+      (and (>= ls lsub) (= sub &(suffix s (- ls lsub))))))
+
   (defn ends-with? [s sub]
     (= sub &(suffix s (- (length s) (length sub)))))
 
