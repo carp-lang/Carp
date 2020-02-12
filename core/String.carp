@@ -63,24 +63,24 @@
   (defn empty? [s]
     (Int.= (length s) 0))
 
-  (defn substring [s a b]
-    (from-chars &(Array.subarray &(chars s) a b)))
+  (defn slice [s a b]
+    (from-chars &(Array.slice &(chars s) a b)))
 
-  (doc prefix-string "Return the first `a` characters of the string `s`.")
-  (defn prefix-string [s a]
-    (from-chars &(Array.subarray &(chars s) 0 a)))
+  (doc prefix "Return the first `a` characters of the string `s`.")
+  (defn prefix [s a]
+    (from-chars &(Array.slice &(chars s) 0 a)))
 
-  (doc suffix-string "Return the last `b` characters of the string `s`.")
-  (defn suffix-string [s b]
-    (from-chars &(Array.subarray &(chars s) b (length s))))
+  (doc suffix "Return the last `b` characters of the string `s`.")
+  (defn suffix [s b]
+    (from-chars &(Array.slice &(chars s) b (length s))))
 
   (doc starts-with? "Check if the string `s` begins with the string `sub`.")
   (defn starts-with? [s sub]
-    (= sub &(prefix-string s (length sub))))
+    (= sub &(prefix s (length sub))))
 
   (doc ends-with? "Check if the string `s` ends with the string `sub`.")
   (defn ends-with? [s sub]
-    (= sub &(suffix-string s (- (length s) (length sub)))))
+    (= sub &(suffix s (- (length s) (length sub)))))
 
   (doc zero "The empty string.")
   (defn zero [] @"")

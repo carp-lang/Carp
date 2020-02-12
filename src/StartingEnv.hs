@@ -321,7 +321,7 @@ dynamicStringModule = Env { envBindings = bindings
                           , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
                                 , addCommand "index-of" 2 commandIndexOf
-                                , addCommand "substring" 3 commandSubstring
+                                , addCommand "slice" 3 commandSubstring
                                 , addCommand "length" 1 commandStringLength
                                 , addCommand "join" 1 commandStringJoin
                                 , addCommand "directory" 1 commandStringDirectory

@@ -50,16 +50,16 @@ If you want to replace all occurrences of the pattern, use `-1`.")
              lidx (Array.length &idx)
              result (Array.allocate (Int.inc lidx))]
       (Array.aset-uninitialized! &result 0
-        (substring s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
+        (slice s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
       (for [i 0 (Int.dec (Array.length &idx))]
         (let [plen (length (Array.unsafe-nth &strs i))]
           (Array.aset-uninitialized! &result (Int.inc i)
-            (substring s (+ @(Array.unsafe-nth &idx i) plen)
-                         @(Array.unsafe-nth &idx (Int.inc i))))))
+            (slice s (+ @(Array.unsafe-nth &idx i) plen)
+                        @(Array.unsafe-nth &idx (Int.inc i))))))
       (when (> lidx 0)
         (let [plen (length (Array.unsafe-nth &strs (Int.dec lidx)))]
           (Array.aset-uninitialized! &result lidx
-            (suffix-string s (+ @(Array.unsafe-nth &idx (Int.dec lidx))
+            (suffix s (+ @(Array.unsafe-nth &idx (Int.dec lidx))
                                 plen)))))
       result))
 
@@ -121,13 +121,13 @@ If you want to replace all occurrences of the pattern, use `-1`.")
              lidx (Array.length &idx)
              result (Array.allocate (Int.inc lidx))]
       (Array.aset-uninitialized! &result 0
-        (substring s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
+        (slice s 0 (if (> lidx 0) @(Array.unsafe-nth &idx 0) (length s))))
       (for [i 0 (Int.dec (Array.length &idx))]
         (Array.aset-uninitialized! &result (Int.inc i)
-          (substring s (Int.inc @(Array.unsafe-nth &idx i)) @(Array.unsafe-nth &idx (Int.inc i)))))
+          (slice s (Int.inc @(Array.unsafe-nth &idx i)) @(Array.unsafe-nth &idx (Int.inc i)))))
       (when (> lidx 0)
         (Array.aset-uninitialized! &result lidx
-          (suffix-string s (Int.inc @(Array.unsafe-nth &idx (Int.dec lidx))))))
+          (suffix s (Int.inc @(Array.unsafe-nth &idx (Int.dec lidx))))))
       result))
 
   (doc words "splits a string into words.")

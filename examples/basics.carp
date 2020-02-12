@@ -183,8 +183,8 @@
 (defn two-lengths-in-same-func []
   (let [a [[1]]
         b [1 2 3]
-        c1 (length &a)
-        c2 (length &b)]
+        c1 (Array.length &a)
+        c2 (Array.length &b)]
     (println* (+ c1 c2))))
 
 (defn changing-target-of-ref []
