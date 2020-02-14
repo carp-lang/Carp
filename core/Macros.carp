@@ -167,10 +167,9 @@
   (list 'ref
         (list 'str x)))
 
-;; Old foreach, what's a better name for this? (it's just 'map' with side effects)
-;; (defmacro foreach [f xs]
-;;   (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
-;;         (list f (list 'Array.nth (list 'ref xs) 'i))))
+(defmacro doall [f xs]
+  (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
+        (list f (list 'Array.unsafe-nth (list 'ref xs) 'i))))
 
 (defndynamic foreach-internal [var xs expr]
   (let [xsym (gensym-with 'xs)
