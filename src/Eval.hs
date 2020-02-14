@@ -1,5 +1,7 @@
+{-# LANGUAGE LambdaCase #-}
 module Eval where
 
+import Data.Foldable (foldrM)
 import Data.List (foldl', null, isSuffixOf)
 import Data.List.Split (splitOn, splitWhen)
 import Control.Monad.State
@@ -183,28 +185,24 @@ eval env xobj =
           | odd (length bindings) -> return (makeEvalError ctx Nothing ("Uneven number of forms in `let`: " ++ pretty xobj) (info xobj)) -- Unreachable?
           | not (all isSym (evenIndices bindings)) -> return (makeEvalError ctx Nothing ("`let` identifiers must be symbols, but it got `" ++ joinWithSpace (map pretty bindings) ++ "`") (info xobj))
           | otherwise ->
-              do bind <- mapM (\(n, x) -> do x' <- eval env x
-                                             return $ do okX <- x'
-                                                         Right [n, okX])
-                              (pairwise bindings)
-                 let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
-                 let okBindings = sequence bind
-                 case okBindings of
-                   (Left err) -> return (Left err)
-                   Right binds ->
-                    case getDuplicate [] binds of
-                      Just dup -> return (makeEvalError ctx Nothing ("I encountered a duplicate binding `" ++ dup ++ "` inside a `let`") (info xobj))
-                      Nothing -> do
-                       let envWithBindings = foldl' (\e [XObj (Sym (SymPath _ n) _) _ _, x] -> extendEnv e n x)
-                                     innerEnv
-                                     binds
-                       evaledBody <- eval envWithBindings body
-                       return $ do okBody <- evaledBody
-                                   Right okBody
-          where getDuplicate _ [] = Nothing
-                getDuplicate names ([XObj (Sym (SymPath _ x) _) _ _,y]:xs) =
-                  if x `elem` names then Just x else getDuplicate (x:names) xs
-
+              do let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
+                 let binds = unwrapVar (pairwise bindings) []
+                 eitherEnv <- foldrM successiveEval (Right innerEnv) binds
+                 case eitherEnv of
+                    Left err -> return $ Left err
+                    Right envWithBindings -> do
+                           evaledBody <- eval envWithBindings body
+                           return $ do okBody <- evaledBody
+                                       Right okBody
+          where unwrapVar [] acc = acc
+                unwrapVar ((XObj (Sym (SymPath [] x) _) _ _,y):xs) acc = unwrapVar xs ((x,y):acc)
+                successiveEval (n, x) =
+                  \case
+                    err@(Left _) -> return err
+                    Right e ->
+                      eval e x >>= \case
+                        Right okX -> return $ Right $ extendEnv e n okX
+                        Left err -> return $ Left err
         XObj (Sym (SymPath [] "register-type") _) _ _ : XObj (Sym (SymPath _ typeName) _) _ _ : rest ->
           specialCommandRegisterType typeName rest
         XObj (Sym (SymPath _ "register-type") _) _ _ : _ ->
