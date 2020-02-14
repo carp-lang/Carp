@@ -41,18 +41,18 @@ Related issues:
 * https://github.com/carp-lang/Carp/issues/659
 
 Questions:
-* How does Carp figure out what the value of the symbol X is?
+#### How does Carp figure out what the value of the symbol X is?
 Lexical scoping (look in the current scope, then any enclosing scope, up until global scope).
 Things that create scopes:
 - function definitions (defn, defndynamic, fn)
 - let
 - modules
 
-* How do you set the value for symbol X?
+#### How do you set the value for symbol X?
 
 `(set! <symbol> <value>)`
 
-* Are there any reserved names?
+#### Are there any reserved names?
 Yes (see the Parsing module for more info)
 
 - defn
@@ -76,53 +76,53 @@ Yes (see the Parsing module for more info)
 More things should be moved to the reserved list, actually.
 The `:rest` token in defmacro is also reserved.
 
-* What is a keyword?
+#### What is a keyword?
 There are no keywords. Maybe will be in the macros, see this implementation https://gist.github.com/sdilts/73a811a633bb0ef3dd7e31b84a138a5a.
 
-* Are there different namespaces for dynamic and static Carp?
+#### Are there different namespaces for dynamic and static Carp?
 They use the same modules but dynamic lookup will only find dynamic functions, and static lookup will only find static functions.
 
 ### 1.1 Global Variables
 Questions:
-* Are global variables mutable?
+#### Are global variables mutable?
 Yes.
 
-* How are they mutated? When do these mutations come into affect?
+#### How are they mutated? When do these mutations come into affect?
 Using `set!`. The mutation comes into effect immedately (using IORefs internally).
 
-* Do global variables have lexical or dynamic scope?
+#### Do global variables have lexical or dynamic scope?
 Lexical (no dynamic scope for anything).
 
 ### 1.2 Local variables
 Questions:
-* Are local variables mutable?
+#### Are local variables mutable?
 Yup.
 
-* When do local variables come in and out of scope?
+#### When do local variables come in and out of scope?
 Lexical scoping rules, functions and let create new variables.
 
-* What is a closure? What are the important rules for variables inside closures?
+#### What is a closure? What are the important rules for variables inside closures?
 No captured variables are mutable.
 The dynamic lambdas captures the whole environment at the time the closure is created (when the `(fn ...)` form is evaluated).
 
 ### 1.3. Namespace Rules
 Questions:
-* Given symbols `a` in the `Foo` module and `a` in the `Bar` module, how do I refer to each of them?
+#### Given symbols `a` in the `Foo` module and `a` in the `Bar` module, how do I refer to each of them?
 Using `.`, Foo.a and Bar.a.
 By using `(use <module name>)` you can avoid having to specify the module.
 
-* What happens if multiple modules are imported and they contain the same symbol?
+#### What happens if multiple modules are imported and they contain the same symbol?
 Runtime error when looking up the symbol.
 
-* Given the symbols`Foo.a` and `Bar.a`, exist, which symbol does `a` refer to?
+#### Given the symbols`Foo.a` and `Bar.a`, exist, which symbol does `a` refer to?
 Neither, unless any single one of the modules (Foo/Bar) is imported with `use`. If both are imported the lookup is an error since it can't be resolved to a single value.
 
-* Do functions and variables live in the same namespace?
+#### Do functions and variables live in the same namespace?
 Yes. Types live in a different namespace.
 
 ### 1.4 Definitions
 Questions:
-* What kinds of definitions are there and how are they created?
+#### What kinds of definitions are there and how are they created?
 
 Dynamic context:
 - defndynamic (creates dynamic functions)
@@ -143,11 +143,11 @@ Related issues:
 * https://github.com/carp-lang/Carp/issues/555
 
 Questions:
-* When are macros evaluated?
-* When are symbols evaluated?
-* When are forms evaluated?
-* Are forms evaluated left-to-right or right-to-left?
-* How does error reporting work?
+#### When are macros evaluated?
+#### When are symbols evaluated?
+#### When are forms evaluated?
+#### Are forms evaluated left-to-right or right-to-left?
+#### How does error reporting work?
 
 ### 2.1 Macros
 Questions:
