@@ -804,9 +804,25 @@ specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) ty
              let interface = defineInterface name t [] (info nameXObj)
                  typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
              in  do put (ctx { contextTypeEnv = typeEnv' })
+                    retroactivelyRegisterFunctionsThatAdhereToInterface name t
                     return dynamicNil
        Nothing ->
          return (makeEvalError ctx Nothing ("Invalid type for interface '" ++ name ++ "': " ++ pretty typeXObj) (info typeXObj))
+
+retroactivelyRegisterFunctionsThatAdhereToInterface :: String -> Ty -> StateT Context IO ()
+retroactivelyRegisterFunctionsThatAdhereToInterface name t =
+  do ctx <- get
+     let env = contextGlobalEnv ctx
+         found = multiLookupALL name env
+         binders = map snd found
+         resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
+                                                   Right ok -> registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder)
+                                                   Left err -> Left err)
+                            (Right ctx) binders
+     case resultCtx of
+       Left err -> error err
+       Right ctx' -> put ctx'
+     return ()
 
 dynamicOrMacroWith :: (SymPath -> [XObj]) -> Ty -> String -> XObj -> StateT Context IO (Either EvalError XObj)
 dynamicOrMacroWith producer ty name body =
