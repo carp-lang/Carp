@@ -143,12 +143,15 @@
     (let [variable (car settings)
           from (cadr settings)
           to (caddr settings)
-          step (if (= (length settings) 4) (cadddr settings) 1)
+          step (if (> (length settings) 3) (cadddr settings) 1)
+          comp (if (> (length settings) 4)
+                 (cadddr (cdr settings))
+                 (if (< step (- step step)) '> '<))
           ]
       (list
        'let (array variable from)
        (list
-        'while (list (if (< step (- step step)) '> '<) variable to)
+        'while (list comp variable to)
         (list
          'do
          (if (= (length body) 0)
