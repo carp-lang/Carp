@@ -33,14 +33,14 @@ moduleForSumtype typeEnv env pathStrings typeName typeVariables rest i existingE
         cases <- toCases typeEnv typeVariables rest
         okIniters <- initers insidePath structTy cases
         okTag <- binderForTag insidePath structTy
-        okStr <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
-        okPrn <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
+        (okStr, okStrDeps) <- binderForStrOrPrn typeEnv env insidePath structTy cases "str"
+        (okPrn, _) <- binderForStrOrPrn typeEnv env insidePath structTy cases "prn"
         okDelete <- binderForDelete typeEnv env insidePath structTy cases
-        okCopy <- binderForCopy typeEnv env insidePath structTy cases
+        (okCopy, okCopyDeps) <- binderForCopy typeEnv env insidePath structTy cases
         okMemberDeps <- memberDeps typeEnv cases
         let moduleEnvWithBindings = addListOfBindings typeModuleEnv (okIniters ++ [okStr, okPrn, okDelete, okCopy, okTag])
             typeModuleXObj = XObj (Mod moduleEnvWithBindings) i (Just ModuleTy)
-        return (typeModuleName, typeModuleXObj, okMemberDeps)
+        return (typeModuleName, typeModuleXObj, okMemberDeps ++ okCopyDeps ++ okStrDeps)
 
 memberDeps :: TypeEnv -> [SumtypeCase] -> Either TypeError [XObj]
 memberDeps typeEnv cases = fmap concat (mapM (concretizeType typeEnv) (concatMap caseTys cases))
@@ -129,16 +129,16 @@ binderForTag insidePath originalStructTy@(StructTy typeName _) =
 
 
 -- | Helper function to create the binder for the 'str' template.
-binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError (String, Binder)
+binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> Either TypeError ((String, Binder), [XObj])
 binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) cases strOrPrn =
   Right $ if isTypeGeneric structTy
-          then genericStr insidePath structTy cases strOrPrn
+          then (genericStr insidePath structTy cases strOrPrn, [])
           else concreteStr typeEnv env insidePath structTy cases strOrPrn
 
 -- | The template for the 'str' function for a concrete deftype.
-concreteStr :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> (String, Binder)
+concreteStr :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> String -> ((String, Binder), [XObj])
 concreteStr typeEnv env insidePath concreteStructTy@(StructTy typeName _) cases strOrPrn =
-  instanceBinder (SymPath insidePath strOrPrn) (FuncTy [RefTy concreteStructTy (VarTy "q")] StringTy StaticLifetimeTy) template doc
+  instanceBinderWithDeps (SymPath insidePath strOrPrn) (FuncTy [RefTy concreteStructTy (VarTy "q")] StringTy StaticLifetimeTy) template doc
   where doc = "converts a `" ++ typeName ++ "` to a string."
         template =
           Template
@@ -286,10 +286,10 @@ deleteCase typeEnv env concreteStructTy@(StructTy _ typeVariables) (theCase, isF
      ]
 
 -- | Helper function to create the binder for the 'copy' template.
-binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError (String, Binder)
+binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [SumtypeCase] -> Either TypeError ((String, Binder), [XObj])
 binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) cases =
   Right $ if isTypeGeneric structTy
-          then genericSumtypeCopy insidePath structTy cases
+          then (genericSumtypeCopy insidePath structTy cases, [])
           else concreteSumtypeCopy insidePath typeEnv env structTy cases
 
 -- | The template for the 'copy' function of a generic sumtype.
@@ -317,9 +317,9 @@ genericSumtypeCopy pathStrings originalStructTy cases =
                                   (filter (isManaged typeEnv) (concatMap caseTys correctedCases)))
 
 -- | The template for the 'copy' function of a concrete sumtype
-concreteSumtypeCopy :: [String] -> TypeEnv -> Env -> Ty -> [SumtypeCase] -> (String, Binder)
+concreteSumtypeCopy :: [String] -> TypeEnv -> Env -> Ty -> [SumtypeCase] -> ((String, Binder), [XObj])
 concreteSumtypeCopy insidePath typeEnv env structTy@(StructTy typeName _) cases =
-  instanceBinder (SymPath insidePath "copy") (FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy) template doc
+  instanceBinderWithDeps (SymPath insidePath "copy") (FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy) template doc
   where doc = "copies a `" ++ typeName ++ "`."
         template = Template
                     (FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy)
