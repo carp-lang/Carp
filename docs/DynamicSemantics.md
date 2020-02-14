@@ -61,6 +61,10 @@ Questions:
 * Given symbols `a` in the `foo` module and `a` in the `bar` module, how do I refer to each of them?
 * Given the symbols`Foo.a` and `Bar.a`, exist, which symbol does `a` refer to?
 * Do functions and variables live in the same namespace?
+### 1.4 Definitions
+Questions:
+* What kinds of definitions are there and how are they created?
+* Which of the defintions work in the dynamic context, and how?
 
 ## 2. Evaluation Rules
 Related issues:
