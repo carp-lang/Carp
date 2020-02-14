@@ -4,7 +4,12 @@
   (let [idx (String.index-of s \%)
         len (String.length s)]
     (if (= idx -1)
-      (list 'copy s) ; no more splits found, just return string
+      (if (= (length args) 0)
+        s ; no more splits found, just return string
+        (macro-error
+          (str "error in format string: too many arguments to format string (missing directive for '"
+               (car args)
+               "')")))
       (if (= len 1)
         (macro-error "error in format string: expected expression after last %")
         (if (= \% (String.char-at s (inc idx))) ; this is an escaped %
