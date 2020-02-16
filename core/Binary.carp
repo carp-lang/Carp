@@ -56,22 +56,6 @@
                   @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
  
-  (sig partition (Fn [(Ref (Array a) b) Int] (Array (Array a))))
-  (defn partition [arr partition-len] 
-    (let [len (+ (mod (Array.length arr) partition-len) (/ (Array.length arr)
-    partition-len))]
-      (let-do [x 0
-               y 0
-               a (Array.allocate len)]
-        (for [i 0 len]
-          (do
-            (set! y (+ x partition-len))
-            (when (> y (Array.length arr))
-              (set! y (Array.length arr)))
-            (Array.aset-uninitialized! &a i (Array.slice arr x y))
-            (set! x y)))
-        a)))
-
   (doc byte-seq->int8-seq-unsafe 
     "Interprets a sequence of bytes as a sequence of int8 values.
      **This operation is unsafe.**")
@@ -101,7 +85,7 @@
      **This operation is unsafe.**")
   (sig byte-seq->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array Int)))
   (defn byte-seq->int32-seq [order bs] 
-    (let [partitions (partition bs 4)
+    (let [partitions (Array.partition bs 4)
           f (fn [b] (bytes->int32-unsafe order b))] 
       (Array.copy-map &f &partitions)))
 
@@ -110,7 +94,7 @@
      **This operation is unsafe.**")
   (sig byte-seq->int64-seq (Fn [Order (Ref (Array Byte) a)] (Array Int)))
   (defn byte-seq->int64-seq [order bs] 
-    (let [partitions (partition bs 8)
+    (let [partitions (Array.partition bs 8)
           f (fn [b] (bytes->int64-unsafe order b))] 
       (Array.copy-map &f &partitions)))
       

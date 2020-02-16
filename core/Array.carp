@@ -355,4 +355,40 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
             (set! result true)
             (break))))
       result))
+
+  (doc partition
+    "Partitions an array `arr` into an array of arrays of length `n`
+    sequentially filled with the `arr`'s original values.
+
+    This function will fill partitions until `arr` is exhuasted.
+
+    If `n` is greater than or equal to the length of `arr`, the result of this
+    function is an array containing a single array of length `n`.
+
+    For example:
+
+    ```clojure
+    (Array.partition &[1 2 3 4] 2)
+    => [[1 2] [3 4]]
+    (Array.partition &[1 2 3 4] 3)
+    => [[1 2 3] [4]]
+    (Array.partition &[1 2 3 4] 6)
+    => [[1 2 3 4]]
+    ```")
+  (sig partition (Fn [(Ref (Array a) b) Int] (Array (Array a))))
+  (defn partition [arr n] 
+    (let [len (+ (mod (Array.length arr) n) (/ (Array.length arr) n))]
+      (let-do [x 0
+               y 0
+               a []]
+        ;; We use while since we're doing custom incrementation of x
+        ;; dealing with the extra increment implicitly called by for is messier
+        (while (< x (Array.length arr))
+          (do
+            (set! y (+ x n))
+            (when (> y (Array.length arr))
+              (set! y (Array.length arr)))
+            (set! a (push-back a (Array.slice arr x y)))
+            (set! x y)))
+        a)))
 )
