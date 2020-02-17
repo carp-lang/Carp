@@ -66,14 +66,6 @@
                   @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
  
-  (doc byte-seq->int8-seq-unsafe 
-    "Interprets a sequence of bytes as a sequence of int8 values.
-     **This operation is unsafe.**")
-  (sig byte-seq->int8-seq (Fn [(Ref (Array Byte) a)] (Array Int)))
-  (defn byte-seq->int8-seq [bs]
-    (let [f (fn [b] (Byte.to-int @b))]
-    (Array.copy-map &f bs)))
-
   (doc byte-seq->int16-seq-unsafe
     "Interprets a sequence of bytes as a sequence of int16 values.
      **This operation is unsafe.**")
