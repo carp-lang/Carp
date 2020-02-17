@@ -14,6 +14,14 @@
   (register to-int16 (λ [Byte Byte] Int))
   (register to-int32 (λ [Byte Byte Byte Byte] Int))
   (register to-int64 (λ [Byte Byte Byte Byte Byte Byte Byte Byte] Int))
+  (register system-endianness-internal (λ [] Int))
+
+  (doc system-endianness "Returns the endianness of the host system.")
+  (sig system-endianness (λ [] Order))
+  (defn system-endianness [] 
+    (if (= (system-endianness-internal) 1)
+        (Order.LittleEndian)
+        (Order.BigEndian)))
 
   (doc bytes->int16-unsafe
     "Interprets the first two bytes in a byte sequence as an int16 value.

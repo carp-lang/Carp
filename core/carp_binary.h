@@ -12,3 +12,17 @@ uint64_t Binary_to_MINUS_int64(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, u
   return (uint64_t) b1 | (b2 << 8) | (b3 << 16) | (b4 << 24) | ((uint64_t)b5 << 32) | 
     ((uint64_t)b6 << 40) | ((uint64_t)b7 << 48) | ((uint64_t)b8 << 56);
 }
+
+int Binary_system_MINUS_endianness_MINUS_internal() {
+  // The int type is always >= 16 bits, two bytes, according to The C
+  // Programming Language, Second Edition. Contrarily, char is always a single
+  // byte. 
+  //
+  // Allocating 1 and converting to char will leave us with the first byte used
+  // to represent the int. On a little endian machine, we're left with 1 on a
+  // big endian machine, we're left with 0.
+  unsigned int i = 1;
+  // Conversion to char lets us access bytes individually.
+  // We return the first byte.
+  return (int) ((char*)&i)[0];
+}
