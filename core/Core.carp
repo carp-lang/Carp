@@ -36,6 +36,7 @@
 (load "Array.carp")
 (load "Char.carp")
 (load "String.carp")
+(load "StdInt.carp")
 (load "System.carp")
 (load "IO.carp")
 (load "Pattern.carp")

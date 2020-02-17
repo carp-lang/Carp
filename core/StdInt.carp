@@ -1,0 +1,250 @@
+(relative-include "carp_stdint.h")
+
+(register-type Uint8)
+(register-type Uint16)
+(register-type Uint32)
+(register-type Uint64)
+(register-type Int8)
+(register-type Int16)
+(register-type Int32)
+(register-type Int64)
+
+(defmodule Int8
+  (register = (λ [Int8 Int8] Bool))
+  (register > (λ [Int8 Int8] Bool))
+  (register < (λ [Int8 Int8] Bool))
+  (register + (λ [Int8 Int8] Int8))
+  (register - (λ [Int8 Int8] Int8))
+  (register * (λ [Int8 Int8] Int8))
+  (register / (λ [Int8 Int8] Int8))
+  (register bit-shift-left (λ [Int8 Int8] Int8))
+  (register bit-shift-right (λ [Int8 Int8] Int8))
+  (register bit-or (λ [Int8 Int8] Int8))
+  (register bit-and (λ [Int8 Int8] Int8))
+  (register bit-not (λ [Int8] Int8))
+  (register bit-xor (λ [Int8 Int8] Int8))
+  (register to-long (λ [Int8] Long))
+  (register from-long (λ [Long] Int8))
+  (register str (λ [Int8] String))
+  (register copy (Fn [&Int8] Int8))
+
+  (defn prn [a] (Int8.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Int8)))
+)
+
+(defmodule Int8Extra
+  (defn prn [a] (Int8.prn @a))
+  (defn str [a] (Int8.str @a))
+  (defn = [a b] (Int8.= @a @b))
+)
+
+(defmodule Int16
+  (register = (λ [Int16 Int16] Bool))
+  (register > (λ [Int16 Int16] Bool))
+  (register < (λ [Int16 Int16] Bool))
+  (register + (λ [Int16 Int16] Int16))
+  (register - (λ [Int16 Int16] Int16))
+  (register * (λ [Int16 Int16] Int16))
+  (register / (λ [Int16 Int16] Int16))
+  (register bit-shift-left (λ [Int16 Int16] Int16))
+  (register bit-shift-right (λ [Int16 Int16] Int16))
+  (register bit-or (λ [Int16 Int16] Int16))
+  (register bit-and (λ [Int16 Int16] Int16))
+  (register bit-not (λ [Int16] Int16))
+  (register bit-xor (λ [Int16 Int16] Int16))
+  (register to-long (λ [Int16] Long))
+  (register from-long (λ [Long] Int16))
+  (register str (λ [Int16] String))
+  (register copy (Fn [&Int16] Int16))
+
+  (defn prn [a] (Int16.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Int16)))
+)
+
+(defmodule Int16Extra
+  (defn prn [a] (Int16.prn @a))
+  (defn str [a] (Int16.str @a))
+  (defn = [a b] (Int16.= @a @b))
+)
+
+(defmodule Int32
+  (register = (λ [Int32 Int32] Bool))
+  (register > (λ [Int32 Int32] Bool))
+  (register < (λ [Int32 Int32] Bool))
+  (register + (λ [Int32 Int32] Int32))
+  (register - (λ [Int32 Int32] Int32))
+  (register * (λ [Int32 Int32] Int32))
+  (register / (λ [Int32 Int32] Int32))
+  (register bit-shift-left (λ [Int32 Int32] Int32))
+  (register bit-shift-right (λ [Int32 Int32] Int32))
+  (register bit-or (λ [Int32 Int32] Int32))
+  (register bit-and (λ [Int32 Int32] Int32))
+  (register bit-not (λ [Int32] Int32))
+  (register bit-xor (λ [Int32 Int32] Int32))
+  (register to-long (λ [Int32] Long))
+  (register from-long (λ [Long] Int32))
+  (register str (λ [Int32] String))
+  (register copy (Fn [&Int32] Int32))
+
+  (defn prn [a] (Int32.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Int32)))
+)
+
+(defmodule Int32Extra
+  (defn prn [a] (Int32.prn @a))
+  (defn str [a] (Int32.str @a))
+  (defn = [a b] (Int32.= @a @b))
+)
+
+(defmodule Int64
+  (register = (λ [Int64 Int64] Bool))
+  (register > (λ [Int64 Int64] Bool))
+  (register < (λ [Int64 Int64] Bool))
+  (register + (λ [Int64 Int64] Int64))
+  (register - (λ [Int64 Int64] Int64))
+  (register * (λ [Int64 Int64] Int64))
+  (register / (λ [Int64 Int64] Int64))
+  (register bit-shift-left (λ [Int64 Int64] Int64))
+  (register bit-shift-right (λ [Int64 Int64] Int64))
+  (register bit-or (λ [Int64 Int64] Int64))
+  (register bit-and (λ [Int64 Int64] Int64))
+  (register bit-not (λ [Int64] Int64))
+  (register bit-xor (λ [Int64 Int64] Int64))
+  (register to-long (λ [Int64] Long))
+  (register from-long (λ [Long] Int64))
+  (register str (λ [Int64] String))
+  (register copy (Fn [&Int64] Int64))
+
+  (defn prn [a] (Int64.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Int64)))
+)
+
+(defmodule Int64Extra
+  (defn prn [a] (Int64.prn @a))
+  (defn str [a] (Int64.str @a))
+  (defn = [a b] (Int64.= @a @b))
+)
+
+(defmodule Uint8
+  (register = (λ [Uint8 Uint8] Bool))
+  (register > (λ [Uint8 Uint8] Bool))
+  (register < (λ [Uint8 Uint8] Bool))
+  (register + (λ [Uint8 Uint8] Uint8))
+  (register - (λ [Uint8 Uint8] Uint8))
+  (register * (λ [Uint8 Uint8] Uint8))
+  (register / (λ [Uint8 Uint8] Uint8))
+  (register bit-shift-left (λ [Uint8 Uint8] Uint8))
+  (register bit-shift-right (λ [Uint8 Uint8] Uint8))
+  (register bit-or (λ [Uint8 Uint8] Uint8))
+  (register bit-and (λ [Uint8 Uint8] Uint8))
+  (register bit-not (λ [Uint8] Uint8))
+  (register bit-xor (λ [Uint8 Uint8] Uint8))
+  (register to-long (λ [Uint8] Long))
+  (register from-long (λ [Long] Uint8))
+  (register str (λ [Uint8] String))
+  (register copy (Fn [&Uint8] Uint8))
+
+  (defn prn [a] (Uint8.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Uint8)))
+)
+
+(defmodule Uint8Extra
+  (defn prn [a] (Uint8.prn @a))
+  (defn str [a] (Uint8.str @a))
+  (defn = [a b] (Uint8.= @a @b))
+)
+
+(defmodule Uint16
+  (register = (λ [Uint16 Uint16] Bool))
+  (register > (λ [Uint16 Uint16] Bool))
+  (register < (λ [Uint16 Uint16] Bool))
+  (register + (λ [Uint16 Uint16] Uint16))
+  (register - (λ [Uint16 Uint16] Uint16))
+  (register * (λ [Uint16 Uint16] Uint16))
+  (register / (λ [Uint16 Uint16] Uint16))
+  (register bit-shift-left (λ [Uint16 Uint16] Uint16))
+  (register bit-shift-right (λ [Uint16 Uint16] Uint16))
+  (register bit-or (λ [Uint16 Uint16] Uint16))
+  (register bit-and (λ [Uint16 Uint16] Uint16))
+  (register bit-not (λ [Uint16] Uint16))
+  (register bit-xor (λ [Uint16 Uint16] Uint16))
+  (register to-long (λ [Uint16] Long))
+  (register from-long (λ [Long] Uint16))
+  (register str (λ [Uint16] String))
+  (register copy (Fn [&Uint16] Uint16))
+
+  (defn prn [a] (Uint16.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Uint16)))
+)
+
+(defmodule Uint16Extra
+  (defn prn [a] (Uint16.prn @a))
+  (defn str [a] (Uint16.str @a))
+  (defn = [a b] (Uint16.= @a @b))
+)
+
+(defmodule Uint32
+  (register = (λ [Uint32 Uint32] Bool))
+  (register > (λ [Uint32 Uint32] Bool))
+  (register < (λ [Uint32 Uint32] Bool))
+  (register + (λ [Uint32 Uint32] Uint32))
+  (register - (λ [Uint32 Uint32] Uint32))
+  (register * (λ [Uint32 Uint32] Uint32))
+  (register / (λ [Uint32 Uint32] Uint32))
+  (register bit-shift-left (λ [Uint32 Uint32] Uint32))
+  (register bit-shift-right (λ [Uint32 Uint32] Uint32))
+  (register bit-or (λ [Uint32 Uint32] Uint32))
+  (register bit-and (λ [Uint32 Uint32] Uint32))
+  (register bit-not (λ [Uint32] Uint32))
+  (register bit-xor (λ [Uint32 Uint32] Uint32))
+  (register to-long (λ [Uint32] Long))
+  (register from-long (λ [Long] Uint32))
+  (register str (λ [Uint32] String))
+  (register copy (Fn [&Uint32] Uint32))
+
+  (defn prn [a] (Uint32.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Uint32)))
+)
+
+(defmodule Uint32Extra
+  (defn prn [a] (Uint32.prn @a))
+  (defn str [a] (Uint32.str @a))
+  (defn = [a b] (Uint32.= @a @b))
+)
+
+(defmodule Uint64
+  (register = (λ [Uint64 Uint64] Bool))
+  (register > (λ [Uint64 Uint64] Bool))
+  (register < (λ [Uint64 Uint64] Bool))
+  (register + (λ [Uint64 Uint64] Uint64))
+  (register - (λ [Uint64 Uint64] Uint64))
+  (register * (λ [Uint64 Uint64] Uint64))
+  (register / (λ [Uint64 Uint64] Uint64))
+  (register bit-shift-left (λ [Uint64 Uint64] Uint64))
+  (register bit-shift-right (λ [Uint64 Uint64] Uint64))
+  (register bit-or (λ [Uint64 Uint64] Uint64))
+  (register bit-and (λ [Uint64 Uint64] Uint64))
+  (register bit-not (λ [Uint64] Uint64))
+  (register bit-xor (λ [Uint64 Uint64] Uint64))
+  (register to-long (λ [Uint64] Long))
+  (register from-long (λ [Long] Uint64))
+  (register str (λ [Uint64] String))
+  (register copy (Fn [&Uint64] Uint64))
+
+  (defn prn [a] (Uint64.str a))
+
+  (register from-bytes (Fn [&(Array Byte)] (Array Uint64)))
+)
+
+(defmodule Uint64Extra
+  (defn prn [a] (Uint64.prn @a))
+  (defn str [a] (Uint64.str @a))
+  (defn = [a b] (Uint64.= @a @b))
+)

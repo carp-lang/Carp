@@ -34,11 +34,43 @@
 )
 
 (defmodule Float
-  (defn hash [k] (to-bytes @k))
+  (defn hash [k] (Float.to-bytes @k))
 )
 
 (defmodule Double
-  (defn hash [k] (Long.to-int (to-bytes @k)))
+  (defn hash [k] (Long.to-int (Double.to-bytes @k)))
+)
+
+(defmodule Int8
+  (defn hash [k] (Long.to-int (Int8.to-long @k)))
+)
+
+(defmodule Int16
+  (defn hash [k] (Long.to-int (Int16.to-long @k)))
+)
+
+(defmodule Int32
+  (defn hash [k] (Long.to-int (Int32.to-long @k)))
+)
+
+(defmodule Int64
+  (defn hash [k] (Long.to-int (Int64.to-long @k)))
+)
+
+(defmodule Uint8
+  (defn hash [k] (Long.to-int (Uint8.to-long @k)))
+)
+
+(defmodule Uint16
+  (defn hash [k] (Long.to-int (Uint16.to-long @k)))
+)
+
+(defmodule Uint32
+  (defn hash [k] (Long.to-int (Uint32.to-long @k)))
+)
+
+(defmodule Uint64
+  (defn hash [k] (Long.to-int (Uint64.to-long @k)))
 )
 
 (defmodule Pair
