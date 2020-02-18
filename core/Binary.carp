@@ -1,6 +1,59 @@
 (system-include "carp_binary.h")
 (load "StdInt.carp")
 
+;; Helper functions for making working with Maybe easier
+;; TODO: Replace all of these with a single type-generic
+;; zip-n macro.
+(defmodule Maybe
+  (defn zip [f a b]
+    (match a
+    (Maybe.Nothing) (Maybe.Nothing)
+    (Just x)
+      (match b
+      (Maybe.Nothing) (Maybe.Nothing)
+      (Just y) (Just (~f x y)))))
+
+  (defn zip4 [f a b c d]
+    (match a
+    (Maybe.Nothing) (Maybe.Nothing)
+    (Just x)
+      (match b
+      (Maybe.Nothing) (Maybe.Nothing)
+      (Just y)
+        (match c
+        (Maybe.Nothing) (Maybe.Nothing)
+        (Just z)
+          (match d
+          (Maybe.Nothing) (Maybe.Nothing)
+          (Just x2) (Just (~f x y z x2)))))))
+
+  (defn zip8 [f a b c d e a1 b1 c1]
+   (match a
+   (Maybe.Nothing) (Maybe.Nothing)
+   (Just x)
+     (match b
+     (Maybe.Nothing) (Maybe.Nothing)
+     (Just y)
+       (match c
+       (Maybe.Nothing) (Maybe.Nothing)
+       (Just z)
+         (match d
+         (Maybe.Nothing) (Maybe.Nothing)
+         (Just x2)
+           (match e
+           (Maybe.Nothing) (Maybe.Nothing)
+           (Just y2)
+             (match a1
+             (Maybe.Nothing) (Maybe.Nothing)
+             (Just z2)
+               (match b1
+               (Maybe.Nothing) (Maybe.Nothing)
+               (Just x3)
+                 (match c1
+                 (Maybe.Nothing) (Maybe.Nothing)
+                 (Just y3) (Just (~f x y z x2 y2 z2 x3 y3)))))))))))
+)
+
 (defmodule Binary
   (doc Order
     "The type of byte orders.
@@ -36,6 +89,19 @@
       (Order.BigEndian)
         (to-int16 @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
+  (doc bytes->int16
+    "Interprets the first two bytes in a byte sequence as an int16 value.
+
+     If the first two bytes are inaccessible, or the given array contains less
+     than two bytes, returns Maybe.Nothing.")
+  (sig bytes->int16 (Fn [Order (Ref (Array Byte) a)] (Maybe Uint16)))
+  (defn bytes->int16 [order bytes]
+    (match order
+      (Order.LittleEndian)
+        (Maybe.zip &to-int16 (Array.nth bytes 0) (Array.nth bytes 1))
+      (Order.BigEndian)
+        (Maybe.zip &to-int16 (Array.nth bytes 1) (Array.nth bytes 0))))
+
   (doc bytes->int32-unsafe
     "Interprets the first four bytes in a byte sequence as an int32 value.
      **This operation is unsafe.**")
@@ -48,6 +114,21 @@
       (Order.BigEndian)
         (to-int32 @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
+
+  (doc bytes->int32
+    "Interprets the first four bytes in a byte sequence as an int32 value.
+
+     If the first four bytes are inaccessible, or the given array contains less
+     than four bytes, returns Maybe.Nothing.")
+  (sig bytes->int32 (Fn [Order (Ref (Array Byte))] (Maybe Uint32)))
+  (defn bytes->int32 [order bs]
+    (match order
+      (Order.LittleEndian)
+        (Maybe.zip4 &to-int32 (Array.nth bs 0) (Array.nth bs 1)
+                              (Array.nth bs 2) (Array.nth bs 3))
+      (Order.BigEndian)
+        (Maybe.zip4 &to-int32 (Array.nth bs 3) (Array.nth bs 2)
+                              (Array.nth bs 1) (Array.nth bs 0))))
 
   (doc bytes->int64-unsafe
     "Interprets the first eight bytes in a byte sequence as an int64 value.
@@ -66,13 +147,42 @@
                   @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
-(doc byte-seq->int16-seq-unsafe
+  (doc bytes->int64
+    "Interprets the first eight bytes in a byte sequence as an int64 value.
+
+     If the first eight bytes are inaccessible, or the given array contains less
+     than eight bytes, returns Maybe.Nothing.")
+  (sig bytes->int64 (Fn [Order (Ref (Array Byte) a)] (Maybe Uint64)))
+  (defn bytes->int64 [order bs]
+    (match order
+      (Order.LittleEndian)
+        (Maybe.zip8 &to-int64 (Array.nth bs 0) (Array.nth bs 1)
+                              (Array.nth bs 2) (Array.nth bs 3)
+                              (Array.nth bs 4) (Array.nth bs 5)
+                              (Array.nth bs 6) (Array.nth bs 7))
+      (Order.BigEndian)
+        (Maybe.zip8 &to-int64 (Array.nth bs 7) (Array.nth bs 6)
+                              (Array.nth bs 5) (Array.nth bs 4)
+                              (Array.nth bs 3) (Array.nth bs 2)
+                              (Array.nth bs 1) (Array.nth bs 0))))
+
+  (doc byte-seq->int16-seq-unsafe
     "Interprets a sequence of bytes as a sequence of int16 values.
      **This operation is unsafe.**")
   (sig byte-seq->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
   (defn byte-seq->int16-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 2)
           f (fn [b] (bytes->int16-unsafe order b))]
+      (Array.copy-map &f &partitions)))
+
+  (doc bytes->int16-seq
+    "Interprets a sequence of bytes as a sequence of Uint16 values.
+
+     If a segment of bytes cannot be interpreted as an Uint16, returns Maybe.Nothing.")
+  (sig bytes->int16-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint16))))
+  (defn bytes->int16-seq [order bs]
+    (let [partitions (Array.partition bs 2)
+          f (fn [b] (bytes->int16 order b))]
       (Array.copy-map &f &partitions)))
 
   (doc byte-seq->int32-seq-unsafe
@@ -84,6 +194,16 @@
           f (fn [b] (bytes->int32-unsafe order b))]
       (Array.copy-map &f &partitions)))
 
+  (doc bytes->int32-seq
+    "Interprets a sequence of bytes as a sequence of Uint32 values.
+
+     If a segment of bytes cannot be interpreted as an Uint32, returns Maybe.Nothing.")
+  (sig bytes->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint32))))
+  (defn bytes->int32-seq [order bs]
+    (let [partitions (Array.partition bs 4)
+          f (fn [b] (bytes->int32 order b))]
+      (Array.copy-map &f &partitions)))
+
   (doc byte-seq->int64-seq-unsafe
     "Interprets a sequence of bytes as a sequence of int64 values.
      **This operation is unsafe.**")
@@ -93,4 +213,13 @@
           f (fn [b] (bytes->int64-unsafe order b))]
       (Array.copy-map &f &partitions)))
 
+  (doc bytes->int64-seq
+    "Interprets a sequence of bytes as a sequence of Uint64 values.
+
+     If a segment of bytes cannot be interpreted as an Uint64, returns Maybe.Nothing.")
+  (sig bytes->int64-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint64))))
+  (defn bytes->int64-seq [order bs]
+    (let [partitions (Array.partition bs 8)
+          f (fn [b] (bytes->int64 order b))]
+      (Array.copy-map &f &partitions)))
 )
