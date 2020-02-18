@@ -13,6 +13,18 @@ uint64_t Binary_to_MINUS_int64(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, u
     ((uint64_t)b6 << 40) | ((uint64_t)b7 << 48) | ((uint64_t)b8 << 56);
 }
 
+uint8_t Binary_int16_MINUS_to_MINUS_byte(uint16_t *x) {
+  return *x & 0xff;
+}
+
+uint8_t Binary_int32_MINUS_to_MINUS_byte(uint32_t *x) {
+  return *x & 0xff;
+}
+
+uint8_t Binary_int64_MINUS_to_MINUS_byte(uint64_t *x) {
+  return *x & 0xff;
+}
+
 int Binary_system_MINUS_endianness_MINUS_internal() {
   // The int type is always >= 16 bits, two bytes, according to The C
   // Programming Language, Second Edition. Contrarily, char is always a single

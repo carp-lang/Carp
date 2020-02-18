@@ -68,6 +68,9 @@
   (register to-int16 (λ [Byte Byte] Uint16))
   (register to-int32 (λ [Byte Byte Byte Byte] Uint32))
   (register to-int64 (λ [Byte Byte Byte Byte Byte Byte Byte Byte] Uint64))
+  (register int16-to-byte  (λ [(Ref Uint16)] Byte))
+  (register int32-to-byte  (λ [(Ref Uint32)] Byte))
+  (register int64-to-byte  (λ [(Ref Uint64)] Byte))
   (register system-endianness-internal (λ [] Int))
 
   (doc system-endianness
@@ -102,6 +105,16 @@
       (Order.BigEndian)
         (Maybe.zip &to-int16 (Array.nth bytes 1) (Array.nth bytes 0))))
 
+  (doc int16->bytes
+    "Converts a Uint16 to a sequence of bytes representing the value using the provided `order`")
+  (sig int16->bytes (Fn [Order Uint16] (Array Byte)))
+  (defn int16->bytes [order i]
+    (match order
+      (Order.LittleEndian)
+        (Array.copy-map &int16-to-byte &[i (Uint16.bit-shift-right i (Uint16.from-long 8l))])
+      (Order.BigEndian)
+        (Array.copy-map &int16-to-byte &[(Uint16.bit-shift-right i (Uint16.from-long 8l)) i])))
+
   (doc bytes->int32-unsafe
     "Interprets the first four bytes in a byte sequence as an Uint32 value.
      **This operation is unsafe.**")
@@ -129,6 +142,19 @@
       (Order.BigEndian)
         (Maybe.zip4 &to-int32 (Array.nth bs 3) (Array.nth bs 2)
                               (Array.nth bs 1) (Array.nth bs 0))))
+
+  (doc int32->bytes
+    "Converts a Uint32 to a sequence of bytes representing the value using the provided `order`")
+  (sig int32->bytes (Fn [Order Uint32] (Array Byte)))
+  (defn int32->bytes [order i]
+    (let [shift (fn [lng] (Uint32.bit-shift-right i (Uint32.from-long lng)))]
+      (match order
+        (Order.LittleEndian)
+          (Array.copy-map &int32-to-byte
+            &[i (shift 8l) (shift 16l) (shift 24l)])
+        (Order.BigEndian)
+          (Array.copy-map &int32-to-byte
+            &[(shift 24l) (shift 16l) (shift 8l) i]))))
 
   (doc bytes->int64-unsafe
     "Interprets the first eight bytes in a byte sequence as an Uint64 value.
@@ -165,6 +191,22 @@
                               (Array.nth bs 5) (Array.nth bs 4)
                               (Array.nth bs 3) (Array.nth bs 2)
                               (Array.nth bs 1) (Array.nth bs 0))))
+  (doc int64->bytes
+    "Converts a Uint64 to a sequence of bytes representing the value using the provided `order`")
+  (sig int64->bytes (Fn [Order Uint64] (Array Byte)))
+  (defn int64->bytes [order i]
+    (let [shift (fn [lng] (Uint64.bit-shift-right i (Uint64.from-long lng)))]
+      (match order
+        (Order.LittleEndian)
+          (Array.copy-map &int64-to-byte
+            &[i (shift 8l) (shift 16l)
+                (shift 24l) (shift 32l)
+                (shift 40l) (shift 48l) (shift 56l)])
+        (Order.BigEndian)
+          (Array.copy-map &int64-to-byte
+            &[(shift 56l) (shift 48l)
+              (shift 40l) (shift 32l)
+              (shift 24l) (shift 16l) (shift 8l) i]))))
 
   (doc bytes->int16-seq-unsafe
     "Interprets a sequence of bytes as a sequence of Uint16 values.
