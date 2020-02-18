@@ -79,7 +79,7 @@
         (Order.BigEndian)))
 
   (doc bytes->int16-unsafe
-    "Interprets the first two bytes in a byte sequence as an int16 value.
+    "Interprets the first two bytes in a byte sequence as an Uint16 value.
      **This operation is unsafe.**")
   (sig bytes->int16-unsafe (Fn [Order (Ref (Array Byte) a)] Uint16))
   (defn bytes->int16-unsafe [order bs]
@@ -90,7 +90,7 @@
         (to-int16 @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
   (doc bytes->int16
-    "Interprets the first two bytes in a byte sequence as an int16 value.
+    "Interprets the first two bytes in a byte sequence as an Uint16 value.
 
      If the first two bytes are inaccessible, or the given array contains less
      than two bytes, returns Maybe.Nothing.")
@@ -103,7 +103,7 @@
         (Maybe.zip &to-int16 (Array.nth bytes 1) (Array.nth bytes 0))))
 
   (doc bytes->int32-unsafe
-    "Interprets the first four bytes in a byte sequence as an int32 value.
+    "Interprets the first four bytes in a byte sequence as an Uint32 value.
      **This operation is unsafe.**")
   (sig bytes->int32-unsafe (Fn [Order (Ref (Array Byte))] Uint32))
   (defn bytes->int32-unsafe [order bs]
@@ -116,7 +116,7 @@
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
   (doc bytes->int32
-    "Interprets the first four bytes in a byte sequence as an int32 value.
+    "Interprets the first four bytes in a byte sequence as an Uint32 value.
 
      If the first four bytes are inaccessible, or the given array contains less
      than four bytes, returns Maybe.Nothing.")
@@ -131,7 +131,7 @@
                               (Array.nth bs 1) (Array.nth bs 0))))
 
   (doc bytes->int64-unsafe
-    "Interprets the first eight bytes in a byte sequence as an int64 value.
+    "Interprets the first eight bytes in a byte sequence as an Uint64 value.
      **This operation is unsafe.**")
   (sig bytes->int64-unsafe (Fn [Order (Ref (Array Byte) a)] Uint64))
   (defn bytes->int64-unsafe [order bs]
@@ -148,7 +148,7 @@
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
   (doc bytes->int64
-    "Interprets the first eight bytes in a byte sequence as an int64 value.
+    "Interprets the first eight bytes in a byte sequence as an Uint64 value.
 
      If the first eight bytes are inaccessible, or the given array contains less
      than eight bytes, returns Maybe.Nothing.")
@@ -166,11 +166,11 @@
                               (Array.nth bs 3) (Array.nth bs 2)
                               (Array.nth bs 1) (Array.nth bs 0))))
 
-  (doc byte-seq->int16-seq-unsafe
-    "Interprets a sequence of bytes as a sequence of int16 values.
+  (doc bytes->int16-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of Uint16 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
-  (defn byte-seq->int16-seq-unsafe [order bs]
+  (sig bytes->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
+  (defn bytes->int16-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 2)
           f (fn [b] (bytes->int16-unsafe order b))]
       (Array.copy-map &f &partitions)))
@@ -185,11 +185,11 @@
           f (fn [b] (bytes->int16 order b))]
       (Array.copy-map &f &partitions)))
 
-  (doc byte-seq->int32-seq-unsafe
-    "Interprets a sequence of bytes as a sequence of int32 values.
+  (doc bytes->int32-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of Uint32 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int32-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
-  (defn byte-seq->int32-seq-unsafe [order bs]
+  (sig bytes->int32-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
+  (defn bytes->int32-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 4)
           f (fn [b] (bytes->int32-unsafe order b))]
       (Array.copy-map &f &partitions)))
@@ -204,11 +204,11 @@
           f (fn [b] (bytes->int32 order b))]
       (Array.copy-map &f &partitions)))
 
-  (doc byte-seq->int64-seq-unsafe
-    "Interprets a sequence of bytes as a sequence of int64 values.
+  (doc bytes->int64-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of Uint64 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int64-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint64)))
-  (defn byte-seq->int64-seq-unsafe [order bs]
+  (sig bytes->int64-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint64)))
+  (defn bytes->int64-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 8)
           f (fn [b] (bytes->int64-unsafe order b))]
       (Array.copy-map &f &partitions)))
