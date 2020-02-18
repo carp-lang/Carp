@@ -115,6 +115,32 @@
       (Order.BigEndian)
         (Array.copy-map &int16-to-byte &[(Uint16.bit-shift-right i (Uint16.from-long 8l)) i])))
 
+  (doc bytes->int16-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of Uint16 values.
+     **This operation is unsafe.**")
+  (sig bytes->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
+  (defn bytes->int16-seq-unsafe [order bs]
+    (let [partitions (Array.partition bs 2)
+          f (fn [b] (bytes->int16-unsafe order b))]
+      (Array.copy-map &f &partitions)))
+
+  (doc bytes->int16-seq
+    "Interprets a sequence of bytes as a sequence of Uint16 values.
+
+     If a segment of bytes cannot be interpreted as an Uint16, returns Maybe.Nothing.")
+  (sig bytes->int16-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint16))))
+  (defn bytes->int16-seq [order bs]
+    (let [partitions (Array.partition bs 2)
+          f (fn [b] (bytes->int16 order b))]
+      (Array.copy-map &f &partitions)))
+
+  (doc int16-seq->bytes
+    "Converts an array of Uint16 values into byte sequences.")
+  (sig int16-seq->bytes (Fn [Order (Ref (Array Uint16) a)] (Array (Array Byte))))
+  (defn int16-seq->bytes [order is]
+    (let [f (fn [i] (int16->bytes order @i))]
+      (Array.copy-map &f is)))
+
   (doc bytes->int32-unsafe
     "Interprets the first four bytes in a byte sequence as an Uint32 value.
      **This operation is unsafe.**")
@@ -155,6 +181,32 @@
         (Order.BigEndian)
           (Array.copy-map &int32-to-byte
             &[(shift 24l) (shift 16l) (shift 8l) i]))))
+
+  (doc bytes->int32-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of Uint32 values.
+     **This operation is unsafe.**")
+  (sig bytes->int32-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
+  (defn bytes->int32-seq-unsafe [order bs]
+    (let [partitions (Array.partition bs 4)
+          f (fn [b] (bytes->int32-unsafe order b))]
+      (Array.copy-map &f &partitions)))
+
+  (doc bytes->int32-seq
+    "Interprets a sequence of bytes as a sequence of Uint32 values.
+
+     If a segment of bytes cannot be interpreted as an Uint32, returns Maybe.Nothing.")
+  (sig bytes->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint32))))
+  (defn bytes->int32-seq [order bs]
+    (let [partitions (Array.partition bs 4)
+          f (fn [b] (bytes->int32 order b))]
+      (Array.copy-map &f &partitions)))
+
+  (doc int32-seq->bytes
+    "Converts an array of Uint32 values into byte sequences.")
+  (sig int32-seq->bytes (Fn [Order (Ref (Array Uint32) a)] (Array (Array Byte))))
+  (defn int32-seq->bytes [order is]
+    (let [f (fn [i] (int32->bytes order @i))]
+      (Array.copy-map &f is)))
 
   (doc bytes->int64-unsafe
     "Interprets the first eight bytes in a byte sequence as an Uint64 value.
@@ -207,58 +259,6 @@
             &[(shift 56l) (shift 48l)
               (shift 40l) (shift 32l)
               (shift 24l) (shift 16l) (shift 8l) i]))))
-
-  (doc bytes->int16-seq-unsafe
-    "Interprets a sequence of bytes as a sequence of Uint16 values.
-     **This operation is unsafe.**")
-  (sig bytes->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
-  (defn bytes->int16-seq-unsafe [order bs]
-    (let [partitions (Array.partition bs 2)
-          f (fn [b] (bytes->int16-unsafe order b))]
-      (Array.copy-map &f &partitions)))
-
-  (doc bytes->int16-seq
-    "Interprets a sequence of bytes as a sequence of Uint16 values.
-
-     If a segment of bytes cannot be interpreted as an Uint16, returns Maybe.Nothing.")
-  (sig bytes->int16-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint16))))
-  (defn bytes->int16-seq [order bs]
-    (let [partitions (Array.partition bs 2)
-          f (fn [b] (bytes->int16 order b))]
-      (Array.copy-map &f &partitions)))
-
-  (doc int16-seq->bytes
-    "Converts an array of Uint16 values into byte sequences.")
-  (sig int16-seq->bytes (Fn [Order (Ref (Array Uint16) a)] (Array (Array Byte))))
-  (defn int16-seq->bytes [order is]
-    (let [f (fn [i] (int16->bytes order @i))]
-      (Array.copy-map &f is)))
-
-  (doc bytes->int32-seq-unsafe
-    "Interprets a sequence of bytes as a sequence of Uint32 values.
-     **This operation is unsafe.**")
-  (sig bytes->int32-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
-  (defn bytes->int32-seq-unsafe [order bs]
-    (let [partitions (Array.partition bs 4)
-          f (fn [b] (bytes->int32-unsafe order b))]
-      (Array.copy-map &f &partitions)))
-
-  (doc bytes->int32-seq
-    "Interprets a sequence of bytes as a sequence of Uint32 values.
-
-     If a segment of bytes cannot be interpreted as an Uint32, returns Maybe.Nothing.")
-  (sig bytes->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint32))))
-  (defn bytes->int32-seq [order bs]
-    (let [partitions (Array.partition bs 4)
-          f (fn [b] (bytes->int32 order b))]
-      (Array.copy-map &f &partitions)))
-
-  (doc int32-seq->bytes
-    "Converts an array of Uint32 values into byte sequences.")
-  (sig int32-seq->bytes (Fn [Order (Ref (Array Uint32) a)] (Array (Array Byte))))
-  (defn int32-seq->bytes [order is]
-    (let [f (fn [i] (int32->bytes order @i))]
-      (Array.copy-map &f is)))
 
   (doc bytes->int64-seq-unsafe
     "Interprets a sequence of bytes as a sequence of Uint64 values.
