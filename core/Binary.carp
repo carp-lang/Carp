@@ -2,8 +2,8 @@
 (load "StdInt.carp")
 
 (defmodule Binary
-  (doc Order 
-    "The type of byte orders. 
+  (doc Order
+    "The type of byte orders.
 
     LittleEndian designates the little endian ordering, and indicates the least
     significant byte appears first in a given byte sequence.
@@ -17,10 +17,10 @@
   (register to-int64 (λ [Byte Byte Byte Byte Byte Byte Byte Byte] Uint64))
   (register system-endianness-internal (λ [] Int))
 
-  (doc system-endianness 
+  (doc system-endianness
     "Returns the endianness of the host system.")
   (sig system-endianness (λ [] Order))
-  (defn system-endianness [] 
+  (defn system-endianness []
     (if (= (system-endianness-internal) 1)
         (Order.LittleEndian)
         (Order.BigEndian)))
@@ -30,7 +30,7 @@
      **This operation is unsafe.**")
   (sig bytes->int16-unsafe (Fn [Order (Ref (Array Byte) a)] Uint16))
   (defn bytes->int16-unsafe [order bs]
-    (match order 
+    (match order
       (Order.LittleEndian)
         (to-int16 @(Array.unsafe-nth bs 0) @(Array.unsafe-nth bs 1))
       (Order.BigEndian)
@@ -41,11 +41,11 @@
      **This operation is unsafe.**")
   (sig bytes->int32-unsafe (Fn [Order (Ref (Array Byte))] Uint32))
   (defn bytes->int32-unsafe [order bs]
-    (match order 
-      (Order.LittleEndian) 
-        (to-int32 @(Array.unsafe-nth bs 0) @(Array.unsafe-nth bs 1) 
-                  @(Array.unsafe-nth bs 2) @(Array.unsafe-nth bs 3)) 
-      (Order.BigEndian) 
+    (match order
+      (Order.LittleEndian)
+        (to-int32 @(Array.unsafe-nth bs 0) @(Array.unsafe-nth bs 1)
+                  @(Array.unsafe-nth bs 2) @(Array.unsafe-nth bs 3))
+      (Order.BigEndian)
         (to-int32 @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
 
@@ -54,50 +54,43 @@
      **This operation is unsafe.**")
   (sig bytes->int64-unsafe (Fn [Order (Ref (Array Byte) a)] Uint64))
   (defn bytes->int64-unsafe [order bs]
-    (match order 
-      (Order.LittleEndian) 
-        (to-int64 @(Array.unsafe-nth bs 0) @(Array.unsafe-nth bs 1) 
+    (match order
+      (Order.LittleEndian)
+        (to-int64 @(Array.unsafe-nth bs 0) @(Array.unsafe-nth bs 1)
                   @(Array.unsafe-nth bs 2) @(Array.unsafe-nth bs 3)
                   @(Array.unsafe-nth bs 4) @(Array.unsafe-nth bs 5)
                   @(Array.unsafe-nth bs 6) @(Array.unsafe-nth bs 7))
-      (Order.BigEndian) 
+      (Order.BigEndian)
         (to-int64 @(Array.unsafe-nth bs 7) @(Array.unsafe-nth bs 6)
                   @(Array.unsafe-nth bs 5) @(Array.unsafe-nth bs 4)
                   @(Array.unsafe-nth bs 3) @(Array.unsafe-nth bs 2)
                   @(Array.unsafe-nth bs 1) @(Array.unsafe-nth bs 0))))
- 
-  (doc byte-seq->int16-seq-unsafe
+
+(doc byte-seq->int16-seq-unsafe
     "Interprets a sequence of bytes as a sequence of int16 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int16-seq (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
-  (defn byte-seq->int16-seq [order bs]
-    ;; This is way less efficient than it could be.
-    ;; Instead of allocating about 4 extra arrays, we can express this
-    ;; as a fold.
-    (let [enum (Array.enumerated bs)] 
-      (let [evens (Array.copy-filter &(fn [p] (Int.even? @(Pair.a p))) &enum)
-            odds (Array.copy-filter &(fn [p] (Int.odd? @(Pair.a p))) &enum)
-            intf (fn [r1 r2] (to-int16 @(Pair.b r1) @(Pair.b r2)))]
-        (match order 
-          (Order.LittleEndian) (Array.zip &intf &evens &odds)
-          (Order.BigEndian) (Array.zip &intf &odds &evens)))))
+  (sig byte-seq->int16-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint16)))
+  (defn byte-seq->int16-seq-unsafe [order bs]
+    (let [partitions (Array.partition bs 2)
+          f (fn [b] (bytes->int16-unsafe order b))]
+      (Array.copy-map &f &partitions)))
 
-  (doc byte-seq->int32-seq-unsafe 
+  (doc byte-seq->int32-seq-unsafe
     "Interprets a sequence of bytes as a sequence of int32 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
-  (defn byte-seq->int32-seq [order bs] 
+  (sig byte-seq->int32-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint32)))
+  (defn byte-seq->int32-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 4)
-          f (fn [b] (bytes->int32-unsafe order b))] 
+          f (fn [b] (bytes->int32-unsafe order b))]
       (Array.copy-map &f &partitions)))
 
-  (doc byte-seq->int64-seq-unsafe 
-    "Interprets a sequence of bytes as a sequence of int32 values.
+  (doc byte-seq->int64-seq-unsafe
+    "Interprets a sequence of bytes as a sequence of int64 values.
      **This operation is unsafe.**")
-  (sig byte-seq->int64-seq (Fn [Order (Ref (Array Byte) a)] (Array Uint64)))
-  (defn byte-seq->int64-seq [order bs] 
+  (sig byte-seq->int64-seq-unsafe (Fn [Order (Ref (Array Byte) a)] (Array Uint64)))
+  (defn byte-seq->int64-seq-unsafe [order bs]
     (let [partitions (Array.partition bs 8)
-          f (fn [b] (bytes->int64-unsafe order b))] 
+          f (fn [b] (bytes->int64-unsafe order b))]
       (Array.copy-map &f &partitions)))
- 
+
 )
