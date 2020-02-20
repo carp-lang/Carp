@@ -36,9 +36,17 @@
                 "Unsafe little endian bytes->int16-seq works as expected.")
 
   (assert-equal test
-                &[(Maybe.Just (Uint16.from-long 776l)) (Maybe.Just (Uint16.from-long 2051l)) (Maybe.Nothing)]
+                &(Pair.init [(Uint16.from-long 776l) (Uint16.from-long 2051l)] 1)
                 &(bytes->int16-seq (Binary.Order.BigEndian) &[3b 8b 8b 3b 2b])
-                "Unsafe big endian bytes->int16-seq works as expected.")
+                "Big endian bytes->int16-seq works as expected.")
+
+  ;; We unwrap the error here since it's simpler than defining equality over
+  ;; arrays of Uint values.
+  ;; TODO: Define equality for arrays of non-ref values.
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint16) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int16-seq-exact (Binary.Order.BigEndian) &[3b 8b 8b 3b 2b]))
+                "Big endian bytes->int16-seq-exact works as expected.")
 
   (assert-equal test
                 &[3b 8b]
@@ -82,9 +90,14 @@
                 "Unsafe little endian bytes->int32-seq works as expected.")
 
   (assert-equal test
-                &[(Maybe.Just  (Uint32.from-long 16909060l)) (Maybe.Just  (Uint32.from-long 67305985l)) (Maybe.Nothing)]
+                &(Pair.init [(Uint32.from-long 16909060l) (Uint32.from-long 67305985l)] 1)
                 &(bytes->int32-seq (Binary.Order.BigEndian) &[1b 2b 3b 4b 4b 3b 2b 1b 5b])
-                "Unsafe big endian bytes->int32-seq works as expected.")
+                "Big endian bytes->int32-seq works as expected.")
+
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint32) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int32-seq-exact (Binary.Order.BigEndian) &[1b 2b 3b 4b 4b 3b 2b 1b 5b]))
+                "Big endian bytes->int32-seq-exact works as expected.")
 
   (assert-equal test
                 &[1b 2b 3b 4b]
@@ -129,9 +142,14 @@
                 "Unsafe little endian bytes->int64-seq works as expected.")
 
   (assert-equal test
-                &[(Maybe.Just (Uint64.from-long 72623859790381056l)) (Maybe.Just (Uint64.from-long 6618611909121l)) (Maybe.Nothing)]
+                &(Pair.init [(Uint64.from-long 72623859790381056l) (Uint64.from-long 6618611909121l)] 1)
                 &(bytes->int64-seq (Binary.Order.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b 0b 0b 6b 5b 4b 3b 2b 1b 5b])
                 "Unsafe big endian bytes->int64-seq works as expected.")
+
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint64) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int64-seq-exact (Binary.Order.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b 0b 0b 6b 5b 4b 3b 2b 1b 5b]))
+                "Unsafe big endian bytes->int64-seq-exact works as expected.")
 
   (assert-equal test
                 &[1b 2b 3b 4b 5b 6b 0b 0b]
