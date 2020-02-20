@@ -73,6 +73,45 @@
   (register int64-to-byte  (λ [(Ref Uint64)] Byte))
   (register system-endianness-internal (λ [] Int))
 
+  (defn unwrap-success [x]
+    (Result.unwrap-or-zero @x))
+
+  (defn unwrap-error [x]
+    (Result.from-error @x (zero)))
+
+  (doc byte-converter
+    "Returns a function that, when called, attempts to convert an array of bytes using `f` and `order`
+
+     If the conversion is successful, returns a `Result.Success` containing the converted value.
+
+     If the conversion fails, returns a `Result.Error` containing the byte array passed as an argument.")
+  (defn byte-converter [f order]
+     (fn [bs]
+       (match (~f order bs)
+              (Maybe.Nothing) (Result.Error @bs)
+              (Maybe.Just i)  (Result.Success i))))
+  (doc interpreted
+    "Returns the interpreted value from a sequence of byte-converion results")
+  (private interpreted)
+  (defn interpreted [results]
+    (==> results
+         (Array.copy-filter &Result.success?)
+         (ref)
+         (Array.copy-map &unwrap-success)))
+
+  (doc remaining-bytes
+    "Returns the number of uninterpreted bytes from a seuqence of byte-conversion results")
+  (private remaining-bytes)
+  (defn remaining-bytes [results]
+    (==> results
+         (Array.copy-filter &Result.error?)
+         (ref)
+         (Array.copy-map &unwrap-error)
+         (ref)
+         (Array.copy-map &Array.length)
+         (ref)
+         (Array.reduce &(fn [x y] (+ x @y)) 0)))
+
   (doc system-endianness
     "Returns the endianness of the host system.")
   (sig system-endianness (λ [] Order))
@@ -127,12 +166,24 @@
   (doc bytes->int16-seq
     "Interprets a sequence of bytes as a sequence of Uint16 values.
 
-     If a segment of bytes cannot be interpreted as an Uint16, returns Maybe.Nothing.")
-  (sig bytes->int16-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint16))))
+     Returns a pair containing interpreted values and the number of bytes that were not interpreted.")
+  (sig bytes->int16-seq (Fn [Order (Ref (Array Byte) a)] (Pair (Array Uint16) Int)))
   (defn bytes->int16-seq [order bs]
     (let [partitions (Array.partition bs 2)
-          f (fn [b] (bytes->int16 order b))]
-      (Array.copy-map &f &partitions)))
+          f (byte-converter &bytes->int16 order)]
+      (let [results (Array.copy-map &f &partitions)]
+        (Pair.init (interpreted &results) (remaining-bytes &results)))))
+
+  (doc bytes->int16-seq-exact
+    "Attempts to interpret a given byte sequence as an exact sequence of Uint16 values.
+
+     If successful, returns the interpreted values. If unsuccessful, returns the number of excess bytes.")
+  (sig bytes->int16-seq-exact (Fn [Order (Ref (Array Byte) a)] (Result (Array Uint16) Int)))
+  (defn bytes->int16-seq-exact [order bs]
+    (let [r (bytes->int16-seq order bs)]
+      (if (= 0 @(Pair.b &r))
+          (Result.Success @(Pair.a &r))
+          (Result.Error @(Pair.b &r)))))
 
   (doc int16-seq->bytes
     "Converts an array of Uint16 values into byte sequences.")
@@ -194,12 +245,24 @@
   (doc bytes->int32-seq
     "Interprets a sequence of bytes as a sequence of Uint32 values.
 
-     If a segment of bytes cannot be interpreted as an Uint32, returns Maybe.Nothing.")
-  (sig bytes->int32-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint32))))
+     Returns a pair containing interpreted values and the number of bytes that were not interpreted.")
+  (sig bytes->int32-seq (Fn [Order (Ref (Array Byte) a)] (Pair (Array Uint32) Int)))
   (defn bytes->int32-seq [order bs]
     (let [partitions (Array.partition bs 4)
-          f (fn [b] (bytes->int32 order b))]
-      (Array.copy-map &f &partitions)))
+          f (byte-converter &bytes->int32 order)]
+      (let [results (Array.copy-map &f &partitions)]
+        (Pair.init (interpreted &results) (remaining-bytes &results)))))
+
+  (doc bytes->int32-seq-exact
+    "Attempts to interpret a given byte sequence as an exact sequence of Uint32 values.
+
+     If successful, returns the interpreted values. If unsuccessful, returns the number of excess bytes.")
+  (sig bytes->int32-seq-exact (Fn [Order (Ref (Array Byte) a)] (Result (Array Uint32) Int)))
+  (defn bytes->int32-seq-exact [order bs]
+    (let [r (bytes->int32-seq order bs)]
+      (if (= 0 @(Pair.b &r))
+          (Result.Success @(Pair.a &r))
+          (Result.Error @(Pair.b &r)))))
 
   (doc int32-seq->bytes
     "Converts an array of Uint32 values into byte sequences.")
@@ -272,12 +335,24 @@
   (doc bytes->int64-seq
     "Interprets a sequence of bytes as a sequence of Uint64 values.
 
-     If a segment of bytes cannot be interpreted as an Uint64, returns Maybe.Nothing.")
-  (sig bytes->int64-seq (Fn [Order (Ref (Array Byte) a)] (Array (Maybe Uint64))))
+     Returns a pair containing interpreted values and the number of bytes that were not interpreted.")
+  (sig bytes->int64-seq (Fn [Order (Ref (Array Byte) a)] (Pair (Array Uint64) Int)))
   (defn bytes->int64-seq [order bs]
     (let [partitions (Array.partition bs 8)
-          f (fn [b] (bytes->int64 order b))]
-      (Array.copy-map &f &partitions)))
+          f (byte-converter &bytes->int64 order)]
+      (let [results (Array.copy-map &f &partitions)]
+        (Pair.init (interpreted &results) (remaining-bytes &results)))))
+
+  (doc bytes->int64-seq-exact
+    "Attempts to interpret a given byte sequence as an exact sequence of Uint64 values.
+
+     If successful, returns the interpreted values. If unsuccessful, returns the number of excess bytes.")
+  (sig bytes->int64-seq-exact (Fn [Order (Ref (Array Byte) a)] (Result (Array Uint64) Int)))
+  (defn bytes->int64-seq-exact [order bs]
+    (let [r (bytes->int64-seq order bs)]
+      (if (= 0 @(Pair.b &r))
+          (Result.Success @(Pair.a &r))
+          (Result.Error @(Pair.b &r)))))
 
   (doc int64-seq->bytes
     "Converts an array of Uint64 values into byte sequences.")
