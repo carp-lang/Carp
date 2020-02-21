@@ -47,9 +47,9 @@ Uint8 Uint8_bit_MINUS_xor(Uint8 x, Uint8 y) {
     return x ^ y;
 }
 String Uint8_str(Uint8 x) {
-    int size = snprintf(NULL, 0, "Uint8(%hhu)", x) + 1;
+    int size = snprintf(NULL, 0, "Uint8(%" PRIu8 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Uint8(%hhu)", x);
+    snprintf(buffer, size, "Uint8(%" PRIu8 ")", x);
     return buffer;
 }
 Uint8 Uint8_from_MINUS_long(long x) {
@@ -114,9 +114,9 @@ Uint16 Uint16_bit_MINUS_xor(Uint16 x, Uint16 y) {
     return x ^ y;
 }
 String Uint16_str(Uint16 x) {
-    int size = snprintf(NULL, 0, "Uint16(%hu)", x) + 1;
+    int size = snprintf(NULL, 0, "Uint16(%" PRIu16 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Uint16(%hu)", x);
+    snprintf(buffer, size, "Uint16(%" PRIu16 ")", x);
     return buffer;
 }
 Uint16 Uint16_from_MINUS_long(long x) {
@@ -181,9 +181,9 @@ Uint32 Uint32_bit_MINUS_xor(Uint32 x, Uint32 y) {
     return x ^ y;
 }
 String Uint32_str(Uint32 x) {
-    int size = snprintf(NULL, 0, "Uint32(%u)", x) + 1;
+    int size = snprintf(NULL, 0, "Uint32(%" PRIu32 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Uint32(%u)", x);
+    snprintf(buffer, size, "Uint32(%" PRIu32 ")", x);
     return buffer;
 }
 Uint32 Uint32_from_MINUS_long(long x) {
@@ -248,9 +248,9 @@ Uint64 Uint64_bit_MINUS_xor(Uint64 x, Uint64 y) {
     return x ^ y;
 }
 String Uint64_str(Uint64 x) {
-    int size = snprintf(NULL, 0, "Uint64(%llu)", x) + 1;
+    int size = snprintf(NULL, 0, "Uint64(%" PRIu64 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Uint64(%llu)", x);
+    snprintf(buffer, size, "Uint64(%" PRIu64 ")", x);
     return buffer;
 }
 Uint64 Uint64_from_MINUS_long(long x) {
@@ -315,9 +315,9 @@ Int8 Int8_bit_MINUS_xor(Int8 x, Int8 y) {
     return x ^ y;
 }
 String Int8_str(Int8 x) {
-    int size = snprintf(NULL, 0, "Int8(%hhd)", x) + 1;
+    int size = snprintf(NULL, 0, "Int8(%" PRId8 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Int8(%hhd)", x);
+    snprintf(buffer, size, "Int8(%" PRId8 ")", x);
     return buffer;
 }
 Int8 Int8_from_MINUS_long(long x) {
@@ -382,9 +382,9 @@ Int16 Int16_bit_MINUS_xor(Int16 x, Int16 y) {
     return x ^ y;
 }
 String Int16_str(Int16 x) {
-    int size = snprintf(NULL, 0, "Int16(%hd)", x) + 1;
+    int size = snprintf(NULL, 0, "Int16(%" PRId16 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Int16(%hd)", x);
+    snprintf(buffer, size, "Int16(%" PRId16 ")", x);
     return buffer;
 }
 Int16 Int16_from_MINUS_long(long x) {
@@ -449,9 +449,9 @@ Int32 Int32_bit_MINUS_xor(Int32 x, Int32 y) {
     return x ^ y;
 }
 String Int32_str(Int32 x) {
-    int size = snprintf(NULL, 0, "Int32(%d)", x) + 1;
+    int size = snprintf(NULL, 0, "Int32(%" PRId32 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Int32(%d)", x);
+    snprintf(buffer, size, "Int32(%" PRId32 ")", x);
     return buffer;
 }
 Int32 Int32_from_MINUS_long(long x) {
@@ -516,9 +516,9 @@ Int64 Int64_bit_MINUS_xor(Int64 x, Int64 y) {
     return x ^ y;
 }
 String Int64_str(Int64 x) {
-    int size = snprintf(NULL, 0, "Int64(%lld)", x) + 1;
+    int size = snprintf(NULL, 0, "Int64(%" PRId64 ")", x) + 1;
     char* buffer = CARP_MALLOC(size);
-    snprintf(buffer, size, "Int64(%lld)", x);
+    snprintf(buffer, size, "Int64(%" PRId64 ")", x);
     return buffer;
 }
 Int64 Int64_from_MINUS_long(long x) {

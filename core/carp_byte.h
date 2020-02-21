@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 typedef uint8_t byte;
 
 uint8_t Byte__PLUS_(uint8_t x, uint8_t y) {
