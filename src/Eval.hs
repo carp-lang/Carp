@@ -1,8 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 module Eval where
 
-import Data.Foldable (foldrM)
-import Data.List (foldl', null, isSuffixOf)
+import Data.List (foldl', null, isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
@@ -60,14 +59,116 @@ eval env xobj@(XObj o i t) =
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef x = x
     eval' = \case
-      x@(XObj (Sym s _) _ _):xs ->
+      [XObj If _ _, mcond, mtrue, mfalse] -> do
+        evd <- eval env mcond
+        case evd of
+          Right cond ->
+            case obj cond of
+              Bol b -> eval env (if b then mtrue else mfalse)
+              _     -> do
+                ctx <- get
+                return (makeEvalError ctx Nothing
+                         ("This `if` condition contains non-boolean value: " ++
+                          pretty cond) (info cond))
+          Left e -> return (Left e)
+      x@(XObj If _ _:_) -> do
+        ctx <- get
+        return (makeEvalError ctx Nothing
+                 ("I didn’t understand this `if`.\n\n Got:\n```\n" ++ pretty xobj ++
+                  "\n```\n\nExpected the form:\n```\n(if cond then else)\n```\n")
+                 (info xobj))
+      x@(XObj sym@(Sym s _) _ _):args ->
         case Map.lookup s primitives of
-          Just prim -> prim x env xs
-          Nothing -> return (Right x)
+          Just prim -> prim x env args
+          Nothing -> do
+            ctx <- get
+            f <- eval env x
+            case f of
+               Right (XObj (Lst [XObj (Fn _ _ (FEnv e)) _ _, XObj (Arr params) _ _, body]) _ _) -> do
+                 case checkArity sym params args of
+                   Left err ->
+                     return (makeEvalError ctx Nothing err (info x))
+                   Right () ->
+                     do evaledArgs <- fmap sequence (mapM (eval env) args)
+                        case evaledArgs of
+                          Right okArgs -> apply e body params okArgs
+                          Left err -> return (Left err)
+
+               Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
+                 case checkArity sym params args of
+                   Left err ->
+                     return (makeEvalError ctx Nothing err (info x))
+                   Right () ->
+                     do evaledArgs <- fmap sequence (mapM (eval env) args)
+                        case evaledArgs of
+                          Right okArgs -> apply env body params okArgs
+                          Left err -> return (Left err)
+
+               Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
+                 case checkArity sym params args of
+                   Left err ->
+                     return (makeEvalError ctx Nothing err (info x))
+                   Right () ->
+                     -- Replace info so that the macro which is called gets the source location info of the expansion site.
+                     --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
+                     -- TODO: fix expansion here
+                     apply env body params args
+
+               Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
+                 do evaledArgs <- fmap sequence (mapM (eval env) args)
+                    case evaledArgs of
+                      Right okArgs -> getCommand callback okArgs
+                      Left err -> return (Left err)
+               Right val ->
+                 return (makeEvalError ctx Nothing
+                          ("You are trying to call a non-callable `" ++ show s ++ "`.")
+                          (info x))
+               Left err -> return (Left err)
       x -> do
         ctx <- get
-        return (makeEvalError ctx Nothing ("Did not understand: " ++ show x) (info xobj))
+        return (makeEvalError ctx Nothing
+                 ("I did not understand the form `" ++ show x ++ "`.")
+                 (info xobj))
+    checkArity s params args =
+      let la = length args
+          lp = length params
+      in if lp /= la
+         then Right ()
+         else if la < lp
+              then Left ("`" ++ show s ++ "` expects " ++ show lp ++
+                         "but received only " ++ show la ++
+                         ".\n\nYou’ll have to provide " ++
+                         intercalate ", " (map pretty (drop la params)) ++
+                         " as well.")
+              else Left ("`" ++ show s ++ "` expects " ++ show lp ++
+                         "but received " ++ show la ++ ".\n\nThe arguments " ++
+                         intercalate ", " (map pretty (drop lp args)) ++
+                         " are not needed.")
 
+apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
+apply env body params args =
+  let allParams = map getName params
+  in case splitWhen ((==) ":rest") allParams of
+       [a, b] -> callWith a b
+       [a] -> callWith a []
+       _ -> do
+        ctx <- get
+        return (makeEvalError ctx Nothing
+                 ("I didn’t understand this macro’s argument split, got `" ++
+                  joinWith "," allParams ++
+                  "`, but expected exactly one `:rest` separator.")
+                 (info (head params)))
+  where callWith proper rest =
+          let n = length proper
+              insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
+              insideEnv' = foldl' (\e (p, x) -> extendEnv e p x) insideEnv
+                                  (zip proper (take n args))
+              insideEnv'' = if null rest
+                             then insideEnv'
+                             else extendEnv insideEnv'
+                                   (head rest)
+                                   (XObj (Lst (drop n args)) Nothing Nothing)
+          in eval insideEnv'' body
 
 -- LEGACY STUFF
 
@@ -123,24 +224,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode) cmd
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 return newCtx
-              Right result@(XObj (Arr _) _ _) ->
+              Right result ->
                 do putStrLnWithColor Yellow ("=> " ++ pretty result)
                    return newCtx
-              Right evaled ->
-                do -- HACK?! The result after evalution might be a list that
-                   -- constitutes a 'def' or 'defn'. So let's evaluate again
-                   -- to make it stick in the environment.
-                   -- To log the intermediate result:
-                   -- putStrLnWithColor Yellow ("-> " ++ (pretty evaled))
-                   (result', newCtx') <- runStateT (eval env evaled) newCtx
-                   case result' of
-                     Left e ->
-                       reportExecutionError newCtx' (show e)
-                     Right (XObj (Lst []) _ _) ->
-                       return newCtx' -- Once again, don't print nil result
-                     Right okResult' ->
-                       do putStrLnWithColor Yellow ("=> " ++ pretty okResult')
-                          return newCtx'
        -- TODO: This is a weird case:
        ReplParseError e xobj ->
          do let msg =  "[PARSE ERROR] " ++ e
