@@ -40,9 +40,9 @@ eval env xobj =
   case obj xobj of
   --case obj (trace ("\nEval " ++ pretty xobj ++ ", obj: " ++ show (obj xobj)) xobj) of
     --Lst _   -> evalList xobj
-    --Arr _   -> evalArray xobj
     --Sym _ _ -> evalSymbol xobj
-    _       -> return (Right xobj)
+    Arr objs  -> map (eval env) objs
+    _         -> return (Right xobj)
 
 -- | Make sure the arg list is the same length as the parameter list
 checkMatchingNrOfArgs :: Context -> FilePathPrintLength -> XObj -> [XObj] -> [XObj] -> Either EvalError ()
