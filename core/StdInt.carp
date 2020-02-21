@@ -29,6 +29,7 @@
   (register copy (Fn [&Int8] Int8))
 
   (defn prn [a] (Int8.str a))
+  (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int8)))
 )
@@ -59,6 +60,7 @@
   (register copy (Fn [&Int16] Int16))
 
   (defn prn [a] (Int16.str a))
+  (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int16)))
 )
@@ -89,6 +91,7 @@
   (register copy (Fn [&Int32] Int32))
 
   (defn prn [a] (Int32.str a))
+  (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int32)))
 )
@@ -119,6 +122,7 @@
   (register copy (Fn [&Int64] Int64))
 
   (defn prn [a] (Int64.str a))
+  (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Int64)))
 )
@@ -149,6 +153,7 @@
   (register copy (Fn [&Uint8] Uint8))
 
   (defn prn [a] (Uint8.str a))
+  (defn zero [] (from-long 0l))
 
   (register from-bytes (Fn [&(Array Byte)] (Array Uint8)))
 )
