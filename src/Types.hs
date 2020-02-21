@@ -42,7 +42,7 @@ data Ty = IntTy
         | PointerTy Ty
         | RefTy Ty Ty -- second Ty is the lifetime
         | StaticLifetimeTy
-        | StructTy String [Ty] -- the name of the struct, and it's type parameters
+        | StructTy String [Ty] -- the name of the struct, and it's type parameters -- TODO: Need to move away from name being a String here!
         | TypeTy -- the type of types
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
