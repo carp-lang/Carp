@@ -81,7 +81,9 @@ templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXOb
      , if isTypeGeneric t
        then (templateGenericSetter insidePath p t memberName, [])
        else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName)) (FuncTy [p, t] p StaticLifetimeTy) (templateSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
-     ,instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy) (templateMutatingSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place.")
+     , if isTypeGeneric t
+       then (templateGenericMutatingSetter insidePath p t memberName, [])
+       else instanceBinderWithDeps (SymPath insidePath ("set-" ++ memberName ++ "!")) (FuncTy [RefTy p (VarTy "q"), t] UnitTy StaticLifetimeTy) (templateMutatingSetter typeEnv env (mangle memberName) t) ("sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place.")
      ,instanceBinderWithDeps (SymPath insidePath ("update-" ++ memberName))
                                                             (FuncTy [p, RefTy (FuncTy [t] t (VarTy "fq")) (VarTy "q")] p StaticLifetimeTy)
                                                             (templateUpdater (mangle memberName))
@@ -155,6 +157,29 @@ templateMutatingSetter typeEnv env memberName memberTy =
                                 ,"    pRef->" ++ memberName ++ " = newValue;"
                                 ,"}\n"])))
     (const [])
+
+-- | The template for mutating setters of a generic deftype.
+templateGenericMutatingSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
+templateGenericMutatingSetter pathStrings originalStructTy@(StructTy typeName _) memberTy memberName =
+  defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy (VarTy "q")), memberTy] UnitTy StaticLifetimeTy) docs
+  where path = SymPath pathStrings ("set-" ++ memberName ++ "!")
+        t = FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy
+        docs = "sets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "` in place."
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+            Template
+            t
+            (const (toTemplate "void $NAME($p* pRef, $t newValue)"))
+            (\(FuncTy [_, memberTy] _ _) ->
+               let callToDelete = memberRefDeletion typeEnv env (memberName, memberTy)
+               in  toTemplate (unlines ["$DECL {"
+                                       ,callToDelete
+                                       ,"    pRef->" ++ memberName ++ " = newValue;"
+                                       ,"}\n"]))
+            (\(FuncTy [_, memberTy] _ _) ->
+               if isManaged typeEnv memberTy
+               then depsOfPolymorphicFunction typeEnv env [] "delete" (typesDeleterFunctionType memberTy)
+               else [])
 
 -- | The template for updater functions of a deftype.
 -- | (allows changing a variable by passing an transformation function).

@@ -33,10 +33,14 @@
 
 
 
-;; Type signatures
+;; Issue #681
+(deftype (X a) [member a])
+(deftype (Y a) [x (X a)])
 
-(sig f (Fn [Int Bool] Float))
-(defn f [] 123)
+(defmodule Y
+  (defn foo [y]
+    (set-x! y (X.init 1))))
 
-(sig x Int)
-(def x 2.3)
+(defn main []
+  (let [y (Y.init (X.init 10))]
+    (Y.foo &y)))
