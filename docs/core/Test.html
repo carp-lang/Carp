@@ -191,6 +191,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#assert-error">
+                    <h3 id="assert-error">
+                        assert-error
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State a), (Ref (Result b c) d), (Ref e f)] State)
+                </p>
+                <pre class="args">
+                    (assert-error state x descr)
+                </pre>
+                <p class="doc">
+                    <p>Assert that x is an <code>Error</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#assert-exit">
                     <h3 id="assert-exit">
                         assert-exit
@@ -231,6 +251,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#assert-just">
+                    <h3 id="assert-just">
+                        assert-just
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State a), (Ref (Maybe b) c), (Ref d e)] State)
+                </p>
+                <pre class="args">
+                    (assert-just state x descr)
+                </pre>
+                <p class="doc">
+                    <p>Assert that x is a <code>Just</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#assert-not-equal">
                     <h3 id="assert-not-equal">
                         assert-not-equal
@@ -247,6 +287,26 @@
                 </pre>
                 <p class="doc">
                     <p>Assert that x and y are not equal. Equality needs to be implemented for their type.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-nothing">
+                    <h3 id="assert-nothing">
+                        assert-nothing
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State a), (Ref (Maybe b) c), (Ref d e)] State)
+                </p>
+                <pre class="args">
+                    (assert-nothing state x descr)
+                </pre>
+                <p class="doc">
+                    <p>Assert that x is a <code>Nothing</code>.</p>
 
                 </p>
             </div>
@@ -271,6 +331,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#assert-ref-equal">
+                    <h3 id="assert-ref-equal">
+                        assert-ref-equal
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State a), (Ref b c), (Ref b d), (Ref e f)] State)
+                </p>
+                <pre class="args">
+                    (assert-ref-equal state x y descr)
+                </pre>
+                <p class="doc">
+                    <p>Assert that x and y are equal by reference. Reference equality needs to be implemented for their type.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#assert-signal">
                     <h3 id="assert-signal">
                         assert-signal
@@ -287,6 +367,26 @@
                 </pre>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#assert-success">
+                    <h3 id="assert-success">
+                        assert-success
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref State a), (Ref (Result b c) d), (Ref e f)] State)
+                </p>
+                <pre class="args">
+                    (assert-success state x descr)
+                </pre>
+                <p class="doc">
+                    <p>Assert that x is a <code>Success</code>.</p>
+
                 </p>
             </div>
             <div class="binder">

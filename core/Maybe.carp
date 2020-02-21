@@ -43,7 +43,9 @@ It is the inverse of [`just?`](#just?).")
       (Nothing) true
       (Just x) false))
 
-  (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Just 1)` and `(Just 1)` are the same, but `(Just 1)` and `(Just 2)` are not.")
+  (doc = "equality is defined as the equality of both the constructor
+and the contained value, i.e. `(Just 1)` and `(Just 1)` are the same, but
+`(Just 1)` and `(Just 2)` are not.")
   (defn = [a b]
     (match @a
       (Nothing) (nothing? b)
@@ -51,6 +53,17 @@ It is the inverse of [`just?`](#just?).")
         (match @b
           (Nothing) false
           (Just y) (= x y))))
+
+  (doc ref= "reference equality is defined as the equality of both the
+constructor and the contained value (by reference), i.e. `(Just [1])` and
+`(Just [1])` are the same, but `(Just [1])` and `(Just [2])` are not.")
+  (defn ref= [a b]
+    (match @a
+      (Nothing) (nothing? b)
+      (Just x)
+        (match @b
+          (Nothing) false
+          (Just y) (= &x &y))))
 
   (doc unsafe-ptr "Creates a `(Ptr a)` from a `(Maybe a)`. If the `Maybe` was
 `Nothing`, this function will return a `NULL` value.")

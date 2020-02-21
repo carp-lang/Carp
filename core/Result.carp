@@ -95,7 +95,9 @@ It is the inverse of [`success?`](#success?).")
       (Error _) true
       (Success _) false))
 
-  (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Success 1)` and `(Success 1)` are the same, but `(Success 1)` and `(Success 2)` are not.")
+  (doc = "equality is defined as the equality of both the constructor
+and the contained value, i.e. `(Success 1)` and `(Success 1)` are the same,
+but `(Success 1)` and `(Success 2)` are not.")
   (defn = [a b]
     (match @a
       (Success x)
@@ -106,6 +108,21 @@ It is the inverse of [`success?`](#success?).")
         (match @b
           (Success _) false
           (Error y) (= x y))))
+
+  (doc ref= "reference equality is defined as the equality of both the
+constructor and the contained value, i.e. `(Success [1])` and
+`(Success [1])` are the same, but `(Success [1])` and `(Success [2])` are
+not.")
+  (defn = [a b]
+    (match @a
+      (Success x)
+        (match @b
+          (Error _) false
+          (Success y) (= &x &y))
+      (Error x)
+        (match @b
+          (Success _) false
+          (Error y) (= &x &y))))
 )
 
 (defmodule Maybe

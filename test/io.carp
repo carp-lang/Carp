@@ -2,13 +2,12 @@
 (use-all IO Test)
 
 (deftest test
-  (assert-equal test
-                &(Maybe.Nothing)
-                &(IO.getenv @"thisdoesnotexist")
-                "getenv works on non-existant variable"
+  (assert-nothing test
+                  &(IO.getenv @"thisdoesnotexist")
+                  "getenv works on non-existant variable"
   )
-  (assert-true test
-               (Maybe.just? &(IO.getenv @"PATH"))
+  (assert-just test
+               &(IO.getenv @"PATH")
                "getenv works on existant variable"
   )
 )
