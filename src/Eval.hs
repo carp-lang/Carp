@@ -624,8 +624,8 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
        Nothing ->
          return ctx
 
-getSigFromDefnOrDef :: Env -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
-getSigFromDefnOrDef globalEnv xobj =
+getSigFromDefnOrDef :: Env -> FilePathPrintLength -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
+getSigFromDefnOrDef globalEnv fppl xobj =
   let metaData = existingMeta globalEnv xobj
   in  case Map.lookup "sig" (getMeta metaData) of
         Just foundSignature ->
@@ -634,7 +634,7 @@ getSigFromDefnOrDef globalEnv xobj =
                           nameToken = XObj (Sym (SymPath [] (getName xobj)) Symbol) Nothing Nothing
                           recreatedSigForm = XObj (Lst [sigToken, nameToken, foundSignature]) Nothing (Just MacroTy)
                       in return (Right (Just (t, recreatedSigForm)))
-            Nothing -> error ("TODO: Return error here, failed to convert " ++ pretty foundSignature ++ " to a type.")
+            Nothing -> return (Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (info xobj) fppl))
         Nothing -> return (Right Nothing)
 
 annotateWithinContext :: Bool -> XObj -> StateT Context IO (Either EvalError (XObj, [XObj]))
@@ -645,7 +645,7 @@ annotateWithinContext qualifyDefn xobj =
          globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          innerEnv = getEnv globalEnv pathStrings
-     sig <- getSigFromDefnOrDef globalEnv xobj
+     sig <- getSigFromDefnOrDef globalEnv fppl xobj
      expansionResult <- expandAll eval globalEnv xobj
      ctxAfterExpansion <- get
      case sig of
