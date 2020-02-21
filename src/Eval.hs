@@ -556,12 +556,6 @@ catcher ctx exception =
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitSuccess
 
-existingMeta :: Env -> XObj -> MetaData
-existingMeta globalEnv xobj =
-  case lookupInEnv (getPath xobj) globalEnv of
-    Just (_, Binder meta _) -> meta
-    Nothing -> emptyMeta
-
 -- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
@@ -582,15 +576,7 @@ define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
        XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
          return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
        _ ->
-         do case Map.lookup "sig" (getMeta adjustedMeta) of
-              Just foundSignature ->
-                do let Just sigTy = xobjToTy foundSignature
-                   unless (areUnifiable (forceTy annXObj) sigTy) $
-                     throw $ EvalException (EvalError ("Definition at " ++ prettyInfoFromXObj annXObj ++ " does not match `sig` annotation " ++
-                              show sigTy ++ ", actual type is `" ++ show (forceTy annXObj) ++ "`.") Nothing fppl)
-              Nothing ->
-                return ()
-            when (projectEchoC proj) $
+         do when (projectEchoC proj) $
               putStrLn (toC All (Binder emptyMeta annXObj))
             case previousType of
               Just previousTypeUnwrapped ->
@@ -638,6 +624,19 @@ registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
        Nothing ->
          return ctx
 
+getSigFromDefnOrDef :: Env -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
+getSigFromDefnOrDef globalEnv xobj =
+  let metaData = existingMeta globalEnv xobj
+  in  case Map.lookup "sig" (getMeta metaData) of
+        Just foundSignature ->
+          case xobjToTy foundSignature of
+            Just t -> let sigToken = XObj (Sym (SymPath [] "sig") Symbol) Nothing Nothing
+                          nameToken = XObj (Sym (SymPath [] (getName xobj)) Symbol) Nothing Nothing
+                          recreatedSigForm = XObj (Lst [sigToken, nameToken, foundSignature]) Nothing (Just MacroTy)
+                      in return (Right (Just (t, recreatedSigForm)))
+            Nothing -> error ("TODO: Return error here, failed to convert " ++ pretty foundSignature ++ " to a type.")
+        Nothing -> return (Right Nothing)
+
 annotateWithinContext :: Bool -> XObj -> StateT Context IO (Either EvalError (XObj, [XObj]))
 annotateWithinContext qualifyDefn xobj =
   do ctx <- get
@@ -646,23 +645,27 @@ annotateWithinContext qualifyDefn xobj =
          globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          innerEnv = getEnv globalEnv pathStrings
+     sig <- getSigFromDefnOrDef globalEnv xobj
      expansionResult <- expandAll eval globalEnv xobj
      ctxAfterExpansion <- get
-     case expansionResult of
-       Left err -> return (makeEvalError ctx Nothing (show err) Nothing)
-       Right expanded ->
-         let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
-             xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
-         in case annotate typeEnv globalEnv xobjFullSymbols of
-              Left err ->
-                case contextExecMode ctx of
-                  Check ->
-                    let fppl = projectFilePathPrintLength (contextProj ctx)
-                    in  return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing fppl))
-                  _ ->
-                    return (Left (EvalError (show err) Nothing fppl))
-              Right ok ->
-                return (Right ok)
+     case sig of
+       Left err -> return (Left err)
+       Right okSig ->
+         case expansionResult of
+           Left err -> return (makeEvalError ctx Nothing (show err) Nothing)
+           Right expanded ->
+             let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
+                 xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
+             in case annotate typeEnv globalEnv xobjFullSymbols okSig of
+                  Left err ->
+                    case contextExecMode ctx of
+                      Check ->
+                        let fppl = projectFilePathPrintLength (contextProj ctx)
+                        in  return (Left (EvalError (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing fppl))
+                      _ ->
+                        return (Left (EvalError (show err) Nothing fppl))
+                  Right ok ->
+                    return (Right ok)
 
 -- | SPECIAL FORM COMMANDS (needs to get access to unevaluated arguments, which makes them "special forms" in Lisp lingo)
 
@@ -1284,7 +1287,7 @@ commandC [xobj] =
      case result of
        Left err -> return (Left (EvalError (show err) (info xobj)))
        Right expanded ->
-         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
+         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
            Left err -> return (Left (EvalError (show err) (info xobj)))
            Right (annXObj, annDeps) ->
              do let cXObj = printC annXObj

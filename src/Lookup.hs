@@ -231,3 +231,9 @@ bindingNames = concatMap select . envBindings
   where select :: Binder -> [String]
         select (Binder _ (XObj (Mod i) _ _)) = bindingNames i
         select (Binder _ obj) = [getName obj]
+
+existingMeta :: Env -> XObj -> MetaData
+existingMeta globalEnv xobj =
+  case lookupInEnv (getPath xobj) globalEnv of
+    Just (_, Binder meta _) -> meta
+    Nothing -> emptyMeta

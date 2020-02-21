@@ -378,6 +378,7 @@ metaIsTrue metaData key =
     _ -> False
 
 
+
 -- | Wraps and holds an XObj in an environment.
 data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
 

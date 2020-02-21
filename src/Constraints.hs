@@ -45,6 +45,7 @@ data ConstraintOrder = OrdNo
                      | OrdArrBetween
                      | OrdMultiSym
                      | OrdInterfaceSym
+                     | OrdSignatureAnnotation
                      deriving (Show, Ord, Eq)
 
 data Constraint = Constraint Ty Ty XObj XObj XObj ConstraintOrder deriving Eq
