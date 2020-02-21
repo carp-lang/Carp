@@ -244,8 +244,7 @@ machineReadableErrorStrings fppl err =
   case err of
     (UnificationFailed constraint@(Constraint a b aObj bObj _ _) mappings constraints) ->
       [machineReadableInfoFromXObj fppl aObj ++ " Inferred " ++ showTypeFromXObj mappings aObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings b) ++ "."
-      ,machineReadableInfoFromXObj fppl bObj ++ " Inferred " ++
-       showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
+      ,machineReadableInfoFromXObj fppl bObj ++ " Inferred " ++ showTypeFromXObj mappings bObj ++ ", can't unify with " ++ show (recursiveLookupTy mappings a) ++ "."]
 
     (DefnMissingType xobj) ->
       [machineReadableInfoFromXObj fppl xobj ++ " Function definition '" ++ getName xobj ++ "' missing type."]
