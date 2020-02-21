@@ -14,7 +14,6 @@ import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..))
 import Control.Exception
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.Error as ParsecError
-import Debug.Trace
 
 import Parsing
 import Emit
@@ -33,56 +32,44 @@ import Qualify
 import TypeError
 import Concretize
 import Path
+import Primitives
 
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
-eval env xobj =
-  case obj xobj of
-  --case obj (trace ("\nEval " ++ pretty xobj ++ ", obj: " ++ show (obj xobj)) xobj) of
-    --Lst _   -> evalList xobj
-    --Sym _ _ -> evalSymbol xobj
-    Arr objs  -> map (eval env) objs
-    _         -> return (Right xobj)
+eval env xobj@(XObj o i t) =
+  case o of
+    Lst body   -> eval' body
+    Sym path@(SymPath p n) _ -> do
+      ctx <- get
+      let fppl = projectFilePathPrintLength (contextProj ctx)
+      case lookupInEnv (SymPath ("Dynamic" : p) n) env of
+        Just (_, Binder _ found) -> return (Right (resolveDef found))
+        Nothing ->
+          case lookupInEnv path env of
+            Just (_, Binder _ found) -> return (Right (resolveDef found))
+            Nothing ->
+              return (makeEvalError ctx Nothing
+                                    ("Can't find symbol '" ++ show path ++ "'")
+                                    (info xobj))
+    Arr objs  -> do
+      evaled <- fmap sequence (mapM (eval env) objs)
+      return $ do ok <- evaled
+                  Right (XObj (Arr ok) i t)
+    _        -> return (Right xobj)
+  where
+    resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
+    resolveDef x = x
+    eval' = \case
+      x@(XObj (Sym s _) _ _):xs ->
+        case Map.lookup s primitives of
+          Just prim -> prim x env xs
+          Nothing -> return (Right x)
+      x -> do
+        ctx <- get
+        return (makeEvalError ctx Nothing ("Did not understand: " ++ show x) (info xobj))
 
--- | Make sure the arg list is the same length as the parameter list
-checkMatchingNrOfArgs :: Context -> FilePathPrintLength -> XObj -> [XObj] -> [XObj] -> Either EvalError ()
-checkMatchingNrOfArgs ctx fppl xobj params args =
-  let usesRestArgs = any (isRestArgSeparator . getName) params
-      paramLen = if usesRestArgs then length params - 2 else length params
-      argsLen = length args
-      expected =
-        if usesRestArgs
-        then "at least " ++ show paramLen
-        else show paramLen
-  in  if (usesRestArgs && argsLen > paramLen) || (paramLen == argsLen)
-      then Right ()
-      else case makeEvalError ctx Nothing ("Wrong number of arguments in call to '" ++ pretty xobj ++ "', expected " ++ expected ++ " but got " ++ show argsLen) (info xobj) of
-             Left e -> Left e
-             Right _ -> Right ()
 
--- | Apply a function to some arguments. The other half of 'eval'.
-apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
-apply env body params args =
-  let insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
-      allParams = map getName params
-      [properParams, restParams] = case splitWhen isRestArgSeparator allParams of
-                                     [a, b] -> [a, b]
-                                     [a] -> [a, []]
-                                     _ -> error ("Invalid split of args: " ++ joinWith "," allParams)
-      n = length properParams
-      insideEnv' = foldl' (\e (p, x) -> extendEnv e p x) insideEnv (zip properParams (take n args))
-      insideEnv'' = if null restParams
-                    then insideEnv'
-                    else extendEnv insideEnv'
-                         (head restParams)
-                         (XObj (Lst (drop n args)) Nothing Nothing)
-      result = eval insideEnv'' body
-  in result
-
--- | Is a string the 'rest' separator for arguments to dynamic functions / macros
-isRestArgSeparator :: String -> Bool
-isRestArgSeparator ":rest" = True
-isRestArgSeparator _ = False
+-- LEGACY STUFF
 
 -- | Print a found binder.
 found binder =
@@ -223,7 +210,6 @@ catcher ctx exception =
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitSuccess
 
--- | Sort different kinds of definitions into the globalEnv or the typeEnv.
 define :: Bool -> Context -> XObj -> IO Context
 define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
   let previousType =
