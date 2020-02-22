@@ -461,14 +461,14 @@ but <code>(Success 1)</code> and <code>(Success 2)</code> are not.</p>
                     </h3>
                 </a>
                 <div class="description">
-                    doc-stub
+                    defn
                 </div>
                 <p class="sig">
-                    a
+                    (λ [(Ref (Result a b) c), (Ref (Result a b) d)] Bool)
                 </p>
-                <span>
-                    
-                </span>
+                <pre class="args">
+                    (ref= a b)
+                </pre>
                 <p class="doc">
                     <p>reference equality is defined as the equality of both the
 constructor and the contained value, i.e. <code>(Success [1])</code> and
