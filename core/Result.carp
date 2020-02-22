@@ -113,7 +113,7 @@ but `(Success 1)` and `(Success 2)` are not.")
 constructor and the contained value, i.e. `(Success [1])` and
 `(Success [1])` are the same, but `(Success [1])` and `(Success [2])` are
 not.")
-  (defn = [a b]
+  (defn ref= [a b]
     (match @a
       (Success x)
         (match @b
