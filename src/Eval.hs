@@ -77,6 +77,11 @@ eval env xobj@(XObj o i t) =
                  ("I didn’t understand this `if`.\n\n Got:\n```\n" ++ pretty xobj ++
                   "\n```\n\nExpected the form:\n```\n(if cond then else)\n```\n")
                  (info xobj))
+      l@[XObj Fn{} _ _, args@(XObj (Arr a) _ _), f] -> do
+        ctx <- get
+        if all isUnqualifiedSym a
+        then return (Right (XObj (Closure (XObj (Lst l) i t) (CEnv env)) i t))
+        else return (makeEvalError ctx Nothing ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
       x@(XObj sym@(Sym s _) _ _):args ->
         case Map.lookup s primitives of
           Just prim -> prim x env args
@@ -84,7 +89,7 @@ eval env xobj@(XObj o i t) =
             ctx <- get
             f <- eval env x
             case f of
-               Right (XObj (Lst [XObj (Fn _ _ (FEnv e)) _ _, XObj (Arr params) _ _, body]) _ _) -> do
+               Right (XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) _ _) ->
                  case checkArity sym params args of
                    Left err ->
                      return (makeEvalError ctx Nothing err (info x))
@@ -124,6 +129,21 @@ eval env xobj@(XObj o i t) =
                           ("You are trying to call a non-callable `" ++ show s ++ "`.")
                           (info x))
                Left err -> return (Left err)
+
+      l@(XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _):args -> do
+        ctx <- get
+        f <- eval env l
+        case f of
+           Right (XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) _ _) ->
+             case checkArity (pretty l) params args of
+               Left err ->
+                 return (makeEvalError ctx Nothing err (info l))
+               Right () ->
+                 do evaledArgs <- fmap sequence (mapM (eval env) args)
+                    case evaledArgs of
+                      Right okArgs -> apply e body params okArgs
+                      Left err -> return (Left err)
+           x -> return x
       x -> do
         ctx <- get
         return (makeEvalError ctx Nothing
@@ -132,16 +152,16 @@ eval env xobj@(XObj o i t) =
     checkArity s params args =
       let la = length args
           lp = length params
-      in if lp /= la
+      in if lp == la
          then Right ()
          else if la < lp
               then Left ("`" ++ show s ++ "` expects " ++ show lp ++
-                         "but received only " ++ show la ++
+                         " but received only " ++ show la ++
                          ".\n\nYou’ll have to provide " ++
                          intercalate ", " (map pretty (drop la params)) ++
                          " as well.")
               else Left ("`" ++ show s ++ "` expects " ++ show lp ++
-                         "but received " ++ show la ++ ".\n\nThe arguments " ++
+                         " but received " ++ show la ++ ".\n\nThe arguments " ++
                          intercalate ", " (map pretty (drop lp args)) ++
                          " are not needed.")
 

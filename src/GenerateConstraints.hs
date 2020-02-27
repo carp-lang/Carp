@@ -52,7 +52,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                              genF xobj args body (fromMaybe Set.empty captures)
 
                            -- Fn
-                           [XObj (Fn _ captures _) _ _, XObj (Arr args) _ _, body] ->
+                           [XObj (Fn _ captures) _ _, XObj (Arr args) _ _, body] ->
                              genF xobj args body captures
 
                            -- Def

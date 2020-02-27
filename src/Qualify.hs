@@ -37,7 +37,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) _
       functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv 0
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _ _) _ _),
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])
                                       i t) =

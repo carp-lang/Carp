@@ -110,6 +110,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\n' -> "'\\n'"
                                 '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
+            Closure elem _ -> visit indent elem
             Sym _ _ -> visitSymbol indent xobj
             (Defn _) -> error (show (DontVisitObj xobj))
             Def -> error (show (DontVisitObj xobj))
@@ -200,7 +201,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ""
 
             -- Fn / λ
-            [XObj (Fn name set _) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn name set) _ _, XObj (Arr argList) _ _, body] ->
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name

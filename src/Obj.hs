@@ -55,9 +55,10 @@ data Obj = Sym SymPath SymbolMode
          | Lst [XObj]
          | Arr [XObj]
          | Dict (Map.Map XObj XObj)
+         | Closure XObj ClosureEnv
          | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
          | Def
-         | Fn (Maybe SymPath) (Set.Set XObj) FnEnv -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
+         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
          | Do
          | Let
          | While
@@ -279,7 +280,8 @@ pretty = visit 0
                                               Just captures -> " <" ++ prettyCaptures captures ++ ">"
                                               Nothing -> ""
             Def -> "def"
-            Fn _ captures _ -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
+            Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
+            Closure elem _ -> "closure<" ++ pretty elem ++ ">"
             If -> "if"
             Match -> "match"
             While -> "while"
@@ -457,13 +459,12 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
 
--- Could be (Maybe Env), but we have to get rid of equality
-data FnEnv = None
-           | FEnv Env
+data ClosureEnv = CEnv Env
   deriving (Show)
 
-instance Eq FnEnv where
+instance Eq ClosureEnv where
   _ == _ = True
+
 
 newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
 
