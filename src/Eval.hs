@@ -59,6 +59,41 @@ eval env xobj@(XObj o i t) =
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef x = x
     eval' = \case
+      [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] ->
+        do ctx <- get
+           evaledA <- eval env a
+           evaledB <- eval env b
+           return $ do okA <- evaledA
+                       case okA of
+                         XObj (Bol ab) _ _ ->
+                           if ab
+                             then do okB <- evaledB
+                                     case okB of
+                                       XObj (Bol bb) _ _ ->
+                                         if bb then Right trueXObj else Right falseXObj
+                                       _ ->
+                                         makeEvalError ctx Nothing ("Can’t perform call `and` on " ++ pretty okB) (info okB)
+                             else Right falseXObj
+                         _ ->
+                           makeEvalError ctx Nothing ("Can’t call `and` on " ++ pretty okA) (info okA)
+
+      [XObj (Sym (SymPath ["Dynamic"] "or") _) _ _, a, b] ->
+        do ctx <- get
+           evaledA <- eval env a
+           evaledB <- eval env b
+           return $ do okA <- evaledA
+                       case okA of
+                         XObj (Bol ab) _ _ ->
+                           if ab
+                             then Right trueXObj
+                             else do okB <- evaledB
+                                     case okB of
+                                       XObj (Bol bb) _ _ ->
+                                         if bb then Right trueXObj else Right falseXObj
+                                       _ ->
+                                         makeEvalError ctx Nothing ("Can’t call `or` on " ++ pretty okB) (info okB)
+                         _ ->
+                           makeEvalError ctx Nothing ("Can’t call `or` on " ++ pretty okA) (info okA)
       [XObj If _ _, mcond, mtrue, mfalse] -> do
         evd <- eval env mcond
         case evd of
@@ -197,14 +232,6 @@ found binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return dynamicNil
 
--- | Print error message for binder that wasn't found.
-notFound :: ExecutionMode -> XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
-notFound execMode xobj path =
-  do fppl <- gets (projectFilePathPrintLength . contextProj)
-     return $ Left $ EvalError (case execMode of
-                                   Check -> machineReadableInfoFromXObj fppl xobj ++ (" Can't find '" ++ show path ++ "'")
-                                   _ -> "Can't find '" ++ show path ++ "'") (info xobj) fppl
-
 -- | A command at the REPL
 -- | TODO: Is it possible to remove the error cases?
 data ReplCommand = ReplParseError String XObj
@@ -316,72 +343,18 @@ catcher ctx exception =
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitSuccess
 
-define :: Bool -> Context -> XObj -> IO Context
-define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
-  let previousType =
-        case lookupInEnv (getPath annXObj) globalEnv of
-          Just (_, Binder _ found) -> ty found
-          Nothing -> Nothing
-      previousMeta = existingMeta globalEnv annXObj
-      adjustedMeta = if hidden
-                     then previousMeta { getMeta = Map.insert "hidden" trueXObj (getMeta previousMeta) }
-                     else previousMeta
-      fppl = projectFilePathPrintLength proj
-  in case annXObj of
-       XObj (Lst (XObj (Defalias _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
-       XObj (Lst (XObj (Deftype _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
-       XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _ ->
-         return (ctx { contextTypeEnv = TypeEnv (envInsertAt (getTypeEnv typeEnv) (getPath annXObj) (Binder adjustedMeta annXObj)) })
-       _ ->
-         do when (projectEchoC proj) $
-              putStrLn (toC All (Binder emptyMeta annXObj))
-            case previousType of
-              Just previousTypeUnwrapped ->
-                unless (areUnifiable (forceTy annXObj) previousTypeUnwrapped) $
-                  do putStrWithColor Blue ("[WARNING] Definition at " ++ prettyInfoFromXObj annXObj ++ " changed type of '" ++ show (getPath annXObj) ++
-                                           "' from " ++ show previousTypeUnwrapped ++ " to " ++ show (forceTy annXObj))
-                     putStrLnWithColor White "" -- To restore color for sure.
-              Nothing -> return ()
-            case registerDefnOrDefInInterfaceIfNeeded ctx annXObj of
-              Left err ->
-                do case contextExecMode ctx of
-                     Check -> let fppl = projectFilePathPrintLength (contextProj ctx)
-                              in  putStrLn (machineReadableInfoFromXObj fppl annXObj ++ " " ++ err)
-                     _ -> putStrLnWithColor Red err
-                   return ctx
-              Right ctx' ->
-                return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj) })
-
--- | Ensure that a 'def' / 'defn' has registered with an interface (if they share the same name).
-registerDefnOrDefInInterfaceIfNeeded :: Context -> XObj -> Either String Context
-registerDefnOrDefInInterfaceIfNeeded ctx xobj =
-  case xobj of
-    XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
-      -- This is a function, does it belong to an interface?
-      registerInInterfaceIfNeeded ctx path t
-    XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
-      -- Global variables can also be part of an interface
-      registerInInterfaceIfNeeded ctx path t
-    _ ->
-      return ctx
-
--- | Registers a definition with an interface, if it isn't already registerd.
-registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
-registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
-  let typeEnv = getTypeEnv (contextTypeEnv ctx)
-  in case lookupInEnv (SymPath [] name) typeEnv of
-       Just (_, Binder _ (XObj (Lst [XObj (Interface interfaceSignature paths) ii it, isym]) i t)) ->
-         if areUnifiable interfaceSignature definitionSignature
-         then let updatedInterface = XObj (Lst [XObj (Interface interfaceSignature (addIfNotPresent path paths)) ii it, isym]) i t
-              in  return $ ctx { contextTypeEnv = TypeEnv (extendEnv typeEnv name updatedInterface) }
-         else Left ("[INTERFACE ERROR] " ++ show path ++ " : " ++ show definitionSignature ++
-                    " doesn't match the interface signature " ++ show interfaceSignature)
-       Just (_, Binder _ x) ->
-         error ("A non-interface named '" ++ name ++ "' was found in the type environment: " ++ show x)
-       Nothing ->
-         return ctx
+specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
+specialCommandDefine xobj =
+  do result <- annotateWithinContext True xobj
+     case result of
+       Right (annXObj, annDeps) ->
+         do ctxAfterExpansion <- get
+            ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
+            ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
+            put ctxWithDef
+            return dynamicNil
+       Left err ->
+         return (Left err)
 
 getSigFromDefnOrDef :: Env -> FilePathPrintLength -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
 getSigFromDefnOrDef globalEnv fppl xobj =
@@ -425,166 +398,6 @@ annotateWithinContext qualifyDefn xobj =
                         return (Left (EvalError (show err) Nothing fppl))
                   Right ok ->
                     return (Right ok)
-
--- | SPECIAL FORM COMMANDS (needs to get access to unevaluated arguments, which makes them "special forms" in Lisp lingo)
-
-specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefine xobj =
-  do result <- annotateWithinContext True xobj
-     case result of
-       Right (annXObj, annDeps) ->
-         do ctxAfterExpansion <- get
-            ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
-            ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
-            put ctxWithDef
-            return dynamicNil
-       Left err ->
-         return (Left err)
-
-specialCommandRegisterType :: String -> [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandRegisterType typeName rest =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         globalEnv = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         innerEnv = getEnv globalEnv pathStrings
-         path = SymPath pathStrings typeName
-         typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
-         i = Nothing
-         preExistingModule = case lookupInEnv (SymPath pathStrings typeName) globalEnv of
-                               Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
-                               _ -> Nothing
-     case rest of
-       [] ->
-         do put (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition) })
-            return dynamicNil
-       members ->
-         case bindingsForRegisteredType typeEnv globalEnv pathStrings typeName members i preExistingModule of
-           Left err ->
-             return (makeEvalError ctx (Just err) (show err) Nothing)
-           Right (typeModuleName, typeModuleXObj, deps) ->
-             let ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
-                             , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
-                             })
-             in do contextWithDefs <- liftIO $ foldM (define True) ctx' deps
-                   put contextWithDefs
-                   return dynamicNil
-
-specialCommandDeftype :: XObj -> [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandDeftype nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) rest =
-  deftypeInternal nameXObj typeName [] rest
-specialCommandDeftype (XObj (Lst (nameXObj@(XObj (Sym (SymPath _ typeName) _) _ _) : typeVariables)) _ _) rest =
-  deftypeInternal nameXObj typeName typeVariables rest
-specialCommandDeftype nameXObj _ =
-  do ctx <- get
-     return (makeEvalError ctx Nothing ("Invalid name for type definition: " ++ pretty nameXObj) (info nameXObj))
-
-deftypeInternal :: XObj -> String -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
-deftypeInternal nameXObj typeName typeVariableXObjs rest =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         typeVariables = mapM xobjToTy typeVariableXObjs
-         (preExistingModule, existingMeta) =
-           case lookupInEnv (SymPath pathStrings typeName) env of
-             Just (_, Binder existingMeta (XObj (Mod found) _ _)) -> (Just found, existingMeta)
-             Just (_, Binder existingMeta _) -> (Nothing, existingMeta)
-             _ -> (Nothing, emptyMeta)
-         (creatorFunction, typeConstructor) =
-            if length rest == 1 && isArray (head rest)
-            then (moduleForDeftype, Deftype)
-            else (moduleForSumtype, DefSumtype)
-     case (nameXObj, typeVariables) of
-       (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
-         case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
-           Right (typeModuleName, typeModuleXObj, deps) ->
-             let structTy = StructTy typeName okTypeVariables
-                 typeDefinition =
-                   -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
-                   XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :
-                              XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
-                              rest)
-                        ) i (Just TypeTy)
-                 ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder existingMeta typeModuleXObj)
-                             , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
-                             })
-             in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
-                   let ctxWithInterfaceRegistrations =
-                         foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
-                               [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy)
-                               ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy)]
-                   case ctxWithInterfaceRegistrations of
-                     Left err -> liftIO (putStrLnWithColor Red err)
-                     Right ok -> put ok
-                   return dynamicNil
-           Left err ->
-             return (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
-       (_, Nothing) ->
-         return (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (info nameXObj))
-
-specialCommandRegister :: String -> XObj -> Maybe String -> StateT Context IO (Either EvalError XObj)
-specialCommandRegister name typeXObj overrideName =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         globalEnv = contextGlobalEnv ctx
-     case xobjToTy typeXObj of
-           Just t -> let path = SymPath pathStrings name
-                         registration = XObj (Lst [XObj (External overrideName) Nothing Nothing,
-                                                   XObj (Sym path Symbol) Nothing Nothing])
-                                        (info typeXObj) (Just t)
-                         meta = existingMeta globalEnv registration
-                         env' = envInsertAt globalEnv path (Binder meta registration)
-                     in  case registerInInterfaceIfNeeded ctx path t of
-                           Left errorMessage ->
-                             return (makeEvalError ctx Nothing errorMessage (info typeXObj))
-                           Right ctx' ->
-                             do put (ctx' { contextGlobalEnv = env' })
-                                return dynamicNil
-           Nothing ->
-             return (makeEvalError ctx Nothing ("Can't understand type when registering '" ++ name ++ "'") (info typeXObj))
-
-specialCommandDefinterface :: XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefinterface nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _) typeXObj =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         typeEnv = getTypeEnv (contextTypeEnv ctx)
-     case xobjToTy typeXObj of
-       Just t ->
-         case lookupInEnv path typeEnv of
-           Just (_, Binder _ (XObj (Lst (XObj (Interface foundType _) _ _ : _)) _ _)) ->
-             -- The interface already exists, so it will be left as-is.
-             if foundType == t
-             then return dynamicNil
-             else liftIO $ do putStrLn ("[FORBIDDEN] Tried to change the type of interface '" ++ show path ++ "' from " ++ show foundType ++ " to " ++ show t)
-                              return dynamicNil
-           Nothing ->
-             let interface = defineInterface name t [] (info nameXObj)
-                 typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
-             in  do put (ctx { contextTypeEnv = typeEnv' })
-                    retroactivelyRegisterFunctionsThatAdhereToInterface name t
-                    return dynamicNil
-       Nothing ->
-         return (makeEvalError ctx Nothing ("Invalid type for interface '" ++ name ++ "': " ++ pretty typeXObj) (info typeXObj))
-
-retroactivelyRegisterFunctionsThatAdhereToInterface :: String -> Ty -> StateT Context IO ()
-retroactivelyRegisterFunctionsThatAdhereToInterface name t =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-         found = multiLookupALL name env
-         binders = map snd found
-         resultCtx = foldl' (\maybeCtx binder -> case maybeCtx of
-                                                   Right ok -> registerDefnOrDefInInterfaceIfNeeded ok (binderXObj binder)
-                                                   Left err -> Left err)
-                            (Right ctx) binders
-     case resultCtx of
-       Left err -> error err
-       Right ctx' -> put ctx'
-     return ()
 
 dynamicOrMacroWith :: (SymPath -> [XObj]) -> Ty -> String -> XObj -> StateT Context IO (Either EvalError XObj)
 dynamicOrMacroWith producer ty name body =
@@ -701,7 +514,7 @@ specialCommandInfo target@(XObj (Sym path@(SymPath _ name) _) _ _) =
             return dynamicNil
        qualifiedPath ->
          case lookupInEnv path env of
-           Nothing -> notFound execMode target path
+           Nothing -> notFound target path
            found -> do liftIO (printer False found True)
                        return dynamicNil
 
@@ -709,7 +522,6 @@ specialCommandType :: XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandType target =
   do ctx <- get
      let env = contextGlobalEnv ctx
-         execMode = contextExecMode ctx
      case target of
            XObj (Sym path@(SymPath [] name) _) _ _ ->
              case lookupInEnv path env of
@@ -718,7 +530,7 @@ specialCommandType target =
                Nothing ->
                  case multiLookupALL name env of
                    [] ->
-                     notFound execMode target path
+                     notFound target path
                    binders ->
                      liftIO $ do mapM_ (\(env, binder) -> putStrLnWithColor White (show binder)) binders
                                  return dynamicNil
@@ -727,7 +539,7 @@ specialCommandType target =
                Just (_, binder) ->
                  found binder
                Nothing ->
-                 notFound execMode target qualifiedPath
+                 notFound target qualifiedPath
            _ ->
              liftIO $ do putStrLnWithColor Red ("Can't get the type of non-symbol: " ++ pretty target)
                          return dynamicNil
