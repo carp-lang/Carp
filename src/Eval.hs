@@ -399,24 +399,6 @@ annotateWithinContext qualifyDefn xobj =
                   Right ok ->
                     return (Right ok)
 
-dynamicOrMacroWith :: (SymPath -> [XObj]) -> Ty -> String -> XObj -> StateT Context IO (Either EvalError XObj)
-dynamicOrMacroWith producer ty name body =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         globalEnv = contextGlobalEnv ctx
-         path = SymPath pathStrings name
-         elem = XObj (Lst (producer path)) (info body) (Just ty)
-         meta = existingMeta globalEnv elem
-     put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta elem) })
-     return dynamicNil
-
-dynamicOrMacro :: Obj -> Ty -> String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-dynamicOrMacro pat ty name params body =
-  dynamicOrMacroWith (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) ty name body
-
-specialCommandDefndynamic :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefndynamic = dynamicOrMacro Dynamic DynamicTy
-
 specialCommandDefdynamic :: String -> XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefdynamic name body =
   do env <- gets contextGlobalEnv
@@ -425,9 +407,6 @@ specialCommandDefdynamic name body =
        Left err -> return (Left err)
        Right evaledBody ->
          dynamicOrMacroWith (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name body
-
-specialCommandDefmacro :: String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefmacro = dynamicOrMacro Macro MacroTy
 
 specialCommandDefmodule :: XObj -> String -> [XObj] -> StateT Context IO (Either EvalError XObj)
 specialCommandDefmodule xobj moduleName innerExpressions =

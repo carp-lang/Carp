@@ -38,7 +38,7 @@ makePrim' name maybeArity example callback =
         err x a l = do
           ctx <- get
           return (makeEvalError ctx Nothing (
-            "The primitive '" ++ name ++ "' expected " ++ show a ++
+            "The primitive `" ++ name ++ "` expected " ++ show a ++
             " arguments, but got " ++ show l ++ ".\n\nExample Usage:\n```\n" ++
             example ++ "\n```\n") (info x))
 
@@ -213,6 +213,39 @@ primitiveInfo _ env [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
                      return dynamicNil
             else if errNotFound then notFound target path else return dynamicNil
 
+dynamicOrMacroWith :: (SymPath -> [XObj]) -> Ty -> String -> XObj -> StateT Context IO (Either EvalError XObj)
+dynamicOrMacroWith producer ty name body =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         globalEnv = contextGlobalEnv ctx
+         path = SymPath pathStrings name
+         elem = XObj (Lst (producer path)) (info body) (Just ty)
+         meta = existingMeta globalEnv elem
+     put (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta elem) })
+     return dynamicNil
+
+dynamicOrMacro :: Obj -> Ty -> String -> XObj -> XObj -> StateT Context IO (Either EvalError XObj)
+dynamicOrMacro pat ty name params body =
+  dynamicOrMacroWith (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) ty name body
+
+primitiveDefndynamic :: Primitive
+primitiveDefndynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body] =
+  dynamicOrMacro Dynamic DynamicTy name params body
+primitiveDefndynamic _ _ [notName, params, body] = do
+  ctx <- get
+  return (makeEvalError ctx Nothing (
+    "`defndynamic` expected a name as first argument, but got " ++ pretty notName)
+    (info notName))
+
+primitiveDefmacro :: Primitive
+primitiveDefmacro _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body]=
+  dynamicOrMacro Macro MacroTy name params body
+primitiveDefmacro _ _ [notName, params, body] = do
+  ctx <- get
+  return (makeEvalError ctx Nothing (
+    "`defmacro` expected a name as first argument, but got " ++ pretty notName)
+    (info notName))
+
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList
   [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ _ [x] -> return (Right x))
@@ -221,4 +254,6 @@ primitives = Map.fromList
   , makePrim "column" 1 "(column mysymbol)" primitiveColumn
   , makePrim "info" 1 "(info mysymbol)" primitiveInfo
   , makeVarPrim "register-type" "(register-type Name <optional: members>)" primitiveRegisterType
+  , makePrim "defmacro" 3 "(defmacro name [args :rest restargs] body)" primitiveDefmacro
+  , makePrim "defndynamic" 3 "(defndynamic name [args] body)" primitiveDefndynamic
   ]
