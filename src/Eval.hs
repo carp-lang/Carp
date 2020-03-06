@@ -332,8 +332,9 @@ instance Show ReplCommand where
   show (ListOfCallbacks _) = "callbacks"
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
-executeString :: Bool -> Context -> String -> String -> IO Context
-executeString doCatch ctx input fileName = if doCatch then catch exec (catcher ctx) else exec
+executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
+executeString doCatch printResult ctx input fileName =
+  if doCatch then catch exec (catcher ctx) else exec
   where exec = case parse input fileName of
                  Left parseError ->
                    let sourcePos = Parsec.errorPos parseError
@@ -341,32 +342,39 @@ executeString doCatch ctx input fileName = if doCatch then catch exec (catcher c
                                                                       , infoLine = Parsec.sourceLine sourcePos
                                                                       , infoColumn = Parsec.sourceColumn sourcePos
                                                                       }) Nothing
-                   in  executeCommand True ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
-                 Right xobjs -> foldM folder ctx xobjs
+                   in do
+                    (_, ctx) <- executeCommand ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
+                    return ctx
+                 Right xobjs -> do
+                  (res, ctx) <- foldM interactiveFolder
+                                    (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctx)
+                                    xobjs
+                  when printResult (putStrLnWithColor Yellow ("=> " ++ pretty res))
+                  return ctx
+        interactiveFolder (_, context) xobj = do
+          cmd <- objToCommand context xobj
+          executeCommand context cmd
 
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
 folder :: Context -> XObj -> IO Context
 folder context xobj =
   do cmd <- objToCommand context xobj
-     executeCommand False context cmd
+     (_, ctx) <- executeCommand context cmd
+     return ctx
 
 -- | Take a ReplCommand and execute it.
-executeCommand :: Bool -> Context -> ReplCommand -> IO Context
-executeCommand shouldPrint ctx@(Context env typeEnv pathStrings proj lastInput execMode _) cmd =
+executeCommand :: Context -> ReplCommand -> IO (XObj, Context)
+executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) cmd =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
      case cmd of
        ReplEval xobj ->
          do (result, newCtx) <- runStateT (eval env xobj) ctx
             case result of
-              Left e ->
+              Left e -> do
                 reportExecutionError newCtx (show e)
-              Right (XObj (Lst []) _ _) ->
-                -- Nil result won't print
-                return newCtx
-              Right result -> do
-                when shouldPrint (putStrLnWithColor Yellow ("=> " ++ pretty result))
-                return newCtx
+                return (xobj, newCtx)
+              Right result -> return (result, newCtx)
        -- TODO: This is a weird case:
        ReplParseError e xobj ->
          do let msg =  "[PARSE ERROR] " ++ e
@@ -375,14 +383,14 @@ executeCommand shouldPrint ctx@(Context env typeEnv pathStrings proj lastInput e
               Check -> putStrLn (machineReadableInfoFromXObj fppl xobj ++ " " ++ msg)
               _ -> putStrLnWithColor Red msg
             throw CancelEvaluationException
-       ListOfCallbacks callbacks -> foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
+       ListOfCallbacks callbacks -> do
+         newCtx <- foldM (\ctx' cb -> callCallbackWithArgs ctx' cb []) ctx callbacks
+         return (XObj (Lst []) (Just dummyInfo) (Just UnitTy), newCtx)
 
-reportExecutionError :: Context -> String -> IO Context
+reportExecutionError :: Context -> String -> IO ()
 reportExecutionError ctx errorMessage =
   case contextExecMode ctx of
-    Check ->
-      do putStrLn errorMessage
-         return ctx
+    Check -> putStrLn errorMessage
     _ ->
       do putStrLnWithColor Red errorMessage
          throw CancelEvaluationException
@@ -623,7 +631,7 @@ commandLoad [xobj@(XObj (Str path) i _)] =
                                              then files
                                              else files ++ [canonicalPath]
                                     proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
-                                newCtx <- liftIO $ executeString True (ctx { contextProj = proj' }) contents canonicalPath
+                                newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
                                 put newCtx
                       return dynamicNil
   where
@@ -734,7 +742,7 @@ commandReload args =
                                    else do
                                            contents <- slurp filepath
                                            let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
-                                           executeString False (context { contextProj = proj' }) contents filepath
+                                           executeString False False (context { contextProj = proj' }) contents filepath
      newCtx <- liftIO (foldM f ctx paths)
      put newCtx
      return dynamicNil
