@@ -17,6 +17,7 @@ import Util
 import ColorText
 import Eval
 import Path
+import Lookup
 import Parsing (balance)
 
 completeKeywordsAnd :: Monad m => [String ] -> String -> String -> m [Completion]
@@ -76,21 +77,26 @@ readlineSettings words = do
     autoAddHistory = True
   }
 
-repl :: Context -> String -> InputT IO ()
+repl :: Context -> String -> InputT IO Context
 repl context readSoFar =
   do let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
      input <- getInputLine prompt
      case input of
-        Nothing -> return ()
+        Nothing -> return context
         Just i -> do
           let concat = readSoFar ++ i ++ "\n"
           case balance concat of
             0 -> do let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
                     context' <- liftIO $ executeString True (resetAlreadyLoadedFiles context) input' "REPL"
-                    repl (context' { contextLastInput = input' }) ""
+                    return $ context' { contextLastInput = input' }
             _ -> repl context concat
 
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
       proj' = proj { projectAlreadyLoaded = [] }
   in  context { contextProj = proj' }
+
+runRepl context = do
+  settings <- readlineSettings (bindingNames $ contextGlobalEnv context)
+  context' <- runInputT settings (repl context "")
+  runRepl context'

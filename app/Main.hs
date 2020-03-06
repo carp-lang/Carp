@@ -11,7 +11,6 @@ import Repl
 import StartingEnv
 import Eval
 import Util
-import Lookup
 import Path
 
 defaultProject :: Project
@@ -83,12 +82,11 @@ main = do setLocaleEncoding utf8
                       then loadFiles context [carpProfile]
                       else return context
           finalContext <- loadFiles context' argFilesToLoad
-          settings <- readlineSettings (bindingNames $ contextGlobalEnv finalContext)
           case execMode of
             Repl -> do putStrLn "Welcome to Carp 0.3.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
-                       runInputT settings (repl finalContext "")
+                       runRepl finalContext
             Build -> do _ <- executeString True finalContext ":b" "Compiler (Build)"
                         return ()
             Install thing ->
