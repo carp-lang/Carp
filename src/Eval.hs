@@ -217,7 +217,7 @@ eval env xobj@(XObj o i t) = do
              res <- apply env body params args
              case res of
               Right xobj -> do
-                end <- eval env xobj
+                _ <- force (eval env xobj)
                 newCtx <- get
                 put (popFrame newCtx)
                 return res
@@ -272,6 +272,7 @@ eval env xobj@(XObj o i t) = do
               Right ok -> return (Right (last ok))
        x ->
          return (evalError ctx ("I did not understand the form `" ++ show x ++ "`.") (info xobj))
+    force x = seq x x
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
