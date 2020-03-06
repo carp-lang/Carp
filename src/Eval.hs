@@ -263,6 +263,10 @@ eval env xobj@(XObj o i t) = do
                Left err -> do
                  put ctx
                  return (Left err)
+       XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
+         specialCommandWith xobj path forms
+       XObj With _ _ : _ ->
+         return (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (info xobj))
        XObj Do _ _ : rest ->
          do evaledList <- fmap sequence (mapM (eval env) rest)
             case evaledList of
@@ -337,18 +341,18 @@ executeString doCatch ctx input fileName = if doCatch then catch exec (catcher c
                                                                       , infoLine = Parsec.sourceLine sourcePos
                                                                       , infoColumn = Parsec.sourceColumn sourcePos
                                                                       }) Nothing
-                   in  executeCommand ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
+                   in  executeCommand True ctx (ReplParseError (replaceChars (Map.fromList [('\n', " ")]) (show parseError)) parseErrorXObj)
                  Right xobjs -> foldM folder ctx xobjs
 
 -- | Used by functions that has a series of forms to evaluate and need to fold over them (producing a new Context in the end)
 folder :: Context -> XObj -> IO Context
 folder context xobj =
   do cmd <- objToCommand context xobj
-     executeCommand context cmd
+     executeCommand False context cmd
 
 -- | Take a ReplCommand and execute it.
-executeCommand :: Context -> ReplCommand -> IO Context
-executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) cmd =
+executeCommand :: Bool -> Context -> ReplCommand -> IO Context
+executeCommand shouldPrint ctx@(Context env typeEnv pathStrings proj lastInput execMode _) cmd =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
      case cmd of
@@ -360,9 +364,9 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) c
               Right (XObj (Lst []) _ _) ->
                 -- Nil result won't print
                 return newCtx
-              Right result ->
-                do putStrLnWithColor Yellow ("=> " ++ pretty result)
-                   return newCtx
+              Right result -> do
+                when shouldPrint (putStrLnWithColor Yellow ("=> " ++ pretty result))
+                return newCtx
        -- TODO: This is a weird case:
        ReplParseError e xobj ->
          do let msg =  "[PARSE ERROR] " ++ e
@@ -431,6 +435,21 @@ catcher ctx exception =
             Install _ -> exitWith (ExitFailure returnCode)
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitSuccess
+
+specialCommandWith :: XObj -> SymPath -> [XObj] -> StateT Context IO (Either EvalError XObj)
+specialCommandWith xobj path forms =
+  do ctx <- get
+     let pathStrings = contextPath ctx
+         env = contextGlobalEnv ctx
+         typeEnv = contextTypeEnv ctx
+         useThese = envUseModules env
+         env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
+         ctx' = ctx { contextGlobalEnv = env' }
+     ctxAfter <- liftIO $ foldM folder ctx' forms
+     let envAfter = contextGlobalEnv ctxAfter
+         ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
+     put ctxAfter'
+     return dynamicNil
 
 specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
 specialCommandDefine xobj =
@@ -537,21 +556,6 @@ specialCommandUse xobj path =
        Nothing ->
          return (evalError ctx ("Can't find a module named '" ++ show path ++ "'") (info xobj))
 
-specialCommandWith :: XObj -> SymPath -> [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandWith xobj path forms =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         useThese = envUseModules env
-         env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
-         ctx' = ctx { contextGlobalEnv = env' }
-     ctxAfter <- liftIO $ foldM folder ctx' forms
-     let envAfter = contextGlobalEnv ctxAfter
-         ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
-     put ctxAfter'
-     return dynamicNil
-
 -- | Get meta data for a Binder
 specialCommandMetaGet :: SymPath -> String -> StateT Context IO (Either EvalError XObj)
 specialCommandMetaGet path key =
@@ -568,8 +572,6 @@ specialCommandMetaGet path key =
                return dynamicNil
        Nothing ->
          return (evalError ctx ("Special command 'meta' failed, can't find '" ++ show path ++ "'") Nothing)
-
-
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
@@ -845,4 +847,7 @@ primitives = Map.fromList
   , makeVarPrim "defmodule" "(defmodule MyModule <expressions>)" primitiveDefmodule
   , makePrim "meta-set!" 3 "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
   , makePrim "definterface" 2 "(definterface myfunction MyType)" primitiveDefinterface
+  , makeVarPrim "register" "(register name <signature> <optional: override>)" primitiveRegister
+  , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
+  , makePrim "use" 1 "(use MyModule)" primitiveUse
   ]

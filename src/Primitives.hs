@@ -10,6 +10,7 @@ import Deftype
 import Emit
 import Lookup
 import Obj
+import Sumtypes
 import TypeError
 import Types
 import Util
@@ -392,3 +393,137 @@ primitiveDefinterface xobj _ [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ _)
 primitiveDefinterface _ _ [name, _] = do
   ctx <- get
   return (evalError ctx ("`definterface` expects a name as first argument, but got `" ++ pretty name ++ "`") (info name))
+
+registerInternal :: String -> XObj -> Maybe String -> StateT Context IO (Either EvalError XObj)
+registerInternal name ty override = do
+  ctx <- get
+  let pathStrings = contextPath ctx
+      fppl = projectFilePathPrintLength (contextProj ctx)
+      globalEnv = contextGlobalEnv ctx
+  case xobjToTy ty of
+        Just t ->
+          let path = SymPath pathStrings name
+              registration = XObj (Lst [XObj (External override) Nothing Nothing,
+                                        XObj (Sym path Symbol) Nothing Nothing])
+                             (info ty) (Just t)
+              meta = existingMeta globalEnv registration
+              env' = envInsertAt globalEnv path (Binder meta registration)
+          in  case registerInInterfaceIfNeeded ctx path t of
+                Left errorMessage ->
+                  return (makeEvalError ctx Nothing errorMessage (info ty))
+                Right ctx' ->
+                  do put (ctx' { contextGlobalEnv = env' })
+                     return dynamicNil
+        Nothing ->
+          return (evalError ctx
+            ("Can't understand type when registering '" ++ name ++ "'") (info ty))
+
+primitiveRegister :: Primitive
+primitiveRegister _ _ [XObj (Sym (SymPath _ name) _) _ _, ty] =
+  registerInternal name ty Nothing
+primitiveRegister _ _ [name, _] = do
+  ctx <- get
+  return (evalError ctx
+    ("`register` expects a name as first argument, but got `" ++ pretty name ++ "`")
+    (info name))
+primitiveRegister _ _ [XObj (Sym (SymPath _ name) _) _ _, ty, XObj (Str override) _ _] =
+  registerInternal name ty (Just override)
+primitiveRegister _ _ [XObj (Sym (SymPath _ name) _) _ _, _, override] = do
+  ctx <- get
+  return (evalError ctx
+    ("`register` expects a string as third argument, but got `" ++ pretty override ++ "`")
+    (info override))
+primitiveRegister _ _ [name, _, _] = do
+  ctx <- get
+  return (evalError ctx
+    ("`register` expects a name as first argument, but got `" ++ pretty name ++ "`")
+    (info name))
+primitiveRegister x _ _ = do
+  ctx <- get
+  return (evalError ctx
+    ("I didn’t understand the form `" ++ pretty x ++
+     "`.\n\nIs it valid? Every `register` needs to follow the form `(register name <signature> <optional: override>)`.")
+    (info x))
+
+primitiveDeftype :: Primitive
+primitiveDeftype xobj _ (name:rest) = do
+  ctx <- get
+  case rest of
+    (XObj (Arr a) _ _ : _) -> if all isUnqualifiedSym (map fst (members a))
+                             then deftype name
+                             else return (makeEvalError ctx Nothing (
+                                  "Type members must be unqualified symbols, but got `" ++
+                                  concatMap pretty rest ++ "`") (info xobj))
+                             where members (binding:val:xs) = (binding, val):members xs
+                                   members [] = []
+    _ -> deftype name
+  where deftype name@(XObj (Sym (SymPath _ ty) _) _ _) = deftype' name ty []
+        deftype (XObj (Lst (name@(XObj (Sym (SymPath _ ty) _) _ _) : tyvars)) _ _) =
+          deftype' name ty tyvars
+        deftype name = do
+          ctx <- get
+          return (evalError ctx
+                   ("Invalid name for type definition: " ++ pretty name)
+                   (info name))
+        deftype' :: XObj -> String -> [XObj] -> StateT Context IO (Either EvalError XObj)
+        deftype' nameXObj typeName typeVariableXObjs = do
+         ctx <- get
+         let pathStrings = contextPath ctx
+             fppl = projectFilePathPrintLength (contextProj ctx)
+             env = contextGlobalEnv ctx
+             typeEnv = contextTypeEnv ctx
+             typeVariables = mapM xobjToTy typeVariableXObjs
+             (preExistingModule, existingMeta) =
+               case lookupInEnv (SymPath pathStrings typeName) env of
+                 Just (_, Binder existingMeta (XObj (Mod found) _ _)) -> (Just found, existingMeta)
+                 Just (_, Binder existingMeta _) -> (Nothing, existingMeta)
+                 _ -> (Nothing, emptyMeta)
+             (creatorFunction, typeConstructor) =
+                if length rest == 1 && isArray (head rest)
+                then (moduleForDeftype, Deftype)
+                else (moduleForSumtype, DefSumtype)
+         case (nameXObj, typeVariables) of
+           (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
+             case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
+               Right (typeModuleName, typeModuleXObj, deps) ->
+                 let structTy = StructTy typeName okTypeVariables
+                     typeDefinition =
+                       -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
+                       XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :
+                                  XObj (Sym (SymPath pathStrings typeName) Symbol) Nothing Nothing :
+                                  rest)
+                            ) i (Just TypeTy)
+                     ctx' = (ctx { contextGlobalEnv = envInsertAt env (SymPath pathStrings typeModuleName) (Binder existingMeta typeModuleXObj)
+                                 , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) typeName typeDefinition)
+                                 })
+                 in do ctxWithDeps <- liftIO (foldM (define True) ctx' deps)
+                       let ctxWithInterfaceRegistrations =
+                             foldM (\context (path, sig) -> registerInInterfaceIfNeeded context path sig) ctxWithDeps
+                                   [(SymPath (pathStrings ++ [typeModuleName]) "str", FuncTy [RefTy structTy (VarTy "q")] StringTy StaticLifetimeTy)
+                                   ,(SymPath (pathStrings ++ [typeModuleName]) "copy", FuncTy [RefTy structTy (VarTy "q")] structTy StaticLifetimeTy)]
+                       case ctxWithInterfaceRegistrations of
+                         Left err -> liftIO (putStrLnWithColor Red err)
+                         Right ok -> put ok
+                       return dynamicNil
+               Left err ->
+                 return (makeEvalError ctx (Just err) ("Invalid type definition for '" ++ pretty nameXObj ++ "':\n\n" ++ show err) Nothing)
+           (_, Nothing) ->
+             return (makeEvalError ctx Nothing ("Invalid type variables for type definition: " ++ pretty nameXObj) (info nameXObj))
+
+primitiveUse :: Primitive
+primitiveUse xobj _ [XObj (Sym path _) _ _] = do
+  ctx <- get
+  let pathStrings = contextPath ctx
+      fppl = projectFilePathPrintLength (contextProj ctx)
+      env = contextGlobalEnv ctx
+      e = getEnv env pathStrings
+      useThese = envUseModules e
+      e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
+      innerEnv = getEnv env pathStrings -- Duplication of e?
+  case lookupInEnv path innerEnv of
+    Just (_, Binder _ _) ->
+      do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
+         return dynamicNil
+    Nothing ->
+      return (evalError ctx
+               ("Can't find a module named '" ++ show path ++ "'") (info xobj))
