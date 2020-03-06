@@ -61,7 +61,7 @@ expand eval env xobj =
              return $ do okValue <- expandedValue
                          Right (XObj (Lst [theExpr, typeXObj, okValue]) i t)
         (XObj The _ _ : _) ->
-            return (makeEvalError ctx Nothing ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
+            return (evalError ctx ("I didn’t understand the `the` at " ++ prettyInfoFromXObj xobj ++ ":\n\n" ++ pretty xobj ++ "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.") Nothing)
         [ifExpr@(XObj If _ _), condition, trueBranch, falseBranch] ->
           do expandedCondition <- expand eval env condition
              expandedTrueBranch <- expand eval env trueBranch
@@ -94,14 +94,13 @@ expand eval env xobj =
                   return $ do okBindings <- sequence bind
                               okBody <- expandedBody
                               Right (XObj (Lst [letExpr, XObj (Arr (concat okBindings)) bindi bindt, okBody]) i t)
-          else return (makeEvalError ctx Nothing (
+          else return (evalError ctx (
             "I ecountered an odd number of forms inside a `let` (`" ++
-            pretty xobj ++ "`)")
-            (info xobj))
+            pretty xobj ++ "`)") (info xobj))
 
         matchExpr@(XObj Match _ _) : (expr : rest)
           | null rest ->
-              return (makeEvalError ctx Nothing "I encountered a `match` without forms" (info xobj))
+              return (evalError ctx "I encountered a `match` without forms" (info xobj))
           | even (length rest) ->
               do expandedExpr <- expand eval env expr
                  expandedPairs <- mapM (\(l,r) -> do expandedR <- expand eval env r
@@ -111,9 +110,8 @@ expand eval env xobj =
                  return $ do okExpandedExpr <- expandedExpr
                              okExpandedRest <- expandedRest
                              return (XObj (Lst (matchExpr : okExpandedExpr : okExpandedRest)) i t)
-          | otherwise -> return (makeEvalError ctx Nothing
-                    "I encountered an odd number of forms inside a `match`"
-                    (info xobj))
+          | otherwise -> return (evalError ctx
+                    "I encountered an odd number of forms inside a `match`" (info xobj))
 
         doExpr@(XObj Do _ _) : expressions ->
           do expandedExpressions <- mapM (expand eval env) expressions
@@ -124,20 +122,16 @@ expand eval env xobj =
              return $ do okExpression <- expandedExpression
                          Right (XObj (Lst [withExpr, pathExpr , okExpression]) i t) -- Replace the with-expression with just the expression!
         [withExpr@(XObj With _ _), _, _] ->
-          return (makeEvalError ctx Nothing ("I encountered the value `" ++ pretty xobj ++
+          return (evalError ctx ("I encountered the value `" ++ pretty xobj ++
             "` inside a `with` at " ++ prettyInfoFromXObj xobj ++
-            ".\n\n`with` accepts only symbols.")
-            Nothing)
+            ".\n\n`with` accepts only symbols.") Nothing)
         XObj With _ _ : _ ->
-          return (makeEvalError ctx Nothing (
+          return (evalError ctx (
             "I encountered multiple forms inside a `with` at " ++
             prettyInfoFromXObj xobj ++
-            ".\n\n`with` accepts only one expression, except at the top level.")
-            Nothing)
+            ".\n\n`with` accepts only one expression, except at the top level.") Nothing)
         XObj Mod{} _ _ : _ ->
-          return (makeEvalError ctx Nothing ("I can’t evaluate the module `" ++
-                                             pretty xobj ++ "`")
-                                            (info xobj))
+          return (evalError ctx ("I can’t evaluate the module `" ++ pretty xobj ++ "`") (info xobj))
         f:args -> do expandedF <- expand eval env f
                      expandedArgs <- fmap sequence (mapM (expand eval env) args)
                      case expandedF of

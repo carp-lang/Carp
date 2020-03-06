@@ -314,12 +314,16 @@ prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
-data EvalError = EvalError String (Maybe Info) FilePathPrintLength deriving (Eq)
+data EvalError = EvalError String [XObj] FilePathPrintLength deriving (Eq)
 
 instance Show EvalError where
-  show (EvalError msg info fppl) = msg ++ getInfo info
+  show (EvalError msg trace@(XObj _ i _:_) fppl) = msg ++ getInfo i ++ getTrace
     where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
           getInfo Nothing = ""
+          getTrace =
+            "\n\nTraceback:\n" ++
+            unlines (map (\x -> pretty x ++ getInfo (info x)) trace)
+  show (EvalError msg [] fppl) = msg
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
@@ -787,11 +791,20 @@ data Context = Context { contextGlobalEnv :: Env
                        , contextProj :: Project
                        , contextLastInput :: String
                        , contextExecMode :: ExecutionMode
+                       , contextHistory :: ![XObj]
                        } deriving Show
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
 
+pushFrame :: Context -> XObj -> Context
+pushFrame ctx x = ctx { contextHistory = x:contextHistory ctx }
+
+popFrame :: Context -> Context
+popFrame ctx@Context{contextHistory=[]}= ctx
+popFrame ctx@Context{contextHistory=(_:rest)}= ctx { contextHistory = rest }
+
+-- | Unwrapping of XObj:s
 -- | Unwrapping of XObj:s
 
 -- | String

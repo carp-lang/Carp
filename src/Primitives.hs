@@ -37,7 +37,7 @@ makePrim' name maybeArity example callback =
         err :: XObj -> Int -> Int -> StateT Context IO (Either EvalError XObj)
         err x a l = do
           ctx <- get
-          return (makeEvalError ctx Nothing (
+          return (evalError ctx (
             "The primitive `" ++ name ++ "` expected " ++ show a ++
             " arguments, but got " ++ show l ++ ".\n\nExample Usage:\n```\n" ++
             example ++ "\n```\n") (info x))
@@ -48,7 +48,7 @@ primitiveFile x@(XObj _ i t) _ [XObj _ mi _] = do
   case mi of
     Just info -> return (Right (XObj (Str (infoFile info)) i t))
     Nothing ->
-      return (makeEvalError ctx Nothing ("No information about object " ++ pretty x) (info x))
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 
 primitiveLine :: Primitive
 primitiveLine x@(XObj _ i t) _ [XObj _ mi _] = do
@@ -56,7 +56,7 @@ primitiveLine x@(XObj _ i t) _ [XObj _ mi _] = do
   case mi of
     Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
     Nothing ->
-      return (makeEvalError ctx Nothing ("No information about object " ++ pretty x) (info x))
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 
 primitiveColumn :: Primitive
 primitiveColumn x@(XObj _ i t) _ [XObj _ mi _] = do
@@ -64,7 +64,7 @@ primitiveColumn x@(XObj _ i t) _ [XObj _ mi _] = do
   case mi of
     Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
     Nothing ->
-      return (makeEvalError ctx Nothing ("No information about object " ++ pretty x) (info x))
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 
 registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
 registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
@@ -93,7 +93,7 @@ registerDefnOrDefInInterfaceIfNeeded ctx xobj =
     _ -> return ctx
 
 define :: Bool -> Context -> XObj -> IO Context
-define hidden ctx@(Context globalEnv typeEnv _ proj _ _) annXObj =
+define hidden ctx@(Context globalEnv typeEnv _ proj _ _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
           Just (_, Binder _ found) -> ty found
@@ -141,8 +141,8 @@ primitiveRegisterType _ e [XObj (Sym (SymPath [] t) _) _ _] = do
   return dynamicNil
 primitiveRegisterType _ _ [x] = do
   ctx <- get
-  return (makeEvalError ctx Nothing ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
-primitiveRegisterType _ _ (XObj (Sym (SymPath [] t) _) _ _:members) = do
+  return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
+primitiveRegisterType _ _ (x@(XObj (Sym (SymPath [] t) _) _ _):members) = do
   ctx <- get
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
@@ -152,7 +152,7 @@ primitiveRegisterType _ _ (XObj (Sym (SymPath [] t) _) _ _:members) = do
                             Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                             _ -> Nothing
   case bindingsForRegisteredType typeEnv globalEnv pathStrings t members Nothing preExistingModule of
-    Left err -> return (makeEvalError ctx (Just err) (show err) Nothing)
+    Left err -> return (makeEvalError ctx (Just err) (show err) (info x))
     Right (typeModuleName, typeModuleXObj, deps) -> do
       let typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
           ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
@@ -165,7 +165,7 @@ primitiveRegisterType _ _ (XObj (Sym (SymPath [] t) _) _ _:members) = do
 notFound :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
 notFound x path = do
   ctx <- get
-  return (makeEvalError ctx Nothing ("I can’t find the symbol `" ++ show path ++ "`") (info x))
+  return (evalError ctx ("I can’t find the symbol `" ++ show path ++ "`") (info x))
 
 primitiveInfo :: Primitive
 primitiveInfo _ env [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
@@ -233,18 +233,14 @@ primitiveDefndynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body] =
   dynamicOrMacro Dynamic DynamicTy name params body
 primitiveDefndynamic _ _ [notName, params, body] = do
   ctx <- get
-  return (makeEvalError ctx Nothing (
-    "`defndynamic` expected a name as first argument, but got " ++ pretty notName)
-    (info notName))
+  return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
 primitiveDefmacro :: Primitive
 primitiveDefmacro _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body]=
   dynamicOrMacro Macro MacroTy name params body
 primitiveDefmacro _ _ [notName, params, body] = do
   ctx <- get
-  return (makeEvalError ctx Nothing (
-    "`defmacro` expected a name as first argument, but got " ++ pretty notName)
-    (info notName))
+  return (evalError ctx ("`defmacro` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList

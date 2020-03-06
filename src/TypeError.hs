@@ -154,9 +154,11 @@ instance Show TypeError where
     "I found the following holes:\n\n    " ++
     joinWith "\n    " (map (\(name, t) -> name ++ " : " ++ show t) holes) ++
     "\n"
-  show (FailedToExpand xobj err@EvalError{}) =
+  show (FailedToExpand xobj err@(EvalError _ hist _)) =
     "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++
-    ".\n\nThe error message I got was: " ++ show err
+    ".\n\nThe error message I got was: " ++ show err ++
+    "\nTraceback:\n" ++
+    unlines (map pretty hist)
   show (NotAValidType xobj) =
     pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
@@ -382,10 +384,14 @@ showTypeFromXObj mappings xobj =
     Just t -> show (recursiveLookupTy mappings t)
     Nothing -> "Type missing"
 
+evalError :: Context -> String -> Maybe Info -> Either EvalError a
+evalError ctx msg i = makeEvalError ctx Nothing msg i
+
 -- | Print type errors correctly when running the compiler in 'Check' mode
 makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> Either EvalError a
 makeEvalError ctx err msg info =
   let fppl = projectFilePathPrintLength (contextProj ctx)
+      history = contextHistory ctx
   in case contextExecMode ctx of
        Check -> let messageWhenChecking = case err of
                                             Just okErr -> joinedMachineReadableErrorStrings fppl okErr
@@ -393,5 +399,5 @@ makeEvalError ctx err msg info =
                                               case info of
                                                 Just okInfo -> machineReadableInfo fppl okInfo ++ " " ++ msg
                                                 Nothing -> msg
-                in  Left (EvalError messageWhenChecking Nothing fppl) -- Passing no info to avoid appending it at the end in 'show' instance for EvalError
-       _ ->  Left (EvalError msg info fppl)
+                in  Left (EvalError messageWhenChecking [] fppl) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
+       _ ->  Left (EvalError msg history fppl)

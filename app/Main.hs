@@ -71,10 +71,11 @@ main = do setLocaleEncoding utf8
               startingContext = Context
                                  (startingGlobalEnv noArray)
                                  (TypeEnv startingTypeEnv)
-                                  []
-                                  projectWithCustomPrompt
-                                  ""
-                                  execMode
+                                 []
+                                 projectWithCustomPrompt
+                                 ""
+                                 execMode
+                                 []
           context <- loadFiles startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
