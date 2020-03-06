@@ -33,6 +33,8 @@ import Concretize
 import Path
 import Primitives
 
+import Debug.Trace
+
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
 eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
 eval env xobj@(XObj o i t) =
@@ -117,86 +119,72 @@ eval env xobj@(XObj o i t) =
         if all isUnqualifiedSym a
         then return (Right (XObj (Closure (XObj (Lst l) i t) (CEnv env)) i t))
         else return (makeEvalError ctx Nothing ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info xobj))
-      x@(XObj sym@(Sym s _) _ _):args ->
+      (XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) i _):args -> do
+        ctx <- get
+        case checkArity params args of
+          Left err ->
+            return (makeEvalError ctx Nothing err i)
+          Right () ->
+            do evaledArgs <- fmap sequence (mapM (eval env) args)
+               case evaledArgs of
+                 Right okArgs -> apply e body params okArgs
+                 Left err -> return (Left err)
+      (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) i _):args -> do
+        ctx <- get
+        case checkArity params args of
+          Left err ->
+            return (makeEvalError ctx Nothing err i)
+          Right () ->
+            do evaledArgs <- fmap sequence (mapM (eval env) args)
+               case evaledArgs of
+                 Right okArgs -> apply env body params okArgs
+                 Left err -> return (Left err)
+      (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _):args -> do
+        ctx <- get
+        case checkArity params args of
+          Left err ->
+            return (makeEvalError ctx Nothing err i)
+          Right () ->
+            -- Replace info so that the macro which is called gets the source location info of the expansion site.
+            --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
+            -- TODO: fix expansion here
+            apply env body params args
+      (XObj (Lst [XObj (Command callback) _ _, _]) _ _):args ->
+        do evaledArgs <- fmap sequence (mapM (eval env) args)
+           case evaledArgs of
+             Right okArgs -> getCommand callback okArgs
+             Left err -> return (Left err)
+      l@(XObj (Lst _) i t):args -> do
+        f <- eval env l
+        case f of
+           Right fun -> eval env (XObj (Lst (fun:args)) i t)
+           x -> return x
+      x@(XObj sym@(Sym s _) i _):args ->
         case Map.lookup s primitives of
           Just prim -> prim x env args
           Nothing -> do
-            ctx <- get
             f <- eval env x
             case f of
-               Right (XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) _ _) ->
-                 case checkArity sym params args of
-                   Left err ->
-                     return (makeEvalError ctx Nothing err (info x))
-                   Right () ->
-                     do evaledArgs <- fmap sequence (mapM (eval env) args)
-                        case evaledArgs of
-                          Right okArgs -> apply e body params okArgs
-                          Left err -> return (Left err)
-
-               Right (XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                 case checkArity sym params args of
-                   Left err ->
-                     return (makeEvalError ctx Nothing err (info x))
-                   Right () ->
-                     do evaledArgs <- fmap sequence (mapM (eval env) args)
-                        case evaledArgs of
-                          Right okArgs -> apply env body params okArgs
-                          Left err -> return (Left err)
-
-               Right (XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) _ _) ->
-                 case checkArity sym params args of
-                   Left err ->
-                     return (makeEvalError ctx Nothing err (info x))
-                   Right () ->
-                     -- Replace info so that the macro which is called gets the source location info of the expansion site.
-                     --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
-                     -- TODO: fix expansion here
-                     apply env body params args
-
-               Right (XObj (Lst [XObj (Command callback) _ _, _]) _ _) ->
-                 do evaledArgs <- fmap sequence (mapM (eval env) args)
-                    case evaledArgs of
-                      Right okArgs -> getCommand callback okArgs
-                      Left err -> return (Left err)
-               Right val ->
-                 return (makeEvalError ctx Nothing
-                          ("You are trying to call a non-callable `" ++ show s ++ "`.")
-                          (info x))
-               Left err -> return (Left err)
-
-      l@(XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _):args -> do
-        ctx <- get
-        f <- eval env l
-        case f of
-           Right (XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) _ _) ->
-             case checkArity (pretty l) params args of
-               Left err ->
-                 return (makeEvalError ctx Nothing err (info l))
-               Right () ->
-                 do evaledArgs <- fmap sequence (mapM (eval env) args)
-                    case evaledArgs of
-                      Right okArgs -> apply e body params okArgs
-                      Left err -> return (Left err)
-           x -> return x
+              Right fun -> eval env (XObj (Lst (fun:args)) i t)
+              Left err -> return (Left err)
       x -> do
         ctx <- get
         return (makeEvalError ctx Nothing
                  ("I did not understand the form `" ++ show x ++ "`.")
                  (info xobj))
-    checkArity s params args =
+    checkArity params args =
       let la = length args
           lp = length params
       in if lp == la
          then Right ()
          else if la < lp
-              then Left ("`" ++ show s ++ "` expects " ++ show lp ++
-                         " but received only " ++ show la ++
+              then Left ("expected " ++ show lp ++
+                         " arguments but received only " ++ show la ++
                          ".\n\nYou’ll have to provide " ++
                          intercalate ", " (map pretty (drop la params)) ++
                          " as well.")
-              else Left ("`" ++ show s ++ "` expects " ++ show lp ++
-                         " but received " ++ show la ++ ".\n\nThe arguments " ++
+              else Left ("expected " ++ show lp ++ " arguments, but received " ++
+                         show la ++ ".\n\nThe arguments " ++
                          intercalate ", " (map pretty (drop lp args)) ++
                          " are not needed.")
 
