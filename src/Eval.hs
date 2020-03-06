@@ -205,15 +205,25 @@ eval env xobj@(XObj o i t) = do
                   Right okArgs -> apply env body params okArgs
                   Left err -> return (Left err)
 
-       XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _:args ->
+       XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _:args -> do
+         put (pushFrame ctx xobj)
          case checkArity params args of
-           Left err ->
+           Left err -> do
+             put ctx
              return (evalError ctx err i)
-           Right () ->
+           Right () -> do
              -- Replace info so that the macro which is called gets the source location info of the expansion site.
              --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
-             -- TODO: fix expansion here
-             apply env body params args
+             res <- apply env body params args
+             case res of
+              Right xobj -> do
+                end <- eval env xobj
+                newCtx <- get
+                put (popFrame newCtx)
+                return res
+              Left err -> do
+                put ctx
+                return (Left err)
 
        XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
          do evaledArgs <- fmap sequence (mapM (eval env) args)
@@ -264,8 +274,9 @@ eval env xobj@(XObj o i t) = do
          return (evalError ctx ("I did not understand the form `" ++ show x ++ "`.") (info xobj))
     checkArity params args =
       let la = length args
-          lp = length params
-      in if lp == la
+          withRest = any ((":rest" ==) . getName) params
+          lp = length params - (if withRest then 2 else 0)
+      in if lp == la  || (withRest && la >= lp)
          then Right ()
          else if la < lp
               then Left ("expected " ++ show lp ++
