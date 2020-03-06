@@ -10,6 +10,7 @@ import System.Console.Haskeline ( getInputLine
                                 )
 import Data.List (isPrefixOf)
 import Control.Monad.IO.Class (liftIO)
+import System.Exit (exitSuccess)
 
 import Types
 import Obj
@@ -82,7 +83,9 @@ repl context readSoFar =
   do let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
      input <- getInputLine prompt
      case input of
-        Nothing -> return context
+        Nothing -> do
+          liftIO exitSuccess
+          return context
         Just i -> do
           let concat = readSoFar ++ i ++ "\n"
           case balance concat of
