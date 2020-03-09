@@ -90,10 +90,14 @@ specialCommands = Map.fromList
   , ('p', "project")
   , ('q', "quit")
   , ('t', "type")
+  , ('m', "expand")
   ]
 
+rewriteError :: String -> String
+rewriteError msg = "(macro-error \"" ++ msg ++ "\")"
+
 treatSpecialInput :: String -> String
-treatSpecialInput ":" = "(macro-error \"Unfinished special command :\")"
+treatSpecialInput ":\n" = rewriteError "Unfinished special command"
 treatSpecialInput (':':rest) =
   let cmdAndArgs = words rest
       cmd = head cmdAndArgs
@@ -103,11 +107,11 @@ treatSpecialInput (':':rest) =
      else
        if null args
        then "(do " ++ unwords (map (makeCommand []) cmd) ++ ")"
-       else "(macro-error \"Can’t have grouped special command with arguments.\")"
+       else rewriteError "Can’t have grouped special command with arguments"
   where makeCommand args cmd =
          case Map.lookup cmd specialCommands of
            Just command -> "(" ++ command ++ " " ++ unwords args ++ ")"
-           Nothing -> "(macro-error \"Unknown special command: :" ++ [cmd] ++ "\")"
+           Nothing -> rewriteError ("Unknown special command: :" ++ [cmd])
 treatSpecialInput arg = arg
 
 repl :: Context -> String -> InputT IO Context
