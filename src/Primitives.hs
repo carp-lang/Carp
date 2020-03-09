@@ -29,6 +29,13 @@ makeVarPrim :: String -> String -> Primitive -> (SymPath, Primitive)
 makeVarPrim name example callback =
   makePrim' name Nothing example callback
 
+argumentErr :: String -> String -> String -> XObj -> StateT Context IO (Either EvalError XObj)
+argumentErr fun ty number actual = do
+  ctx <- get
+  return (evalError ctx (
+            "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number ++
+            " argument, but got `" ++ pretty actual ++ "`") (info actual))
+
 makePrim' :: String -> Maybe Int -> String -> Primitive -> (SymPath, Primitive)
 makePrim' name maybeArity example callback =
   let path = SymPath [] name
@@ -273,16 +280,14 @@ dynamicOrMacro pat ty name params body =
 primitiveDefndynamic :: Primitive
 primitiveDefndynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body] =
   dynamicOrMacro Dynamic DynamicTy name params body
-primitiveDefndynamic _ _ [notName, params, body] = do
-  ctx <- get
-  return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
+primitiveDefndynamic _ _ [notName, params, body] =
+  argumentErr "defndynamic" "a name" "first" notName
 
 primitiveDefmacro :: Primitive
 primitiveDefmacro _ _ [XObj (Sym (SymPath [] name) _) _ _, params, body] =
   dynamicOrMacro Macro MacroTy name params body
-primitiveDefmacro _ _ [notName, params, body] = do
-  ctx <- get
-  return (evalError ctx ("`defmacro` expected a name as first argument, but got " ++ pretty notName) (info notName))
+primitiveDefmacro _ _ [notName, params, body] =
+  argumentErr "defmacro" "a name" "first" notName
 
 primitiveType :: Primitive
 primitiveType _ _ [x@(XObj (Sym path@(SymPath [] name) _) _ _)] = do
@@ -383,12 +388,10 @@ primitiveMetaSet _ env [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
                   newEnv = envInsertAt globalEnv xobjPath newBinder
               put (ctx { contextGlobalEnv = newEnv })
               return dynamicNil
-primitiveMetaSet _ _ [(XObj (Sym _ _) _ _), key, _] = do
-  ctx <- get
-  return (evalError ctx ("`meta-set!` expected a string as its second argument, but got `" ++ pretty key ++ "`") (info key))
-primitiveMetaSet _ _ [target, _, _] = do
-  ctx <- get
-  return (evalError ctx ("`meta-set!` expected a symbol as its first argument, but got `" ++ pretty target ++ "`") (info target))
+primitiveMetaSet _ _ [(XObj (Sym _ _) _ _), key, _] =
+  argumentErr "meta-set!" "a string" "second" key
+primitiveMetaSet _ _ [target, _, _] =
+  argumentErr "meta-set!" "a symbol" "first" target
 
 registerInterfaceFunctions :: String -> Ty -> StateT Context IO ()
 registerInterfaceFunctions name t = do
@@ -563,3 +566,34 @@ primitiveUse xobj _ [XObj (Sym path _) _ _] = do
     Nothing ->
       return (evalError ctx
                ("Can't find a module named '" ++ show path ++ "'") (info xobj))
+
+-- | Get meta data for a Binder
+primitiveMeta :: Primitive
+primitiveMeta (XObj _ i _) _ [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
+  ctx <- get
+  let pathStrings = contextPath ctx
+      fppl = projectFilePathPrintLength (contextProj ctx)
+      globalEnv = contextGlobalEnv ctx
+  case lookupInEnv (consPath pathStrings path) globalEnv of
+    Just (_, Binder metaData _) ->
+        case Map.lookup key (getMeta metaData) of
+          Just foundValue ->
+            return (Right foundValue)
+          Nothing ->
+            return dynamicNil
+    Nothing ->
+      return (evalError ctx
+                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
+                        i)
+primitiveMeta _ _ [XObj (Sym path _) _ _, key@(XObj _ i _)] =
+  argumentErr "meta" "a string" "second" key
+primitiveMeta _ _ [path@(XObj _ i _), _] = do
+  argumentErr "meta" "a symbol" "first" path
+
+primitiveDefined :: Primitive
+primitiveDefined _ env [XObj (Sym path _) _ _] =
+  case lookupInEnv path env of
+    Just found -> return (Right trueXObj)
+    Nothing -> return (Right falseXObj)
+primitiveDefined _ _ [arg] =
+  argumentErr "defined" "a symbol" "first" arg

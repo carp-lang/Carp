@@ -87,14 +87,14 @@ main = do setLocaleEncoding utf8
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
                        runRepl finalContext
-            Build -> do _ <- executeString True False finalContext ":b" "Compiler (Build)"
+            Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
                         return ()
             Install thing ->
               do _ <- executeString True False finalContext
                       ("(load \"" ++ thing ++ "\")")
                       "Installation"
                  return ()
-            BuildAndRun -> do _ <- executeString True False finalContext ":bx" "Compiler (Build & Run)"
+            BuildAndRun -> do _ <- executeString True False finalContext "(do (build) (run))" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
             Check -> return ()

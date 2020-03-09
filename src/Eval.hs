@@ -379,27 +379,6 @@ reportExecutionError ctx errorMessage =
       do putStrLnWithColor Red errorMessage
          throw CancelEvaluationException
 
--- | Call a CommandCallback.
-callCallbackWithArgs :: Context -> CommandCallback -> [XObj] -> IO Context
-callCallbackWithArgs ctx callback args =
-  do (ret, newCtx) <- runStateT (callback args) ctx
-     let fppl = projectFilePathPrintLength (contextProj newCtx)
-     case ret of
-       Left err -> throw (EvalException err)
-       Right _ -> return newCtx
-
--- | Generate commands from shortcut characters (i.e. 'b' = build)
-charToCommand :: Char -> Maybe CommandCallback
-charToCommand 'x' = Just commandRunExe
-charToCommand 'r' = Just commandReload
-charToCommand 'b' = Just (commandBuild False)
-charToCommand 'c' = Just commandCat
-charToCommand 'e' = Just commandListBindings
-charToCommand 'h' = Just commandHelp
-charToCommand 'p' = Just commandProject
-charToCommand 'q' = Just commandQuit
-charToCommand _   = Just (\_ -> return dynamicNil)
-
 -- | Decides what to do when the evaluation fails for some reason.
 catcher :: Context -> CarpException -> IO Context
 catcher ctx exception =
@@ -519,37 +498,6 @@ primitiveDefmodule xobj env (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpre
   case result of
     Left err -> return (Left err)
     Right _ -> return dynamicNil
-
--- | Get meta data for a Binder
-primitiveMeta :: Primitive
-primitiveMeta (XObj _ i _) _ [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
-  ctx <- get
-  let pathStrings = contextPath ctx
-      fppl = projectFilePathPrintLength (contextProj ctx)
-      globalEnv = contextGlobalEnv ctx
-  case lookupInEnv (consPath pathStrings path) globalEnv of
-    Just (_, Binder metaData _) ->
-        case Map.lookup key (getMeta metaData) of
-          Just foundValue ->
-            return (Right foundValue)
-          Nothing ->
-            return dynamicNil
-    Nothing ->
-      return (evalError ctx
-                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
-                        i)
-primitiveMeta _ _ [XObj (Sym path _) _ _, key@(XObj _ i _)] = do
-  ctx <- get
-  return (evalError
-           ctx
-           ("`meta` expected a string as a second argument, but got `" ++ pretty key ++ "`")
-           i)
-primitiveMeta _ _ [path@(XObj _ i _), _] = do
-  ctx <- get
-  return (evalError
-           ctx
-           ("`meta` expected a symbol as a first argument, but got `" ++ pretty path ++ "`")
-           i)
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
@@ -690,13 +638,16 @@ commandLoad [x] = do
   ctx <- get
   return $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (info x)
 
-
 -- | Load several files in order.
 loadFiles :: Context -> [FilePath] -> IO Context
 loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
   where folder :: Context -> FilePath -> IO Context
-        folder ctx file =
-          callCallbackWithArgs ctx commandLoad [XObj (Str file) Nothing Nothing]
+        folder ctx file = do
+         (ret, newCtx) <- runStateT (commandLoad [XObj (Str file) Nothing Nothing]) ctx
+         let fppl = projectFilePathPrintLength (contextProj newCtx)
+         case ret of
+           Left err -> throw (EvalException err)
+           Right _ -> return newCtx
 
 -- | Command for reloading all files in the project (= the files that has been loaded before).
 commandReload :: CommandCallback
@@ -838,4 +789,5 @@ primitives = Map.fromList
   , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
   , makePrim "use" 1 "(use MyModule)" primitiveUse
   , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
+  , makePrim "defined?" 1 "(evaluate mycode)" primitiveEval
   ]
