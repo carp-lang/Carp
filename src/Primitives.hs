@@ -49,28 +49,64 @@ makePrim' name maybeArity example callback =
             example ++ "\n```\n") (info x))
 
 primitiveFile :: Primitive
+primitiveFile x@(XObj _ i t) _ [] = do
+  ctx <- get
+  case i of
+    Just info -> return (Right (XObj (Str (infoFile info)) i t))
+    Nothing ->
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveFile x@(XObj _ i t) _ [XObj _ mi _] = do
   ctx <- get
   case mi of
     Just info -> return (Right (XObj (Str (infoFile info)) i t))
     Nothing ->
       return (evalError ctx ("No information about object " ++ pretty x) (info x))
+primitiveFile x@(XObj _ i t) _ args = do
+  ctx <- get
+  return (
+    evalError ctx
+      ("`file` expected 0 or 1 arguments, but got " ++ show (length args))
+      (info x))
 
 primitiveLine :: Primitive
+primitiveLine x@(XObj _ i t) _ [] = do
+  ctx <- get
+  case i of
+    Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
+    Nothing ->
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveLine x@(XObj _ i t) _ [XObj _ mi _] = do
   ctx <- get
   case mi of
     Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoLine info))) i t))
     Nothing ->
       return (evalError ctx ("No information about object " ++ pretty x) (info x))
+primitiveLine x@(XObj _ i t) _ args = do
+  ctx <- get
+  return (
+    evalError ctx
+      ("`line` expected 0 or 1 arguments, but got " ++ show (length args))
+      (info x))
 
 primitiveColumn :: Primitive
+primitiveColumn x@(XObj _ i t) _ [] = do
+  ctx <- get
+  case i of
+    Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
+    Nothing ->
+      return (evalError ctx ("No information about object " ++ pretty x) (info x))
 primitiveColumn x@(XObj _ i t) _ [XObj _ mi _] = do
   ctx <- get
   case mi of
     Just info -> return (Right (XObj (Num IntTy (fromIntegral (infoColumn info))) i t))
     Nothing ->
       return (evalError ctx ("No information about object " ++ pretty x) (info x))
+primitiveColumn x@(XObj _ i t) _ args = do
+  ctx <- get
+  return (
+    evalError ctx
+      ("`column` expected 0 or 1 arguments, but got " ++ show (length args))
+      (info x))
 
 registerInInterfaceIfNeeded :: Context -> SymPath -> Ty -> Either String Context
 registerInInterfaceIfNeeded ctx path@(SymPath _ name) definitionSignature =
