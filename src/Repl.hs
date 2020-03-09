@@ -11,6 +11,7 @@ import System.Console.Haskeline ( getInputLine
 import Data.List (isPrefixOf)
 import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
+import qualified Data.Map as Map
 
 import Types
 import Obj
@@ -78,6 +79,37 @@ readlineSettings words = do
     autoAddHistory = True
   }
 
+specialCommands :: Map.Map Char String
+specialCommands = Map.fromList
+  [ ('x', "run")
+  , ('r', "reload")
+  , ('b', "build")
+  , ('c', "cat")
+  , ('e', "env")
+  , ('h', "help")
+  , ('p', "project")
+  , ('q', "quit")
+  , ('t', "type")
+  ]
+
+treatSpecialInput :: String -> String
+treatSpecialInput ":" = "(macro-error \"Unfinished special command :\")"
+treatSpecialInput (':':rest) =
+  let cmdAndArgs = words rest
+      cmd = head cmdAndArgs
+      args = tail cmdAndArgs
+  in if length cmd == 1
+     then makeCommand args (head cmd)
+     else
+       if null args
+       then "(do " ++ unwords (map (makeCommand []) cmd) ++ ")"
+       else "(macro-error \"Can’t have grouped special command with arguments.\")"
+  where makeCommand args cmd =
+         case Map.lookup cmd specialCommands of
+           Just command -> "(" ++ command ++ " " ++ unwords args ++ ")"
+           Nothing -> "(macro-error \"Unknown special command: :" ++ [cmd] ++ "\")"
+treatSpecialInput arg = arg
+
 repl :: Context -> String -> InputT IO Context
 repl context readSoFar =
   do let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
@@ -90,7 +122,7 @@ repl context readSoFar =
           let concat = readSoFar ++ i ++ "\n"
           case balance concat of
             0 -> do let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
-                    context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) input' "REPL"
+                    context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
                     return $ context' { contextLastInput = input' }
             _ -> repl context concat
 
