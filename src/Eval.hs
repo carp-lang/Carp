@@ -520,39 +520,36 @@ primitiveDefmodule xobj env (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpre
     Left err -> return (Left err)
     Right _ -> return dynamicNil
 
-specialCommandUse :: XObj -> SymPath -> StateT Context IO (Either EvalError XObj)
-specialCommandUse xobj path =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         env = contextGlobalEnv ctx
-         e = getEnv env pathStrings
-         useThese = envUseModules e
-         e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
-         innerEnv = getEnv env pathStrings -- Duplication of e?
-     case lookupInEnv path innerEnv of
-       Just (_, Binder _ _) ->
-         do put $ ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }
-            return dynamicNil
-       Nothing ->
-         return (evalError ctx ("Can't find a module named '" ++ show path ++ "'") (info xobj))
-
 -- | Get meta data for a Binder
-specialCommandMetaGet :: SymPath -> String -> StateT Context IO (Either EvalError XObj)
-specialCommandMetaGet path key =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         fppl = projectFilePathPrintLength (contextProj ctx)
-         globalEnv = contextGlobalEnv ctx
-     case lookupInEnv (consPath pathStrings path) globalEnv of
-       Just (_, Binder metaData _) ->
-           case Map.lookup key (getMeta metaData) of
-             Just foundValue ->
-               return (Right foundValue)
-             Nothing ->
-               return dynamicNil
-       Nothing ->
-         return (evalError ctx ("Special command 'meta' failed, can't find '" ++ show path ++ "'") Nothing)
+primitiveMeta :: Primitive
+primitiveMeta (XObj _ i _) _ [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
+  ctx <- get
+  let pathStrings = contextPath ctx
+      fppl = projectFilePathPrintLength (contextProj ctx)
+      globalEnv = contextGlobalEnv ctx
+  case lookupInEnv (consPath pathStrings path) globalEnv of
+    Just (_, Binder metaData _) ->
+        case Map.lookup key (getMeta metaData) of
+          Just foundValue ->
+            return (Right foundValue)
+          Nothing ->
+            return dynamicNil
+    Nothing ->
+      return (evalError ctx
+                        ("`meta` failed, I can’t find `" ++ show path ++ "`")
+                        i)
+primitiveMeta _ _ [XObj (Sym path _) _ _, key@(XObj _ i _)] = do
+  ctx <- get
+  return (evalError
+           ctx
+           ("`meta` expected a string as a second argument, but got `" ++ pretty key ++ "`")
+           i)
+primitiveMeta _ _ [path@(XObj _ i _), _] = do
+  ctx <- get
+  return (evalError
+           ctx
+           ("`meta` expected a symbol as a first argument, but got `" ++ pretty path ++ "`")
+           i)
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
@@ -835,6 +832,7 @@ primitives = Map.fromList
   , makePrim "members" 1 "(type mysymbol)" primitiveMembers
   , makeVarPrim "defmodule" "(defmodule MyModule <expressions>)" primitiveDefmodule
   , makePrim "meta-set!" 3 "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
+  , makePrim "meta" 2 "(meta mysymbol \"mykey\")" primitiveMeta
   , makePrim "definterface" 2 "(definterface myfunction MyType)" primitiveDefinterface
   , makeVarPrim "register" "(register name <signature> <optional: override>)" primitiveRegister
   , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
