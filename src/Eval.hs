@@ -839,6 +839,14 @@ primitiveDefdynamic _ _ [notName, body] = do
   ctx <- get
   return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
+primitiveEval :: Primitive
+primitiveEval _ env [val] = do
+  -- primitives don’t evaluate their arguments, so this needs to double-evaluate
+  arg <- eval env val
+  case arg of
+    Left err -> return (Left err)
+    Right ok -> eval env ok
+
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList
   [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ _ [x] -> return (Right x))
@@ -858,4 +866,5 @@ primitives = Map.fromList
   , makeVarPrim "register" "(register name <signature> <optional: override>)" primitiveRegister
   , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
   , makePrim "use" 1 "(use MyModule)" primitiveUse
+  , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
   ]
