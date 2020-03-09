@@ -442,7 +442,7 @@ tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing N
 tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
 tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -463,7 +463,7 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
 
-data ClosureEnv = CEnv Env
+newtype ClosureEnv = CEnv Env
   deriving (Show)
 
 instance Eq ClosureEnv where

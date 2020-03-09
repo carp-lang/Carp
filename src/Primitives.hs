@@ -237,30 +237,31 @@ primitiveInfo _ env [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
           case binderPair of
            Just (_, binder@(Binder metaData x@(XObj _ (Just i) _))) ->
              do liftIO $ putStrLn (show binder ++ "\nDefined at " ++ prettyInfo i)
-                case Map.lookup "doc" (getMeta metaData) of
-                  Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
-                  Nothing -> return ()
-                liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-                return dynamicNil
+                printDoc metaData proj x
            Just (_, binder@(Binder metaData x)) ->
              do liftIO $ print binder
-                case Map.lookup "doc" (getMeta metaData) of
-                  Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
-                  Nothing -> return ()
-                liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
-                return dynamicNil
-           Nothing ->
-             if allowLookupInALL
-             then case multiLookupALL name env of
-                   [] -> if errNotFound then notFound target path else return dynamicNil
-                   binders -> do
-                     liftIO$ mapM_ (\(env, binder@(Binder _ (XObj _ i _))) ->
-                              case i of
-                                Just i' -> putStrLnWithColor White (show binder ++ " Defined at " ++ prettyInfo i')
-                                Nothing -> putStrLnWithColor White (show binder))
-                           binders
-                     return dynamicNil
-            else if errNotFound then notFound target path else return dynamicNil
+                printDoc metaData proj x
+           Nothing | allowLookupInALL ->
+            case multiLookupALL name env of
+                [] -> if errNotFound then notFound target path else
+                        return dynamicNil
+                binders -> do liftIO $
+                                mapM_
+                                  (\ (env, binder@(Binder _ (XObj _ i _))) ->
+                                     case i of
+                                         Just i' -> putStrLnWithColor White
+                                                      (show binder ++ " Defined at " ++ prettyInfo i')
+                                         Nothing -> putStrLnWithColor White (show binder))
+                                  binders
+                              return dynamicNil
+                   | errNotFound -> notFound target path
+                   | otherwise -> return dynamicNil
+        printDoc metaData proj x = do
+          case Map.lookup "doc" (getMeta metaData) of
+            Just (XObj (Str val) _ _) -> liftIO $ putStrLn ("Documentation: " ++ val)
+            Nothing -> return ()
+          liftIO $ when (projectPrintTypedAST proj) $ putStrLnWithColor Yellow (prettyTyped x)
+          return dynamicNil
 
 dynamicOrMacroWith :: (SymPath -> [XObj]) -> Ty -> String -> XObj -> StateT Context IO (Either EvalError XObj)
 dynamicOrMacroWith producer ty name body =
@@ -388,7 +389,7 @@ primitiveMetaSet _ env [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
                   newEnv = envInsertAt globalEnv xobjPath newBinder
               put (ctx { contextGlobalEnv = newEnv })
               return dynamicNil
-primitiveMetaSet _ _ [(XObj (Sym _ _) _ _), key, _] =
+primitiveMetaSet _ _ [XObj (Sym _ _) _ _, key, _] =
   argumentErr "meta-set!" "a string" "second" key
 primitiveMetaSet _ _ [target, _, _] =
   argumentErr "meta-set!" "a symbol" "first" target
@@ -587,7 +588,7 @@ primitiveMeta (XObj _ i _) _ [XObj (Sym path _) _ _, XObj (Str key) _ _] = do
                         i)
 primitiveMeta _ _ [XObj (Sym path _) _ _, key@(XObj _ i _)] =
   argumentErr "meta" "a string" "second" key
-primitiveMeta _ _ [path@(XObj _ i _), _] = do
+primitiveMeta _ _ [path@(XObj _ i _), _] =
   argumentErr "meta" "a symbol" "first" path
 
 primitiveDefined :: Primitive

@@ -73,7 +73,7 @@ concreteCaseInit allocationMode insidePath structTy sumtypeCase =
                  correctedTys = map (replaceTyVars mappings) (caseTys sumtypeCase)
              in  (toTemplate $ "$p $NAME(" ++ joinWithComma (zipWith (curry memberArg) anonMemberNames correctedTys) ++ ")"))
           (const (tokensForCaseInit allocationMode structTy sumtypeCase))
-          (\(FuncTy _ _ _) -> [])
+          (\FuncTy{} -> [])
 
 genericCaseInit :: AllocationMode -> [String] -> Ty -> SumtypeCase -> (String, Binder)
 genericCaseInit allocationMode pathStrings originalStructTy sumtypeCase =

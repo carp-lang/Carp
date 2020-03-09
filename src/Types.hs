@@ -109,14 +109,14 @@ tyToC :: Ty -> String
 tyToC = tyToCManglePtr False
 
 tyToCLambdaFix :: Ty -> String
-tyToCLambdaFix t@(FuncTy _ _ _) = "Lambda"
-tyToCLambdaFix (RefTy (FuncTy _ _ _) _) = "Lambda*"
-tyToCLambdaFix (RefTy (RefTy (FuncTy _ _ _) _) _) = "Lambda**"
-tyToCLambdaFix (RefTy (RefTy (RefTy (FuncTy _ _ _) _) _) _) = "Lambda***" -- | TODO: More cases needed?! What's a better way to do it..?
+tyToCLambdaFix t@FuncTy{} = "Lambda"
+tyToCLambdaFix (RefTy FuncTy{} _) = "Lambda*"
+tyToCLambdaFix (RefTy (RefTy FuncTy{} _) _) = "Lambda**"
+tyToCLambdaFix (RefTy (RefTy (RefTy FuncTy{} _) _) _) = "Lambda***" -- | TODO: More cases needed?! What's a better way to do it..?
 tyToCLambdaFix t = tyToCManglePtr False t
 
 tyToCRawFunctionPtrFix :: Ty -> String
-tyToCRawFunctionPtrFix t@(FuncTy _ _ _) = "void*"
+tyToCRawFunctionPtrFix t@FuncTy{} = "void*"
 tyToCRawFunctionPtrFix t = tyToCManglePtr False t
 
 tyToCManglePtr :: Bool -> Ty -> String
@@ -251,7 +251,7 @@ unifySignatures v t = Map.fromList (unify v t)
               retToks = unify retTyA retTyB
               ltToks = unify ltA ltB
           in  ltToks ++ argToks ++ retToks
-        unify a@(FuncTy _ _ _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
+        unify a@FuncTy{} b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
         unify a b | a == b    = []
                   | otherwise = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
@@ -269,14 +269,14 @@ areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
 areUnifiable (PointerTy _) _ = False
 areUnifiable (RefTy a ltA) (RefTy b ltB) = areUnifiable a b && areUnifiable ltA ltB
-areUnifiable (RefTy _ _) _ = False
+areUnifiable RefTy{} _ = False
 areUnifiable (FuncTy argTysA retTyA ltA) (FuncTy argTysB retTyB ltB)
   | length argTysA /= length argTysB = False
   | otherwise = let argBools = zipWith areUnifiable argTysA argTysB
                     retBool = areUnifiable retTyA retTyB
                     ltBool = areUnifiable ltA ltB
                 in  all (== True) (ltBool : retBool : argBools)
-areUnifiable (FuncTy _ _ _) _ = False
+areUnifiable FuncTy{} _ = False
 areUnifiable a b | a == b    = True
           | otherwise = False
 

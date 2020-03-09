@@ -334,7 +334,7 @@ deleteTy typeEnv env (StructTy "Array" [innerType]) =
 deleteTy _ _ _ = []
 
 initTy :: Ty -> [String]
-initTy (StructTy "Array" [innerType@(FuncTy _ _ _)]) =
+initTy (StructTy "Array" [innerType@FuncTy{}]) =
   [ "    // initialize each Lambda struct "
   , "    for(int i = 0; i < a.len; i++) {"
   , "    " ++ insideArrayInitLambda innerType "i"

@@ -198,12 +198,12 @@ isManaged typeEnv (StructTy name _) =
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
-isManaged _ (FuncTy _ _ _) = True
+isManaged _ FuncTy{} = True
 isManaged _ _ = False
 
 -- | Is this type a function type?
 isFunctionType :: Ty -> Bool
-isFunctionType (FuncTy _ _ _) = True
+isFunctionType FuncTy{} = True
 isFunctionType _ = False
 
 -- | Is this type a struct type?

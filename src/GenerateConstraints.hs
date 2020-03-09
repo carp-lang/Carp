@@ -195,7 +195,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let lt = (VarTy (makeTypeVariableNameFromInfo (info xobj)))
+                                let lt = VarTy (makeTypeVariableNameFromInfo (info xobj))
                                 let theTheConstraint = Constraint (RefTy xobjType lt) valueType xobj value xobj OrdDeref
                                 return (theTheConstraint : insideValueConstraints)
 

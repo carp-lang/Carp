@@ -179,7 +179,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
         [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
-        (XObj defn@(Defn _) _ _) : _  -> return (Left (InvalidObj defn xobj))
+        XObj defn@(Defn _) _ _ : _  -> return (Left (InvalidObj defn xobj))
 
         -- Fn
         [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
