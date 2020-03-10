@@ -286,7 +286,7 @@ eval env xobj@(XObj o i t) = do
                       Right x -> return (Right x)
        [] -> return dynamicNil
        x ->
-         return (evalError ctx ("I did not understand the form `" ++ show x ++ "`.") (info xobj))
+         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
     force x = seq x x
     checkArity params args =
       let la = length args
