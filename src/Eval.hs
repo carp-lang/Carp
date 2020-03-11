@@ -5,7 +5,7 @@ import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
-import Data.Foldable (foldrM)
+import Data.Foldable (foldlM, foldrM)
 import Data.List (foldl', null, isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
 import Data.Maybe (fromJust, mapMaybe, isJust, Maybe(..))
@@ -269,13 +269,21 @@ eval env xobj@(XObj o i t) = do
          specialCommandWith xobj path forms
        XObj With _ _ : _ ->
          return (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (info xobj))
-       XObj Do _ _ : rest ->
-         do evaledList <- fmap sequence (mapM (eval env) rest)
-            case evaledList of
-              Left e -> return (Left e)
-              Right [] ->
-                return (makeEvalError ctx Nothing "No forms in 'do' statement." (info xobj))
-              Right ok -> return (Right (last ok))
+       [XObj Do _ _] ->
+         return (evalError ctx "No forms in do" (info xobj))
+       XObj Do _ _ : rest -> do
+         evaled <- foldlM (successiveEval env) dynamicNil rest
+         case evaled of
+           Left e -> return (Left e)
+           Right evald -> return (Right evald)
+        where successiveEval e acc x =
+                 case acc of
+                   err@(Left _) -> return err
+                   Right _ -> do
+                    res <- eval e x
+                    case res of
+                      Left err -> return (Left err)
+                      Right x -> return (Right x)
        [] -> return dynamicNil
        x ->
          return (evalError ctx ("I did not understand the form `" ++ show x ++ "`.") (info xobj))
@@ -360,7 +368,7 @@ folder context xobj = do
      (_, ctx) <- executeCommand context xobj
      return ctx
 
--- | Take a ReplCommand and execute it.
+-- | Take a repl command and execute it.
 executeCommand :: Context -> XObj -> IO (XObj, Context)
 executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) xobj =
   do when (isJust (envModuleName env)) $
@@ -370,7 +378,23 @@ executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) x
        Left e -> do
          reportExecutionError newCtx (show e)
          return (xobj, newCtx)
+       -- special case: calling a function at the repl
+       Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
+        (r, nc) <- runStateT (annotateWithinContext False (XObj (Lst (name:args)) i Nothing)) newCtx
+        case r of
+          Right (ann, _) -> executeCommand nc (withBuildAndRun (buildMainFunction ann))
+          Left err -> do
+           reportExecutionError nc (show err)
+           return (xobj, nc)
        Right result -> return (result, newCtx)
+  where withBuildAndRun xobj =
+          XObj (Lst [ XObj Do (Just dummyInfo) Nothing
+                    , xobj
+                    , XObj (Lst [XObj (Sym (SymPath [] "build") Symbol) (Just dummyInfo) Nothing])
+                           (Just dummyInfo) Nothing
+                    , XObj (Lst [XObj (Sym (SymPath [] "run") Symbol) (Just dummyInfo) Nothing])
+                           (Just dummyInfo) Nothing
+                    ]) (Just dummyInfo) Nothing
 
 reportExecutionError :: Context -> String -> IO ()
 reportExecutionError ctx errorMessage =
@@ -709,45 +733,20 @@ printC xobj =
     Right _ ->
       strWithColor Green (toC All (Binder emptyMeta xobj))
 
--- | This allows execution of calls to non-dynamic functions (defined with 'defn') to be run from the REPL
-executeFunctionAsMain :: Context -> XObj -> StateT Context IO (Either EvalError XObj)
-executeFunctionAsMain ctx expression =
-  let fppl = projectFilePathPrintLength (contextProj ctx)
-      tempMainFunction x = XObj (Lst [XObj (Defn Nothing) (Just dummyInfo) Nothing
-                                     ,XObj (Sym (SymPath [] "main") Symbol) (Just dummyInfo) Nothing
-                                     ,XObj (Arr []) (Just dummyInfo) Nothing
-                                     ,case ty x of
-                                        Just UnitTy -> x
-                                        Just (RefTy _ _) -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing, x])
-                                                               (Just dummyInfo) (Just UnitTy)
-                                        Just _ -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing,
-                                                             XObj (Lst [XObj Ref (Just dummyInfo) Nothing, x])
-                                                                   (Just dummyInfo) (Just UnitTy)])
-                                                       (Just dummyInfo) (Just UnitTy)
-                                     ]) (Just dummyInfo) (Just (FuncTy [] UnitTy StaticLifetimeTy))
-  in  do r <- annotateWithinContext False expression
-         case r of
-           Right (annXObj, annDeps) ->
-             do let m = tempMainFunction annXObj
-
-                ctxAfterExpansion <- get
-                ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
-                put ctxWithDeps
-
-                defineResult <- specialCommandDefine m
-                case defineResult of
-                  Left e -> return (Left e)
-                  Right _ ->
-                    do buildResult <- commandBuild True []
-                       case buildResult of
-                         Left e -> return (Left e)
-                         Right _ ->
-                           do executionResult <- commandRunExe []
-                              case executionResult of
-                                Left e -> return (Left e)
-                                Right _ -> return dynamicNil
-           Left err ->
-             return (Left err)
+buildMainFunction :: XObj -> XObj
+buildMainFunction xobj =
+  XObj (Lst [ XObj (Defn Nothing) (Just dummyInfo) Nothing
+            , XObj (Sym (SymPath [] "main") Symbol) (Just dummyInfo) Nothing
+            , XObj (Arr []) (Just dummyInfo) Nothing
+            , case ty xobj of
+                Just UnitTy -> xobj
+                Just (RefTy _ _) -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing, xobj])
+                                       (Just dummyInfo) (Just UnitTy)
+                Just _ -> XObj (Lst [XObj (Sym (SymPath [] "println*") Symbol) (Just dummyInfo) Nothing,
+                                     XObj (Lst [XObj Ref (Just dummyInfo) Nothing, xobj])
+                                           (Just dummyInfo) (Just UnitTy)])
+                               (Just dummyInfo) (Just UnitTy)
+            ]) (Just dummyInfo) (Just (FuncTy [] UnitTy StaticLifetimeTy))
 
 primitiveDefdynamic :: Primitive
 primitiveDefdynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, value] =
