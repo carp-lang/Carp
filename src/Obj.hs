@@ -314,16 +314,18 @@ prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
-data EvalError = EvalError String [XObj] FilePathPrintLength deriving (Eq)
+data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info) deriving (Eq)
 
 instance Show EvalError where
-  show (EvalError msg trace@(XObj _ i _:_) fppl) = msg ++ getInfo i ++ getTrace
+  show (EvalError msg t fppl i) = msg ++ getInfo i ++ getTrace
     where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
           getInfo Nothing = ""
           getTrace =
-            "\n\nTraceback:\n" ++
-            unlines (map (\x -> pretty x ++ getInfo (info x)) trace)
-  show (EvalError msg [] fppl) = msg
+            if null t
+            then ""
+            else
+              "\n\nTraceback:\n" ++
+              unlines (map (\x -> pretty x ++ getInfo (info x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
