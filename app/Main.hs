@@ -86,7 +86,8 @@ main = do setLocaleEncoding utf8
             Repl -> do putStrLn "Welcome to Carp 0.3.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
-                       runRepl finalContext
+                       _ <- runRepl finalContext
+                       return ()
             Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
                         return ()
             Install thing ->

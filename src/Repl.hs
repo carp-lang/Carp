@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, UndecidableInstances #-}
 module Repl where
 
 import System.Console.Haskeline ( getInputLine
@@ -7,9 +8,11 @@ import System.Console.Haskeline ( getInputLine
                                 , Completion
                                 , simpleCompletion
                                 , completeWordWithPrev
+                                , useFileHandle
                                 )
 import Data.List (isPrefixOf)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State.Strict
 import System.Exit (exitSuccess)
 import qualified Data.Map as Map
 
@@ -22,8 +25,14 @@ import Path
 import Lookup
 import Parsing (balance)
 
-completeKeywordsAnd :: Monad m => [String ] -> String -> String -> m [Completion]
-completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords) []
+instance MonadState s m => MonadState s (InputT m) where
+    get = lift get
+    put = lift . put
+    state = lift . state
+
+completeKeywordsAnd :: Context -> String -> [Completion]
+completeKeywordsAnd context word = do
+  findKeywords word ((bindingNames $ contextGlobalEnv context) ++ keywords) []
   where
         findKeywords match [] res = res
         findKeywords match (x : xs) res =
@@ -69,12 +78,13 @@ completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords
                    ]
 
 
-readlineSettings :: Monad m => [String] -> IO (Settings m)
-readlineSettings words = do
-  historyFile <- configPath "history"
-  createDirectoryIfMissing True (takeDirectory historyFile)
-  return $ Settings {
-    complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] (completeKeywordsAnd words),
+readlineSettings :: String -> Settings (StateT Context IO)
+readlineSettings historyFile =
+  Settings {
+    complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n']
+                  (\_ w -> do
+                      ctx <- get
+                      return (completeKeywordsAnd ctx w)),
     historyFile = Just historyFile,
     autoAddHistory = True
   }
@@ -115,21 +125,23 @@ treatSpecialInput (':':rest) =
            Nothing -> rewriteError ("Unknown special command: :" ++ [cmd])
 treatSpecialInput arg = arg
 
-repl :: Context -> String -> InputT IO Context
-repl context readSoFar =
-  do let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
+repl :: String -> InputT (StateT Context IO) ()
+repl readSoFar =
+  do context <- get
+     let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
      input <- getInputLine prompt
      case input of
         Nothing -> do
           liftIO exitSuccess
-          return context
+          return ()
         Just i -> do
           let concat = readSoFar ++ i ++ "\n"
           case balance concat of
             0 -> do let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
                     context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
-                    return $ context' { contextLastInput = input' }
-            _ -> repl context concat
+                    put context'
+                    repl ""
+            _ -> repl concat
 
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
@@ -137,6 +149,6 @@ resetAlreadyLoadedFiles context =
   in  context { contextProj = proj' }
 
 runRepl context = do
-  settings <- readlineSettings (bindingNames $ contextGlobalEnv context)
-  context' <- runInputT settings (repl context "")
-  runRepl context'
+  historyFile <- configPath "history"
+  createDirectoryIfMissing True (takeDirectory historyFile)
+  runStateT (runInputT (readlineSettings historyFile) (repl "")) context
