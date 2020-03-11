@@ -91,6 +91,7 @@ specialCommands = Map.fromList
   , ('q', "quit")
   , ('t', "type")
   , ('m', "expand")
+  , ('i', "info")
   ]
 
 rewriteError :: String -> String
