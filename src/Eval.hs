@@ -341,7 +341,8 @@ executeString doCatch printResult ctx input fileName =
                   (res, ctx) <- foldM interactiveFolder
                                     (XObj (Lst []) (Just dummyInfo) (Just UnitTy), ctx)
                                     xobjs
-                  when printResult (putStrLnWithColor Yellow ("=> " ++ pretty res))
+                  when (printResult && ty res /= Just UnitTy)
+                    (putStrLnWithColor Yellow ("=> " ++ pretty res))
                   return ctx
         interactiveFolder (_, context) xobj =
           executeCommand context xobj
