@@ -8,7 +8,6 @@ import System.Console.Haskeline ( getInputLine
                                 , Completion
                                 , simpleCompletion
                                 , completeWordWithPrev
-                                , useFileHandle
                                 )
 import Data.List (isPrefixOf)
 import Control.Monad.IO.Class (liftIO)
