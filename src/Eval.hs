@@ -370,6 +370,10 @@ folder context xobj = do
 
 -- | Take a repl command and execute it.
 executeCommand :: Context -> XObj -> IO (XObj, Context)
+executeCommand ctx s@(XObj (Sym _ _) _ _) =
+  executeCommand ctx
+    (XObj (Lst [ (XObj (Sym (SymPath [] "info") Symbol) (Just dummyInfo) Nothing)
+               , s]) (Just dummyInfo) Nothing)
 executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) xobj =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
