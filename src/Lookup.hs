@@ -18,6 +18,8 @@ lookupInEnv (SymPath [] name) env =
     Nothing -> case envParent env of
                  Just parent -> lookupInEnv (SymPath [] name) parent
                  Nothing -> Nothing
+lookupInEnv (SymPath ("LET" : ps) name) env =
+  lookupInEnv (SymPath ps name) env
 lookupInEnv path@(SymPath (p : ps) name) env =
   case Map.lookup p (envBindings env) of
     Just (Binder _ xobj) ->
@@ -129,6 +131,8 @@ extendEnv env name xobj = envAddBinding env name (Binder emptyMeta xobj)
 envInsertAt :: Env -> SymPath -> Binder -> Env
 envInsertAt env (SymPath [] name) binder =
   envAddBinding env name binder
+envInsertAt env (SymPath ("LET":ps) name) xobj =
+  envInsertAt env (SymPath ps name) xobj
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
     Just (Binder existingMeta (XObj (Mod innerEnv) i t)) ->

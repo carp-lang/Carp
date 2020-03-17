@@ -4,7 +4,6 @@ module Eval where
 import Control.Concurrent (forkIO)
 import Control.Exception
 import Control.Monad.State
-import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import Data.Foldable (foldlM, foldrM)
 import Data.List (foldl', null, isSuffixOf, intercalate)
 import Data.List.Split (splitOn, splitWhen)
@@ -154,7 +153,7 @@ eval env xobj@(XObj o i t) = do
               "\n\nIs it valid? Every `the` needs to follow the form `(the type expression)`.")
               (info xobj))
 
-       [XObj Let _ _x, XObj (Arr bindings) bindi bindt, body]
+       [XObj Let _ _, XObj (Arr bindings) bindi bindt, body]
          | odd (length bindings) -> return (evalError ctx
              ("Uneven number of forms in `let`: " ++ pretty xobj)
              (info xobj)) -- Unreachable?
@@ -163,12 +162,20 @@ eval env xobj@(XObj o i t) = do
               joinWithSpace (map pretty bindings) ++ "`") (info xobj))
          | otherwise ->
              do let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
+                    pathStrings = contextPath ctx
+                    mod = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
+                    globalEnvWithModuleAdded = envInsertAt (contextGlobalEnv ctx) (SymPath pathStrings "LET") (Binder emptyMeta mod)
+                    ctx' = ctx {
+                      contextGlobalEnv=globalEnvWithModuleAdded,
+                      contextPath=pathStrings ++ ["LET"]}
+                put ctx'
                 let binds = unwrapVar (pairwise bindings) []
                 eitherEnv <- foldrM successiveEval (Right innerEnv) binds
                 case eitherEnv of
                    Left err -> return $ Left err
                    Right envWithBindings -> do
                           evaledBody <- eval envWithBindings body
+                          put (popModulePath ctx')
                           return $ do okBody <- evaledBody
                                       Right okBody
          where unwrapVar [] acc = acc
@@ -217,7 +224,7 @@ eval env xobj@(XObj o i t) = do
              res <- apply env body params args
              case res of
               Right xobj -> do
-                _ <- force (eval env xobj)
+                _ <- eval env xobj
                 newCtx <- get
                 put (popFrame newCtx)
                 return res
@@ -269,25 +276,27 @@ eval env xobj@(XObj o i t) = do
          specialCommandWith xobj path forms
        XObj With _ _ : _ ->
          return (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (info xobj))
+       XObj SetBang _ _ :args -> specialCommandSet args
        [XObj Do _ _] ->
          return (evalError ctx "No forms in do" (info xobj))
        XObj Do _ _ : rest -> do
-         evaled <- foldlM (successiveEval env) dynamicNil rest
+         (evaled, _) <- foldlM successiveEval (dynamicNil, env) rest
          case evaled of
            Left e -> return (Left e)
            Right evald -> return (Right evald)
-        where successiveEval e acc x =
+        where successiveEval (acc, e) x =
                  case acc of
-                   err@(Left _) -> return err
+                   err@(Left _) -> return (err, e)
                    Right _ -> do
-                    res <- eval e x
-                    case res of
-                      Left err -> return (Left err)
-                      Right x -> return (Right x)
+                     res <- eval e x
+                     ctx <- get
+                     let pathStrings = contextPath ctx
+                         globalEnv = contextGlobalEnv ctx
+                         env = getEnv globalEnv pathStrings
+                     return (res, env)
        [] -> return dynamicNil
        x -> do
         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
-    force x = seq x x
     checkArity params args =
       let la = length args
           withRest = any ((":rest" ==) . getName) params
@@ -763,6 +772,24 @@ primitiveDefdynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, value] =
 primitiveDefdynamic _ _ [notName, body] = do
   ctx <- get
   return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
+
+specialCommandSet :: [XObj] -> StateT Context IO (Either EvalError XObj)
+specialCommandSet [XObj (Sym (SymPath [] name) _) _ _, value] =
+  do env <- gets contextGlobalEnv
+     result <- eval env value
+     case result of
+       Left err -> return (Left err)
+       Right evald -> do
+          ctx <- get
+          let nenv = extendEnv env name evald
+          put (ctx {contextGlobalEnv = seq nenv nenv})
+          return dynamicNil
+specialCommandSet [notName, body] = do
+  ctx <- get
+  return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
+specialCommandSet args = do
+  ctx <- get
+  return (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
 
 primitiveEval :: Primitive
 primitiveEval _ env [val] = do
