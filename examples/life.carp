@@ -107,7 +107,7 @@
     (Random.seed)
     (let [app (create "~ Game of Life ~" 800 600)
           rend @(renderer &app)
-          world (repeat (* height width) flip)
+          world (repeat (* height width) &flip)
           play false]
       (while true
         (do
