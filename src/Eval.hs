@@ -820,5 +820,5 @@ primitives = Map.fromList
   , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
   , makePrim "use" 1 "(use MyModule)" primitiveUse
   , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
-  , makePrim "defined?" 1 "(evaluate mycode)" primitiveEval
+  , makePrim "defined?" 1 "(defined? mycode)" primitiveDefined
   ]
