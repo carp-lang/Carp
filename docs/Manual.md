@@ -5,7 +5,9 @@ To explore the commands available, enter ```(help)``` and press enter.
 
 To load code from disk, use ```(load "filename.carp")```, this will add the source file `filename.carp` to the current 'project'. A project is a light weight concept in the repl that ties together source files and compiler settings much like in an IDE like Eclipse or Visual Studio.
 
-To build your current project, call ```(build)```. This will emit an executable or dynamic library depending on if you have defined a main-function or not. Everything emitted by the compiler will be saved in a directory named ```out``` by default. This, and other settings regarding the project can be changed by various commands. To see a list of available commands, call ```(help "project")```.
+To build your current project, call ```(build)```. This will emit an executable or dynamic library depending on if you have defined a main-function or not. Please note that a project emitting a library will not initialize global variables automatically, the user of the library needs to call the C function `carp_init_globals` or the Carp function `System.carp-init-globals` instead.
+
+Everything emitted by the compiler will be saved in a directory named ```out``` by default. This, and other settings regarding the project can be changed by various commands. To see a list of available commands, call ```(help "project")```.
 
 There are a bunch of handy shortcuts for doing common things at the REPL:
 
