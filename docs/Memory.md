@@ -40,10 +40,17 @@ All the array transforming functions 'endo-map' and 'filter' use C-style mutatio
 
 The restriction of 'endo-map' is that it must return an array of the same type as the input. If that's not possible, use 'copy-map' instead. It works like the normal 'map' found in other functional languages. The 'copy-' prefix is there to remind you of the fact that the function is allocating memory.
 
-To execute side-effects, use the foreach macro:
+To execute side-effects, use the `doall` macro:
 
 ```
-(foreach println [@"Yo" @"Hola" @"Hej"])
+(doall IO.println [@"Yo" @"Hola" @"Hej"])
+```
+
+Or `foreach` (works like a foreach loop construct in a lot of other programming languages):
+
+```
+(foreach [x &[1 2 3]]
+  (println* "x: " x))
 ```
 
 

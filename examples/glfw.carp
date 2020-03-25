@@ -1,4 +1,4 @@
-(load "GLFW.carp")
+(load "../core/GLFW.carp")
 (use GLFW)
 
 (load "OpenGL.carp")
