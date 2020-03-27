@@ -1033,27 +1033,15 @@ manageMemory typeEnv globalEnv root =
 
         visitCaseLhs :: XObj -> State MemState (Either TypeError [()])
         visitCaseLhs (XObj (Lst vars) _ _) =
-          case vars of
-            [xobj@(XObj (Sym (SymPath _ name) _) _ _)] | isVarName name ->
-                                                           do manage xobj
-                                                              return (Right [])
-                                                       | otherwise ->
-                                                           return (Right [])
-            _ -> visitVars
-            where visitVars =
-                    do results <- mapM (\var ->
-                                           case var of
-                                             XObj (Sym path mode) _ _ ->
-                                               do manage var
-                                                  return (Right ())
-                                             _ -> return (Right ()))
-                                       (tail vars) -- Don't do anything to the first one, it's a tag
-                       return (sequence results)
-        visitCaseLhs xobj@(XObj (Sym _ _) _ _) =
-          do manage xobj
-             return (Right [])
-        visitCaseLhs _ =
-          return (Right []) -- TODO: Handle nesting!!!
+          do result <- mapM visitCaseLhs vars
+             let result' = sequence result
+             return (fmap concat result')
+        visitCaseLhs xobj@(XObj (Sym (SymPath _ name) _) _ _)
+          | isVarName name = do manage xobj
+                                return (Right [])
+          | otherwise = return (Right [])
+        visitCaseLhs x =
+          error ("Unhandled: " ++ show x)
 
         addToLifetimesMappingsIfRef :: Bool -> XObj -> State MemState ()
         addToLifetimesMappingsIfRef internal xobj =
