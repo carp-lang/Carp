@@ -400,8 +400,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
             _ -> error "Can't create binder for non-symbol parameter."
 
     extendEnvWithCaseMatch :: Env -> XObj -> State Integer Env
-    extendEnvWithCaseMatch env singleCaseList@(XObj (Lst xs) _ _) =
-      do binders <- fmap catMaybes (mapM createBinderForCaseVariable xs)
+    extendEnvWithCaseMatch env caseRoot =
+      do binders <- createBindersForCaseVariable caseRoot
          return Env { envBindings = Map.fromList binders
                     , envParent = Just env
                     , envModuleName = Nothing
@@ -410,36 +410,22 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                     , envFunctionNestingLevel = envFunctionNestingLevel env
                     }
       where
-        createBinderForCaseVariable :: XObj -> State Integer (Maybe (String, Binder))
-        createBinderForCaseVariable xobj =
-          case obj xobj of
-            (Sym (SymPath _ name) _) ->
-              createBinderInternal xobj name
-            (MultiSym name _) ->
-              createBinderInternal xobj name
-            (InterfaceSym name) ->
-              createBinderInternal xobj name
-            x -> error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
+        createBindersForCaseVariable :: XObj -> State Integer [(String, Binder)]
+        createBindersForCaseVariable xobj@(XObj (Sym (SymPath _ name) _) _ _) = createBinderInternal xobj name
+        createBindersForCaseVariable xobj@(XObj (MultiSym name _) _ _) = createBinderInternal xobj name
+        createBindersForCaseVariable xobj@(XObj (InterfaceSym name) _ _) = createBinderInternal xobj name
+        createBindersForCaseVariable xobj@(XObj (Lst lst) _ _) = do binders <- mapM createBindersForCaseVariable lst
+                                                                    return (concat binders)
+        createBindersForCaseVariable x = error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
 
-        createBinderInternal :: XObj -> String -> State Integer (Maybe (String, Binder))
+        createBinderInternal :: XObj -> String -> State Integer [(String, Binder)]
         createBinderInternal xobj name =
           if isVarName name
           -- A variable that will bind to something:
           then do freshTy <- genVarTy
-                  return (Just (name, Binder emptyMeta xobj { ty = Just freshTy }))
+                  return [(name, Binder emptyMeta xobj { ty = Just freshTy })]
           -- Tags for the sumtypes won't bind to anything:
-          else return Nothing
-    extendEnvWithCaseMatch env xobj@(XObj (Sym (SymPath _ name) _) _ _) =
-      do freshTy <- genVarTy
-         return Env { envBindings = Map.fromList [(name, Binder emptyMeta xobj { ty = Just freshTy })]
-                    , envParent = Just env
-                    , envModuleName = Nothing
-                    , envUseModules = []
-                    , envMode = InternalEnv
-                    , envFunctionNestingLevel = envFunctionNestingLevel env
-                    }
-    extendEnvWithCaseMatch env _ =
-      return env -- TODO: Handle nesting!!!
+          else return []
 
 uniquifyWildcardNames :: XObj -> XObj
 uniquifyWildcardNames (XObj (Sym (SymPath [] "_") mode) (Just i) t) =
