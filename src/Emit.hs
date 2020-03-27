@@ -303,6 +303,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
                                      pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ mangle caseName ++
                                      ".member" ++ show index ++ ";\n")
+                  emitCaseMatcher caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
+                    zipWithM_ (\x i -> emitCaseMatcher (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
+                  emitCaseMatcher _ xobj _ =
+                    error ("Failed to emit case matcher for: " ++ pretty xobj)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
