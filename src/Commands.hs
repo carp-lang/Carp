@@ -1,14 +1,11 @@
 module Commands where
 
-import System.Directory
 import System.Info (os)
 import Control.Monad.State
 import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
 import Data.Maybe (fromMaybe)
 import Data.List (elemIndex)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.FilePath (takeDirectory)
-import System.IO
 import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
 import qualified Data.Map as Map
@@ -25,6 +22,7 @@ import Util
 import Lookup
 import RenderDocs
 import TypeError
+import Path
 
 type CommandCallback = [XObj] -> StateT Context IO (Either (FilePathPrintLength -> EvalError) XObj)
 
@@ -78,30 +76,6 @@ addCommandConfigurable name maybeArity callback =
             else
               unwrap $ return (Left (EvalError ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing))
         withoutArity args = unwrap $ callback args
-
--- | DEPRECATED Command for changing various project settings.
-commandProjectSet :: CommandCallback
-commandProjectSet [XObj (Str key) _ _, value] =
-  do ctx <- get
-     let proj = contextProj ctx
-         env = contextGlobalEnv ctx
-     case value of
-       XObj (Str valueStr) _ _ -> do
-          newCtx <- case key of
-                      "cflag" -> return ctx { contextProj = proj { projectCFlags = addIfNotPresent valueStr (projectCFlags proj) } }
-                      "libflag" -> return ctx { contextProj = proj { projectLibFlags = addIfNotPresent valueStr (projectLibFlags proj) } }
-                      "prompt" -> return ctx { contextProj = proj { projectPrompt = valueStr } }
-                      "search-path" -> return ctx { contextProj = proj { projectCarpSearchPaths = addIfNotPresent valueStr (projectCarpSearchPaths proj) } }
-                      -- TODO: should these be booleans?
-                      "printAST" -> return ctx { contextProj = proj { projectPrintTypedAST = valueStr == "true" } }
-                      "echoC" -> return ctx { contextProj = proj { projectEchoC = valueStr == "true" } }
-                      "echoCompilationCommand" -> return ctx { contextProj = proj { projectEchoCompilationCommand = valueStr == "true" } }
-                      "compiler" -> return ctx { contextProj = proj { projectCompiler = valueStr } }
-                      "title"    -> return ctx { contextProj = proj { projectTitle = valueStr } }
-                      _ -> presentError ("Unrecognized key: '" ++ key ++ "'") ctx
-          put newCtx
-          return dynamicNil
-       val -> presentError "Argument to project-set! must be a string" dynamicNil
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
@@ -207,7 +181,7 @@ commandCat :: CommandCallback
 commandCat args =
   do ctx <- get
      let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir ++ "/" ++ "main.c"
+         outMain = outDir </> "main.c"
      liftIO $ do callCommand ("cat -n " ++ outMain)
                  return dynamicNil
 
@@ -217,7 +191,8 @@ commandRunExe args =
   do ctx <- get
      let proj = contextProj ctx
          outDir = projectOutDir proj
-         outExe = "\"" ++ outDir ++ pathSeparator ++ projectTitle (contextProj ctx) ++ "\""
+         quoted x = "\"" ++ x ++ "\""
+         outExe = quoted $ outDir </> projectTitle (contextProj ctx)
      if projectCanExecute proj
        then liftIO $ do handle <- spawnCommand outExe
                         exitCode <- waitForProcess handle
@@ -256,10 +231,10 @@ commandBuild shutUp args =
                 incl = projectIncludesToC proj
                 includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
                 flags = includeCorePath ++ projectFlags proj
-                outDir = projectOutDir proj ++ pathSeparator
-                outMain = outDir ++ "main.c"
-                outExe = outDir ++ projectTitle proj
-                outLib = outDir ++ projectTitle proj
+                outDir = projectOutDir proj
+                outMain = outDir </> "main.c"
+                outExe = outDir </> projectTitle proj
+                outLib = outDir </> projectTitle proj
                 generateOnly = projectGenerateOnly proj
             liftIO $ createDirectoryIfMissing False outDir
             liftIO $ writeFile outMain (incl ++ okSrc)
@@ -479,12 +454,6 @@ commandProject args =
      liftIO (print (contextProj ctx))
      return dynamicNil
 
--- | Command for printing a message to the screen.
-commandPrint :: CommandCallback
-commandPrint args =
-  do liftIO $ mapM_ (putStrLn . pretty) args
-     return dynamicNil
-
 -- | Command for getting the name of the operating system you're on.
 commandOS :: CommandCallback
 commandOS _ =
@@ -501,7 +470,7 @@ commandAddInclude includerConstructor [x] =
              includers = projectIncludes proj
              includers' = if includer `elem` includers
                           then includers
-                          else includer : includers
+                          else includers ++ [includer] -- Add last to preserve include order
              proj' = proj { projectIncludes = includers' }
          put (ctx { contextProj = proj' })
          return dynamicNil
@@ -509,7 +478,17 @@ commandAddInclude includerConstructor [x] =
       return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
 
 commandAddSystemInclude = commandAddInclude SystemInclude
-commandAddLocalInclude  = commandAddInclude LocalInclude
+
+commandAddRelativeInclude :: CommandCallback
+commandAddRelativeInclude [x] =
+  case x of
+    XObj (Str file) i@(Just info) t ->
+        let compiledFile = infoFile info
+        in commandAddInclude RelativeInclude [
+          XObj (Str $ takeDirectory compiledFile </> file) i t
+        ]
+    _ ->
+      return (Left (EvalError ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x)))
 
 commandIsList :: CommandCallback
 commandIsList [x] =
@@ -528,6 +507,12 @@ commandIsSymbol [x] =
   case x of
     XObj (Sym _ _) _ _ -> return (Right trueXObj)
     _ -> return (Right falseXObj)
+
+commandArray :: CommandCallback
+commandArray args = return $ Right (XObj (Arr args) (Just dummyInfo) Nothing)
+
+commandList :: CommandCallback
+commandList  args = return $ Right (XObj (Lst args) (Just dummyInfo) Nothing)
 
 commandLength :: CommandCallback
 commandLength [x] =
@@ -594,12 +579,14 @@ commandMacroError [msg] =
     x                  -> return (Left (EvalError (pretty x) (info msg)))
 
 commandMacroLog :: CommandCallback
-commandMacroLog [msg] =
-  case msg of
-    XObj (Str msg) _ _ -> do liftIO (putStrLn msg)
-                             return dynamicNil
-    x                  -> do liftIO (putStrLn (pretty x))
-                             return dynamicNil
+commandMacroLog msgs = do
+  liftIO (mapM_ (putStr . logify) msgs)
+  liftIO (putStr "\n")
+  return dynamicNil
+  where logify msg =
+          case msg of
+            XObj (Str msg) _ _ -> msg
+            x                  -> pretty x
 
 commandEq :: CommandCallback
 commandEq [a, b] =
@@ -669,7 +656,10 @@ commandCharAt :: CommandCallback
 commandCharAt [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
-      Right (XObj (Chr (s !! (round n :: Int))) (Just dummyInfo) (Just IntTy))
+      let i = (round n :: Int)
+      in if length s > i
+         then Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy))
+         else Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (info a))
     _ ->
       Left (EvalError ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a))
 
@@ -726,13 +716,36 @@ commandSymPrefix [x, XObj (Sym (SymPath [] _) _) _ _] =
 commandSymPrefix [_, x] =
   return $ Left (EvalError ("Can’t call `prefix` with " ++ pretty x) (info x))
 
+commandSymFrom :: CommandCallback
+commandSymFrom [x@(XObj (Sym _ _) _ _)] = return $ Right x
+commandSymFrom [XObj (Str s) i t] = return $ Right $ XObj (sFrom_ s) i t
+commandSymFrom [XObj (Pattern s) i t] = return $ Right $ XObj (sFrom_ s) i t
+commandSymFrom [XObj (Chr c) i t] = return $ Right $ XObj (sFrom_ (show c)) i t
+commandSymFrom [XObj n@(Num _ _) i t] =
+  return $ Right $ XObj (sFrom_ (simpleFromNum n)) i t
+commandSymFrom [XObj (Bol b) i t] = return $ Right $ XObj (sFrom_ (show b)) i t
+commandSymFrom [x] =
+  return $ Left (EvalError ("Can’t call `from` with " ++ pretty x) (info x))
+
+commandSymStr :: CommandCallback
+commandSymStr [XObj (Sym s _) i _] =
+  return $ Right $ XObj (Str (show s)) i (Just StringTy)
+commandSymStr [x] =
+  return $ Left (EvalError ("Can’t call `str` with " ++ pretty x) (info x))
+
+sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
+
+simpleFromNum (Num IntTy num) = show (round num :: Int)
+simpleFromNum (Num LongTy num) = show (round num :: Int)
+simpleFromNum (Num _ num) = show num
+
 commandStringDirectory :: CommandCallback
 commandStringDirectory [a] =
   return $ case a of
     XObj (Str s) _ _ ->
       Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
     _ ->
-      Left (EvalError ("Can't call directory with " ++ pretty a) (info a))
+      Left (EvalError ("Can't call `directory` with " ++ pretty a) (info a))
 
 commandPlus :: CommandCallback
 commandPlus [a, b] =
@@ -801,7 +814,7 @@ commandReadFile :: CommandCallback
 commandReadFile [filename] =
   case filename of
     XObj (Str fname) _ _ -> do
-         exceptional <- liftIO $ ((try $ readFile fname) :: (IO (Either IOException String)))
+         exceptional <- liftIO ((try $ slurp fname) :: (IO (Either IOException String)))
          case exceptional of
             Right contents ->
               return (Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
@@ -809,6 +822,22 @@ commandReadFile [filename] =
               return (Left (EvalError ("The argument to `read-file` `" ++ fname ++ "` does not exist") (info filename)))
     _ ->
       return (Left (EvalError ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename)))
+
+commandWriteFile :: CommandCallback
+commandWriteFile [filename, contents] =
+  case filename of
+    XObj (Str fname) _ _ ->
+      case contents of
+        XObj (Str s) _ _ -> do
+         exceptional <- liftIO ((try $ writeFile fname s) :: (IO (Either IOException ())))
+         case exceptional of
+            Right () -> return dynamicNil
+            Left _ ->
+              return (Left (EvalError ("Cannot write to argument to `" ++ fname ++ "`, an argument to `write-file`") (info filename)))
+        _ ->
+          return (Left (EvalError ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (info contents)))
+    _ ->
+      return (Left (EvalError ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal [modulePath] = do

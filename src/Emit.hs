@@ -98,6 +98,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             Arr _   -> visitArray indent xobj
             Num IntTy num -> return (show (round num :: Int))
             Num LongTy num -> return (show (round num :: Int) ++ "l")
+            Num ByteTy num -> return (show (round num :: Int))
             Num FloatTy num -> return (show num ++ "f")
             Num DoubleTy num -> return (show num)
             Num _ _ -> error "Can't emit invalid number type."
@@ -110,14 +111,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                 '\\' -> "'\\\\'"
                                 x -> ['\'', x, '\'']
             Sym _ _ -> visitSymbol indent xobj
-            Defn -> error (show (DontVisitObj xobj))
+            (Defn _) -> error (show (DontVisitObj xobj))
             Def -> error (show (DontVisitObj xobj))
             Let -> error (show (DontVisitObj xobj))
             If -> error (show (DontVisitObj xobj))
             Break -> error (show (DontVisitObj xobj))
             While -> error (show (DontVisitObj xobj))
             Do -> error (show (DontVisitObj xobj))
-            e@(Typ _) -> error (show (DontVisitObj xobj))
+            e@(Deftype _) -> error (show (DontVisitObj xobj))
             e@(DefSumtype _) -> error (show (DontVisitObj xobj))
             Mod _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
@@ -180,13 +181,13 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitList indent (XObj (Lst xobjs) (Just i) t) =
           case xobjs of
             -- Defn
-            [XObj Defn _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Defn _) _ _, XObj (Sym path@(SymPath _ name) _) _ _, XObj (Arr argList) _ _, body] ->
               case toCMode of
                 Globals ->
                   return ""
                 _ ->
                   do let innerIndent = indent + indentAmount
-                         Just (FuncTy _ retTy) = t
+                         Just (FuncTy _ retTy _) = t
                          defnDecl = defnToDeclaration meta path argList retTy
                      appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
@@ -199,7 +200,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ""
 
             -- Fn / λ
-            [XObj (Fn name set) _ _, XObj (Arr argList) _ _, body] ->
+            [XObj (Fn name set _) _ _, XObj (Arr argList) _ _, body] ->
               do let retVar = freshVar i
                      capturedVars = Set.toList set
                      Just callback = name
@@ -315,12 +316,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        zipWithM_ (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
-                       caseExprRetVal <- visit indent' caseExpr
-                       when isNotVoid $
-                         appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
-                       let Just caseLhsInfo' = caseLhsInfo
-                       delete indent' caseLhsInfo'
-                       appendToSrc (addIndent indent ++ "}\n")
+                       emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
@@ -330,6 +326,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
+                       emitCaseEnd caseLhsInfo caseExpr
+                  emitCaseEnd caseLhsInfo caseExpr = do
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
                          appendToSrc (addIndent indent' ++ retVar ++ " = " ++ caseExprRetVal ++ ";\n")
@@ -442,7 +440,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  return ("(*" ++ x ++ ")")
 
             -- Deftype
-            XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _ ->
+            XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _ ->
               return ""
 
             -- DefSumtype
@@ -501,7 +499,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy argTys retTy _ = funcTy
                      callFunction = overriddenName ++ "(" ++ argListAsC ++ ");\n"
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ callFunction)
@@ -513,7 +511,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
             func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
               do argListAsC <- createArgList indent (mode == ExternalCode) args
-                 let Just (FuncTy _ retTy) = ty func
+                 let Just (FuncTy _ retTy _) = ty func
                      funcToCall = pathToC path
                  if retTy == UnitTy
                    then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
@@ -532,7 +530,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                  let funcTy = case ty func of
                                Just actualType -> actualType
                                _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy = funcTy
+                     FuncTy argTys retTy _ = funcTy
                      castToFn =
                        if unwrapLambdas
                        then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
@@ -597,6 +595,10 @@ delete indent i = mapM_ deleterToC (infoDelete i)
   where deleterToC :: Deleter -> State EmitterState ()
         deleterToC FakeDeleter {} =
           return ()
+        deleterToC PrimDeleter {} =
+          return ()
+        deleterToC RefDeleter {} =
+          return ()
         deleterToC deleter@ProperDeleter{} =
           appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 
@@ -604,7 +606,8 @@ defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
   let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
       annotationsStr = joinWith " " (map strToC annotations)
-  in annotationsStr ++ if not (null annotationsStr) then " " else "" ++
+      sep = if not (null annotationsStr) then " " else ""
+  in annotationsStr ++ sep ++
     if name == "main"
       then "int main(int argc, char** argv)"
       else let retTyAsC = tyToCLambdaFix retTy
@@ -690,20 +693,20 @@ defSumtypeToDeclaration sumTy@(StructTy typeName typeVariables) path rest =
 defaliasToDeclaration :: Ty -> SymPath -> String
 defaliasToDeclaration t path =
   case t of
-    (FuncTy argTys retTy) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
-                             intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
+    (FuncTy argTys retTy _) -> "typedef " ++ tyToCLambdaFix retTy ++ "(*" ++ pathToC path ++ ")(" ++
+                               intercalate ", " (map tyToCLambdaFix argTys) ++ ");\n"
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
 toDeclaration :: Binder -> String
 toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
   case xobjs of
-    [XObj Defn _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
-      let (Just (FuncTy _ retTy)) = t
+    [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
+      let (Just (FuncTy _ retTy _)) = t
       in  defnToDeclaration meta path argList retTy ++ ";\n"
     [XObj Def _ _, XObj (Sym path _) _ _, _] ->
       let Just t' = t
       in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
-    XObj (Typ t) _ _ : XObj (Sym path _) _ _ : rest ->
+    XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defSumtypeToDeclaration t path rest
@@ -732,15 +735,18 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
 toDeclaration _ = error "Missing case."
 
 paramListToC :: [XObj] -> String
-paramListToC xobjs = intercalate ", " (map getParam xobjs)
+paramListToC xobjs = intercalate ", " (map getParam (filter notUnit xobjs))
   where getParam :: XObj -> String
         getParam (XObj (Sym (SymPath _ name) _) _ (Just t)) = tyToCLambdaFix t ++ " " ++ mangle name
         getParam invalid = error (show (InvalidParameter invalid))
+        notUnit (XObj _ _ (Just UnitTy)) = False
+        notUnit _ = True
 
 projectIncludesToC :: Project -> String
-projectIncludesToC proj = intercalate "\n" (map includerToC (projectIncludes proj)) ++ "\n\n"
+projectIncludesToC proj = intercalate "\n" (map includerToC includes) ++ "\n\n"
   where includerToC (SystemInclude file) = "#include <" ++ file ++ ">"
-        includerToC (LocalInclude file) = "#include \"" ++ file ++ "\""
+        includerToC (RelativeInclude file) = "#include \"" ++ file ++ "\""
+        includes = projectIncludes proj
 
 binderToC :: ToCMode -> Binder -> Either ToCError String
 binderToC toCMode binder =

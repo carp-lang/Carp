@@ -5,7 +5,6 @@
 ;;(definterface str (λ [a] String))
 
 (definterface = (λ [a a] Bool))
-(definterface /= (λ [a a] Bool))
 
 (definterface add-ref (λ [&a &a] a))
 (definterface sub-ref (λ [&a &a] a))
@@ -21,8 +20,10 @@
 (definterface < (λ [a a] Bool))
 (definterface > (λ [a a] Bool))
 
+(definterface zero (λ [] a))
 (definterface inc (λ [a] a))
 (definterface dec (λ [a] a))
+(definterface neg (λ [a] a))
 
 (definterface to-int (λ [a] Int))
 (definterface from-int (λ [Int] a))
@@ -30,50 +31,32 @@
 (definterface format (λ [&String a] String))
 (definterface from-string (λ [&String] a))
 
-(definterface zero (λ [] a))
 (definterface random (Fn [] a))
 (definterface random-between (Fn [a a] a))
 
 (definterface pi a)
 
-(definterface neg (λ [a] a))
+(definterface abs (λ [a] a))
+(definterface acos (λ [a] a))
+(definterface asin (λ [a] a))
+(definterface atan (λ [a] a))
+(definterface atan2 (λ [a a] a))
+(definterface ceil (λ [a] a))
+(definterface cos (λ [a] a))
+(definterface cosh (λ [a] a))
+(definterface exp (λ [a] a))
+(definterface floor (λ [a] a))
+(definterface frexp (λ [a (Ref Int)] a))
+(definterface ldexp (λ [a Int] a))
+(definterface log (λ [a] a))
+(definterface log10 (λ [a] a))
+(definterface mod (λ [a a] a))
+(definterface modf (λ [a (Ref a)] a))
+(definterface pow (λ [a a] a))
+(definterface sin (λ [a] a))
+(definterface sinh (λ [a] a))
+(definterface sqrt (λ [a] a))
+(definterface tan (λ [a] a))
+(definterface tanh (λ [a] a))
 
-
-
-;; The following functions make use of the interfaces
-
-(defn <= [a b]
-  (or (< a b)
-      (= a b)))
-
-(defn >= [a b]
-  (or (> a b)
-      (= a b)))
-
-(defn cmp [a b]
-  (if (= a b)
-    0
-    (if (< a b) -1 1)))
-
-(defn max [a b]
-  (if (> a b) a b))
-
-(defn min [a b]
-  (if (< a b) a b))
-
-(defn zero? [x]
-  (= (zero) x))
-
-(defn pos? [x]
-  (< (zero) x))
-
-(defn neg? [x]
-  (< x (zero)))
-
-(defn id [x] x)
-
-(defn null? [p]
-  (Pointer.eq NULL (the (Ptr t) p)))
-
-(defn not-null? [p]
-  (not (null? p)))
+(definterface slice (Fn [&a Int Int] a))

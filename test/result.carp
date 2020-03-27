@@ -21,31 +21,40 @@
   )
   (assert-equal test
                 &(Success 1)
-                &(apply (Success 0) Int.inc Int.dec)
+                &(apply (Success 0) &Int.inc &Int.dec)
                 "apply works with Success"
   )
   (assert-equal test
                 &(Error -1)
-                &(apply (Error 0) Int.inc Int.dec)
+                &(apply (Error 0) &Int.inc &Int.dec)
                 "apply works with Error"
   )
   (assert-true test
-               (error? &(map (Error @"hi") Int.inc))
+               (error? &(map (Error @"hi") &Int.inc))
                "map works with Error"
   )
   (assert-equal test
                 &(Success 2)
-                &(map (the (Result Int String) (Success 1)) Int.inc)
+                &(map (the (Result Int String) (Success 1)) &Int.inc)
                 "map works with Success"
   )
   (assert-true test
-               (error? &(and-then (Error @"hi") (fn [x] (Success (Int.inc x)))))
+               (success? &(map-error (Success @"hi") &Int.inc))
+               "map-error works with Success"
+  )
+  (assert-equal test
+                &(Error 2)
+                &(map-error (the (Result String Int) (Error 1)) &Int.inc)
+                "map-error works with Error"
+  )
+  (assert-true test
+               (error? &(and-then (Error @"hi") &(fn [x] (Success (Int.inc x)))))
                "and-then works with Error"
   )
   (assert-equal test
                 &(Success 2)
                 &(and-then (the (Result Int String) (Success 1))
-                           (fn [x] (Success (Int.inc x))))
+                           &(fn [x] (Success (Int.inc x))))
                 "and-then works with Success"
   )
   (assert-equal test
@@ -61,23 +70,23 @@
   (assert-equal test
                 &(Error 5)
                 &(or-else (the (Result Int String) (Error @"error"))
-                          (fn [x] (Error (String.length &x))))
+                          &(fn [x] (Error (String.length &x))))
                 "or-else works with Error"
   )
   (assert-equal test
                 &(Success 1)
-                &(or-else (Success 1) (fn [x] (Error (String.length &x))))
+                &(or-else (Success 1) &(fn [x] (Error (String.length &x))))
                 "or-else works with Success"
   )
   (assert-equal test
                 5
                 (unwrap-or-else (the (Result Int String) (Error @"error"))
-                                (fn [s] (String.length &s)))
+                                &(fn [s] (String.length &s)))
                 "unwrap-or-else works with Error"
   )
   (assert-equal test
                 1
-                (unwrap-or-else (Success 1) (fn [s] (String.length &s)))
+                (unwrap-or-else (Success 1) &(fn [s] (String.length &s)))
                 "unwrap-or-else works with Success"
   )
   (assert-equal test

@@ -1,11 +1,3 @@
-#include <time.h>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
-#include <carp_memory.h>
-#include <carp_string.h>
 
 void System_free(void *p) {
     CARP_FREE(p);
@@ -37,9 +29,9 @@ void System_sleep_MINUS_micros(int t) {
 }
 
 double System_nanotime() {
-  struct timespec tv;
-  clock_gettime(CLOCK_REALTIME, &tv);
-  return 1000000000 * tv.tv_sec + tv.tv_nsec;
+    struct timespec tv;
+    clock_gettime(CLOCK_REALTIME, &tv);
+    return 1000000000 * tv.tv_sec + tv.tv_nsec;
 }
 #endif
 
@@ -49,9 +41,9 @@ void System_system(const String *command) {
 
 Array System_args;
 
-String* System_get_MINUS_arg(int idx) {
+String *System_get_MINUS_arg(int idx) {
     assert(idx < System_args.len);
-    return &(((String*)System_args.data)[idx]);
+    return &(((String *)System_args.data)[idx]);
 }
 
 int System_get_MINUS_args_MINUS_len() {

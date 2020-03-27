@@ -9,8 +9,6 @@ import System.Console.Haskeline ( getInputLine
                                 , completeWordWithPrev
                                 )
 import Data.List (isPrefixOf)
-import System.Info (os)
-import System.Directory (getHomeDirectory)
 import Control.Monad.IO.Class (liftIO)
 
 import Types
@@ -18,6 +16,7 @@ import Obj
 import Util
 import ColorText
 import Eval
+import Path
 import Parsing (balance)
 
 completeKeywordsAnd :: Monad m => [String ] -> String -> String -> m [Completion]
@@ -69,10 +68,11 @@ completeKeywordsAnd words _ word = return $ findKeywords word (words ++ keywords
 
 readlineSettings :: Monad m => [String] -> IO (Settings m)
 readlineSettings words = do
-  home <- getHomeDirectory
+  historyFile <- configPath "history"
+  createDirectoryIfMissing True (takeDirectory historyFile)
   return $ Settings {
     complete = completeWordWithPrev Nothing ['(', ')', '[', ']', ' ', '\t', '\n'] (completeKeywordsAnd words),
-    historyFile = Just $ home ++ "/.carp/history",
+    historyFile = Just historyFile,
     autoAddHistory = True
   }
 

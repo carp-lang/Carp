@@ -4,21 +4,21 @@
 (defn insert []
   (let [m {}]
     (for [i 0 100]
-      (set! m (Map.put &m &i &1)))))
+      (Map.put! &m &i &1))))
 
 (defn insert-collisions []
   (let [m (Map.create-with-len 1)]
     (for [i 0 100]
-      (set! m (Map.put &m &1 &1)))))
+      (Map.put! &m &1 &1))))
 
 (def m (the (Map Int Int) {}))
 
 (defn single-insert []
-  (set! m (Map.put &m &1 &1)))
+  (Map.put! &m &1 &1))
 
 (defn setup-big-map []
   (for [i 0 10000]
-    (set! m (Map.put &m &i &1))))
+    (Map.put! &m &i &1)))
 
 (defn retrieve []
   (Map.get &m &10))
@@ -52,21 +52,21 @@
 (defn insert-set []
   (let [m (Set.create)]
     (for [i 0 100]
-      (set! m (Set.put &m &i)))))
+      (Set.put! &m &i))))
 
 (defn insert-set-collisions []
   (let [m (Set.create-with-len 1)]
     (for [i 0 100]
-      (set! m (Set.put &m &i)))))
+      (Set.put! &m &i))))
 
 (def s (the (Set Int) (Set.create)))
 
 (defn single-insert-set []
-  (set! s (Set.put &s &1)))
+  (Set.put! &s &1))
 
 (defn setup-big-set []
   (for [i 0 10000]
-    (set! s (Set.put &s &i))))
+    (Set.put! &s &i)))
 
 (defn contains-set []
   (Set.contains? &s &10))

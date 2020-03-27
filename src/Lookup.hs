@@ -191,19 +191,19 @@ isManaged typeEnv (StructTy name _) =
   (name == "Array") || (name == "Dictionary") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
-         Just (_, Binder _ (XObj (Lst (XObj (Typ _) _ _ : _)) _ _)) -> True
+         Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)
          Nothing -> error ("Can't find " ++ name ++ " in type env.") -- TODO: Please don't crash here!
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
-isManaged _ (FuncTy _ _) = True
+isManaged _ (FuncTy _ _ _) = True
 isManaged _ _ = False
 
 -- | Is this type a function type?
 isFunctionType :: Ty -> Bool
-isFunctionType (FuncTy _ _) = True
+isFunctionType (FuncTy _ _ _) = True
 isFunctionType _ = False
 
 -- | Is this type a struct type?
@@ -231,3 +231,9 @@ bindingNames = concatMap select . envBindings
   where select :: Binder -> [String]
         select (Binder _ (XObj (Mod i) _ _)) = bindingNames i
         select (Binder _ obj) = [getName obj]
+
+existingMeta :: Env -> XObj -> MetaData
+existingMeta globalEnv xobj =
+  case lookupInEnv (getPath xobj) globalEnv of
+    Just (_, Binder meta _) -> meta
+    Nothing -> emptyMeta

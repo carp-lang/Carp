@@ -84,16 +84,16 @@
                 "from-chars works as expected")
   (assert-equal test
                 "edan"
-                &(substring "svedang" 2 6)
-                "substring works as expected")
+                &(slice "svedang" 2 6)
+                "slice works as expected")
   (assert-equal test
                 "sved"
-                &(prefix-string "svedang" 4)
-                "prefix-string works as expected")
+                &(prefix "svedang" 4)
+                "prefix works as expected")
   (assert-equal test
                 "dang"
-                &(suffix-string "svedang" 3)
-                "suffix-string works as expected")
+                &(suffix "svedang" 3)
+                "suffix works as expected")
   (assert-true test
                (ends-with? "heller" "ler")
                "ends-with? works as expected")
@@ -200,16 +200,20 @@
 
   (assert-equal test
                 "hello world"
-                &(join @"" &[@"hello" @" " @"world"])
+                &(join "" &[@"hello" @" " @"world"])
                 "join works correctly I")
   (assert-equal test
                 "hello world"
-                &(join @" " &[@"hello" @"world"])
+                &(join " " &[@"hello" @"world"])
                 "join works correctly II")
   (assert-equal test
                 "hello aaaa there aaaa world"
-                &(join @" aaaa " &[@"hello" @"there" @"world"])
+                &(join " aaaa " &[@"hello" @"there" @"world"])
                 "join works correctly III")
+  (assert-equal test
+                ""
+                &(join " aaaa " &[])
+                "join works correctly IV")
   (assert-equal test
                 "hello there world"
                 &(join-with-char \  &[@"hello" @"there" @"world"])
@@ -218,6 +222,10 @@
                 "hello, there, world"
                 &(join-with-char \, &[@"hello" @" there" @" world"])
                 "join-with-char works correctly II")
+  (assert-equal test
+                ""
+                &(join-with-char \, &[])
+                "join-with-char works correctly III")
   (assert-equal test
                 "hellohellohello"
                 &(repeat 3 "hello")
@@ -236,6 +244,7 @@
                 &(let-do [str @"aaaaaaaaaa"]
                          (string-set-at! &str 4 "bcde")
                          (string-set-at! &str 9 "q")
+                         (string-set-at! &str 0 "")
                          str)
                 "string-set-at! works correctly")
   (assert-equal test

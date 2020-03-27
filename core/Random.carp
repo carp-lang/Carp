@@ -76,3 +76,12 @@
   (defn random-sized [n]
     (from-chars &(Array.repeat n &Char.random)))
 )
+
+(defmodule Byte
+  (defn random-between [lower upper]
+    (Byte.from-int (Int.random-between (Byte.to-int lower) (Byte.to-int upper))))
+
+  (defn random []
+    (Byte.from-int (Int.random)))
+)
+

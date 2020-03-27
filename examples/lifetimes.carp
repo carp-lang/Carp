@@ -1,0 +1,178 @@
+(Debug.sanitize-addresses)
+(Project.config "print-ast" true)
+
+;; Preventing the usage of a reference to a deleted object
+;; (defn f []
+;;   (let-do [x @"DATA"
+;;            r &x]
+;;     (delete x)
+;;     (IO.println r)))
+
+;; Same as above, but deleting the argument
+;; (defn g [x]
+;;   (let-do [r &x]
+;;     (delete (the String x))
+;;     (IO.println r)))
+
+;; A function accepting two refs and returning one of them
+;; (defn two-refs [x a b]
+;;   (if x
+;;     (the (Ref t q) a)
+;;     (the (Ref t w) b)))
+
+;; Lambdas
+;; (defn l []
+;;   (let [x @"DATA"
+;;         r &x
+;;         f (fn [] (IO.println r))]
+;;     (do
+;;       (String.delete x)
+;;       (f))))
+
+;; (defn from-ptr [a]
+;;   (if (null? a)
+;;     (Maybe.Nothing)
+;;     (Maybe.Just @(Pointer.to-ref a))))
+
+;; (defn pair-eq [p1 p2]
+;;   (and (= (Pair.a p1) (Pair.a p2))
+;;        (= (Pair.b p1) (Pair.b p2)))
+;;   )
+
+;; (defn map-put []
+;;   (fn [b]
+;;     (let [n &b]
+;;       ())))
+
+
+;; (defn f [x y]
+;;   (let [s @"hej"
+;;         z 123]
+;;     (Int.+ x y)))
+
+
+
+;; (defn f []
+;;   &100) ;; TODO: Number literals should create prim var deleter too!
+
+
+
+;; use-ref-in-lambda-after-free
+;; (defn boo []
+;;   (let-do [data @"DATA"
+;;            r &data
+;;            f (fn []
+;;                (IO.println (id r)))]
+;;     ;;(String.delete data)
+;;     (f)))
+
+
+
+;; (defn foo []
+;;   (let-do [data [10 20 30]
+;;            r &data
+;;            f (fn [] (Array.nth r 1))]
+;;     ;;(Array.delete data)
+;;     (println* (f))))
+
+;; (defn lam []
+;;   (let [stuff [100 200 300]
+;;         ;;r &stuff
+;;         f (fn []
+;;             (println* (id &stuff)))]
+;;     (f)))
+
+
+
+;; Problematic order of arguments, the variable 'b' will depend on 'snake', which is consumed first in the call to Snake.set-body
+;; (use Array)
+;; (deftype Snake [body (Array Int)])
+
+;; (defn grow [snake]
+;;   (let [b (Snake.body &snake)]
+;;     (Snake.set-body snake (push-back @b 0))))
+
+;;(unsafe-last b)
+
+
+;; (defn dangling-1 []
+;;   (let [b [1 2 3]]
+;;     &b))
+
+;; (defn dangling-2 []
+;;   (let [b [1 2 3]
+;;         r &b]
+;;     r))
+
+
+;; (defn unique []
+;;   (let [r1 (the &String "DATA")
+;;         r2 (the &String "DATA") ;; should get another lifetime variable than r1
+;;         r3 "DATA"]
+;;     ()))
+
+
+;; (defn fool [s1 s2]
+;;   (let [r1 (the (Ref String Static) s1)
+;;         r2 (the (Ref String b) s2)]
+;;     (do
+;;       (if (= r1 r2) () ())
+;;       ;;(delete s1)
+;;       ;;(= r1 r2)
+;;       ;;()
+;;       r2)))
+
+
+;; This should be detected as an error too:
+;; (defn f [s]
+;;   (let [r &s]
+;;     r))
+;;(f @"hej")
+
+
+
+;; (defn magic []
+;;   (let [s @"DATA"]
+;;     &s)) ;; shouldn't work either
+
+;; (defn simple-fool []
+;;   (let [r (magic) ;; 'magic' returns (Ref String a)
+;;         static (the (Ref String Static) "")]
+;;     (do
+;;       (if (= r static) () ()) ;; shouldn't just be possible to trick 'r' that its lifetime is Static
+;;       ())))
+
+;; (defn first [xs]
+;;   (Array.nth xs 0))
+
+;;(defn f [x] (fn [] (IO.println x)))
+
+
+
+;; (defn g []
+;;   (let-do [s @"DATA"
+;;            r &s
+;;            f (fn [] (IO.println r))]
+;;     ;;(delete s)
+;;     ;;(f)
+;;     f))
+
+
+
+;; (defn ok [r]
+;;   (let-do [f (fn [] (IO.println r))]
+;;     f))
+
+
+
+(deftype Blah [x Int])
+
+(defn trick []
+  (let[s1 (Blah.init 100)
+       r1 &s1
+       g (let [s2 (Blah.init 200)
+               r2 &s2
+               f (fn [] (println* r1 r2))]
+           f)]
+    (g) ;; shouldn't work because 's2' has been deleted and 'r2' is thus a dead reference
+    ))

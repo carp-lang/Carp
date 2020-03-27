@@ -1,6 +1,8 @@
 (system-include "carp_long.h")
 
 (defmodule Long
+  (register MAX Long "LONG_MAX")
+  (register MIN Long "LONG_MIN")
   (register + (λ [Long Long] Long))
   (register - (λ [Long Long] Long))
   (register * (λ [Long Long] Long))
@@ -25,9 +27,6 @@
 to non-refs.")
   (register copy (λ [&Long] Long))
 
-  (defn /= [x y]
-    (not (Long.= x y)))
-
   (register safe-add (λ [Long Long (Ref Long)] Bool))
   (register safe-sub (λ [Long Long (Ref Long)] Bool))
   (register safe-mul (λ [Long Long (Ref Long)] Bool))
@@ -36,6 +35,8 @@ to non-refs.")
 
   (defn even? [a] (= (mod a 2l) 0l))
   (defn odd? [a] (not (even? a)))
+
+  (defn zero [] 0l)
 )
 
 (defmodule LongRef

@@ -29,14 +29,12 @@
   (list 'meta-set! name "todo" value))
 
 (doc private? "Is this binding private?")
-(todo private? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro private? [name]
-  (list 'not (list '= () (list 'meta name "private"))))
+  (list 'not (list 'list? (meta name "private"))))
 
 (doc hidden? "Is this binding hidden?")
-(todo hidden? "This is buggy, will report true when meta is set to 'false'!")
 (defmacro hidden? [name]
-  (list 'not (list '= () (list 'meta name "hidden"))))
+  (list 'not (list 'list? (meta name "hidden"))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
@@ -75,6 +73,25 @@
   (defndynamic cdddar [pair] (cdr (cdr (cdr (car pair)))))
   (defndynamic cddddr [pair] (cdr (cdr (cdr (cdr pair)))))
 
+  (defndynamic cxr [x pair]
+    (if (= (length x) 0)
+      (list 'quote pair)
+      (list
+        (if (= 'a (cadr x))
+          'car
+          (if (= 'd (cadr x))
+            'cdr
+            (macro-error "`cxr` expects either `a` or `d` symbols, got " (cadr x))))
+        (if (= 1 (car x))
+          (cxr (cddr x) pair)
+          (cxr (cons (- (car x) 1) (cdr x)) pair)))))
+
+  (defndynamic nthcdr [n pair]
+    (cxr (list (+ n 1) 'd) pair))
+
+  (defndynamic nthcar [n pair]
+    (cxr (list 1 'a n 'd) pair))
+
   (defndynamic eval-internal [form]
     (list 'do
           (list 'defn 'main [] (list 'IO.println* form))
@@ -87,6 +104,21 @@
   (defmacro e [form]
     (eval-internal form))
 
+  (defndynamic list-to-array-internal [xs acc]
+    (if (= 0 (length xs))
+        acc
+        (list-to-array-internal (cdr xs) (append acc (array (car xs))))))
+
+  (defndynamic collect-into-internal [xs acc f]
+    (if (= 0 (length xs))
+        acc
+        (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
+
+  (doc collect-into
+    "Transforms a dynamic data literal into another, preserving order")
+  (defndynamic collect-into [xs f]
+    (list 'quote
+      (collect-into-internal xs (f) f)))
   )
 
 (defndynamic cond-internal [xs]
@@ -108,41 +140,46 @@
 (defmacro for [settings :rest body] ;; settings = variable, from, to, <step>
   (if (> (length body) 1)
     (macro-error "Warning: the body of the 'for' loop can only contain one expression")
-    (list
-     'let
-     (array (car settings) (cadr settings))
-     (list
-      'while
-      (list 'Int.< (car settings) (caddr settings))
-      (list 'do
-            (if (= (length body) 0)
-              ()
-              (if (list? body)
-                (car body)
-                body))
-            (list
-             'set! (car settings)
-             (list 'Int.+
-                   (car settings)
-                   (if (= 4 (length settings)) ;; optional arg for step
-                     (cadddr settings)
-                     1))))))))
+    (let [variable (car settings)
+          from (cadr settings)
+          to (caddr settings)
+          step (if (> (length settings) 3) (cadddr settings) 1)
+          comp (if (> (length settings) 4)
+                 (cadddr (cdr settings))
+                 (if (< step (- step step)) '> '<))
+          ]
+      (list
+       'let (array variable from)
+       (list
+        'while (list comp variable to)
+        (list
+         'do
+         (if (= (length body) 0)
+           ()
+           (if (list? body)
+             (car body)
+             body))
+         (list
+          'set! variable
+          (list '+ variable step))))))))
 
 (defmacro refstr [x]
   (list 'ref
         (list 'str x)))
 
-;; Old foreach, what's a better name for this? (it's just 'map' with side effects)
-;; (defmacro foreach [f xs]
-;;   (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
-;;         (list f (list 'Array.nth (list 'ref xs) 'i))))
+(defmacro doall [f xs]
+  (list 'for ['i 0 (list 'Array.length (list 'ref xs))]
+        (list f (list 'Array.unsafe-nth (list 'ref xs) 'i))))
 
 (defndynamic foreach-internal [var xs expr]
-  (list 'let ['xs xs
-              'len (list 'Array.length 'xs)]
-        (list 'for ['i 0 'len]
-              (list 'let [var (list 'Array.nth 'xs 'i)]
-                    expr))))
+  (let [xsym (gensym-with 'xs)
+        len (gensym-with 'len)
+        i (gensym-with 'i)]
+    (list 'let [xsym xs
+                len (list 'Array.length xsym)]
+          (list 'for [i 0 len]
+                (list 'let [var (list 'Array.unsafe-nth xsym i)]
+                      expr)))))
 
 (defmacro foreach [binding expr]
   (if (array? binding)
@@ -296,25 +333,18 @@
 (defmacro ignore [form]
   (list 'let (array '_ form) (list)))
 
-;; Allows inclusion of C headers relative to the Carp file in which this macro is called.
-(defmacro relative-include [file]
-  (list 'local-include
-        (list 'Dynamic.String.join [(list 'Dynamic.String.directory (list 'file))
-                                    "/"
-                                    file])))
-
 (defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
   (list 'save-docs-internal (list 'quote modules)))
 
-(defndynamic project-config [bindings] 
+(defndynamic project-config [bindings]
   (if (< (length bindings) 2)
     (list)
     (cons-last (project-config (cdr (cdr bindings))) (list 'do (list 'Project.config
     (car bindings) (car (cdr bindings)))))))
 
 (doc defproject "Define a project configuration.")
-(defmacro defproject [:rest bindings] 
+(defmacro defproject [:rest bindings]
   (project-config bindings))
 
 (doc const-assert "asserts that the expression `expr` is true at compile time.
@@ -323,3 +353,37 @@ Otherwise it will fail with the message `msg`.
 The expression must be evaluable at compile time.")
 (defndynamic const-assert [expr msg]
   (if expr () (macro-error msg)))
+
+(doc *gensym-counter* "is a helper counter for `gensym`.")
+(defdynamic *gensym-counter* 1000)
+
+(doc gensym-with "generates symbols dynamically, based on a symbol name.")
+(defndynamic gensym-with [x]
+  (do
+    (defdynamic *gensym-counter* (inc *gensym-counter*))
+    (Symbol.join [x (Symbol.from *gensym-counter*)])))
+
+(doc gensym "generates symbols dynamically as needed.")
+(defndynamic gensym []
+  (gensym-with 'gensym-generated))
+
+(doc until "executes `body` until the condition `cnd` is true.")
+(defmacro until [cnd body]
+  (list 'while (list 'not cnd)
+    body))
+
+(doc defdynamic-once "creates a dynamic variable and sets its value if it's not already defined.")
+(defmacro defdynamic-once [var expr]
+  (list 'if (list 'defined? var)
+        ()
+        (list 'defdynamic var expr)))
+
+(defndynamic comp-internal [sym fns]
+  (if (= (length fns) 0)
+    sym
+    (list (car fns) (comp-internal sym (cdr fns)))))
+
+(doc comp "composes the functions `fns` into one `fn`.")
+(defmacro comp [:rest fns]
+  (let [x (gensym)]
+    (list 'fn [x] (comp-internal x fns))))

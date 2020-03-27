@@ -35,7 +35,7 @@ GLFWAPI void glfwPollEvents(void);
 // C function-like macros
 
 #define X(a, b) a + b
-#define Y(a, b) {\\
-  foo(a, b);\\
+#define Y(a, b) {\
+  foo(a, b);\
 }
 #define Z(a, b) "hi"

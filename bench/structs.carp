@@ -8,7 +8,7 @@
 (defn creation [] (Point.init 0 0))
 (defn bench-access [] (ignore (Point.x &p))) ;; The name 'access' collides with an existing C-function.
 (defn set [] (Point.set-x @&p 5))
-(defn update [] (Point.update-x @&p Int.inc))
+(defn update [] (Point.update-x @&p &Int.inc))
 
 (defn main []
   (do

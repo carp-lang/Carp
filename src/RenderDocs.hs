@@ -10,15 +10,25 @@ import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Text.Blaze.Internal (stringValue)
 import Data.Maybe (fromMaybe)
 import Data.Text.Lazy as T
-import Data.Text.Lazy.Encoding as E
 import Data.Text as Text
-import System.Directory
 import qualified Data.Map as Map
+import qualified Data.List as List
 import Debug.Trace
 
 import Obj
 import Types
 import Util
+import Path
+import AssignTypes (typeVariablesInOrderOfAppearance)
+
+-- TODO: Move the beautification to a much earlier place, preferably when the function is defined/concretized-
+-- This might be a duplicate with the work in a PR by @jacereda
+beautifyType :: Ty -> Ty
+beautifyType t =
+  let tys = List.nub (typeVariablesInOrderOfAppearance t)
+      mappings = Map.fromList (List.zip (List.map (\(VarTy name) -> name) tys)
+                                        (List.map (VarTy . (:[])) ['a'..]))
+  in replaceTyVars mappings t
 
 saveDocsForEnvs :: Project -> [(SymPath, Binder)] -> IO ()
 saveDocsForEnvs ctx pathsAndEnvBinders =
@@ -27,7 +37,7 @@ saveDocsForEnvs ctx pathsAndEnvBinders =
       generateIndex = projectDocsGenerateIndex ctx
       allEnvNames = fmap (getModuleName . fst . getEnvAndMetaFromBinder . snd) pathsAndEnvBinders
   in  do mapM_ (saveDocsForEnvBinder ctx allEnvNames) pathsAndEnvBinders
-         when generateIndex (writeFile (dir ++ "/" ++ title ++ "_index.html")
+         when generateIndex (writeFile (dir </> title ++ "_index.html")
                                        (projectIndexPage ctx allEnvNames))
          putStrLn ("Generated docs to '" ++ dir ++ "'")
 
@@ -72,7 +82,7 @@ saveDocsForEnvBinder :: Project -> [String] -> (SymPath, Binder) -> IO ()
 saveDocsForEnvBinder ctx moduleNames (pathToEnv, envBinder) =
   do let SymPath _ moduleName = pathToEnv
          dir = projectDocsDir ctx
-         fullPath = dir ++ "/" ++ moduleName ++ ".html"
+         fullPath = dir </> moduleName ++ ".html"
          string = renderHtml (envBinderToHtml envBinder ctx (show pathToEnv) moduleNames)
      createDirectoryIfMissing False dir
      writeFile fullPath string
@@ -120,7 +130,7 @@ binderToHtml (Binder meta xobj) =
       maybeNameAndArgs = getSimpleNameWithArgs xobj
       description = getBinderDescription xobj
       typeSignature = case ty xobj of
-                 Just t -> show t
+                 Just t -> show (beautifyType t) -- NOTE: This destroys user-defined names of type variables!
                  Nothing -> ""
       metaMap = getMeta meta
       docString = case Map.lookup "doc" metaMap of

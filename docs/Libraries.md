@@ -54,23 +54,25 @@ Please note that for private repos only loading through SSH is supported. For pu
 * [Dynamic ⦁](http://carp-lang.github.io/Carp/core/Dynamic.html) (only available in the repl and at compile time)
 
 * [Maybe ⦁](http://carp-lang.github.io/Carp/core/Maybe.html)
-* [Either ⦁](http://carp-lang.github.io/Carp/core/Either.html)
+* [Result ⦁](http://carp-lang.github.io/Carp/core/Result.html)
 
 ### Numerics
 * [Int ⦁](http://carp-lang.github.io/Carp/core/Int.html)
-* SafeInt
+<!-- * SafeInt -->
 * [Long ⦁](http://carp-lang.github.io/Carp/core/Long.html)
 * [Bool ⦁](http://carp-lang.github.io/Carp/core/Bool.html)
 * [Float ⦁](http://carp-lang.github.io/Carp/core/Float.html)
 * [Double ⦁](http://carp-lang.github.io/Carp/core/Double.html)
-* [Vector](http://carp-lang.github.io/Carp/core/Vector.html)
+* [Vector2](http://carp-lang.github.io/Carp/core/Vector2.html)
+* [Vector3](http://carp-lang.github.io/Carp/core/Vector3.html)
+* [VectorN](http://carp-lang.github.io/Carp/core/VectorN.html)
 * [Geometry](http://carp-lang.github.io/Carp/core/Geometry.html)
 * [Statistics](http://carp-lang.github.io/Carp/core/Statistics.html)
 
 ### Text
 * [String ⦁](http://carp-lang.github.io/Carp/core/String.html)
 * [Char ⦁](http://carp-lang.github.io/Carp/core/Char.html)
-* Format ⦁
+<!-- * Format ⦁ -->
 * [Pattern ⦁](http://carp-lang.github.io/Carp/core/Pattern.html)
 
 ### Collections
@@ -82,15 +84,15 @@ Please note that for private repos only loading through SSH is supported. For pu
 * [System ⦁](http://carp-lang.github.io/Carp/core/System.html)
 
 ### Development
-* [Debug ⦁](http://carp-lang.github.io/Carp/core/Debug.html)
-* [Test](http://carp-lang.github.io/Carp/core/Test.html)
 * [Bench](http://carp-lang.github.io/Carp/core/Bench.html)
+* [Debug ⦁](http://carp-lang.github.io/Carp/core/Debug.html)
+* [Test ⦁](http://carp-lang.github.io/Carp/core/Test.html)
 
 ### Graphics, sound and interaction
-* [SDL](../core/SDL.carp)
-* [SDL Image](../core/SDL_image.carp)
-* [SDL TTF](../core/SDL_ttf.carp)
-* [SDL Mixer](../core/SDL_mixer.carp)
+* [SDL](http://carp-lang.github.io/Carp/sdl/SDL_index.html)
+* [SDL Image](http://carp-lang.github.io/Carp/sdl/IMG.html)
+* [SDL TTF](http://carp-lang.github.io/Carp/sdl/TTF.html)
+* [SDL Mixer](http://carp-lang.github.io/Carp/sdl/Mixer.html)
 * [GLFW](../core/GLFW.carp)
 * [OpenGL](../core/OpenGL.carp)
 

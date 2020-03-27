@@ -1,5 +1,5 @@
 name:                CarpHask
-version:             0.2.0.0
+version:             0.3.0.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/eriksvedang/Carp
@@ -45,6 +45,7 @@ library
                        StartingEnv,
                        RenderDocs,
                        StructUtils,
+                       Path,
                        Validate
 
   build-depends:       base >= 4.7 && < 5
@@ -73,6 +74,7 @@ executable carp
                      , CarpHask
                      , containers
                      , directory
+                     , filepath
                      , haskeline
                      , process
   default-language:    Haskell2010

@@ -15,7 +15,7 @@
   (let-do [pairs (Bucket.entries bucket)
            result (zero)]
     (for [i 0 (length pairs)]
-      (let [pair (nth pairs i)]
+      (let [pair (unsafe-nth pairs i)]
         (when (= (Entry.key pair) &lookup-key)
           (set! result @(Entry.value pair)))))
     result))

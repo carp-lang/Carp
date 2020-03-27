@@ -1,0 +1,9 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f []
+  (let [xs [@"A" @"B" @"C"]
+        r (Array.unsafe-nth &xs 0) ;; The lifetime has to be propagated via the call to 'nth' for this to work
+        q r] ;; An extra copy of the ref just to make things more tricky
+    (do
+      (Array.delete xs)
+      (IO.println q))))

@@ -6,7 +6,7 @@
 
 (deftest test
   (assert-equal test
-                &(init 0.0 0.0) &(zero)
+                &(init 0.0 0.0) &(Vector2.zero)
                 "zero works")
   (assert-equal test
                 &(init 1.0 2.0) &(init 1.0 2.0)
@@ -55,7 +55,7 @@
              &(init -2.0 1.0)
              &(rotate &(init 1.0 2.0) (degree-to-radians 90.0))
              "rotate works"
-             approx)
+             vapprox)
   (assert-equal test
                 90.0
                 (radians-to-degree (Vector2.angle-between &(init 1.0 0.0) &(init 0.0 1.0)))
@@ -75,6 +75,6 @@
                 "dot works")
   (assert-equal test
                 &(init 2.5 5.0)
-                &(lerp &(init 0.0 0.0) &(init 5.0 10.0) 0.5)
-                "lerp works")
+                &(vlerp &(Vector2.zero) &(init 5.0 10.0) 0.5)
+                "vlerp works")
 )

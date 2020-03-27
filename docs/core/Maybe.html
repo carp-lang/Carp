@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -151,7 +161,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a)), (Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b), (Ref (Maybe a) c)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -211,7 +221,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Maybe a), (λ [a] b)] (Maybe b))
+                    (λ [(Maybe a), (Ref (λ [a] b c) d)] (Maybe b))
                 </p>
                 <pre class="args">
                     (apply a f)
@@ -231,7 +241,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] (Maybe a))
+                    (λ [(Ref (Maybe a) b)] (Maybe a))
                 </p>
                 <span>
                     
@@ -303,6 +313,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#get-tag">
+                    <h3 id="get-tag">
+                        get-tag
+                    </h3>
+                </a>
+                <div class="description">
+                    instantiate
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Maybe a) b)] Int)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>Gets the tag from a <code>Maybe</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#just?">
                     <h3 id="just?">
                         just?
@@ -312,7 +342,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (just? a)
@@ -333,7 +363,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] Bool)
+                    (λ [(Ref (Maybe a) b)] Bool)
                 </p>
                 <pre class="args">
                     (nothing? a)
@@ -375,34 +405,13 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] String)
+                    (λ [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
                     <p>stringifies a <code>&quot;Maybe&quot;</code>.</p>
-
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#ptr">
-                    <h3 id="ptr">
-                        ptr
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Maybe a))] (Ptr a))
-                </p>
-                <pre class="args">
-                    (ptr a)
-                </pre>
-                <p class="doc">
-                    <p>Creates a <code>(Ptr a)</code> from a <code>(Maybe a)</code>. If the <code>Maybe</code> was
-<code>Nothing</code>, this function will return a <code>NULL</code> value.</p>
 
                 </p>
             </div>
@@ -416,7 +425,7 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Maybe a))] String)
+                    (λ [(Ref (Maybe a) b)] String)
                 </p>
                 <span>
                     
@@ -465,6 +474,84 @@ a value using <code>zero</code> if a <code>Nothing</code> is passed.</p>
                 <p class="doc">
                     <p>is an unsafe unwrapper that will get the value from a <code>Just</code>. If <code>a</code> is <code>Nothing</code>, a runtime error will be generated.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-ptr">
+                    <h3 id="unsafe-ptr">
+                        unsafe-ptr
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Maybe a) b)] (Ptr a))
+                </p>
+                <pre class="args">
+                    (unsafe-ptr a)
+                </pre>
+                <p class="doc">
+                    <p>Creates a <code>(Ptr a)</code> from a <code>(Maybe a)</code>. If the <code>Maybe</code> was
+<code>Nothing</code>, this function will return a <code>NULL</code> value.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip">
+                    <h3 id="zip">
+                        zip
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [a, b] c d) e), (Maybe a), (Maybe b)] (Maybe c))
+                </p>
+                <pre class="args">
+                    (zip f a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip4">
+                    <h3 id="zip4">
+                        zip4
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [a, b, c, d] e f) g), (Maybe a), (Maybe b), (Maybe c), (Maybe d)] (Maybe e))
+                </p>
+                <pre class="args">
+                    (zip4 f a b c d)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip8">
+                    <h3 id="zip8">
+                        zip8
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [a, b, c, d, e, f, g, h] i j) k), (Maybe a), (Maybe b), (Maybe c), (Maybe d), (Maybe e), (Maybe f), (Maybe g), (Maybe h)] (Maybe i))
+                </p>
+                <pre class="args">
+                    (zip8 f a b c d e a1 b1 c1)
+                </pre>
+                <p class="doc">
+                    
                 </p>
             </div>
         </div>

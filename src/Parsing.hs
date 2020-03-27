@@ -58,6 +58,12 @@ integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- maybeSigned
              return (XObj (Num IntTy (read num)) i Nothing)
 
+byte :: Parsec.Parsec String ParseState XObj
+byte = do (i, num) <- maybeSigned
+          _ <- Parsec.char 'b'
+          incColumn 1
+          return (XObj (Num ByteTy (read num)) i Nothing)
+
 long :: Parsec.Parsec String ParseState XObj
 long = do (i, num) <- maybeSigned
           _ <- Parsec.char 'l'
@@ -67,6 +73,7 @@ long = do (i, num) <- maybeSigned
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
          Parsec.try floatNoPeriod <|>
+         Parsec.try byte <|>
          Parsec.try double <|>
          Parsec.try long <|>
          Parsec.try integer
@@ -103,8 +110,8 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             _ <- Parsec.char '\\'
             c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
                                'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
-                               'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
-                               '(', ')', '^', '"', '*', '.']
+                               'x', 'n', 'r', 't', 'b', 'f', '[', ']', '\\',
+                               '$', '(', ')', '^', '"', '*', '.', '-']
             case c of
               'b' -> do c1 <- Parsec.noneOf ['"']
                         c2 <- Parsec.noneOf ['"']
@@ -216,12 +223,12 @@ symbol = do i <- createInfo
                           i Nothing)
             else
               case last segments of
-                "defn" -> return (XObj Defn i Nothing)
+                "defn" -> return (XObj (Defn Nothing) i Nothing)
                 "def" -> return (XObj Def i Nothing)
                 -- TODO: What about the other def- forms?
                 "do" -> return (XObj Do i Nothing)
                 "while" -> return (XObj While i Nothing)
-                "fn" -> return (XObj (Fn Nothing Set.empty) i Nothing)
+                "fn" -> return (XObj (Fn Nothing Set.empty None) i Nothing)
                 "let" -> return (XObj Let i Nothing)
                 "break" -> return (XObj Break i Nothing)
                 "if" -> return (XObj If i Nothing)

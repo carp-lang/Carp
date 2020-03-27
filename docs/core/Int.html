@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -209,25 +219,6 @@
                 </div>
                 <p class="sig">
                     (λ [Int, Int] Int)
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#/=">
-                    <h3 id="/=">
-                        /=
-                    </h3>
-                </a>
-                <div class="description">
-                    external
-                </div>
-                <p class="sig">
-                    (λ [Int, Int] Bool)
                 </p>
                 <span>
                     
@@ -361,7 +352,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int, &amp;Int] Int)
+                    (λ [(Ref Int a), (Ref Int b)] Int)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -513,7 +504,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int] Int)
+                    (λ [(Ref Int a)] Int)
                 </p>
                 <span>
                     
@@ -570,7 +561,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Int] String)
+                    (λ [(Ref String a), Int] String)
                 </p>
                 <span>
                     
@@ -609,7 +600,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] Int)
+                    (λ [(Ref String a)] Int)
                 </p>
                 <span>
                     
@@ -628,7 +619,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Int] Int)
+                    (λ [(Ref Int a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -801,7 +792,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int a)] Bool)
                 </p>
                 <span>
                     
@@ -821,7 +812,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int a)] Bool)
                 </p>
                 <span>
                     
@@ -841,7 +832,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Int, Int, &amp;Int] Bool)
+                    (λ [Int, Int, (Ref Int a)] Bool)
                 </p>
                 <span>
                     

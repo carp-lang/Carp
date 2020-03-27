@@ -70,12 +70,6 @@ platform =
       "darwin" -> MacOS
       "mingw32" -> Windows
 
-pathSeparator :: String
-pathSeparator =
-  case platform of
-    Windows -> "\\"
-    _ -> "/"
-
 unionOfSetsInList (x:xs) =
   foldl' Set.union x xs
 unionOfSetsInList [] =
@@ -86,8 +80,8 @@ intersectionOfSetsInList (x:xs) =
 intersectionOfSetsInList [] =
   Set.empty
 
-evenIndicies :: [a] -> [a]
-evenIndicies xs = map snd . filter (even . fst) $ zip [0..] xs
+evenIndices :: [a] -> [a]
+evenIndices xs = map snd . filter (even . fst) $ zip [0..] xs
 
 -- 'Naked' Lmabdas declared at the top level have their own s-expression forms
 -- as names, e.g. (fn <> [] ()). This can result in invalid c code. This

@@ -1,0 +1,127 @@
+html {
+    font-family: "Helvetica", sans-serif;
+    font-size: 1.0em;
+}
+
+p {
+    margin: 0em 0em 0.5em 0em;
+    line-height: 1.5em;
+}
+
+a {
+    color: #f00;
+}
+
+.logo {
+    text-align: right;
+    float: right;
+    width: 150px;
+    font-family: "Hasklig", "Lucida Console", monospace;
+}
+
+.logo img {
+    width: 150px;
+    margin-bottom: 1em;
+}
+
+.args {
+  background-color: #eee;
+  padding: 3px;
+  display: inline-block;
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+  white-space: normal;
+}
+
+ul {
+    list-style-type: none;
+    font-family: "Hasklig", "Lucida Console", monospace;
+    line-height: 1.4em;
+}
+
+.title {
+    font-size: 1.5em;
+}
+
+.content {
+    margin: 3em auto auto auto;
+    width: 80%;
+    max-width: 800px;
+}
+
+h1 {
+
+}
+
+h3 {
+    margin: 0em;
+}
+
+.anchor {
+    color: #000;
+    text-decoration: none;
+}
+
+.anchor:hover {
+    text-decoration: underline;
+}
+
+.binder {
+    margin: 3.5em 0em 0em 0em;
+}
+
+.sig {
+    font-family: "Hasklig", "Source Code Pro", "Lucida Console", monospace;
+}
+
+code {
+    font-family: "Hasklig", "Source Code Pro", "Lucida Console", monospace;
+}
+
+.doc {
+    /* font-style: italic; */
+}
+
+.description {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+.module-description {
+    margin: 0em;
+}
+
+.huge {
+    font-size: 15em;
+    margin: 0em;
+}
+
+/* Smaller screens */
+@media only screen and (max-width: 600px) {
+    .logo {
+        margin: 1em;
+        text-align: left;
+        float: left;
+        width: 100%;
+    }
+    .logo img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 50%;
+    }
+    .content {
+        margin: 0.5em;
+    }
+    .binder {
+        margin: 0em 0em 1.5em 0em;
+    }
+    .sig {
+        font-size: 0.9em;
+    }
+    ul {
+        padding: 0px;
+    }
+}

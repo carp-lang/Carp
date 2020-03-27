@@ -1,0 +1,50 @@
+(load "Test.carp")
+
+(use-all Byte Test)
+
+(deftest test
+  (assert-equal test
+                1b
+                (min 1b 2b)
+                "min works as expected")
+  (assert-equal test
+                2b
+                (max 1b 2b)
+                "max works as expected")
+  (assert-equal test
+                false
+                (even? 3b)
+                "even? works as expected")
+  (assert-equal test
+                true
+                (odd? 3b)
+                "odd? works as expected")
+  (assert-equal test
+                1b
+                (bit-and 3b 5b)
+                "bit-and works as expected")
+  (assert-equal test
+                5b
+                (bit-or 1b 4b)
+                "bit-or works as expected")
+  (assert-equal test
+                4b
+                (bit-xor 1b 5b)
+                "bit-xor works as expected")
+  (assert-equal test
+                1b
+                (bit-not 254b)
+                "bit-not works as expected")
+  (assert-equal test
+                8b
+                (bit-shift-left 2b 2b)
+                "bit-shift-left works as expected")
+  (assert-equal test
+                2b
+                (bit-shift-right 16b 3b)
+                "bit-shift-right works as expected")
+  (assert-equal test
+                1
+                (/ 3 2)
+                "integer division truncates as expected")
+)

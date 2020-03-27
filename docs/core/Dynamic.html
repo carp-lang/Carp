@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -130,6 +135,11 @@
                         <li>
                             <a href="Result.html">
                                 Result
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
                             </a>
                         </li>
                     </ul>
@@ -314,9 +324,9 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#Sym">
-                    <h3 id="Sym">
-                        Sym
+                <a class="anchor" href="#Symbol">
+                    <h3 id="Symbol">
+                        Symbol
                     </h3>
                 </a>
                 <div class="description">
@@ -355,6 +365,25 @@
                 <a class="anchor" href="#append">
                     <h3 id="append">
                         append
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#array">
+                    <h3 id="array">
+                        array
                     </h3>
                 </a>
                 <div class="description">
@@ -1017,6 +1046,45 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#collect-into">
+                    <h3 id="collect-into">
+                        collect-into
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (collect-into xs f)
+                </pre>
+                <p class="doc">
+                    <p>Transforms a dynamic data literal into another, preserving order</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#collect-into-internal">
+                    <h3 id="collect-into-internal">
+                        collect-into-internal
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (collect-into-internal xs acc f)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#cons">
                     <h3 id="cons">
                         cons
@@ -1050,6 +1118,25 @@
                 <span>
                     
                 </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#cxr">
+                    <h3 id="cxr">
+                        cxr
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (cxr x pair)
+                </pre>
                 <p class="doc">
                     
                 </p>
@@ -1245,6 +1332,44 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#list">
+                    <h3 id="list">
+                        list
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#list-to-array-internal">
+                    <h3 id="list-to-array-internal">
+                        list-to-array-internal
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (list-to-array-internal xs acc)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#list?">
                     <h3 id="list?">
                         list?
@@ -1267,25 +1392,6 @@
                 <a class="anchor" href="#load">
                     <h3 id="load">
                         load
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#local-include">
-                    <h3 id="local-include">
-                        local-include
                     </h3>
                 </a>
                 <div class="description">
@@ -1359,6 +1465,44 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#nthcar">
+                    <h3 id="nthcar">
+                        nthcar
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (nthcar n pair)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#nthcdr">
+                    <h3 id="nthcdr">
+                        nthcdr
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (nthcdr n pair)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#os">
                     <h3 id="os">
                         os
@@ -1397,25 +1541,6 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#project-set!">
-                    <h3 id="project-set!">
-                        project-set!
-                    </h3>
-                </a>
-                <div class="description">
-                    command
-                </div>
-                <p class="sig">
-                    Dynamic
-                </p>
-                <span>
-                    
-                </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
                 <a class="anchor" href="#quit">
                     <h3 id="quit">
                         quit
@@ -1438,6 +1563,25 @@
                 <a class="anchor" href="#read-file">
                     <h3 id="read-file">
                         read-file
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#relative-include">
+                    <h3 id="relative-include">
+                        relative-include
                     </h3>
                 </a>
                 <div class="description">
@@ -1552,6 +1696,25 @@
                 <a class="anchor" href="#system-include">
                     <h3 id="system-include">
                         system-include
+                    </h3>
+                </a>
+                <div class="description">
+                    command
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#write-file">
+                    <h3 id="write-file">
+                        write-file
                     </h3>
                 </a>
                 <div class="description">

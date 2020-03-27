@@ -1,6 +1,5 @@
 module Obj where
 
-import System.FilePath (takeFileName)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (intercalate, foldl')
@@ -9,6 +8,7 @@ import Control.Monad.State
 import Data.Char
 import Types
 import Util
+import Path (takeFileName)
 import Debug.Trace
 
 -- | Will the lookup look at other Carp code or at C code. This matters when calling functions, should they assume it's a lambda or a normal C function?
@@ -55,9 +55,9 @@ data Obj = Sym SymPath SymbolMode
          | Lst [XObj]
          | Arr [XObj]
          | Dict (Map.Map XObj XObj)
-         | Defn
+         | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
          | Def
-         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, and the set of variables this lambda captures
+         | Fn (Maybe SymPath) (Set.Set XObj) FnEnv -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
          | Do
          | Let
          | While
@@ -65,7 +65,7 @@ data Obj = Sym SymPath SymbolMode
          | If
          | Match
          | Mod Env
-         | Typ Ty -- TODO: Rename to Deftype!
+         | Deftype Ty
          | DefSumtype Ty
          | With
          | External (Maybe String)
@@ -123,16 +123,23 @@ data Info = Info { infoLine :: Int
 dummyInfo :: Info
 dummyInfo = Info 0 0 "dummy-file" Set.empty (-1)
 
+-- TODO: The name 'deleter' for these things are really confusing!
 data Deleter = ProperDeleter { deleterPath :: SymPath
                              , deleterVariable :: String
                              }
              | FakeDeleter { deleterVariable :: String -- used for external types with no delete function
                            }
+             | PrimDeleter { aliveVariable :: String -- used by primitive types (i.e. Int) to signify that the variable is alive
+                           }
+             | RefDeleter { refVariable :: String
+                          }
              deriving (Eq, Ord)
 
 instance Show Deleter where
   show (ProperDeleter path var) = "(ProperDel " ++ show path ++ " " ++ show var ++ ")"
   show (FakeDeleter var) = "(FakeDel " ++ show var ++ ")"
+  show (PrimDeleter var) = "(PrimDel " ++ show var ++ ")"
+  show (RefDeleter var) = "(RefDel " ++ show var ++ ")"
 
 getInfo i = (infoLine i, infoColumn i, infoFile i)
 
@@ -180,7 +187,7 @@ data XObj = XObj { obj :: Obj
                  } deriving (Show, Eq, Ord)
 
 getBinderDescription :: XObj -> String
-getBinderDescription (XObj (Lst (XObj Defn _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
+getBinderDescription (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "defn"
 getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "def"
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
@@ -191,7 +198,7 @@ getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
 getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj DocStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "doc-stub"
-getBinderDescription (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
+getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "interface"
 getBinderDescription (XObj (Mod _) _ _) = "module"
@@ -204,7 +211,7 @@ getSimpleName :: XObj -> String
 getSimpleName xobj = let SymPath _ name = getPath xobj in name
 
 getSimpleNameWithArgs :: XObj -> Maybe String
-getSimpleNameWithArgs xobj@(XObj (Lst (XObj Defn _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
+getSimpleNameWithArgs xobj@(XObj (Lst (XObj (Defn _) _ _ : _ : XObj (Arr args) _ _ : _)) _ _) =
   Just $
     "(" ++ getSimpleName xobj ++ (if not (null args) then " " else "") ++
     unwords (map getSimpleName args) ++ ")"
@@ -220,7 +227,7 @@ getSimpleNameWithArgs xobj = Nothing
 
 -- | Extracts the second form (where the name of definitions are stored) from a list of XObj:s.
 getPath :: XObj -> SymPath
-getPath (XObj (Lst (XObj Defn _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Defn _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Def _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Macro _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj Dynamic _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -230,7 +237,7 @@ getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = p
 getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DocStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj (Typ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -239,7 +246,7 @@ getPath x = SymPath [] (pretty x)
 
 -- | Changes the second form (where the name of definitions are stored) in a list of XObj:s.
 setPath :: XObj -> SymPath -> XObj
-setPath (XObj (Lst (defn@(XObj Defn _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
+setPath (XObj (Lst (defn@(XObj (Defn _) _ _) : XObj (Sym _ _) si st : rest)) i t) newPath =
   XObj (Lst (defn : XObj (Sym newPath Symbol) si st : rest)) i t
 setPath (XObj (Lst [extr@(XObj (External _) _ _), XObj (Sym _ _) si st]) i t) newPath =
   XObj (Lst [extr, XObj (Sym newPath Symbol) si st]) i t
@@ -257,6 +264,7 @@ pretty = visit 0
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
+            Num ByteTy num -> show num
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
             Num _ _ -> error "Invalid number type."
@@ -267,16 +275,18 @@ pretty = visit 0
             MultiSym originalName paths -> originalName ++ "{" ++ joinWithComma (map show paths) ++ "}"
             InterfaceSym name -> name -- ++ "§"
             Bol b -> if b then "true" else "false"
-            Defn -> "defn"
+            Defn maybeCaptures -> "defn" ++ case maybeCaptures of
+                                              Just captures -> " <" ++ prettyCaptures captures ++ ">"
+                                              Nothing -> ""
             Def -> "def"
-            Fn _ captures -> "fn" ++ " <" ++ joinWithComma (map getName (Set.toList captures)) ++ ">"
+            Fn _ captures _ -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
             If -> "if"
             Match -> "match"
             While -> "while"
             Do -> "do"
             Let -> "let"
             Mod env -> fromMaybe "module" (envModuleName env)
-            Typ _ -> "deftype"
+            Deftype _ -> "deftype"
             DefSumtype _ -> "deftype"
             Deftemplate _ -> "deftemplate"
             Instantiate _ -> "instantiate"
@@ -297,6 +307,10 @@ pretty = visit 0
             Break -> "break"
             Interface _ _ -> "interface"
             With -> "with"
+
+prettyCaptures :: Set.Set XObj -> String
+prettyCaptures captures =
+  joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
 data EvalError = EvalError String (Maybe Info) FilePathPrintLength deriving (Eq)
 
@@ -364,6 +378,7 @@ metaIsTrue metaData key =
     _ -> False
 
 
+
 -- | Wraps and holds an XObj in an environment.
 data Binder = Binder { binderMeta :: MetaData, binderXObj :: XObj } deriving Eq
 
@@ -380,7 +395,7 @@ showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder meta xobj) =
-  if metaIsTrue meta "hidden"
+  if False -- metaIsTrue meta "hidden"
   then ""
   else replicate indent ' ' ++ name ++
        -- " (" ++ show (getPath xobj) ++ ")" ++
@@ -389,7 +404,11 @@ showBinderIndented indent (name, Binder meta xobj) =
 
 -- | Get a list of pairs from a deftype declaration.
 memberXObjsToPairs :: [XObj] -> [(String, Ty)]
-memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJust (xobjToTy t))) (pairwise xobjs)
+memberXObjsToPairs xobjs = map (\(n, t) -> (mangle (getName n), fromJustWithErrorMessage (xobjToTy t) ("Failed to convert " ++ show t ++ "\nPRETTY: " ++ pretty t ++ " from xobj to type."))) (pairwise xobjs)
+
+fromJustWithErrorMessage :: Maybe Ty -> String -> Ty
+fromJustWithErrorMessage (Just x) _ = x
+fromJustWithErrorMessage Nothing msg = error msg
 
 replaceGenericTypeSymbolsOnMembers :: Map.Map String Ty -> [XObj] -> [XObj]
 replaceGenericTypeSymbolsOnMembers mappings memberXObjs =
@@ -414,9 +433,10 @@ replaceGenericTypeSymbols _ xobj = xobj
 tyToXObj :: Ty -> XObj
 tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
 tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
-tyToXObj (RefTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
+tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -436,6 +456,14 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envMode :: EnvMode
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
+
+-- Could be (Maybe Env), but we have to get rid of equality
+data FnEnv = None
+           | FEnv Env
+  deriving (Show)
+
+instance Eq FnEnv where
+  _ == _ = True
 
 newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
 
@@ -564,34 +592,35 @@ instance Show Project where
             , "Library flags:\n    " ++ joinWith "\n    " libFlags
             , "Carp source files:\n    " ++ joinWith "\n    " srcFiles
             , "Already loaded:\n    " ++ joinWith "\n    " alreadyLoaded
-            , "Echo C: " ++ if echoC then "true" else "false"
-            , "Echo compilation command: " ++ if echoCompilationCommand then "true" else "false"
-            , "Can execute: " ++ if canExecute then "true" else "false"
+            , "Echo C: " ++ showB echoC
+            , "Echo compilation command: " ++ showB echoCompilationCommand
+            , "Can execute: " ++ showB canExecute
             , "Output directory: " ++ outDir
             , "Docs directory: " ++ docsDir
             , "Docs logo: " ++ docsLogo
             , "Docs prelude: " ++ docsPrelude
             , "Docs Project URL: " ++ docsURL
-            , "Docs generate index: " ++ show docsGenerateIndex
+            , "Docs generate index: " ++ showB docsGenerateIndex
             , "Docs CSS URL: " ++ docsStyling
             , "Library directory: " ++ libDir
             , "CARP_DIR: " ++ carpDir
             , "Prompt: " ++ prompt
-            , "Using Core: " ++ show core
+            , "Using Core: " ++ showB core
             , "Search paths for 'load' command:\n    " ++ joinWith  "\n    " searchPaths
-            , "Print AST (with 'info' command): " ++ if printTypedAST then "true" else "false"
+            , "Print AST (with 'info' command): " ++ showB printTypedAST
             , "File path print length (when using --check): " ++ show filePathPrintLength
-            , "Generate Only: " ++ if generateOnly then "true" else "false"
+            , "Generate Only: " ++ showB generateOnly
             ]
+    where showB b = if b then "true" else "false"
 
 -- | Represent the inclusion of a C header file, either like <string.h> or "string.h"
 data Includer = SystemInclude String
-              | LocalInclude String
+              | RelativeInclude String
               deriving Eq
 
 instance Show Includer where
   show (SystemInclude file) = "<" ++ file ++ ">"
-  show (LocalInclude file) = "\"" ++ file ++ "\""
+  show (RelativeInclude file) = "\"" ++ file ++ "\""
 
 -- | Converts an S-expression to one of the Carp types.
 xobjToTy :: XObj -> Maybe Ty
@@ -599,10 +628,12 @@ xobjToTy (XObj (Sym (SymPath _ "Int") _) _ _) = Just IntTy
 xobjToTy (XObj (Sym (SymPath _ "Float") _) _ _) = Just FloatTy
 xobjToTy (XObj (Sym (SymPath _ "Double") _) _ _) = Just DoubleTy
 xobjToTy (XObj (Sym (SymPath _ "Long") _) _ _) = Just LongTy
+xobjToTy (XObj (Sym (SymPath _ "Byte") _) _ _) = Just ByteTy
 xobjToTy (XObj (Sym (SymPath _ "String") _) _ _) = Just StringTy
 xobjToTy (XObj (Sym (SymPath _ "Pattern") _) _ _) = Just PatternTy
 xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
+xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
 xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)
                                                           | otherwise = Just (StructTy s [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
@@ -610,12 +641,16 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
      return (PointerTy okInnerTy)
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ptr") _) _ _ : _)) _ _) =
   Nothing
-xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) _ _) =
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy]) i _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy)
-xobjToTy (XObj (Lst [XObj Ref i t, innerTy]) _ _) = -- This enables parsing of '&'
+     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ref") _) _ _, innerTy, lifetimeTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
-     return (RefTy okInnerTy)
+     okLifetimeTy <- xobjToTy lifetimeTy
+     return (RefTy okInnerTy okLifetimeTy)
+xobjToTy (XObj (Lst [XObj Ref _ _, innerTy]) i _) = -- This enables parsing of '&'
+  do okInnerTy <- xobjToTy innerTy
+     return (RefTy okInnerTy (VarTy (makeTypeVariableNameFromInfo i)))
 xobjToTy (XObj (Lst (XObj (Sym (SymPath _ "Ref") _) _ _ : _)) _ _) =
   Nothing
 xobjToTy (XObj (Lst [XObj (Sym (SymPath path "╬╗") _) fi ft, XObj (Arr argTys) ai at, retTy]) i t) =
@@ -625,7 +660,12 @@ xobjToTy (XObj (Lst [XObj (Sym (SymPath path "λ") _) fi ft, XObj (Arr argTys) a
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy]) _ _) =
   do okArgTys <- mapM xobjToTy argTys
      okRetTy <- xobjToTy retTy
-     return (FuncTy okArgTys okRetTy)
+     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
+xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Fn") _) _ _, XObj (Arr argTys) _ _, retTy, lifetime]) _ _) =
+  do okArgTys <- mapM xobjToTy argTys
+     okRetTy <- xobjToTy retTy
+     okLifetime <- xobjToTy lifetime
+     return (FuncTy okArgTys okRetTy StaticLifetimeTy)
 xobjToTy (XObj (Lst []) _ _) = Just UnitTy
 xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
@@ -635,6 +675,12 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
        (VarTy n) -> return (StructTy n okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
+
+makeTypeVariableNameFromInfo :: Maybe Info -> String
+makeTypeVariableNameFromInfo (Just i) =
+  "tyvar-from-info-" ++ show (infoIdentifier i) ++ "_" ++ show (infoLine i) ++ "_" ++ show (infoColumn i)
+makeTypeVariableNameFromInfo Nothing =
+  error "unnamed-typevariable"
 
 -- | Generates the suffix added to polymorphic functions when they are instantiated.
 --   For example                (defn id [x] x) : t -> t
@@ -658,12 +704,12 @@ polymorphicSuffix signature actualType =
                                      then return []
                                      else do put (a : visitedTypeVariables) -- now it's visited
                                              return [tyToC b]
-            (FuncTy argTysA retTyA, FuncTy argTysB retTyB) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
-                                                                 visitedRets <- visit retTyA retTyB
-                                                                 return (visitedArgs ++ visitedRets)
+            (FuncTy argTysA retTyA _, FuncTy argTysB retTyB _) -> do visitedArgs <- fmap concat (zipWithM visit argTysA argTysB)
+                                                                     visitedRets <- visit retTyA retTyB
+                                                                     return (visitedArgs ++ visitedRets)
             (StructTy _ a, StructTy _ b) -> fmap concat (zipWithM visit a b)
             (PointerTy a, PointerTy b) -> visit a b
-            (RefTy a, RefTy b) -> visit a b
+            (RefTy a _, RefTy b _) -> visit a b
             (_, _) -> return []
 
 type VisitedTypes = [Ty]
@@ -805,6 +851,12 @@ isSym _ = False
 isArray :: XObj -> Bool
 isArray (XObj (Arr _) _ _) = True
 isArray _ = False
+
+isLiteral :: XObj -> Bool
+isLiteral (XObj (Num _ _) _ _) = True
+isLiteral (XObj (Chr _) _ _) = True
+isLiteral (XObj (Bol _) _ _) = True
+isLiteral _ = False
 
 -- construct an empty list xobj
 emptyList :: XObj

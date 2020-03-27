@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -140,25 +150,6 @@
             </h1>
             <div class="module-description">
                 
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#/=">
-                    <h3 id="/=">
-                        /=
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [a, a] Bool)
-                </p>
-                <pre class="args">
-                    (/= a b)
-                </pre>
-                <p class="doc">
-                    
-                </p>
             </div>
             <div class="binder">
                 <a class="anchor" href="#=">
@@ -170,7 +161,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double)), (Ref (Vector3 Double))] Bool)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (= a b)
@@ -189,7 +180,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), (Ref (Vector3 a))] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] (Vector3 a))
                 </p>
                 <pre class="args">
                     (add a b)
@@ -208,13 +199,13 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double)), (Ref (Vector3 Double))] Double)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] a)
                 </p>
                 <pre class="args">
                     (angle-between a b)
                 </pre>
                 <p class="doc">
-                    <p>Get the angle between to vectors a and b.</p>
+                    <p>Get the angle between two vectors a and b.</p>
 
                 </p>
             </div>
@@ -228,7 +219,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double)), (Ref (Vector3 Double))] Bool)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (anti-parallel? a b)
@@ -236,6 +227,25 @@
                 <p class="doc">
                     <p>Check whether the two vectors a and b are anti-parallel.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#cmul">
+                    <h3 id="cmul">
+                        cmul
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] (Vector3 a))
+                </p>
+                <pre class="args">
+                    (cmul a b)
+                </pre>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -248,7 +258,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -268,7 +278,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), (Ref (Vector3 a))] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] (Vector3 a))
                 </p>
                 <pre class="args">
                     (cross a b)
@@ -299,6 +309,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#dist">
+                    <h3 id="dist">
+                        dist
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] a)
+                </p>
+                <pre class="args">
+                    (dist a b)
+                </pre>
+                <p class="doc">
+                    <p>Get the distance between the vectors a and b.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#div">
                     <h3 id="div">
                         div
@@ -308,10 +338,10 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), a] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b), a] (Vector3 a))
                 </p>
                 <pre class="args">
-                    (div a n)
+                    (div v n)
                 </pre>
                 <p class="doc">
                     
@@ -327,7 +357,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), (Ref (Vector3 a))] a)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] a)
                 </p>
                 <pre class="args">
                     (dot a b)
@@ -358,26 +388,6 @@
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#lerp">
-                    <h3 id="lerp">
-                        lerp
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [(Ref (Vector3 a)), (Ref (Vector3 a)), a] (Vector3 a))
-                </p>
-                <pre class="args">
-                    (lerp a b amnt)
-                </pre>
-                <p class="doc">
-                    <p>Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).</p>
-
-                </p>
-            </div>
-            <div class="binder">
                 <a class="anchor" href="#mag">
                     <h3 id="mag">
                         mag
@@ -387,7 +397,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double))] Double)
+                    (λ [(Ref (Vector3 a) b)] a)
                 </p>
                 <pre class="args">
                     (mag o)
@@ -407,7 +417,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] a)
+                    (λ [(Ref (Vector3 a) b)] a)
                 </p>
                 <pre class="args">
                     (mag-sq o)
@@ -415,6 +425,25 @@
                 <p class="doc">
                     <p>Get the squared magnitude of a vector.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#map">
+                    <h3 id="map">
+                        map
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [a] b c), (Ref (Vector3 a) d)] (Vector3 b))
+                </p>
+                <pre class="args">
+                    (map f v)
+                </pre>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -427,10 +456,29 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), a] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b), a] (Vector3 a))
                 </p>
                 <pre class="args">
-                    (mul a n)
+                    (mul v n)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#neg">
+                    <h3 id="neg">
+                        neg
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b)] (Vector3 a))
+                </p>
+                <pre class="args">
+                    (neg a)
                 </pre>
                 <p class="doc">
                     
@@ -446,7 +494,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double))] (Vector3 Double))
+                    (λ [(Ref (Vector3 a) b)] (Vector3 a))
                 </p>
                 <pre class="args">
                     (normalize o)
@@ -466,7 +514,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double)), (Ref (Vector3 Double))] Bool)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (parallel? a b)
@@ -486,7 +534,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 Double)), (Ref (Vector3 Double))] Bool)
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] Bool)
                 </p>
                 <pre class="args">
                     (perpendicular? a b)
@@ -506,7 +554,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] String)
+                    (λ [(Ref (Vector3 a) b)] String)
                 </p>
                 <span>
                     
@@ -526,7 +574,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Vector3 Double))
+                    (λ [] (Vector3 a))
                 </p>
                 <pre class="args">
                     (random)
@@ -562,10 +610,10 @@
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), a] ())
+                    (λ [(Ref (Vector3 a) b), a] ())
                 </p>
                 <span>
                     
@@ -602,10 +650,10 @@
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), a] ())
+                    (λ [(Ref (Vector3 a) b), a] ())
                 </p>
                 <span>
                     
@@ -642,10 +690,10 @@
                     </h3>
                 </a>
                 <div class="description">
-                    instantiate
+                    template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), a] ())
+                    (λ [(Ref (Vector3 a) b), a] ())
                 </p>
                 <span>
                     
@@ -665,7 +713,7 @@
                     template
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] String)
+                    (λ [(Ref (Vector3 a) b)] String)
                 </p>
                 <span>
                     
@@ -685,10 +733,29 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a)), (Ref (Vector3 a))] (Vector3 a))
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] (Vector3 a))
                 </p>
                 <pre class="args">
                     (sub a b)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sum">
+                    <h3 id="sum">
+                        sum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b)] a)
+                </p>
+                <pre class="args">
+                    (sum o)
                 </pre>
                 <p class="doc">
                     
@@ -704,7 +771,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref (λ [a] a))] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -724,7 +791,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref (λ [a] a))] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -744,7 +811,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Vector3 a), (Ref (λ [a] a))] (Vector3 a))
+                    (λ [(Vector3 a), (Ref (λ [a] a b) c)] (Vector3 a))
                 </p>
                 <span>
                     
@@ -752,6 +819,65 @@
                 <p class="doc">
                     <p>updates the <code>z</code> property of a <code>Vector3</code> using a function <code>f</code>.</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#vapprox">
+                    <h3 id="vapprox">
+                        vapprox
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c)] Bool)
+                </p>
+                <pre class="args">
+                    (vapprox a b)
+                </pre>
+                <p class="doc">
+                    <p>Check whether the vectors a and b are approximately equal.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#vlerp">
+                    <h3 id="vlerp">
+                        vlerp
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (Vector3 a) b), (Ref (Vector3 a) c), a] (Vector3 a))
+                </p>
+                <pre class="args">
+                    (vlerp a b amnt)
+                </pre>
+                <p class="doc">
+                    <p>Linearly interpolate between the two vectors a and b by amnt (between 0 and 1).</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#vreduce">
+                    <h3 id="vreduce">
+                        vreduce
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [a, b] a c), a, (Ref (Vector3 b) d)] a)
+                </p>
+                <pre class="args">
+                    (vreduce f i v)
+                </pre>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
@@ -764,7 +890,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] &amp;a)
+                    (λ [(Ref (Vector3 a) b)] (Ref a b))
                 </p>
                 <span>
                     
@@ -784,7 +910,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] &amp;a)
+                    (λ [(Ref (Vector3 a) b)] (Ref a b))
                 </p>
                 <span>
                     
@@ -804,7 +930,7 @@
                     instantiate
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Vector3 a))] &amp;a)
+                    (λ [(Ref (Vector3 a) b)] (Ref a b))
                 </p>
                 <span>
                     
@@ -824,10 +950,29 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [] (Vector3 Double))
+                    (λ [] (Vector3 a))
                 </p>
                 <pre class="args">
                     (zero)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip">
+                    <h3 id="zip">
+                        zip
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(λ [a, b] c d), (Ref (Vector3 a) e), (Ref (Vector3 b) f)] (Vector3 c))
+                </p>
+                <pre class="args">
+                    (zip f a b)
                 </pre>
                 <p class="doc">
                     

@@ -1,0 +1,17 @@
+(defn safe-to-int16 [m m2]
+    (match m
+      (Maybe.Just b) 
+        (match m2 
+          (Maybe.Just bb) (Maybe.Just (to-int16 b bb))
+          (Maybe.Nothing) (Maybe.Nothing))
+      (Maybe.Nothing) (Maybe.Nothing)))
+
+(doc bytes->int16
+    "Interprets the first two bytes in a byte sequence as an int16 value.")
+  (sig bytes->int16 (Fn [Order (Ref (Array Byte) a)] (Maybe Int)))
+  (defn bytes->int16 [order bs]
+    (let [first-byte (Array.nth bs 0)
+          second-byte (Array.nth bs 1)]
+    (match order 
+      (Order.LittleEndian) (safe-to-int16 first-byte second-byte)
+      (Order.BigEndian) (safe-to-int16 second-byte first-byte))))

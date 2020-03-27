@@ -1,0 +1,64 @@
+(load "Test.carp")
+(use Test)
+
+(load "stdint.carp")
+(use Int8)
+
+(deftest test
+  (assert-equal test
+                (from-long 3l)
+                (+ (from-long 1l) (from-long 2l))
+                "addition works")
+  (assert-equal test
+                (from-long 3l)
+                (- (from-long 2l) (from-long -1l))
+                "subtraction works")
+  (assert-equal test
+                (from-long -4l)
+                (* (from-long 2l) (from-long -2l))
+                "multiplication works")
+  (assert-equal test
+                (from-long 2l)
+                (/ (from-long 5l) (from-long 2l))
+                "division works")
+  (assert-equal test
+                (from-long 2l)
+                (/ (from-long 5l) (from-long 2l))
+                "division works")
+  (assert-equal test
+                (from-long 8l)
+                (bit-shift-left (from-long 2l) (from-long 2l))
+                "shift left works")
+  (assert-equal test
+                (from-long 1l)
+                (bit-shift-right (from-long 4l) (from-long 2l))
+                "shift right works")
+  (assert-equal test
+                (from-long 6l)
+                (bit-or (from-long 4l) (from-long 2l))
+                "binary or works")
+  (assert-equal test
+                (from-long 2l)
+                (bit-and (from-long 6l) (from-long 3l))
+                "binary and works")
+  (assert-equal test
+                (from-long 127l)
+                (bit-not (from-long 128l))
+                "binary not works")
+  (assert-equal test
+                (from-long 5l)
+                (bit-xor (from-long 6l) (from-long 3l))
+                "binary xor works")
+  (assert-equal test
+                5l
+                (to-long (from-long 5l))
+                "conversion works")
+  (assert-equal test
+                "Int8(1)"
+                &(str (from-long 1l))
+                "str works")
+  (assert-equal test
+                &[(from-long -1l)]
+                &(from-bytes &[255b])
+                "from-bytes works")
+)

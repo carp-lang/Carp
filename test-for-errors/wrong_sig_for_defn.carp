@@ -1,0 +1,4 @@
+(Project.config "file-path-print-length" "short")
+
+(sig foo (Fn [Int] Float))
+(defn foo [] true)

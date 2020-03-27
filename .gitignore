@@ -1,4 +1,6 @@
 *.dSYM
+*~
+*#
 */.DS_Store
 
 .stack-work/
@@ -12,3 +14,4 @@ dist/
 /releases
 main.obj
 examples/out
+/stack.yaml.lock

@@ -1,21 +1,20 @@
 (system-include "math.h")
 
-(local-include "../core/SDLHelper.h")
+(relative-include "SDLHelper.h")
 
 (not-on-windows
   (add-pkg "sdl2"))
 
-(defmodule SDL
-  (defmodule Windows
-    (defdynamic header-path "C:\\SDL2-2.0.9\\include")
-    (defdynamic library-path "C:\\SDL2-2.0.9\\lib\\x86\\")))
+;; Only define these if they're not already defined (allows the user to pre-define them before including SDL.carp)
+(defdynamic-once sdl-windows-header-path "C:\\SDL2-2.0.9\\include")
+(defdynamic-once sdl-windows-library-path "C:\\SDL2-2.0.9\\lib\\x86\\")
 
 (windows-only
   ;; Note - you'll still need the SDL2.dll to be able to run the executable
   (add-cflag "-DSDL_MAIN_HANDLED")
   (add-cflag "-Wno-pragma-pack")
-  (add-cflag (str "-I" SDL.Windows.header-path))
-  (add-lib (str "/link " SDL.Windows.library-path "SDL2.lib " SDL.Windows.library-path "SDL2main.lib")))
+  (add-cflag (str "-I" sdl-windows-header-path))
+  (add-lib (str "/link " sdl-windows-library-path "SDL2.lib "))) ;; sdl-windows-library-path "SDL2main.lib")))
 
 ;; Types
 (register-type SDL_Keycode)
@@ -121,8 +120,6 @@
     (register str (Fn [SDL_Keycode] String))
     (defn prn [x]
       (SDL.Keycode.str x))
-    (defn /= [x y]
-      (not (SDL.Keycode.= x y)))
 
     (register return SDL_Keycode "SDLK_RETURN")
     (register space SDL_Keycode "SDLK_SPACE")
@@ -251,6 +248,7 @@
      fps Int])
 
 (defmodule SDLApp
+  (doc create "creates an SDLApp instance that can then be used by `run-with-callbacks`.")
   (defn create [title width height]
     (let [win NULL
           ren NULL]
@@ -260,6 +258,13 @@
           (SDL.set-window-title win (cstr title))
           (SDLApp.init win ren 60))))
 
+  (hidden reduce-events)
+  (defn reduce-events [app f state-to-reduce-over]
+    (Array.reduce &(fn [s e] (~f app s e)) ;; Note, this will malloc an environment that captures the 'app' variable.
+                  state-to-reduce-over
+                  &(SDL.Event.all)))
+
+  (doc run-with-callbacks "starts the SDLApp and uses three callbacks to handle events, update state and render graphics.")
   (defn run-with-callbacks [app event-fn update-fn draw-fn initial-state]
     (let-do [rend @(SDLApp.renderer app)
              state initial-state
@@ -267,7 +272,7 @@
              target-dt (/ 1000 @(SDLApp.fps app))]
       (while true
         (do
-          (event-fn app)
+          (set! state (reduce-events app &event-fn state))
           (set! state (update-fn state))
           (let-do [dt (- (SDL.get-ticks) last-t)
                 time-left (- target-dt dt)]
@@ -278,21 +283,23 @@
           (draw-fn app rend &state)
           (SDL.render-present rend)))))
 
+  (doc stop "stops the app. This function return 'a' to enable it to be called from anywhere.")
   (defn stop [app]
     (do (SDL.destroy-window @(window app))
         (SDL.quit)
         (System.exit 0)))
 
+  (doc default-draw "is a default rendering function that can be passed to `run-with-callbacks`.")
   (defn default-draw [app rend state-ref]
     (do (SDL.set-render-draw-color rend 0 0 0 255)
         (SDL.render-clear rend)))
 
-  (defn quit-on-esc [app]
-    (foreach [event &(SDL.Event.all)]
-             (case (SDL.Event.type event)
-               SDL.Event.quit (SDLApp.stop app)
-               SDL.Event.key-down (let [key (SDL.Event.keycode event)]
-                                    (if (= key SDL.Keycode.escape)
-                                      (SDLApp.stop app)
-                                      ()))
-               ()))))
+  (doc quit-on-esc "is a default event handling function that can be passed to `run-with-callbacks`. Allows the application to quit if the player presses the escape key.")
+  (defn quit-on-esc [app state event]
+    (case (SDL.Event.type event)
+      SDL.Event.quit (SDLApp.stop app)
+      SDL.Event.key-down (let [key (SDL.Event.keycode event)]
+                           (if (= key SDL.Keycode.escape)
+                             (SDLApp.stop app)
+                             state))
+      state)))

@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -228,13 +238,13 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [Id] ())
                 </p>
                 <pre class="args">
-                    (color cname)
+                    (color cid)
                 </pre>
                 <p class="doc">
-                    <p>sets the output color using ANSI coloration based on a color name <code>cname</code>.</p>
+                    <p>sets the output color using ANSI coloration based on a color id <code>cid</code>.</p>
 
                 </p>
             </div>
@@ -248,13 +258,13 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] ())
+                    (λ [Id, (Ref String a)] ())
                 </p>
                 <pre class="args">
-                    (colorize cname s)
+                    (colorize cid s)
                 </pre>
                 <p class="doc">
-                    <p>wraps a string in ANSI coloration based on a color name <code>cname</code> and prints it.</p>
+                    <p>wraps a string in ANSI coloration based on a color id <code>cid</code> and prints it.</p>
 
                 </p>
             </div>
@@ -265,10 +275,10 @@
                     </h3>
                 </a>
                 <div class="description">
-                    doc-stub
+                    external
                 </div>
                 <p class="sig">
-                    a
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -288,7 +298,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -388,13 +398,13 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, &amp;String] (Ptr FILE))
+                    (λ [(Ref String a), (Ref String b)] (Ptr FILE))
                 </p>
                 <span>
                     
                 </span>
                 <p class="doc">
-                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer.</p>
+                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a file pointer. Consider using the function open-file instead.</p>
 
                 </p>
             </div>
@@ -519,6 +529,45 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#getenv">
+                    <h3 id="getenv">
+                        getenv
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [String] (Maybe String))
+                </p>
+                <pre class="args">
+                    (getenv s)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#open-file">
+                    <h3 id="open-file">
+                        open-file
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref String a), (Ref String b)] (Result (Ptr FILE) Int))
+                </p>
+                <pre class="args">
+                    (open-file filename mode)
+                </pre>
+                <p class="doc">
+                    <p>opens a file by name using a mode (one or multiple of [r]ead, [w]rite, and [a]ppend), returns a Result type that contains an error string or a file pointer.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#print">
                     <h3 id="print">
                         print
@@ -528,7 +577,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -548,7 +597,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] ())
+                    (λ [(Ref String a)] ())
                 </p>
                 <span>
                     
@@ -568,7 +617,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] (Result String String))
+                    (λ [(Ref String a)] (Result String Int))
                 </p>
                 <pre class="args">
                     (read-&gt;EOF filename)
@@ -588,7 +637,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String] String)
+                    (λ [(Ref String a)] String)
                 </p>
                 <span>
                     
@@ -616,6 +665,63 @@
                 <p class="doc">
                     <p>rewinds a file pointer (i.e. puts input and output stream to beginning).</p>
 
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#stderr">
+                    <h3 id="stderr">
+                        stderr
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (Ptr FILE)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#stdin">
+                    <h3 id="stdin">
+                        stdin
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (Ptr FILE)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#stdout">
+                    <h3 id="stdout">
+                        stdout
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (Ptr FILE)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
                 </p>
             </div>
             <div class="binder">
