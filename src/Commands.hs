@@ -1,13 +1,13 @@
 module Commands where
 
-import System.Info (os)
-import Control.Monad.State
-import Control.Monad.State.Lazy (StateT(..), runStateT, liftIO, modify, get, put)
-import Data.Maybe (fromMaybe)
-import Data.List (elemIndex)
-import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
-import System.Process (callCommand, spawnCommand, waitForProcess)
 import Control.Exception
+import Control.Monad (join, when)
+import Control.Monad.IO.Class (liftIO, MonadIO)
+import Data.List (elemIndex)
+import Data.Maybe (fromMaybe)
+import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
+import System.Info (os)
+import System.Process (callCommand, spawnCommand, waitForProcess)
 import qualified Data.Map as Map
 
 import Parsing
@@ -23,8 +23,6 @@ import Lookup
 import RenderDocs
 import TypeError
 import Path
-
-type CommandCallback = [XObj] -> StateT Context IO (Either EvalError XObj)
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -48,8 +46,7 @@ falseXObj = XObj (Bol False) Nothing Nothing
 
 -- | Use this function to register commands in the environment.
 addCommand :: String -> Int -> CommandCallback -> (String, Binder)
-addCommand name arity callback =
-  addCommandConfigurable name (Just arity) callback
+addCommand name arity callback = addCommandConfigurable name (Just arity) callback
 
 addCommandConfigurable :: String -> Maybe Int -> CommandCallback -> (String, Binder)
 addCommandConfigurable name maybeArity callback =
@@ -61,14 +58,12 @@ addCommandConfigurable name maybeArity callback =
   in (name, Binder emptyMeta cmd)
   where f = case maybeArity of
               Just arity -> withArity arity
-              Nothing -> withoutArity
-        withArity arity args =
+              Nothing -> callback
+        withArity arity ctx args =
           if length args == arity
-            then callback args
-            else do
-              ctx <- get
+            then callback ctx args
+            else
               return (evalError ctx ("Invalid args to '" ++ name ++ "' command: " ++ joinWithComma (map pretty args)) Nothing)
-        withoutArity args = callback args
 
 presentError :: MonadIO m => String -> a -> m a
 presentError msg ret =
@@ -77,68 +72,65 @@ presentError msg ret =
 
 -- | Command for changing various project settings.
 commandProjectConfig :: CommandCallback
-commandProjectConfig [xobj@(XObj (Str key) _ _), value] =
-  do ctx <- get
-     let proj = contextProj ctx
-         env = contextGlobalEnv ctx
-         newProj = case key of
-                     "cflag" -> do cflag <- unwrapStringXObj value
-                                   return (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
-                     "libflag" -> do libflag <- unwrapStringXObj value
-                                     return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
-                     "prompt" -> do prompt <- unwrapStringXObj value
-                                    return (proj { projectPrompt = prompt })
-                     "search-path" -> do searchPath <- unwrapStringXObj value
-                                         return (proj { projectCarpSearchPaths = addIfNotPresent searchPath (projectCarpSearchPaths proj) })
-                     "print-ast" -> do printAST <- unwrapBoolXObj value
-                                       return (proj { projectPrintTypedAST = printAST })
-                     "echo-c" -> do echoC <- unwrapBoolXObj value
-                                    return (proj { projectEchoC = echoC })
-                     "echo-compiler-cmd" -> do echoCompilerCmd <- unwrapBoolXObj value
-                                               return (proj { projectEchoCompilationCommand = echoCompilerCmd })
-                     "compiler" -> do compiler <- unwrapStringXObj value
-                                      return (proj { projectCompiler = compiler })
-                     "title" -> do title <- unwrapStringXObj value
-                                   return (proj { projectTitle = title })
-                     "output-directory" -> do outDir <- unwrapStringXObj value
-                                              return (proj { projectOutDir = outDir })
-                     "docs-directory" -> do docsDir <- unwrapStringXObj value
-                                            return (proj { projectDocsDir = docsDir })
-                     "docs-generate-index" ->
-                       do docsGenerateIndex <- unwrapBoolXObj value
-                          return (proj { projectDocsGenerateIndex = docsGenerateIndex })
-                     "docs-logo" -> do logo <- unwrapStringXObj value
-                                       return (proj { projectDocsLogo = logo })
-                     "docs-prelude" -> do prelude <- unwrapStringXObj value
-                                          return (proj { projectDocsPrelude = prelude })
-                     "docs-url" -> do url <- unwrapStringXObj value
-                                      return (proj { projectDocsURL = url })
-                     "docs-styling" -> do url <- unwrapStringXObj value
-                                          return (proj { projectDocsStyling = url })
-                     "file-path-print-length" -> do length <- unwrapStringXObj value
-                                                    case length of
-                                                      "short" -> return (proj { projectFilePathPrintLength = ShortPath })
-                                                      "full" -> return (proj { projectFilePathPrintLength = ShortPath })
-                                                      _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
-                     "generate-only" -> do generateOnly <- unwrapBoolXObj value
-                                           return (proj { projectGenerateOnly = generateOnly })
-                     _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
-     case newProj of
-       Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) dynamicNil
-       Right ok -> do put (ctx { contextProj = ok })
-                      return dynamicNil
-commandProjectConfig [faultyKey, _] =
-  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
+commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
+  let proj = contextProj ctx
+      env = contextGlobalEnv ctx
+      newProj = case key of
+                  "cflag" -> do cflag <- unwrapStringXObj value
+                                return (proj { projectCFlags = addIfNotPresent cflag (projectCFlags proj) })
+                  "libflag" -> do libflag <- unwrapStringXObj value
+                                  return (proj { projectLibFlags = addIfNotPresent libflag (projectLibFlags proj) })
+                  "prompt" -> do prompt <- unwrapStringXObj value
+                                 return (proj { projectPrompt = prompt })
+                  "search-path" -> do searchPath <- unwrapStringXObj value
+                                      return (proj { projectCarpSearchPaths = addIfNotPresent searchPath (projectCarpSearchPaths proj) })
+                  "print-ast" -> do printAST <- unwrapBoolXObj value
+                                    return (proj { projectPrintTypedAST = printAST })
+                  "echo-c" -> do echoC <- unwrapBoolXObj value
+                                 return (proj { projectEchoC = echoC })
+                  "echo-compiler-cmd" -> do echoCompilerCmd <- unwrapBoolXObj value
+                                            return (proj { projectEchoCompilationCommand = echoCompilerCmd })
+                  "compiler" -> do compiler <- unwrapStringXObj value
+                                   return (proj { projectCompiler = compiler })
+                  "title" -> do title <- unwrapStringXObj value
+                                return (proj { projectTitle = title })
+                  "output-directory" -> do outDir <- unwrapStringXObj value
+                                           return (proj { projectOutDir = outDir })
+                  "docs-directory" -> do docsDir <- unwrapStringXObj value
+                                         return (proj { projectDocsDir = docsDir })
+                  "docs-generate-index" ->
+                    do docsGenerateIndex <- unwrapBoolXObj value
+                       return (proj { projectDocsGenerateIndex = docsGenerateIndex })
+                  "docs-logo" -> do logo <- unwrapStringXObj value
+                                    return (proj { projectDocsLogo = logo })
+                  "docs-prelude" -> do prelude <- unwrapStringXObj value
+                                       return (proj { projectDocsPrelude = prelude })
+                  "docs-url" -> do url <- unwrapStringXObj value
+                                   return (proj { projectDocsURL = url })
+                  "docs-styling" -> do url <- unwrapStringXObj value
+                                       return (proj { projectDocsStyling = url })
+                  "file-path-print-length" -> do length <- unwrapStringXObj value
+                                                 case length of
+                                                   "short" -> return (proj { projectFilePathPrintLength = ShortPath })
+                                                   "full" -> return (proj { projectFilePathPrintLength = ShortPath })
+                                                   _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
+                  "generate-only" -> do generateOnly <- unwrapBoolXObj value
+                                        return (proj { projectGenerateOnly = generateOnly })
+                  _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
+  case newProj of
+    Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) (ctx, dynamicNil)
+    Right ok -> return (ctx, dynamicNil)
+commandProjectConfig ctx [faultyKey, _] =
+  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 
 -- | Command for changing various project settings.
 commandProjectGetConfig :: CommandCallback
-commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
-  do ctx <- get
-     let proj = contextProj ctx
-         env = contextGlobalEnv ctx
-     case getVal ctx proj of
-      Right val -> return $ Right $ XObj val (Just dummyInfo) (Just StringTy)
-      Left err -> return $ Left err
+commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] = do
+  let proj = contextProj ctx
+      env = contextGlobalEnv ctx
+  case getVal ctx proj of
+   Right val -> return (ctx, Right $ XObj val (Just dummyInfo) (Just StringTy))
+   Left key -> return (evalError ctx ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj))
   where getVal ctx proj = case key of
           "cflag" -> Right $ Str $ show $ projectCFlags proj
           "libflag" -> Right $ Str $ show $ projectLibFlags proj
@@ -158,115 +150,104 @@ commandProjectGetConfig [xobj@(XObj (Str key) _ _)] =
           "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
           "generate-only" -> Right $ Str $ show (projectGenerateOnly proj)
-          _ ->
-            evalError ctx ("[CONFIG ERROR] Project.get-config can't understand the key '" ++ key) (info xobj)
-commandProjectGetConfig [faultyKey] =
-  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) dynamicNil
+          _ -> Left key
+commandProjectGetConfig ctx [faultyKey] =
+  presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 
 -- | Command for exiting the REPL/compiler
 commandQuit :: CommandCallback
-commandQuit args =
+commandQuit ctx args =
   do liftIO exitSuccess
-     return dynamicNil
+     return (ctx, dynamicNil)
 
 -- | Command for printing the generated C output (in out/main.c)
 commandCat :: CommandCallback
-commandCat args =
-  do ctx <- get
-     let outDir = projectOutDir (contextProj ctx)
-         outMain = outDir </> "main.c"
-     liftIO $ do callCommand ("cat -n " ++ outMain)
-                 return dynamicNil
+commandCat ctx args = do
+  let outDir = projectOutDir (contextProj ctx)
+      outMain = outDir </> "main.c"
+  liftIO $ do callCommand ("cat -n " ++ outMain)
+              return (ctx, dynamicNil)
 
 -- | Command for running the executable generated by the 'build' command.
 commandRunExe :: CommandCallback
-commandRunExe args =
-  do ctx <- get
-     let proj = contextProj ctx
-         outDir = projectOutDir proj
-         quoted x = "\"" ++ x ++ "\""
-         outExe = quoted $ outDir </> projectTitle (contextProj ctx)
-     if projectCanExecute proj
-       then liftIO $ do handle <- spawnCommand outExe
-                        exitCode <- waitForProcess handle
-                        case exitCode of
-                          ExitSuccess -> return (Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
-                          ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
-       else liftIO $ do putStrLnWithColor Red "Can't call the 'run' command, need to build an executable first (requires a 'main' function)."
-                        return dynamicNil
+commandRunExe ctx args = do
+  let proj = contextProj ctx
+      outDir = projectOutDir proj
+      quoted x = "\"" ++ x ++ "\""
+      outExe = quoted $ outDir </> projectTitle (contextProj ctx)
+  if projectCanExecute proj
+    then liftIO $ do handle <- spawnCommand outExe
+                     exitCode <- waitForProcess handle
+                     case exitCode of
+                       ExitSuccess -> return (ctx, Right (XObj (Num IntTy 0) (Just dummyInfo) (Just IntTy)))
+                       ExitFailure i -> throw (ShellOutException ("'" ++ outExe ++ "' exited with return value " ++ show i ++ ".") i)
+    else liftIO $ do putStrLnWithColor Red "Can't call the 'run' command, need to build an executable first (requires a 'main' function)."
+                     return (ctx, dynamicNil)
 
 -- | Command for building the project, producing an executable binary or a shared library.
-commandBuild :: Bool -> [XObj] -> StateT Context IO (Either EvalError XObj)
-commandBuild shutUp args =
-  do ctx <- get
-     let env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         proj = contextProj ctx
-         execMode = contextExecMode ctx
-         src = do decl <- envToDeclarations typeEnv env
-                  typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
-                  c <- envToC env Functions
-                  initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
-                  return ("//Types:\n" ++ typeDecl ++
-                          "\n\n//Declarations:\n" ++ decl ++
-                          "\n\n//Init globals:\n" ++ initGlobals ++
-                          "\n\n//Definitions:\n" ++ c
-                         )
-     case src of
-       Left err ->
-         return (evalError ctx ("I encountered an error when emitting code:\n\n" ++ show err) Nothing)
-       Right okSrc ->
-         do let compiler = projectCompiler proj
-                echoCompilationCommand = projectEchoCompilationCommand proj
-                incl = projectIncludesToC proj
-                includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
-                flags = includeCorePath ++ projectFlags proj
-                outDir = projectOutDir proj
-                outMain = outDir </> "main.c"
-                outExe = outDir </> projectTitle proj
-                outLib = outDir </> projectTitle proj
-                generateOnly = projectGenerateOnly proj
-            liftIO $ createDirectoryIfMissing False outDir
-            liftIO $ writeFile outMain (incl ++ okSrc)
-            if generateOnly then return dynamicNil else
-                case Map.lookup "main" (envBindings env) of
-                                Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
-                                             liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                         callCommand cmd
-                                                         when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
-                                             setProjectCanExecute True
-                                             return dynamicNil
-                                Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
-                                              liftIO $ do when echoCompilationCommand (putStrLn cmd)
-                                                          callCommand cmd
-                                                          when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
-                                              setProjectCanExecute False
-                                              return dynamicNil
+commandBuild :: Bool -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+commandBuild shutUp ctx args = do
+  let env = contextGlobalEnv ctx
+      typeEnv = contextTypeEnv ctx
+      proj = contextProj ctx
+      execMode = contextExecMode ctx
+      src = do decl <- envToDeclarations typeEnv env
+               typeDecl <- envToDeclarations typeEnv (getTypeEnv typeEnv)
+               c <- envToC env Functions
+               initGlobals <- fmap (wrapInInitFunction (projectCore proj)) (globalsToC env)
+               return ("//Types:\n" ++ typeDecl ++
+                       "\n\n//Declarations:\n" ++ decl ++
+                       "\n\n//Init globals:\n" ++ initGlobals ++
+                       "\n\n//Definitions:\n" ++ c
+                      )
+  case src of
+    Left err ->
+      return (evalError ctx ("I encountered an error when emitting code:\n\n" ++ show err) Nothing)
+    Right okSrc ->
+      do let compiler = projectCompiler proj
+             echoCompilationCommand = projectEchoCompilationCommand proj
+             incl = projectIncludesToC proj
+             includeCorePath = " -I" ++ projectCarpDir proj ++ "/core/ "
+             flags = includeCorePath ++ projectFlags proj
+             outDir = projectOutDir proj
+             outMain = outDir </> "main.c"
+             outExe = outDir </> projectTitle proj
+             outLib = outDir </> projectTitle proj
+             generateOnly = projectGenerateOnly proj
+         liftIO $ createDirectoryIfMissing False outDir
+         liftIO $ writeFile outMain (incl ++ okSrc)
+         if generateOnly then return (ctx, dynamicNil) else
+             case Map.lookup "main" (envBindings env) of
+                             Just _ -> do let cmd = compiler ++ " " ++ outMain ++ " -o \"" ++ outExe ++ "\" " ++ flags
+                                          liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                                      callCommand cmd
+                                                      when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outExe ++ "' (executable)"))
+                                          return (setProjectCanExecute True ctx, dynamicNil)
+                             Nothing -> do let cmd = compiler ++ " " ++ outMain ++ " -shared -o \"" ++ outLib ++ "\" " ++ flags
+                                           liftIO $ do when echoCompilationCommand (putStrLn cmd)
+                                                       callCommand cmd
+                                                       when (execMode == Repl && not shutUp) (putStrLn ("Compiled to '" ++ outLib ++ "' (shared library)"))
+                                           return (setProjectCanExecute False ctx, dynamicNil)
 
-setProjectCanExecute :: Bool -> StateT Context IO ()
-setProjectCanExecute value =
-  do ctx <- get
-     let proj = contextProj ctx
-         proj' = proj { projectCanExecute = value }
-         ctx' = ctx { contextProj = proj' }
-     put ctx'
-     return ()
+setProjectCanExecute :: Bool -> Context -> Context
+setProjectCanExecute value ctx =
+  let proj = contextProj ctx
+      proj' = proj { projectCanExecute = value }
+  in ctx { contextProj = proj' }
 
 -- | Command for printing all the bindings in the current environment.
 commandListBindings :: CommandCallback
-commandListBindings args =
-  do ctx <- get
-     liftIO $ do putStrLn "Types:\n"
-                 putStrLn (prettyEnvironment (getTypeEnv (contextTypeEnv ctx)))
-                 putStrLn "\nGlobal environment:\n"
-                 putStrLn (prettyEnvironment (contextGlobalEnv ctx))
-                 putStrLn ""
-                 return dynamicNil
+commandListBindings ctx args =
+  liftIO $ do putStrLn "Types:\n"
+              putStrLn (prettyEnvironment (getTypeEnv (contextTypeEnv ctx)))
+              putStrLn "\nGlobal environment:\n"
+              putStrLn (prettyEnvironment (contextGlobalEnv ctx))
+              putStrLn ""
+              return (ctx, dynamicNil)
 
 -- | Command for printing help.
 commandHelp :: CommandCallback
-
-commandHelp [XObj (Str "about") _ _] =
+commandHelp ctx [XObj (Str "about") _ _] =
   liftIO $ do putStrLn "Carp is an ongoing research project by Erik Svedäng, et al."
               putStrLn ""
               putStrLn "Licensed under the Apache License, Version 2.0 (the \"License\"); \n\
@@ -286,9 +267,9 @@ commandHelp [XObj (Str "about") _ _] =
                        \OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n\
                        \IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj (Str "language") _ _] =
+commandHelp ctx [XObj (Str "language") _ _] =
   liftIO $ do putStrLn "Special forms:"
               putStrLn "(if <condition> <then> <else>)"
               putStrLn "(while <condition> <body>)"
@@ -317,9 +298,9 @@ commandHelp [XObj (Str "language") _ _] =
               putStrLn "&<expr>   (ref <expr>)"
               putStrLn "@<expr>   (copy <expr>)"
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj (Str "macros") _ _] =
+commandHelp ctx [XObj (Str "macros") _ _] =
   liftIO $ do putStrLn "To inspect what macros expand to:"
               putStrLn "(expand <quoted expression>)"
               putStrLn ""
@@ -331,9 +312,9 @@ commandHelp [XObj (Str "macros") _ _] =
               putStrLn "(=> <expr> <func1> <func2> ...)"
               putStrLn "(==> <expr> <func1> <func2> ...)"
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj (Str "structs") _ _] =
+commandHelp ctx [XObj (Str "structs") _ _] =
   liftIO $ do putStrLn "To define a struct without any generic member variables:"
               putStrLn "(deftype <name> [<member> <type>, ...])"
               putStrLn ""
@@ -349,24 +330,27 @@ commandHelp [XObj (Str "structs") _ _] =
               putStrLn "copy"
               putStrLn "delete (used internally, no need to call this explicitly)"
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj(Str "shortcuts") _ _] =
+commandHelp ctx [XObj(Str "shortcuts") _ _] =
   liftIO $ do putStrLn "GHC-style shortcuts at the repl:"
-              putStrLn "(reload)   :r"
-              putStrLn "(build)    :b"
-              putStrLn "(run)      :x"
-              putStrLn "(cat)      :c"
-              putStrLn "(env)      :e"
-              putStrLn "(help)     :h"
-              putStrLn "(project)  :p"
-              putStrLn "(quit)     :q"
+              putStrLn "(reload)       :r"
+              putStrLn "(build)        :b"
+              putStrLn "(run)          :x"
+              putStrLn "(cat)          :c"
+              putStrLn "(env)          :e"
+              putStrLn "(help)         :h"
+              putStrLn "(project)      :p"
+              putStrLn "(quit)         :q"
+              putStrLn "(type <arg>)   :t"
+              putStrLn "(expand <arg>) :m"
+              putStrLn "(info <arg>)   :i"
               putStrLn ""
               putStrLn "The shortcuts can be combined like this: \":rbx\""
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj(Str "interop") _ _] =
+commandHelp ctx [XObj(Str "interop") _ _] =
   liftIO $ do putStrLn "(register <name> <type>)                      - Make an external variable or function available for usage."
               putStrLn "(register-type <name> [<member> <type>, ...]) - Make an external struct available for usage."
               putStrLn ""
@@ -375,9 +359,9 @@ commandHelp [XObj(Str "interop") _ _] =
               putStrLn "(local-include <file>)           - Include a local header file."
               putStrLn "(add-cflag <flag>)               - Add a cflag to the compilation step."
               putStrLn "(add-lib <flag>)                 - Add a library flag to the compilation step."
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [XObj(Str "project") _ _] =
+commandHelp ctx [XObj(Str "project") _ _] =
   liftIO $ do putStrLn "(Project.config <setting> <value>) handles the following settings:"
               putStrLn ""
               putStrLn "'cflag'              - Add a flag to the compiler."
@@ -398,9 +382,9 @@ commandHelp [XObj(Str "project") _ _] =
               putStrLn "'echo-compiler-cmd'  - When building the project the command for running the C compiler will be printed."
               putStrLn "'print-ast'          - The 'info' command will print the AST for a binding."
               putStrLn ""
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp [] =
+commandHelp ctx [] =
   liftIO $ do putStrLn "Compiler commands:"
               putStrLn "(load <file>)      - Load a .carp file, evaluate its content, and add it to the project."
               putStrLn "(reload)           - Reload all the project files."
@@ -431,318 +415,297 @@ commandHelp [] =
               putStrLn "--optimize                       - Removes safety checks and runs the C-compiler with the '-O3' flag."
               putStrLn "--check                          - Report all errors found in a machine readable way."
               putStrLn "--generate-only                  - Don't compile the C source."
-              return dynamicNil
+              return (ctx, dynamicNil)
 
-commandHelp args =
-  do liftIO $ putStrLn ("Can't find help for " ++ joinWithComma (map pretty args))
-     return dynamicNil
+commandHelp ctx args =
+  return (evalError ctx ("Invalid args to `help` command: " ++ joinWithComma (map pretty args)) Nothing)
 
 -- | Command for printing information about the current project.
 commandProject :: CommandCallback
-commandProject args =
-  do ctx <- get
+commandProject ctx args = do
      liftIO (print (contextProj ctx))
-     return dynamicNil
+     return (ctx, dynamicNil)
 
 -- | Command for getting the name of the operating system you're on.
 commandOS :: CommandCallback
-commandOS _ =
-  return (Right (XObj (Str os) (Just dummyInfo) (Just StringTy)))
+commandOS ctx _ =
+  return (ctx, (Right (XObj (Str os) (Just dummyInfo) (Just StringTy))))
 
 -- | Command for adding a header file include to the project.
 commandAddInclude :: (String -> Includer) -> CommandCallback
-commandAddInclude includerConstructor [x] =
+commandAddInclude includerConstructor ctx [x] =
   case x of
-    XObj (Str file) _ _ ->
-      do ctx <- get
-         let proj = contextProj ctx
-             includer = includerConstructor file
-             includers = projectIncludes proj
-             includers' = if includer `elem` includers
-                          then includers
-                          else includers ++ [includer] -- Add last to preserve include order
-             proj' = proj { projectIncludes = includers' }
-         put (ctx { contextProj = proj' })
-         return dynamicNil
-    _ -> do
-      ctx <- get
+    XObj (Str file) _ _ -> do
+      let proj = contextProj ctx
+          includer = includerConstructor file
+          includers = projectIncludes proj
+          includers' = if includer `elem` includers
+                       then includers
+                       else includers ++ [includer] -- Add last to preserve include order
+          proj' = proj { projectIncludes = includers' }
+      return (ctx { contextProj = proj' }, dynamicNil)
+    _ ->
       return (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x))
 
 commandAddSystemInclude = commandAddInclude SystemInclude
 
 commandAddRelativeInclude :: CommandCallback
-commandAddRelativeInclude [x] =
+commandAddRelativeInclude ctx [x] =
   case x of
     XObj (Str file) i@(Just info) t ->
         let compiledFile = infoFile info
-        in commandAddInclude RelativeInclude [
+        in commandAddInclude RelativeInclude ctx [
           XObj (Str $ takeDirectory compiledFile </> file) i t
         ]
-    _ -> do
-      ctx <- get
+    _ ->
       return (evalError ctx ("Argument to 'include' must be a string, but was `" ++ pretty x ++ "`") (info x))
 
 commandIsList :: CommandCallback
-commandIsList [x] =
+commandIsList ctx [x] =
   case x of
-    XObj (Lst _) _ _ -> return (Right trueXObj)
-    _ -> return (Right falseXObj)
+    XObj (Lst _) _ _ -> return (ctx, Right trueXObj)
+    _ -> return (ctx, Right falseXObj)
 
 commandIsArray :: CommandCallback
-commandIsArray [x] =
+commandIsArray ctx [x] =
   case x of
-    XObj (Arr _) _ _ -> return (Right trueXObj)
-    _ -> return (Right falseXObj)
+    XObj (Arr _) _ _ -> return (ctx, Right trueXObj)
+    _ -> return (ctx, Right falseXObj)
 
 commandIsSymbol :: CommandCallback
-commandIsSymbol [x] =
+commandIsSymbol ctx [x] =
   case x of
-    XObj (Sym _ _) _ _ -> return (Right trueXObj)
-    _ -> return (Right falseXObj)
+    XObj (Sym _ _) _ _ -> return (ctx, Right trueXObj)
+    _ -> return (ctx, Right falseXObj)
 
 commandArray :: CommandCallback
-commandArray args = return $ Right (XObj (Arr args) (Just dummyInfo) Nothing)
+commandArray ctx args =
+  return (ctx, Right (XObj (Arr args) (Just dummyInfo) Nothing))
 
 commandList :: CommandCallback
-commandList  args = return $ Right (XObj (Lst args) (Just dummyInfo) Nothing)
+commandList ctx args =
+  return (ctx, Right (XObj (Lst args) (Just dummyInfo) Nothing))
 
 commandLength :: CommandCallback
-commandLength [x] =
+commandLength ctx [x] =
   case x of
-    XObj (Lst lst) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing))
-    XObj (Arr arr) _ _ -> return (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing))
-    _ -> do
-      ctx <- get
+    XObj (Lst lst) _ _ ->
+      return (ctx, (Right (XObj (Num IntTy (fromIntegral (length lst))) Nothing Nothing)))
+    XObj (Arr arr) _ _ ->
+      return (ctx, (Right (XObj (Num IntTy (fromIntegral (length arr))) Nothing Nothing)))
+    _ ->
       return (evalError ctx ("Applying 'length' to non-list: " ++ pretty x) (info x))
 
 commandCar :: CommandCallback
-commandCar [x] =
+commandCar ctx [x] =
   case x of
-    XObj (Lst (car : _)) _ _ -> return (Right car)
-    XObj (Arr (car : _)) _ _ -> return (Right car)
-    _ -> do
-      ctx <- get
+    XObj (Lst (car : _)) _ _ -> return (ctx, Right car)
+    XObj (Arr (car : _)) _ _ -> return (ctx, Right car)
+    _ ->
       return (evalError ctx ("Applying 'car' to non-list: " ++ pretty x) (info x))
 
 commandCdr :: CommandCallback
-commandCdr [x] =
+commandCdr ctx [x] =
   case x of
-    XObj (Lst (_ : cdr)) i _ -> return (Right (XObj (Lst cdr) i Nothing))
-    XObj (Arr (_ : cdr)) i _ -> return (Right (XObj (Arr cdr) i Nothing))
-    _ -> do
-      ctx <- get
+    XObj (Lst (_ : cdr)) i _ -> return (ctx, Right (XObj (Lst cdr) i Nothing))
+    XObj (Arr (_ : cdr)) i _ -> return (ctx, Right (XObj (Arr cdr) i Nothing))
+    _ ->
       return (evalError ctx "Applying 'cdr' to non-list or empty list" (info x))
 
 commandLast :: CommandCallback
-commandLast [x] =
+commandLast ctx [x] =
   case x of
-    XObj (Lst lst) _ _ -> return (Right (last lst))
-    XObj (Arr arr) _ _ -> return (Right (last arr))
-    _ -> do
-      ctx <- get
+    XObj (Lst lst) _ _ -> return (ctx, Right (last lst))
+    XObj (Arr arr) _ _ -> return (ctx, Right (last arr))
+    _ ->
       return (evalError ctx "Applying 'last' to non-list or empty list." (info x))
 
 commandAllButLast :: CommandCallback
-commandAllButLast [x] =
+commandAllButLast ctx [x] =
   case x of
-    XObj (Lst lst) i _ -> return (Right (XObj (Lst (init lst)) i Nothing))
-    XObj (Arr arr) i _ -> return (Right (XObj (Arr (init arr)) i Nothing))
-    _ -> do
-      ctx <- get
+    XObj (Lst lst) i _ -> return (ctx, Right (XObj (Lst (init lst)) i Nothing))
+    XObj (Arr arr) i _ -> return (ctx, Right (XObj (Arr (init arr)) i Nothing))
+    _ ->
       return (evalError ctx "Applying 'all-but-last' to non-list or empty list." (info x))
 
 commandCons :: CommandCallback
-commandCons [x, xs] =
+commandCons ctx [x, xs] =
   case xs of
-    XObj (Lst lst) _ _ -> return (Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
-    XObj (Arr arr) _ _ -> return (Right (XObj (Arr (x : arr)) (info x) (ty x)))
-    _ -> do
-      ctx <- get
+    XObj (Lst lst) _ _ ->
+      return (ctx, Right (XObj (Lst (x : lst)) (info x) (ty x))) -- TODO: probably not correct to just copy 'i' and 't'?
+    XObj (Arr arr) _ _ ->
+      return (ctx, Right (XObj (Arr (x : arr)) (info x) (ty x)))
+    _ ->
       return (evalError ctx "Applying 'cons' to non-list or empty list." (info xs))
 
 commandConsLast :: CommandCallback
-commandConsLast [x, xs] =
+commandConsLast ctx [x, xs] =
   case xs of
-    XObj (Lst lst) i t -> return (Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
-    _ -> do
-      ctx <- get
+    XObj (Lst lst) i t ->
+      return (ctx, Right (XObj (Lst (lst ++ [x])) i t)) -- TODO: should they get their own i:s and t:s
+    _ ->
       return (evalError ctx "Applying 'cons-last' to non-list or empty list." (info xs))
 
 commandAppend :: CommandCallback
-commandAppend [xs, ys] =
+commandAppend ctx [xs, ys] =
   case (xs, ys) of
     (XObj (Lst lst1) i t, XObj (Lst lst2) _ _) ->
-      return (Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
+      return (ctx, Right (XObj (Lst (lst1 ++ lst2)) i t)) -- TODO: should they get their own i:s and t:s
     (XObj (Arr arr1) i t, XObj (Arr arr2) _ _) ->
-      return (Right (XObj (Arr (arr1 ++ arr2)) i t))
-    _ -> do
-      ctx <- get
+      return (ctx, Right (XObj (Arr (arr1 ++ arr2)) i t))
+    _ ->
       return (evalError ctx "Applying 'append' to non-array/list or empty list." (info xs))
 
 commandMacroError :: CommandCallback
-commandMacroError [msg] = do
-  ctx <- get
+commandMacroError ctx [msg] =
   case msg of
     XObj (Str smsg) _ _ -> return (evalError ctx smsg (info msg))
     x                  -> return (evalError ctx (pretty x) (info msg))
 
 commandMacroLog :: CommandCallback
-commandMacroLog msgs = do
+commandMacroLog ctx msgs = do
   liftIO (mapM_ (putStr . logify) msgs)
   liftIO (putStr "\n")
-  return dynamicNil
+  return (ctx, dynamicNil)
   where logify msg =
           case msg of
             XObj (Str msg) _ _ -> msg
             x                  -> pretty x
 
 commandEq :: CommandCallback
-commandEq [a, b] = do
-  ctx <- get
+commandEq ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       if (round aNum :: Int) == (round bNum :: Int)
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
       if (round aNum :: Int) == (round bNum :: Int)
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
       if aNum == bNum
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
       if aNum == bNum
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Str sa) _ _, XObj (Str sb) _ _) ->
-      if sa == sb then Right trueXObj else Right falseXObj
+      if sa == sb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Chr ca) _ _, XObj (Chr cb) _ _) ->
-      if ca == cb then Right trueXObj else Right falseXObj
+      if ca == cb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Sym sa _) _ _, XObj (Sym sb _) _ _) ->
-      if sa == sb then Right trueXObj else Right falseXObj
+      if sa == sb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Bol xa) _ _, XObj (Bol xb) _ _) ->
-      if xa == xb then Right trueXObj else Right falseXObj
+      if xa == xb then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Lst []) _ _, XObj (Lst []) _ _) ->
-      Right trueXObj
+      (ctx, Right trueXObj)
     _ -> evalError ctx ("Can't compare " ++ pretty a ++ " with " ++ pretty b) (info a)
 
 commandLt :: CommandCallback
-commandLt [a, b] = do
- ctx <- get
+commandLt ctx [a, b] =
  return $ case (a, b) of
    (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
      if (round aNum :: Int) < (round bNum :: Int)
-     then Right trueXObj else Right falseXObj
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
      if (round aNum :: Int) < (round bNum :: Int)
-     then Right trueXObj else Right falseXObj
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
      if aNum < bNum
-     then Right trueXObj else Right falseXObj
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
      if aNum < bNum
-     then Right trueXObj else Right falseXObj
+     then (ctx, Right trueXObj) else (ctx, Right falseXObj)
    _ -> evalError ctx ("Can't compare (<) " ++ pretty a ++ " with " ++ pretty b) (info a)
 
 commandGt :: CommandCallback
-commandGt [a, b] = do
-  ctx <- get
+commandGt ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
       if (round aNum :: Int) > (round bNum :: Int)
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num LongTy aNum) _ _, XObj (Num LongTy bNum) _ _) ->
       if (round aNum :: Int) > (round bNum :: Int)
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num FloatTy aNum) _ _, XObj (Num floatTy bNum) _ _) ->
       if aNum > bNum
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     (XObj (Num DoubleTy aNum) _ _, XObj (Num DoubleTy bNum) _ _) ->
       if aNum > bNum
-      then Right trueXObj else Right falseXObj
+      then (ctx, Right trueXObj) else (ctx, Right falseXObj)
     _ -> evalError ctx ("Can't compare (>) " ++ pretty a ++ " with " ++ pretty b) (info a)
 
 commandCharAt :: CommandCallback
-commandCharAt [a, b] = do
-  ctx <- get
+commandCharAt ctx [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Num IntTy n) _ _) ->
       let i = (round n :: Int)
       in if length s > i
-         then Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy))
+         then (ctx, Right (XObj (Chr (s !! i)) (Just dummyInfo) (Just IntTy)))
          else evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ show i ++ ", index too large") (info a)
     _ -> evalError ctx ("Can't call char-at with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandIndexOf :: CommandCallback
-commandIndexOf [a, b] = do
-  ctx <- get
+commandIndexOf ctx [a, b] =
   return $ case (a, b) of
     (XObj (Str s) _ _, XObj (Chr c) _ _) ->
-      Right (XObj (Num IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy))
+      (ctx, Right (XObj (Num IntTy (getIdx c s)) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call index-of with " ++ pretty a ++ " and " ++ pretty b) (info a)
   where getIdx c s = fromIntegral $ fromMaybe (-1) $ elemIndex c s
 
 commandSubstring :: CommandCallback
-commandSubstring [a, b, c] = do
-  ctx <- get
+commandSubstring ctx [a, b, c] =
   return $ case (a, b, c) of
     (XObj (Str s) _ _, XObj (Num IntTy f) _ _, XObj (Num IntTy t) _ _) ->
-      Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy))
+      (ctx, Right (XObj (Str (take (round t :: Int) (drop (round f :: Int) s))) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call substring with " ++ pretty a ++ ", " ++ pretty b ++ " and " ++ pretty c) (info a)
 
 commandStringLength :: CommandCallback
-commandStringLength [a] = do
-  ctx <- get
+commandStringLength ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
-      Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy))
+      (ctx, Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (info a)
 
 commandStringJoin :: CommandCallback
-commandStringJoin [a] = do
-  ctx <- get
+commandStringJoin ctx [a] =
   return $ case a of
     XObj (Arr strings) _ _ ->
       case mapM unwrapStringXObj strings of
         Left err -> evalError ctx err (info a)
-        Right result -> Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy))
+        Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
 
 commandSymJoin :: CommandCallback
-commandSymJoin [a] = do
-  ctx <- get
+commandSymJoin ctx [a] =
   return $ case a of
     XObj (Arr syms) _ _ ->
       case mapM unwrapSymPathXObj syms of
         Left err -> evalError ctx err (info a)
-        Right result -> Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing)
+        Right result -> (ctx, Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing))
     _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
 
 commandSymPrefix :: CommandCallback
-commandSymPrefix [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
-  return $ Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t)
-commandSymPrefix [x, XObj (Sym (SymPath [] _) _) _ _] = do
-  ctx <- get
+commandSymPrefix ctx [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
+  return $ (ctx, Right (XObj (Sym (SymPath [prefix] suffix) (LookupGlobal CarpLand AVariable)) i t))
+commandSymPrefix ctx [x, XObj (Sym (SymPath [] _) _) _ _] =
   return $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (info x)
-commandSymPrefix [_, x] = do
-  ctx <- get
+commandSymPrefix ctx [_, x] =
   return $ evalError ctx ("Can’t call `prefix` with " ++ pretty x) (info x)
 
 commandSymFrom :: CommandCallback
-commandSymFrom [x@(XObj (Sym _ _) _ _)] = return $ Right x
-commandSymFrom [XObj (Str s) i t] = return $ Right $ XObj (sFrom_ s) i t
-commandSymFrom [XObj (Pattern s) i t] = return $ Right $ XObj (sFrom_ s) i t
-commandSymFrom [XObj (Chr c) i t] = return $ Right $ XObj (sFrom_ (show c)) i t
-commandSymFrom [XObj n@(Num _ _) i t] =
-  return $ Right $ XObj (sFrom_ (simpleFromNum n)) i t
-commandSymFrom [XObj (Bol b) i t] = return $ Right $ XObj (sFrom_ (show b)) i t
-commandSymFrom [x] = do
-  ctx <- get
+commandSymFrom ctx [x@(XObj (Sym _ _) _ _)] = return (ctx, Right x)
+commandSymFrom ctx [XObj (Str s) i t] = return (ctx, Right $ XObj (sFrom_ s) i t)
+commandSymFrom ctx [XObj (Pattern s) i t] = return (ctx, Right $ XObj (sFrom_ s) i t)
+commandSymFrom ctx [XObj (Chr c) i t] = return (ctx, Right $ XObj (sFrom_ (show c)) i t)
+commandSymFrom ctx [XObj n@(Num _ _) i t] =
+  return (ctx, Right $ XObj (sFrom_ (simpleFromNum n)) i t)
+commandSymFrom ctx [XObj (Bol b) i t] = return (ctx, Right $ XObj (sFrom_ (show b)) i t)
+commandSymFrom ctx [x] =
   return $ evalError ctx ("Can’t call `from` with " ++ pretty x) (info x)
 
 commandSymStr :: CommandCallback
-commandSymStr [XObj (Sym s _) i _] =
-  return $ Right $ XObj (Str (show s)) i (Just StringTy)
-commandSymStr [x] = do
-  ctx <- get
+commandSymStr ctx [XObj (Sym s _) i _] =
+  return (ctx, Right $ XObj (Str (show s)) i (Just StringTy))
+commandSymStr ctx [x] =
   return $ evalError ctx ("Can’t call `str` with " ++ pretty x) (info x)
 
 sFrom_ s = Sym (SymPath [] s) (LookupGlobal CarpLand AVariable)
@@ -752,58 +715,53 @@ simpleFromNum (Num LongTy num) = show (round num :: Int)
 simpleFromNum (Num _ num) = show num
 
 commandStringDirectory :: CommandCallback
-commandStringDirectory [a] = do
-  ctx <- get
+commandStringDirectory ctx [a] =
   return $ case a of
     XObj (Str s) _ _ ->
-      Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy))
+      (ctx, Right (XObj (Str (takeDirectory s)) (Just dummyInfo) (Just StringTy)))
     _ -> evalError ctx ("Can't call `directory` with " ++ pretty a) (info a)
 
 commandPlus :: CommandCallback
-commandPlus [a, b] = do
-  ctx <- get
+commandPlus ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
-      then Right (XObj (Num aty (aNum + bNum)) (Just dummyInfo) (Just aty))
+      then (ctx, Right (XObj (Num aty (aNum + bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call + with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMinus :: CommandCallback
-commandMinus [a, b] = do
-  ctx <- get
+commandMinus ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
-      then Right (XObj (Num aty (aNum - bNum)) (Just dummyInfo) (Just aty))
+      then (ctx, Right (XObj (Num aty (aNum - bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call - with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandDiv :: CommandCallback
-commandDiv [a, b] = do
-  ctx <- get
+commandDiv ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num IntTy aNum) _ _, XObj (Num IntTy bNum) _ _) ->
-      Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy))
+      (ctx, Right (XObj (Num IntTy (fromIntegral (quot (round aNum ::Int) (round bNum :: Int)))) (Just dummyInfo) (Just IntTy)))
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
-      then Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty))
+      then (ctx, Right (XObj (Num aty (aNum / bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call / with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandMul :: CommandCallback
-commandMul [a, b] = do
-  ctx <- get
+commandMul ctx [a, b] =
   return $ case (a, b) of
     (XObj (Num aty aNum) _ _, XObj (Num bty bNum) _ _) ->
       if aty == bty
-      then Right (XObj (Num aty (aNum * bNum)) (Just dummyInfo) (Just aty))
+      then (ctx, Right (XObj (Num aty (aNum * bNum)) (Just dummyInfo) (Just aty)))
       else evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
     _ -> evalError ctx ("Can't call * with " ++ pretty a ++ " and " ++ pretty b) (info a)
 
 commandStr :: CommandCallback
-commandStr xs =
-  return (Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
+commandStr ctx xs =
+  return (ctx, Right (XObj (Str (join (map f xs))) (Just dummyInfo) (Just StringTy)))
   -- | TODO: Is there a better function to call here than some exceptions + 'pretty'?
   where f (XObj (Str s) _ _) = s
         f (XObj (Sym path mode) _ _) = show path
@@ -813,40 +771,37 @@ commandStr xs =
         escape (x:y) = x : escape y
 
 commandNot :: CommandCallback
-commandNot [x] =
+commandNot ctx [x] =
   case x of
     XObj (Bol ab) _ _ ->
       if ab
-      then return (Right falseXObj)
-      else return (Right trueXObj)
-    _ -> do
-      ctx <- get
+      then return (ctx, Right falseXObj)
+      else return (ctx, Right trueXObj)
+    _ ->
       return (evalError ctx ("Can't perform logical operation (not) on " ++ pretty x) (info x))
 
 commandReadFile :: CommandCallback
-commandReadFile [filename] = do
-  ctx <- get
+commandReadFile ctx [filename] =
   case filename of
     XObj (Str fname) _ _ -> do
          exceptional <- liftIO ((try $ slurp fname) :: (IO (Either IOException String)))
          case exceptional of
             Right contents ->
-              return (Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
+              return (ctx, Right (XObj (Str contents) (Just dummyInfo) (Just StringTy)))
             Left _ ->
               return (evalError ctx ("The argument to `read-file` `" ++ fname ++ "` does not exist") (info filename))
     _ ->
       return (evalError ctx ("The argument to `read-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
 
 commandWriteFile :: CommandCallback
-commandWriteFile [filename, contents] = do
-  ctx <- get
+commandWriteFile ctx [filename, contents] =
   case filename of
     XObj (Str fname) _ _ ->
       case contents of
         XObj (Str s) _ _ -> do
          exceptional <- liftIO ((try $ writeFile fname s) :: (IO (Either IOException ())))
          case exceptional of
-            Right () -> return dynamicNil
+            Right () -> return (ctx, dynamicNil)
             Left _ ->
               return (evalError ctx ("Cannot write to argument to `" ++ fname ++ "`, an argument to `write-file`") (info filename))
         _ ->
@@ -855,8 +810,7 @@ commandWriteFile [filename, contents] = do
       return (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
 
 commandSaveDocsInternal :: CommandCallback
-commandSaveDocsInternal [modulePath] = do
-     ctx <- get
+commandSaveDocsInternal ctx [modulePath] = do
      let globalEnv = contextGlobalEnv ctx
      case modulePath of
        XObj (Lst xobjs) _ _ ->
@@ -864,22 +818,21 @@ commandSaveDocsInternal [modulePath] = do
            Left err -> return (evalError ctx err (info modulePath))
            Right okPaths ->
              case mapM (getEnvironmentBinderForDocumentation ctx globalEnv) okPaths of
-               Left err -> return (Left err)
-               Right okEnvBinders -> saveDocs (zip okPaths okEnvBinders)
+               Left err -> return (evalError ctx err (info modulePath))
+               Right okEnvBinders -> saveDocs ctx (zip okPaths okEnvBinders)
        x ->
          return (evalError ctx ("Invalid arg to save-docs-internal (expected list of symbols): " ++ pretty x) (info modulePath))
-  where getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either EvalError Binder
+  where getEnvironmentBinderForDocumentation :: Context -> Env -> SymPath -> Either String Binder
         getEnvironmentBinderForDocumentation ctx env path =
           case lookupInEnv path env of
             Just (_, foundBinder@(Binder _ (XObj (Mod foundEnv) _ _))) ->
               Right foundBinder
             Just (_, Binder _ x) ->
-              evalError ctx ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module") (info modulePath)
+              Left ("I can’t generate documentation for `" ++ pretty x ++ "` because it isn’t a module")
             Nothing ->
-              evalError ctx ("I can’t find the module `" ++ show path ++ "`") (info modulePath)
+              Left ("I can’t find the module `" ++ show path ++ "`")
 
-saveDocs :: [(SymPath, Binder)] -> StateT Context IO (Either a XObj)
-saveDocs pathsAndEnvBinders =
-  do ctx <- get
+saveDocs :: Context -> [(SymPath, Binder)] -> IO (Context, Either a XObj)
+saveDocs ctx pathsAndEnvBinders = do
      liftIO (saveDocsForEnvs (contextProj ctx) pathsAndEnvBinders)
-     return dynamicNil
+     return (ctx, dynamicNil)

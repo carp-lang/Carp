@@ -114,8 +114,8 @@
         acc
         (collect-into-internal (cdr xs) (append acc (f (car xs))) f)))
 
-  (doc collect-into
-    "Transforms a dynamic data literal into another, preserving order")
+;  (doc collect-into
+;    "Transforms a dynamic data literal into another, preserving order")
   (defndynamic collect-into [xs f]
     (list 'quote
       (collect-into-internal xs (f) f)))
@@ -296,10 +296,10 @@
   (case-internal name forms))
 
 (defmacro and [x y]
-  (list 'if x y false))
+  (list 'quote (list 'if x y false)))
 
 (defmacro or [x y]
-  (list 'if x true y))
+  (list 'quote (list 'if x true y)))
 
 (defndynamic build-vararg [func forms]
   (if (= (length forms) 0)
@@ -360,7 +360,9 @@ The expression must be evaluable at compile time.")
 (doc gensym-with "generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
+    (macro-log *gensym-counter*)
     (set! *gensym-counter* (inc *gensym-counter*))
+    (macro-log *gensym-counter*)
     (Symbol.join [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "generates symbols dynamically as needed.")

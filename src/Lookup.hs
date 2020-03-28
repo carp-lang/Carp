@@ -131,8 +131,6 @@ extendEnv env name xobj = envAddBinding env name (Binder emptyMeta xobj)
 envInsertAt :: Env -> SymPath -> Binder -> Env
 envInsertAt env (SymPath [] name) binder =
   envAddBinding env name binder
-envInsertAt env (SymPath ("LET":ps) name) xobj =
-  envInsertAt env (SymPath ps name) xobj
 envInsertAt env (SymPath (p:ps) name) xobj =
   case Map.lookup p (envBindings env) of
     Just (Binder existingMeta (XObj (Mod innerEnv) i t)) ->
@@ -167,6 +165,10 @@ getEnv env (p:ps) = case Map.lookup p (envBindings env) of
                       Just (Binder _ (XObj (Mod innerEnv) _ _)) -> getEnv innerEnv ps
                       Just _ -> error "Can't get non-env."
                       Nothing -> error "Can't get env."
+
+contextEnv :: Context -> Env
+contextEnv Context{contextInternalEnv=Just e} = e
+contextEnv Context{contextGlobalEnv=e, contextPath=p} = getEnv e p
 
 -- | Checks if an environment is "external", meaning it's either the global scope or a module scope.
 envIsExternal :: Env -> Bool

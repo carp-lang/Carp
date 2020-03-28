@@ -33,77 +33,88 @@ import Concretize
 import Path
 import Primitives
 
+import Debug.Trace
+
 -- | Dynamic (REPL) evaluation of XObj:s (s-expressions)
-eval :: Env -> XObj -> StateT Context IO (Either EvalError XObj)
-eval env xobj@(XObj o i t) = do
-  ctx <- get
+eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
+eval ctx xobj@(XObj o i t) =
   case o of
     Lst body   -> eval' body
-    Sym path@(SymPath p n) _ -> do
-      let fppl = projectFilePathPrintLength (contextProj ctx)
-      case lookupInEnv (SymPath ("Dynamic" : p) n) env of
-        Just (_, Binder _ found) -> return (Right (resolveDef found))
+    Sym path@(SymPath p n) _ ->
+      case lookupInEnv (SymPath ("Dynamic" : p) n) (contextGlobalEnv ctx) of
+        Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
         Nothing ->
-          case lookupInEnv path env of
-            Just (_, Binder _ found) -> return (Right (resolveDef found))
-            Nothing ->
-              return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
+          if null p
+          then
+            case tryInternalLookup path of
+              Just v -> return v
+              Nothing -> tryLookup path
+          else tryLookup path
+      where tryInternalLookup path =
+              case contextInternalEnv ctx of
+                Nothing -> Nothing
+                Just e  ->
+                  case lookupInEnv path e of
+                    Just (_ , Binder _ found) -> Just (ctx, Right (resolveDef found))
+                    Nothing -> Nothing
+            tryLookup path =
+                case lookupInEnv path (contextGlobalEnv ctx) of
+                  Just (_, Binder _ found) -> return (ctx, Right (resolveDef found))
+                  Nothing ->
+                    return (evalError ctx ("Can't find symbol '" ++ show path ++ "'") i)
     Arr objs  -> do
-      evaled <- fmap sequence (mapM (eval env) objs)
-      return $ do ok <- evaled
-                  Right (XObj (Arr ok) i t)
-    _        -> return (Right xobj)
+      (newCtx, evaled) <- foldlM successiveEval (ctx, Right []) objs
+      return (newCtx, do ok <- evaled
+                         Right (XObj (Arr ok) i t))
+    _        -> return (ctx, Right xobj)
   where
     resolveDef (XObj (Lst [XObj DefDynamic _ _, _, value]) _ _) = value
     resolveDef x = x
-    eval' form = do
-      ctx <- get
+    eval' form =
       case form of
        [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] -> do
-         evaledA <- eval env a
-         evaledB <- eval env b
-         return $ do okA <- evaledA
-                     case okA of
-                       XObj (Bol ab) _ _ ->
-                         if ab
-                           then do okB <- evaledB
-                                   case okB of
-                                     XObj (Bol bb) _ _ ->
-                                       if bb then Right trueXObj else Right falseXObj
-                                     _ ->
-                                       evalError ctx ("Can’t perform call `and` on " ++ pretty okB) (info okB)
-                           else Right falseXObj
-                       _ ->
-                         evalError ctx ("Can’t call `and` on " ++ pretty okA) (info okA)
+         (newCtx, evaledA) <- eval ctx a
+         case evaledA of
+           Left e -> return (ctx, Left e)
+           Right (XObj (Bol ab) _ _) ->
+             if ab
+               then do
+                 (newCtx', evaledB) <- eval newCtx b
+                 case evaledB of
+                   Left e -> return (newCtx, Left e)
+                   Right (XObj (Bol bb) _ _) ->
+                     return (newCtx', if bb then Right trueXObj else Right falseXObj)
+                   Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
+               else return (newCtx, Right falseXObj)
+           Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
 
        [XObj (Sym (SymPath ["Dynamic"] "or") _) _ _, a, b] -> do
-         evaledA <- eval env a
-         evaledB <- eval env b
-         return $ do okA <- evaledA
-                     case okA of
-                       XObj (Bol ab) _ _ ->
-                         if ab
-                           then Right trueXObj
-                           else do okB <- evaledB
-                                   case okB of
-                                     XObj (Bol bb) _ _ ->
-                                       if bb then Right trueXObj else Right falseXObj
-                                     _ ->
-                                       evalError ctx ("Can’t call `or` on " ++ pretty okB) (info okB)
-                       _ ->
-                         evalError ctx ("Can’t call `or` on " ++ pretty okA) (info okA)
+         (newCtx, evaledA) <- eval ctx a
+         case evaledA of
+           Left e -> return (ctx, Left e)
+           Right (XObj (Bol ab) _ _) ->
+             if ab
+               then return (newCtx, Right trueXObj)
+               else do
+                 (newCtx', evaledB) <- eval newCtx b
+                 case evaledB of
+                   Left e -> return (newCtx, Left e)
+                   Right (XObj (Bol bb) _ _) ->
+                     return (newCtx', if bb then Right trueXObj else Right falseXObj)
+                   Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
+           Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
 
        [XObj If _ _, mcond, mtrue, mfalse] -> do
-         evd <- eval env mcond
+         (newCtx, evd) <- eval ctx mcond
          case evd of
            Right cond ->
              case obj cond of
-               Bol b -> eval env (if b then mtrue else mfalse)
+               Bol b -> eval newCtx (if b then mtrue else mfalse)
                _     ->
                  return (evalError ctx
                           ("This `if` condition contains the non-boolean value `" ++
                            pretty cond ++ "`") (info cond))
-           Left e -> return (Left e)
+           Left e -> return (newCtx, Left e)
 
        XObj If _ _:_ ->
          return (evalError ctx
@@ -114,7 +125,7 @@ eval env xobj@(XObj o i t) = do
          case obj name of
            (Sym (SymPath [] _) _) ->
                if all isUnqualifiedSym a
-               then specialCommandDefine xobj
+               then specialCommandDefine ctx xobj
                else return (evalError ctx
                  ("`defn` requires all arguments to be unqualified symbols, but it got `" ++
                   pretty args ++ "`") (info xobj))
@@ -136,15 +147,15 @@ eval env xobj@(XObj o i t) = do
 
        [def@(XObj Def _ _), name, expr] ->
          if isUnqualifiedSym name
-         then specialCommandDefine xobj
+         then specialCommandDefine ctx xobj
          else return (evalError ctx
            ("`def` identifiers must be unqualified symbols, but it got `" ++
             pretty name ++ "`") (info xobj))
 
        [the@(XObj The _ _), ty, value] ->
-         do evaledValue <- expandAll eval env value -- TODO: Why expand all here?
-            return $ do okValue <- evaledValue
-                        Right (XObj (Lst [the, ty, okValue]) i t)
+         do (newCtx, evaledValue) <- expandAll eval ctx value -- TODO: Why expand all here?
+            return (newCtx, do okValue <- evaledValue
+                               Right (XObj (Lst [the, ty, okValue]) i t))
 
        (XObj The _ _: _) ->
            return (evalError ctx
@@ -161,140 +172,111 @@ eval env xobj@(XObj o i t) = do
              ("`let` identifiers must be symbols, but it got `" ++
               joinWithSpace (map pretty bindings) ++ "`") (info xobj))
          | otherwise ->
-             do let innerEnv = Env Map.empty (Just env) (Just "LET") [] InternalEnv 0
-                    pathStrings = contextPath ctx
-                    mod = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
-                    globalEnvWithModuleAdded = envInsertAt (contextGlobalEnv ctx) (SymPath pathStrings "LET") (Binder emptyMeta mod)
-                    ctx' = ctx {
-                      contextGlobalEnv=globalEnvWithModuleAdded,
-                      contextPath=pathStrings ++ ["LET"]}
-                put ctx'
-                let binds = unwrapVar (pairwise bindings) []
-                eitherEnv <- foldrM successiveEval (Right innerEnv) binds
-                case eitherEnv of
-                   Left err -> return $ Left err
-                   Right envWithBindings -> do
-                          evaledBody <- eval envWithBindings body
-                          put (popModulePath ctx')
-                          return $ do okBody <- evaledBody
-                                      Right okBody
+             do let binds = unwrapVar (pairwise bindings) []
+                eitherCtx <- foldrM successiveEval (Right ctx) binds
+                case eitherCtx of
+                   Left err -> return (ctx, Left err)
+                   Right newCtx -> do
+                          (_, evaledBody) <- eval newCtx body
+                          return (ctx, do okBody <- evaledBody
+                                          Right okBody)
          where unwrapVar [] acc = acc
                unwrapVar ((XObj (Sym (SymPath [] x) _) _ _,y):xs) acc = unwrapVar xs ((x,y):acc)
                successiveEval (n, x) =
                  \case
                    err@(Left _) -> return err
-                   Right e ->
-                     eval e x >>= \case
-                       Right okX -> return $ Right $ extendEnv e n okX
+                   Right ctx -> do
+                     (newCtx, res) <- eval ctx x
+                     case res of
+                       Right okX -> do
+                        let name = SymPath (contextPath newCtx) n
+                            binder = Binder emptyMeta okX
+                        return $ Right (newCtx {contextGlobalEnv=envInsertAt (contextGlobalEnv ctx) name binder})
                        Left err -> return $ Left err
 
        l@[XObj Fn{} _ _, args@(XObj (Arr a) _ _), f] ->
          if all isUnqualifiedSym a
-         then return (Right (XObj (Closure (XObj (Lst l) i t) (CEnv env)) i t))
+         then return (ctx, Right (XObj (Closure (XObj (Lst l) i t) (CCtx ctx)) i t))
          else return (evalError ctx ("`fn` requires all arguments to be unqualified symbols, but it got `" ++ pretty args ++ "`") (info args))
-       XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CEnv e)) i _:args ->
+       XObj (Closure (XObj (Lst [XObj (Fn _ _) _ _, XObj (Arr params) _ _, body]) _ _) (CCtx c)) i _:args ->
          case checkArity params args of
-           Left err ->
-             return (evalError ctx err (info xobj))
+           Left err -> return (evalError ctx err (info xobj))
            Right () ->
-             do evaledArgs <- fmap sequence (mapM (eval env) args)
+             do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
-                  Right okArgs -> apply e body params okArgs
-                  Left err -> return (Left err)
+                  Right okArgs -> do
+                    (_, res) <- apply c body params okArgs
+                    return (newCtx, res)
+                  Left err -> return (newCtx, Left err)
 
        XObj (Lst [XObj Dynamic _ _, _, XObj (Arr params) _ _, body]) i _:args ->
          case checkArity params args of
            Left err ->
              return (evalError ctx err i)
            Right () ->
-             do evaledArgs <- fmap sequence (mapM (eval env) args)
+             do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
-                  Right okArgs -> apply env body params okArgs
-                  Left err -> return (Left err)
+                  Right okArgs -> do
+                    (newCtx', res) <- apply (pushFrame newCtx xobj) body params okArgs
+                    case res of
+                      Right xobj -> return (popFrame newCtx', res)
+                      Left err -> return (newCtx', res)
+                  Left err -> return (newCtx, Left err)
 
-       XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _:args -> do
-         put (pushFrame ctx xobj)
+       XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _:args ->
          case checkArity params args of
-           Left err -> do
-             put ctx
-             return (evalError ctx err i)
+           Left err -> return (evalError ctx err i)
            Right () -> do
              -- Replace info so that the macro which is called gets the source location info of the expansion site.
              --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
-             res <- apply env body params args
+             (ctx', res) <- apply (pushFrame ctx xobj) body params args
              case res of
               Right xobj -> do
-                _ <- eval env xobj
-                newCtx <- get
-                put (popFrame newCtx)
-                return res
-              Left err -> do
-                put ctx
-                return (Left err)
+                (newCtx, res) <- eval ctx' xobj
+                return (popFrame newCtx, res)
+              Left err -> return (ctx, res)
 
        XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
-         do evaledArgs <- fmap sequence (mapM (eval env) args)
+         do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
             case evaledArgs of
-              Right okArgs -> getCommand callback okArgs
-              Left err -> return (Left err)
+              Right okArgs -> getCommand callback ctx okArgs
+              Left err -> return (ctx, Left err)
 
-       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (Right xobj)
+       XObj (Lst (XObj (Defn _) _ _:_)) _ _:_ -> return (ctx, Right xobj)
 
        l@(XObj (Lst _) i t):args -> do
-         put (pushFrame ctx xobj)
-         f <- eval env l
+         (newCtx, f) <- eval ctx l
          case f of
             Right fun -> do
-             res <- eval env (XObj (Lst (fun:args)) i t)
-             newCtx <- get
-             put (popFrame newCtx)
-             return res
-            x -> do
-             put ctx
-             return x
+             (newCtx', res) <- eval (pushFrame newCtx xobj) (XObj (Lst (fun:args)) i t)
+             return (popFrame newCtx', res)
+            x -> return (newCtx, x)
 
-       x@(XObj sym@(Sym s _) i _):args -> do
-         put (pushFrame ctx xobj)
+       x@(XObj sym@(Sym s _) i _):args ->
          case Map.lookup s primitives of
            Just prim -> do
-             res <- prim x env args
-             newCtx <- get
-             put (popFrame newCtx)
-             return res
+             (newCtx, res) <- prim x (pushFrame ctx xobj) args
+             return (popFrame newCtx, res)
            Nothing -> do
-             f <- eval env x
+             (newCtx, f) <- eval ctx x
              case f of
                Right fun -> do
-                 res <- eval env (XObj (Lst (fun:args)) i t)
-                 newCtx <- get
-                 put (popFrame newCtx)
-                 return res
-               Left err -> do
-                 put ctx
-                 return (Left err)
+                 (newCtx', res) <- eval ctx (XObj (Lst (fun:args)) i t)
+                 return (popFrame newCtx', res)
+               Left err -> return (newCtx, Left err)
        XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
-         specialCommandWith xobj path forms
+         specialCommandWith ctx xobj path forms
        XObj With _ _ : _ ->
          return (evalError ctx ("Invalid arguments to `with`: " ++ pretty xobj) (info xobj))
-       XObj SetBang _ _ :args -> specialCommandSet args
+       XObj SetBang _ _ :args -> specialCommandSet ctx args
        [XObj Do _ _] ->
          return (evalError ctx "No forms in do" (info xobj))
-       XObj Do _ _ : rest -> do
-         (evaled, _) <- foldlM successiveEval (dynamicNil, env) rest
-         case evaled of
-           Left e -> return (Left e)
-           Right evald -> return (Right evald)
-        where successiveEval (acc, e) x =
-                 case acc of
-                   err@(Left _) -> return (err, e)
-                   Right _ -> do
-                     res <- eval e x
-                     ctx <- get
-                     let pathStrings = contextPath ctx
-                         globalEnv = contextGlobalEnv ctx
-                         env = getEnv globalEnv pathStrings
-                     return (res, env)
-       [] -> return dynamicNil
+       XObj Do _ _ : rest -> foldlM successiveEval (ctx, dynamicNil) rest
+        where successiveEval (ctx, acc) x =
+               case acc of
+                 err@(Left _) -> return (ctx, err)
+                 Right _ -> eval ctx x
+       [] -> return (ctx, dynamicNil)
        x -> do
         return (evalError ctx ("I did not understand the form `" ++ pretty xobj ++ "`") (info xobj))
     checkArity params args =
@@ -313,20 +295,28 @@ eval env xobj@(XObj o i t) = do
                          show la ++ ".\n\nThe arguments " ++
                          intercalate ", " (map pretty (drop lp args)) ++
                          " are not needed.")
+    successiveEval (ctx, acc) x =
+     case acc of
+       err@(Left _) -> return (ctx, err)
+       Right l -> do
+        (newCtx, evald) <- eval ctx x
+        case evald of
+          Right res -> return (newCtx, Right (l ++ [res]))
+          Left err -> return (newCtx, Left err)
 
-apply :: Env -> XObj -> [XObj] -> [XObj] -> StateT Context IO (Either EvalError XObj)
-apply env body params args =
-  let allParams = map getName params
+apply :: Context -> XObj -> [XObj] -> [XObj] -> IO (Context, Either EvalError XObj)
+apply ctx body params args =
+  let env = contextEnv ctx
+      allParams = map getName params
   in case splitWhen (":rest" ==) allParams of
-       [a, b] -> callWith a b
-       [a] -> callWith a []
-       _ -> do
-        ctx <- get
+       [a, b] -> callWith env a b
+       [a] -> callWith env a []
+       _ ->
         return (evalError ctx
                  ("I didn’t understand this macro’s argument split, got `" ++
                   joinWith "," allParams ++
                   "`, but expected exactly one `:rest` separator.") Nothing)
-  where callWith proper rest =
+  where callWith env proper rest = do
           let n = length proper
               insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
               insideEnv' = foldl' (\e (p, x) -> extendEnv e p x) insideEnv
@@ -336,9 +326,8 @@ apply env body params args =
                              else extendEnv insideEnv'
                                    (head rest)
                                    (XObj (Lst (drop n args)) Nothing Nothing)
-          in eval insideEnv'' body
-
--- LEGACY STUFF
+          (nctx, res) <- eval (ctx {contextInternalEnv=Just insideEnv''}) body
+          return (nctx {contextInternalEnv=Nothing}, res)
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
@@ -383,17 +372,17 @@ executeCommand ctx s@(XObj (Sym _ _) _ _) =
   executeCommand ctx
     (XObj (Lst [ (XObj (Sym (SymPath [] "info") Symbol) (Just dummyInfo) Nothing)
                , s]) (Just dummyInfo) Nothing)
-executeCommand ctx@(Context env typeEnv pathStrings proj lastInput execMode _) xobj =
+executeCommand ctx@(Context env _ typeEnv pathStrings proj lastInput execMode _) xobj =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
-     (result, newCtx) <- runStateT (eval env xobj) ctx
+     (newCtx, result) <- eval ctx xobj
      case result of
        Left e -> do
          reportExecutionError newCtx (show e)
          return (xobj, newCtx)
        -- special case: calling a function at the repl
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
-        (r, nc) <- runStateT (annotateWithinContext False (XObj (Lst (name:args)) i Nothing)) newCtx
+        (nc, r) <- annotateWithinContext False newCtx (XObj (Lst (name:args)) i Nothing)
         case r of
           Right (ann, _) -> executeCommand nc (withBuildAndRun (buildMainFunction ann))
           Left err -> do
@@ -437,33 +426,29 @@ catcher ctx exception =
             BuildAndRun -> exitWith (ExitFailure returnCode)
             Check -> exitSuccess
 
-specialCommandWith :: XObj -> SymPath -> [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandWith xobj path forms =
-  do ctx <- get
-     let pathStrings = contextPath ctx
-         env = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-         useThese = envUseModules env
-         env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
-         ctx' = ctx { contextGlobalEnv = env' }
-     ctxAfter <- liftIO $ foldM folder ctx' forms
-     let envAfter = contextGlobalEnv ctxAfter
-         ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
-     put ctxAfter'
-     return dynamicNil
+specialCommandWith :: Context -> XObj -> SymPath -> [XObj] -> IO (Context, Either EvalError XObj)
+specialCommandWith ctx xobj path forms = do
+  let pathStrings = contextPath ctx
+      env = contextEnv ctx
+      typeEnv = contextTypeEnv ctx
+      useThese = envUseModules env
+      env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
+      ctx' = ctx { contextGlobalEnv = env' }
+  ctxAfter <- liftIO $ foldM folder ctx' forms
+  let envAfter = contextEnv ctxAfter
+      ctxAfter' = ctx { contextGlobalEnv = envAfter { envUseModules = useThese } } -- This will undo ALL use:s made inside the 'with'.
+  return (ctxAfter', dynamicNil)
 
-specialCommandDefine :: XObj -> StateT Context IO (Either EvalError XObj)
-specialCommandDefine xobj =
-  do result <- annotateWithinContext True xobj
+specialCommandDefine :: Context -> XObj -> IO (Context, Either EvalError XObj)
+specialCommandDefine ctx xobj =
+  do (newCtx, result) <- annotateWithinContext True ctx xobj
      case result of
        Right (annXObj, annDeps) ->
-         do ctxAfterExpansion <- get
-            ctxWithDeps <- liftIO $ foldM (define True) ctxAfterExpansion annDeps
+         do ctxWithDeps <- liftIO $ foldM (define True) newCtx annDeps
             ctxWithDef <- liftIO $ define False ctxWithDeps annXObj
-            put ctxWithDef
-            return dynamicNil
+            return (ctxWithDef, dynamicNil)
        Left err ->
-         return (Left err)
+         return (ctx, Left err)
 
 getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
 getSigFromDefnOrDef ctx globalEnv fppl xobj =
@@ -478,17 +463,15 @@ getSigFromDefnOrDef ctx globalEnv fppl xobj =
             Nothing -> return (evalError ctx ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (info xobj))
         Nothing -> return (Right Nothing)
 
-annotateWithinContext :: Bool -> XObj -> StateT Context IO (Either EvalError (XObj, [XObj]))
-annotateWithinContext qualifyDefn xobj =
-  do ctx <- get
+annotateWithinContext :: Bool -> Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
+annotateWithinContext qualifyDefn ctx xobj = do
      let pathStrings = contextPath ctx
          fppl = projectFilePathPrintLength (contextProj ctx)
          globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          innerEnv = getEnv globalEnv pathStrings
      sig <- getSigFromDefnOrDef ctx globalEnv fppl xobj
-     expansionResult <- expandAll eval globalEnv xobj
-     ctxAfterExpansion <- get
+     (ctxAfterExpansion, expansionResult) <- expandAll eval ctx xobj
      case expansionResult of
        Left err -> return (evalError ctx (show err) Nothing)
        Right expanded ->
@@ -503,93 +486,90 @@ annotateWithinContext qualifyDefn xobj =
                   _ ->
                     return (evalError ctx (show err) (info xobj))
               Right ok ->
-                return (Right ok)
+                return (ctx, Right ok)
 
 primitiveDefmodule :: Primitive
-primitiveDefmodule xobj env (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
-  ctx@(Context _ typeEnv pathStrings proj lastInput execMode history) <- get
+primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history) (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
   let fppl = projectFilePathPrintLength proj
 
-      defineIt :: MetaData -> StateT Context IO (Either EvalError XObj)
-      defineIt meta = do let parentEnv = getEnv env pathStrings
-                             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
-                             newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
-                             globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-                             ctx' = Context globalEnvWithModuleAdded typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
-                         ctxAfterModuleDef <- liftIO $ foldM folder ctx' innerExpressions
-                         put (popModulePath ctxAfterModuleDef)
-                         return dynamicNil
+      defineIt :: MetaData -> IO (Context, Either EvalError XObj)
+      defineIt meta = do
+        let parentEnv = getEnv env pathStrings
+            innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
+            newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
+            globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
+            ctx' = Context globalEnvWithModuleAdded i typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
+        ctxAfterModuleDef <- liftIO $ foldM folder ctx' innerExpressions
+        return (popModulePath ctxAfterModuleDef, dynamicNil)
 
-  result <- case lookupInEnv (SymPath pathStrings moduleName) env of
-              Just (_, Binder _ (XObj (Mod _) _ _)) ->
-                do let ctx' = Context env typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- use { = } syntax instead
-                   ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
-                   put (popModulePath ctxAfterModuleAdditions)
-                   return dynamicNil -- TODO: propagate errors...
-              Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
-                defineIt existingMeta
-              Just (_, Binder _ x) ->
-                return (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
-              Nothing ->
-                defineIt emptyMeta
+  (newCtx, result) <-
+    case lookupInEnv (SymPath pathStrings moduleName) env of
+      Just (_, Binder _ (XObj (Mod _) _ _)) -> do
+        let ctx' = Context env i typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
+        ctxAfterModuleAdditions <- liftIO $ foldM folder ctx' innerExpressions
+        return (popModulePath ctxAfterModuleAdditions, dynamicNil) -- TODO: propagate errors...
+      Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->
+        defineIt existingMeta
+      Just (_, Binder _ x) ->
+        return (evalError ctx ("Can't redefine '" ++ moduleName ++ "' as module") (info xobj))
+      Nothing ->
+        defineIt emptyMeta
 
   case result of
-    Left err -> return (Left err)
-    Right _ -> return dynamicNil
+    Left err -> return (newCtx, Left err)
+    Right _ -> return (newCtx, dynamicNil)
 
 -- | "NORMAL" COMMANDS (just like the ones in Command.hs, but these need access to 'eval', etc.)
 
 -- | Command for loading a Carp file.
 commandLoad :: CommandCallback
-commandLoad [xobj@(XObj (Str path) i _)] =
-  do ctx <- get
-     let proj = contextProj ctx
-     libDir <- liftIO $ cachePath $ projectLibDir proj
-     let relativeTo = case i of
-                        Just ii ->
-                          case infoFile ii of
-                            "REPL" -> "."
-                            file -> takeDirectory file
-                        Nothing -> "."
-         carpDir = projectCarpDir proj
-         fullSearchPaths =
-           path :
-           (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
-           map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
-           [carpDir </> "core" </> path] ++
-           [libDir </> path]
-         firstM _ [] = return Nothing
-         firstM p (x:xs) = do
-           q <- p x
-           if q
-             then return $ Just x
-             else firstM p xs
-     existingPath <- liftIO $ firstM doesFileExist fullSearchPaths
-     case existingPath of
-       Nothing ->
-        if '@' `elem` path
-          then tryInstall path
-          else return $ invalidPath ctx path
-       Just firstPathFound ->
-         do canonicalPath <- liftIO (canonicalizePath firstPathFound)
-            fileThatLoads <- liftIO (canonicalizePath (case i of
-                                                         Just ii -> infoFile ii
-                                                         Nothing -> ""))
-            if canonicalPath == fileThatLoads
-              then return $ cantLoadSelf ctx path
-              else do let alreadyLoaded = projectAlreadyLoaded proj
-                      if canonicalPath `elem` alreadyLoaded
-                        then
-                             return ()
-                        else do contents <- liftIO $ slurp canonicalPath
-                                let files = projectFiles proj
-                                    files' = if canonicalPath `elem` files
-                                             then files
-                                             else files ++ [canonicalPath]
-                                    proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
-                                newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
-                                put newCtx
-                      return dynamicNil
+commandLoad ctx [xobj@(XObj (Str path) i _)] = do
+  let proj = contextProj ctx
+  libDir <- liftIO $ cachePath $ projectLibDir proj
+  let relativeTo = case i of
+                     Just ii ->
+                       case infoFile ii of
+                         "REPL" -> "."
+                         file -> takeDirectory file
+                     Nothing -> "."
+      carpDir = projectCarpDir proj
+      fullSearchPaths =
+        path :
+        (relativeTo </> path) :                         -- the path from the file that contains the '(load)', or the current directory if not loading from a file (e.g. the repl)
+        map (</> path) (projectCarpSearchPaths proj) ++ -- user defined search paths
+        [carpDir </> "core" </> path] ++
+        [libDir </> path]
+      firstM _ [] = return Nothing
+      firstM p (x:xs) = do
+        q <- p x
+        if q
+          then return $ Just x
+          else firstM p xs
+  existingPath <- liftIO $ firstM doesFileExist fullSearchPaths
+  case existingPath of
+    Nothing ->
+     if '@' `elem` path
+       then tryInstall path
+       else return $ invalidPath ctx path
+    Just firstPathFound ->
+      do canonicalPath <- liftIO (canonicalizePath firstPathFound)
+         fileThatLoads <- liftIO (canonicalizePath (case i of
+                                                      Just ii -> infoFile ii
+                                                      Nothing -> ""))
+         if canonicalPath == fileThatLoads
+           then return $ cantLoadSelf ctx path
+           else do let alreadyLoaded = projectAlreadyLoaded proj
+                   if canonicalPath `elem` alreadyLoaded
+                     then return (ctx, dynamicNil)
+                     else do
+                      contents <- liftIO $ slurp canonicalPath
+                      let files = projectFiles proj
+                          files' = if canonicalPath `elem` files
+                                   then files
+                                   else files ++ [canonicalPath]
+                          proj' = proj { projectFiles = files', projectAlreadyLoaded = canonicalPath : alreadyLoaded }
+                      newCtx <- liftIO $ executeString True False (ctx { contextProj = proj' }) contents canonicalPath
+                      return (newCtx, dynamicNil)
   where
     fppl ctx =
       projectFilePathPrintLength (contextProj ctx)
@@ -630,7 +610,6 @@ commandLoad [xobj@(XObj (Str path) i _)] =
             then joinWith "/" (joinWith "@" (tail (splitOn "@" fst)) : tail split)
             else url
     tryInstallWithCheckout path toCheckout = do
-      ctx <- get
       let proj = contextProj ctx
       fpath <- liftIO $ cachePath $ projectLibDir proj </> fromURL path </> toCheckout
       cur <- liftIO getCurrentDirectory
@@ -668,12 +647,11 @@ commandLoad [xobj@(XObj (Str path) i _)] =
           fileToLoad = fpath </> realName
           mainToLoad = fpath </> "main.carp"
       in do
-        res <- commandLoad [XObj (Str fileToLoad) Nothing Nothing]
+        (newCtx, res) <- commandLoad ctx [XObj (Str fileToLoad) Nothing Nothing]
         case res of
-          ret@(Right _) -> return ret
-          Left _ ->  commandLoad [XObj (Str mainToLoad) Nothing Nothing]
-commandLoad [x] = do
-  ctx <- get
+          ret@(Right _) -> return (newCtx, ret)
+          Left _ ->  commandLoad ctx [XObj (Str mainToLoad) Nothing Nothing]
+commandLoad ctx [x] =
   return $ evalError ctx ("Invalid args to `load`: " ++ pretty x) (info x)
 
 -- | Load several files in order.
@@ -681,7 +659,7 @@ loadFiles :: Context -> [FilePath] -> IO Context
 loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
   where folder :: Context -> FilePath -> IO Context
         folder ctx file = do
-         (ret, newCtx) <- runStateT (commandLoad [XObj (Str file) Nothing Nothing]) ctx
+         (newCtx, ret) <- commandLoad ctx [XObj (Str file) Nothing Nothing]
          let fppl = projectFilePathPrintLength (contextProj newCtx)
          case ret of
            Left err -> throw (EvalException err)
@@ -689,53 +667,49 @@ loadFiles ctxStart filesToLoad = foldM folder ctxStart filesToLoad
 
 -- | Command for reloading all files in the project (= the files that has been loaded before).
 commandReload :: CommandCallback
-commandReload args =
-  do ctx <- get
-     let paths = projectFiles (contextProj ctx)
-         f :: Context -> FilePath -> IO Context
-         f context filepath = do let proj = contextProj context
-                                     alreadyLoaded = projectAlreadyLoaded proj
-                                 if filepath `elem` alreadyLoaded
-                                   then
-                                        return context
-                                   else do
-                                           contents <- slurp filepath
-                                           let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
-                                           executeString False False (context { contextProj = proj' }) contents filepath
-     newCtx <- liftIO (foldM f ctx paths)
-     put newCtx
-     return dynamicNil
+commandReload ctx args = do
+  let paths = projectFiles (contextProj ctx)
+      f :: Context -> FilePath -> IO Context
+      f context filepath = do let proj = contextProj context
+                                  alreadyLoaded = projectAlreadyLoaded proj
+                              if filepath `elem` alreadyLoaded
+                                then
+                                     return context
+                                else do
+                                        contents <- slurp filepath
+                                        let proj' = proj { projectAlreadyLoaded = filepath : alreadyLoaded }
+                                        executeString False False (context { contextProj = proj' }) contents filepath
+  newCtx <- liftIO (foldM f ctx paths)
+  return (newCtx, dynamicNil)
 
 -- | Command for expanding a form and its macros.
 commandExpand :: CommandCallback
-commandExpand [xobj] =
-  do ctx <- get
-     result <- expandAll eval (contextGlobalEnv ctx) xobj
-     case result of
-       Left e -> return (Left e)
-       Right expanded ->
-         liftIO $ do putStrLnWithColor Yellow (pretty expanded)
-                     return dynamicNil
+commandExpand ctx [xobj] = do
+  (newCtx, result) <- expandAll eval ctx xobj
+  case result of
+    Left e -> return (newCtx, Left e)
+    Right expanded ->
+      liftIO $ do putStrLnWithColor Yellow (pretty expanded)
+                  return (newCtx, dynamicNil)
 
 -- | This function will show the resulting C code from an expression.
 -- | i.e. (Int.+ 2 3) => "_0 = 2 + 3"
 commandC :: CommandCallback
-commandC [xobj] =
-  do ctx <- get
-     let globalEnv = contextGlobalEnv ctx
-         typeEnv = contextTypeEnv ctx
-     result <- expandAll eval globalEnv xobj
-     case result of
-       Left err -> return $ Left err
-       Right expanded ->
-         case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
-           Left err -> return $ evalError ctx (show err) (info xobj)
-           Right (annXObj, annDeps) ->
-             do let cXObj = printC annXObj
-                    cDeps = concatMap printC annDeps
-                    c = cDeps ++ cXObj
-                liftIO (putStr c)
-                return dynamicNil
+commandC ctx [xobj] = do
+  let globalEnv = contextGlobalEnv ctx
+      typeEnv = contextTypeEnv ctx
+  (newCtx, result) <- expandAll eval ctx xobj
+  case result of
+    Left err -> return (newCtx, Left err)
+    Right expanded ->
+      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
+        Left err -> return $ evalError newCtx (show err) (info xobj)
+        Right (annXObj, annDeps) ->
+          do let cXObj = printC annXObj
+                 cDeps = concatMap printC annDeps
+                 c = cDeps ++ cXObj
+             liftIO (putStr c)
+             return (newCtx, dynamicNil)
 
 -- | Helper function for commandC
 printC :: XObj -> String
@@ -762,46 +736,40 @@ buildMainFunction xobj =
             ]) (Just dummyInfo) (Just (FuncTy [] UnitTy StaticLifetimeTy))
 
 primitiveDefdynamic :: Primitive
-primitiveDefdynamic _ _ [XObj (Sym (SymPath [] name) _) _ _, value] =
-  do env <- gets contextGlobalEnv
-     result <- eval env value
-     case result of
-       Left err -> return (Left err)
-       Right evaledBody ->
-         dynamicOrMacroWith (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name value
-primitiveDefdynamic _ _ [notName, body] = do
-  ctx <- get
+primitiveDefdynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, value] = do
+  (newCtx, result) <- eval ctx value
+  case result of
+    Left err -> return (newCtx, Left err)
+    Right evaledBody ->
+      dynamicOrMacroWith newCtx (\path -> [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evaledBody]) DynamicTy name value
+primitiveDefdynamic _ ctx [notName, body] =
   return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
-specialCommandSet :: [XObj] -> StateT Context IO (Either EvalError XObj)
-specialCommandSet [XObj (Sym (SymPath [] name) _) _ _, value] =
-  do env <- gets contextGlobalEnv
-     result <- eval env value
-     case result of
-       Left err -> return (Left err)
-       Right evald -> do
-          ctx <- get
-          let nenv = extendEnv env name evald
-          put (ctx {contextGlobalEnv = seq nenv nenv})
-          return dynamicNil
-specialCommandSet [notName, body] = do
-  ctx <- get
+specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
+specialCommandSet ctx [x@(XObj (Sym path _) _ _), value] = do
+  (newCtx, result) <- eval ctx value
+  case result of
+    Left err -> return (newCtx, Left (trace (show err) err))
+    Right evald -> do
+      let globalEnv = contextGlobalEnv ctx
+          nenv = newCtx { contextGlobalEnv=envInsertAt globalEnv path (Binder emptyMeta (trace (show evald) evald)) }
+      return (nenv, dynamicNil)
+specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
-specialCommandSet args = do
-  ctx <- get
+specialCommandSet ctx args =
   return (evalError ctx ("`set!` takes a name and a value, but got `" ++ intercalate " " (map pretty args)) (if null args then Nothing else info (head args)))
 
 primitiveEval :: Primitive
-primitiveEval _ env [val] = do
+primitiveEval _ ctx [val] = do
   -- primitives don’t evaluate their arguments, so this needs to double-evaluate
-  arg <- eval env val
+  (newCtx, arg) <- eval ctx val
   case arg of
-    Left err -> return (Left err)
-    Right ok -> eval env ok
+    Left err -> return (newCtx, Left err)
+    Right ok -> eval newCtx ok
 
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList
-  [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ _ [x] -> return (Right x))
+  [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
   , makeVarPrim "file" "(file mysymbol)" primitiveFile
   , makeVarPrim "line" "(line mysymbol)" primitiveLine
   , makeVarPrim "column" "(column mysymbol)" primitiveColumn

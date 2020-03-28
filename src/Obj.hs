@@ -55,7 +55,7 @@ data Obj = Sym SymPath SymbolMode
          | Lst [XObj]
          | Arr [XObj]
          | Dict (Map.Map XObj XObj)
-         | Closure XObj ClosureEnv
+         | Closure XObj ClosureContext
          | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
          | Def
          | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
@@ -94,7 +94,9 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
-newtype CommandFunctionType = CommandFunction { getCommand :: [XObj] -> StateT Context IO (Either EvalError XObj) }
+type CommandCallback = Context -> [XObj] -> IO (Context, (Either EvalError XObj))
+
+newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
 
 instance Eq CommandFunctionType where
   a == b = True
@@ -465,10 +467,10 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
 
-newtype ClosureEnv = CEnv Env
+newtype ClosureContext = CCtx Context
   deriving (Show)
 
-instance Eq ClosureEnv where
+instance Eq ClosureContext where
   _ == _ = True
 
 
@@ -788,6 +790,7 @@ data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check derivin
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env
+                       , contextInternalEnv :: Maybe Env
                        , contextTypeEnv :: TypeEnv
                        , contextPath :: [String]
                        , contextProj :: Project

@@ -384,11 +384,11 @@ showTypeFromXObj mappings xobj =
     Just t -> show (recursiveLookupTy mappings t)
     Nothing -> "Type missing"
 
-evalError :: Context -> String -> Maybe Info -> Either EvalError a
+evalError :: Context -> String -> Maybe Info -> (Context, Either EvalError a)
 evalError ctx msg i = makeEvalError ctx Nothing msg i
 
 -- | Print type errors correctly when running the compiler in 'Check' mode
-makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> Either EvalError a
+makeEvalError :: Context -> Maybe TypeError.TypeError -> String -> Maybe Info -> (Context, Either EvalError a)
 makeEvalError ctx err msg info =
   let fppl = projectFilePathPrintLength (contextProj ctx)
       history = contextHistory ctx
@@ -399,5 +399,5 @@ makeEvalError ctx err msg info =
                                               case info of
                                                 Just okInfo -> machineReadableInfo fppl okInfo ++ " " ++ msg
                                                 Nothing -> msg
-                in  Left (EvalError messageWhenChecking [] fppl info) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
-       _ ->  Left (EvalError msg history fppl info)
+                in  (ctx, Left (EvalError messageWhenChecking [] fppl info)) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
+       _ ->  (ctx, Left (EvalError msg history fppl info))

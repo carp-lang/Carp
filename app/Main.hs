@@ -69,6 +69,7 @@ main = do setLocaleEncoding utf8
               projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
               startingContext = Context
                                  (startingGlobalEnv noArray)
+                                 Nothing
                                  (TypeEnv startingTypeEnv)
                                  []
                                  projectWithCustomPrompt

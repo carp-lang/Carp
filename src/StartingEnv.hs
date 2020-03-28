@@ -405,7 +405,7 @@ startingGlobalEnv noArray =
                    ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
                    ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
-                   ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
+                   ++ [("Unsafe",   Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
