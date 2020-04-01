@@ -1,4 +1,9 @@
+(system-include "carp_pointer.h")
+
 (defmodule Pointer
   (defn inc [a] (Pointer.add a 1l))
   (defn dec [a] (Pointer.sub a 1l))
+  (register void (Fn [] (Ptr ())) "void_pointer")
+  (sig str (Fn [(Ref (Ptr ()))] String))
+  (defn str [p] @"(Ptr ())")
 )
