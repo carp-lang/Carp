@@ -296,10 +296,10 @@
   (case-internal name forms))
 
 (defmacro and [x y]
-  (list 'quote (list 'if x y false)))
+  (list 'if x y false))
 
 (defmacro or [x y]
-  (list 'quote (list 'if x true y)))
+  (list 'if x true y))
 
 (defndynamic build-vararg [func forms]
   (if (= (length forms) 0)

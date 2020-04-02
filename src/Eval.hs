@@ -230,11 +230,12 @@ eval ctx xobj@(XObj o i t) =
              -- Replace info so that the macro which is called gets the source location info of the expansion site.
              --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
              (ctx', res) <- apply (pushFrame ctx xobj) body params args
-             case res of
-              Right xobj -> do
-                (newCtx, res) <- eval ctx' xobj
-                return (popFrame newCtx, res)
-              Left err -> return (ctx, res)
+             return (popFrame ctx', res)
+             --case res of
+             -- Right xobj -> do
+             --   (newCtx, res) <- eval ctx' xobj
+             --   return (popFrame newCtx, res)
+             -- Left err -> return (ctx, res)
 
        XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
          do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
@@ -326,8 +327,12 @@ apply ctx body params args =
                              else extendEnv insideEnv'
                                    (head rest)
                                    (XObj (Lst (drop n args)) Nothing Nothing)
-          (nctx, res) <- eval (ctx {contextInternalEnv=Just insideEnv''}) body
-          return (nctx {contextInternalEnv=Nothing}, res)
+          (nctx, res) <- expandAll eval (ctx {contextInternalEnv=Just insideEnv''}) body
+          case res of
+            Left _ -> return (nctx {contextInternalEnv=Nothing}, res)
+            Right res -> do
+              (nctx', res') <- eval nctx res
+              return (nctx' {contextInternalEnv=Nothing}, res')
 
 -- | Parses a string and then converts the resulting forms to commands, which are evaluated in order.
 executeString :: Bool -> Bool -> Context -> String -> String -> IO Context
