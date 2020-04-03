@@ -42,45 +42,53 @@
   (defn reset [state]
     (State.set-failed (State.set-passed state 0) 0))
 
-  (hidden run-child)
-  (defn run-child [x]
-    (let [pid (System.fork)
-          status 0]
-      (if (= pid 0)
-        (do
-          (x)
-          0)
-        (do
-          (ignore (System.wait (address status)))
-          (System.get-exit-status status)))))
+  (not-on-windows
+    (hidden run-child)
+    (defn run-child [x]
+      (let [pid (System.fork)
+            status 0]
+        (if (= pid 0)
+          (do
+            (x)
+            0)
+          (do
+            (ignore (System.wait (address status)))
+            (System.get-exit-status status)))))
 
-  (hidden handle-signal)
-  (defn handle-signal [x] (System.exit x))
+    (hidden handle-signal)
+    (defn handle-signal [x] (System.exit x))
 
-  (hidden run-child-signals)
-  (defn run-child-signals [x]
-    (let [pid (System.fork)
-          status 0]
-      (if (= pid 0)
-        (do
-          (System.signal System.signal-abort handle-signal)
-          (System.signal System.signal-fpe handle-signal)
-          (System.signal System.signal-ill handle-signal)
-          (System.signal System.signal-segv handle-signal)
-          (System.signal System.signal-term handle-signal)
-          (x)
-          0)
-        (do
-          (ignore (System.wait (address status)))
-          (System.get-exit-status status)))))
+    (hidden run-child-signals)
+    (defn run-child-signals [x]
+      (let [pid (System.fork)
+            status 0]
+        (if (= pid 0)
+          (do
+            (System.signal System.signal-abort handle-signal)
+            (System.signal System.signal-fpe handle-signal)
+            (System.signal System.signal-ill handle-signal)
+            (System.signal System.signal-segv handle-signal)
+            (System.signal System.signal-term handle-signal)
+            (x)
+            0)
+          (do
+            (ignore (System.wait (address status)))
+            (System.get-exit-status status)))))
 
-  (doc assert-exit "Assert that function f exits with exit code exit-code.")
-  (defn assert-exit [state exit-code f descr]
-    (assert-equal state exit-code (run-child f) descr))
+    (doc assert-exit "Assert that function f exits with exit code exit-code.")
+    (defn assert-exit [state exit-code f descr]
+      (assert-equal state exit-code (run-child f) descr))
 
-  (doc assert-signal "Assert that function f aborts with OS signal signal.")
-  (defn assert-signal [state signal x descr]
-    (assert-equal state signal (run-child-signals x) descr))
+    (doc assert-signal "Assert that function f aborts with OS signal signal.")
+    (defn assert-signal [state signal x descr]
+      (assert-equal state signal (run-child-signals x) descr)))
+
+  (windows-only
+    (defndynamic assert-exit [state exit-code f descr]
+      (macro-error "assert-exit is not implemented on Windows."))
+
+    (defndynamic assert-signal [state signal x descr]
+      (macro-error "assert-signal is not implemented on Windows.")))
 
   (doc print-test-results "Print test results.")
   (defn print-test-results [state]
