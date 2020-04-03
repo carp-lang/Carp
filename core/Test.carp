@@ -78,7 +78,7 @@
   (defn assert-exit [state exit-code f descr]
     (assert-equal state exit-code (run-child f) descr))
 
-  (doc assert-exit "Assert that function f aborts with OS signal signal.")
+  (doc assert-signal "Assert that function f aborts with OS signal signal.")
   (defn assert-signal [state signal x descr]
     (assert-equal state signal (run-child-signals x) descr))
 
