@@ -23,6 +23,7 @@ To learn more about the details of memory management, check out [Memory.md](http
 1500l   ;; Long
 3.14f   ;; Float
 10.0    ;; Double
+1b      ;; Byte
 true    ;; Bool
 "hello" ;; &String
 #"hello" ;; &Pattern
