@@ -1,7 +1,7 @@
 (load "Test.carp")
 (use Test)
 
-(load "stdint.carp")
+(load "StdInt.carp")
 (use Int64)
 
 (deftest test
