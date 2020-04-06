@@ -39,6 +39,7 @@ Int
 Long
 Float
 Double
+Byte
 Bool
 String
 Pattern
