@@ -2,15 +2,10 @@
  (system-include "SDL2/SDL_image.h")
  (add-pkg "SDL2_image"))
 
-(defmodule IMG
-  (defmodule Windows
-    (defdynamic header-path "C:\\SDL2_image-2.0.4\\include")
-    (defdynamic library-path "C:\\SDL2_image-2.0.4\\lib\\x86\\")))
-
 (windows-only
   (system-include "SDL_image.h")
-  (add-cflag (str "-I" IMG.Windows.header-path))
-  (add-lib (str "/link " IMG.Windows.library-path "SDL2_image.lib ")))
+  (add-cflag (str "-I" sdl-windows-header-path))
+  (add-lib (str sdl-windows-library-path "SDL2_image.lib ")))
 
 (defmodule IMG
   (register load-texture (Fn [(Ptr SDL_Renderer) (Ptr Char)] (Ptr SDL_Texture)) "IMG_LoadTexture")
