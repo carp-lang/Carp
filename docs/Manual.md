@@ -86,6 +86,8 @@ For example, to set the title of your project:
 ### Profile settings
 If a file called ```profile.carp``` is placed in the folder ```~/.carp/```, that file will get loaded after the compiler has started (after loading the core libraries but before any other source files are loaded). This file is meant for user specific settings that you want in all your projects, like little helper functions and other customizations.
 
+On Windows this file is located at ```C:/Users/USERNAME/AppData/Roaming/carp/profile.carp```.
+
 <!-- If a file called ```project.carp``` is placed in the folder where you invoke the ```carp``` command this file will get loaded after the compiler has started (and after 'user.carp' has loaded). This files is intended for setting up the build process of this particular project, for example by loading the correct source files, configuring the compiler variables, etc. -->
 
 ### Compiler flags
