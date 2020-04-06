@@ -28,5 +28,8 @@ jobs:
     - name: Build
       run: stack build
 
+    - name: Run Compiler Tests
+      run: stack test
+
     - name: Run Carp Tests
       run: ./run_carp_tests.sh --no_sdl
