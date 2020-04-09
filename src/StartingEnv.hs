@@ -56,6 +56,7 @@ pointerModule = Env { envBindings = bindings
   where bindings = Map.fromList [ templatePointerCopy
                                 , templatePointerEqual
                                 , templatePointerToRef
+                                , templatePointerToValue
                                 , templatePointerAdd
                                 , templatePointerSub
                                 , templatePointerWidth
@@ -93,6 +94,18 @@ templatePointerToRef = defineTemplate
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p;"
+                        ,"}"])
+  (const [])
+
+
+-- | A template function for converting pointers to values (it's up to the user of this function to make sure that is a safe operation).
+templatePointerToValue = defineTemplate
+  (SymPath ["Pointer"] "to-value")
+  (FuncTy [PointerTy (VarTy "p")] (VarTy "p") StaticLifetimeTy)
+  "converts a pointer to a value. The user will have to ensure themselves that this is a safe operation."
+  (toTemplate "$p $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *p;"
                         ,"}"])
   (const [])
 
