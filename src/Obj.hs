@@ -395,7 +395,7 @@ showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder meta xobj) =
-  if False -- metaIsTrue meta "hidden"
+  if metaIsTrue meta "hidden"
   then ""
   else replicate indent ' ' ++ name ++
        -- " (" ++ show (getPath xobj) ++ ")" ++
