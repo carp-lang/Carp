@@ -386,7 +386,7 @@ unsafeModule = Env { envBindings = bindings
                    , envUseModules = []
                    , envMode = ExternalEnv
                    , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateCoerce ]
+  where bindings = Map.fromList [ templateCoerce, templateLeak ]
 
 -- | A template for coercing (casting) a type to another type
 templateCoerce :: (String, Binder)
@@ -397,6 +397,17 @@ templateCoerce = defineTemplate
   (toTemplate "$a $NAME ($b b)")
   (toTemplate $ unlines ["$DECL {"
                         ,"   return ($a)b;"
+                        ,"}"])
+  (const [])
+
+-- | A template function for preventing destructor from being run on a value (it's up to the user of this function to make sure that memory is freed).
+templateLeak = defineTemplate
+  (SymPath ["Unsafe"] "leak")
+  (FuncTy [(VarTy "a")] UnitTy StaticLifetimeTy)
+  "prevents a destructor from being run on a value a."
+  (toTemplate "void $NAME ($a a)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    // Leak"
                         ,"}"])
   (const [])
 
