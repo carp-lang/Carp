@@ -259,22 +259,6 @@ dynamicOrMacroWith ctx producer ty name body = do
       meta = existingMeta globalEnv elem
   return (ctx { contextGlobalEnv = envInsertAt globalEnv path (Binder meta elem) }, dynamicNil)
 
-dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
-dynamicOrMacro ctx pat ty name params body =
-  dynamicOrMacroWith ctx (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, body]) ty name body
-
-primitiveDefndynamic :: Primitive
-primitiveDefndynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
-  dynamicOrMacro ctx Dynamic DynamicTy name params body
-primitiveDefndynamic _ ctx [notName, params, body] =
-  argumentErr ctx "defndynamic" "a name" "first" notName
-
-primitiveDefmacro :: Primitive
-primitiveDefmacro _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
-  dynamicOrMacro ctx Macro MacroTy name params body
-primitiveDefmacro _ ctx [notName, params, body] =
-  argumentErr ctx "defmacro" "a name" "first" notName
-
 primitiveType :: Primitive
 primitiveType _ ctx [x@(XObj (Sym path@(SymPath [] name) _) _ _)] = do
   let env = contextGlobalEnv ctx

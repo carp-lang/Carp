@@ -119,7 +119,7 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                   _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
   case newProj of
     Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) (ctx, dynamicNil)
-    Right ok -> return (ctx, dynamicNil)
+    Right ok -> return (ctx {contextProj=ok}, dynamicNil)
 commandProjectConfig ctx [faultyKey, _] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)
 

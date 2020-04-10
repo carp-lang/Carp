@@ -224,38 +224,40 @@
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro linux-only [:rest forms]
   (if (= "linux" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro windows-only [:rest forms]
   (if (Dynamic.or (= "windows" (os)) (= "mingw32" (os)))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro not-on-windows [:rest forms]
   (if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
-    (if (= (length names) 1)
-      (list (list 'use (car names)))
-      (cons (list 'use (car names)) (use-all-fn (cdr names))))));(use-all (cdr names))))))
+    (do
+      (eval (list 'use (car names)))
+      (if (= (length names) 1)
+        ()
+        (use-all-fn (cdr names))))))
 
 (defmacro use-all [:rest names]
-  (cons 'do (use-all-fn names)))
+  (use-all-fn names))
 
 (defmacro load-and-use [name]
-  (list 'do
-        (list 'load (str name ".carp"))
-        (list 'use name)))
+  (do
+    (eval (list 'load (str name ".carp")))
+    (eval (list 'use name))))
 
 (defmacro when [condition form]
   (list 'if condition form (list)))

@@ -399,5 +399,5 @@ makeEvalError ctx err msg info =
                                               case info of
                                                 Just okInfo -> machineReadableInfo fppl okInfo ++ " " ++ msg
                                                 Nothing -> msg
-                in  (ctx, Left (EvalError messageWhenChecking [] fppl info)) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
+                in  (ctx, Left (EvalError messageWhenChecking [] fppl Nothing)) -- Passing no history to avoid appending it at the end in 'show' instance for EvalError
        _ ->  (ctx, Left (EvalError msg history fppl info))

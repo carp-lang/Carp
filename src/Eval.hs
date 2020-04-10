@@ -816,6 +816,26 @@ primitiveEval _ ctx [val] = do
     Left err -> return (newCtx, Left err)
     Right ok -> eval newCtx ok
 
+dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
+dynamicOrMacro ctx pat ty name params body = do
+  (ctx', exp) <- macroExpand ctx body
+  case exp of
+    Right expanded ->
+      dynamicOrMacroWith ctx' (\path -> [XObj pat Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, params, expanded]) ty name body
+    Left err -> return (ctx, exp)
+
+primitiveDefndynamic :: Primitive
+primitiveDefndynamic _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
+  dynamicOrMacro ctx Dynamic DynamicTy name params body
+primitiveDefndynamic _ ctx [notName, params, body] =
+  argumentErr ctx "defndynamic" "a name" "first" notName
+
+primitiveDefmacro :: Primitive
+primitiveDefmacro _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
+  dynamicOrMacro ctx Macro MacroTy name params body
+primitiveDefmacro _ ctx [notName, params, body] =
+  argumentErr ctx "defmacro" "a name" "first" notName
+
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList
   [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
