@@ -174,8 +174,7 @@ eval ctx xobj@(XObj o i t) =
          | otherwise ->
              do let binds = unwrapVar (pairwise bindings) []
                     i = contextInternalEnv ctx
-                    env = contextEnv ctx
-                    ni = Env Map.empty (Just env) Nothing [] InternalEnv 0
+                    ni = Env Map.empty i Nothing [] InternalEnv 0
                 eitherCtx <- foldrM successiveEval (Right ctx{contextInternalEnv=Just ni}) binds
                 case eitherCtx of
                    Left err -> return (ctx, Left err)
@@ -219,11 +218,7 @@ eval ctx xobj@(XObj o i t) =
            Right () ->
              do (newCtx, evaledArgs) <- foldlM successiveEval (ctx, Right []) args
                 case evaledArgs of
-                  Right okArgs -> do
-                    (newCtx', res) <- apply (pushFrame newCtx xobj) body params okArgs
-                    case res of
-                      Right xobj -> return (popFrame newCtx', res)
-                      Left err -> return (newCtx', res)
+                  Right okArgs -> apply newCtx body params okArgs
                   Left err -> return (newCtx, Left err)
 
        XObj (Lst [XObj Macro _ _, _, XObj (Arr params) _ _, body]) i _:args ->
@@ -232,13 +227,9 @@ eval ctx xobj@(XObj o i t) =
            Right () -> do
              -- Replace info so that the macro which is called gets the source location info of the expansion site.
              --let replacedBody = replaceSourceInfoOnXObj (info xobj) body
-             (ctx', res) <- apply (pushFrame ctx xobj) body params args
+             (ctx', res) <- apply ctx body params args
              case res of
-              Right xobj -> do
-                (ctx'', res) <- macroExpand ctx' xobj
-                case res of
-                  Right _ -> return (popFrame ctx'', res)
-                  Left err -> return (ctx, res)
+              Right xobj -> macroExpand ctx' xobj
               Left err -> return (ctx, res)
 
        XObj (Lst [XObj (Command callback) _ _, _]) _ _:args ->
@@ -266,8 +257,8 @@ eval ctx xobj@(XObj o i t) =
              (newCtx, f) <- eval ctx x
              case f of
                Right fun -> do
-                 (newCtx', res) <- eval ctx (XObj (Lst (fun:args)) i t)
-                 return (newCtx', res)
+                 (newCtx', res) <- eval (pushFrame ctx xobj) (XObj (Lst (fun:args)) i t)
+                 return (popFrame newCtx', res)
                Left err -> return (newCtx, Left err)
        XObj With _ _ : xobj@(XObj (Sym path _) _ _) : forms ->
          specialCommandWith ctx xobj path forms
@@ -355,7 +346,7 @@ apply ctx@Context{contextInternalEnv=internal} body params args =
                   "`, but expected exactly one `:rest` separator.") Nothing)
   where callWith env proper rest = do
           let n = length proper
-              insideEnv = Env Map.empty (Just env) Nothing [] InternalEnv 0
+              insideEnv = Env Map.empty internal Nothing [] InternalEnv 0
               insideEnv' = foldl' (\e (p, x) -> extendEnv e p x) insideEnv
                                   (zip proper (take n args))
               insideEnv'' = if null rest
@@ -534,7 +525,7 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
             newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
             globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-            ctx' = Context globalEnvWithModuleAdded (Just innerEnv) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
+            ctx' = Context globalEnvWithModuleAdded (Just (innerEnv{envParent=i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
         (ctxAfterModuleDef, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         return (popModulePath ctxAfterModuleDef{contextInternalEnv=i}, res)
 
@@ -794,15 +785,21 @@ primitiveDefdynamic _ ctx [notName, body] =
   return (evalError ctx ("`defndynamic` expected a name as first argument, but got " ++ pretty notName) (info notName))
 
 specialCommandSet :: Context -> [XObj] -> IO (Context, Either EvalError XObj)
-specialCommandSet ctx [x@(XObj (Sym path _) _ _), value] = do
+specialCommandSet ctx [x@(XObj (Sym path@(SymPath mod n) _) _ _), value] = do
   (newCtx, result) <- eval ctx value
   case result of
     Left err -> return (newCtx, Left err)
     Right evald -> do
       let globalEnv = contextGlobalEnv ctx
           elem = XObj (Lst  [XObj DefDynamic Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing, evald]) (info value) (Just DynamicTy)
-          nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path (Binder emptyMeta elem) }
-      return (nctx, dynamicNil)
+          binder = (Binder emptyMeta elem)
+          nctx = newCtx { contextGlobalEnv=envInsertAt globalEnv path binder }
+      case contextInternalEnv nctx of
+        Nothing -> return (nctx, dynamicNil)
+        Just env ->
+          if contextPath nctx == mod
+          then return (nctx{contextInternalEnv=Just (envInsertAt env (SymPath [] n) binder)}, dynamicNil)
+          else return (nctx, dynamicNil)
 specialCommandSet ctx [notName, body] =
   return (evalError ctx ("`set!` expected a name as first argument, but got " ++ pretty notName) (info notName))
 specialCommandSet ctx args =
@@ -814,7 +811,11 @@ primitiveEval _ ctx [val] = do
   (newCtx, arg) <- eval ctx val
   case arg of
     Left err -> return (newCtx, Left err)
-    Right ok -> eval newCtx ok
+    Right evald -> do
+      (newCtx', expanded) <- macroExpand ctx evald
+      case expanded of
+        Left err -> return (newCtx', Left err)
+        Right ok -> eval newCtx' ok
 
 dynamicOrMacro :: Context -> Obj -> Ty -> String -> XObj -> XObj -> IO (Context, Either EvalError XObj)
 dynamicOrMacro ctx pat ty name params body = do

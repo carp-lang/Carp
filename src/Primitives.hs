@@ -509,13 +509,16 @@ primitiveUse xobj ctx [XObj (Sym path _) _ _] = do
       e = getEnv env pathStrings
       useThese = envUseModules e
       e' = if path `elem` useThese then e else e { envUseModules = path : useThese }
-      innerEnv = getEnv env pathStrings -- Duplication of e?
-  case lookupInEnv path innerEnv of
+  case lookupInEnv path e of
     Just (_, Binder _ _) ->
       return (ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }, dynamicNil)
     Nothing ->
-      return (evalError ctx
-               ("Can't find a module named '" ++ show path ++ "'") (info xobj))
+      case lookupInEnv path env of
+        Just (_, Binder _ _) ->
+          return (ctx { contextGlobalEnv = envReplaceEnvAt env pathStrings e' }, dynamicNil)
+        Nothing ->
+          return (evalError ctx
+                   ("Can't find a module named '" ++ show path ++ "'") (info xobj))
 
 -- | Get meta data for a Binder
 primitiveMeta :: Primitive

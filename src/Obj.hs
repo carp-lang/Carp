@@ -267,7 +267,7 @@ pretty = visit 0
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
-            Num ByteTy num -> show num
+            Num ByteTy num -> show num ++ "b"
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
             Num _ _ -> error "Invalid number type."
@@ -312,6 +312,66 @@ pretty = visit 0
             Interface _ _ -> "interface"
             With -> "with"
 
+prettyUpTo :: Int -> XObj -> String
+prettyUpTo max xobj =
+  let prettied = pretty xobj
+  in if length prettied > max
+     then take max prettied ++ "..." ++ end
+     else prettied
+  where end =
+          -- we match all of them explicitly to get errors if we forget one
+          case obj xobj of
+            Lst lst -> ")"
+            Arr arr -> "]"
+            Dict dict -> "}"
+            Num LongTy num -> "l"
+            Num IntTy num -> ""
+            Num ByteTy num -> "b"
+            Num FloatTy num -> show num ++ "f"
+            Num DoubleTy num -> ""
+            Num _ _ -> error "Invalid number type."
+            Str str -> ""
+            Pattern str -> ""
+            Chr c -> ""
+            Sym path mode -> ""
+            MultiSym originalName paths -> "}"
+            InterfaceSym name -> ""
+            Bol b -> ""
+            Defn maybeCaptures ->
+              case maybeCaptures of
+                Just captures -> ">"
+                Nothing -> ""
+            Def -> ""
+            Fn _ captures -> ">"
+            Closure elem _ -> ">"
+            If -> ""
+            Match -> ""
+            While -> ""
+            Do -> ""
+            Let -> ""
+            Mod env -> ""
+            Deftype _ -> ""
+            DefSumtype _ -> ""
+            Deftemplate _ -> ""
+            Instantiate _ -> ""
+            External Nothing -> ""
+            External (Just override) -> ")"
+            ExternalType -> ""
+            DocStub -> ""
+            Defalias _ -> ""
+            Address -> ""
+            SetBang -> ""
+            Macro -> ""
+            Dynamic -> ""
+            DefDynamic -> ""
+            Command _ -> ""
+            The -> ""
+            Ref -> ""
+            Deref -> ""
+            Break -> ""
+            Interface _ _ -> ""
+            With -> ""
+
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
@@ -327,7 +387,7 @@ instance Show EvalError where
             then ""
             else
               "\n\nTraceback:\n" ++
-              unlines (map (\x -> pretty x ++ getInfo (info x)) t)
+              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (info x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String

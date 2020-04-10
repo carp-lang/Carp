@@ -362,9 +362,7 @@ The expression must be evaluable at compile time.")
 (doc gensym-with "generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
-    ;(macro-log *gensym-counter*)
     (set! *gensym-counter* (inc *gensym-counter*))
-    ;(macro-log *gensym-counter*)
     (Symbol.join [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "generates symbols dynamically as needed.")

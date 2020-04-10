@@ -18,8 +18,6 @@ lookupInEnv (SymPath [] name) env =
     Nothing -> case envParent env of
                  Just parent -> lookupInEnv (SymPath [] name) parent
                  Nothing -> Nothing
-lookupInEnv (SymPath ("LET" : ps) name) env =
-  lookupInEnv (SymPath ps name) env
 lookupInEnv path@(SymPath (p : ps) name) env =
   case Map.lookup p (envBindings env) of
     Just (Binder _ xobj) ->

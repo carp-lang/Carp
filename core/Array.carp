@@ -279,7 +279,7 @@ Example:
 
 The trailing elements of the longer array will be discarded.")
   (defn zip [f a b]
-    (let-do [l (Int.min (length a) (length b))
+    (let-do [l (min (length a) (length b))
              na (allocate l)]
       (for [i 0 l]
         (aset-uninitialized! &na i (~f (unsafe-nth a i) (unsafe-nth b i))))

@@ -158,7 +158,7 @@ instance Show TypeError where
     "I failed to expand a macro at " ++ prettyInfoFromXObj xobj ++
     ".\n\nThe error message I got was: " ++ show err ++
     "\nTraceback:\n" ++
-    unlines (map pretty hist)
+    unlines (map (prettyUpTo 60) hist)
   show (NotAValidType xobj) =
     pretty xobj ++ "is not a valid type at " ++ prettyInfoFromXObj xobj
   show (FunctionsCantReturnRefTy xobj t) =
