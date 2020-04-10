@@ -185,7 +185,10 @@ expand eval ctx xobj =
         Left err -> return (ctx, acc)
         Right lst -> do
           (newCtx, expanded) <- expand eval ctx e
-          return (newCtx, Right (lst ++ [e]))
+          case expanded of
+            Right e -> do
+              return (newCtx, Right (lst ++ [e]))
+            Left err -> return (ctx, Left err)
 
 -- | Replace all the infoIdentifier:s on all nested XObj:s
 setNewIdentifiers :: XObj -> XObj
