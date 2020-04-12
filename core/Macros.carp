@@ -43,6 +43,16 @@
 (defmacro annotate [name annotation]
   (list 'meta-set! name "annotations" (annotate-helper name annotation)))
 
+(doc immutable
+  "Annotate a binding as immutable. Emits the correpsonding c code for the
+  binding qualified with `const`.
+
+   Carp itself performs no checks against such bindings, rebinding a value
+   annotated as immutable is valid in Carp, but it will result in invalid
+   reassignment in the emitted C, which won't compile.")
+(defmacro immutable [name]
+  (list 'meta-set! name "annotations" (annotate-helper name "const")))
+
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
   (defndynamic cadr [pair] (car (cdr pair)))

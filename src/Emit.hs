@@ -8,7 +8,7 @@ module Emit (toC,
              wrapInInitFunction
             ) where
 
-import Data.List (intercalate, sortOn)
+import Data.List (intercalate, sortOn, isInfixOf)
 import Control.Monad.State
 import Control.Monad (when, zipWithM_)
 import qualified Data.Map as Map
@@ -233,13 +233,18 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                 Functions ->
                   return ""
                 _ ->
-                  do appendToSrc (addIndent indent ++ "{\n")
-                     let innerIndent = indent + indentAmount
-                     ret <- visit innerIndent expr
-                     appendToSrc (addIndent innerIndent ++ pathToC path ++ " = " ++ ret ++ ";\n")
-                     delete innerIndent i
-                     appendToSrc (addIndent indent ++ "}\n")
-                     return ""
+                  let Just typ = t
+                      innerIndent = indent + indentAmount
+                  in if constAnnotated meta
+                     then do ret <- visit innerIndent expr
+                             appendToSrc(defToDeclaration meta path typ ++ " = " ++ ret ++ ";\n")
+                             return ""
+                     else do appendToSrc (addIndent indent ++ "{\n")
+                             ret <- visit innerIndent expr
+                             appendToSrc (addIndent innerIndent ++ defToDeclaration meta path typ ++ " = " ++ ret ++ ";\n")
+                             delete innerIndent i
+                             appendToSrc (addIndent indent ++ "}\n")
+                             return ""
 
             -- Let
             [XObj Let _ _, XObj (Arr bindings) _ _, body] ->
@@ -602,6 +607,16 @@ delete indent i = mapM_ deleterToC (infoDelete i)
         deleterToC deleter@ProperDeleter{} =
           appendToSrc $ addIndent indent ++ "" ++ pathToC (deleterPath deleter) ++ "(" ++ mangle (deleterVariable deleter) ++ ");\n"
 
+constAnnotated :: MetaData -> Bool
+constAnnotated meta = isInfixOf "const" (annotationToStr meta)
+
+annotationToStr :: MetaData -> String
+annotationToStr meta =
+  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
+  in joinWith " " (map strToC annotations)
+  where strToC (XObj (Str s) _ _) = s
+        strToC xobj = pretty xobj
+
 defnToDeclaration :: MetaData -> SymPath -> [XObj] -> Ty -> String
 defnToDeclaration meta path@(SymPath _ name) argList retTy =
   let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
@@ -614,6 +629,15 @@ defnToDeclaration meta path@(SymPath _ name) argList retTy =
                paramsAsC = paramListToC argList
                annotations = meta
            in (retTyAsC ++ " " ++ pathToC path ++ "(" ++ paramsAsC ++ ")")
+  where strToC (XObj (Str s) _ _) = s
+        strToC xobj = pretty xobj
+
+defToDeclaration :: MetaData -> SymPath -> Ty -> String
+defToDeclaration meta path@(SymPath _ name) t =
+  let (XObj (Lst annotations) _ _) = fromMaybe emptyList (Map.lookup "annotations" (getMeta meta))
+      annotationsStr = joinWith " " (map strToC annotations)
+      sep = if not (null annotationsStr) then " " else ""
+  in tyToCLambdaFix t ++ " " ++ annotationsStr ++ sep ++ pathToC path
   where strToC (XObj (Str s) _ _) = s
         strToC xobj = pretty xobj
 
@@ -698,14 +722,16 @@ defaliasToDeclaration t path =
     _ ->  "typedef " ++ tyToC t ++ " " ++ pathToC path ++ ";\n"
 
 toDeclaration :: Binder -> String
-toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
+toDeclaration binder@(Binder meta xobj@(XObj lst@(Lst xobjs) _ t)) =
   case xobjs of
     [XObj (Defn _) _ _, XObj (Sym path _) _ _, XObj (Arr argList) _ _, _] ->
       let (Just (FuncTy _ retTy _)) = t
       in  defnToDeclaration meta path argList retTy ++ ";\n"
-    [XObj Def _ _, XObj (Sym path _) _ _, _] ->
+    [XObj Def _ _, XObj (Sym path _) _ _, expr] ->
       let Just t' = t
-      in "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
+      in if constAnnotated meta
+         then toC Globals binder
+         else "" ++ tyToCLambdaFix t' ++ " " ++ pathToC path ++ ";\n"
     XObj (Deftype t) _ _ : XObj (Sym path _) _ _ : rest ->
       defStructToDeclaration t path rest
     XObj (DefSumtype t) _ _ : XObj (Sym path _) _ _ : rest ->
