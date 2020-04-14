@@ -56,6 +56,7 @@ pointerModule = Env { envBindings = bindings
   where bindings = Map.fromList [ templatePointerCopy
                                 , templatePointerEqual
                                 , templatePointerToRef
+                                , templatePointerToValue
                                 , templatePointerAdd
                                 , templatePointerSub
                                 , templatePointerWidth
@@ -93,6 +94,18 @@ templatePointerToRef = defineTemplate
   (toTemplate "$p* $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p;"
+                        ,"}"])
+  (const [])
+
+
+-- | A template function for converting pointers to values (it's up to the user of this function to make sure that is a safe operation).
+templatePointerToValue = defineTemplate
+  (SymPath ["Pointer"] "to-value")
+  (FuncTy [PointerTy (VarTy "p")] (VarTy "p") StaticLifetimeTy)
+  "converts a pointer to a value. The user will have to ensure themselves that this is a safe operation."
+  (toTemplate "$p $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *p;"
                         ,"}"])
   (const [])
 
@@ -373,7 +386,7 @@ unsafeModule = Env { envBindings = bindings
                    , envUseModules = []
                    , envMode = ExternalEnv
                    , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateCoerce ]
+  where bindings = Map.fromList [ templateCoerce, templateLeak ]
 
 -- | A template for coercing (casting) a type to another type
 templateCoerce :: (String, Binder)
@@ -384,6 +397,17 @@ templateCoerce = defineTemplate
   (toTemplate "$a $NAME ($b b)")
   (toTemplate $ unlines ["$DECL {"
                         ,"   return ($a)b;"
+                        ,"}"])
+  (const [])
+
+-- | A template function for preventing destructor from being run on a value (it's up to the user of this function to make sure that memory is freed).
+templateLeak = defineTemplate
+  (SymPath ["Unsafe"] "leak")
+  (FuncTy [(VarTy "a")] UnitTy StaticLifetimeTy)
+  "prevents a destructor from being run on a value a."
+  (toTemplate "void $NAME ($a a)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    // Leak"
                         ,"}"])
   (const [])
 
