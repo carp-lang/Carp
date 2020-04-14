@@ -1,0 +1,12 @@
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  (assert-equal test
+                1l
+                (do
+                  (Debug.reset-memory-balance!)
+                  (let [s @"String"]
+                    (Unsafe.leak s))
+                  (Debug.memory-balance))
+                "Unsafe.leak should stop Carp from freeing allocated memory"))
