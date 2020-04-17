@@ -2,46 +2,46 @@
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name string]
-  (list 'meta-set! name "doc" string))
+  (eval (list 'meta-set! name "doc" string)))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
-  (list 'macro-log (list 'meta name "doc")))
+  (eval (list 'macro-log (list 'meta name "doc"))))
 
 (doc sig "Annotate a binding with the desired signature.")
 (defmacro sig [name signature]
-  (list 'meta-set! name "sig" signature))
+  (eval (list 'meta-set! name "sig" signature)))
 
 (doc print-sig "Print the annotated signature for a binding.")
 (defmacro print-sig [name]
-  (list 'macro-log (list 'meta name "sig")))
+  (eval (list 'macro-log (list 'meta name "sig"))))
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
-  (list 'meta-set! name "hidden" true))
+  (eval (list 'meta-set! name "hidden" true)))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
-  (list 'meta-set! name "private" true))
+  (eval (list 'meta-set! name "private" true)))
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
-  (list 'meta-set! name "todo" value))
+  (eval (list 'meta-set! name "todo" value)))
 
 (doc private? "Is this binding private?")
 (defmacro private? [name]
-  (list 'not (list 'list? (meta name "private"))))
+  (eval (list 'not (list 'list? (meta name "private")))))
 
 (doc hidden? "Is this binding hidden?")
 (defmacro hidden? [name]
-  (list 'not (list 'list? (meta name "hidden"))))
+  (eval (list 'not (list 'list? (meta name "hidden")))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (list 'meta-set! name "annotations" (annotate-helper name annotation)))
+  (eval (list 'meta-set! name "annotations" (annotate-helper name annotation))))
 
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))

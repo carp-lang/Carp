@@ -478,7 +478,7 @@ specialCommandDefine ctx xobj =
        Left err ->
          return (ctx, Left err)
 
-getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> StateT Context IO (Either EvalError (Maybe (Ty, XObj)))
+getSigFromDefnOrDef :: Context -> Env -> FilePathPrintLength -> XObj -> (Either EvalError (Maybe (Ty, XObj)))
 getSigFromDefnOrDef ctx globalEnv fppl xobj =
   let metaData = existingMeta globalEnv xobj
   in  case Map.lookup "sig" (getMeta metaData) of
@@ -487,9 +487,9 @@ getSigFromDefnOrDef ctx globalEnv fppl xobj =
             Just t -> let sigToken = XObj (Sym (SymPath [] "sig") Symbol) Nothing Nothing
                           nameToken = XObj (Sym (SymPath [] (getName xobj)) Symbol) Nothing Nothing
                           recreatedSigForm = XObj (Lst [sigToken, nameToken, foundSignature]) Nothing (Just MacroTy)
-                      in return (Right (Just (t, recreatedSigForm)))
-            Nothing -> return (evalError ctx ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (info xobj))
-        Nothing -> return (Right Nothing)
+                      in Right (Just (t, recreatedSigForm))
+            Nothing -> Left (EvalError ("Can't use '" ++ pretty foundSignature ++ "' as a type signature") (contextHistory ctx) fppl (info xobj))
+        Nothing -> Right Nothing
 
 annotateWithinContext :: Bool -> Context -> XObj -> IO (Context, Either EvalError (XObj, [XObj]))
 annotateWithinContext qualifyDefn ctx xobj = do
@@ -498,22 +498,25 @@ annotateWithinContext qualifyDefn ctx xobj = do
          globalEnv = contextGlobalEnv ctx
          typeEnv = contextTypeEnv ctx
          innerEnv = getEnv globalEnv pathStrings
-     sig <- getSigFromDefnOrDef ctx globalEnv fppl xobj
-     (ctxAfterExpansion, expansionResult) <- expandAll eval ctx xobj
-     case expansionResult of
-       Left err -> return (evalError ctx (show err) Nothing)
-       Right expanded ->
-         let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
-             xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
-         in case annotate typeEnv globalEnv xobjFullSymbols of
-              Left err ->
-                case contextExecMode ctx of
-                  Check ->
-                    let fppl = projectFilePathPrintLength (contextProj ctx)
-                    in  return (evalError ctx (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing)
-                  _ ->
-                    return (evalError ctx (show err) (info xobj))
-              Right ok -> return (ctx, Right ok)
+     let sig = getSigFromDefnOrDef ctx globalEnv fppl xobj
+     case sig of
+       Left err -> return (ctx, Left err)
+       Right okSig -> do
+         (ctxAfterExpansion, expansionResult) <- expandAll eval ctx xobj
+         case expansionResult of
+           Left err -> return (evalError ctx (show err) Nothing)
+           Right expanded ->
+             let xobjFullPath = if qualifyDefn then setFullyQualifiedDefn expanded (SymPath pathStrings (getName xobj)) else expanded
+                 xobjFullSymbols = setFullyQualifiedSymbols typeEnv globalEnv innerEnv xobjFullPath
+             in case annotate typeEnv globalEnv xobjFullSymbols okSig of
+                  Left err ->
+                    case contextExecMode ctx of
+                      Check ->
+                        let fppl = projectFilePathPrintLength (contextProj ctx)
+                        in  return (evalError ctx (joinWith "\n" (machineReadableErrorStrings fppl err)) Nothing)
+                      _ ->
+                        return (evalError ctx (show err) (info xobj))
+                  Right ok -> return (ctx, Right ok)
 
 primitiveDefmodule :: Primitive
 primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history) (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
@@ -741,7 +744,7 @@ commandC ctx [xobj] = do
   case result of
     Left err -> return (newCtx, Left err)
     Right expanded ->
-      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) of
+      case annotate typeEnv globalEnv (setFullyQualifiedSymbols typeEnv globalEnv globalEnv expanded) Nothing of
         Left err -> return $ evalError newCtx (show err) (info xobj)
         Right (annXObj, annDeps) ->
           do let cXObj = printC annXObj

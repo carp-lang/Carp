@@ -357,8 +357,8 @@ primitiveMetaSet _ ctx [XObj (Sym _ _) _ _, key, _] =
 primitiveMetaSet _ ctx [target, _, _] =
   argumentErr ctx "meta-set!" "a symbol" "first" target
 
-registerInterfaceFunctions :: Context -> String -> Ty -> IO Context
-registerInterfaceFunctions ctx name t = do
+retroactivelyRegisterInterfaceFunctions :: Context -> String -> Ty -> IO Context
+retroactivelyRegisterInterfaceFunctions ctx name t = do
   let env = contextGlobalEnv ctx
       found = multiLookupALL name env
       binders = map snd found
@@ -386,7 +386,7 @@ primitiveDefinterface xobj ctx [nameXObj@(XObj (Sym path@(SymPath [] name) _) _ 
           let interface = defineInterface name t [] (info nameXObj)
               typeEnv' = TypeEnv (envInsertAt typeEnv (SymPath [] name) (Binder emptyMeta interface))
           in  do
-                 newCtx <- registerInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) name t
+                 newCtx <- retroactivelyRegisterInterfaceFunctions (ctx { contextTypeEnv = typeEnv' }) name t
                  return (newCtx, dynamicNil)
     Nothing ->
       return (evalError ctx ("Invalid type for interface `" ++ name ++ "`: " ++ pretty ty) (info ty))
