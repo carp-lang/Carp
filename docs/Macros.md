@@ -98,4 +98,103 @@ the resulting code. `macro-log` is useful for tracing your macro, a form of
 
 ## Inner Workings
 
-TODO
+The Carp compiler is split in a few different stages. The diagram below
+illustrates the flow of the compiler.
+
+![The compiler passes](./compiler-passes.svg)
+
+The dynamic evaluator is arguably one of the most central pieces of the Carp
+compiler. It orchestrates macro expansion, borrow checking, and type inference,
+as it encounters forms that have requirements for these services, such as
+function definitions, variables, or `let` bindings.
+
+As such, the evaluator serves many purposes. While you might start out trying
+to gain an understanding of macro expansion, understanding the evaluator will
+give you a lot of insight into how Carp works generally.
+
+The most tried-and-true starting point for understanding the dynamic evaluator
+is `eval` in [`src/Eval.hs`](/src/Eval.hs).
+
+### Data Structures
+
+The type signature of `eval` is as follows:
+
+```haskell
+eval :: Context -> XObj -> IO (Context, Either EvalError XObj)
+```
+
+Thus, to understand it, we’ll have to understand at least `Context`, `XObj`,
+and `EvalError`. The types `IO` and `Either` are part of the Haskell standard
+library and will not be covered extensively—please refer to your favorite
+tool for Haskell documentation (we recommend [Stackage](https://stackage.org))
+to find out more about them.
+
+All data structures that are discussed here are defined in
+[`src/Obj.hs`](/src/Eval.hs).
+
+#### `XObj`
+
+`XObj` is short for “`Obj` with eXtras”. `Obj` is the type for AST nodes in
+Carp, and it’s used throughout the compiler. Most often, you’ll find it wrapped
+in an `XObj`, though, which annotates such an `Obj` with an optional source
+location information—in the field `info`, modelled as a `Maybe Info`—and
+type information—in the field `ty`, modelled as a `Maybe Ty`. While both of
+these fields are important, for the purposes of this document we will overlook
+them and treat a `XObj` as an ordinary AST node. Thus, `eval` becomes a
+function that takes a context and an AST node, and returns a pair consisting of
+a new context, and either an `EvalError` or a new AST node.
+
+#### `Context`
+
+`Context` is a data structure that holds all of the state of the Carp compiler.
+It is fairly extensive, holding information ranging from the type and value
+environments to the history of evaluation frames that were traversed for
+tracebacks.
+
+The entire state of the compiler should be inspectable by inspecting its
+context.
+
+#### `EvalError`
+
+An `EvalError` is emitted whenever the dynamic evaluator encounters an error.
+It consists of an error message and meta information (such as a traceback and
+source location information).
+
+### Evaluation
+
+The dynamic evaluator in Carp takes care both of evaluation and meta-level
+information like definitions. This means that definitions are treated much like
+dynamic primitives to evaluate rather than special constructs. In fact, many of
+them are not treated as special forms, but are implemented as `Primitive`s.
+
+Because we already introduced multiple constructs by name, let us define what
+kinds of Carp constructs there are for the evaluator:
+
+- Special forms: these are forms that have their own representation in the
+  abstract syntax tree and are treated directly in the evaluator loop. `fn` and
+  `the` are examples for this category.
+- Primitives: these are regular Carp forms that do not evaluate their
+  arguments, and they resemble builtin macros implemented in Haskell. Examples
+  for this category include `defmacro`, `defn`, and `quote`.
+- Commands: these, too, are regular Carp forms. They evaluate their arguments
+  and behave like builtin functions. Examples for this category include
+  `Project.config`, `car`, and `cons`.
+
+Primitives are mostly defined in [`src/Primitives.hs`](/src/Primitives.hs),
+commands can be found in [`src/Commands.hs`](/src/Commands.hs), and special
+forms can be found directly inside `eval`.
+
+#### Adding your own special forms, primitives, or commands
+
+While there is a lot of machinery involved in getting your own primitives or
+commands into the Carp evaluator, there are a lot of simple functions around to
+help you get started.
+
+If the name for the primitive or command is already present as a runtime
+function, it should try to mimic its behavior as closely as possible.
+
+Adding special forms is a little more involved and we try to exercise caution
+in what to add, since every form makes `eval` harder to understand and reason
+about. You should probably get in touch [on the
+chat](https://gitter.im/carp-lang/carp) before embarking on a quest to
+implement a new special form to avoid frustration.
