@@ -108,9 +108,8 @@ compiler. It orchestrates macro expansion, borrow checking, and type inference,
 as it encounters forms that have requirements for these services, such as
 function definitions, variables, or `let` bindings.
 
-As such, the evaluator serves many purposes. While you might start out trying
-to gain an understanding of macro expansion, understanding the evaluator will
-give you a lot of insight into how Carp works generally.
+Therefore, understanding the evaluator will give you a lot of insight into how
+Carp works generally.
 
 The most tried-and-true starting point for understanding the dynamic evaluator
 is `eval` in [`src/Eval.hs`](/src/Eval.hs).
@@ -130,7 +129,7 @@ tool for Haskell documentation (we recommend [Stackage](https://stackage.org))
 to find out more about them.
 
 All data structures that are discussed here are defined in
-[`src/Obj.hs`](/src/Eval.hs).
+[`src/Obj.hs`](/src/Obj.hs).
 
 #### `XObj`
 
