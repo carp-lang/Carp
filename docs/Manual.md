@@ -67,6 +67,13 @@ To generate html docs from the doc strings, run:
 鲮 :i <module name>
 ```
 
+### Expanding a macro
+
+```clojure
+鲮 (expand 'yourcode)
+鲮 :m yourcode
+```
+
 ### Configuring a project
 
 The current session in the repl is called a "project" and can be configured using the `(Project.config <setting> <value>)` command. The following settings can be configured with this command:
