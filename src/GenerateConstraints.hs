@@ -52,7 +52,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                              genF xobj args body (fromMaybe Set.empty captures)
 
                            -- Fn
-                           [XObj (Fn _ captures _) _ _, XObj (Arr args) _ _, body] ->
+                           [XObj (Fn _ captures) _ _, XObj (Arr args) _ _, body] ->
                              genF xobj args body captures
 
                            -- Def
@@ -195,7 +195,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                              do insideValueConstraints <- gen value
                                 xobjType <- toEither (ty xobj) (ExpressionMissingType xobj)
                                 valueType <- toEither (ty value) (ExpressionMissingType value)
-                                let lt = (VarTy (makeTypeVariableNameFromInfo (info xobj)))
+                                let lt = VarTy (makeTypeVariableNameFromInfo (info xobj))
                                 let theTheConstraint = Constraint (RefTy xobjType lt) valueType xobj value xobj OrdDeref
                                 return (theTheConstraint : insideValueConstraints)
 

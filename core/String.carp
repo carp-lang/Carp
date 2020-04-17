@@ -39,12 +39,12 @@
 
   (doc pad-left "Pads the left of a string with len bytes using the padding pad.")
   (defn pad-left [len pad s]
-    (let [x (Int.max 0 (- len (length s)))]
+    (let [x (max 0 (- len (length s)))]
       (append &(from-chars &(Array.replicate x &pad)) s)))
 
   (doc pad-right "Pads the right of a string with len bytes using the padding pad.")
   (defn pad-right [len pad s]
-    (let [x (Int.max 0 (- len (length s)))]
+    (let [x (max 0 (- len (length s)))]
       (append s &(from-chars &(Array.replicate x &pad)))))
 
   (doc count-char "Returns the number of occurrences of `c` in the string `s`.")

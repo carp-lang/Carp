@@ -50,6 +50,10 @@
 (defmacro test-gensym []
   (let [x (gensym)]
     (list 'let (array x 1) (list '= x 1))))
+
+(defmacro test-read-file []
+  (read-file "test/fixture_file.txt"))
+
 (defmacro test-gensym-with []
   (let [x (gensym-with 'a)]
     (list 'let (array x 1) (list '= x 1))))
@@ -209,7 +213,7 @@
                 "Symbol.join works as expected")
   (assert-equal test
                 "test file contents\n"
-                (Dynamic.read-file "test/fixture_file.txt")
+                (test-read-file)
                 "Dynamic.read-file works as expected")
   (assert-true test
                (test-gensym-with)

@@ -11,7 +11,6 @@ import Repl
 import StartingEnv
 import Eval
 import Util
-import Lookup
 import Path
 
 defaultProject :: Project
@@ -70,11 +69,13 @@ main = do setLocaleEncoding utf8
               projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
               startingContext = Context
                                  (startingGlobalEnv noArray)
+                                 Nothing
                                  (TypeEnv startingTypeEnv)
-                                  []
-                                  projectWithCustomPrompt
-                                  ""
-                                  execMode
+                                 []
+                                 projectWithCustomPrompt
+                                 ""
+                                 execMode
+                                 []
           context <- loadFiles startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
@@ -82,20 +83,20 @@ main = do setLocaleEncoding utf8
                       then loadFiles context [carpProfile]
                       else return context
           finalContext <- loadFiles context' argFilesToLoad
-          settings <- readlineSettings (bindingNames $ contextGlobalEnv finalContext)
           case execMode of
             Repl -> do putStrLn "Welcome to Carp 0.3.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
-                       runInputT settings (repl finalContext "")
-            Build -> do _ <- executeString True finalContext ":b" "Compiler (Build)"
+                       _ <- runRepl finalContext
+                       return ()
+            Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
                         return ()
             Install thing ->
-              do _ <- executeString True finalContext
+              do _ <- executeString True False finalContext
                       ("(load \"" ++ thing ++ "\")")
                       "Installation"
                  return ()
-            BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"
+            BuildAndRun -> do _ <- executeString True False finalContext "(do (build) (run))" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
             Check -> return ()

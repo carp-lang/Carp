@@ -46,6 +46,7 @@ library
                        RenderDocs,
                        StructUtils,
                        Path,
+                       Primitives,
                        Validate
 
   build-depends:       base >= 4.7 && < 5

@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 // Event
 SDL_Event SDL_Event_init() {

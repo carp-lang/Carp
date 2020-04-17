@@ -83,7 +83,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
                        e@(Defn _)         -> return (Left (InvalidObj e xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
-                       e@(Fn _ _ _)       -> return (Left (InvalidObj e xobj))
+                       e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
                        While              -> return (Left (InvalidObj While xobj))
@@ -179,10 +179,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
         [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
-        (XObj defn@(Defn _) _ _) : _  -> return (Left (InvalidObj defn xobj))
+        XObj defn@(Defn _) _ _ : _  -> return (Left (InvalidObj defn xobj))
 
         -- Fn
-        [fn@(XObj (Fn _ _ _) _ _), XObj (Arr argList) argsi argst, body] ->
+        [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              lt <- genVarTy
              let funcTy = Just (FuncTy argTypes returnType lt)
@@ -193,8 +193,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
                          return final --(trace ("FINAL: " ++ show final) final)
 
-        [XObj (Fn _ _ _ ) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
-        XObj fn@(Fn _ _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
+        [XObj (Fn _ _ ) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
+        XObj fn@(Fn _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
 
         -- Def
         [def@(XObj Def _ _), nameSymbol, expression]->

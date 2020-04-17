@@ -2,46 +2,46 @@
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name string]
-  (list 'meta-set! name "doc" string))
+  (eval (list 'meta-set! name "doc" string)))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
-  (list 'macro-log (list 'meta name "doc")))
+  (eval (list 'macro-log (list 'meta name "doc"))))
 
 (doc sig "Annotate a binding with the desired signature.")
 (defmacro sig [name signature]
-  (list 'meta-set! name "sig" signature))
+  (eval (list 'meta-set! name "sig" signature)))
 
 (doc print-sig "Print the annotated signature for a binding.")
 (defmacro print-sig [name]
-  (list 'macro-log (list 'meta name "sig")))
+  (eval (list 'macro-log (list 'meta name "sig"))))
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
-  (list 'meta-set! name "hidden" true))
+  (eval (list 'meta-set! name "hidden" true)))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
-  (list 'meta-set! name "private" true))
+  (eval (list 'meta-set! name "private" true)))
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
-  (list 'meta-set! name "todo" value))
+  (eval (list 'meta-set! name "todo" value)))
 
 (doc private? "Is this binding private?")
 (defmacro private? [name]
-  (list 'not (list 'list? (meta name "private"))))
+  (eval (list 'not (list 'list? (meta name "private")))))
 
 (doc hidden? "Is this binding hidden?")
 (defmacro hidden? [name]
-  (list 'not (list 'list? (meta name "hidden"))))
+  (eval (list 'not (list 'list? (meta name "hidden")))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (list 'meta-set! name "annotations" (annotate-helper name annotation)))
+  (eval (list 'meta-set! name "annotations" (annotate-helper name annotation))))
 
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
@@ -98,7 +98,7 @@
           (list 'build)
           (list 'run)))
 
-  (defmacro eval [form]
+  (defmacro evaluate [form]
     (eval-internal form))
 
   (defmacro e [form]
@@ -119,7 +119,7 @@
   (defndynamic collect-into [xs f]
     (list 'quote
       (collect-into-internal xs (f) f)))
-  )
+)
 
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
@@ -224,38 +224,40 @@
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro linux-only [:rest forms]
   (if (= "linux" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro windows-only [:rest forms]
   (if (Dynamic.or (= "windows" (os)) (= "mingw32" (os)))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro not-on-windows [:rest forms]
   (if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
-    (if (= (length names) 1)
-      (list (list 'use (car names)))
-      (cons (list 'use (car names)) (use-all-fn (cdr names))))));(use-all (cdr names))))))
+    (do
+      (eval (list 'use (car names)))
+      (if (= (length names) 1)
+        ()
+        (use-all-fn (cdr names))))))
 
 (defmacro use-all [:rest names]
-  (cons 'do (use-all-fn names)))
+  (use-all-fn names))
 
 (defmacro load-and-use [name]
-  (list 'do
-        (list 'load (str name ".carp"))
-        (list 'use name)))
+  (do
+    (eval (list 'load (str name ".carp")))
+    (eval (list 'use name))))
 
 (defmacro when [condition form]
   (list 'if condition form (list)))
@@ -272,7 +274,7 @@
     (cons 'do forms)))
 
 (defmacro defn-do [name arguments :rest body]
-  (list 'defn name arguments (cons 'do body)))
+  (eval (list 'defn name arguments (cons 'do body))))
 
 (defmacro comment [:rest forms]
   ())
@@ -335,7 +337,7 @@
 
 (defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (list 'save-docs-internal (list 'quote modules)))
+  (eval (list 'save-docs-internal (list 'quote modules))))
 
 (defndynamic project-config [bindings]
   (if (< (length bindings) 2)
@@ -360,7 +362,7 @@ The expression must be evaluable at compile time.")
 (doc gensym-with "generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
-    (defdynamic *gensym-counter* (inc *gensym-counter*))
+    (set! *gensym-counter* (inc *gensym-counter*))
     (Symbol.join [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "generates symbols dynamically as needed.")
