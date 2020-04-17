@@ -337,7 +337,7 @@
 
 (defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (list 'save-docs-internal (list 'quote modules)))
+  (eval (list 'save-docs-internal (list 'quote modules))))
 
 (defndynamic project-config [bindings]
   (if (< (length bindings) 2)
