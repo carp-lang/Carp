@@ -123,9 +123,7 @@
   (doc empty?
     "Returns true if the provided data literal is empty, false otherwise.")
   (defndynamic empty? [xs]
-    (if (= 0 (length xs))
-      true
-      false))
+    (= 0 (length xs)))
 
   (doc flip
     "Flips the arguments of a function `f`.
