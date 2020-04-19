@@ -127,6 +127,15 @@
       true
       false))
 
+  (doc flip
+    "Flips the arguments of a function `f`.
+
+    For example,
+
+    ```
+    ((flip Symbol.prefix) 'Bar 'Foo)
+    => ;; (Foo.Bar)
+    ```")
   (defndynamic flip [f]
     (fn [x y]
       (f y x)))
@@ -136,6 +145,16 @@
   (defndynamic or-internal [x y]
     (if x true y))
 
+  (doc curry
+    "Returns a curried function accepting a single argument, that applies f to x
+    and then to the following argument.
+
+    For example,
+
+    ```
+    (map (curry Symbol.prefix 'Foo) '(bar baz))
+    ;; => (Foo.bar Foo.baz)
+    ```")
   (defndynamic curry [f x]
     (fn [y]
       (f x y)))
