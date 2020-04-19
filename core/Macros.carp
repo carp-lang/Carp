@@ -127,12 +127,6 @@
       true
       false))
 
-  (defndynamic and-internal [x y]
-    (if x y false))
-
-  (defndynamic or-internal [x y]
-    (if x true y))
-
   (doc reduce
     "Reduces or 'folds' a data literal, such as a list or array, into a single
     value through successive applications of `f`.")
@@ -179,7 +173,7 @@
         (map-internal f (cdr xs) (append acc (list (f (car xs)))))))
 
   (defndynamic zip-internal [f forms acc]
-    (if (reduce or-internal false (map-internal empty? forms (list)))
+    (if (reduce or false (map-internal empty? forms (list)))
         acc
         (zip-internal
           f
