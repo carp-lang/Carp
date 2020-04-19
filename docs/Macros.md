@@ -171,10 +171,13 @@ kinds of Carp constructs there are for the evaluator:
 
 - Special forms: these are forms that have their own representation in the
   abstract syntax tree and are treated directly in the evaluator loop. `fn` and
-  `the` are examples for this category.
+  `the` are examples for this category. They cannot be passed around by value,
+  as you would do in higher order functions.
 - Primitives: these are regular Carp forms that do not evaluate their
   arguments, and they resemble builtin macros implemented in Haskell. Examples
-  for this category include `defmacro`, `defn`, and `quote`.
+  for this category include `defmacro`, `defn`, and `quote`. They can also not
+  be passed around by value, but this is considered a bug and should be
+  resolved.
 - Commands: these, too, are regular Carp forms. They evaluate their arguments
   and behave like builtin functions. Examples for this category include
   `Project.config`, `car`, and `cons`.
@@ -197,3 +200,18 @@ in what to add, since every form makes `eval` harder to understand and reason
 about. You should probably get in touch [on the
 chat](https://gitter.im/carp-lang/carp) before embarking on a quest to
 implement a new special form to avoid frustration.
+
+#### A current list of special forms
+
+Since special forms are “magical”, they deserve an enumeration. Currently there
+are:
+
+- `if` for branching,
+- `defn` for defining functions,
+- `def` for defining global variables,
+- `let` for defining local variables,
+- `the` for type annotations,
+- `fn` for function literals.
+
+`Dynamic.or` and `Dynamic.and` are also currently special forms, but this is
+considered a bug and should be resolved.
