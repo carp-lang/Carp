@@ -167,13 +167,6 @@
       x
       (reduce f (f x (car xs)) (cdr xs))))
 
-  (hidden apply-internal)
-  (defndynamic apply-internal [argument-list acc]
-      (if (empty? argument-list)
-          acc
-          (apply-internal (cdr argument-list) (append acc (list (car
-          argument-list))))))
-
   (doc apply
     "Applies the function `f` to the provided argument list, passing each value
     in the list as an argument to the function.")
@@ -195,7 +188,7 @@
     ;; the quoted function name argument in map-internal or the unquoted one in
     ;; apply, we can't use zip and map-internal in map.
     (let [function-name (list (cadr f))]
-      (apply-internal argument-list function-name)))
+      (append function-name argument-list)))
 
   (hidden map-internal)
   (defndynamic map-internal [f xs acc]
