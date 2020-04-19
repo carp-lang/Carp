@@ -1,0 +1,21 @@
+(load "Test.carp")
+
+(use Test)
+
+(deftest test
+  (assert-equal test
+                1
+                (id 1)
+                "id works I"
+  )
+  (assert-equal test
+                &(Maybe.Just 1)
+                &(id (Maybe.Just 1))
+                "id works II"
+  )
+  (assert-equal test
+                20
+                ((const 20) 1)
+                "const works"
+  )
+)

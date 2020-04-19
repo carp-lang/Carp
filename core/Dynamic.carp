@@ -16,16 +16,26 @@
         (Project.config "print-ast" false)
         (Project.config "echo-compiler-cmd" false))))
 
+  (defmodule String
+    (defndynamic prefix [s to]
+      (String.slice s 0 to))
+
+    (defndynamic suffix [s from]
+      (String.slice s from (String.length s)))
+
+    (defndynamic tail [s ]
+      (String.suffix s 1))
   )
+)
 
 
 ;; The following functions are not put into a module for now:
 
 (defndynamic add-cflag [flag]
-  (Project.config "cflag" flag))
+  (eval (list 'Project.config "cflag" flag)))
 
 (defndynamic add-lib [lib]
-  (Project.config "libflag" lib))
+  (eval (list 'Project.config "libflag" lib)))
 
 (defndynamic pkg-config [pkg flags]
   (Dynamic.String.join ["`pkg-config " pkg " " flags "`"]))

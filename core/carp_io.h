@@ -1,15 +1,18 @@
-#pragma once
-#include <stdio.h>
+void IO_println(String *s) {
+    puts(*s);
+}
+void IO_print(String *s) {
+    printf("%s", *s);
+}
 
-#include <carp_string.h>
+void IO_errorln(String *s) {
+    fprintf(stderr, "%s\n", *s);
+}
+void IO_error(String *s) {
+    fprintf(stderr, "%s", *s);
+}
 
-void IO_println(String *s) { puts(*s); }
-void IO_print(String *s) { printf("%s", *s); }
-
-void IO_errorln(String *s) { fprintf(stderr, "%s\n", *s); }
-void IO_error(String *s) { fprintf(stderr, "%s", *s); }
-
-char IO_EOF = (char) EOF;
+char IO_EOF = (char)EOF;
 
 #ifdef _WIN32
 // getline isn't a C standard library function so it's missing on windows
@@ -37,13 +40,13 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
     }
 
     pos = 0;
-    while(c != EOF) {
+    while (c != EOF) {
         if (pos + 1 >= *n) {
             size_t new_size = *n + (*n >> 2);
             if (new_size < 128) {
                 new_size = 128;
             }
-            char *new_ptr = realloc(*lineptr, new_size);
+            char *new_ptr = CARP_REALLOC(*lineptr, new_size);
             if (new_ptr == NULL) {
                 return -1;
             }
@@ -51,7 +54,7 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
             *lineptr = new_ptr;
         }
 
-        ((unsigned char *)(*lineptr))[pos ++] = c;
+        ((unsigned char *)(*lineptr))[pos++] = c;
         if (c == '\n') {
             break;
         }
@@ -75,30 +78,29 @@ String IO_read_MINUS_file(const String *filename) {
     long length;
     FILE *f = fopen(*filename, "rb");
 
-    if(f) {
-        fseek (f, 0, SEEK_END);
-        length = ftell (f);
-        fseek (f, 0, SEEK_SET);
-        buffer = CARP_MALLOC (length + 1);
-        if (buffer)	{
-            fread (buffer, 1, length, f);
+    if (f) {
+        fseek(f, 0, SEEK_END);
+        length = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        buffer = CARP_MALLOC(length + 1);
+        if (buffer) {
+            fread(buffer, 1, length, f);
             buffer[length] = '\0';
         } else {
             printf("Failed to open buffer from file: %s\n", *filename);
             buffer = String_empty();
         }
-        fclose (f);
+        fclose(f);
     } else {
         printf("Failed to open file: %s\n", *filename);
         buffer = String_empty();
     }
 
-
     return buffer;
 }
 
 char IO_fgetc(FILE *f) {
-    return (char) fgetc(f);
+    return (char)fgetc(f);
 }
 
 void IO_fclose(FILE *f) {

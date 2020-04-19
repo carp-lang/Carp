@@ -164,6 +164,10 @@ getEnv env (p:ps) = case Map.lookup p (envBindings env) of
                       Just _ -> error "Can't get non-env."
                       Nothing -> error "Can't get env."
 
+contextEnv :: Context -> Env
+contextEnv Context{contextInternalEnv=Just e} = e
+contextEnv Context{contextGlobalEnv=e, contextPath=p} = getEnv e p
+
 -- | Checks if an environment is "external", meaning it's either the global scope or a module scope.
 envIsExternal :: Env -> Bool
 envIsExternal env =
@@ -198,12 +202,12 @@ isManaged typeEnv (StructTy name _) =
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
-isManaged _ (FuncTy _ _) = True
+isManaged _ FuncTy{} = True
 isManaged _ _ = False
 
 -- | Is this type a function type?
 isFunctionType :: Ty -> Bool
-isFunctionType (FuncTy _ _) = True
+isFunctionType FuncTy{} = True
 isFunctionType _ = False
 
 -- | Is this type a struct type?
@@ -231,3 +235,9 @@ bindingNames = concatMap select . envBindings
   where select :: Binder -> [String]
         select (Binder _ (XObj (Mod i) _ _)) = bindingNames i
         select (Binder _ obj) = [getName obj]
+
+existingMeta :: Env -> XObj -> MetaData
+existingMeta globalEnv xobj =
+  case lookupInEnv (getPath xobj) globalEnv of
+    Just (_, Binder meta _) -> meta
+    Nothing -> emptyMeta

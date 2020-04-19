@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -213,25 +223,6 @@
                 <span>
                     
                 </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#/=">
-                    <h3 id="/=">
-                        /=
-                    </h3>
-                </a>
-                <div class="description">
-                    defn
-                </div>
-                <p class="sig">
-                    (λ [Float, Float] Bool)
-                </p>
-                <pre class="args">
-                    (/= x y)
-                </pre>
                 <p class="doc">
                     
                 </p>
@@ -360,7 +351,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float, &amp;Float] Float)
+                    (λ [(Ref Float a), (Ref Float b)] Float)
                 </p>
                 <pre class="args">
                     (add-ref x y)
@@ -495,7 +486,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float] Float)
+                    (λ [(Ref Float a)] Float)
                 </p>
                 <span>
                     
@@ -609,7 +600,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [&amp;String, Float] String)
+                    (λ [(Ref String a), Float] String)
                 </p>
                 <span>
                     
@@ -628,7 +619,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Float, &amp;Int] Float)
+                    (λ [Float, (Ref Int a)] Float)
                 </p>
                 <span>
                     
@@ -657,6 +648,25 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#from-string">
+                    <h3 id="from-string">
+                        from-string
+                    </h3>
+                </a>
+                <div class="description">
+                    external
+                </div>
+                <p class="sig">
+                    (λ [(Ref String a)] Float)
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#hash">
                     <h3 id="hash">
                         hash
@@ -666,7 +676,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [&amp;Float] Int)
+                    (λ [(Ref Float a)] Int)
                 </p>
                 <pre class="args">
                     (hash k)
@@ -780,7 +790,7 @@
                     external
                 </div>
                 <p class="sig">
-                    (λ [Float, &amp;Float] Float)
+                    (λ [Float, (Ref Float a)] Float)
                 </p>
                 <span>
                     

@@ -181,9 +181,9 @@
 (defn if-6 []
   (branch-in-let false))
 
-(defn string-substring []
+(defn string-slice []
   (let [s1 @"abcde"
-        s2 (String.substring &s1 0 3)]
+        s2 (String.slice &s1 0 3)]
     (assert (= "abc" &s2))))
 
 (defn array-aset []
@@ -241,9 +241,9 @@
   (let [xs [10 20 30 40 50]]
     (assert (= 150 (sum &xs)))))
 
-(defn array-subarray []
+(defn array-slice []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
-    (assert (= &[@"c" @"d"] &(Array.subarray &xs 2 4)))))
+    (assert (= &[@"c" @"d"] &(Array.slice &xs 2 4)))))
 
 (defn array-reverse-1 []
   (let [xs [@"a" @"b" @"c" @"d" @"e"]]
@@ -259,7 +259,7 @@
     (assert (= 3 (Array.element-count &xs "a")))))
 
 (defn first-letter [s]
-  (String.substring s 0 1))
+  (String.slice s 0 1))
 
 (defn array-aupdate []
   (let [xs [@"abc" @"xyz"]
@@ -287,18 +287,17 @@
   (let [xs (Array.range 0 5 1)]
     (assert (= &[0 1 2 3 4 5] &xs))))
 
-;; TODO! Failing to compile this...
-;; (defmodule ArrayCompareExtension
-;;   (defn < [a b]
-;;     (Int.< (Array.length a)
-;;            (Array.length b)))
-;;   (defn > [a b]
-;;     (Int.> (Array.length a)
-;;            (Array.length b))))
-;; (defn array-sort-1 []
-;;   (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
-;;         ys (Array.sort xs)]
-;;     (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
+(defmodule ArrayCompareExtension
+  (defn < [a b]
+    (< (Array.length a)
+       (Array.length b)))
+  (defn > [a b]
+    (> (Array.length a)
+       (Array.length b))))
+(defn array-sort-1 []
+  (let [xs [[0 0] [0 0 0] [0 0 0 0] [0]]
+        ys (Array.sort xs)]
+    (assert (= &[[0] [0 0] [0 0 0] [0 0 0 0]] &ys))))
 
 (defn array-sort-2 []
   (let [xs [5 2 4 3 1]
@@ -349,7 +348,7 @@
 
 (defn lambda-3 []
   (let-do [stuff [100 200 300]
-        f (fn [n] (copy (nth &stuff n)))]
+        f (fn [n] (copy (unsafe-nth &stuff n)))]
     (assert (= 100 (f 0)))
     (assert (= 200 (f 1)))
     (assert (= 300 (f 2)))))
@@ -459,7 +458,7 @@
   (assert-no-leak test if-4 "if-4 does not leak")
   (assert-no-leak test if-5 "if-5 does not leak")
   (assert-no-leak test if-6 "if-6 does not leak")
-  (assert-no-leak test string-substring "string-substring does not leak")
+  (assert-no-leak test string-slice "string-slice does not leak")
   (assert-no-leak test array-aset "array-aset does not leak")
   (assert-no-leak test array-reduce "array-reduce does not leak")
   (assert-no-leak test array-endo-filter "array-endo-filter does not leak")
@@ -471,7 +470,7 @@
   (assert-no-leak test array-maximum "array-maximum does not leak")
   (assert-no-leak test array-minimum "array-minimum does not leak")
   (assert-no-leak test array-sum "array-sum does not leak")
-  (assert-no-leak test array-subarray "array-subarray does not leak")
+  (assert-no-leak test array-slice "array-slice does not leak")
   (assert-no-leak test array-reverse-1 "array-reverse-2 does not leak")
   (assert-no-leak test array-index-of "array-index-of does not leak")
   (assert-no-leak test array-element-count "array-element-count does not leak")
@@ -480,7 +479,7 @@
   (assert-no-leak test array-swap "array-swap does not leak")
   (assert-no-leak test array-swap! "array-swap! does not leak")
   (assert-no-leak test array-range "array-range does not leak")
-  ;; PROBLEMATIC (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
+  (assert-no-leak test array-sort-1 "array-sort-1 does not leak")
   (assert-no-leak test array-sort-2 "array-sort-2 does not leak")
   (assert-no-leak test array-repeat "array-repeat does not leak")
   (assert-no-leak test array-replicate "array-replicate does not leak")

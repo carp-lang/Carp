@@ -10,7 +10,6 @@
   (register < (λ [Int Int] Bool))
   (register > (λ [Int Int] Bool))
   (register = (λ [Int Int] Bool))
-  (register /= (λ [Int Int] Bool))
   (register neg (λ [Int] Int))
   (register mod (λ [Int Int] Int))
   (register bit-shift-left (λ [Int Int] Int))
@@ -73,9 +72,6 @@
 (defmodule IntRef
   (defn = [a b]
     (Int.= @a @b))
-
-  (defn /= [a b]
-    (Int./= @a @b))
 
   (defn < [a b]
     (Int.< @a @b))

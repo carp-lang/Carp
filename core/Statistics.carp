@@ -27,7 +27,7 @@
     (let [sum 0.0]
       (do
         (for [i 0 (Array.length a)]
-          (let [tmp (Double.- (Double.copy (Array.nth a i)) mean)]
+          (let [tmp (Double.- (Double.copy (Array.unsafe-nth a i)) mean)]
             (set! sum (Double.* tmp tmp))))
         sum)))
 
@@ -36,7 +36,7 @@
     (let [sum 0.0]
       (do
         (for [i 0 (Array.length a)]
-          (set! sum (Double.- (Double.copy (Array.nth a i)) mean)))
+          (set! sum (Double.- (Double.copy (Array.unsafe-nth a i)) mean)))
         sum)))
 
   (hidden _ss)
@@ -52,10 +52,10 @@
     (let [n (Array.length data)
           sorted (Array.sorted data)]
       (cond (= n 0) 0.0
-            (= (mod n 2) 1) @(Array.nth data (/ n 2))
+            (= (mod n 2) 1) @(Array.unsafe-nth data (/ n 2))
             (let [mid (/ n 2)] ; else
-              (/ (+ (the Double @(Array.nth data (dec mid)))
-                    @(Array.nth data mid))
+              (/ (+ (the Double @(Array.unsafe-nth data (dec mid)))
+                    @(Array.unsafe-nth data mid))
                   2.0)))))
 
   (doc low-median "Compute the low median of the samples data.")
@@ -63,8 +63,8 @@
     (let [n (Array.length data)
           sorted (Array.sorted data)]
       (cond (= n 0) 0.0
-            (= (mod n 2) 1) @(Array.nth data (/ n 2))
-            @(Array.nth data (dec (/ n 2)))))) ; else
+            (= (mod n 2) 1) @(Array.unsafe-nth data (/ n 2))
+            @(Array.unsafe-nth data (dec (/ n 2)))))) ; else
 
   (doc high-median "Compute the high median of the samples data.")
   (defn high-median [data]
@@ -72,15 +72,15 @@
           sorted (Array.sorted data)]
       (if (= n 0)
         0.0
-        @(Array.nth data (/ n 2)))))
+        @(Array.unsafe-nth data (/ n 2)))))
 
   (doc grouped-median "Compute the grouped median of the samples data.")
   (defn grouped-median [data interval]
     (let [n (Array.length data)
           sorted (Array.sorted data)]
       (cond (= n 0) 0.0
-            (= n 1) @(Array.nth data 0)
-            (let [x @(Array.nth data (/ n 2)) ; else
+            (= n 1) @(Array.unsafe-nth data 0)
+            (let [x @(Array.unsafe-nth data (/ n 2)) ; else
                   l (- x (/ (from-int interval) 2.0))
                   cf (Maybe.from (Array.index-of data &x) -1)
                   f (Array.element-count data &x)]
@@ -119,7 +119,7 @@
           n 1.4826] ; taken from Rust and R, because that’s how it’s done apparently
       (do
         (for [i 0 (Array.length data)]
-          (Array.aset! &abs-devs i (abs (- med @(Array.nth data i)))))
+          (Array.aset! &abs-devs i (abs (- med @(Array.unsafe-nth data i)))))
         (* (median &abs-devs) n))))
 
   (hidden median-abs-dev-pct)
@@ -132,15 +132,15 @@
       (Int.= 0 (Array.length sorted)) -1.0 ; should abort here
       (Double.< pct 0.0) -1.0 ; should abort here
       (Double.> pct 100.0) -1.0 ; should abort here
-      (Int.= 1 (Array.length sorted)) @(Array.nth sorted 0)
-      (Double.= 100.0 pct) @(Array.nth sorted (Int.dec (Array.length sorted)))
+      (Int.= 1 (Array.length sorted)) @(Array.unsafe-nth sorted 0)
+      (Double.= 100.0 pct) @(Array.unsafe-nth sorted (Int.dec (Array.length sorted)))
       (let [len (Int.dec (Array.length sorted))
             rank (Double.* (Double./ pct 100.0) (Double.from-int len))
             lrank (Double.floor rank)
             d (Double.- rank lrank)
             n (Double.to-int lrank)
-            lo @(Array.nth sorted n)
-            hi @(Array.nth sorted (Int.inc n))]
+            lo @(Array.unsafe-nth sorted n)
+            hi @(Array.unsafe-nth sorted (Int.inc n))]
         (Double.+ lo (Double.* d (Double.- hi lo))))))
 
   (doc quartiles "Compute the quartiles of the samples data.")
@@ -157,7 +157,7 @@
   (doc iqr "Compute the interquartile range.")
   (defn iqr [data]
     (let [s &(quartiles data)]
-      (the Double (- @(Array.nth s 2) @(Array.nth s 0)))))
+      (the Double (- @(Array.unsafe-nth s 2) @(Array.unsafe-nth s 0)))))
 
   (hidden winsorize)
   (defn winsorize [samples pct]
@@ -166,7 +166,7 @@
           hi (Statistics.percentile-of-sorted tmp (Double.- 100.0 pct))]
       (do
         (for [i 0 (Array.length tmp)]
-          (let [samp @(Array.nth tmp i)]
+          (let [samp @(Array.unsafe-nth tmp i)]
             (cond
               (> samp hi) (Array.aset! tmp i hi)
               (< samp lo) (Array.aset! tmp i lo)

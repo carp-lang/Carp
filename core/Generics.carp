@@ -31,7 +31,7 @@
       (< (- x y) margin)
       (< (- y x) margin)))
 
-  (doc approx-margin "checks whether `x` and `y` are approximately equal with a margin.
+  (doc approx "checks whether `x` and `y` are approximately equal with a margin.
 
 The margin of error is 0.00001.")
   (defn approx [a b]
@@ -74,6 +74,7 @@ The margin of error is 0.00001.")
   (not (neg? x)))
 
 (defn id [x] x)
+(defn const [x] (fn [_] x))
 
 (defn null? [p]
   (Pointer.eq NULL (the (Ptr t) p)))
@@ -102,5 +103,8 @@ The margin of error is 0.00001.")
 
 (defn random--1-1 []
   (random-between (minus-one) (one)))
+
+(defn /= [a b]
+  (not (= a b)))
 
 )

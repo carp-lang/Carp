@@ -1,0 +1,4 @@
+(defmodule Pointer
+  (defn inc [a] (Pointer.add a 1l))
+  (defn dec [a] (Pointer.sub a 1l))
+)

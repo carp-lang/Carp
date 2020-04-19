@@ -61,17 +61,24 @@
                             (address (SDL.point 150 150))
                             SDL.flip-none)))))
 
-(defn handle-events [app]
-  (foreach [event &(SDL.Event.all)]
-    (case (SDL.Event.type event)
-      SDL.Event.quit (SDLApp.stop app)
-      SDL.Event.key-down (let [key (SDL.Event.keycode event)]
-                           (case key
-                             SDL.Keycode.escape (SDLApp.stop app)
-                             SDL.Keycode.backspace (println "!")
-                             (println "Unrecognized key.")))
-      () ;;(println "Some other event happened...")
-      )))
+(defn event-handler [app state event]
+  (let [et (SDL.Event.type event)]
+    (cond
+      ;; Quit event
+      (= et SDL.Event.quit)
+      (SDLApp.stop app)
+
+      ;; Key events
+      (= et SDL.Event.key-down)
+      (let [key (SDL.Event.keycode event)]
+        (cond
+          (= key SDL.Keycode.escape) (SDLApp.stop app)
+          (= key SDL.Keycode.backspace) (do (println "!")
+                                            state)
+          state))
+
+      ;; Other event
+      state)))
 
 (defn tick [state] state)
 
@@ -82,4 +89,4 @@
     (do
       (set! images (Images.init (IMG.load-texture rend (cstr "./img/square.png"))
                                 (IMG.load-texture rend (cstr "./img/carp_logo_969_no_texture.png"))))
-      (SDLApp.run-with-callbacks &app handle-events tick draw initial-state))))
+      (SDLApp.run-with-callbacks &app event-handler tick draw initial-state))))

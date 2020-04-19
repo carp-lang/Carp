@@ -1,0 +1,55 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+
+      - name: Save git commit SHA 
+        run: echo ::set-env name=GITHUB_SHA::%GITHUB_SHA%
+        shell: cmd
+
+      - name: Install Scoop
+        run: |
+          iwr -useb get.scoop.sh | iex
+          echo "::add-path::~\scoop\shims"
+          echo "::add-path::C:\ProgramData\scoop\shims"
+
+      - name: Install Stack
+        run: scoop install stack
+
+      - uses: actions/cache@v1
+        name: Cache stack dependencies
+        with:
+          path: C:\\Users\\runneradmin\\AppData\\Local\\Programs\\stack
+          key: ${{ runner.os }}-stack-deps-${{ env.GITHUB_SHA }} 
+          restore-keys: ${{ runner.os }}-stack-deps
+
+      - uses: actions/cache@v1
+        name: Cache stack build
+        with:
+          path: C:\\Users\\runneradmin\\AppData\\Roaming\\stack\
+          key: ${{ runner.os }}-stack-build-${{ env.GITHUB_SHA }}
+          restore-keys: ${{ runner.os }}-stack-build
+
+      - name: Install Clang
+        run: scoop install llvm --global
+
+      - name: Build
+        run: stack build
+
+      - name: Run Compiler Tests
+        run: stack test
+
+      - name: Run Carp Tests
+        run: ./run_carp_tests.ps1
+

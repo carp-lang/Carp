@@ -1,10 +1,7 @@
 module Main where
 
-import Control.Monad
 import qualified System.Environment as SystemEnvironment
-import System.IO (stdout)
 import System.Console.Haskeline (runInputT)
-import System.Directory (doesPathExist, getHomeDirectory)
 import GHC.IO.Encoding
 
 import ColorText
@@ -14,30 +11,28 @@ import Repl
 import StartingEnv
 import Eval
 import Util
-import Lookup
+import Path
 
 defaultProject :: Project
 defaultProject =
   Project { projectTitle = "Untitled"
-          , projectIncludes = [SystemInclude "core.h"]
+          , projectIncludes = []
           , projectCFlags = [""]
           , projectLibFlags = [""]
           , projectFiles = []
           , projectAlreadyLoaded = []
           , projectEchoC = False
-          , projectLibDir = ".carp/libs/"
-          , projectCarpDir = "./"
-          , projectOutDir = case platform of
-                              Windows -> ".\\out"
-                              _ -> "./out"
-          , projectDocsDir = "./docs/"
+          , projectLibDir = "libs"
+          , projectCarpDir = "."
+          , projectOutDir = "out"
+          , projectDocsDir = "docs"
           , projectDocsLogo = ""
           , projectDocsPrelude = ""
           , projectDocsURL = ""
           , projectDocsGenerateIndex = True
           , projectDocsStyling = "carp_style.css"
           , projectPrompt = case platform of
-                              MacOS -> "鲮 "
+                              MacOS -> "鲤 "
                               _     -> "> "
           , projectCarpSearchPaths = []
           , projectPrintTypedAST = False
@@ -61,50 +56,50 @@ main = do setLocaleEncoding utf8
               noCore = NoCore `elem` otherOptions
               optimize = Optimize `elem` otherOptions
               generateOnly = GenerateOnly `elem` otherOptions
-              projectWithFiles = defaultProject { projectCFlags = (if logMemory then ["-D LOG_MEMORY"] else []) ++
-                                                                  (if optimize then ["-O3 -D NDEBUG"] else []) ++
-                                                                  (projectCFlags defaultProject),
+              projectWithFiles = defaultProject { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
+                                                                  ["-O3 -D NDEBUG" | optimize] ++
+                                                                  projectCFlags defaultProject,
                                                   projectCore = not noCore,
                                                   projectGenerateOnly = generateOnly}
               noArray = False
-              coreModulesToLoad = if noCore then [] else (coreModules (projectCarpDir projectWithCarpDir))
+              coreModulesToLoad = if noCore then [] else coreModules (projectCarpDir projectWithCarpDir)
               projectWithCarpDir = case lookup "CARP_DIR" sysEnv of
                                      Just carpDir -> projectWithFiles { projectCarpDir = carpDir }
                                      Nothing -> projectWithFiles
               projectWithCustomPrompt = setCustomPromptFromOptions projectWithCarpDir otherOptions
-              startingContext = (Context
+              startingContext = Context
                                  (startingGlobalEnv noArray)
+                                 Nothing
                                  (TypeEnv startingTypeEnv)
-                                  []
-                                  projectWithCustomPrompt
-                                  ""
-                                  execMode)
+                                 []
+                                 projectWithCustomPrompt
+                                 ""
+                                 execMode
+                                 []
           context <- loadFiles startingContext coreModulesToLoad
-          home <- getHomeDirectory
-          let carpProfile = home ++ "/.carp/profile.carp"
-          hasProfile <- doesPathExist carpProfile
+          carpProfile <- configPath "profile.carp"
+          hasProfile <- doesFileExist carpProfile
           context' <- if hasProfile
                       then loadFiles context [carpProfile]
-                      else do --putStrLn ("No '" ++ carpProfile ++ "' found.")
-                              return context
+                      else return context
           finalContext <- loadFiles context' argFilesToLoad
-          settings <- readlineSettings (bindingNames $ contextGlobalEnv finalContext)
           case execMode of
             Repl -> do putStrLn "Welcome to Carp 0.3.0"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
-                       runInputT settings (repl finalContext "")
-            Build -> do _ <- executeString True finalContext ":b" "Compiler (Build)"
+                       _ <- runRepl finalContext
+                       return ()
+            Build -> do _ <- executeString True False finalContext "(build)" "Compiler (Build)"
                         return ()
             Install thing ->
-              do _ <- executeString True finalContext
+              do _ <- executeString True False finalContext
                       ("(load \"" ++ thing ++ "\")")
                       "Installation"
                  return ()
-            BuildAndRun -> do _ <- executeString True finalContext ":bx" "Compiler (Build & Run)"
+            BuildAndRun -> do _ <- executeString True False finalContext "(do (build) (run))" "Compiler (Build & Run)"
                               -- TODO: Handle the return value from executeString and return that one to the shell
                               return ()
-            Check -> do return ()
+            Check -> return ()
 
 -- | Options for how to run the compiler.
 data OtherOptions = NoCore

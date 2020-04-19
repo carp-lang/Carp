@@ -23,7 +23,7 @@ setFullyQualifiedDefn xobj _ = error ("Can't set new path on " ++ show xobj)
 -- | This must run after the 'setFullyQualifiedDefn' function has fixed the paths of all bindings in the environment.
 -- | This function does NOT go into function-body scope environments and the like.
 setFullyQualifiedSymbols :: TypeEnv -> Env -> Env -> XObj -> XObj
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj Defn _ _),
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) _ _),
                                                  sym@(XObj (Sym (SymPath _ functionName) _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])
@@ -51,9 +51,9 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [the@(XObj The _ _), t
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [def@(XObj Def _ _), sym, expr]) i t) =
   let expr' = setFullyQualifiedSymbols typeEnv globalEnv env expr
   in  XObj (Lst [def, sym, expr']) i t
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t) 
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _), bind@(XObj (Arr bindings) bindi bindt), body]) i t)
   | odd (length bindings) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
-  | not (all isSym (evenIndicies bindings)) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
+  | not (all isSym (evenIndices bindings)) = XObj (Lst [letExpr, bind, body]) i t -- Leave it untouched for the compiler to find the error.
   | otherwise = let Just ii = i
                     lvl = envFunctionNestingLevel env
                     innerEnv = Env Map.empty (Just env) (Just ("let-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
@@ -160,7 +160,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
               (e, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal (captureOrNot e))) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               [] ->
-                --(trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
+                -- (trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
                 case path of
                   (SymPath [] name) ->
                      -- Create a MultiSym!

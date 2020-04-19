@@ -58,6 +58,12 @@ integer :: Parsec.Parsec String ParseState XObj
 integer = do (i, num) <- maybeSigned
              return (XObj (Num IntTy (read num)) i Nothing)
 
+byte :: Parsec.Parsec String ParseState XObj
+byte = do (i, num) <- maybeSigned
+          _ <- Parsec.char 'b'
+          incColumn 1
+          return (XObj (Num ByteTy (read num)) i Nothing)
+
 long :: Parsec.Parsec String ParseState XObj
 long = do (i, num) <- maybeSigned
           _ <- Parsec.char 'l'
@@ -67,6 +73,7 @@ long = do (i, num) <- maybeSigned
 number :: Parsec.Parsec String ParseState XObj
 number = Parsec.try float <|>
          Parsec.try floatNoPeriod <|>
+         Parsec.try byte <|>
          Parsec.try double <|>
          Parsec.try long <|>
          Parsec.try integer
@@ -94,7 +101,7 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
                           return $ unwrapMaybe maybeAnchor ++ concat str ++
                                    unwrapMaybe maybeEnd
     where unwrapMaybe (Just c) = [c]
-          unwrapMaybe (Nothing) = []
+          unwrapMaybe Nothing  = []
           simple :: Parsec.Parsec String ParseState String
           simple = do char <- Parsec.noneOf "^$()[]\\\""
                       return [char]
@@ -103,8 +110,8 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             _ <- Parsec.char '\\'
             c <- Parsec.oneOf ['1', '2', '3', '4', '5', '6', '7', '8', '9',
                                'a', 'c', 'd', 'g', 'l', 'p', 's', 'u', 'w',
-                               'x', 'n', 't', 'b', 'f', '[', ']', '\\', '$',
-                               '(', ')', '^', '"', '*', '.']
+                               'x', 'n', 'r', 't', 'b', 'f', '[', ']', '\\',
+                               '$', '(', ')', '^', '"', '*', '.', '-']
             case c of
               'b' -> do c1 <- Parsec.noneOf ['"']
                         c2 <- Parsec.noneOf ['"']
@@ -136,22 +143,21 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
             closing <- Parsec.char ']'
             return $ "[" ++ unwrapMaybe maybeAnchor ++ concat str ++ "]"
 
-
-pattern :: Parsec.Parsec String ParseState XObj
-pattern = do i <- createInfo
-             _ <- Parsec.char '#'
-             _ <- Parsec.char '"'
-             str <- parseInternalPattern
-             _ <- Parsec.char '"'
-             incColumn (length str + 2)
-             return (XObj (Pattern $ treat str) i Nothing)
+pat :: Parsec.Parsec String ParseState XObj
+pat = do i <- createInfo
+         _ <- Parsec.char '#'
+         _ <- Parsec.char '"'
+         str <- parseInternalPattern
+         _ <- Parsec.char '"'
+         incColumn (length str + 2)
+         return (XObj (Pattern $ treat str) i Nothing)
   -- auto-escaping backslashes
   where treat :: String -> String
         treat [] = []
         treat ('\\':r) = "\\\\" ++ treat r
         treat (x:r) = x : treat r
 
-escaped :: Parsec.Parsec String ParseState [Char]
+escaped :: Parsec.Parsec String ParseState String
 escaped =  do
     _ <- Parsec.char '\\'
     c <- Parsec.oneOf ['\\', '\"']
@@ -216,7 +222,7 @@ symbol = do i <- createInfo
                           i Nothing)
             else
               case last segments of
-                "defn" -> return (XObj Defn i Nothing)
+                "defn" -> return (XObj (Defn Nothing) i Nothing)
                 "def" -> return (XObj Def i Nothing)
                 -- TODO: What about the other def- forms?
                 "do" -> return (XObj Do i Nothing)
@@ -237,7 +243,7 @@ symbol = do i <- createInfo
                 name   -> return (XObj (Sym (SymPath (init segments) name) Symbol) i Nothing)
 
 atom :: Parsec.Parsec String ParseState XObj
-atom = Parsec.choice [number, pattern, string, aChar, symbol]
+atom = Parsec.choice [number, pat, string, aChar, symbol]
 
 incColumn :: Int -> Parsec.Parsec String ParseState ()
 incColumn x = do s <- Parsec.getState
@@ -343,7 +349,7 @@ dictionary = do i <- createInfo
                     pairInit = XObj (Sym (SymPath ["Pair"] "init") (LookupGlobal CarpLand AFunction)) i Nothing
                     pairs = map (\(k,v) -> XObj (Lst [pairInit, k, v]) i Nothing) (pairwise objs')
                     arrayLiteral = XObj (Arr pairs) i Nothing
-                    reffedArrayLiteral = XObj (Lst [(XObj Ref i Nothing), arrayLiteral]) i Nothing
+                    reffedArrayLiteral = XObj (Lst [XObj Ref i Nothing, arrayLiteral]) i Nothing
                     fromArraySymbol = XObj (Sym (SymPath ["Map"] "from-array") (LookupGlobal CarpLand AFunction)) i Nothing
                     fromArraySexp = XObj (Lst [fromArraySymbol, reffedArrayLiteral]) i Nothing
                 return fromArraySexp
@@ -408,8 +414,7 @@ balance text =
   where
         parenSyntax :: Parsec.Parsec String [Char] Int
         parenSyntax = do _ <- Parsec.many character
-                         parens <- Parsec.getState
-                         return (length parens)
+                         length <$> Parsec.getState
 
         character :: Parsec.Parsec String [Char] ()
         character = do c <- Parsec.anyChar

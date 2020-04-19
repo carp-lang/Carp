@@ -2,11 +2,15 @@
 
 (defmodule Bool
   (register = (Fn [Bool Bool] Bool))
-  (register /= (Fn [Bool Bool] Bool))
   (register copy (Fn [&Bool] Bool))
   (register format (Fn [&String Bool] String))
+  (register not (Fn [Bool] Bool))
+  (register and (Fn [Bool Bool] Bool))
+  (register or (Fn [Bool Bool] Bool))
 )
 
 (defmodule RefBool
   (defn = [a b]
     (Bool.= @a @b)))
+
+(defn not [a] (Bool.not a))

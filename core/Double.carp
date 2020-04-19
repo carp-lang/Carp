@@ -50,9 +50,6 @@ The margin of error is `0.00001`.")
   (defn approx [x y]
     (Generics.approx x y))
 
-  (defn /= [x y]
-    (not (Double.= x y)))
-
   (doc zero "returns the value `0.0`.")
   (defn zero []
     0.0)

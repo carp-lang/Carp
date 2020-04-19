@@ -28,6 +28,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="Byte.html">
+                                Byte
+                            </a>
+                        </li>
+                        <li>
                             <a href="Long.html">
                                 Long
                             </a>
@@ -132,6 +137,11 @@
                                 Result
                             </a>
                         </li>
+                        <li>
+                            <a href="Pointer.html">
+                                Pointer
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -170,7 +180,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double)), Int] Double)
+                    (λ [(Ref (Array Double) a), Int] Double)
                 </p>
                 <pre class="args">
                     (grouped-median data interval)
@@ -190,7 +200,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (high-median data)
@@ -210,7 +220,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (iqr data)
@@ -230,7 +240,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (low-median data)
@@ -250,7 +260,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array a))] a)
+                    (λ [(Ref (Array a) b)] a)
                 </p>
                 <pre class="args">
                     (mean data)
@@ -270,7 +280,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (median data)
@@ -290,7 +300,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (pstdev data)
@@ -330,7 +340,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (pvariance data)
@@ -350,7 +360,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] (Array Double))
+                    (λ [(Ref (Array Double) a)] (Array Double))
                 </p>
                 <pre class="args">
                     (quartiles data)
@@ -370,7 +380,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (stdev data)
@@ -390,7 +400,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (stdev-pct data)
@@ -409,7 +419,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Summary)
+                    (λ [(Ref (Array Double) a)] Summary)
                 </p>
                 <pre class="args">
                     (summary samples)
@@ -429,7 +439,7 @@
                     defn
                 </div>
                 <p class="sig">
-                    (λ [(Ref (Array Double))] Double)
+                    (λ [(Ref (Array Double) a)] Double)
                 </p>
                 <pre class="args">
                     (variance data)

@@ -46,7 +46,7 @@
     (let [eq true]
       (do
         (for [i 0 (Array.length a)]
-          (if (/= @(Array.nth a i) @(Array.nth b i))
+          (if (/= @(Array.unsafe-nth a i) @(Array.unsafe-nth b i))
             (set! eq false)
             ()))
         eq))))

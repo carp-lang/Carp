@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(defn f []
+  (let-do [data @"DATA"
+           r &data]
+    (delete data)
+    (IO.println r)))

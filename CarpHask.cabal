@@ -45,6 +45,8 @@ library
                        StartingEnv,
                        RenderDocs,
                        StructUtils,
+                       Path,
+                       Primitives,
                        Validate
 
   build-depends:       base >= 4.7 && < 5
@@ -73,6 +75,7 @@ executable carp
                      , CarpHask
                      , containers
                      , directory
+                     , filepath
                      , haskeline
                      , process
   default-language:    Haskell2010

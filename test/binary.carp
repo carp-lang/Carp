@@ -1,0 +1,163 @@
+(use Binary)
+
+(load "Test.carp")
+(use Test)
+
+(deftest test
+  ;; int16 tests
+  (assert-equal test
+                (Uint16.from-long 2051l)
+                (unsafe-bytes->int16 (ByteOrder.LittleEndian) &[3b 8b])
+                "Unsafe little endian unsafe-bytes->int16 works as expected.")
+
+  (assert-equal test
+                (Uint16.from-long 776l)
+                (unsafe-bytes->int16 (ByteOrder.BigEndian) &[3b 8b])
+                "Unsafe big endian unsafe-bytes->int16 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just (Uint16.from-long 2051l))
+                &(bytes->int16 (ByteOrder.LittleEndian) &[3b 8b])
+                "Unsafe little endian bytes->int16 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just (Uint16.from-long 776l))
+                &(bytes->int16 (ByteOrder.BigEndian) &[3b 8b])
+                "Unsafe big endian bytes->int16 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(bytes->int16 (ByteOrder.LittleEndian) &[3b])
+                "bytes->int16 returns Nothing on insufficient data.")
+
+  (assert-equal test
+                &[(Uint16.from-long 2051l) (Uint16.from-long 776l)]
+                &(unsafe-bytes->int16-seq (ByteOrder.LittleEndian) &[3b 8b 8b 3b])
+                "Unsafe little endian bytes->int16-seq works as expected.")
+
+  (assert-equal test
+                &(Pair.init [(Uint16.from-long 776l) (Uint16.from-long 2051l)] 1)
+                &(bytes->int16-seq (ByteOrder.BigEndian) &[3b 8b 8b 3b 2b])
+                "Big endian bytes->int16-seq works as expected.")
+
+  ;; We unwrap the error here since it's simpler than defining equality over
+  ;; arrays of Uint values.
+  ;; TODO: Define equality for arrays of non-ref values.
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint16) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int16-seq-exact (ByteOrder.BigEndian) &[3b 8b 8b 3b 2b]))
+                "Big endian bytes->int16-seq-exact works as expected.")
+
+  (assert-equal test
+                &[3b 8b]
+                &(int16->bytes (ByteOrder.LittleEndian) (Uint16.from-long 2051l))
+                "Little endian int16->bytes works as expected.")
+
+  (assert-equal test
+                &[[3b 8b] [8b 3b]]
+                &(int16-seq->bytes (ByteOrder.LittleEndian) &[(Uint16.from-long 2051l) (Uint16.from-long 776l)])
+                "Little endian int16->bytes works as expected.")
+
+  ;; int32 tests
+  (assert-equal test
+                (Uint32.from-long 67305985l)
+                (unsafe-bytes->int32 (ByteOrder.LittleEndian) &[1b 2b 3b 4b])
+                "Unsafe little endian unsafe-bytes->int32 works as expected.")
+
+  (assert-equal test
+                (Uint32.from-long 16909060l)
+                (unsafe-bytes->int32 (ByteOrder.BigEndian) &[1b 2b 3b 4b])
+                "Unsafe big endian unsafe-bytes->int32 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just (Uint32.from-long 67305985l))
+                &(bytes->int32 (ByteOrder.LittleEndian) &[1b 2b 3b 4b])
+                "Unsafe little endian bytes->int32 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just (Uint32.from-long 16909060l))
+                &(bytes->int32 (ByteOrder.BigEndian) &[1b 2b 3b 4b])
+                "Unsafe big endian bytes->int32 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(bytes->int32 (ByteOrder.LittleEndian) &[3b])
+                "bytes->int32 returns Nothing on insufficient data.")
+
+  (assert-equal test
+                &[(Uint32.from-long 67305985l) (Uint32.from-long 16909060l)]
+                &(unsafe-bytes->int32-seq (ByteOrder.LittleEndian) &[1b 2b 3b 4b 4b 3b 2b 1b])
+                "Unsafe little endian bytes->int32-seq works as expected.")
+
+  (assert-equal test
+                &(Pair.init [(Uint32.from-long 16909060l) (Uint32.from-long 67305985l)] 1)
+                &(bytes->int32-seq (ByteOrder.BigEndian) &[1b 2b 3b 4b 4b 3b 2b 1b 5b])
+                "Big endian bytes->int32-seq works as expected.")
+
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint32) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int32-seq-exact (ByteOrder.BigEndian) &[1b 2b 3b 4b 4b 3b 2b 1b 5b]))
+                "Big endian bytes->int32-seq-exact works as expected.")
+
+  (assert-equal test
+                &[1b 2b 3b 4b]
+                &(int32->bytes (ByteOrder.LittleEndian) (Uint32.from-long 67305985l))
+                "Little endian int32->bytes works as expected.")
+
+  (assert-equal test
+                &[[1b 2b 3b 4b] [4b 3b 2b 1b]]
+                &(int32-seq->bytes (ByteOrder.LittleEndian) &[(Uint32.from-long 67305985l) (Uint32.from-long 16909060l)])
+                "Little endian int32-seq->bytes works as expected.")
+
+  ;; int64 tests
+  ;; We only go up to 6b in the 6th position--going higher seems to cause precision loss (at least on my system).
+  (assert-equal test
+                (Uint64.from-long 6618611909121l)
+                (unsafe-bytes->int64 (ByteOrder.LittleEndian) &[1b 2b 3b 4b 5b 6b 0b 0b])
+                "Unsafe little endian unsafe-bytes->int64 works as expected.")
+
+  (assert-equal test
+                (Uint64.from-long 72623859790381056l)
+                (unsafe-bytes->int64 (ByteOrder.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b])
+                "Unsafe big endian unsafe-bytes->int64 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just  (Uint64.from-long 6618611909121l))
+                &(bytes->int64 (ByteOrder.LittleEndian) &[1b 2b 3b 4b 5b 6b 0b 0b])
+                "Unsafe little endian bytes->int64 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Just (Uint64.from-long 72623859790381056l))
+                &(bytes->int64 (ByteOrder.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b])
+                "Unsafe big endian bytes->int64 works as expected.")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(bytes->int64 (ByteOrder.LittleEndian) &[3b])
+                "bytes->int64 returns Nothing on insufficient data.")
+
+  (assert-equal test
+                &[(Uint64.from-long 6618611909121l) (Uint64.from-long 72623859790381056l)]
+                &(unsafe-bytes->int64-seq (ByteOrder.LittleEndian) &[1b 2b 3b 4b 5b 6b 0b 0b 0b 0b 6b 5b 4b 3b 2b 1b])
+                "Unsafe little endian bytes->int64-seq works as expected.")
+
+  (assert-equal test
+                &(Pair.init [(Uint64.from-long 72623859790381056l) (Uint64.from-long 6618611909121l)] 1)
+                &(bytes->int64-seq (ByteOrder.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b 0b 0b 6b 5b 4b 3b 2b 1b 5b])
+                "Unsafe big endian bytes->int64-seq works as expected.")
+
+  (assert-equal test
+                &(Result.unsafe-from-error (the (Result (Array Uint64) Int) (Result.Error 1)))
+                &(Result.unsafe-from-error (bytes->int64-seq-exact (ByteOrder.BigEndian) &[1b 2b 3b 4b 5b 6b 0b 0b 0b 0b 6b 5b 4b 3b 2b 1b 5b]))
+                "Unsafe big endian bytes->int64-seq-exact works as expected.")
+
+  (assert-equal test
+                &[1b 2b 3b 4b 5b 6b 0b 0b]
+                &(int64->bytes (ByteOrder.LittleEndian) (Uint64.from-long 6618611909121l))
+                "Little endian int64->bytes works as expected.")
+
+  (assert-equal test
+                &[[1b 2b 3b 4b 5b 6b 0b 0b] [0b 0b 6b 5b 4b 3b 2b 1b]]
+                &(int64-seq->bytes (ByteOrder.LittleEndian) &[ (Uint64.from-long 6618611909121l) (Uint64.from-long 72623859790381056l)])
+                "Little endian int64-seq->bytes works as expected.")
+)

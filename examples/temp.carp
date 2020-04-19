@@ -18,3 +18,29 @@
 ;;   (match x
 ;;     (Maybe.Just a)  a
 ;;     (Maybe.Nothing) 0))
+
+
+;; Adding pre-existing functions to interface when it's defined
+;; (defmodule Foo
+;;   (defn tripoli [x y z] (Int.= 0 (+ x (+ y z)))))
+
+;; ;; 'foo' will match this interface that is defined AFTER foo
+;; (definterface tripoli (λ [Int Int Int] Bool))
+
+;; ;; This should still be added, obviously
+;; (defmodule Goo
+;;   (defn tripoli [x y z] (Int.= 0 (+ x (+ y z)))))
+
+
+
+;; Issue #681
+(deftype (X a) [member a])
+(deftype (Y a) [x (X a)])
+
+(defmodule Y
+  (defn foo [y]
+    (set-x! y (X.init 1))))
+
+(defn main []
+  (let [y (Y.init (X.init 10))]
+    (Y.foo &y)))

@@ -22,7 +22,7 @@
   (+ (* y @(State.width state)) x))
 
 (defn get-square [state x y]
-  @(nth (State.grid state) (coord-to-index state x y)))
+  @(unsafe-nth (State.grid state) (coord-to-index state x y)))
 
 (defn draw [rend state]
   (do
@@ -53,7 +53,7 @@
   (let [x @(State.x &state)
         y @(State.y &state)
         n (coord-to-index &state x y)
-        b (nth (State.grid &state) n)]
+        b (unsafe-nth (State.grid &state) n)]
     (do (aset! (State.grid &state) n (not @b))
         state)))
 
@@ -67,7 +67,7 @@
   (let [x @(State.x &state)
         y @(State.y &state)
         n (coord-to-index &state x y)
-        b (nth (State.grid &state) n)
+        b (unsafe-nth (State.grid &state) n)
         dir @(State.dir &state)
         new-dir (if @b (turn-left dir) (turn-right dir))
         new-x (case new-dir

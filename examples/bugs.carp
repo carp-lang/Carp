@@ -120,25 +120,38 @@
 ;; (test1 T) ; => T
 ;; (expand '(test1 T)) ; => hangs
 
-(defn main []
-  (let [ret false
-        f (fn []
-            (set! ret true))]
-    (do
-      (f)
-      (IO.println &(str ret)))))
+
+
+;; Not sure what these tests are about? (lifetimes probably)
+;; (defn main []
+;;   (let [ret false
+;;         f (fn []
+;;             (set! ret true))]
+;;     (do
+;;       (f)
+;;       (IO.println &(str ret)))))
+
+;; (defn main []
+;;   (let [ret false
+;;         f (fn []
+;;             (let [x 10]
+;;               (set! x 11)))]
+;;     (do
+;;       (f)
+;;       (IO.println &(str ret)))))
+
+;; (defn main2 []
+;;   (let [x 10]
+;;     (do
+;;       (set! x 11)
+;;       (println* x))))
+
+
+
+;; Failing to instantiate deps
+;;(deftype Z [x (Array String)])
+(deftype X (Y [(Array String)]))
 
 (defn main []
-  (let [ret false
-        f (fn []
-            (let [x 10]
-              (set! x 11)))]
-    (do
-      (f)
-      (IO.println &(str ret)))))
-
-(defn main2 []
-  (let [x 10]
-    (do
-      (set! x 11)
-      (println* x))))
+  (let [s @&(X.Y [])]
+    (println* "I did compile.")))

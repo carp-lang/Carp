@@ -105,24 +105,32 @@
                 "sum works as expected")
   (assert-equal test
                 &[2 3]
-                &(subarray &(range 1 10 1) 1 3)
-                "subarray works as expected")
+                &(slice &(range 1 10 1) 1 3)
+                "slice works as expected")
   (assert-equal test
                 &[1 2 3]
-                &(prefix-array &(range 1 10 1) 3)
-                "prefix-array works as expected")
+                &(prefix &(range 1 10 1) 3)
+                "prefix works as expected")
   (assert-equal test
                 &[8 9 10]
-                &(suffix-array &(range 1 10 1) 7)
-                "suffix-array works as expected")
+                &(suffix &(range 1 10 1) 7)
+                "suffix works as expected")
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(nth &a 100)
+                "nth works as expected")
+  (assert-equal test
+                &(Maybe.Just 0)
+                &(nth &a 0)
+                "nth works as expected")
   (assert-equal test
                 5
-                @(nth &a 5)
-                "nth works as expected")
+                @(unsafe-nth &a 5)
+                "unsafe-nth works as expected")
   (assert-equal test
                 &[1 2 3]
-                (nth &(nested) 0)
-                "nth works as expected")
+                (unsafe-nth &(nested) 0)
+                "unsafe-nth works as expected")
   (assert-equal test
                 &[10 11 12 13 14 15]
                 &(range 10 15 1)
@@ -275,6 +283,14 @@
                 (predicate-count &[1 8 5 10 3] &(fn [i] (Int.even? @i)))
                 "predicate-count works")
   (assert-equal test
+                &1
+                (Pointer.to-ref (unsafe-raw &[1 2 3]))
+                "unsafe-raw works")
+  (assert-equal test
+                &2
+                (Pointer.to-ref (Pointer.inc (unsafe-raw &[1 2 3])))
+                "unsafe-raw works II")
+  (assert-equal test
                 &[1 3 5]
                 &(remove &2 [2 1 3 2 5])
                 "remove works")
@@ -285,4 +301,9 @@
   (assert-equal test
                 &[1 3]
                 &(remove-nth 1 [1 2 3])
-                "remove-nth works"))
+                "remove-nth works")
+  (assert-equal test
+                &[1.0 1.5 2.0 2.5]
+                &(unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
+                "unreduce works")
+)

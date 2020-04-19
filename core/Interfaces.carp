@@ -5,7 +5,6 @@
 ;;(definterface str (λ [a] String))
 
 (definterface = (λ [a a] Bool))
-(definterface /= (λ [a a] Bool))
 
 (definterface add-ref (λ [&a &a] a))
 (definterface sub-ref (λ [&a &a] a))
@@ -59,3 +58,5 @@
 (definterface sqrt (λ [a] a))
 (definterface tan (λ [a] a))
 (definterface tanh (λ [a] a))
+
+(definterface slice (Fn [&a Int Int] a))
