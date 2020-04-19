@@ -127,6 +127,19 @@
       true
       false))
 
+  (defndynamic flip [f]
+    (fn [x y]
+      (f y x)))
+
+  ;; Dynamic.or already exists, but since it's a special form, it can't be passed
+  ;; to higher order functions like reduce. So, we define an alternative here.
+  (defndynamic or-internal [x y]
+    (if x true y))
+
+  (defndynamic curry [f x]
+    (fn [y]
+      (f x y)))
+
   (doc reduce
     "Reduces or 'folds' a data literal, such as a list or array, into a single
     value through successive applications of `f`.")
@@ -161,19 +174,16 @@
     ;; calls to map or zip (which uses apply) as appropriate--unless we support
     ;; the quoted function name argument in map-internal or the unquoted one in
     ;; apply, we can't use zip and map-internal in map.
-    ;;
-    ;; TODO: Once issue #555 is fixed, we shouldn't need to call (list 'quote...
-    ;; here
     (let [function-name (list (cadr f))]
       (apply-internal argument-list function-name)))
 
   (defndynamic map-internal [f xs acc]
     (if (empty? xs)
         acc
-        (map-internal f (cdr xs) (append acc (list (f (car xs)))))))
+        (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
 
   (defndynamic zip-internal [f forms acc]
-    (if (reduce or false (map-internal empty? forms (list)))
+    (if (reduce or-internal false (map-internal empty? forms (list)))
         acc
         (zip-internal
           f
@@ -193,9 +203,6 @@
     applications thus far is returned, and any remaining members in the other
     forms are ignored.
 
-    Note: because this function returns a list, you need to quote it's
-    result to prevent immediate evaluation of the result in the REPL.
-
     For example:
       ```clojure
       '(map symbol? '(a b c))
@@ -207,7 +214,7 @@
       ```")
   (defndynamic map [f :rest forms]
     (if (= 1 (length forms))
-        (map-internal f forms (list))
+        (map-internal f (car forms) (list))
         (zip-internal f forms (list))))
 )
 
