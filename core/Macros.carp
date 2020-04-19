@@ -210,6 +210,32 @@
           (let [result (list (apply f (map-internal car forms (list))))]
             (append acc result)))))
 
+  (doc zip
+    "Returns the *form* that results from applying  a function `f` to each of
+    the values supplied in `forms`.
+
+    If the members of a single form are exhuasted, the result of the
+    applications thus far is returned, and any remaining members in the other
+    forms are ignored.
+
+    For example,
+
+    ```
+    (zip + '(1 2 3) '(4 5 6))
+    ;; => ((+ 1 4) (+ 2 5) (+ 3 6))
+    ```
+
+    It's important to note that zip operates on forms, and that the form
+    returned by zip may not be evaluable by itself. For instance, to actually
+    transform the result in the example above into something Carp can
+    evaluate, we need to wrap each member of the list in a `do`:
+
+    ```
+    (append (list 'do) (zip + '(1 2 3) '(4 5 6)))
+    ;; => (do (+ 1 4) (+ 2 5) (+ 3 6))
+    (eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))
+    ;; => 9 ;; do returns the value of the last form in its body
+    ```")
   (defndynamic zip [f :rest forms]
     (zip-internal f forms (list)))
 
