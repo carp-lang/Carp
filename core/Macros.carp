@@ -167,6 +167,7 @@
       x
       (reduce f (f x (car xs)) (cdr xs))))
 
+  (hidden apply-internal)
   (defndynamic apply-internal [argument-list acc]
       (if (empty? argument-list)
           acc
@@ -196,11 +197,13 @@
     (let [function-name (list (cadr f))]
       (apply-internal argument-list function-name)))
 
+  (hidden map-internal)
   (defndynamic map-internal [f xs acc]
     (if (empty? xs)
         acc
         (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
 
+  (hidden zip-internal)
   (defndynamic zip-internal [f forms acc]
     (if (reduce or-internal false (map-internal empty? forms (list)))
         acc
