@@ -58,6 +58,16 @@
   (let [x (gensym-with 'a)]
     (list 'let (array x 1) (list '= x 1))))
 
+(defmacro test-map []
+  (let [mapped (Dynamic.map length '((a) (b c) (d e f)))]
+    (Dynamic.and (Dynamic.and (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
+    (Dynamic.caddr mapped)))))
+
+(defmacro test-zip []
+  (let [zipped (Dynamic.zip array '('a 'd) '('c 'o) '('e 'g))]
+    (Dynamic.and (= 'ace (Symbol.join (eval (Dynamic.car zipped))))
+      (= 'dog (Symbol.join (eval (Dynamic.cadr zipped)))))))
+
 (deftest test
   (assert-true test
                (test-let-do)
@@ -221,4 +231,10 @@
   (assert-true test
                (test-gensym)
                "gensym works as expected")
+  (assert-true test
+               (test-map)
+               "map works as expected")
+  (assert-true test
+               (test-zip)
+               "zip works as expected") 
 )
