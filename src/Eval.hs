@@ -412,7 +412,9 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
         (nc, r) <- annotateWithinContext False newCtx (XObj (Lst (name:args)) i Nothing)
         case r of
-          Right (ann, _) -> executeCommand nc (withBuildAndRun (buildMainFunction ann))
+          Right (ann, deps) -> do
+            ctxWithDeps <- liftIO $ foldM (define True) nc deps
+            executeCommand ctxWithDeps (withBuildAndRun (buildMainFunction ann))
           Left err -> do
            reportExecutionError nc (show err)
            return (xobj, nc)
