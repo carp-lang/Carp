@@ -409,6 +409,8 @@ executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
          reportExecutionError newCtx (show e)
          return (xobj, newCtx)
        -- special case: calling a function at the repl
+       Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:(XObj (Sym (SymPath [] "main") _) _ _):_)) _ _:_)) _ _) ->
+        executeCommand newCtx (withBuildAndRun (XObj (Lst []) (Just dummyInfo) Nothing))
        Right (XObj (Lst (XObj (Lst (XObj (Defn _) _ _:name:_)) _ _:args)) i _) -> do
         (nc, r) <- annotateWithinContext False newCtx (XObj (Lst (name:args)) i Nothing)
         case r of
