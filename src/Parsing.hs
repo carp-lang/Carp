@@ -327,6 +327,16 @@ array = do i <- createInfo
            incColumn 1
            return (XObj (Arr objs) i Nothing)
 
+staticArray :: Parsec.Parsec String ParseState XObj
+staticArray =
+  do i <- createInfo
+     _ <- Parsec.string "❪"
+     incColumn 2
+     objs <- readObjs
+     _ <- Parsec.string "❫"
+     incColumn 2
+     return (XObj (StaticArr objs) i Nothing)
+
 list :: Parsec.Parsec String ParseState XObj
 list = do i <- createInfo
           _ <- Parsec.char '('
@@ -386,7 +396,7 @@ quote = do i1 <- createInfo
            return (XObj (Lst [XObj (Sym (SymPath [] "quote") Symbol) i1 Nothing, expr]) i2 Nothing)
 
 sexpr :: Parsec.Parsec String ParseState XObj
-sexpr = do x <- Parsec.choice [ref, deref, copy, quote, list, array, dictionary, atom]
+sexpr = do x <- Parsec.choice [ref, deref, copy, quote, list, staticArray, array, dictionary, atom]
            _ <- whitespaceOrNothing
            return x
 

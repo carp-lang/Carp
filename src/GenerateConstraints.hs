@@ -248,4 +248,19 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
 
+            -- THIS CODE IS VERY MUCH A DUPLICATION OF THE 'ARR' CODE FROM ABOVE:
+            (StaticArr arr) ->
+              case arr of
+                [] -> Right []
+                x:xs -> do insideExprConstraints <- fmap join (mapM gen arr)
+                           let Just headTy = ty x
+                               genObj o n = XObj (Sym (SymPath [] ("Whereas the " ++ enumerate n ++ " element in the array is " ++ show (getPath o))) Symbol)
+                                  (info o) (ty o)
+                               headObj = XObj (Sym (SymPath [] ("I inferred the type of the static array from its first element " ++ show (getPath x))) Symbol)
+                                  (info x) (Just headTy)
+                               Just (RefTy(StructTy "StaticArray" [t]) _) = ty xobj
+                               betweenExprConstraints = zipWith (\o n -> Constraint headTy (forceTy o) headObj (genObj o n) xobj OrdArrBetween) xs [1..]
+                               headConstraint = Constraint headTy t headObj (genObj x 1) xobj OrdArrHead
+                           return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
+
             _ -> Right []

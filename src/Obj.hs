@@ -54,6 +54,7 @@ data Obj = Sym SymPath SymbolMode
          | Bol Bool
          | Lst [XObj]
          | Arr [XObj]
+         | StaticArr [XObj]
          | Dict (Map.Map XObj XObj)
          | Closure XObj ClosureContext
          | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
@@ -264,6 +265,7 @@ pretty = visit 0
           case obj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
+            StaticArr arr -> "❪" ++ joinWithSpace (map (visit indent) arr) ++ "❫"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"

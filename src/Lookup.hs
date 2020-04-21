@@ -192,7 +192,7 @@ isExternalType _ _ =
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
-  (name == "Array") || (name == "Dictionary") || (
+  (name == "Array") || (name == "StaticArray") || (name == "Dictionary") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True

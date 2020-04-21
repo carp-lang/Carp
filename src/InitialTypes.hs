@@ -77,6 +77,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
+                       (StaticArr _)      -> visitStaticArray env xobj
                        (Dict _)           -> visitDictionary env xobj
                        (Sym symPath _)    -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
@@ -146,6 +147,16 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                      Right (XObj (Arr okVisited) i (Just (StructTy "Array" [arrayVarTy])))
 
     visitArray _ _ = error "The function 'visitArray' only accepts XObj:s with arrays in them."
+
+    visitStaticArray :: Env -> XObj -> State Integer (Either TypeError XObj)
+    visitStaticArray env (XObj (StaticArr xobjs) i _) =
+      do visited <- mapM (visit env) xobjs
+         arrayVarTy <- genVarTy
+         lt <- genVarTy
+         return $ do okVisited <- sequence visited
+                     Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy "StaticArray" [arrayVarTy]) lt)))
+
+    visitStaticArray _ _ = error "The function 'visitStaticArray' only accepts XObj:s with arrays in them."
 
     visitDictionary :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitDictionary env (XObj (Dict xobjs) i _) =

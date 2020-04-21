@@ -96,6 +96,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
           case obj xobj of
             Lst _   -> visitList indent xobj
             Arr _   -> visitArray indent xobj
+            StaticArr _ -> visitStaticArray indent xobj
             Num IntTy num -> return (show (round num :: Int))
             Num LongTy num -> return (show (round num :: Int) ++ "l")
             Num ByteTy num -> return (show (round num :: Int))
@@ -581,7 +582,6 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                           " .data = CARP_MALLOC(sizeof(" ++ tyToCLambdaFix innerTy ++ ") * " ++ show len ++ ") };\n")
              zipWithM_ (visitArrayElement indent arrayVar innerTy) [0..] xobjs
              return arrayVar
-
         visitArray _ _ = error "Must visit array!"
 
         visitArrayElement :: Int -> String -> Ty -> Int -> XObj -> State EmitterState ()
@@ -589,6 +589,27 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
           do visited <- visit indent xobj
              appendToSrc (addIndent indent ++ "((" ++ tyToCLambdaFix innerTy ++ "*)" ++ arrayVar ++
                           ".data)[" ++ show index ++ "] = " ++ visited ++ ";\n")
+             return ()
+
+        visitStaticArray :: Int -> XObj -> State EmitterState String
+        visitStaticArray indent (XObj (StaticArr xobjs) (Just i) t) =
+          do let arrayVar = freshVar i
+                 arrayDataVar = arrayVar ++ "_data"
+                 len = length xobjs
+                 Just (RefTy (StructTy "StaticArray" [innerTy]) _) = t
+             appendToSrc (addIndent indent ++ tyToCLambdaFix innerTy ++ " " ++ arrayDataVar ++ "[" ++ show len ++ "];\n")
+             appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
+                           " = { .len = " ++ show len ++ "," ++
+                          " /* .capacity = DOES NOT MATTER, STACK ALLOCATED ARRAY, */" ++
+                          " .data = " ++ arrayDataVar ++ " };\n")
+             zipWithM_ (visitStaticArrayElement indent arrayDataVar innerTy) [0..] xobjs
+             return arrayVar
+        visitStaticArray _ _ = error "Must visit static array!"
+
+        visitStaticArrayElement :: Int -> String -> Ty -> Int -> XObj -> State EmitterState ()
+        visitStaticArrayElement indent arrayDataVar innerTy index xobj =
+          do visited <- visit indent xobj
+             appendToSrc (addIndent indent ++ arrayDataVar ++ "[" ++ show index ++ "] = " ++ visited ++ ";\n")
              return ()
 
 delete :: Int -> Info -> State EmitterState ()
@@ -824,6 +845,7 @@ checkForUnresolvedSymbols = visit
           case obj xobj of
             (Lst _) -> visitList xobj
             (Arr _) -> visitArray xobj
+            (StaticArr _) -> visitStaticArray xobj
             (MultiSym _ _) -> Left (UnresolvedMultiSymbol xobj)
             (InterfaceSym _) -> Left (UnresolvedInterfaceSymbol xobj)
             _ -> return ()
@@ -841,6 +863,13 @@ checkForUnresolvedSymbols = visit
         Left e -> Left e
         Right _ -> return ()
     visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    visitStaticArray :: XObj -> Either ToCError ()
+    visitStaticArray (XObj (StaticArr xobjs) i t) =
+      case mapM visit xobjs of
+        Left e -> Left e
+        Right _ -> return ()
+    visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
 
 wrapInInitFunction :: Bool -> String -> String
 wrapInInitFunction with_core src =
