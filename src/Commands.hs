@@ -3,6 +3,7 @@ module Commands where
 import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
@@ -808,6 +809,11 @@ commandWriteFile ctx [filename, contents] =
           return (evalError ctx ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (info contents))
     _ ->
       return (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
+
+commandBitWidth :: CommandCallback
+commandBitWidth ctx [] =
+  let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
+  in return (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal ctx [modulePath] = do
