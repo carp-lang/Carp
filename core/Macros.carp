@@ -203,21 +203,17 @@
      (apply f (list x y))))
 
   (doc curry*
-    "Curry functions that take multiple arguments.
+    "Curry functions of any airity.
 
-     The usability of this function is not great yet, in some cases, you'll
-     need to pass more quotes to arguments than you might expect.
-
-     For example, removing the double quotes in this example will produce errors:
+     For example:
 
      ```
-     (map (curry* Dynamic.zip ''+ ''(1 2 3)) '((list 1 2) (list 3 4)))
-     ;; => (((+ 1 1) (+ 2 2)) ((+ 1 3) (+ 2 4)))
-     ``
+     (map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
+     ;; => (((+ 1 4) (+ 2 5)) ((+ 1 6)))
 
-     For basic use cases, extra quotes usually aren't necessary:
+     ((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+     ;; => ((cons 1 (4 5)) (cons (2 (6))))
 
-     ```
      (defndynamic add-em-up [x y z] (+ (+ x y) z))
      (map (curry* add-em-up 1 2) '(1 2 3))
      ;; => (4 5 6)
@@ -226,12 +222,21 @@
     (let [f-name (cadr f)
           all-args (caddr f)
           unfilled-args (- (length all-args) (length args))
-          remaining (take unfilled-args all-args)]
-    ;; eval immediately to return a closure.
-    (eval (list 'fn remaining
-      ;; eval once more to execute the curried function.
-      ;; otherwise, this resolves to the form that *will* call the function, e.g. (add-three-vals 2 3 1)
-      (list 'eval (list 'apply f-name (cons 'list (append args (collect-into remaining list)))))))))
+          remaining (take unfilled-args all-args)
+          ;; Quote the arguments to retain expected behavior and avoid the need
+          ;; for double quotes in curried higher-orders, e.g. zip.
+          quote-args (map quoted args)]
+    (list 'fn remaining
+      ;; eval to execute the curried function.
+      ;; otherwise, this resolves to the form that will call the function, e.g. (add-three-vals 2 3 1)
+      (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
+      remaining list))))))))
+
+  ;; Higher-order functions can't currently accept primitives
+  ;; For now, wrapping primitives in a function allows us to pass them
+  ;; to HOFs like map.
+  (defndynamic quoted [x]
+    (list 'quote x))
 
   (doc reduce
     "Reduces or 'folds' a data literal, such as a list or array, into a single
@@ -277,7 +282,7 @@
      ;; => (a a a a)
      ```")
   (defndynamic filter [p xs]
-    (let [filter-fn (fn [x y] (if (p y) (append (list y) x) x))]
+    (let [filter-fn (fn [x y] (if (p y) (append x (list y)) x))]
       (reduce filter-fn (list) xs)))
 
   (doc reverse
