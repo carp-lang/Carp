@@ -113,7 +113,7 @@ templatePointerAdd = defineTemplate
   (SymPath ["Pointer"] "add")
   (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "adds a long integer value to a pointer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate "$p* $NAME ($p *p, Long x)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p + x;"
                         ,"}"])
@@ -123,7 +123,7 @@ templatePointerSub = defineTemplate
   (SymPath ["Pointer"] "sub")
   (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "subtracts a long integer value from a pointer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate "$p* $NAME ($p *p, Long x)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p - x;"
                         ,"}"])
@@ -133,7 +133,7 @@ templatePointerWidth = defineTemplate
   (SymPath ["Pointer"] "width")
   (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "gets the byte size of a pointer."
-  (toTemplate "long $NAME ($p *p)")
+  (toTemplate "Long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return sizeof(*p);"
                         ,"}"])
@@ -143,9 +143,9 @@ templatePointerToLong = defineTemplate
   (SymPath ["Pointer"] "to-long")
   (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "converts a pointer to a long integer."
-  (toTemplate "long $NAME ($p *p)")
+  (toTemplate "Long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
-                        ,"    return (long)p;"
+                        ,"    return (Long)p;"
                         ,"}"])
   (const [])
 
@@ -153,7 +153,7 @@ templatePointerFromLong = defineTemplate
   (SymPath ["Pointer"] "from-long")
   (FuncTy [LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "converts a long integer to a pointer."
-  (toTemplate "$p* $NAME (long p)")
+  (toTemplate "$p* $NAME (Long p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return ($p*)p;"
                         ,"}"])

@@ -6,7 +6,7 @@ bool log_memory_balance = false;
 void *logged_malloc(size_t size) {
     void *ptr = malloc(size);
     if (log_memory_balance) {
-        printf("MALLOC: %p (%ld bytes)\n", ptr, size);
+        printf("MALLOC: %p (%zu bytes)\n", ptr, size);
     }
     malloc_balance_counter++;
     return ptr;
