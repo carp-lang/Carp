@@ -145,8 +145,7 @@ parseInternalPattern = do maybeAnchor <- Parsec.optionMaybe (Parsec.char '^')
 
 pat :: Parsec.Parsec String ParseState XObj
 pat = do i <- createInfo
-         _ <- Parsec.char '#'
-         _ <- Parsec.char '"'
+         _ <- Parsec.string "#\""
          str <- parseInternalPattern
          _ <- Parsec.char '"'
          incColumn (length str + 2)
@@ -330,7 +329,7 @@ array = do i <- createInfo
 staticArray :: Parsec.Parsec String ParseState XObj
 staticArray =
   do i <- createInfo
-     _ <- Parsec.string "#["
+     _ <- Parsec.string "$["
      incColumn 2
      objs <- readObjs
      _ <- Parsec.string "]"
