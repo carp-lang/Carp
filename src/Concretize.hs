@@ -669,6 +669,7 @@ manageMemory typeEnv globalEnv root =
                                 --                  return res
                                 --   Left err -> return (Left err)
                     Arr _ -> visitArray xobj
+                    StaticArr _ -> visitStaticArray xobj
                     Str _ -> do manage xobj
                                 addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here?
                                 return (Right xobj)
@@ -694,6 +695,18 @@ manageMemory typeEnv globalEnv root =
                     return (Right xobj)
 
         visitArray _ = error "Must visit array."
+
+        visitStaticArray :: XObj -> State MemState (Either TypeError XObj)
+        visitStaticArray xobj@(XObj (StaticArr arr) _ _) =
+          do mapM_ visit arr
+             results <- mapM unmanage arr
+             case sequence results of
+               Left e -> return (Left e)
+               Right _ ->
+                 do _ <- manage xobj -- TODO: result is discarded here, is that OK?
+                    return (Right xobj)
+
+        visitStaticArray _ = error "Must visit static array."
 
         visitList :: XObj -> State MemState (Either TypeError XObj)
         visitList xobj@(XObj (Lst lst) i t) =
@@ -1167,6 +1180,9 @@ manageMemory typeEnv globalEnv root =
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
           case ty xobj of
+            Just (RefTy (StructTy "StaticArray" _) _) ->
+              let var = varOfXObj xobj
+              in  Just (FakeDeleter var) -- The static array needs a deleter that the ref returned (by its form) can depend on.
             Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
