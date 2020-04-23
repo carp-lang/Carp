@@ -594,16 +594,18 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
         visitStaticArray :: Int -> XObj -> State EmitterState String
         visitStaticArray indent (XObj (StaticArr xobjs) (Just i) t) =
           do let arrayVar = freshVar i
+                 retVar = arrayVar ++ "_retref"
                  arrayDataVar = arrayVar ++ "_data"
                  len = length xobjs
-                 Just (RefTy (StructTy "StaticArray" [innerTy]) _) = t
+                 Just tt@(RefTy (StructTy "StaticArray" [innerTy]) _) = t
              appendToSrc (addIndent indent ++ tyToCLambdaFix innerTy ++ " " ++ arrayDataVar ++ "[" ++ show len ++ "];\n")
              appendToSrc (addIndent indent ++ "Array " ++ arrayVar ++
                            " = { .len = " ++ show len ++ "," ++
                           " /* .capacity = DOES NOT MATTER, STACK ALLOCATED ARRAY, */" ++
                           " .data = " ++ arrayDataVar ++ " };\n")
              zipWithM_ (visitStaticArrayElement indent arrayDataVar innerTy) [0..] xobjs
-             return arrayVar
+             appendToSrc (addIndent indent ++ tyToCLambdaFix tt ++ " " ++ retVar ++ " = &" ++ arrayVar ++ ";\n")
+             return retVar
         visitStaticArray _ _ = error "Must visit static array!"
 
         visitStaticArrayElement :: Int -> String -> Ty -> Int -> XObj -> State EmitterState ()

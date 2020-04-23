@@ -9,6 +9,7 @@ import Types
 import Template
 import ToTemplate
 import ArrayTemplates
+import qualified StaticArray
 import Commands
 import Parsing
 import Eval
@@ -43,6 +44,18 @@ arrayModule = Env { envBindings = bindings
                                 , templateDeleteArray
                                 , templateCopyArray
                                 , templateStrArray
+                                ]
+
+-- | The static array module
+staticArrayModule :: Env
+staticArrayModule = Env { envBindings = bindings
+                        , envParent = Nothing
+                        , envModuleName = Just "StaticArray"
+                        , envUseModules = []
+                        , envMode = ExternalEnv
+                        , envFunctionNestingLevel = 0 }
+  where bindings = Map.fromList [ StaticArray.templateUnsafeNth
+                                , StaticArray.templateLength
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
@@ -425,6 +438,7 @@ startingGlobalEnv noArray =
                                   , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
+                   ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule) Nothing Nothing))]
                    ++ [("Pointer",  Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
                    ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]

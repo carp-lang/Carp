@@ -359,6 +359,12 @@ concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
   then Right []
   else do deps <- mapM (concretizeType typeEnv) varTys
           Right (defineArrayTypeAlias arrayTy : concat deps)
+-- TODO: Remove ugly duplication of code here:
+concretizeType typeEnv arrayTy@(StructTy "StaticArray" varTys) =
+  if isTypeGeneric arrayTy
+  then Right []
+  else do deps <- mapM (concretizeType typeEnv) varTys
+          Right (defineStaticArrayTypeAlias arrayTy : concat deps)
 concretizeType typeEnv genericStructTy@(StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder _ (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _)) ->

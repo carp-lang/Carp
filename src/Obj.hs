@@ -835,6 +835,9 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
+defineStaticArrayTypeAlias :: Ty -> XObj
+defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
+
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
 defineInterface name t paths info =
