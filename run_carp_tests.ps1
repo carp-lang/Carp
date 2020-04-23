@@ -32,7 +32,6 @@ exitOnError { stack exec carp "--" ./examples/check_malloc.carp -b }
 
 # Generate docs
 exitOnError { stack exec carp "--" ./docs/core/generate_core_docs.carp }
-exitOnError { stack exec carp "--" ./docs/sdl/generate_sdl_docs.carp }
 
 echo "ALL TESTS DONE."
 
