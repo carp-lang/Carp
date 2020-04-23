@@ -325,7 +325,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
-deleteTy typeEnv env (StructTy "Array" [innerType]) =
+deleteTy typeEnv env (StructTy _ [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
   , TokC $ "    " ++ insideArrayDeletion typeEnv env innerType "i"
   , TokC   "    }\n"

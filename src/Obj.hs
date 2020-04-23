@@ -265,7 +265,7 @@ pretty = visit 0
           case obj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
-            StaticArr arr -> "❪" ++ joinWithSpace (map (visit indent) arr) ++ "❫"
+            StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
@@ -423,6 +423,8 @@ prettyTyped = visit 0
                  listPrinter "(" ")" lst suffix indent
                Arr arr ->
                  listPrinter "[" "]" arr suffix indent
+               StaticArr arr ->
+                 listPrinter "$[" "]" arr suffix indent
                _ ->
                  pretty xobj ++ suffix
 

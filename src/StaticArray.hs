@@ -9,6 +9,7 @@ import ToTemplate
 import Polymorphism
 import Concretize
 import Lookup
+import qualified ArrayTemplates
 
 templateUnsafeNth :: (String, Binder)
 templateUnsafeNth =
@@ -40,3 +41,28 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
             (const (toTemplate "$DECL { return (*a).len; }"))
             (\(FuncTy [RefTy arrayType _] _ _) ->
               depsForDeleteFunc typeEnv env arrayType)
+
+templateDeleteArray :: (String, Binder)
+templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t docs
+  where path = SymPath ["StaticArray"] "delete"
+        t = FuncTy [StructTy "StaticArray" [VarTy "a"]] UnitTy StaticLifetimeTy
+        docs = "deletes a static array. This function should not be called manually (there shouldn't be a way to create value types of type StaticArray)."
+        templateCreator = TemplateCreator $
+          \typeEnv env ->
+             Template
+             t
+             (const (toTemplate "void $NAME (Array a)"))
+             (\(FuncTy [arrayType] UnitTy _) ->
+                [TokDecl, TokC "{\n"] ++
+                deleteTy typeEnv env arrayType ++
+                [TokC "}\n"])
+             (\(FuncTy [arrayType@(StructTy "StaticArray" [insideType])] UnitTy _) ->
+                depsForDeleteFunc typeEnv env insideType)
+
+deleteTy :: TypeEnv -> Env -> Ty -> [Token]
+deleteTy typeEnv env (StructTy _ [innerType]) =
+  [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
+  , TokC $ "    " ++ ArrayTemplates.insideArrayDeletion typeEnv env innerType "i"
+  , TokC   "    }\n"
+  ]
+deleteTy _ _ _ = []

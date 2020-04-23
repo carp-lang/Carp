@@ -18,6 +18,7 @@ assignTypes mappings root = visit root
       case obj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
+        (StaticArr _) -> visitStaticArray xobj
         _ -> assignType xobj
 
     visitList :: XObj -> Either TypeError XObj
@@ -33,6 +34,13 @@ assignTypes mappings root = visit root
          let xobj' = XObj (Arr visited) i t
          assignType xobj'
     visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    visitStaticArray :: XObj -> Either TypeError XObj
+    visitStaticArray (XObj (StaticArr xobjs) i t) =
+      do visited <- mapM (assignTypes mappings) xobjs
+         let xobj' = XObj (StaticArr visited) i t
+         assignType xobj'
+    visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
 
     assignType :: XObj -> Either TypeError XObj
     assignType xobj = case ty xobj of

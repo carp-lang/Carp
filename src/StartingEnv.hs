@@ -56,6 +56,7 @@ staticArrayModule = Env { envBindings = bindings
                         , envFunctionNestingLevel = 0 }
   where bindings = Map.fromList [ StaticArray.templateUnsafeNth
                                 , StaticArray.templateLength
+                                , StaticArray.templateDeleteArray
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.

@@ -1,0 +1,4 @@
+(defn main []
+  (Debug.memory-logged
+   (let [xs $[@"a" @"b" @"c"]]
+     (println* (StaticArray.unsafe-nth xs 2)))))

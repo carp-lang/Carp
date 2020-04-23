@@ -50,6 +50,11 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          concretizeTypeOfXObj typeEnv xobj
          return $ do okVisited <- visited
                      Right (XObj (Arr okVisited) i (Just t))
+    visit allowAmbig level env xobj@(XObj (StaticArr arr) i (Just t)) =
+      do visited <- fmap sequence (mapM (visit allowAmbig level env) arr)
+         concretizeTypeOfXObj typeEnv xobj
+         return $ do okVisited <- visited
+                     Right (XObj (StaticArr okVisited) i (Just t))
     visit _ _ _ x = return (Right x)
 
     visitList :: Bool -> Level -> Env -> XObj -> State [XObj] (Either TypeError [XObj])
@@ -317,6 +322,7 @@ collectCapturedVars root = removeDuplicates (map toGeneralSymbol (visit root))
         (Lst [XObj (Fn _ captures) _ _, _, _]) -> Set.toList captures
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
+        -- TODO: Static Arrays!
         (Sym path (LookupLocal Capture)) -> [xobj]
         _ -> []
 
@@ -703,7 +709,19 @@ manageMemory typeEnv globalEnv root =
              case sequence results of
                Left e -> return (Left e)
                Right _ ->
-                 do _ <- manage xobj -- TODO: result is discarded here, is that OK?
+                 -- We know that we want to add a deleter for the static array here
+                 do let var = varOfXObj xobj
+                        Just (RefTy t@(StructTy "StaticArray" [_]) _) = ty xobj
+                        deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
+                                    Just pathOfDeleteFunc ->
+                                      ProperDeleter pathOfDeleteFunc var
+                                    Nothing ->
+                                      error ("No deleter found for Static Array : " ++ show t) --Just (FakeDeleter var)
+                    MemState deleters deps lifetimes <- get
+                    let newDeleters = Set.insert deleter deleters
+                        newDeps = deps ++ depsForDeleteFunc typeEnv globalEnv t
+                        newState = (MemState newDeleters newDeps lifetimes)
+                    put newState --(trace (show newState) newState)
                     return (Right xobj)
 
         visitStaticArray _ = error "Must visit static array."
@@ -1180,9 +1198,6 @@ manageMemory typeEnv globalEnv root =
         createDeleter :: XObj -> Maybe Deleter
         createDeleter xobj =
           case ty xobj of
-            Just (RefTy (StructTy "StaticArray" _) _) ->
-              let var = varOfXObj xobj
-              in  Just (FakeDeleter var) -- The static array needs a deleter that the ref returned (by its form) can depend on.
             Just (RefTy _ _) -> Just (RefDeleter (varOfXObj xobj))
             Just t -> let var = varOfXObj xobj
                       in  if isExternalType typeEnv t
@@ -1238,7 +1253,7 @@ manageMemory typeEnv globalEnv root =
                        [one] -> let newDeleters = Set.delete one deleters
                                 in  do put (MemState newDeleters deps lifetimes)
                                        return (Right ())
-                       _ -> error "Too many variables with the same name in set."
+                       tooMany -> error ("Too many variables with the same name in set: " ++ show tooMany)
              else return (Right ())
 
         -- | Check that the value being referenced hasn't already been given away
@@ -1265,13 +1280,13 @@ manageMemory typeEnv globalEnv root =
                Right _ -> do manage to --(trace ("Transfered from " ++ getName from ++ " '" ++ varOfXObj from ++ "' to " ++ getName to ++ " '" ++ varOfXObj to ++ "'") to)
                              return (Right ())
 
-        varOfXObj :: XObj -> String
-        varOfXObj xobj =
-          case xobj of
-            XObj (Sym path _) _ _ -> pathToC path
-            _ -> case info xobj of
-                   Just i -> freshVar i
-                   Nothing -> error ("Missing info on " ++ show xobj)
+varOfXObj :: XObj -> String
+varOfXObj xobj =
+  case xobj of
+    XObj (Sym path _) _ _ -> pathToC path
+    _ -> case info xobj of
+           Just i -> freshVar i
+           Nothing -> error ("Missing info on " ++ show xobj)
 
 suffixTyVars :: String -> Ty -> Ty
 suffixTyVars suffix t =

@@ -201,6 +201,7 @@ setNewIdentifiers root = let final = evalState (visit root) 0
       case obj xobj of
         (Lst _) -> visitList xobj
         (Arr _) -> visitArray xobj
+        (StaticArr _) -> visitStaticArray xobj
         _ -> bumpAndSet xobj
 
     visitList :: XObj -> State Int XObj
@@ -216,6 +217,13 @@ setNewIdentifiers root = let final = evalState (visit root) 0
          let xobj' = XObj (Arr visited) i t
          bumpAndSet xobj'
     visitArray _ = error "The function 'visitArray' only accepts XObjs with arrays in them."
+
+    visitStaticArray :: XObj -> State Int XObj
+    visitStaticArray (XObj (StaticArr xobjs) i t) =
+      do visited <- mapM visit xobjs
+         let xobj' = XObj (StaticArr visited) i t
+         bumpAndSet xobj'
+    visitStaticArray _ = error "The function 'visitStaticArray' only accepts XObjs with arrays in them."
 
     bumpAndSet :: XObj -> State Int XObj
     bumpAndSet xobj =

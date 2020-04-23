@@ -185,6 +185,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t
+
+setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (StaticArr array) i t) =
+  let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
+  in  XObj (StaticArr array') i t
+
 setFullyQualifiedSymbols _ _ _ xobj = xobj
 
 isExternalFunction :: XObj -> Bool
