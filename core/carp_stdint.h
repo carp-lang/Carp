@@ -52,10 +52,10 @@ String Uint8_str(Uint8 x) {
     snprintf(buffer, size, "Uint8(%" PRIu8 ")", x);
     return buffer;
 }
-Uint8 Uint8_from_MINUS_long(long x) {
+Uint8 Uint8_from_MINUS_long(Long x) {
     return (Uint8)x;
 }
-long Uint8_to_MINUS_long(Uint8 x) {
+Long Uint8_to_MINUS_long(Uint8 x) {
     return (long)x;
 }
 Uint8 Uint8_copy(Uint8* x) {
@@ -119,10 +119,10 @@ String Uint16_str(Uint16 x) {
     snprintf(buffer, size, "Uint16(%" PRIu16 ")", x);
     return buffer;
 }
-Uint16 Uint16_from_MINUS_long(long x) {
+Uint16 Uint16_from_MINUS_long(Long x) {
     return (Uint16)x;
 }
-long Uint16_to_MINUS_long(Uint16 x) {
+Long Uint16_to_MINUS_long(Uint16 x) {
     return (long)x;
 }
 Uint16 Uint16_copy(Uint16* x) {
@@ -186,10 +186,10 @@ String Uint32_str(Uint32 x) {
     snprintf(buffer, size, "Uint32(%" PRIu32 ")", x);
     return buffer;
 }
-Uint32 Uint32_from_MINUS_long(long x) {
+Uint32 Uint32_from_MINUS_long(Long x) {
     return (Uint32)x;
 }
-long Uint32_to_MINUS_long(Uint32 x) {
+Long Uint32_to_MINUS_long(Uint32 x) {
     return (long)x;
 }
 Uint32 Uint32_copy(Uint32* x) {
@@ -253,10 +253,10 @@ String Uint64_str(Uint64 x) {
     snprintf(buffer, size, "Uint64(%" PRIu64 ")", x);
     return buffer;
 }
-Uint64 Uint64_from_MINUS_long(long x) {
+Uint64 Uint64_from_MINUS_long(Long x) {
     return (Uint64)x;
 }
-long Uint64_to_MINUS_long(Uint64 x) {
+Long Uint64_to_MINUS_long(Uint64 x) {
     return (long)x;
 }
 Uint64 Uint64_copy(Uint64* x) {
@@ -320,10 +320,10 @@ String Int8_str(Int8 x) {
     snprintf(buffer, size, "Int8(%" PRId8 ")", x);
     return buffer;
 }
-Int8 Int8_from_MINUS_long(long x) {
+Int8 Int8_from_MINUS_long(Long x) {
     return (Int8)x;
 }
-long Int8_to_MINUS_long(Int8 x) {
+Long Int8_to_MINUS_long(Int8 x) {
     return (long)x;
 }
 Int8 Int8_copy(Int8* x) {
@@ -387,10 +387,10 @@ String Int16_str(Int16 x) {
     snprintf(buffer, size, "Int16(%" PRId16 ")", x);
     return buffer;
 }
-Int16 Int16_from_MINUS_long(long x) {
+Int16 Int16_from_MINUS_long(Long x) {
     return (Int16)x;
 }
-long Int16_to_MINUS_long(Int16 x) {
+Long Int16_to_MINUS_long(Int16 x) {
     return (long)x;
 }
 Int16 Int16_copy(Int16* x) {
@@ -454,10 +454,10 @@ String Int32_str(Int32 x) {
     snprintf(buffer, size, "Int32(%" PRId32 ")", x);
     return buffer;
 }
-Int32 Int32_from_MINUS_long(long x) {
+Int32 Int32_from_MINUS_long(Long x) {
     return (Int32)x;
 }
-long Int32_to_MINUS_long(Int32 x) {
+Long Int32_to_MINUS_long(Int32 x) {
     return (long)x;
 }
 Int32 Int32_copy(Int32* x) {
@@ -521,11 +521,11 @@ String Int64_str(Int64 x) {
     snprintf(buffer, size, "Int64(%" PRId64 ")", x);
     return buffer;
 }
-Int64 Int64_from_MINUS_long(long x) {
+Int64 Int64_from_MINUS_long(Long x) {
     return (Int64)x;
 }
-long Int64_to_MINUS_long(Int64 x) {
-    return (long)x;
+Long Int64_to_MINUS_long(Int64 x) {
+    return (Long)x;
 }
 Int64 Int64_copy(Int64* x) {
     return *x;
