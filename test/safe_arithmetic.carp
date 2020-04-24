@@ -1,3 +1,6 @@
+(windows-only ; safe arithmetic does not currently work on windows
+  (quit))
+
 (load "Test.carp")
 (load "SafeInt.carp")
 
