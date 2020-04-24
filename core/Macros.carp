@@ -188,6 +188,11 @@
   (defndynamic or-internal [x y]
     (if x true y))
 
+  ;; Dynamic.and already exists, but since it's a special form, it can't be passed
+  ;; to higher order functions like reduce. So, we define an alternative here.
+  (defndynamic and-internal [x y]
+    (if x y false))
+
   (doc curry
     "Returns a curried function accepting a single argument, that applies f to x
     and then to the following argument.
