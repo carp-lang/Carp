@@ -3,9 +3,11 @@
 #include <BaseTsd.h>
 #include <windows.h>
 typedef SSIZE_T ssize_t;
+#define SIZE_T_FORMAT_SPECIFIER "%ld"
 #endif
 #ifndef _WIN32
 #include <unistd.h>
+#define SIZE_T_FORMAT_SPECIFIER "%zd"
 #endif
 #include <inttypes.h>
 
@@ -17,7 +19,7 @@ typedef int64_t Long;
 #define CHK_INDEX(i, n)
 #else
 
-#define CHK_INDEX_FORMAT_STRING ":%u: bad index: %zd < %zd\n"
+#define CHK_INDEX_FORMAT_STRING ":%u: bad index: " SIZE_T_FORMAT_SPECIFIER " < " SIZE_T_FORMAT_SPECIFIER "\n"
 
 #define CHK_INDEX(i, n)                                                    \
     do {                                                                   \
