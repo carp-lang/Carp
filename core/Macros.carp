@@ -200,7 +200,7 @@
     ```")
   (defndynamic curry [f x]
     (fn [y]
-     (apply f (list x y))))
+     (f x y)))
 
   (doc curry*
     "Curry functions of any airity.
