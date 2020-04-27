@@ -414,16 +414,16 @@ parse text fileName = let initState = ParseState (Info 1 1 fileName (Set.fromLis
 
 {-# ANN balance "HLint: ignore Use String" #-}
 -- | For detecting the parenthesis balance in a string, i.e. "((( ))" = 1
-balance :: String -> Int
+balance :: String -> String
 balance text =
   case Parsec.runParser parenSyntax [] "(parens)" text of
     Left err -> error (show err)
     Right ok -> ok
 
   where
-        parenSyntax :: Parsec.Parsec String [Char] Int
+        parenSyntax :: Parsec.Parsec String [Char] String
         parenSyntax = do _ <- Parsec.many character
-                         length <$> Parsec.getState
+                         reverse <$> Parsec.getState
 
         character :: Parsec.Parsec String [Char] ()
         character = do c <- Parsec.anyChar
