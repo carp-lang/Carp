@@ -50,3 +50,4 @@
 (load "Heap.carp")
 (load "Sort.carp")
 (load "Binary.carp")
+(load "Control.carp")
