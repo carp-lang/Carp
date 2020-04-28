@@ -431,7 +431,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
 
 -- | TODO: move this into the templateStrArray function?
 strTy :: TypeEnv -> Env -> Ty -> [Token]
-strTy typeEnv env (StructTy "Array" [innerType]) =
+strTy typeEnv env (StructTy _ [innerType]) =
   [ TokC   ""
   , TokC   "  String temp = NULL;\n"
   , TokC $ calculateStrSize typeEnv env innerType

@@ -14,6 +14,7 @@ import Commands
 import Parsing
 import Eval
 import Concretize
+import Debug.Trace (trace)
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -57,6 +58,8 @@ staticArrayModule = Env { envBindings = bindings
   where bindings = Map.fromList [ StaticArray.templateUnsafeNth
                                 , StaticArray.templateLength
                                 , StaticArray.templateDeleteArray
+                                , StaticArray.templateAsetBang
+                                , StaticArray.templateStrArray
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
@@ -461,7 +464,7 @@ startingTypeEnv = Env { envBindings = bindings
             builtInSymbolInfo
 
           , interfaceBinder "str" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["Array"] "str" : registerFunctionFunctionsWithInterface "str")
+            ((SymPath ["Array"] "str") : (SymPath ["StaticArray"] "str") : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo
 
           , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)

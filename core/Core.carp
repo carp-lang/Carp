@@ -35,6 +35,7 @@
 (load "Double.carp")
 (load "Float.carp")
 (load "Tuples.carp")
+(load "StaticArray.carp")
 (load "Array.carp")
 (load "Char.carp")
 (load "String.carp")

@@ -1,4 +1,6 @@
 (defn main []
   (Debug.memory-logged
-   (let [xs $[@"a" @"b" @"c"]]
-     (println* (StaticArray.unsafe-nth xs 2)))))
+   (let [xs $[1 2 3 4 5]]
+     (do
+       (StaticArray.map! xs &(fn [x] (+ @x 1)))
+       (println* (StaticArray.reduce &(fn [total x] (+ total @x)) 0 xs))))))
