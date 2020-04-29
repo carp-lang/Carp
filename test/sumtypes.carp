@@ -4,7 +4,7 @@
 (use Test)
 
 (deftype A (F [(Fn [] Int)]))
-(deftype (Nest a) (Nested [a]))
+(deftype (Nest a) (Nested [a]) (End []))
 
 (def nest (Nest.Nested (Nest.Nested (Nest.Nested 123))))
 
@@ -21,7 +21,11 @@
     "match adds lhs bindings to inner environments")
   (assert-equal test
     "matched!"    
-    (match nest 
+    (match nest
+          (Nest.Nested (Nest.End))
+          "wrong!"
+          (Nest.Nested (Nest.Nested (Nest.End)))
+          "Also wrong!"
           (Nest.Nested (Nest.Nested (Nest.Nested _)))
           "matched!")
     "Match matches nested sumtype constructors with underscores")
