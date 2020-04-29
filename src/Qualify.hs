@@ -96,8 +96,6 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
        in  XObj (Lst (matchExpr : newExpr : concat newCasesXObjs)) i t
   else XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
 
-
-
 setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [XObj With _ _, XObj (Sym path _) _ _, expression]) _ _) =
   let useThese = envUseModules env
       env' = if path `elem` useThese then env else env { envUseModules = path : useThese }
