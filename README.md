@@ -68,6 +68,7 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Eric Shimizu Karbstein ([@GrayJack](https://github.com/GrayJack))
 * Jorge Acereda ([@jacereda](https://github.com/jacereda))
 * Scott Olsen ([@scolsen](https://github.com/scolsen))
+* Tim Dévé ([@timdeve](https://github.com/TimDeve))
 
 Are you missing from the contributors list? Please send a pull request!
 
