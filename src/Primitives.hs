@@ -128,6 +128,9 @@ registerDefnOrDefInInterfaceIfNeeded ctx xobj =
     XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ (Just t) ->
       -- This is a function, does it belong to an interface?
       registerInInterfaceIfNeeded ctx path t
+    XObj (Lst [XObj (Deftemplate _) _ _, XObj (Sym path _) _ _]) _ (Just t) ->
+      -- Templates should also be registered.
+      registerInInterfaceIfNeeded ctx path t
     XObj (Lst [XObj Def _ _, XObj (Sym path _) _ _, _]) _ (Just t) ->
       -- Global variables can also be part of an interface
       registerInInterfaceIfNeeded ctx path t

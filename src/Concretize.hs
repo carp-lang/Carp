@@ -1077,6 +1077,8 @@ manageMemory typeEnv globalEnv root =
           | isVarName name = do manage xobj
                                 return (Right [])
           | otherwise = return (Right [])
+        visitCaseLhs (XObj Ref _ _) =
+          return (Right [])
         visitCaseLhs x =
           error ("Unhandled: " ++ show x)
 

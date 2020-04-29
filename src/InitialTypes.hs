@@ -427,6 +427,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         createBindersForCaseVariable xobj@(XObj (InterfaceSym name) _ _) = createBinderInternal xobj name
         createBindersForCaseVariable xobj@(XObj (Lst lst) _ _) = do binders <- mapM createBindersForCaseVariable lst
                                                                     return (concat binders)
+        createBindersForCaseVariable xobj@(XObj Ref _ _) = return []
         createBindersForCaseVariable x = error ("Can't create binder for non-symbol in 'case' variable match:" ++ show x) -- TODO: Should use proper error mechanism
 
         createBinderInternal :: XObj -> String -> State Integer [(String, Binder)]

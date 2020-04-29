@@ -49,21 +49,21 @@
 
 
 ;; Nesting match
-(use Maybe)
-(defn main []
-  (let [s (Just (Just (Just @"Oh, but hello.")))]
-    (match s
-      (Just (Just (Just x))) (println* "It's just just just '" &x "'")
-      (Just (Just (Nothing))) (IO.println "It's just just nothing.")
-      (Just (Nothing)) (IO.println "It's just nothing.")
-      (Nothing) (IO.println "Didn't match."))))
+;; (use Maybe)
+;; (defn main []
+;;   (let [s (Just (Just (Just @"Oh, but hello.")))]
+;;     (match s
+;;       (Just (Just (Just x))) (println* "It's just just just '" &x "'")
+;;       (Just (Just (Nothing))) (IO.println "It's just just nothing.")
+;;       (Just (Nothing)) (IO.println "It's just nothing.")
+;;       (Nothing) (IO.println "Didn't match."))))
 
 
 ;; Match on refs
-;;(use Maybe)
-;; (defn main []
-;;   (let [s (Just @"Yo")
-;;         r &s]
-;;     (match r
-;;       (Just x) (IO.println "just!")
-;;       Nothing (IO.println "nada"))))
+(use Maybe)
+(defn main []
+  (let [s (Just @"Yo")
+        r &s]
+    (match r
+      (ref (Just x)) (IO.println "just!")
+      (ref (Nothing)) (IO.println "nada"))))

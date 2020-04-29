@@ -321,6 +321,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
+                  emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj Ref _ _ : caseMatchers)) _ _), caseExpr) =
+                    error ("Can't emit case matchers for refs: " ++ pretty caseLhs)
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName@(firstLetter : _)) _) _ _ : caseMatchers)) caseLhsInfo _), caseExpr) =
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
@@ -340,6 +342,9 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
                        emitCaseEnd caseLhsInfo caseExpr
+                  emitCase _ _ x =
+                    error ("Fell through: " ++ show x)
+
                   emitCaseEnd caseLhsInfo caseExpr = do
                        caseExprRetVal <- visit indent' caseExpr
                        when isNotVoid $
