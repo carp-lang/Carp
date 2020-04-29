@@ -14,7 +14,7 @@
   (sig iterate-until (Fn [a, (Ref (Fn [b] b c) d), (Ref (Fn [b] Bool c) e), b] b))
   (defn iterate-until [f pred start]
     (let-do [result start]
-      (while (not (~pred result))
+      (while (not (~pred &result))
         (set! result (~f result)))
       result))
 
