@@ -129,5 +129,14 @@
                 &(Maybe.Nothing)
                 &(to-maybe (the (Result Int String) (Error @"error")))
                 "to-maybe works with Error"
+                )
+
+  (assert-equal test
+                123
+                (match (the (Result (Result Int String) String) (Success (Success 123)))
+                  (Success (Error _)) 0
+                  (Error _) 0
+                  (Success (Success x)) x)
+                "matching on nested results"
   )
 )
