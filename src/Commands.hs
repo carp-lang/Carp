@@ -116,6 +116,9 @@ commandProjectConfig ctx [xobj@(XObj (Str key) _ _), value] = do
                                                    _ -> Left ("Project.config can't understand the value '" ++ length ++ "' for key 'file-path-print-length.")
                   "generate-only" -> do generateOnly <- unwrapBoolXObj value
                                         return (proj { projectGenerateOnly = generateOnly })
+                  "paren-balance-hints" ->
+                    do balanceHints <- unwrapBoolXObj value
+                       return (proj { projectBalanceHints = balanceHints })
                   _ -> Left ("Project.config can't understand the key '" ++ key ++ "' at " ++ prettyInfoFromXObj xobj ++ ".")
   case newProj of
     Left errorMessage -> presentError ("[CONFIG ERROR] " ++ errorMessage) (ctx, dynamicNil)
@@ -149,7 +152,8 @@ commandProjectGetConfig ctx [xobj@(XObj (Str key) _ _)] = do
           "docs-generate-index" -> Right $ Bol $ projectDocsGenerateIndex proj
           "docs-styling" -> Right $ Str $ projectDocsStyling proj
           "file-path-print-length" -> Right $ Str $ show (projectFilePathPrintLength proj)
-          "generate-only" -> Right $ Str $ show (projectGenerateOnly proj)
+          "generate-only" -> Right $ Bol $ projectGenerateOnly proj
+          "paren-balance-hints" -> Right $ Bol $ projectBalanceHints proj
           _ -> Left key
 commandProjectGetConfig ctx [faultyKey] =
   presentError ("First argument to 'Project.config' must be a string: " ++ pretty faultyKey) (ctx, dynamicNil)

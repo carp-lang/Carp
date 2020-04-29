@@ -32,8 +32,8 @@ instance MonadState s m => MonadState s (InputT m) where
     state = lift . state
 
 completeKeywordsAnd :: Context -> String -> [Completion]
-completeKeywordsAnd context word = do
-  findKeywords word ((bindingNames $ contextGlobalEnv context) ++ keywords) []
+completeKeywordsAnd context word =
+  findKeywords word (bindingNames (contextGlobalEnv context) ++ keywords) []
   where
         findKeywords match [] res = res
         findKeywords match (x : xs) res =
@@ -137,13 +137,14 @@ repl readSoFar prompt =
         Just i -> do
           let concat = readSoFar ++ i ++ "\n"
               balanced = balance concat
+              proj = contextProj context
           case balanced of
             "" -> do
               let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
               context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
               put context'
-              repl "" (projectPrompt (contextProj context))
-            _ -> repl concat balanced
+              repl "" (projectPrompt proj)
+            _ -> repl concat (if projectBalanceHints proj then balanced else "")
 
 resetAlreadyLoadedFiles context =
   let proj = contextProj context

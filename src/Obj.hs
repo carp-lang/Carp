@@ -625,6 +625,7 @@ data Project = Project { projectTitle :: String
                        , projectCanExecute :: Bool
                        , projectFilePathPrintLength :: FilePathPrintLength
                        , projectGenerateOnly :: Bool
+                       , projectBalanceHints :: Bool
                        }
 
 projectFlags :: Project -> String
@@ -657,6 +658,7 @@ instance Show Project where
         canExecute
         filePathPrintLength
         generateOnly
+        balanceHints
        ) =
     unlines [ "Title: " ++ title
             , "Compiler: " ++ compiler
@@ -683,6 +685,7 @@ instance Show Project where
             , "Print AST (with 'info' command): " ++ showB printTypedAST
             , "File path print length (when using --check): " ++ show filePathPrintLength
             , "Generate Only: " ++ showB generateOnly
+            , "Balance Hints: " ++ showB balanceHints
             ]
     where showB b = if b then "true" else "false"
 
