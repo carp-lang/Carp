@@ -73,10 +73,23 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match
            innerEnv = Env Map.empty (Just env) (Just ("case-env-" ++ show (infoIdentifier ii))) [] InternalEnv lvl
            newCasesXObjs =
              map (\(l, r) ->
-                    let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
-                        -- NOTE: Used to extend innerEnv with bindings from the lhs here. Doesn't seem necessary, and cleans up the code not to do it.
-                        r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv r
-                    in  [l', r']
+                    case l of
+                      XObj (Lst (x:xs)) _ _ ->
+                        let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
+                            innerEnv' = foldl' (\e v ->
+                                                  case v of
+                                                    XObj (Sym (SymPath _ binderName) _) _ _ ->
+                                                      extendEnv e binderName v
+                                                    x ->
+                                                      error ("Can't match variable with " ++ show x))
+                                               innerEnv
+                                               xs
+                            r' = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' r
+                        in  [l', r']
+                      XObj{} ->
+                        let l' = setFullyQualifiedSymbols typeEnv globalEnv env l
+                            r' = setFullyQualifiedSymbols typeEnv globalEnv env r
+                        in  [l', r']
                  ) (pairwise casesXObjs)
        in  XObj (Lst (matchExpr : newExpr : concat newCasesXObjs)) i t
   else XObj (Lst (matchExpr : expr : casesXObjs)) i t -- Leave it untouched for the compiler to find the error.
