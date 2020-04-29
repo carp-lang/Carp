@@ -135,16 +135,16 @@ repl readSoFar prompt =
           liftIO exitSuccess
           return ()
         Just i -> do
-          let concat = readSoFar ++ i ++ "\n"
-              balanced = balance concat
+          let concatenated = readSoFar ++ i ++ "\n"
+              balanced = balance concatenated
               proj = contextProj context
           case balanced of
             "" -> do
-              let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
+              let input' = if concatenated == "\n" then contextLastInput context else concatenated -- Entering an empty string repeats last input
               context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
               put context'
               repl "" (projectPrompt proj)
-            _ -> repl concat (if projectBalanceHints proj then balanced else "")
+            _ -> repl concatenated (if projectBalanceHints proj then balanced else "")
 
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
