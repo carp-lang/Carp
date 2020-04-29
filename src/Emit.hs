@@ -91,6 +91,15 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                            Functions -> 0
                            Globals -> 4
                            All -> 0
+        currentArgs =
+          case obj root of
+            Lst [XObj (Defn _) _ _, _, XObj (Arr args) _ _, _] -> map getSymName args
+            _ -> []
+        currentPath = getFuncName root
+        getFuncName (XObj (Lst [XObj (Defn _) _ _, XObj (Sym path _) _ _, _, _]) _ _) = path
+        getFuncName _ = SymPath [] ""
+        getSymName (XObj (Sym path _) _ _) = path
+        getSymName _ = SymPath [] ""
         visit :: Int -> XObj -> State EmitterState String
         visit indent xobj =
           case obj xobj of
@@ -194,6 +203,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      appendToSrc (defnDecl ++ " {\n")
                      when (name == "main") $
                        appendToSrc (addIndent innerIndent ++ "carp_init_globals(argc, argv);\n")
+                     appendToSrc "tco: ;\n"
                      ret <- visit innerIndent body
                      delete innerIndent i
                      when (retTy /= UnitTy) $
@@ -523,42 +533,56 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
             -- Function application (global symbols that are functions -- lambdas stored in def:s need to be called like locals, see below)
             func@(XObj (Sym path (LookupGlobal mode AFunction)) _ _) : args ->
-              do argListAsC <- createArgList indent (mode == ExternalCode) args
-                 let Just (FuncTy _ retTy _) = ty func
-                     funcToCall = pathToC path
-                 if retTy == UnitTy
-                   then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                           return ""
-                   else do let varName = freshVar i
-                           appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
-                           return varName
+              if path == currentPath
+              then do
+                argNames <- mapM (visit indent) args
+                mapM_ (\(a, n) -> (appendToSrc (addIndent indent ++ show a ++ " = " ++ n ++ ";\n"))) (zip currentArgs argNames)
+                appendToSrc (addIndent indent ++ "goto tco;\n")
+                return "NULL"
+              else do
+                argListAsC <- createArgList indent (mode == ExternalCode) args
+                let Just (FuncTy _ retTy _) = ty func
+                    funcToCall = pathToC path
+                if retTy == UnitTy
+                  then do appendToSrc (addIndent indent ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                          return ""
+                  else do let varName = freshVar i
+                          appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ funcToCall ++ "(" ++ argListAsC ++ ");\n")
+                          return varName
 
             -- Function application (on local symbols and global defs containing lambdas)
             func : args ->
-              do funcToCall <- visit indent func
-                 let unwrapLambdas = case func of
-                                       XObj (Sym _ (LookupGlobal ExternalCode _)) _ _ -> True
-                                       _ -> False
-                 argListAsC <- createArgList indent unwrapLambdas args
-                 let funcTy = case ty func of
-                               Just actualType -> actualType
-                               _ -> error ("No type on func " ++ show func)
-                     FuncTy argTys retTy _ = funcTy
-                     castToFn =
-                       if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
-                     castToFnWithEnv =
-                       if unwrapLambdas
-                       then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                       else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
-                     callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
-                 if retTy == UnitTy
-                   then do appendToSrc (addIndent indent ++ callLambda)
-                           return ""
-                   else do let varName = freshVar i
-                           appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callLambda)
-                           return varName
+              if getSymName func == currentPath
+              then do
+                argNames <- mapM (visit indent) args
+                mapM_ (\(a, n) -> (appendToSrc (addIndent indent ++ show a ++ " = " ++ n ++ ";\n"))) (zip (trace (show (getSymName func) ++ " : " ++ show currentArgs) currentArgs) argNames)
+                appendToSrc (addIndent indent ++ "goto tco;\n")
+                return "NULL"
+              else do
+                funcToCall <- visit indent func
+                let unwrapLambdas = case func of
+                                      XObj (Sym _ (LookupGlobal ExternalCode _)) _ _ -> True
+                                      _ -> False
+                argListAsC <- createArgList indent unwrapLambdas args
+                let funcTy = case ty func of
+                              Just actualType -> actualType
+                              _ -> error ("No type on func " ++ show func)
+                    FuncTy argTys retTy _ = funcTy
+                    castToFn =
+                      if unwrapLambdas
+                      then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix argTys) ++ ")"
+                      else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix argTys) ++ ")"
+                    castToFnWithEnv =
+                      if unwrapLambdas
+                      then tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCRawFunctionPtrFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                      else tyToCLambdaFix retTy ++ "(*)(" ++ joinWithComma (map tyToCLambdaFix (StructTy "LambdaEnv" [] : argTys)) ++ ")"
+                    callLambda = funcToCall ++ ".env ? ((" ++ castToFnWithEnv ++ ")" ++ funcToCall ++ ".callback)" ++ "(" ++ funcToCall ++ ".env" ++ (if null args then "" else ", ") ++ argListAsC ++ ") : ((" ++ castToFn ++ ")" ++ funcToCall ++ ".callback)(" ++ argListAsC ++ ");\n"
+                if retTy == UnitTy
+                  then do appendToSrc (addIndent indent ++ callLambda)
+                          return ""
+                  else do let varName = freshVar i
+                          appendToSrc (addIndent indent ++ tyToCLambdaFix retTy ++ " " ++ varName ++ " = " ++ callLambda)
+                          return varName
 
             -- Empty list
             [] -> do appendToSrc (addIndent indent ++ "/* () */\n")
