@@ -117,8 +117,7 @@
   (doc collect-into
     "Transforms a dynamic data literal into another, preserving order")
   (defndynamic collect-into [xs f]
-    (list 'quote
-      (collect-into-internal xs (f) f)))
+    (collect-into-internal xs (f) f))
 
   (doc empty?
     "Returns true if the provided data literal is empty, false otherwise.")
@@ -138,10 +137,61 @@
     (fn [x y]
       (f y x)))
 
+  (doc compose
+    "Returns the composition of two functions `f` and `g` for functions of any
+     airity; concretely, returns a function accepting the correct number of
+     arguments for `g`, applies `g` to those arguments, then applies `f` to the
+     result.
+
+    If you only need to compose functions that take a single argument (unary arity)
+    see `comp`. Comp also generates the form that corresponds to the composition,
+    compose contrarily evaluates 'eagerly' and returns a computed symbol.
+
+    For exmaple:
+
+    ```
+    ;; a silly composition
+    ((compose empty take) 3 [1 2 3 4 5])
+    ;; => []
+
+    (String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))
+    ;; => 'carp'
+
+    ;; comp for comparison
+    ((comp (curry + 1) (curry + 2)) 4)
+    ;; => (+ 1 (+ 2 4))
+    ```")
+  (defndynamic compose [f g]
+    ;; Recall that **unquoted** function names evaluate to their definitions in
+    ;; dynamic contexts, e.g. f = (dyanmic f [arg] body)
+    ;;
+    ;; Right now, this cannot handle anonymous functions because they cannot be passed to apply.
+    ;; and not anonymous functions.
+    ;; commands expand to (command <name>), fns expand to a non-list.
+    ;;
+    ;; TODO: Support passing anonymous functions.
+    (if (not (Dynamic.or (list? f) (list? g)))
+	(macro-error "compose can only compose named dynamic functions. To
+		     compose anonymous functions, such as curried functions,
+                     see comp.")
+        (let [f-name (cadr f)
+              g-name (cadr g)
+              arguments (caddr g)]
+          (list 'fn arguments
+            ;; Since we call an eval to apply g immediately, we wrap the args in an
+            ;; extra quote, otherwise, users would need to double quote any sequence of
+            ;; symbols such as '(p r a c)
+            (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
+
   ;; Dynamic.or already exists, but since it's a special form, it can't be passed
   ;; to higher order functions like reduce. So, we define an alternative here.
   (defndynamic or-internal [x y]
     (if x true y))
+
+  ;; Dynamic.and already exists, but since it's a special form, it can't be passed
+  ;; to higher order functions like reduce. So, we define an alternative here.
+  (defndynamic and-internal [x y]
+    (if x y false))
 
   (doc curry
     "Returns a curried function accepting a single argument, that applies f to x
@@ -155,7 +205,43 @@
     ```")
   (defndynamic curry [f x]
     (fn [y]
-      (f x y)))
+     (f x y)))
+
+  (doc curry*
+    "Curry functions of any airity.
+
+     For example:
+
+     ```
+     (map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
+     ;; => (((+ 1 4) (+ 2 5)) ((+ 1 6)))
+
+     ((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+     ;; => ((cons 1 (4 5)) (cons (2 (6))))
+
+     (defndynamic add-em-up [x y z] (+ (+ x y) z))
+     (map (curry* add-em-up 1 2) '(1 2 3))
+     ;; => (4 5 6)
+     ```")
+  (defndynamic curry* [f :rest args]
+    (let [f-name (cadr f)
+          all-args (caddr f)
+          unfilled-args (- (length all-args) (length args))
+          remaining (take unfilled-args all-args)
+          ;; Quote the arguments to retain expected behavior and avoid the need
+          ;; for double quotes in curried higher-orders, e.g. zip.
+          quote-args (map quoted args)]
+    (list 'fn remaining
+      ;; eval to execute the curried function.
+      ;; otherwise, this resolves to the form that will call the function, e.g. (add-three-vals 2 3 1)
+      (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
+      remaining list))))))))
+
+  ;; Higher-order functions can't currently accept primitives
+  ;; For now, wrapping primitives in a function allows us to pass them
+  ;; to HOFs like map.
+  (defndynamic quoted [x]
+    (list 'quote x))
 
   (doc reduce
     "Reduces or 'folds' a data literal, such as a list or array, into a single
@@ -164,6 +250,92 @@
     (if (empty? xs)
       x
       (reduce f (f x (car xs)) (cdr xs))))
+
+  (hidden unreduce-internal)
+  (defndynamic unreduce-internal [f x lim acc counter]
+    ;; Currently only works with anonymous functions and named functions.
+    ;; does not work with commands.
+    (if (not (Dynamic.or (array? acc) (list? acc)))
+      (macro-error
+	"Unreduce requires a dynamic data structure to collect results, such as
+         (list) or (array).")
+      (if (= counter lim)
+        acc
+        (unreduce-internal f (f x) lim (append acc (cons (eval (f x)) (empty acc))) (+ counter 1)))))
+
+  (doc unreduce
+    "Applies `f` to a starting value `x`, then generates a sequence of values
+     by successively applying `f` to the result `lim-1` times.
+     Collects results in the structure given by `acc`.
+
+     For example:
+
+     ```
+     (unreduce (curry + 1) 0 10 (list))
+     ;; => (1 2 3 4 5 6 7 8 9 10)
+     ```")
+  (defndynamic unreduce [f x lim acc]
+    (unreduce-internal f x lim acc 0))
+
+  (doc filter
+    "Returns a list containing only the elements of `xs` that satisify predicate `p`.
+
+     For example:
+
+     ```
+     (filter (fn [x] (= 'a x)) '(a b a b a b a b))
+     ;; => (a a a a)
+     ```")
+  (defndynamic filter [p xs]
+    (let [filter-fn (fn [x y] (if (p y) (append x (list y)) x))]
+      (reduce filter-fn (list) xs)))
+
+  (doc reverse
+    "Reverses the order of elements in an array or list.
+
+     For example:
+
+     ```
+     (reverse [1 2 3 4])
+     ;; => [4 3 2 1]
+     ```")
+  (defndynamic reverse [xs]
+    (if (array? xs)
+      (reduce (flip append) (array) (map array xs))
+      (reduce (flip append) (list) (map list xs))))
+
+  (doc empty
+    "Returns the empty form of `xs`.
+
+     For example:
+
+     ```
+     (empty '(1 2 3 4))
+     ;; => ()
+     (empty '[1 2 3 4])
+     ;; => []
+     ```")
+  (defndynamic empty [xs]
+    (if (array? xs)
+        (array)
+        (list)))
+
+  (doc take
+    "Returns a list containing the first `n` eleements of a list.
+
+     For example:
+
+     ```
+     (take 3 '(1 2 3 4 5))
+     ;; => (1 2 3)
+     ```")
+  (defndynamic take [n xs]
+    ;; A more straightforward impl is likely more efficient?
+    (let [indicies (unreduce (curry + 1) 0 n (list))
+          result (map cadr (zip list xs indicies))]
+      (if (array? xs)
+          (collect-into result array)
+          result)))
 
   (doc apply
     "Applies the function `f` to the provided argument list, passing each value
@@ -185,8 +357,12 @@
     ;; calls to map or zip (which uses apply) as appropriate--unless we support
     ;; the quoted function name argument in map-internal or the unquoted one in
     ;; apply, we can't use zip and map-internal in map.
+    (if (not (list? f))
+        (f argument-list)
     (let [function-name (list (cadr f))]
-      (append function-name argument-list)))
+      (if (array? argument-list)
+          (append function-name (collect-into argument-list list))
+          (append function-name argument-list)))))
 
   (hidden map-internal)
   (defndynamic map-internal [f xs acc]
@@ -234,27 +410,19 @@
     (zip-internal f forms (list)))
 
   (doc map
-    "Applies a function `f` to `forms` and returns a list dynamic data literal
-    containing the result of the function applications. If a single form is
-    provided, the function is applied to each member of the form. If multiple
-    forms are provided, the function is applied to the members of each form in
-    succession. If the members of a single form are exhuasted, the result of the
-    applications thus far is returned, and any remaining members in the other
-    forms are ignored.
+    "Applies a function `f` to each element in the list or array `xs` and
+     returns a list dynamic data literal containing the result of the function
+     applications.
 
-    For example:
+     For example:
       ```clojure
       '(map symbol? '(a b c))
       => (true true true)
-      '(map + '(1 2 3) '(4 5 6))
-      => ((+ 1 4) (2 5) (6 3))
-      '(map + '(1 2 3) '(4 5 6) '(7))
-      => ((+ 1 4 7))
+      '(map (curry + 1) '(1 2 3))
+      => (2 3 4)
       ```")
-  (defndynamic map [f :rest forms]
-    (if (= 1 (length forms))
-        (map-internal f (car forms) (list))
-        (zip-internal f forms (list))))
+  (defndynamic map [f xs]
+    (map-internal f xs (list)))
 )
 
 (defndynamic cond-internal [xs]

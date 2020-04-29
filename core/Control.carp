@@ -1,0 +1,21 @@
+;; This module contains functions that deal with functions, control flow, etc.
+
+(defmodule Control
+
+  (doc iterate "Apply function `f` `n` times, first to `start` and then to the result of `f`. TODO: Mention fix points.")
+  (sig iterate (Fn [Int, (Ref (Fn [a] a b) c), a] a))
+  (defn iterate [n f start]
+    (let-do [result start]
+      (for [i 0 n]
+        (set! result (~f result)))
+      result))
+
+  (doc iterate-until "Like `iterate`, but f is applied repeatedly until the predicate `pred` is true.")
+  (sig iterate-until (Fn [a, (Ref (Fn [b] b c) d), (Ref (Fn [b] Bool c) e), b] b))
+  (defn iterate-until [f pred start]
+    (let-do [result start]
+      (while (not (~pred &result))
+        (set! result (~f result)))
+      result))
+
+  )

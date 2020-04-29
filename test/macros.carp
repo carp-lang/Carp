@@ -68,6 +68,46 @@
     (Dynamic.and (= 'ace (Symbol.join (eval (Dynamic.car zipped))))
       (= 'dog (Symbol.join (eval (Dynamic.cadr zipped)))))))
 
+(defmacro test-curry []
+  (= 3 ((Dynamic.curry + 1) 2)))
+
+(defmacro test-flip []
+  (= 'Foo.Bar ((Dynamic.flip Symbol.prefix) 'Bar 'Foo)))
+
+(defmacro test-compose []
+  (= '() ((Dynamic.compose Dynamic.empty Dynamic.take) 2 '(1 2 3 4))))
+
+(defmacro test-reduce []
+  (= 10 (Dynamic.reduce + 0 '(1 2 3 4))))
+
+(defmacro test-unreduce []
+  (Dynamic.reduce Dynamic.and-internal true
+    (Dynamic.map 'eval
+      (Dynamic.zip = '(1 2 3 4) (Dynamic.unreduce (curry + 1) 0 4 (list))))))
+
+(defmacro test-filter []
+  (Dynamic.reduce Dynamic.and-internal true
+    (Dynamic.map 'eval
+      (Dynamic.zip = '('a 'a 'a 'a)
+        (Dynamic.map Dynamic.quoted
+	  (Dynamic.filter (fn [x] (= 'a x)) '(a b a b a b a b)))))))
+
+(defmacro test-empty []
+  ;; We can't compare '[] and '[] for some reason.
+  ;; But '() and '() are comparable
+  (Dynamic.and (= '() (Dynamic.empty '(1 2 3 4)))
+               (empty? (Dynamic.empty '[1 2 3 4]))))
+
+(defmacro test-reverse []
+  (Dynamic.reduce Dynamic.and-internal true
+    (Dynamic.map 'eval
+      (Dynamic.zip = '(4 3 2 1) (Dynamic.reverse '(1 2 3 4))))))
+
+(defmacro test-take []
+  (let [result  (Dynamic.take 2 '(1 2 3 4))]
+    (Dynamic.and (= 1 (car result ))
+                 (= '() (cddr result)))))
+
 (deftest test
   (assert-true test
                (test-let-do)
@@ -236,5 +276,32 @@
                "map works as expected")
   (assert-true test
                (test-zip)
-               "zip works as expected") 
+               "zip works as expected")
+  (assert-true test
+               (test-curry)
+               "curry works as expected")
+  (assert-true test
+               (test-flip)
+               "filp works as expected")
+  (assert-true test
+               (test-compose)
+               "compose works as expected")
+  (assert-true test
+               (test-reduce)
+               "reduce works as expected")
+  (assert-true test
+               (test-unreduce)
+               "unreduce works as expected")
+  (assert-true test
+               (test-filter)
+               "filter works as expected")
+  (assert-true test
+               (test-reverse)
+               "reverse works as expected")
+  (assert-true test
+               (test-empty)
+               "empty works as expected")
+  (assert-true test
+               (test-take)
+               "take works as expected")
 )
