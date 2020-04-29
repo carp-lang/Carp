@@ -291,34 +291,45 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ifRetVar
 
             -- Match
-            XObj (Match _) _ _ : expr@(XObj _ (Just exprInfo) (Just exprTy)) : rest ->
+            XObj (Match matchMode) _ _ : expr@(XObj _ (Just exprInfo) (Just exprTyNotFixed)) : rest ->
               let indent' = indent + indentAmount
                   retVar = freshVar i
                   isNotVoid = t /= Just UnitTy
                   sumTypeAsPath = SymPath [] (show exprTy)
+                  exprTy = exprTyNotFixed
 
-                  tagCondition :: String -> Ty -> XObj -> [String]
-                  tagCondition var caseTy (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _)) =
+                  tagCondition :: String -> String -> Ty -> XObj -> [String]
+                  tagCondition var periodOrArrow caseTy (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _)) =
                     -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
                     -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                     -- This requires a bunch of extra machinery though, so this will do for now...
-                    [var ++ "._tag == " ++ tagName caseTy (removeSuffix caseName)] ++ concat (zipWith (\c i -> tagCondition (var ++ "." ++ (removeSuffix caseName) ++ ".member" ++ show i) (forceTy c) c) caseMatchers [0..])
-                  tagCondition _ _ x =
+                    [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
+                      concat (zipWith (\c i -> tagCondition (var ++ "." ++ (removeSuffix caseName) ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
+                  tagCondition _ _ _ x =
                     []
                     --error ("tagCondition fell through: " ++ show x)
 
                   tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
 
-                  emitCaseMatcher :: String -> XObj -> Integer -> State EmitterState ()
-                  emitCaseMatcher caseName (XObj (Sym path _) i t) index =
+                  emitCaseMatcher :: String -> String -> XObj -> Integer -> State EmitterState ()
+                  emitCaseMatcher periodOrArrow caseName (XObj (Sym path _) i t) index =
                     let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
-                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ "." ++ mangle caseName ++
+                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ periodOrArrow ++ mangle caseName ++
                                      ".member" ++ show index ++ ";\n")
-                  emitCaseMatcher caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
-                    zipWithM_ (\x i -> emitCaseMatcher (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
-                  emitCaseMatcher _ xobj _ =
+                  emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
+                    zipWithM_ (\x i -> emitCaseMatcher "." (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
+                  emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
+
+                  removeOuterRefTyIfMatchRef :: Ty -> Ty
+                  removeOuterRefTyIfMatchRef t =
+                     case matchMode of
+                       MatchValue -> t
+                       MatchRef ->
+                         case t of
+                           RefTy inner _ -> inner
+                           _ -> error ("Failed to remove outer ref on type " ++ show t)
 
                   emitCase :: String -> Bool -> (XObj, XObj) -> State EmitterState ()
                   emitCase exprVar isFirst (caseLhs@(XObj (Lst (XObj Ref _ _ : caseMatchers)) _ _), caseExpr) =
@@ -327,10 +338,14 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        unless isFirst (appendToSrc "else ")
-                       appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar exprTy caseLhs) ++ ") {\n")
+                       let periodOrArrow =
+                             case matchMode of
+                               MatchValue -> "."
+                               MatchRef -> "->"
+                       appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar periodOrArrow (removeOuterRefTyIfMatchRef exprTy) caseLhs) ++ ") {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       zipWithM_ (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
+                       zipWithM_ (emitCaseMatcher periodOrArrow (removeSuffix caseName)) caseMatchers [0..]
                        emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
                     -- Single variable

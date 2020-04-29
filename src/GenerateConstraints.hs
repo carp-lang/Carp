@@ -113,7 +113,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                   returnConstraints = mapMaybe (\(_, rhs) -> mkRetConstr rhs) (pairwise cases)
 
                                   -- Each case lhs should have the same type as the expression matching on
-                                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint t exprType x expr xobj OrdArg) -- | TODO: Ord
+                                  mkExprConstr x@(XObj _ _ (Just t)) = Just (Constraint (wrapTyInRefIfMatchingRef t) exprType x expr xobj OrdArg) -- | TODO: Ord
                                   mkExprConstr _ = Nothing
                                   exprConstraints = mapMaybe (\(lhs, _) -> mkExprConstr lhs) (pairwise cases)
 
