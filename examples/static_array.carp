@@ -2,9 +2,3 @@
   (let-do [xs $[1 2 3 4 5]]
     (StaticArray.map! xs &(fn [x] (* @x 2)))
     (println* (StaticArray.reduce &(fn [total x] (+ total @x)) 0 xs))))
-
-(defn f []
-  (let [nested $[[1 2 3]
-                 [4 5 6]
-                 [7 8 9]]]
-    @(StaticArray.unsafe-nth nested 1)))
