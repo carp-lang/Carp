@@ -91,5 +91,26 @@
                 &(Nothing)
                 &(the (Maybe Int) (from-ptr NULL))
                 "from-ptr works on NULL/Nothing"
-  )
+                )
+
+  (assert-equal test
+                123
+                (match (the (Maybe (Maybe Int)) (Just (Just 123)))
+                  Nothing 0
+                  (Just (Nothing)) 0
+                  (Just (Just x)) x)
+                "Matching on nested Maybes."
+                )
+
+  (assert-equal test
+                123
+                (match (the (Maybe (Maybe (Maybe Int))) (Just (Just (Nothing))))
+                  Nothing 0
+                  (Just (Nothing)) 0
+                  (Just (Just (Just _))) 0
+                  (Just (Just (Nothing))) 123
+                  )
+                "Matching on nested Maybes."
+                )
+
 )
