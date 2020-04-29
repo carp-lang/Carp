@@ -950,3 +950,7 @@ isLiteral _ = False
 -- construct an empty list xobj
 emptyList :: XObj
 emptyList = XObj (Lst []) Nothing Nothing
+
+wrapInRefTyIfMatchRef :: MatchMode -> Ty -> Ty
+wrapInRefTyIfMatchRef MatchRef t = RefTy t (VarTy "whatever") -- TODO: Better name for the lifetime variable.
+wrapInRefTyIfMatchRef MatchValue t = t
