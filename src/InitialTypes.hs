@@ -261,7 +261,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
         XObj If _ _ : _ -> return (Left (InvalidObj If xobj))
 
         -- Match
-        matchExpr@(XObj Match _ _) : expr : cases ->
+        matchExpr@(XObj (Match _) _ _) : expr : cases ->
           do visitedExpr <- visit env expr
              visitedCases <- sequence <$>
               mapM (\(lhs, rhs) -> do let lhs' = uniquifyWildcardNames (helpWithParens lhs) -- Add parens if missing
@@ -279,7 +279,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst ([matchExpr, okExpr] ++ okCasesConcatenated))
                                   i (Just returnType))
 
-        XObj Match _ _ : _ -> return (Left (InvalidObj Match xobj))
+        XObj (Match m) _ _ : _ -> return (Left (InvalidObj (Match m) xobj))
 
         -- While (always return Unit)
         [whileExpr@(XObj While _ _), expr, body] ->

@@ -64,6 +64,6 @@
 (defn main []
   (let [s (Just @"Yo")
         r &s]
-    (match r
-      (ref (Just x)) (IO.println "just!")
-      (ref (Nothing)) (IO.println "nada"))))
+    (match-ref r
+      (Just x) (IO.println "just!")
+      (Nothing) (IO.println "nada"))))

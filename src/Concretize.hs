@@ -190,7 +190,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
          return $ do okVisitedValue <- visitedValue
                      return [theExpr, typeXObj, okVisitedValue]
 
-    visitList allowAmbig level env matchXObj@(XObj (Lst (matchExpr@(XObj Match _ _) : expr : rest)) _ _) =
+    visitList allowAmbig level env matchXObj@(XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : rest)) _ _) =
       do concretizeTypeOfXObj typeEnv expr
          visitedExpr <- visit allowAmbig level env expr
          mapM_ (concretizeTypeOfXObj typeEnv . snd) (pairwise rest)
@@ -971,7 +971,7 @@ manageMemory typeEnv globalEnv root =
                              okFalse <- visitedFalse
                              return (XObj (Lst [ifExpr, okExpr, del okTrue delsTrue, del okFalse delsFalse]) i t)
 
-            matchExpr@(XObj Match _ _) : expr : cases ->
+            matchExpr@(XObj (Match _) _ _) : expr : cases ->
               -- General idea of how to figure out what to delete in a 'match' statement:
               -- 1. Visit each case and investigate which variables are deleted in each one of the cases
               -- 2. Variables deleted in at least one case has to be deleted in all, so make a union U of all such vars

@@ -43,6 +43,8 @@ isLookupLocal :: SymbolMode -> Bool
 isLookupLocal (LookupLocal _) = True
 isLookupLocal _ = False
 
+data MatchMode = MatchValue | MatchRef deriving (Eq, Show)
+
 -- | The canonical Lisp object.
 data Obj = Sym SymPath SymbolMode
          | MultiSym String [SymPath] -- refering to multiple functions with the same name
@@ -65,7 +67,7 @@ data Obj = Sym SymPath SymbolMode
          | While
          | Break
          | If
-         | Match
+         | Match MatchMode
          | Mod Env
          | Deftype Ty
          | DefSumtype Ty
@@ -287,7 +289,8 @@ pretty = visit 0
             Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
             Closure elem _ -> "closure<" ++ pretty elem ++ ">"
             If -> "if"
-            Match -> "match"
+            Match MatchValue -> "match"
+            Match MatchRef -> "match-ref"
             While -> "while"
             Do -> "do"
             Let -> "let"
@@ -347,7 +350,7 @@ prettyUpTo max xobj =
             Fn _ captures -> ">"
             Closure elem _ -> ">"
             If -> ""
-            Match -> ""
+            Match _ -> ""
             While -> ""
             Do -> ""
             Let -> ""

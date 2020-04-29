@@ -102,7 +102,7 @@ expand eval ctx xobj =
                         Left err -> return (newCtx, Left err)
                         Right okX -> return (newCtx, Right (l ++ [[n, okX]]))
 
-        matchExpr@(XObj Match _ _) : (expr : rest)
+        matchExpr@(XObj (Match _) _ _) : (expr : rest)
           | null rest ->
               return (evalError ctx "I encountered a `match` without forms" (info xobj))
           | even (length rest) ->

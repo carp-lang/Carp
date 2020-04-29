@@ -65,7 +65,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [letExpr@(XObj Let _ _
                     newBody = setFullyQualifiedSymbols typeEnv globalEnv innerEnv' body
                 in  XObj (Lst [letExpr, XObj (Arr bindings') bindi bindt, newBody]) i t
 
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj Match _ _) : expr : casesXObjs)) i t) =
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst (matchExpr@(XObj (Match _) _ _) : expr : casesXObjs)) i t) =
   if even (length casesXObjs)
   then let newExpr = setFullyQualifiedSymbols typeEnv globalEnv env expr
            Just ii = i

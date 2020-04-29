@@ -99,7 +99,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                         insideTrueConstraints ++ insideFalseConstraints)
 
                            -- Match
-                           XObj Match _ _ : expr : cases ->
+                           XObj (Match matchMode) _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
                                 casesLhsConstraints <- fmap join (mapM (gen . fst) (pairwise cases))
                                 casesRhsConstraints <- fmap join (mapM (gen .snd) (pairwise cases))
@@ -136,6 +136,11 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                         casesRhsConstraints ++
                                         returnConstraints ++
                                         exprConstraints)
+
+                                  where wrapTyInRefIfMatchingRef t =
+                                          case matchMode of
+                                            MatchValue -> t
+                                            MatchRef -> RefTy t (VarTy "whatever")
 
                            -- While
                            [XObj While _ _, expr, body] ->

@@ -291,7 +291,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                      return ifRetVar
 
             -- Match
-            XObj Match _ _ : expr@(XObj _ (Just exprInfo) (Just exprTy)) : rest ->
+            XObj (Match _) _ _ : expr@(XObj _ (Just exprInfo) (Just exprTy)) : rest ->
               let indent' = indent + indentAmount
                   retVar = freshVar i
                   isNotVoid = t /= Just UnitTy
@@ -368,7 +368,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     quoteBackslashes ('\\':r) = "\\\\" ++ quoteBackslashes r
                     quoteBackslashes (x:r) = x : quoteBackslashes r
 
-            XObj Match _ _ : _ ->
+            XObj (Match _) _ _ : _ ->
               error "Fell through match."
 
             -- While
