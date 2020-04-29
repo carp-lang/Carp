@@ -8,11 +8,13 @@ import Obj
 import Types
 import Template
 import ToTemplate
-import ArrayTemplates
+import qualified ArrayTemplates
+import qualified StaticArrayTemplates
 import Commands
 import Parsing
 import Eval
 import Concretize
+import Debug.Trace (trace)
 
 -- | These modules will be loaded in order before any other code is evaluated.
 coreModules :: String -> [String]
@@ -26,23 +28,38 @@ arrayModule = Env { envBindings = bindings
                   , envUseModules = []
                   , envMode = ExternalEnv
                   , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateNth
-                                , templateAllocate
-                                , templateEMap
-                                , templateEFilter
-                                , templateRaw
-                                , templateUnsafeRaw
-                                , templateAset
-                                , templateAsetBang
-                                , templateAsetUninitializedBang
-                                , templateLength
-                                , templatePushBack
-                                , templatePushBackBang
-                                , templatePopBack
-                                , templatePopBackBang
-                                , templateDeleteArray
-                                , templateCopyArray
-                                , templateStrArray
+  where bindings = Map.fromList [ ArrayTemplates.templateNth
+                                , ArrayTemplates.templateAllocate
+                                , ArrayTemplates.templateEMap
+                                , ArrayTemplates.templateEFilter
+                                , ArrayTemplates.templateRaw
+                                , ArrayTemplates.templateUnsafeRaw
+                                , ArrayTemplates.templateAset
+                                , ArrayTemplates.templateAsetBang
+                                , ArrayTemplates.templateAsetUninitializedBang
+                                , ArrayTemplates.templateLength
+                                , ArrayTemplates.templatePushBack
+                                , ArrayTemplates.templatePushBackBang
+                                , ArrayTemplates.templatePopBack
+                                , ArrayTemplates.templatePopBackBang
+                                , ArrayTemplates.templateDeleteArray
+                                , ArrayTemplates.templateCopyArray
+                                , ArrayTemplates.templateStrArray
+                                ]
+
+-- | The static array module
+staticArrayModule :: Env
+staticArrayModule = Env { envBindings = bindings
+                        , envParent = Nothing
+                        , envModuleName = Just "StaticArray"
+                        , envUseModules = []
+                        , envMode = ExternalEnv
+                        , envFunctionNestingLevel = 0 }
+  where bindings = Map.fromList [ StaticArrayTemplates.templateUnsafeNth
+                                , StaticArrayTemplates.templateLength
+                                , StaticArrayTemplates.templateDeleteArray
+                                , StaticArrayTemplates.templateAsetBang
+                                , StaticArrayTemplates.templateStrArray
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
@@ -56,6 +73,7 @@ pointerModule = Env { envBindings = bindings
   where bindings = Map.fromList [ templatePointerCopy
                                 , templatePointerEqual
                                 , templatePointerToRef
+                                , templatePointerToValue
                                 , templatePointerAdd
                                 , templatePointerSub
                                 , templatePointerWidth
@@ -96,11 +114,23 @@ templatePointerToRef = defineTemplate
                         ,"}"])
   (const [])
 
+
+-- | A template function for converting pointers to values (it's up to the user of this function to make sure that is a safe operation).
+templatePointerToValue = defineTemplate
+  (SymPath ["Pointer"] "to-value")
+  (FuncTy [PointerTy (VarTy "p")] (VarTy "p") StaticLifetimeTy)
+  "converts a pointer to a value. The user will have to ensure themselves that this is a safe operation."
+  (toTemplate "$p $NAME ($p *p)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    return *p;"
+                        ,"}"])
+  (const [])
+
 templatePointerAdd = defineTemplate
   (SymPath ["Pointer"] "add")
   (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "adds a long integer value to a pointer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate "$p* $NAME ($p *p, Long x)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p + x;"
                         ,"}"])
@@ -110,7 +140,7 @@ templatePointerSub = defineTemplate
   (SymPath ["Pointer"] "sub")
   (FuncTy [PointerTy (VarTy "p"), LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "subtracts a long integer value from a pointer."
-  (toTemplate "$p* $NAME ($p *p, long x)")
+  (toTemplate "$p* $NAME ($p *p, Long x)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return p - x;"
                         ,"}"])
@@ -120,7 +150,7 @@ templatePointerWidth = defineTemplate
   (SymPath ["Pointer"] "width")
   (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "gets the byte size of a pointer."
-  (toTemplate "long $NAME ($p *p)")
+  (toTemplate "Long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return sizeof(*p);"
                         ,"}"])
@@ -130,9 +160,9 @@ templatePointerToLong = defineTemplate
   (SymPath ["Pointer"] "to-long")
   (FuncTy [PointerTy (VarTy "p")] LongTy StaticLifetimeTy)
   "converts a pointer to a long integer."
-  (toTemplate "long $NAME ($p *p)")
+  (toTemplate "Long $NAME ($p *p)")
   (toTemplate $ unlines ["$DECL {"
-                        ,"    return (long)p;"
+                        ,"    return (Long)p;"
                         ,"}"])
   (const [])
 
@@ -140,7 +170,7 @@ templatePointerFromLong = defineTemplate
   (SymPath ["Pointer"] "from-long")
   (FuncTy [LongTy] (PointerTy (VarTy "p")) StaticLifetimeTy)
   "converts a long integer to a pointer."
-  (toTemplate "$p* $NAME (long p)")
+  (toTemplate "$p* $NAME (Long p)")
   (toTemplate $ unlines ["$DECL {"
                         ,"    return ($p*)p;"
                         ,"}"])
@@ -373,7 +403,7 @@ unsafeModule = Env { envBindings = bindings
                    , envUseModules = []
                    , envMode = ExternalEnv
                    , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateCoerce ]
+  where bindings = Map.fromList [ templateCoerce, templateLeak ]
 
 -- | A template for coercing (casting) a type to another type
 templateCoerce :: (String, Binder)
@@ -384,6 +414,17 @@ templateCoerce = defineTemplate
   (toTemplate "$a $NAME ($b b)")
   (toTemplate $ unlines ["$DECL {"
                         ,"   return ($a)b;"
+                        ,"}"])
+  (const [])
+
+-- | A template function for preventing destructor from being run on a value (it's up to the user of this function to make sure that memory is freed).
+templateLeak = defineTemplate
+  (SymPath ["Unsafe"] "leak")
+  (FuncTy [(VarTy "a")] UnitTy StaticLifetimeTy)
+  "prevents a destructor from being run on a value a."
+  (toTemplate "void $NAME ($a a)")
+  (toTemplate $ unlines ["$DECL {"
+                        ,"    // Leak"
                         ,"}"])
   (const [])
 
@@ -401,11 +442,12 @@ startingGlobalEnv noArray =
                                   , templateEnumToInt
                                   ]
                    ++ (if noArray then [] else [("Array", Binder emptyMeta (XObj (Mod arrayModule) Nothing Nothing))])
+                   ++ [("StaticArray", Binder emptyMeta (XObj (Mod staticArrayModule) Nothing Nothing))]
                    ++ [("Pointer",  Binder emptyMeta (XObj (Mod pointerModule) Nothing Nothing))]
                    ++ [("System",   Binder emptyMeta (XObj (Mod systemModule) Nothing Nothing))]
                    ++ [("Dynamic",  Binder emptyMeta (XObj (Mod dynamicModule) Nothing Nothing))]
                    ++ [("Function", Binder emptyMeta (XObj (Mod functionModule) Nothing Nothing))]
-                   ++ [("Unsafe", Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
+                   ++ [("Unsafe",   Binder emptyMeta (XObj (Mod unsafeModule) Nothing Nothing))]
 
 -- | The type environment (containing deftypes and interfaces) before any code is run.
 startingTypeEnv :: Env
@@ -422,11 +464,11 @@ startingTypeEnv = Env { envBindings = bindings
             builtInSymbolInfo
 
           , interfaceBinder "str" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (SymPath ["Array"] "str" : registerFunctionFunctionsWithInterface "str")
+            ((SymPath ["Array"] "str") : (SymPath ["StaticArray"] "str") : registerFunctionFunctionsWithInterface "str")
             builtInSymbolInfo
 
           , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (registerFunctionFunctionsWithInterface "prn")
+            ((SymPath ["StaticArray"] "str") : (registerFunctionFunctionsWithInterface "prn")) -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
             builtInSymbolInfo
           ]
         builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)

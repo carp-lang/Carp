@@ -98,6 +98,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="StaticArray.html">
+                                StaticArray
+                            </a>
+                        </li>
+                        <li>
                             <a href="IO.html">
                                 IO
                             </a>
@@ -362,6 +367,25 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#and-internal">
+                    <h3 id="and-internal">
+                        and-internal
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (and-internal x y)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#append">
                     <h3 id="append">
                         append
@@ -378,6 +402,27 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#apply">
+                    <h3 id="apply">
+                        apply
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (apply f argument-list)
+                </pre>
+                <p class="doc">
+                    <p>Applies the function <code>f</code> to the provided argument list, passing each value
+in the list as an argument to the function.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -1085,6 +1130,48 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#compose">
+                    <h3 id="compose">
+                        compose
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (compose f g)
+                </pre>
+                <p class="doc">
+                    <p>Returns the composition of two functions <code>f</code> and <code>g</code> for functions of any
+airity; concretely, returns a function accepting the correct number of
+arguments for <code>g</code>, applies <code>g</code> to those arguments, then applies <code>f</code> to the
+result.</p>
+<pre><code>If you only need to compose functions that take a single argument (unary arity)
+see `comp`. Comp also generates the form that corresponds to the composition,
+compose contrarily evaluates 'eagerly' and returns a computed symbol.
+
+For exmaple:
+
+```
+;; a silly composition
+((compose empty take) 3 [1 2 3 4 5])
+;; =&gt; []
+
+(String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))
+;; =&gt; 'carp'
+
+;; comp for comparison
+((comp (curry + 1) (curry + 2)) 4)
+;; =&gt; (+ 1 (+ 2 4))
+```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#cons">
                     <h3 id="cons">
                         cons
@@ -1120,6 +1207,68 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#curry">
+                    <h3 id="curry">
+                        curry
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (curry f x)
+                </pre>
+                <p class="doc">
+                    <p>Returns a curried function accepting a single argument, that applies f to x
+and then to the following argument.</p>
+<pre><code>For example,
+
+```
+(map (curry Symbol.prefix 'Foo) '(bar baz))
+;; =&gt; (Foo.bar Foo.baz)
+```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#curry*">
+                    <h3 id="curry*">
+                        curry*
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (curry* f :rest args)
+                </pre>
+                <p class="doc">
+                    <p>Curry functions of any airity.</p>
+<pre><code> For example:
+
+ ```
+ (map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
+ ;; =&gt; (((+ 1 4) (+ 2 5)) ((+ 1 6)))
+
+ ((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+ ;; =&gt; ((cons 1 (4 5)) (cons (2 (6))))
+
+ (defndynamic add-em-up [x y z] (+ (+ x y) z))
+ (map (curry* add-em-up 1 2) '(1 2 3))
+ ;; =&gt; (4 5 6)
+ ```
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1180,6 +1329,55 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#empty">
+                    <h3 id="empty">
+                        empty
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (empty xs)
+                </pre>
+                <p class="doc">
+                    <p>Returns the empty form of <code>xs</code>.</p>
+<pre><code> For example:
+
+ ```
+ (empty '(1 2 3 4))
+ ;; =&gt; ()
+ (empty '[1 2 3 4])
+ ;; =&gt; []
+ ```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#empty?">
+                    <h3 id="empty?">
+                        empty?
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (empty? xs)
+                </pre>
+                <p class="doc">
+                    <p>Returns true if the provided data literal is empty, false otherwise.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#env">
                     <h3 id="env">
                         env
@@ -1194,25 +1392,6 @@
                 <span>
                     
                 </span>
-                <p class="doc">
-                    
-                </p>
-            </div>
-            <div class="binder">
-                <a class="anchor" href="#eval">
-                    <h3 id="eval">
-                        eval
-                    </h3>
-                </a>
-                <div class="description">
-                    macro
-                </div>
-                <p class="sig">
-                    Macro
-                </p>
-                <pre class="args">
-                    (eval form)
-                </pre>
                 <p class="doc">
                     
                 </p>
@@ -1237,6 +1416,25 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#evaluate">
+                    <h3 id="evaluate">
+                        evaluate
+                    </h3>
+                </a>
+                <div class="description">
+                    macro
+                </div>
+                <p class="sig">
+                    Macro
+                </p>
+                <pre class="args">
+                    (evaluate form)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#expand">
                     <h3 id="expand">
                         expand
@@ -1253,6 +1451,60 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#filter">
+                    <h3 id="filter">
+                        filter
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (filter p xs)
+                </pre>
+                <p class="doc">
+                    <p>Returns a list containing only the elements of <code>xs</code> that satisify predicate <code>p</code>.</p>
+<pre><code> For example:
+
+ ```
+ (filter (fn [x] (= 'a x)) '(a b a b a b a b))
+ ;; =&gt; (a a a a)
+ ```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#flip">
+                    <h3 id="flip">
+                        flip
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (flip f)
+                </pre>
+                <p class="doc">
+                    <p>Flips the arguments of a function <code>f</code>.</p>
+<pre><code>For example,
+
+```
+((flip Symbol.prefix) 'Bar 'Foo)
+=&gt; ;; (Foo.Bar)
+```
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1446,6 +1698,56 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#map">
+                    <h3 id="map">
+                        map
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (map f xs)
+                </pre>
+                <p class="doc">
+                    <p>Applies a function <code>f</code> to each element in the list or array <code>xs</code> and
+returns a list dynamic data literal containing the result of the function
+applications.</p>
+<pre><code> For example:
+  ```clojure
+  '(map symbol? '(a b c))
+  =&gt; (true true true)
+  '(map (curry + 1) '(1 2 3))
+  =&gt; (2 3 4)
+  ```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#no-echo">
+                    <h3 id="no-echo">
+                        no-echo
+                    </h3>
+                </a>
+                <div class="description">
+                    doc-stub
+                </div>
+                <p class="sig">
+                    a
+                </p>
+                <span>
+                    
+                </span>
+                <p class="doc">
+                    <p>Turn off debug printing in the compiler.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#not">
                     <h3 id="not">
                         not
@@ -1497,6 +1799,25 @@
                 </p>
                 <pre class="args">
                     (nthcdr n pair)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#or-internal">
+                    <h3 id="or-internal">
+                        or-internal
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (or-internal x y)
                 </pre>
                 <p class="doc">
                     
@@ -1560,6 +1881,25 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#quoted">
+                    <h3 id="quoted">
+                        quoted
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (quoted x)
+                </pre>
+                <p class="doc">
+                    
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#read-file">
                     <h3 id="read-file">
                         read-file
@@ -1576,6 +1916,27 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reduce">
+                    <h3 id="reduce">
+                        reduce
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (reduce f x xs)
+                </pre>
+                <p class="doc">
+                    <p>Reduces or 'folds' a data literal, such as a list or array, into a single
+value through successive applications of <code>f</code>.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -1614,6 +1975,33 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#reverse">
+                    <h3 id="reverse">
+                        reverse
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (reverse xs)
+                </pre>
+                <p class="doc">
+                    <p>Reverses the order of elements in an array or list.</p>
+<pre><code> For example:
+
+ ```
+ (reverse [1 2 3 4])
+ ;; =&gt; [4 3 2 1]
+ ```
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1712,6 +2100,62 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#take">
+                    <h3 id="take">
+                        take
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (take n xs)
+                </pre>
+                <p class="doc">
+                    <p>Returns a list containing the first <code>n</code> eleements of a list.</p>
+<pre><code> For example:
+
+ ```
+ (take 3 '(1 2 3 4 5))
+ ;; =&gt; (1 2 3)
+ ```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unreduce">
+                    <h3 id="unreduce">
+                        unreduce
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (unreduce f x lim acc)
+                </pre>
+                <p class="doc">
+                    <p>Applies <code>f</code> to a starting value <code>x</code>, then generates a sequence of values
+by successively applying <code>f</code> to the result <code>lim-1</code> times.
+Collects results in the structure given by <code>acc</code>.</p>
+<pre><code> For example:
+
+ ```
+ (unreduce (curry + 1) 0 10 (list))
+ ;; =&gt; (1 2 3 4 5 6 7 8 9 10)
+ ```
+</code></pre>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#write-file">
                     <h3 id="write-file">
                         write-file
@@ -1728,6 +2172,50 @@
                 </span>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#zip">
+                    <h3 id="zip">
+                        zip
+                    </h3>
+                </a>
+                <div class="description">
+                    dynamic
+                </div>
+                <p class="sig">
+                    Dynamic
+                </p>
+                <pre class="args">
+                    (zip f :rest forms)
+                </pre>
+                <p class="doc">
+                    <p>Returns the <em>form</em> that results from applying  a function <code>f</code> to each of
+the values supplied in <code>forms</code>.</p>
+<pre><code>If the members of a single form are exhuasted, the result of the
+applications thus far is returned, and any remaining members in the other
+forms are ignored.
+
+For example,
+
+```
+(zip + '(1 2 3) '(4 5 6))
+;; =&gt; ((+ 1 4) (+ 2 5) (+ 3 6))
+```
+
+It's important to note that zip operates on forms, and that the form
+returned by zip may not be evaluable by itself. For instance, to actually
+transform the result in the example above into something Carp can
+evaluate, we need to wrap each member of the list in a `do`:
+
+```
+(append (list 'do) (zip + '(1 2 3) '(4 5 6)))
+;; =&gt; (do (+ 1 4) (+ 2 5) (+ 3 6))
+(eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))
+;; =&gt; 9 ;; do returns the value of the last form in its body
+```
+</code></pre>
+
                 </p>
             </div>
         </div>

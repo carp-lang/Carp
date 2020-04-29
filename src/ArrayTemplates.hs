@@ -325,7 +325,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
-deleteTy typeEnv env (StructTy "Array" [innerType]) =
+deleteTy typeEnv env (StructTy _ [innerType]) =
   [ TokC   "    for(int i = 0; i < a.len; i++) {\n"
   , TokC $ "    " ++ insideArrayDeletion typeEnv env innerType "i"
   , TokC   "    }\n"
@@ -334,7 +334,7 @@ deleteTy typeEnv env (StructTy "Array" [innerType]) =
 deleteTy _ _ _ = []
 
 initTy :: Ty -> [String]
-initTy (StructTy "Array" [innerType@(FuncTy _ _ _)]) =
+initTy (StructTy "Array" [innerType@FuncTy{}]) =
   [ "    // initialize each Lambda struct "
   , "    for(int i = 0; i < a.len; i++) {"
   , "    " ++ insideArrayInitLambda innerType "i"
@@ -431,7 +431,7 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
 
 -- | TODO: move this into the templateStrArray function?
 strTy :: TypeEnv -> Env -> Ty -> [Token]
-strTy typeEnv env (StructTy "Array" [innerType]) =
+strTy typeEnv env (StructTy _ [innerType]) =
   [ TokC   ""
   , TokC   "  String temp = NULL;\n"
   , TokC $ calculateStrSize typeEnv env innerType

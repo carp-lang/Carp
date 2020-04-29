@@ -27,6 +27,7 @@
            Char
            Pattern
            Array
+           StaticArray
            IO
            System
            Debug

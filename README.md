@@ -1,6 +1,6 @@
 # Carp
 
-[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/eriksvedang/Carp](https://badges.gitter.im/eriksvedang/Carp.svg)](https://gitter.im/eriksvedang/Carp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![CI](https://github.com/carp-lang/Carp/workflows/CI/badge.svg)](https://github.com/carp-lang/Carp/actions?query=workflow%3ACI)
 
 <img src="https://github.com/carp-lang/Carp/blob/master/img/carp_logo_300_c.png" alt="Logo" align="right" />
 
@@ -67,6 +67,8 @@ To build this example, save it to a file called 'example.carp' and load it with 
 * Joel Kaasinen ([@opqdonut](https://github.com/opqdonut))
 * Eric Shimizu Karbstein ([@GrayJack](https://github.com/GrayJack))
 * Jorge Acereda ([@jacereda](https://github.com/jacereda))
+* Scott Olsen ([@scolsen](https://github.com/scolsen))
+* Tim Dévé ([@timdeve](https://github.com/TimDeve))
 
 Are you missing from the contributors list? Please send a pull request!
 

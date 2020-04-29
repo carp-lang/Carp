@@ -1,0 +1,42 @@
+(defmodule StaticArray
+
+  (defndynamic foreach-internal [var xs expr]
+    (let [xsym (gensym-with 'xs)
+          len (gensym-with 'len)
+          i (gensym-with 'i)]
+      (list 'let [xsym xs
+                  len (list 'StaticArray.length xsym)]
+            (list 'for [i 0 len]
+                  (list 'let [var (list 'StaticArray.unsafe-nth xsym i)]
+                        expr)))))
+
+  ;; NOTE: Exact copy of the Array.foreach macro, could be made "generic" by removing the module prefixes.
+  (defmacro foreach [binding expr]
+    (StaticArray.foreach-internal (car binding) (cadr binding) expr))
+
+  (doc map! "Maps a function over the static array `xs`, mutating it in place. The difference to Array.endo-map (which does the same thing internally) is that this function takes a ref (since you can never have static arrays as values) and that it returns ().")
+  (defn map! [xs f]
+    (for [i 0 (StaticArray.length xs)]
+      (StaticArray.aset! xs i (~f (StaticArray.unsafe-nth xs i)))))
+
+  ;; NOTE: Exact copy of the Array.reduce function.
+  (defn reduce [f x xs]
+    (let [total x]
+      (do
+        (for [i 0 (StaticArray.length xs)]
+          (set! total (~f total (StaticArray.unsafe-nth xs i))))
+        total)))
+
+  (doc = "compares two static arrays.")
+  (defn = [a b]
+    (if (/= (StaticArray.length a) (StaticArray.length b))
+      false
+      (let-do [eq true]
+        (for [i 0 (StaticArray.length a)]
+          (when (/= (StaticArray.unsafe-nth a i) (StaticArray.unsafe-nth b i))
+            (do
+              (set! eq false)
+              (break))))
+        eq)))
+
+  )

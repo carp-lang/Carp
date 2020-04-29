@@ -23,8 +23,8 @@
 
 (load "Interfaces.carp")
 (load "Bool.carp")
-(load "Generics.carp")
 (load "Macros.carp")
+(load "Generics.carp")
 (load "Maybe.carp")
 (load "Result.carp")
 (load "Dynamic.carp")
@@ -35,6 +35,7 @@
 (load "Double.carp")
 (load "Float.carp")
 (load "Tuples.carp")
+(load "StaticArray.carp")
 (load "Array.carp")
 (load "Char.carp")
 (load "String.carp")
@@ -50,3 +51,4 @@
 (load "Heap.carp")
 (load "Sort.carp")
 (load "Binary.carp")
+(load "Control.carp")

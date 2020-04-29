@@ -37,7 +37,7 @@ setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [defn@(XObj (Defn _) _
       functionEnv = Env Map.empty (Just envWithSelf) Nothing [] InternalEnv 0
       envWithArgs = foldl' (\e arg@(XObj (Sym (SymPath _ argSymName) _) _ _) -> extendEnv e argSymName arg) functionEnv argsArr
   in  XObj (Lst [defn, sym, args, setFullyQualifiedSymbols typeEnv globalEnv envWithArgs body]) i t
-setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _ _) _ _),
+setFullyQualifiedSymbols typeEnv globalEnv env (XObj (Lst [fn@(XObj (Fn _ _) _ _),
                                                  args@(XObj (Arr argsArr) _ _),
                                                  body])
                                       i t) =
@@ -147,7 +147,7 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
               (e, Binder _ local) : _ -> XObj (Sym (getPath local) (LookupLocal (captureOrNot e))) i t
             -- There are no local bindings, this is allowed to become a multi lookup symbol:
               [] ->
-                --(trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
+                -- (trace $ "Turned " ++ show path ++ " into multisym: " ++ joinWithComma (map (show . (\(e, b) -> (getPath (binderXObj b), safeEnvModuleName e, envMode e))) multiple)) $
                 case path of
                   (SymPath [] name) ->
                      -- Create a MultiSym!
@@ -172,6 +172,11 @@ setFullyQualifiedSymbols typeEnv globalEnv localEnv xobj@(XObj (Sym path _) i t)
 setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (Arr array) i t) =
   let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
   in  XObj (Arr array') i t
+
+setFullyQualifiedSymbols typeEnv globalEnv env xobj@(XObj (StaticArr array) i t) =
+  let array' = map (setFullyQualifiedSymbols typeEnv globalEnv env) array
+  in  XObj (StaticArr array') i t
+
 setFullyQualifiedSymbols _ _ _ xobj = xobj
 
 isExternalFunction :: XObj -> Bool

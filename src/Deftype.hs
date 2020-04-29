@@ -222,7 +222,7 @@ concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) m
          memberPairs = memberXObjsToPairs correctedMembers
      in  (toTemplate $ "$p $NAME(" ++ joinWithComma (map memberArg memberPairs) ++ ")"))
     (const (tokensForInit allocationMode typeName membersXObjs))
-    (\(FuncTy _ _ _) -> [])
+    (\FuncTy{} -> [])
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)

@@ -77,13 +77,14 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Command _)        -> return (Right (xobj { ty = Just DynamicTy }))
                        (Lst _)            -> visitList env xobj
                        (Arr _)            -> visitArray env xobj
+                       (StaticArr _)      -> visitStaticArray env xobj
                        (Dict _)           -> visitDictionary env xobj
                        (Sym symPath _)    -> visitSymbol env xobj symPath
                        (MultiSym _ paths) -> visitMultiSym env xobj paths
                        (InterfaceSym _)   -> visitInterfaceSym env xobj
                        e@(Defn _)         -> return (Left (InvalidObj e xobj))
                        Def                -> return (Left (InvalidObj Def xobj))
-                       e@(Fn _ _ _)       -> return (Left (InvalidObj e xobj))
+                       e@(Fn _ _)         -> return (Left (InvalidObj e xobj))
                        Let                -> return (Left (InvalidObj Let xobj))
                        If                 -> return (Left (InvalidObj If xobj))
                        While              -> return (Left (InvalidObj While xobj))
@@ -147,6 +148,16 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
 
     visitArray _ _ = error "The function 'visitArray' only accepts XObj:s with arrays in them."
 
+    visitStaticArray :: Env -> XObj -> State Integer (Either TypeError XObj)
+    visitStaticArray env (XObj (StaticArr xobjs) i _) =
+      do visited <- mapM (visit env) xobjs
+         arrayVarTy <- genVarTy
+         lt <- genVarTy
+         return $ do okVisited <- sequence visited
+                     Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy "StaticArray" [arrayVarTy]) lt)))
+
+    visitStaticArray _ _ = error "The function 'visitStaticArray' only accepts XObj:s with arrays in them."
+
     visitDictionary :: Env -> XObj -> State Integer (Either TypeError XObj)
     visitDictionary env (XObj (Dict xobjs) i _) =
       do visited <- mapM (visit env) xobjs
@@ -179,10 +190,10 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          return (XObj (Lst [defn, nameSymbol, XObj (Arr okArgs) argsi argst, okBody]) i funcTy)
 
         [defn@(XObj (Defn _) _ _), XObj (Sym _ _) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj))
-        (XObj defn@(Defn _) _ _) : _  -> return (Left (InvalidObj defn xobj))
+        XObj defn@(Defn _) _ _ : _  -> return (Left (InvalidObj defn xobj))
 
         -- Fn
-        [fn@(XObj (Fn _ _ _) _ _), XObj (Arr argList) argsi argst, body] ->
+        [fn@(XObj (Fn _ _) _ _), XObj (Arr argList) argsi argst, body] ->
           do (argTypes, returnType, funcScopeEnv) <- getTys env argList
              lt <- genVarTy
              let funcTy = Just (FuncTy argTypes returnType lt)
@@ -193,8 +204,8 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                          let final = XObj (Lst [fn, XObj (Arr okArgs) argsi argst, okBody]) i funcTy
                          return final --(trace ("FINAL: " ++ show final) final)
 
-        [XObj (Fn _ _ _ ) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
-        XObj fn@(Fn _ _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
+        [XObj (Fn _ _ ) _ _, XObj (Arr _) _ _] -> return (Left (NoFormsInBody xobj)) -- TODO: Special error message for lambdas needed?
+        XObj fn@(Fn _ _) _ _ : _  -> return (Left (InvalidObj fn xobj))
 
         -- Def
         [def@(XObj Def _ _), nameSymbol, expression]->

@@ -38,8 +38,8 @@ double Double_from_MINUS_int(int x) {
     return (double)x;
 }
 
-long Double_to_MINUS_bytes(double x) {
-    long y;
+Long Double_to_MINUS_bytes(double x) {
+    Long y;
     memcpy(&y, &x, sizeof(double));
     return y;
 }
@@ -52,11 +52,11 @@ double Double_from_MINUS_float(float x) {
     return (double)x;
 }
 
-long Double_to_MINUS_long(double x) {
-    return (long)x;
+Long Double_to_MINUS_long(double x) {
+    return (Long)x;
 }
 
-double Double_from_MINUS_long(long x) {
+double Double_from_MINUS_long(Long x) {
     return (double)x;
 }
 

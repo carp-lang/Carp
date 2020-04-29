@@ -98,6 +98,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="StaticArray.html">
+                                StaticArray
+                            </a>
+                        </li>
+                        <li>
                             <a href="IO.html">
                                 IO
                             </a>
@@ -206,7 +211,7 @@
                     (assert-exit state exit-code f descr)
                 </pre>
                 <p class="doc">
-                    <p>Assert that function f aborts with OS signal signal.</p>
+                    <p>Assert that function f exits with exit code exit-code.</p>
 
                 </p>
             </div>
@@ -286,7 +291,8 @@
                     (assert-signal state signal x descr)
                 </pre>
                 <p class="doc">
-                    
+                    <p>Assert that function f aborts with OS signal signal.</p>
+
                 </p>
             </div>
             <div class="binder">

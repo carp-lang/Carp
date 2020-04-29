@@ -164,6 +164,10 @@ getEnv env (p:ps) = case Map.lookup p (envBindings env) of
                       Just _ -> error "Can't get non-env."
                       Nothing -> error "Can't get env."
 
+contextEnv :: Context -> Env
+contextEnv Context{contextInternalEnv=Just e} = e
+contextEnv Context{contextGlobalEnv=e, contextPath=p} = getEnv e p
+
 -- | Checks if an environment is "external", meaning it's either the global scope or a module scope.
 envIsExternal :: Env -> Bool
 envIsExternal env =
@@ -188,7 +192,7 @@ isExternalType _ _ =
 -- | Is this type managed - does it need to be freed?
 isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
-  (name == "Array") || (name == "Dictionary") || (
+  (name == "Array") || (name == "StaticArray") || (name == "Dictionary") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
          Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
          Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
@@ -198,12 +202,12 @@ isManaged typeEnv (StructTy name _) =
     )
 isManaged _ StringTy  = True
 isManaged _ PatternTy = True
-isManaged _ (FuncTy _ _ _) = True
+isManaged _ FuncTy{} = True
 isManaged _ _ = False
 
 -- | Is this type a function type?
 isFunctionType :: Ty -> Bool
-isFunctionType (FuncTy _ _ _) = True
+isFunctionType FuncTy{} = True
 isFunctionType _ = False
 
 -- | Is this type a struct type?

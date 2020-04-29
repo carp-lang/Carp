@@ -54,10 +54,12 @@ data Obj = Sym SymPath SymbolMode
          | Bol Bool
          | Lst [XObj]
          | Arr [XObj]
+         | StaticArr [XObj]
          | Dict (Map.Map XObj XObj)
+         | Closure XObj ClosureContext
          | Defn (Maybe (Set.Set XObj)) -- if this is a lifted lambda it needs the set of captured variables
          | Def
-         | Fn (Maybe SymPath) (Set.Set XObj) FnEnv -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
+         | Fn (Maybe SymPath) (Set.Set XObj) -- the name of the lifted function, the set of variables this lambda captures, and a dynamic environment
          | Do
          | Let
          | While
@@ -93,7 +95,9 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
-newtype CommandFunctionType = CommandFunction { getCommand :: [XObj] -> StateT Context IO (Either EvalError XObj) }
+type CommandCallback = Context -> [XObj] -> IO (Context, (Either EvalError XObj))
+
+newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
 
 instance Eq CommandFunctionType where
   a == b = True
@@ -261,10 +265,11 @@ pretty = visit 0
           case obj xobj of
             Lst lst -> "(" ++ joinWithSpace (map (visit indent) lst) ++ ")"
             Arr arr -> "[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
+            StaticArr arr -> "$[" ++ joinWithSpace (map (visit indent) arr) ++ "]"
             Dict dict -> "{" ++ joinWithSpace (map (visit indent) (concatMap (\(a, b) -> [a, b]) (Map.toList dict))) ++ "}"
             Num IntTy num -> show (round num :: Int)
             Num LongTy num -> show num ++ "l"
-            Num ByteTy num -> show num
+            Num ByteTy num -> show num ++ "b"
             Num FloatTy num -> show num ++ "f"
             Num DoubleTy num -> show num
             Num _ _ -> error "Invalid number type."
@@ -279,7 +284,8 @@ pretty = visit 0
                                               Just captures -> " <" ++ prettyCaptures captures ++ ">"
                                               Nothing -> ""
             Def -> "def"
-            Fn _ captures _ -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
+            Fn _ captures -> "fn" ++ " <" ++ prettyCaptures captures ++ ">"
+            Closure elem _ -> "closure<" ++ pretty elem ++ ">"
             If -> "if"
             Match -> "match"
             While -> "while"
@@ -308,16 +314,82 @@ pretty = visit 0
             Interface _ _ -> "interface"
             With -> "with"
 
+prettyUpTo :: Int -> XObj -> String
+prettyUpTo max xobj =
+  let prettied = pretty xobj
+  in if length prettied > max
+     then take max prettied ++ "..." ++ end
+     else prettied
+  where end =
+          -- we match all of them explicitly to get errors if we forget one
+          case obj xobj of
+            Lst lst -> ")"
+            Arr arr -> "]"
+            Dict dict -> "}"
+            Num LongTy num -> "l"
+            Num IntTy num -> ""
+            Num ByteTy num -> "b"
+            Num FloatTy num -> show num ++ "f"
+            Num DoubleTy num -> ""
+            Num _ _ -> error "Invalid number type."
+            Str str -> ""
+            Pattern str -> ""
+            Chr c -> ""
+            Sym path mode -> ""
+            MultiSym originalName paths -> "}"
+            InterfaceSym name -> ""
+            Bol b -> ""
+            Defn maybeCaptures ->
+              case maybeCaptures of
+                Just captures -> ">"
+                Nothing -> ""
+            Def -> ""
+            Fn _ captures -> ">"
+            Closure elem _ -> ">"
+            If -> ""
+            Match -> ""
+            While -> ""
+            Do -> ""
+            Let -> ""
+            Mod env -> ""
+            Deftype _ -> ""
+            DefSumtype _ -> ""
+            Deftemplate _ -> ""
+            Instantiate _ -> ""
+            External Nothing -> ""
+            External (Just override) -> ")"
+            ExternalType -> ""
+            DocStub -> ""
+            Defalias _ -> ""
+            Address -> ""
+            SetBang -> ""
+            Macro -> ""
+            Dynamic -> ""
+            DefDynamic -> ""
+            Command _ -> ""
+            The -> ""
+            Ref -> ""
+            Deref -> ""
+            Break -> ""
+            Interface _ _ -> ""
+            With -> ""
+
 prettyCaptures :: Set.Set XObj -> String
 prettyCaptures captures =
   joinWithComma (map (\x -> getName x ++ " : " ++ fromMaybe "" (fmap show (ty x))) (Set.toList captures))
 
-data EvalError = EvalError String (Maybe Info) FilePathPrintLength deriving (Eq)
+data EvalError = EvalError String [XObj] FilePathPrintLength (Maybe Info) deriving (Eq)
 
 instance Show EvalError where
-  show (EvalError msg info fppl) = msg ++ getInfo info
+  show (EvalError msg t fppl i) = msg ++ getInfo i ++ getTrace
     where getInfo (Just i) = " at " ++ machineReadableInfo fppl i ++ "."
           getInfo Nothing = ""
+          getTrace =
+            if null t
+            then ""
+            else
+              "\n\nTraceback:\n" ++
+              unlines (map (\x -> prettyUpTo 60 x ++ getInfo (info x)) t)
 
 -- | Get the type of an XObj as a string.
 typeStr :: XObj -> String
@@ -351,6 +423,8 @@ prettyTyped = visit 0
                  listPrinter "(" ")" lst suffix indent
                Arr arr ->
                  listPrinter "[" "]" arr suffix indent
+               StaticArr arr ->
+                 listPrinter "$[" "]" arr suffix indent
                _ ->
                  pretty xobj ++ suffix
 
@@ -395,7 +469,7 @@ showBinderIndented indent (name, Binder _ (XObj (Lst [XObj (Interface t paths) _
   joinWith "\n    " (map show paths) ++
   "\n" ++ replicate indent ' ' ++ "}"
 showBinderIndented indent (name, Binder meta xobj) =
-  if False -- metaIsTrue meta "hidden"
+  if metaIsTrue meta "hidden"
   then ""
   else replicate indent ' ' ++ name ++
        -- " (" ++ show (getPath xobj) ++ ")" ++
@@ -436,7 +510,7 @@ tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing N
 tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
 tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
-tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [(XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing), XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
+tyToXObj (FuncTy argTys returnTy lt) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy, tyToXObj lt]) Nothing Nothing
 tyToXObj x = XObj (Sym (SymPath [] (show x)) Symbol) Nothing Nothing
 
 -- | Helper function to create binding pairs for registering external functions.
@@ -457,13 +531,12 @@ data Env = Env { envBindings :: Map.Map String Binder
                , envFunctionNestingLevel :: Int -- Normal defn:s have 0, lambdas get +1 for each level of nesting
                } deriving (Show, Eq)
 
--- Could be (Maybe Env), but we have to get rid of equality
-data FnEnv = None
-           | FEnv Env
+newtype ClosureContext = CCtx Context
   deriving (Show)
 
-instance Eq FnEnv where
+instance Eq ClosureContext where
   _ == _ = True
+
 
 newtype TypeEnv = TypeEnv { getTypeEnv :: Env }
 
@@ -764,6 +837,9 @@ defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 defineArrayTypeAlias :: Ty -> XObj
 defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
 
+defineStaticArrayTypeAlias :: Ty -> XObj
+defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
+
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj
 defineInterface name t paths info =
@@ -781,16 +857,26 @@ data ExecutionMode = Repl | Build | BuildAndRun | Install String | Check derivin
 
 -- | Information needed by the REPL
 data Context = Context { contextGlobalEnv :: Env
+                       , contextInternalEnv :: Maybe Env
                        , contextTypeEnv :: TypeEnv
                        , contextPath :: [String]
                        , contextProj :: Project
                        , contextLastInput :: String
                        , contextExecMode :: ExecutionMode
+                       , contextHistory :: ![XObj]
                        } deriving Show
 
 popModulePath :: Context -> Context
 popModulePath ctx = ctx { contextPath = init (contextPath ctx) }
 
+pushFrame :: Context -> XObj -> Context
+pushFrame ctx x = ctx { contextHistory = x:contextHistory ctx }
+
+popFrame :: Context -> Context
+popFrame ctx@Context{contextHistory=[]}= ctx
+popFrame ctx@Context{contextHistory=(_:rest)}= ctx { contextHistory = rest }
+
+-- | Unwrapping of XObj:s
 -- | Unwrapping of XObj:s
 
 -- | String

@@ -2,46 +2,46 @@
 
 (meta-set! doc "doc" "Set documentation for a binding.")
 (defmacro doc [name string]
-  (list 'meta-set! name "doc" string))
+  (eval (list 'meta-set! name "doc" string)))
 
 (doc print-doc "Print the documentation for a binding.")
 (defmacro print-doc [name]
-  (list 'macro-log (list 'meta name "doc")))
+  (eval (list 'macro-log (list 'meta name "doc"))))
 
 (doc sig "Annotate a binding with the desired signature.")
 (defmacro sig [name signature]
-  (list 'meta-set! name "sig" signature))
+  (eval (list 'meta-set! name "sig" signature)))
 
 (doc print-sig "Print the annotated signature for a binding.")
 (defmacro print-sig [name]
-  (list 'macro-log (list 'meta name "sig")))
+  (eval (list 'macro-log (list 'meta name "sig"))))
 
 (doc hide "Mark a binding as hidden, this will make it not print with the 'info' command.")
 (defmacro hidden [name]
-  (list 'meta-set! name "hidden" true))
+  (eval (list 'meta-set! name "hidden" true)))
 
 (doc private "Mark a binding as private, this will make it inaccessible from other modules.")
 (defmacro private [name]
-  (list 'meta-set! name "private" true))
+  (eval (list 'meta-set! name "private" true)))
 
 (doc todo "sets the todo property for a binding.")
 (defmacro todo [name value]
-  (list 'meta-set! name "todo" value))
+  (eval (list 'meta-set! name "todo" value)))
 
 (doc private? "Is this binding private?")
 (defmacro private? [name]
-  (list 'not (list 'list? (meta name "private"))))
+  (eval (list 'not (list 'list? (meta name "private")))))
 
 (doc hidden? "Is this binding hidden?")
 (defmacro hidden? [name]
-  (list 'not (list 'list? (meta name "hidden"))))
+  (eval (list 'not (list 'list? (meta name "hidden")))))
 
 (defndynamic annotate-helper [name annotation]
   (cons annotation (meta name "annotations")))
 
 (doc annotate "Add an annotation to this binding.")
 (defmacro annotate [name annotation]
-  (list 'meta-set! name "annotations" (annotate-helper name annotation)))
+  (eval (list 'meta-set! name "annotations" (annotate-helper name annotation))))
 
 (defmodule Dynamic
   (defndynamic caar [pair] (car (car pair)))
@@ -98,7 +98,7 @@
           (list 'build)
           (list 'run)))
 
-  (defmacro eval [form]
+  (defmacro evaluate [form]
     (eval-internal form))
 
   (defmacro e [form]
@@ -117,9 +117,313 @@
   (doc collect-into
     "Transforms a dynamic data literal into another, preserving order")
   (defndynamic collect-into [xs f]
-    (list 'quote
-      (collect-into-internal xs (f) f)))
-  )
+    (collect-into-internal xs (f) f))
+
+  (doc empty?
+    "Returns true if the provided data literal is empty, false otherwise.")
+  (defndynamic empty? [xs]
+    (= 0 (length xs)))
+
+  (doc flip
+    "Flips the arguments of a function `f`.
+
+    For example,
+
+    ```
+    ((flip Symbol.prefix) 'Bar 'Foo)
+    => ;; (Foo.Bar)
+    ```")
+  (defndynamic flip [f]
+    (fn [x y]
+      (f y x)))
+
+  (doc compose
+    "Returns the composition of two functions `f` and `g` for functions of any
+     airity; concretely, returns a function accepting the correct number of
+     arguments for `g`, applies `g` to those arguments, then applies `f` to the
+     result.
+
+    If you only need to compose functions that take a single argument (unary arity)
+    see `comp`. Comp also generates the form that corresponds to the composition,
+    compose contrarily evaluates 'eagerly' and returns a computed symbol.
+
+    For exmaple:
+
+    ```
+    ;; a silly composition
+    ((compose empty take) 3 [1 2 3 4 5])
+    ;; => []
+
+    (String.join (collect-into ((compose reverse map) Symbol.str '(p r a c)) array))
+    ;; => 'carp'
+
+    ;; comp for comparison
+    ((comp (curry + 1) (curry + 2)) 4)
+    ;; => (+ 1 (+ 2 4))
+    ```")
+  (defndynamic compose [f g]
+    ;; Recall that **unquoted** function names evaluate to their definitions in
+    ;; dynamic contexts, e.g. f = (dyanmic f [arg] body)
+    ;;
+    ;; Right now, this cannot handle anonymous functions because they cannot be passed to apply.
+    ;; and not anonymous functions.
+    ;; commands expand to (command <name>), fns expand to a non-list.
+    ;;
+    ;; TODO: Support passing anonymous functions.
+    (if (not (Dynamic.or (list? f) (list? g)))
+	(macro-error "compose can only compose named dynamic functions. To
+		     compose anonymous functions, such as curried functions,
+                     see comp.")
+        (let [f-name (cadr f)
+              g-name (cadr g)
+              arguments (caddr g)]
+          (list 'fn arguments
+            ;; Since we call an eval to apply g immediately, we wrap the args in an
+            ;; extra quote, otherwise, users would need to double quote any sequence of
+            ;; symbols such as '(p r a c)
+            (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
+
+  ;; Dynamic.or already exists, but since it's a special form, it can't be passed
+  ;; to higher order functions like reduce. So, we define an alternative here.
+  (defndynamic or-internal [x y]
+    (if x true y))
+
+  ;; Dynamic.and already exists, but since it's a special form, it can't be passed
+  ;; to higher order functions like reduce. So, we define an alternative here.
+  (defndynamic and-internal [x y]
+    (if x y false))
+
+  (doc curry
+    "Returns a curried function accepting a single argument, that applies f to x
+    and then to the following argument.
+
+    For example,
+
+    ```
+    (map (curry Symbol.prefix 'Foo) '(bar baz))
+    ;; => (Foo.bar Foo.baz)
+    ```")
+  (defndynamic curry [f x]
+    (fn [y]
+     (f x y)))
+
+  (doc curry*
+    "Curry functions of any airity.
+
+     For example:
+
+     ```
+     (map (curry* Dynamic.zip + '(1 2 3)) '((4 5) (6)))
+     ;; => (((+ 1 4) (+ 2 5)) ((+ 1 6)))
+
+     ((curry Dynamic.zip cons '(1 2 3)) '((4 5) (6)))
+     ;; => ((cons 1 (4 5)) (cons (2 (6))))
+
+     (defndynamic add-em-up [x y z] (+ (+ x y) z))
+     (map (curry* add-em-up 1 2) '(1 2 3))
+     ;; => (4 5 6)
+     ```")
+  (defndynamic curry* [f :rest args]
+    (let [f-name (cadr f)
+          all-args (caddr f)
+          unfilled-args (- (length all-args) (length args))
+          remaining (take unfilled-args all-args)
+          ;; Quote the arguments to retain expected behavior and avoid the need
+          ;; for double quotes in curried higher-orders, e.g. zip.
+          quote-args (map quoted args)]
+    (list 'fn remaining
+      ;; eval to execute the curried function.
+      ;; otherwise, this resolves to the form that will call the function, e.g. (add-three-vals 2 3 1)
+      (list 'eval (list 'apply f-name (list 'quote (append quote-args (collect-into
+      remaining list))))))))
+
+  ;; Higher-order functions can't currently accept primitives
+  ;; For now, wrapping primitives in a function allows us to pass them
+  ;; to HOFs like map.
+  (defndynamic quoted [x]
+    (list 'quote x))
+
+  (doc reduce
+    "Reduces or 'folds' a data literal, such as a list or array, into a single
+    value through successive applications of `f`.")
+  (defndynamic reduce [f x xs]
+    (if (empty? xs)
+      x
+      (reduce f (f x (car xs)) (cdr xs))))
+
+  (hidden unreduce-internal)
+  (defndynamic unreduce-internal [f x lim acc counter]
+    ;; Currently only works with anonymous functions and named functions.
+    ;; does not work with commands.
+    (if (not (Dynamic.or (array? acc) (list? acc)))
+      (macro-error
+	"Unreduce requires a dynamic data structure to collect results, such as
+         (list) or (array).")
+      (if (= counter lim)
+        acc
+        (unreduce-internal f (f x) lim (append acc (cons (eval (f x)) (empty acc))) (+ counter 1)))))
+
+  (doc unreduce
+    "Applies `f` to a starting value `x`, then generates a sequence of values
+     by successively applying `f` to the result `lim-1` times.
+     Collects results in the structure given by `acc`.
+
+     For example:
+
+     ```
+     (unreduce (curry + 1) 0 10 (list))
+     ;; => (1 2 3 4 5 6 7 8 9 10)
+     ```")
+  (defndynamic unreduce [f x lim acc]
+    (unreduce-internal f x lim acc 0))
+
+  (doc filter
+    "Returns a list containing only the elements of `xs` that satisify predicate `p`.
+
+     For example:
+
+     ```
+     (filter (fn [x] (= 'a x)) '(a b a b a b a b))
+     ;; => (a a a a)
+     ```")
+  (defndynamic filter [p xs]
+    (let [filter-fn (fn [x y] (if (p y) (append x (list y)) x))]
+      (reduce filter-fn (list) xs)))
+
+  (doc reverse
+    "Reverses the order of elements in an array or list.
+
+     For example:
+
+     ```
+     (reverse [1 2 3 4])
+     ;; => [4 3 2 1]
+     ```")
+  (defndynamic reverse [xs]
+    (if (array? xs)
+      (reduce (flip append) (array) (map array xs))
+      (reduce (flip append) (list) (map list xs))))
+
+  (doc empty
+    "Returns the empty form of `xs`.
+
+     For example:
+
+     ```
+     (empty '(1 2 3 4))
+     ;; => ()
+     (empty '[1 2 3 4])
+     ;; => []
+     ```")
+  (defndynamic empty [xs]
+    (if (array? xs)
+        (array)
+        (list)))
+
+  (doc take
+    "Returns a list containing the first `n` eleements of a list.
+
+     For example:
+
+     ```
+     (take 3 '(1 2 3 4 5))
+     ;; => (1 2 3)
+     ```")
+  (defndynamic take [n xs]
+    ;; A more straightforward impl is likely more efficient?
+    (let [indicies (unreduce (curry + 1) 0 n (list))
+          result (map cadr (zip list xs indicies))]
+      (if (array? xs)
+          (collect-into result array)
+          result)))
+
+  (doc apply
+    "Applies the function `f` to the provided argument list, passing each value
+    in the list as an argument to the function.")
+  (defndynamic apply [f argument-list]
+    ;; The let clause here is a tad mysterious at first glance. When passed a
+    ;; standalone function name (i.e. not an application (f x), carp evaluates
+    ;; it into the function's defining form, e.g. foo becomes (defn foo [x] x),
+    ;; commands such as + become (command +) etc.  ;; The binding here accounts
+    ;; for that case, allowing users to pass the function name to apply
+    ;; unquoted.
+    ;;
+    ;; This is necessary for parity across map-internal, zip, and apply.
+    ;; Since map calls its function directly, it takes it as is. Apply, on the
+    ;; other hand, would have to take the quoted form, since it builds a list
+    ;; that serves as the actual application.
+    ;;
+    ;; This is problematic for the user facing map function, since it makes
+    ;; calls to map or zip (which uses apply) as appropriate--unless we support
+    ;; the quoted function name argument in map-internal or the unquoted one in
+    ;; apply, we can't use zip and map-internal in map.
+    (if (not (list? f))
+        (f argument-list)
+    (let [function-name (list (cadr f))]
+      (if (array? argument-list)
+          (append function-name (collect-into argument-list list))
+          (append function-name argument-list)))))
+
+  (hidden map-internal)
+  (defndynamic map-internal [f xs acc]
+    (if (empty? xs)
+        acc
+        (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
+
+  (hidden zip-internal)
+  (defndynamic zip-internal [f forms acc]
+    (if (reduce or-internal false (map-internal empty? forms (list)))
+        acc
+        (zip-internal
+          f
+          (map-internal cdr forms (list))
+          (let [result (list (apply f (map-internal car forms (list))))]
+            (append acc result)))))
+
+  (doc zip
+    "Returns the *form* that results from applying  a function `f` to each of
+    the values supplied in `forms`.
+
+    If the members of a single form are exhuasted, the result of the
+    applications thus far is returned, and any remaining members in the other
+    forms are ignored.
+
+    For example,
+
+    ```
+    (zip + '(1 2 3) '(4 5 6))
+    ;; => ((+ 1 4) (+ 2 5) (+ 3 6))
+    ```
+
+    It's important to note that zip operates on forms, and that the form
+    returned by zip may not be evaluable by itself. For instance, to actually
+    transform the result in the example above into something Carp can
+    evaluate, we need to wrap each member of the list in a `do`:
+
+    ```
+    (append (list 'do) (zip + '(1 2 3) '(4 5 6)))
+    ;; => (do (+ 1 4) (+ 2 5) (+ 3 6))
+    (eval (append (list 'do) (zip + '(1 2 3) '(4 5 6))))
+    ;; => 9 ;; do returns the value of the last form in its body
+    ```")
+  (defndynamic zip [f :rest forms]
+    (zip-internal f forms (list)))
+
+  (doc map
+    "Applies a function `f` to each element in the list or array `xs` and
+     returns a list dynamic data literal containing the result of the function
+     applications.
+
+     For example:
+      ```clojure
+      '(map symbol? '(a b c))
+      => (true true true)
+      '(map (curry + 1) '(1 2 3))
+      => (2 3 4)
+      ```")
+  (defndynamic map [f xs]
+    (map-internal f xs (list)))
+)
 
 (defndynamic cond-internal [xs]
   (if (= (length xs) 0)
@@ -224,38 +528,40 @@
 
 (defmacro mac-only [:rest forms]
   (if (= "darwin" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro linux-only [:rest forms]
   (if (= "linux" (os))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro windows-only [:rest forms]
   (if (Dynamic.or (= "windows" (os)) (= "mingw32" (os)))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defmacro not-on-windows [:rest forms]
   (if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
-    (cons (quote do) forms)
+    (eval (cons (quote do) forms))
     ()))
 
 (defndynamic use-all-fn [names]
   (if (= (length names) 0)
     (macro-error "Trying to call use-all without arguments")
-    (if (= (length names) 1)
-      (list (list 'use (car names)))
-      (cons (list 'use (car names)) (use-all-fn (cdr names))))));(use-all (cdr names))))))
+    (do
+      (eval (list 'use (car names)))
+      (if (= (length names) 1)
+        ()
+        (use-all-fn (cdr names))))))
 
 (defmacro use-all [:rest names]
-  (cons 'do (use-all-fn names)))
+  (use-all-fn names))
 
 (defmacro load-and-use [name]
-  (list 'do
-        (list 'load (str name ".carp"))
-        (list 'use name)))
+  (do
+    (eval (list 'load (str name ".carp")))
+    (eval (list 'use name))))
 
 (defmacro when [condition form]
   (list 'if condition form (list)))
@@ -272,7 +578,7 @@
     (cons 'do forms)))
 
 (defmacro defn-do [name arguments :rest body]
-  (list 'defn name arguments (cons 'do body)))
+  (eval (list 'defn name arguments (cons 'do body))))
 
 (defmacro comment [:rest forms]
   ())
@@ -335,7 +641,7 @@
 
 (defmacro save-docs [:rest modules]
   ;; A trick to be able to send unquoted symbols to 'save-docs'
-  (list 'save-docs-internal (list 'quote modules)))
+  (eval (list 'save-docs-internal (list 'quote modules))))
 
 (defndynamic project-config [bindings]
   (if (< (length bindings) 2)
@@ -360,7 +666,7 @@ The expression must be evaluable at compile time.")
 (doc gensym-with "generates symbols dynamically, based on a symbol name.")
 (defndynamic gensym-with [x]
   (do
-    (defdynamic *gensym-counter* (inc *gensym-counter*))
+    (set! *gensym-counter* (inc *gensym-counter*))
     (Symbol.join [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "generates symbols dynamically as needed.")

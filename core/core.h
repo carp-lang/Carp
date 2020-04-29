@@ -7,21 +7,17 @@ typedef SSIZE_T ssize_t;
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+#include <inttypes.h>
 
 typedef char *String;
 typedef char *Pattern;
+typedef int64_t Long;
 
 #if defined NDEBUG
 #define CHK_INDEX(i, n)
 #else
 
-#if defined(WIN32) || defined(_WIN32) || \
-    defined(__WIN32) && !defined(__CYGWIN__)
-// The %zd format flag doesn't seem to work on Windows?
-#define CHK_INDEX_FORMAT_STRING ":%u: bad index: %ld < %ld\n"
-#else
 #define CHK_INDEX_FORMAT_STRING ":%u: bad index: %zd < %zd\n"
-#endif
 
 #define CHK_INDEX(i, n)                                                    \
     do {                                                                   \

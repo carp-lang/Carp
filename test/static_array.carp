@@ -1,0 +1,35 @@
+(use StaticArray)
+
+(load "Test.carp")
+(use Test)
+
+(deftest test
+
+  (assert-true test
+               (= $[1 2 3] $[1 2 3])
+               "= works as expected I")
+
+  (assert-false test
+                (= $[1 2 3] $[1 2 3 4 5])
+                "= works as expected II")
+
+  (assert-false test
+                (= $[1 1 1] $[0 0 0])
+                "= works as expected III")
+
+  (assert-equal test
+                5
+                (let [a $[0 1 2 3 4 5 6 7 8 9]]
+                  @(unsafe-nth a 5))
+                "unsafe-nth works as expected")
+
+  ;; TODO: FIX! THIS ONE IS PROBLEMATIC.
+  ;; (assert-equal test
+  ;;               &[4 5 6]
+  ;;               (let [nested $[[1 2 3]
+  ;;                              [4 5 6]
+  ;;                              [7 8 9]]]
+  ;;                 &@(unsafe-nth nested 1))
+  ;;               "unsafe-nth works as expected")
+
+  )

@@ -1,87 +1,87 @@
-long Long__PLUS_(long x, long y) {
+Long Long__PLUS_(Long x, Long y) {
     return x + y;
 }
-long Long__MINUS_(long x, long y) {
+Long Long__MINUS_(Long x, Long y) {
     return x - y;
 }
-long Long__MUL_(long x, long y) {
+Long Long__MUL_(Long x, Long y) {
     return x * y;
 }
-long Long__DIV_(long x, long y) {
+Long Long__DIV_(Long x, Long y) {
     return x / y;
 }
 #ifndef _WIN32
-bool Long_safe_MINUS_add(long x, long y, long* res) {
-    return __builtin_saddl_overflow(x, y, res);
+bool Long_safe_MINUS_add(Long x, Long y, Long* res) {
+    return __builtin_add_overflow(x, y, res);
 }
-bool Long_safe_MINUS_sub(long x, long y, long* res) {
-    return __builtin_ssubl_overflow(x, y, res);
+bool Long_safe_MINUS_sub(Long x, Long y, Long* res) {
+    return __builtin_sub_overflow(x, y, res);
 }
-bool Long_safe_MINUS_mul(long x, long y, long* res) {
-    return __builtin_smull_overflow(x, y, res);
+bool Long_safe_MINUS_mul(Long x, Long y, Long* res) {
+    return __builtin_mul_overflow(x, y, res);
 }
 #endif
-bool Long__EQ_(long x, long y) {
+bool Long__EQ_(Long x, Long y) {
     return x == y;
 }
-bool Long__LT_(long x, long y) {
+bool Long__LT_(Long x, Long y) {
     return x < y;
 }
-bool Long__GT_(long x, long y) {
+bool Long__GT_(Long x, Long y) {
     return x > y;
 }
-long Long_neg(long x) {
+Long Long_neg(Long x) {
     return -x;
 }
 
-long Long_inc(long x) {
+Long Long_inc(Long x) {
     return x + 1;
 }
-long Long_dec(long x) {
+Long Long_dec(Long x) {
     return x - 1;
 }
-long Long_abs(long x) {
+Long Long_abs(Long x) {
     return x > 0 ? x : -x;
 }
-long Long_bit_MINUS_shift_MINUS_left(long x, long y) {
+Long Long_bit_MINUS_shift_MINUS_left(Long x, Long y) {
     return x << y;
 }
-long Long_bit_MINUS_shift_MINUS_right(long x, long y) {
+Long Long_bit_MINUS_shift_MINUS_right(Long x, Long y) {
     return x >> y;
 }
-long Long_bit_MINUS_and(long x, long y) {
+Long Long_bit_MINUS_and(Long x, Long y) {
     return x & y;
 }
-long Long_bit_MINUS_or(long x, long y) {
+Long Long_bit_MINUS_or(Long x, Long y) {
     return x | y;
 }
-long Long_bit_MINUS_xor(long x, long y) {
+Long Long_bit_MINUS_xor(Long x, Long y) {
     return x ^ y;
 }
-long Long_bit_MINUS_not(long x) {
+Long Long_bit_MINUS_not(Long x) {
     return ~x;
 }
 
-long Long_copy(const long* x) {
+Long Long_copy(const Long* x) {
     return *x;
 }
 
-long Long_mod(long x, long divider) {
+Long Long_mod(Long x, Long divider) {
     return x % divider;
 }
 
-void Long_seed(long seed) {
+void Long_seed(Long seed) {
     srand(seed);
 }
 
-bool Long_mask(long a, long b) {
+bool Long_mask(Long a, Long b) {
     return a & b;
 }
 
-int Long_to_MINUS_int(long a) {
+int Long_to_MINUS_int(Long a) {
     return (int)a;
 }
 
-long Long_from_MINUS_int(int a) {
-    return (long)a;
+Long Long_from_MINUS_int(int a) {
+    return (Long)a;
 }
