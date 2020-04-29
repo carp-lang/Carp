@@ -51,10 +51,14 @@
 ;; Nesting match
 (use Maybe)
 (defn main []
-  (let [s (the (Maybe (Maybe String)) (Just (Nothing)))]
+  (let [s (the (Maybe (Maybe (Maybe String))) (Just (Just (Just @"Oh, but hello."))))]
     (match s
-      (Just (Just x)) (IO.println &x)
-      _ (IO.println "Didn't match."))))
+      (Just (Just (Just x))) (println* "It's just just just '" &x "'")
+      (Just (Just (Nothing))) (IO.println "It's just just nothing.")
+      (Just (Nothing)) (IO.println "It's just nothing.")
+      (Nothing) (IO.println "Didn't match.")
+      _ (IO.println "Unnecessary case.")
+      )))
 
 
 ;; Match on refs

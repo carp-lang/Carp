@@ -297,6 +297,16 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                   isNotVoid = t /= Just UnitTy
                   sumTypeAsPath = SymPath [] (show exprTy)
 
+                  tagCondition :: String -> Ty -> XObj -> [String]
+                  tagCondition var caseTy (caseLhs@(XObj (Lst (XObj (Sym firstPath@(SymPath _ caseName) _) _ _ : caseMatchers)) caseLhsInfo _)) =
+                    -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
+                    -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
+                    -- This requires a bunch of extra machinery though, so this will do for now...
+                    [var ++ "._tag == " ++ tagName caseTy (removeSuffix caseName)] ++ concat (zipWith (\c i -> tagCondition (var ++ "." ++ (removeSuffix caseName) ++ ".member" ++ show i) (forceTy c) c) caseMatchers [0..])
+                  tagCondition _ _ x =
+                    []
+                    --error ("tagCondition fell through: " ++ show x)
+
                   tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
 
                   emitCaseMatcher :: String -> XObj -> Integer -> State EmitterState ()
@@ -315,10 +325,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        unless isFirst (appendToSrc "else ")
-                       -- HACK! The function 'removeSuffix' ignores the type specialisation of the tag name and just uses the base name
-                       -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
-                       -- This requires a bunch of extra machinery though, so this will do for now...
-                       appendToSrc ("if(" ++ exprVar ++ "._tag == " ++ tagName exprTy (removeSuffix caseName) ++ ") {\n")
+                       appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar exprTy caseLhs) ++ ") {\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        zipWithM_ (emitCaseMatcher (removeSuffix caseName)) caseMatchers [0..]
