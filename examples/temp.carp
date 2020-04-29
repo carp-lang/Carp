@@ -67,3 +67,7 @@
     (match-ref r
       (Just x) (IO.println "just!")
       (Nothing) (IO.println "nada"))))
+
+(defn f []
+  (match (Just 123)
+    (Just x) @"Hej"))

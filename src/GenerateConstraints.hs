@@ -102,7 +102,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                            XObj (Match matchMode) _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
                                 casesLhsConstraints <- fmap join (mapM (gen . fst) (pairwise cases))
-                                casesRhsConstraints <- fmap join (mapM (gen .snd) (pairwise cases))
+                                casesRhsConstraints <- fmap join (mapM (gen . snd) (pairwise cases))
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
 

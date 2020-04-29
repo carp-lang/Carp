@@ -53,7 +53,7 @@ annotateUntilDone typeEnv globalEnv xobj rootSig deps limiter =
 annotateOne :: TypeEnv -> Env -> XObj -> Maybe (Ty, XObj) -> Bool -> Either TypeError (XObj, [XObj])
 annotateOne typeEnv env xobj rootSig allowAmbiguity = do
   constraints <- genConstraints env xobj rootSig
-  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints -- (trace ("Constraints for '" ++ getName xobj ++ "':\n" ++ joinWith "\n" (map show constraints)) constraints)
+  mappings <- solveConstraintsAndConvertErrorIfNeeded constraints -- (trace ("Constraints for '" ++ getName xobj ++ "':\n" ++ joinWith "\n" (map show constraints)) constraints
   typed <- assignTypes mappings xobj -- (trace ("Mappings for '" ++ getName xobj ++ ": " ++ show mappings) mappings) xobj
   concretizeXObj allowAmbiguity typeEnv env [] typed
 
