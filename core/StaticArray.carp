@@ -27,4 +27,16 @@
           (set! total (~f total (StaticArray.unsafe-nth xs i))))
         total)))
 
+  (doc = "compares two static arrays.")
+  (defn = [a b]
+    (if (/= (StaticArray.length a) (StaticArray.length b))
+      false
+      (let-do [eq true]
+        (for [i 0 (StaticArray.length a)]
+          (when (/= (StaticArray.unsafe-nth a i) (StaticArray.unsafe-nth b i))
+            (do
+              (set! eq false)
+              (break))))
+        eq)))
+
   )

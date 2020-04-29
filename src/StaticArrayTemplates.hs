@@ -1,4 +1,4 @@
-module StaticArray where
+module StaticArrayTemplates where
 
 import Util
 import Types
@@ -10,6 +10,14 @@ import Polymorphism
 import Concretize
 import Lookup
 import qualified ArrayTemplates
+
+
+
+-- | NOTE: The code for these templates is copied from ArrayTemplates.hs but
+-- since there are some small differences here and there I'v decided to not
+-- try to abstract over them and just duplicate the templates instead.
+
+
 
 templateUnsafeNth :: (String, Binder)
 templateUnsafeNth =
@@ -67,33 +75,11 @@ deleteTy typeEnv env (StructTy _ [innerType]) =
   ]
 deleteTy _ _ _ = []
 
--- templateEMap :: (String, Binder)
--- templateEMap =
---   let fTy = FuncTy [VarTy "a"] (VarTy "a") (VarTy "fq")
---       aTy = RefTy (StructTy "StaticArray" [VarTy "a"]) (VarTy "q")
---       bTy = RefTy (StructTy "StaticArray" [VarTy "a"]) (VarTy "q")
---       elem = "((($a*)a.data)[i])"
---   in  defineTemplate
---       (SymPath ["StaticArray"] "endo-map")
---       (FuncTy [RefTy fTy (VarTy "q"), aTy] bTy StaticLifetimeTy)
---       "applies a function `f` to an array `a`. The type of the elements cannot change."
---       (toTemplate "Array $NAME(Lambda *f, Array a)") -- Lambda used to be $(Fn [a] a)
---       (toTemplate $ unlines
---         ["$DECL { "
---         ,"    for(int i = 0; i < a.len; ++i) {"
---         ,"        (($a*)a.data)[i] = " ++ templateCodeForCallingLambda "(*f)" fTy [elem] ++ ";"
---         ,"    }"
---         ,"    return a;"
---         ,"}"
---         ])
---       (\(FuncTy [RefTy t@(FuncTy fArgTys fRetTy _) _, arrayType] _ _) ->
---          [defineFunctionTypeAlias t, defineFunctionTypeAlias (FuncTy (lambdaEnvTy : fArgTys) fRetTy StaticLifetimeTy)])
-
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["StaticArray"] "aset!"
         t = FuncTy [RefTy (StructTy "StaticArray" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
-        docs = "sets an array element at the index `n` to a new value in place."
+        docs = "sets a static array element at the index `n` to a new value in place."
         templateCreator = TemplateCreator $
           \typeEnv env ->
             Template

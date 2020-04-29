@@ -37,7 +37,7 @@ library
                        Polymorphism,
                        Concretize,
                        ArrayTemplates,
-                       StaticArray,
+                       StaticArrayTemplates,
                        Expand,
                        Scoring,
                        Lookup,

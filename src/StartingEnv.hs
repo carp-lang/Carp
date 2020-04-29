@@ -8,8 +8,8 @@ import Obj
 import Types
 import Template
 import ToTemplate
-import ArrayTemplates
-import qualified StaticArray
+import qualified ArrayTemplates
+import qualified StaticArrayTemplates
 import Commands
 import Parsing
 import Eval
@@ -28,23 +28,23 @@ arrayModule = Env { envBindings = bindings
                   , envUseModules = []
                   , envMode = ExternalEnv
                   , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ templateNth
-                                , templateAllocate
-                                , templateEMap
-                                , templateEFilter
-                                , templateRaw
-                                , templateUnsafeRaw
-                                , templateAset
-                                , templateAsetBang
-                                , templateAsetUninitializedBang
-                                , templateLength
-                                , templatePushBack
-                                , templatePushBackBang
-                                , templatePopBack
-                                , templatePopBackBang
-                                , templateDeleteArray
-                                , templateCopyArray
-                                , templateStrArray
+  where bindings = Map.fromList [ ArrayTemplates.templateNth
+                                , ArrayTemplates.templateAllocate
+                                , ArrayTemplates.templateEMap
+                                , ArrayTemplates.templateEFilter
+                                , ArrayTemplates.templateRaw
+                                , ArrayTemplates.templateUnsafeRaw
+                                , ArrayTemplates.templateAset
+                                , ArrayTemplates.templateAsetBang
+                                , ArrayTemplates.templateAsetUninitializedBang
+                                , ArrayTemplates.templateLength
+                                , ArrayTemplates.templatePushBack
+                                , ArrayTemplates.templatePushBackBang
+                                , ArrayTemplates.templatePopBack
+                                , ArrayTemplates.templatePopBackBang
+                                , ArrayTemplates.templateDeleteArray
+                                , ArrayTemplates.templateCopyArray
+                                , ArrayTemplates.templateStrArray
                                 ]
 
 -- | The static array module
@@ -55,11 +55,11 @@ staticArrayModule = Env { envBindings = bindings
                         , envUseModules = []
                         , envMode = ExternalEnv
                         , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ StaticArray.templateUnsafeNth
-                                , StaticArray.templateLength
-                                , StaticArray.templateDeleteArray
-                                , StaticArray.templateAsetBang
-                                , StaticArray.templateStrArray
+  where bindings = Map.fromList [ StaticArrayTemplates.templateUnsafeNth
+                                , StaticArrayTemplates.templateLength
+                                , StaticArrayTemplates.templateDeleteArray
+                                , StaticArrayTemplates.templateAsetBang
+                                , StaticArrayTemplates.templateStrArray
                                 ]
 
 -- | The Pointer module contains functions for dealing with pointers.
@@ -468,7 +468,7 @@ startingTypeEnv = Env { envBindings = bindings
             builtInSymbolInfo
 
           , interfaceBinder "prn" (FuncTy [VarTy "a"] StringTy StaticLifetimeTy)
-            (registerFunctionFunctionsWithInterface "prn")
+            ((SymPath ["StaticArray"] "str") : (registerFunctionFunctionsWithInterface "prn")) -- QUESTION: Where is 'prn' for dynamic Array:s registered? Can't find it... (but it is)
             builtInSymbolInfo
           ]
         builtInSymbolInfo = Info (-1) (-1) "Built-in." Set.empty (-1)
