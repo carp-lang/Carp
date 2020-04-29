@@ -1,6 +1,9 @@
 name: Windows CI
 
-on: []
+on:
+  push:
+    branches-ignore:
+      - '**'
 
 jobs:
   build:
