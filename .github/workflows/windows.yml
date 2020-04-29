@@ -1,6 +1,6 @@
 name: Windows CI
 
-on:
+on: []
 
 jobs:
   build:
