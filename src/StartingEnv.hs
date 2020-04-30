@@ -353,7 +353,7 @@ dynamicStringModule = Env { envBindings = bindings
                                 , addCommand "index-of" 2 commandIndexOf
                                 , addCommand "slice" 3 commandSubstring
                                 , addCommand "length" 1 commandStringLength
-                                , addCommand "join" 1 commandStringJoin
+                                , addCommand "concat" 1 commandStringConcat
                                 , addCommand "directory" 1 commandStringDirectory
                                 ]
 
@@ -365,7 +365,7 @@ dynamicSymModule = Env { envBindings = bindings
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "join" 1 commandSymJoin
+  where bindings = Map.fromList [ addCommand "concat" 1 commandSymConcat
                                 , addCommand "prefix" 2 commandSymPrefix
                                 , addCommand "from" 1 commandSymFrom
                                 , addCommand "str" 1 commandSymStr

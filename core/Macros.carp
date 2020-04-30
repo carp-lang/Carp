@@ -171,8 +171,8 @@
     ;;
     ;; TODO: Support passing anonymous functions.
     (if (not (Dynamic.or (list? f) (list? g)))
-	(macro-error "compose can only compose named dynamic functions. To
-		     compose anonymous functions, such as curried functions,
+        (macro-error "compose can only compose named dynamic functions. To
+                     compose anonymous functions, such as curried functions,
                      see comp.")
         (let [f-name (cadr f)
               g-name (cadr g)
@@ -257,7 +257,7 @@
     ;; does not work with commands.
     (if (not (Dynamic.or (array? acc) (list? acc)))
       (macro-error
-	"Unreduce requires a dynamic data structure to collect results, such as
+        "Unreduce requires a dynamic data structure to collect results, such as
          (list) or (array).")
       (if (= counter lim)
         acc
@@ -667,7 +667,7 @@ The expression must be evaluable at compile time.")
 (defndynamic gensym-with [x]
   (do
     (set! *gensym-counter* (inc *gensym-counter*))
-    (Symbol.join [x (Symbol.from *gensym-counter*)])))
+    (Symbol.concat [x (Symbol.from *gensym-counter*)])))
 
 (doc gensym "generates symbols dynamically as needed.")
 (defndynamic gensym []

@@ -669,23 +669,23 @@ commandStringLength ctx [a] =
       (ctx, Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (info a)
 
-commandStringJoin :: CommandCallback
-commandStringJoin ctx [a] =
+commandStringConcat :: CommandCallback
+commandStringConcat ctx [a] =
   return $ case a of
     XObj (Arr strings) _ _ ->
       case mapM unwrapStringXObj strings of
         Left err -> evalError ctx err (info a)
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
-    _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
+    _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
 
-commandSymJoin :: CommandCallback
-commandSymJoin ctx [a] =
+commandSymConcat :: CommandCallback
+commandSymConcat ctx [a] =
   return $ case a of
     XObj (Arr syms) _ _ ->
       case mapM unwrapSymPathXObj syms of
         Left err -> evalError ctx err (info a)
         Right result -> (ctx, Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing))
-    _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
+    _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
 
 commandSymPrefix :: CommandCallback
 commandSymPrefix ctx [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
