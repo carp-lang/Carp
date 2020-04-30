@@ -289,7 +289,7 @@ genConstraintsForCaseMatcher matchMode = gen
                  let expected t n = XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName caseName ++ "'")) Symbol) (info caseName) (Just t)
                      argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
                                                (List.map forceTy variables)
-                                               (fmap (wrapInRefTyIfMatchRef matchMode) argTys)
+                                               (zipWith refWrapper variables argTys)
                                                variables
                                                [0..]
                      Just xobjTy = ty xobj
@@ -302,3 +302,10 @@ genConstraintsForCaseMatcher matchMode = gen
                in  return (wholeTypeConstraint : caseNameConstraints ++ variablesConstraints)
              _ -> Left (NotAFunction caseName) -- | TODO: This error could be more specific too, since it's not an actual function call.
     gen x = return []
+
+    -- | If this is a 'match-ref' statement we want to wrap the type of *symbols* (not lists matching nested sumtypes) in a Ref type
+    -- | to make the type inference think they are refs.
+    -- | This will make sure we don't take ownership over the sumtype:s members, which would be catastrophic due to it not being owned by the match.
+    refWrapper :: XObj -> Ty -> Ty
+    refWrapper (XObj (Sym _ _) _ _) wrapThisType = wrapInRefTyIfMatchRef matchMode wrapThisType
+    refWrapper _ t = t

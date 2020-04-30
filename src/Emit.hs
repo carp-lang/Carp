@@ -304,7 +304,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A better idea is to not specialise the names, which happens when calling 'concretize' on the lhs
                     -- This requires a bunch of extra machinery though, so this will do for now...
                     [var ++ periodOrArrow ++ "_tag == " ++ tagName caseTy (removeSuffix caseName)] ++
-                      concat (zipWith (\c i -> tagCondition (var ++ "." ++ (removeSuffix caseName) ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
+                      concat (zipWith (\c i -> tagCondition (var ++ periodOrArrow ++ (removeSuffix caseName) ++ ".member" ++ show i) "." (forceTy c) c) caseMatchers [0..])
                   tagCondition _ _ _ x =
                     []
                     --error ("tagCondition fell through: " ++ show x)
@@ -316,8 +316,8 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     let Just tt = t
                     in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
                                     ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
-                  emitCaseMatcher _ caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
-                    zipWithM_ (\x i -> emitCaseMatcher (".", "") (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
+                  emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
+                    zipWithM_ (\x i -> emitCaseMatcher periodOrArrow (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 

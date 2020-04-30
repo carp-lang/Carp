@@ -68,5 +68,11 @@
       (Nothing) (IO.println "nada"))))
 
 (defn f []
+  (let [s (Just @"Yo")]
+    (match s
+      (Just x) (IO.println &x)
+      (Nothing) (IO.println "nada"))))
+
+(defn g []
   (match-ref &(Just (Just @"foooo"))
      (Just (Just x)) (IO.println x)))
