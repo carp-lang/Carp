@@ -14,13 +14,13 @@
   (match a
     (A.F f) (f)))
 
-(deftest test 
+(deftest test
   (assert-equal test
     123
     (m (A.F one-two-three))
     "match adds lhs bindings to inner environments")
   (assert-equal test
-    "matched!"    
+    "matched!"
     (match nest
           (Nest.Nested (Nest.End))
           "wrong!"
@@ -30,9 +30,17 @@
           "matched!")
     "Match matches nested sumtype constructors with underscores")
   (assert-equal test
-    123    
-    (match nest 
+    123
+    (match nest
           (Nest.Nested (Nest.Nested (Nest.Nested x)))
           x)
     "Match matches nested sumtype constructors with variables")
+
+  (assert-equal test
+                "found"
+                (let [n (Nest.Nested (Nest.Nested (Nest.Nested @"found")))]
+                  (match-ref &n
+                             (Nest.Nested (Nest.Nested (Nest.Nested s))) s))
+                "match-ref works on deeply nested sumtype"
+                )
 )
