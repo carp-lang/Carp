@@ -31,7 +31,7 @@ a value using `zero` if a `Nothing` is passed.")
 
 It is the inverse of [`nothing?`](#nothing?).")
   (defn just? [a]
-    (match @a
+    (match-ref a
       (Nothing) false
       (Just x) true))
 
@@ -39,16 +39,16 @@ It is the inverse of [`nothing?`](#nothing?).")
 
 It is the inverse of [`just?`](#just?).")
   (defn nothing? [a]
-    (match @a
+    (match-ref a
       (Nothing) true
       (Just x) false))
 
   (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Just 1)` and `(Just 1)` are the same, but `(Just 1)` and `(Just 2)` are not.")
   (defn = [a b]
-    (match @a
+    (match-ref a
       (Nothing) (nothing? b)
       (Just x)
-        (match @b
+        (match-ref b
           (Nothing) false
           (Just y) (= x y))))
 
@@ -56,7 +56,7 @@ It is the inverse of [`just?`](#just?).")
 `Nothing`, this function will return a `NULL` value.")
   (defn unsafe-ptr [a]
     (the (Ptr a) (Unsafe.coerce
-      (match @a
+      (match-ref a
         (Nothing) NULL
         (Just _) (the (Ref (Maybe a)) a)))))
 

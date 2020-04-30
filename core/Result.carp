@@ -83,7 +83,7 @@ The error value is thrown away.")
 
 It is the inverse of [`error?`](#error?).")
   (defn success? [a]
-    (match @a
+    (match-ref a
       (Error _) false
       (Success _) true))
 
@@ -91,19 +91,19 @@ It is the inverse of [`error?`](#error?).")
 
 It is the inverse of [`success?`](#success?).")
   (defn error? [a]
-    (match @a
+    (match-ref a
       (Error _) true
       (Success _) false))
 
   (doc = "equality is defined as the equality of both the constructor and the contained value, i.e. `(Success 1)` and `(Success 1)` are the same, but `(Success 1)` and `(Success 2)` are not.")
   (defn = [a b]
-    (match @a
+    (match-ref a
       (Success x)
-        (match @b
+        (match-ref b
           (Error _) false
           (Success y) (= x y))
       (Error x)
-        (match @b
+        (match-ref b
           (Success _) false
           (Error y) (= x y))))
 )
