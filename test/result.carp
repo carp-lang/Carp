@@ -139,9 +139,4 @@
                   (Success (Success x)) x)
                 "matching on nested results"
   )
-  (assert-equal test
-                &(the (Result Int String) (Success 0))
-                &(zero)
-                "zero works"
-  )
 )
