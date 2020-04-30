@@ -62,12 +62,11 @@
 ;; Match on refs
 (use Maybe)
 (defn main []
-  (let [s (Just @"Yo")
-        r &s]
-    (match-ref r
+  (let [s (Just @"Yo")]
+    (match-ref &s
       (Just x) (IO.println x)
       (Nothing) (IO.println "nada"))))
 
 (defn f []
-  (match (Just 123)
-    (Just x) @"Hej"))
+  (match-ref &(Just (Just @"foooo"))
+     (Just (Just x)) (IO.println x)))
