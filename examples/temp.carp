@@ -73,6 +73,8 @@
       (Just x) (IO.println &x)
       (Nothing) (IO.println "nada"))))
 
-(defn g []
-  (match-ref &(Just (Just @"foooo"))
-     (Just (Just x)) (IO.println x)))
+(defn deep [x]
+  (match-ref x
+             (Nothing) (IO.println "nothing")
+             (Just (Nothing)) (IO.println "just nothing")
+             (Just (Just x)) (IO.println x)))
