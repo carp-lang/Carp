@@ -295,6 +295,10 @@ genConstraintsForCaseMatcher = gen
                      Just xobjTy = ty xobj
                      retConstraint = Constraint xobjTy retTy xobj caseName xobj OrdFuncAppRet
                  in  return (retConstraint : caseNameConstraints ++ argConstraints ++ variablesConstraints)
-             _ -> Left (NotAFunction caseName) -- | TODO: This error could be better too.
-    gen (XObj (Sym _ _) _ _) = return []
-    gen x = error ("Fell through: " ++ pretty x ++ "\n\n" ++ show x)
+             funcVarTy@(VarTy _) ->
+               let fabricatedFunctionType = FuncTy (List.map forceTy variables) (forceTy xobj) (VarTy "what?!") -- | TODO: Fix
+                   expected = XObj (Sym (SymPath [] ("Matchin on '" ++ getName caseName ++ "'")) Symbol) (info caseName) Nothing
+                   wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType caseName expected xobj OrdFuncAppVarTy
+               in  return (wholeTypeConstraint : caseNameConstraints ++ variablesConstraints)
+             _ -> Left (NotAFunction caseName) -- | TODO: This error could be more specific too, since it's not an actual function call.
+    gen x = return []
