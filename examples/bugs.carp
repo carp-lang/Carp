@@ -145,13 +145,3 @@
 ;;     (do
 ;;       (set! x 11)
 ;;       (println* x))))
-
-
-
-;; Failing to instantiate deps
-;;(deftype Z [x (Array String)])
-(deftype X (Y [(Array String)]))
-
-(defn main []
-  (let [s @&(X.Y [])]
-    (println* "I did compile.")))
