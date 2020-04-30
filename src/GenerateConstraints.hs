@@ -101,7 +101,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                            -- Match
                            XObj (Match matchMode) _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
-                                casesLhsConstraints <- fmap join (mapM (gen . fst) (pairwise cases))
+                                casesLhsConstraints <- fmap join (mapM (genConstraintsForCaseMatcher . fst) (pairwise cases))
                                 casesRhsConstraints <- fmap join (mapM (gen . snd) (pairwise cases))
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
@@ -211,7 +211,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                            -- Function application
                            func : args ->
                              do funcConstraints <- gen func
-                                insideArgsConstraints <- fmap join (mapM gen args)
+                                variablesConstraints <- fmap join (mapM gen args)
                                 funcTy <- toEither (ty func) (ExpressionMissingType func)
                                 case funcTy of
                                   (FuncTy argTys retTy _) ->
@@ -228,12 +228,12 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                                                                     [0..]
                                           Just xobjTy = ty xobj
                                           retConstraint = Constraint xobjTy retTy xobj func xobj OrdFuncAppRet
-                                      in  return (retConstraint : funcConstraints ++ argConstraints ++ insideArgsConstraints)
+                                      in  return (retConstraint : funcConstraints ++ argConstraints ++ variablesConstraints)
                                   funcVarTy@(VarTy _) ->
                                     let fabricatedFunctionType = FuncTy (List.map forceTy args) (forceTy xobj) (VarTy "what?!")
                                         expected = XObj (Sym (SymPath [] ("Calling '" ++ getName func ++ "'")) Symbol) (info func) Nothing
                                         wholeTypeConstraint = Constraint funcVarTy fabricatedFunctionType func expected xobj OrdFuncAppVarTy
-                                    in  return (wholeTypeConstraint : funcConstraints ++ insideArgsConstraints)
+                                    in  return (wholeTypeConstraint : funcConstraints ++ variablesConstraints)
                                   _ -> Left (NotAFunction func)
 
                            -- Empty list
@@ -269,3 +269,32 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                            return (headConstraint : insideExprConstraints ++ betweenExprConstraints)
 
             _ -> Right []
+
+genConstraintsForCaseMatcher :: XObj -> Either TypeError [Constraint]
+genConstraintsForCaseMatcher = gen
+  where
+    -- | NOTE: This works very similar to generating constraints for function calls
+    -- | since the cases for sumtypes *are* functions. So we rely on those symbols to
+    -- | already have the correct type, e.g. in (match foo (Just x) x) the 'Just' case name
+    -- | has the type (Fn [Int] Maybe) which is exactly what we need to give 'x' the correct type.
+    gen xobj@(XObj (Lst (caseName : variables)) _ _) =
+        do caseNameConstraints <- gen caseName
+           variablesConstraints <- fmap join (mapM gen variables)
+           caseNameTy <- toEither (ty caseName) (ExpressionMissingType caseName)
+           case caseNameTy of
+             (FuncTy argTys retTy _) ->
+               if length variables /= length argTys then
+                 Left (WrongArgCount caseName (length argTys) (length variables)) -- | TODO: This could be another error since this isn't an actual function call.
+               else
+                 let expected t n = XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName caseName ++ "'")) Symbol) (info caseName) (Just t)
+                     argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
+                                               (List.map forceTy variables)
+                                               argTys
+                                               variables
+                                               [0..]
+                     Just xobjTy = ty xobj
+                     retConstraint = Constraint xobjTy retTy xobj caseName xobj OrdFuncAppRet
+                 in  return (retConstraint : caseNameConstraints ++ argConstraints ++ variablesConstraints)
+             _ -> Left (NotAFunction caseName) -- | TODO: This error could be better too.
+    gen (XObj (Sym _ _) _ _) = return []
+    gen x = error ("Fell through: " ++ pretty x ++ "\n\n" ++ show x)
