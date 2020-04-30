@@ -41,7 +41,7 @@ done
 # Just make sure these compile
 ./carp.sh ./examples/mutual_recursion.carp -b
 ./carp.sh ./examples/guessing.carp -b
-./carp.sh ./examples/no_core.carp --no-core -b
+./carp.sh ./examples/no_core.carp --no-core --no-profile -b
 ./carp.sh ./examples/check_malloc.carp -b
 
 # Run tests which rely on SDL unless the `--no_sdl` argument was passed in

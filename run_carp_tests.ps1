@@ -27,11 +27,10 @@ Get-ChildItem -Filter test/*.carp | ForEach-Object -Process {
 # Just make sure these compile
 exitOnError { stack exec carp "--" ./examples/mutual_recursion.carp -b }
 exitOnError { stack exec carp "--" ./examples/guessing.carp -b }
-exitOnError { stack exec carp "--" ./examples/no_core.carp --no-core -b }
+exitOnError { stack exec carp "--" ./examples/no_core.carp --no-core --no-profile -b }
 exitOnError { stack exec carp "--" ./examples/check_malloc.carp -b }
 
 # Generate docs
 exitOnError { stack exec carp "--" ./docs/core/generate_core_docs.carp }
 
 echo "ALL TESTS DONE."
-
