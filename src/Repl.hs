@@ -24,14 +24,16 @@ import Path
 import Lookup
 import Parsing (balance)
 
+import Debug.Trace
+
 instance MonadState s m => MonadState s (InputT m) where
     get = lift get
     put = lift . put
     state = lift . state
 
 completeKeywordsAnd :: Context -> String -> [Completion]
-completeKeywordsAnd context word = do
-  findKeywords word ((bindingNames $ contextGlobalEnv context) ++ keywords) []
+completeKeywordsAnd context word =
+  findKeywords word (bindingNames (contextGlobalEnv context) ++ keywords) []
   where
         findKeywords match [] res = res
         findKeywords match (x : xs) res =
@@ -124,23 +126,25 @@ treatSpecialInput (':':rest) =
            Nothing -> rewriteError ("Unknown special command: :" ++ [cmd])
 treatSpecialInput arg = arg
 
-repl :: String -> InputT (StateT Context IO) ()
-repl readSoFar =
+repl :: String -> String -> InputT (StateT Context IO) ()
+repl readSoFar prompt =
   do context <- get
-     let prompt = strWithColor Yellow (if null readSoFar then projectPrompt (contextProj context) else "     ")
-     input <- getInputLine prompt
+     input <- getInputLine (strWithColor Yellow prompt)
      case input of
         Nothing -> do
           liftIO exitSuccess
           return ()
         Just i -> do
-          let concat = readSoFar ++ i ++ "\n"
-          case balance concat of
-            0 -> do let input' = if concat == "\n" then contextLastInput context else concat -- Entering an empty string repeats last input
-                    context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
-                    put context'
-                    repl ""
-            _ -> repl concat
+          let concatenated = readSoFar ++ i ++ "\n"
+              balanced = balance concatenated
+              proj = contextProj context
+          case balanced of
+            "" -> do
+              let input' = if concatenated == "\n" then contextLastInput context else concatenated -- Entering an empty string repeats last input
+              context' <- liftIO $ executeString True True (resetAlreadyLoadedFiles context) (treatSpecialInput input') "REPL"
+              put context'
+              repl "" (projectPrompt proj)
+            _ -> repl concatenated (if projectBalanceHints proj then balanced else "")
 
 resetAlreadyLoadedFiles context =
   let proj = contextProj context
@@ -150,4 +154,4 @@ resetAlreadyLoadedFiles context =
 runRepl context = do
   historyFile <- configPath "history"
   createDirectoryIfMissing True (takeDirectory historyFile)
-  runStateT (runInputT (readlineSettings historyFile) (repl "")) context
+  runStateT (runInputT (readlineSettings historyFile) (repl "" (projectPrompt (contextProj context)))) context

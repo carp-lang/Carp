@@ -31,6 +31,7 @@ defaultProject =
           , projectDocsURL = ""
           , projectDocsGenerateIndex = True
           , projectDocsStyling = "carp_style.css"
+          , projectBalanceHints = True
           , projectPrompt = case platform of
                               MacOS -> "鲤 "
                               _     -> "> "
