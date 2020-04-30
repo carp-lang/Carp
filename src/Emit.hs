@@ -311,14 +311,13 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
 
                   tempVarToAvoidClash = freshVar exprInfo ++ "_temp";
 
-                  emitCaseMatcher :: String -> String -> XObj -> Integer -> State EmitterState ()
-                  emitCaseMatcher periodOrArrow caseName (XObj (Sym path _) i t) index =
+                  emitCaseMatcher :: (String, String) -> String -> XObj -> Integer -> State EmitterState ()
+                  emitCaseMatcher (periodOrArrow, ampersandOrNot) caseName (XObj (Sym path _) i t) index =
                     let Just tt = t
-                    in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++
-                                     pathToC path ++ " = " ++ tempVarToAvoidClash ++ periodOrArrow ++ mangle caseName ++
-                                     ".member" ++ show index ++ ";\n")
-                  emitCaseMatcher periodOrArrow caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
-                    zipWithM_ (\x i -> emitCaseMatcher "." (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
+                    in  appendToSrc (addIndent indent' ++ tyToCLambdaFix tt ++ " " ++ pathToC path ++ " = "
+                                    ++ ampersandOrNot ++ tempVarToAvoidClash ++ periodOrArrow ++ mangle caseName ++ ".member" ++ show index ++ ";\n")
+                  emitCaseMatcher _ caseName xobj@(XObj (Lst (XObj (Sym (SymPath _ innerCaseName) _) _ _ : xs)) i t) index =
+                    zipWithM_ (\x i -> emitCaseMatcher (".", "") (caseName ++ ".member" ++ show i ++ "." ++ (removeSuffix innerCaseName)) x index) xs [0..]
                   emitCaseMatcher _ _ xobj _ =
                     error ("Failed to emit case matcher for: " ++ pretty xobj)
 
@@ -338,22 +337,21 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
                     -- A list of things, beginning with a tag
                     do appendToSrc (addIndent indent)
                        unless isFirst (appendToSrc "else ")
-                       let periodOrArrow =
+                       let refModifications =
                              case matchMode of
-                               MatchValue -> "."
-                               MatchRef -> "->"
-                       appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar periodOrArrow (removeOuterRefTyIfMatchRef exprTy) caseLhs) ++ ") {\n")
-                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
-                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
-                       zipWithM_ (emitCaseMatcher periodOrArrow (removeSuffix caseName)) caseMatchers [0..]
+                               MatchValue -> (".", "")
+                               MatchRef -> ("->", "&")
+                       appendToSrc ("if(" ++ joinWith " && " (tagCondition exprVar (fst refModifications) (removeOuterRefTyIfMatchRef exprTy) caseLhs) ++ ") {\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
+                       zipWithM_ (emitCaseMatcher refModifications (removeSuffix caseName)) caseMatchers [0..]
+                       appendToSrc (addIndent indent' ++ "// Case expr:\n")
                        emitCaseEnd caseLhsInfo caseExpr
                   emitCase exprVar isFirst (XObj (Sym firstPath _) caseLhsInfo _, caseExpr) =
                     -- Single variable
                     do appendToSrc (addIndent indent)
                        unless isFirst (appendToSrc "else ")
                        appendToSrc "if(true) {\n"
-                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
-                                    tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
+                       appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++ tempVarToAvoidClash ++ " = " ++ exprVar ++ ";\n")
                        appendToSrc (addIndent indent' ++ tyToCLambdaFix exprTy ++ " " ++
                                     pathToC firstPath ++ " = " ++ tempVarToAvoidClash ++ ";\n") -- Store the whole expr in a variable
                        emitCaseEnd caseLhsInfo caseExpr

@@ -101,7 +101,7 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
                            -- Match
                            XObj (Match matchMode) _ _ : expr : cases ->
                              do insideExprConstraints <- gen expr
-                                casesLhsConstraints <- fmap join (mapM (genConstraintsForCaseMatcher . fst) (pairwise cases))
+                                casesLhsConstraints <- fmap join (mapM (genConstraintsForCaseMatcher matchMode . fst) (pairwise cases))
                                 casesRhsConstraints <- fmap join (mapM (gen . snd) (pairwise cases))
                                 exprType <- toEither (ty expr) (ExpressionMissingType expr)
                                 xobjType <- toEither (ty xobj) (DefMissingType xobj)
@@ -270,8 +270,8 @@ genConstraints globalEnv root rootSig = fmap sort (gen root)
 
             _ -> Right []
 
-genConstraintsForCaseMatcher :: XObj -> Either TypeError [Constraint]
-genConstraintsForCaseMatcher = gen
+genConstraintsForCaseMatcher :: MatchMode -> XObj -> Either TypeError [Constraint]
+genConstraintsForCaseMatcher matchMode = gen
   where
     -- | NOTE: This works very similar to generating constraints for function calls
     -- | since the cases for sumtypes *are* functions. So we rely on those symbols to
@@ -289,7 +289,7 @@ genConstraintsForCaseMatcher = gen
                  let expected t n = XObj (Sym (SymPath [] ("Expected " ++ enumerate n ++ " argument to '" ++ getName caseName ++ "'")) Symbol) (info caseName) (Just t)
                      argConstraints = zipWith4 (\a t aObj n -> Constraint a t aObj (expected t n) xobj OrdFuncAppArg)
                                                (List.map forceTy variables)
-                                               argTys
+                                               (fmap (wrapInRefTyIfMatchRef matchMode) argTys)
                                                variables
                                                [0..]
                      Just xobjTy = ty xobj

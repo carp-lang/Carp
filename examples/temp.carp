@@ -65,7 +65,7 @@
   (let [s (Just @"Yo")
         r &s]
     (match-ref r
-      (Just x) (IO.println "just!")
+      (Just x) (IO.println x)
       (Nothing) (IO.println "nada"))))
 
 (defn f []
