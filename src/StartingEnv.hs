@@ -337,26 +337,26 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "read-file" 1 commandReadFile
                     , addCommand "write-file" 2 commandWriteFile
                     , addCommand "bit-width" 0 commandBitWidth
-                    , makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
-                    , makeVarPrim "file" "(file mysymbol)" primitiveFile
-                    , makeVarPrim "line" "(line mysymbol)" primitiveLine
-                    , makeVarPrim "column" "(column mysymbol)" primitiveColumn
-                    , makePrim "info" 1 "(info mysymbol)" primitiveInfo
-                    , makeVarPrim "register-type" "(register-type Name <optional: members>)" primitiveRegisterType
-                    , makePrim "defmacro" 3 "(defmacro name [args :rest restargs] body)" primitiveDefmacro
-                    , makePrim "defndynamic" 3 "(defndynamic name [args] body)" primitiveDefndynamic
-                    , makePrim "defdynamic" 2 "(defdynamic name value)" primitiveDefdynamic
-                    , makePrim "type" 1 "(type mysymbol)" primitiveType
-                    , makePrim "members" 1 "(type mysymbol)" primitiveMembers
-                    , makeVarPrim "defmodule" "(defmodule MyModule <expressions>)" primitiveDefmodule
-                    , makePrim "meta-set!" 3 "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
-                    , makePrim "meta" 2 "(meta mysymbol \"mykey\")" primitiveMeta
-                    , makePrim "definterface" 2 "(definterface myfunction MyType)" primitiveDefinterface
-                    , makeVarPrim "register" "(register name <signature> <optional: override>)" primitiveRegister
-                    , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
-                    , makePrim "use" 1 "(use MyModule)" primitiveUse
-                    , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
-                    , makePrim "defined?" 1 "(defined? mycode)" primitiveDefined
+                    , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
+                    , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
+                    , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
+                    , makeVarPrim "column" "returns the column a symbol was defined on." "(column mysymbol)" primitiveColumn
+                    , makePrim "info" 1 "prints all information associated with a symbol." "(info mysymbol)" primitiveInfo
+                    , makeVarPrim "register-type" "registers a new type from C." "(register-type Name <optional: members>)" primitiveRegisterType
+                    , makePrim "defmacro" 3 "defines a new macro." "(defmacro name [args :rest restargs] body)" primitiveDefmacro
+                    , makePrim "defndynamic" 3 "defines a new dynamic function, i.e. a function available at compile time." "(defndynamic name [args] body)" primitiveDefndynamic
+                    , makePrim "defdynamic" 2 "defines a new dynamic value, i.e. a value available at compile time." "(defdynamic name value)" primitiveDefdynamic
+                    , makePrim "type" 1 "prints the type of a symbol." "(type mysymbol)" primitiveType
+                    , makePrim "members" 1 "returns the members of a type as an array." "(members MyType)" primitiveMembers
+                    , makeVarPrim "defmodule" "defines a new module in which `expressions` are defined." "(defmodule MyModule <expressions>)" primitiveDefmodule
+                    , makePrim "meta-set!" 3 "sets a new key and value pair on the meta map associated with a symbol." "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
+                    , makePrim "meta" 2 "gets the value under `\"mykey\"` in the meta map associated with a symbol. It returns `()` if the key isn’t found." "(meta mysymbol \"mykey\")" primitiveMeta
+                    , makePrim "definterface" 2 "defines a new interface (which could be a function or symbol)." "(definterface mysymbol MyType)" primitiveDefinterface
+                    , makeVarPrim "register" "registers a new function. This is used to define C functions and other symbols that will be available at link time." "(register name <signature> <optional: override>)" primitiveRegister
+                    , makeVarPrim "deftype" "defines a new sumtype or struct." "(deftype Name <members>)" primitiveDeftype
+                    , makePrim "use" 1 "uses a module, i.e. imports the symbols inside that module into the current module." "(use MyModule)" primitiveUse
+                    , makePrim "eval" 1 "evaluates a list." "(eval mycode)" primitiveEval
+                    , makePrim "defined?" 1 "checks whether a symbol is defined." "(defined? mysymbol)" primitiveDefined
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))
