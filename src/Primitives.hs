@@ -24,13 +24,17 @@ found ctx binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return (ctx, dynamicNil)
 
+makeModulePrim :: [String] -> String -> Int -> String -> Primitive -> (SymPath, Primitive)
+makeModulePrim modules name arity example callback =
+  makePrim' modules name (Just arity) example callback
+
 makePrim :: String -> Int -> String -> Primitive -> (SymPath, Primitive)
 makePrim name arity example callback =
-  makePrim' name (Just arity) example callback
+  makePrim' [] name (Just arity) example callback
 
 makeVarPrim :: String -> String -> Primitive -> (SymPath, Primitive)
 makeVarPrim name example callback =
-  makePrim' name Nothing example callback
+  makePrim' [] name Nothing example callback
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
@@ -38,9 +42,9 @@ argumentErr ctx fun ty number actual =
             "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number ++
             " argument, but got `" ++ pretty actual ++ "`") (info actual))
 
-makePrim' :: String -> Maybe Int -> String -> Primitive -> (SymPath, Primitive)
-makePrim' name maybeArity example callback =
-  let path = SymPath [] name
+makePrim' :: [String] -> String -> Maybe Int -> String -> Primitive -> (SymPath, Primitive)
+makePrim' modules name maybeArity example callback =
+  let path = SymPath modules name
   in (path, wrapped)
   where wrapped =
           case maybeArity of

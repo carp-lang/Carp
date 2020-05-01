@@ -72,37 +72,6 @@ eval ctx xobj@(XObj o i t) =
     resolveDef x = x
     eval' form =
       case form of
-       [XObj (Sym (SymPath ["Dynamic"] "and") _) _ _, a, b] -> do
-         (newCtx, evaledA) <- eval ctx a
-         case evaledA of
-           Left e -> return (ctx, Left e)
-           Right (XObj (Bol ab) _ _) ->
-             if ab
-               then do
-                 (newCtx', evaledB) <- eval newCtx b
-                 case evaledB of
-                   Left e -> return (newCtx, Left e)
-                   Right (XObj (Bol bb) _ _) ->
-                     return (newCtx', if bb then Right trueXObj else Right falseXObj)
-                   Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
-               else return (newCtx, Right falseXObj)
-           Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
-
-       [XObj (Sym (SymPath ["Dynamic"] "or") _) _ _, a, b] -> do
-         (newCtx, evaledA) <- eval ctx a
-         case evaledA of
-           Left e -> return (ctx, Left e)
-           Right (XObj (Bol ab) _ _) ->
-             if ab
-               then return (newCtx, Right trueXObj)
-               else do
-                 (newCtx', evaledB) <- eval newCtx b
-                 case evaledB of
-                   Left e -> return (newCtx, Left e)
-                   Right (XObj (Bol bb) _ _) ->
-                     return (newCtx', if bb then Right trueXObj else Right falseXObj)
-                   Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
-           Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
 
        [XObj If _ _, mcond, mtrue, mfalse] -> do
          (newCtx, evd) <- eval ctx mcond
@@ -844,6 +813,40 @@ primitiveDefmacro _ ctx [XObj (Sym (SymPath [] name) _) _ _, params, body] =
 primitiveDefmacro _ ctx [notName, params, body] =
   argumentErr ctx "defmacro" "a name" "first" notName
 
+primitiveAnd :: Primitive
+primitiveAnd _ ctx [a, b] = do
+ (newCtx, evaledA) <- eval ctx a
+ case evaledA of
+   Left e -> return (ctx, Left e)
+   Right (XObj (Bol ab) _ _) ->
+     if ab
+       then do
+         (newCtx', evaledB) <- eval newCtx b
+         case evaledB of
+           Left e -> return (newCtx, Left e)
+           Right (XObj (Bol bb) _ _) ->
+             return (newCtx', if bb then Right trueXObj else Right falseXObj)
+           Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
+       else return (newCtx, Right falseXObj)
+   Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
+
+primitiveOr :: Primitive
+primitiveOr _ ctx [a, b] = do
+ (newCtx, evaledA) <- eval ctx a
+ case evaledA of
+   Left e -> return (ctx, Left e)
+   Right (XObj (Bol ab) _ _) ->
+     if ab
+       then return (newCtx, Right trueXObj)
+       else do
+         (newCtx', evaledB) <- eval newCtx b
+         case evaledB of
+           Left e -> return (newCtx, Left e)
+           Right (XObj (Bol bb) _ _) ->
+             return (newCtx', if bb then Right trueXObj else Right falseXObj)
+           Right b -> return (evalError ctx ("Can’t call `or` on " ++ pretty b) (info b))
+   Right a -> return (evalError ctx ("Can’t call `or` on " ++ pretty a) (info a))
+
 primitives :: Map.Map SymPath Primitive
 primitives = Map.fromList
   [ makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
@@ -866,4 +869,6 @@ primitives = Map.fromList
   , makePrim "use" 1 "(use MyModule)" primitiveUse
   , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
   , makePrim "defined?" 1 "(defined? mycode)" primitiveDefined
+  , makeModulePrim ["Dynamic"] "and" 2 "(Dynamic.and true false)" primitiveAnd
+  , makeModulePrim ["Dynamic"] "or" 2 "(Dynamic.or true false)" primitiveOr
   ]
