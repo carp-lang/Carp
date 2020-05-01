@@ -14,6 +14,7 @@ import Commands
 import Parsing
 import Eval
 import Concretize
+import Primitives
 import Debug.Trace (trace)
 
 -- | These modules will be loaded in order before any other code is evaluated.
@@ -336,6 +337,26 @@ dynamicModule = Env { envBindings = bindings
                     , addCommand "read-file" 1 commandReadFile
                     , addCommand "write-file" 2 commandWriteFile
                     , addCommand "bit-width" 0 commandBitWidth
+                    , makePrim "quote" 1 "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
+                    , makeVarPrim "file" "(file mysymbol)" primitiveFile
+                    , makeVarPrim "line" "(line mysymbol)" primitiveLine
+                    , makeVarPrim "column" "(column mysymbol)" primitiveColumn
+                    , makePrim "info" 1 "(info mysymbol)" primitiveInfo
+                    , makeVarPrim "register-type" "(register-type Name <optional: members>)" primitiveRegisterType
+                    , makePrim "defmacro" 3 "(defmacro name [args :rest restargs] body)" primitiveDefmacro
+                    , makePrim "defndynamic" 3 "(defndynamic name [args] body)" primitiveDefndynamic
+                    , makePrim "defdynamic" 2 "(defdynamic name value)" primitiveDefdynamic
+                    , makePrim "type" 1 "(type mysymbol)" primitiveType
+                    , makePrim "members" 1 "(type mysymbol)" primitiveMembers
+                    , makeVarPrim "defmodule" "(defmodule MyModule <expressions>)" primitiveDefmodule
+                    , makePrim "meta-set!" 3 "(meta-set! mysymbol \"mykey\" \"myval\")" primitiveMetaSet
+                    , makePrim "meta" 2 "(meta mysymbol \"mykey\")" primitiveMeta
+                    , makePrim "definterface" 2 "(definterface myfunction MyType)" primitiveDefinterface
+                    , makeVarPrim "register" "(register name <signature> <optional: override>)" primitiveRegister
+                    , makeVarPrim "deftype" "(deftype name <members>)" primitiveDeftype
+                    , makePrim "use" 1 "(use MyModule)" primitiveUse
+                    , makePrim "eval" 1 "(evaluate mycode)" primitiveEval
+                    , makePrim "defined?" 1 "(defined? mycode)" primitiveDefined
                     ]
                     ++ [("String", Binder emptyMeta (XObj (Mod dynamicStringModule) Nothing Nothing))
                        ,("Symbol", Binder emptyMeta (XObj (Mod dynamicSymModule) Nothing Nothing))

@@ -18,23 +18,17 @@ import Util
 
 import Debug.Trace
 
-type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
-
 found ctx binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return (ctx, dynamicNil)
 
-makeModulePrim :: [String] -> String -> Int -> String -> Primitive -> (SymPath, Primitive)
-makeModulePrim modules name arity example callback =
-  makePrim' modules name (Just arity) example callback
-
-makePrim :: String -> Int -> String -> Primitive -> (SymPath, Primitive)
+makePrim :: String -> Int -> String -> Primitive -> (String, Binder)
 makePrim name arity example callback =
-  makePrim' [] name (Just arity) example callback
+  makePrim' name (Just arity) example callback
 
-makeVarPrim :: String -> String -> Primitive -> (SymPath, Primitive)
+makeVarPrim :: String -> String -> Primitive -> (String, Binder)
 makeVarPrim name example callback =
-  makePrim' [] name Nothing example callback
+  makePrim' name Nothing example callback
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
@@ -42,10 +36,14 @@ argumentErr ctx fun ty number actual =
             "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number ++
             " argument, but got `" ++ pretty actual ++ "`") (info actual))
 
-makePrim' :: [String] -> String -> Maybe Int -> String -> Primitive -> (SymPath, Primitive)
-makePrim' modules name maybeArity example callback =
-  let path = SymPath modules name
-  in (path, wrapped)
+makePrim' :: String -> Maybe Int -> String -> Primitive -> (String, Binder)
+makePrim' name maybeArity example callback =
+  let path = SymPath [] name
+      prim = XObj (Lst [ XObj (Primitive (PrimitiveFunction wrapped)) (Just dummyInfo) Nothing
+                       , XObj (Sym path Symbol) Nothing Nothing
+                       ])
+            (Just dummyInfo) (Just DynamicTy)
+  in (name, Binder emptyMeta prim)
   where wrapped =
           case maybeArity of
             Just a ->
