@@ -34,8 +34,8 @@
     1 true
     false))
 
-(defmacro test-and [a b] (Dynamic.and a b))
-(defmacro test-or [a b] (Dynamic.or a b))
+(defmacro test-and [a b] (dynand a b))
+(defmacro test-or [a b] (dynor a b))
 (defmacro test-not [a] (not a))
 (defmacro test-< [a b] (< a b))
 (defmacro test-> [a b] (> a b))
@@ -60,12 +60,12 @@
 
 (defmacro test-map []
   (let [mapped (Dynamic.map length '((a) (b c) (d e f)))]
-    (Dynamic.and (Dynamic.and (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
+    (dynand (dynand (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
     (Dynamic.caddr mapped)))))
 
 (defmacro test-zip []
   (let [zipped (Dynamic.zip array '('a 'd) '('c 'o) '('e 'g))]
-    (Dynamic.and (= 'ace (Symbol.concat (eval (Dynamic.car zipped))))
+    (dynand (= 'ace (Symbol.concat (eval (Dynamic.car zipped))))
       (= 'dog (Symbol.concat (eval (Dynamic.cadr zipped)))))))
 
 (defmacro test-curry []
@@ -81,12 +81,12 @@
   (= 10 (Dynamic.reduce + 0 '(1 2 3 4))))
 
 (defmacro test-unreduce []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynand true
     (Dynamic.map 'eval
       (Dynamic.zip = '(1 2 3 4) (Dynamic.unreduce (curry + 1) 0 4 (list))))))
 
 (defmacro test-filter []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynand true
     (Dynamic.map 'eval
       (Dynamic.zip = '('a 'a 'a 'a)
         (Dynamic.map Dynamic.quoted
@@ -95,17 +95,17 @@
 (defmacro test-empty []
   ;; We can't compare '[] and '[] for some reason.
   ;; But '() and '() are comparable
-  (Dynamic.and (= '() (Dynamic.empty '(1 2 3 4)))
+  (dynand (= '() (Dynamic.empty '(1 2 3 4)))
                (empty? (Dynamic.empty '[1 2 3 4]))))
 
 (defmacro test-reverse []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynand true
     (Dynamic.map 'eval
       (Dynamic.zip = '(4 3 2 1) (Dynamic.reverse '(1 2 3 4))))))
 
 (defmacro test-take []
   (let [result  (Dynamic.take 2 '(1 2 3 4))]
-    (Dynamic.and (= 1 (car result ))
+    (dynand (= 1 (car result ))
                  (= '() (cddr result)))))
 
 (deftest test

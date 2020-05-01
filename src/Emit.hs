@@ -126,6 +126,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             External _ -> error (show (CannotEmitExternal xobj))
             ExternalType -> error (show (DontVisitObj xobj))
             e@(Command _) -> error (show (DontVisitObj xobj))
+            e@(Primitive _) -> error (show (DontVisitObj xobj))
             e@(Deftemplate _) ->  error (show (DontVisitObj xobj))
             e@(Instantiate _) ->  error (show (DontVisitObj xobj))
             e@(Defalias _) -> error (show (DontVisitObj xobj))
@@ -497,6 +498,10 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             XObj (Command _) _ _ : _ ->
               return ""
 
+            -- Primitive
+            XObj (Primitive _) _ _ : _ ->
+              return ""
+
             -- Interface
             XObj (Interface _ _) _ _ : _ ->
               return ""
@@ -765,6 +770,8 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
     XObj ExternalType _ _ : _ ->
       ""
     XObj (Command _) _ _ : _ ->
+      ""
+    XObj (Primitive _) _ _ : _ ->
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)
 toDeclaration _ = error "Missing case."

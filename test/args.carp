@@ -3,7 +3,7 @@
 
 (defndynamic _make-exe-path [pth]
   (let [out (Project.get-config "output-directory")
-        sep (if (Dynamic.or (= (os) "windows") (= (os) "mingw32")) "\\" "/")
+        sep (if (dynor (= (os) "windows") (= (os) "mingw32")) "\\" "/")
         lst (Dynamic.String.suffix out (- (String.length out) 1))]
     (Dynamic.String.concat (array out (if (= lst sep) "" sep) pth))))
 
