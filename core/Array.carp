@@ -106,7 +106,7 @@ Returns `Nothing` if the array is empty.")
               (break))))
         eq)))
 
-    (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
+  (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
 
 If the array is empty, it returns `Nothing`.")
   (defn maximum [xs]
@@ -127,7 +127,7 @@ If the array is empty, returns `Nothing`")
     (if (empty? xs)
       (Maybe.Nothing)
       (let-do [result (unsafe-nth xs 0)
-             n (length xs)]
+               n (length xs)]
         (for [i 1 n]
           (let [x (unsafe-nth xs i)]
             (when (> result x)
@@ -323,9 +323,9 @@ The trailing elements of the longer array will be discarded.")
 
 If the `index` is out of bounds, return `Maybe.Nothing`")
   (defn nth [xs index]
-  (if (and (>= index 0) (< index (length xs)))
-    (Maybe.Just @(unsafe-nth xs index)) ; the copy will go away with lifetimes
-    (Maybe.Nothing)))
+    (if (and (>= index 0) (< index (length xs)))
+       (Maybe.Just @(unsafe-nth xs index)) ; the copy will go away with lifetimes
+       (Maybe.Nothing)))
 
   (doc remove "removes all occurrences of the element `el` in the array `arr`, in place.")
   (defn remove [el arr]
@@ -341,7 +341,7 @@ If the `index` is out of bounds, return `Maybe.Nothing`")
         (aset! &arr j @(unsafe-nth &arr (inc j))))
       (pop-back arr)))
 
-   (doc copy-filter "filters the elements in an array.
+  (doc copy-filter "filters the elements in an array.
 
 It will create a copy. If you want to avoid that, consider using [`endo-filter`](#endo-filter) instead.")
   (defn copy-filter [f a] (endo-filter f @a))
@@ -389,5 +389,5 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
               (set! y (Array.length arr)))
             (set! a (push-back a (Array.slice arr x y)))
             (set! x y)))
-        a))
-)
+        a)))
+

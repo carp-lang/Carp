@@ -1,7 +1,6 @@
-(use StaticArray)
-
 (load "Test.carp")
 (use Test)
+(use StaticArray)
 
 (deftest test
 
@@ -32,4 +31,21 @@
   ;;                 &@(unsafe-nth nested 1))
   ;;               "unsafe-nth works as expected")
 
-  )
+  (assert-equal test
+                10
+                (let [arr $[2 2 2 2]]
+                  (reduce
+                    &(fn [acc val] (+ acc @val))
+                    2
+                    arr))
+                "reduce works as expected")
+
+  (assert-equal test
+                $[2 4 8]
+                (let-do [arr $[1 2 4]]
+                  (map!
+                    arr
+                    &(fn [val] (* @val 2)))
+                  arr)
+                "map! works as expected"))
+
