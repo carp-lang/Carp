@@ -47,5 +47,34 @@
                     arr
                     &(fn [val] (* @val 2)))
                   arr)
-                "map! works as expected"))
+                "map! works as expected")
 
+  (assert-equal test
+                true
+                (empty? (the (Ref (StaticArray Int)) $[]))
+                "empty? works as expected I")
+
+  (assert-equal test
+                false
+                (empty? $[1])
+                "empty? works as expected II")
+
+  (assert-equal test
+                true
+                (any? &(fn [x] (= 0 @x)) $[0 1 2 3])
+                "any? works as expected I")
+
+  (assert-equal test
+                false
+                (any? &(fn [x] (= 0 @x)) $[1 2 3 4])
+                "any? works as expected II")
+
+  (assert-equal test
+                true
+                (all? &(fn [x] (< 0 @x)) $[1 2 3])
+                "all? works as expected I")
+
+  (assert-equal test
+                false
+                (all? &(fn [x] (< 0 @x)) $[0 1 2])
+                "all? works as expected II"))

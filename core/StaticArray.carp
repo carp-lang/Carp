@@ -1,5 +1,7 @@
 (defmodule StaticArray
 
+  ;; NOTE: Following function declarations are copy of the ones in Array
+  ;; could we share inmplementation between Array and StaticArray?
   (defndynamic foreach-internal [var xs expr]
     (let [xsym (gensym-with 'xs)
           len (gensym-with 'len)
@@ -10,7 +12,6 @@
                   (list 'let [var (list 'StaticArray.unsafe-nth xsym i)]
                         expr)))))
 
-  ;; NOTE: Exact copy of the Array.foreach macro, could be made "generic" by removing the module prefixes.
   (defmacro foreach [binding expr]
     (StaticArray.foreach-internal (car binding) (cadr binding) expr))
 
@@ -19,7 +20,6 @@
     (for [i 0 (StaticArray.length xs)]
       (StaticArray.aset! xs i (~f (StaticArray.unsafe-nth xs i)))))
 
-  ;; NOTE: Exact copy of the Array.reduce function.
   (defn reduce [f x xs]
     (let [total x]
       (do
@@ -39,4 +39,26 @@
               (break))))
         eq)))
 
-  )
+  (doc empty? "checks whether the array `a` is empty.")
+  (defn empty? [a]
+    (= (StaticArray.length a) 0))
+
+  (doc any? "checks whether any of the elements in `a` match the function `f`.")
+  (defn any? [f a]
+    (let-do [res false]
+      (for [i 0 (length a)]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! res true)
+            (break))))
+      res))
+
+  (doc all? "checks whether all of the elements in `a` match the function `f`.")
+  (defn all? [f a]
+    (let-do [res true]
+      (for [i 0 (length a)]
+        (when (not (~f (unsafe-nth a i)))
+          (do
+            (set! res false)
+            (break))))
+      res)))
