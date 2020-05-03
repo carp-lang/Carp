@@ -439,6 +439,48 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#maximum">
+                    <h3 id="maximum">
+                        maximum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (maximum xs)
+                </pre>
+                <p class="doc">
+                    <p>gets the maximum in an array (elements must support <code>&lt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, it returns <code>Nothing</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#minimum">
+                    <h3 id="minimum">
+                        minimum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (minimum xs)
+                </pre>
+                <p class="doc">
+                    <p>gets the minimum in an array (elements must support <code>&gt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, returns <code>Nothing</code></p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#reduce">
                     <h3 id="reduce">
                         reduce

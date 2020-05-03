@@ -114,4 +114,32 @@ Returns `Nothing` if the array is empty.")
   (defn last [a]
     (if (empty? a)
       (Maybe.Nothing)
-      (Maybe.Just @(unsafe-nth a (Int.dec (length a)))))))
+      (Maybe.Just @(unsafe-nth a (Int.dec (length a))))))
+
+  (doc maximum "gets the maximum in an array (elements must support `<`) and wraps it in a `Just`.
+
+If the array is empty, it returns `Nothing`.")
+  (defn maximum [xs]
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (unsafe-nth xs 0)
+               n (length xs)]
+        (for [i 1 n]
+          (let [x (unsafe-nth xs i)]
+            (when (< result x)
+              (set! result x))))
+        (Maybe.Just @result))))
+
+  (doc minimum "gets the minimum in an array (elements must support `>`) and wraps it in a `Just`.
+
+If the array is empty, returns `Nothing`")
+  (defn minimum [xs]
+    (if (empty? xs)
+      (Maybe.Nothing)
+      (let-do [result (unsafe-nth xs 0)
+               n (length xs)]
+        (for [i 1 n]
+          (let [x (unsafe-nth xs i)]
+            (when (> result x)
+              (set! result x))))
+        (Maybe.Just @result)))))
