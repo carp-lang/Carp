@@ -1,5 +1,21 @@
 (defmodule StaticArray
 
+  (doc map! "Maps a function over the static array `xs`, mutating it in place. The difference to Array.endo-map (which does the same thing internally) is that this function takes a ref (since you can never have static arrays as values) and that it returns ().")
+  (defn map! [xs f]
+    (for [i 0 (StaticArray.length xs)]
+      (StaticArray.aset! xs i (~f (StaticArray.unsafe-nth xs i)))))
+
+  (doc reverse! "Reverse array in place.")
+  (defn reverse! [a]
+    (let-do [i 0
+             j (Int.dec (length a))]
+      (while (Int.< i j)
+        (let-do [tmp @(unsafe-nth a i)]
+          (aset! a i @(unsafe-nth a j))
+          (set! i (Int.inc i))
+          (aset! a j tmp)
+          (set! j (Int.dec j))))))
+
   ;; NOTE: Following function declarations are copy of the ones in Array
   ;; could we share inmplementation between Array and StaticArray?
   (defndynamic foreach-internal [var xs expr]
@@ -14,11 +30,6 @@
 
   (defmacro foreach [binding expr]
     (StaticArray.foreach-internal (car binding) (cadr binding) expr))
-
-  (doc map! "Maps a function over the static array `xs`, mutating it in place. The difference to Array.endo-map (which does the same thing internally) is that this function takes a ref (since you can never have static arrays as values) and that it returns ().")
-  (defn map! [xs f]
-    (for [i 0 (StaticArray.length xs)]
-      (StaticArray.aset! xs i (~f (StaticArray.unsafe-nth xs i)))))
 
   (defn reduce [f x xs]
     (let [total x]
