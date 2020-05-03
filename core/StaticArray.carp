@@ -195,4 +195,22 @@ If the array is empty, returns `Nothing`")
     (let-do [x @(unsafe-nth a i)
              y @(unsafe-nth a j)]
       (aset! a i y)
-      (aset! a j x))))
+      (aset! a j x)))
+
+  (doc nth "gets a reference to the `n`th element from an array `arr` wrapped on a `Maybe`.
+
+  If the `index` is out of bounds, return `Maybe.Nothing`")
+  (defn nth [xs index]
+   (if (and (>= index 0) (< index (length xs)))
+     (Maybe.Just @(unsafe-nth xs index)) ; the copy will go away with lifetimes
+     (Maybe.Nothing)))
+
+  (doc contains? "checks wether an element exists in the array.")
+  (defn contains? [arr el]
+    (let-do [result false]
+      (for [i 0 (length arr)]
+        (when (= el (unsafe-nth arr i))
+          (do
+            (set! result true)
+            (break))))
+      result)))

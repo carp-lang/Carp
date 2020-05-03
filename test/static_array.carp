@@ -195,4 +195,22 @@
                 (let-do [arr $[1 2]]
                   (StaticArray.swap! arr 0 1)
                   arr)
-                "swap! works as expected"))
+                "swap! works as expected")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(nth $[0 1 2] 3)
+                "nth works as expected I")
+
+  (assert-equal test
+                &(Maybe.Just 0)
+                &(nth $[0 1 2] 0)
+                "nth works as expected II")
+
+  (assert-true test
+                (contains? $[0 1 2] &1)
+                "contains? works as expected I")
+
+  (assert-false test
+                (contains? $[0 1 2] &100)
+                "contains? works as expected II"))

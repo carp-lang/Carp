@@ -322,6 +322,12 @@
                 &[1.0 1.5 2.0 2.5]
                 &(unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
                 "unreduce works")
+  (assert-true test
+                (contains? &[0 1 2] &1)
+                "contains? works as expected I")
+  (assert-false test
+                (contains? &[0 1 2] &100)
+                "contains? works as expected II")
   (assert-equal test
                 &[1 2 3]
                 &(from-static $[1 2 3])
