@@ -97,4 +97,35 @@
   (assert-equal test
                 &(Maybe.Just 1)
                 &(find-index &(fn [i] (Int.even? @i)) $[1 8 5])
-                "find-index works II"))
+                "find-index works II")
+
+  (assert-equal test
+                1
+                (unsafe-first $[1 2 3])
+                "unsafe-first works as expected")
+
+  (assert-equal test
+                &(Maybe.Just 1)
+                &(first $[1 2 3])
+                "first works as expected")
+
+  (assert-equal test
+                &(the (Maybe Int) (Maybe.Nothing))
+                &(first $[])
+                "first works as expected on empty array")
+
+  (assert-equal test
+                \c
+                (unsafe-last $[\a \b \c])
+                "unsafe-last works as expected")
+
+  (assert-equal test
+                &(Maybe.Just \c)
+                &(last $[\a \b \c])
+                "last works as expected")
+
+  (assert-equal test
+                &(the (Maybe Char) (Maybe.Nothing))
+                &(last $[])
+                "last works as expected on empty array"))
+

@@ -85,4 +85,33 @@ If it doesn’t find an index, `Nothing` will be returned.")
           (do
             (set! ret (Maybe.Just i))
             (break))))
-      ret)))
+      ret))
+
+  (doc unsafe-first "takes the first element of an array.
+
+Generates a runtime error if the array is empty.")
+  (defn unsafe-first [a]
+    @(unsafe-nth a 0))
+
+  (doc first "takes the first element of an array and returns a `Just`.
+
+Returns `Nothing` if the array is empty.")
+  (defn first [a]
+    (if (empty? a)
+      (Maybe.Nothing)
+      (Maybe.Just @(unsafe-nth a 0))))
+
+  (doc unsafe-last "takes the last element of an array.
+
+Generates a runtime error if the array is empty.")
+  (defn unsafe-last [a]
+    @(unsafe-nth a (Int.dec (length a))))
+
+
+  (doc last "takes the last element of an array and returns a `Just`.
+
+Returns `Nothing` if the array is empty.")
+  (defn last [a]
+    (if (empty? a)
+      (Maybe.Nothing)
+      (Maybe.Just @(unsafe-nth a (Int.dec (length a)))))))
