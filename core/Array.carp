@@ -389,5 +389,12 @@ It will create a copy. If you want to avoid that, consider using [`endo-filter`]
               (set! y (Array.length arr)))
             (set! a (push-back a (Array.slice arr x y)))
             (set! x y)))
-        a)))
+        a))
+
+  (doc from-static "Turns a `StaticArray` into an `Array`. Copies elements.")
+  (defn from-static [sarr]
+    (let-do [darr (allocate (StaticArray.length sarr))]
+      (for [i 0 (StaticArray.length sarr)]
+        (aset-uninitialized! &darr i @(StaticArray.unsafe-nth sarr i)))
+      darr)))
 

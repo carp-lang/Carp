@@ -306,4 +306,8 @@
                 &[1.0 1.5 2.0 2.5]
                 &(unreduce 1.0 &(fn [x] (< x 3.0)) &(fn [x] (+ x 0.5)))
                 "unreduce works")
-)
+  (assert-equal test
+                &[1 2 3]
+                &(from-static $[1 2 3])
+                "from-static works"))
+
