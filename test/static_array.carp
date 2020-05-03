@@ -77,4 +77,24 @@
   (assert-equal test
                 false
                 (all? &(fn [x] (< 0 @x)) $[0 1 2])
-                "all? works as expected II"))
+                "all? works as expected II")
+
+  (assert-equal test
+                &(Maybe.Just 3)
+                &(find &(fn [x] (= 3 @x)) $[0 1 2 3])
+                "find works as expected I")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(find &(fn [x] (= 4 @x)) $[0 1 2 3])
+                "find works as expected II")
+
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(find-index &(fn [i] (Int.even? @i)) $[1 3 5])
+                "find-index works I")
+
+  (assert-equal test
+                &(Maybe.Just 1)
+                &(find-index &(fn [i] (Int.even? @i)) $[1 8 5])
+                "find-index works II"))

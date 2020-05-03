@@ -277,6 +277,48 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#find">
+                    <h3 id="find">
+                        find
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (find f a)
+                </pre>
+                <p class="doc">
+                    <p>finds an element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an element, <code>Nothing</code> will be returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#find-index">
+                    <h3 id="find-index">
+                        find-index
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe Int))
+                </p>
+                <pre class="args">
+                    (find-index f a)
+                </pre>
+                <p class="doc">
+                    <p>finds the index of the first element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an index, <code>Nothing</code> will be returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#foreach">
                     <h3 id="foreach">
                         foreach

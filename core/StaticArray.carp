@@ -61,4 +61,28 @@
           (do
             (set! res false)
             (break))))
-      res)))
+      res))
+
+  (doc find "finds an element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an element, `Nothing` will be returned.")
+  (defn find [f a]
+    (let-do [res (Maybe.Nothing)]
+      (for [i 0 (length a)]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! res (Maybe.Just @(unsafe-nth a i)))
+            (break))))
+      res))
+
+  (doc find-index "finds the index of the first element in `a` that matches the function `f` and wraps it in a `Just`.
+
+If it doesn’t find an index, `Nothing` will be returned.")
+  (defn find-index [f a]
+    (let-do [ret (Maybe.Nothing)]
+      (for [i 0 (length a)]
+        (when (~f (unsafe-nth a i))
+          (do
+            (set! ret (Maybe.Just i))
+            (break))))
+      ret)))
