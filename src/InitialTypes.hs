@@ -92,7 +92,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Mod _)            -> return (Left (InvalidObj If xobj))
                        e@(Deftype _)      -> return (Left (InvalidObj e xobj))
                        e@(External _)     -> return (Left (InvalidObj e xobj))
-                       ExternalType       -> return (Left (InvalidObj ExternalType xobj))
+                       e@(ExternalType _) -> return (Left (InvalidObj e xobj))
                        e@(Deftemplate _)  -> return (Left (InvalidObj e xobj))
                        e@(Instantiate _)  -> return (Left (InvalidObj e xobj))
                        e@(Defalias _)     -> return (Left (InvalidObj e xobj))

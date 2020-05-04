@@ -71,7 +71,7 @@ data Obj = Sym SymPath SymbolMode
          | DefSumtype Ty
          | With
          | External (Maybe String)
-         | ExternalType
+         | ExternalType (Maybe String)
          | DocStub
          | Deftemplate TemplateCreator
          | Instantiate Template
@@ -200,7 +200,7 @@ getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _ _) _ _ :
 getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "instantiate"
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
-getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
+getBinderDescription (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj DocStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "doc-stub"
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
@@ -239,7 +239,7 @@ getPath (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) 
 getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DocStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
@@ -298,7 +298,7 @@ pretty = visit 0
             Instantiate _ -> "instantiate"
             External Nothing -> "external"
             External (Just override) -> "external (override: " ++ show override ++ ")"
-            ExternalType -> "external-type"
+            ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
             DocStub -> "doc-stub"
             Defalias _ -> "defalias"
             Address -> "address"
@@ -358,7 +358,8 @@ prettyUpTo max xobj =
             Instantiate _ -> ""
             External Nothing -> ""
             External (Just override) -> ")"
-            ExternalType -> ""
+            ExternalType Nothing -> ")"
+            ExternalType (Just override) -> ")"
             DocStub -> ""
             Defalias _ -> ""
             Address -> ""
