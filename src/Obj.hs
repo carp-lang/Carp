@@ -358,7 +358,7 @@ prettyUpTo max xobj =
             Instantiate _ -> ""
             External Nothing -> ""
             External (Just override) -> ")"
-            ExternalType Nothing -> ")"
+            ExternalType Nothing -> ""
             ExternalType (Just override) -> ")"
             DocStub -> ""
             Defalias _ -> ""
