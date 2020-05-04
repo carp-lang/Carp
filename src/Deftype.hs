@@ -32,7 +32,7 @@ moduleForDeftype typeEnv env pathStrings typeName typeVariables rest i existingE
       -- For example (module Vec2 [x Float]) creates bindings like Vec2.create, Vec2.x, etc.
       insidePath = pathStrings ++ [typeModuleName]
   in do validateMemberCases typeEnv typeVariables rest
-        let structTy = StructTy typeName typeVariables
+        let structTy = StructTy (ConcreteNameTy typeName) typeVariables
         (okMembers, membersDeps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
@@ -54,7 +54,7 @@ bindingsForRegisteredType typeEnv env pathStrings typeName rest i existingEnv =
       typeModuleEnv = fromMaybe (Env (Map.fromList []) (Just env) (Just typeModuleName) [] ExternalEnv 0) existingEnv
       insidePath = pathStrings ++ [typeModuleName]
   in do validateMemberCases typeEnv [] rest
-        let structTy = StructTy typeName []
+        let structTy = StructTy (ConcreteNameTy typeName) []
         (binders, deps) <- templatesForMembers typeEnv env insidePath structTy rest
         okInit <- binderForInit insidePath structTy rest
         (okStr, strDeps) <- binderForStrOrPrn typeEnv env insidePath structTy rest "str"
@@ -74,7 +74,7 @@ templatesForMembers _ _ _ _ _ = error "Shouldn't reach this case (invalid type d
 
 -- | Generate the templates for a single member in a deftype declaration.
 templatesForSingleMember :: TypeEnv -> Env -> [String] -> Ty -> (XObj, XObj) -> [((String, Binder), [XObj])]
-templatesForSingleMember typeEnv env insidePath p@(StructTy typeName _) (nameXObj, typeXObj) =
+templatesForSingleMember typeEnv env insidePath p@(StructTy (ConcreteNameTy typeName) _) (nameXObj, typeXObj) =
   let Just t = xobjToTy typeXObj
       memberName = getName nameXObj
   in [instanceBinderWithDeps (SymPath insidePath memberName) (FuncTy [RefTy p (VarTy "q")] (RefTy t (VarTy "q")) StaticLifetimeTy) (templateGetter (mangle memberName) t) ("gets the `" ++ memberName ++ "` property of a `" ++ typeName ++ "`.")
@@ -123,7 +123,7 @@ templateSetter typeEnv env memberName memberTy =
 
 -- | The template for setters of a generic deftype.
 templateGenericSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
-templateGenericSetter pathStrings originalStructTy@(StructTy typeName _) memberTy memberName =
+templateGenericSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) memberTy memberName =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy, memberTy] originalStructTy StaticLifetimeTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName)
         t = FuncTy [VarTy "p", VarTy "t"] (VarTy "p") StaticLifetimeTy
@@ -160,7 +160,7 @@ templateMutatingSetter typeEnv env memberName memberTy =
 
 -- | The template for mutating setters of a generic deftype.
 templateGenericMutatingSetter :: [String] -> Ty -> Ty -> String -> (String, Binder)
-templateGenericMutatingSetter pathStrings originalStructTy@(StructTy typeName _) memberTy memberName =
+templateGenericMutatingSetter pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) memberTy memberName =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [(RefTy originalStructTy (VarTy "q")), memberTy] UnitTy StaticLifetimeTy) docs
   where path = SymPath pathStrings ("set-" ++ memberName ++ "!")
         t = FuncTy [RefTy (VarTy "p") (VarTy "q"), VarTy "t"] UnitTy StaticLifetimeTy
@@ -199,7 +199,7 @@ templateUpdater member =
 
 -- | Helper function to create the binder for the 'init' template.
 binderForInit :: [String] -> Ty -> [XObj] -> Either TypeError (String, Binder)
-binderForInit insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForInit insidePath structTy@(StructTy (ConcreteNameTy typeName) _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
   then Right (genericInit StackAlloc insidePath structTy membersXObjs)
   else Right $ instanceBinder (SymPath insidePath "init")
@@ -213,7 +213,7 @@ initArgListTypes xobjs = map (\(_, x) -> fromJust (xobjToTy x)) (pairwise xobjs)
 
 -- | The template for the 'init' and 'new' functions for a concrete deftype.
 concreteInit :: AllocationMode -> Ty -> [XObj] -> Template
-concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) membersXObjs =
+concreteInit allocationMode originalStructTy@(StructTy (ConcreteNameTy typeName) typeVariables) membersXObjs =
   Template
     (FuncTy (map snd (memberXObjsToPairs membersXObjs)) (VarTy "p") StaticLifetimeTy)
     (\(FuncTy _ concreteStructTy _) ->
@@ -226,7 +226,7 @@ concreteInit allocationMode originalStructTy@(StructTy typeName typeVariables) m
 
 -- | The template for the 'init' and 'new' functions for a generic deftype.
 genericInit :: AllocationMode -> [String] -> Ty -> [XObj] -> (String, Binder)
-genericInit allocationMode pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+genericInit allocationMode pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings "init"
         t = FuncTy (map snd (memberXObjsToPairs membersXObjs)) originalStructTy StaticLifetimeTy
@@ -275,7 +275,7 @@ templatizeTy t = t
 
 -- | Helper function to create the binder for the 'str' template.
 binderForStrOrPrn :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> String -> Either TypeError ((String, Binder), [XObj])
-binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] strOrPrn =
+binderForStrOrPrn typeEnv env insidePath structTy@(StructTy (ConcreteNameTy typeName) _) [XObj (Arr membersXObjs) _ _] strOrPrn =
   if isTypeGeneric structTy
   then Right (genericStr insidePath structTy membersXObjs strOrPrn, [])
   else Right (instanceBinderWithDeps (SymPath insidePath strOrPrn)
@@ -285,7 +285,7 @@ binderForStrOrPrn typeEnv env insidePath structTy@(StructTy typeName _) [XObj (A
 
 -- | The template for the 'str' function for a concrete deftype.
 concreteStr :: TypeEnv -> Env -> Ty -> [(String, Ty)] -> String -> Template
-concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOrPrn =
+concreteStr typeEnv env concreteStructTy@(StructTy (ConcreteNameTy typeName) _) memberPairs strOrPrn =
   Template
     (FuncTy [RefTy concreteStructTy (VarTy "q")] StringTy StaticLifetimeTy)
     (\(FuncTy [RefTy structTy _] StringTy _) -> toTemplate $ "String $NAME(" ++ tyToCLambdaFix structTy ++ " *p)")
@@ -298,7 +298,7 @@ concreteStr typeEnv env concreteStructTy@(StructTy typeName _) memberPairs strOr
 
 -- | The template for the 'str' function for a generic deftype.
 genericStr :: [String] -> Ty -> [XObj] -> String -> (String, Binder)
-genericStr pathStrings originalStructTy@(StructTy typeName varTys) membersXObjs strOrPrn =
+genericStr pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) varTys) membersXObjs strOrPrn =
   defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath pathStrings strOrPrn
         t = FuncTy [RefTy originalStructTy (VarTy "q")] StringTy StaticLifetimeTy
@@ -346,7 +346,7 @@ tokensForStr typeEnv env typeName memberPairs concreteStructTy  =
 
 -- | Figure out how big the string needed for the string representation of the struct has to be.
 calculateStructStrSize :: TypeEnv -> Env -> [(String, Ty)] -> Ty -> String
-calculateStructStrSize typeEnv env members structTy@(StructTy name _) =
+calculateStructStrSize typeEnv env members structTy@(StructTy (ConcreteNameTy name) _) =
   "  int size = snprintf(NULL, 0, \"(%s )\", \"" ++ name ++ "\");\n" ++
   unlines (map (memberPrnSize typeEnv env) members)
 
@@ -360,7 +360,7 @@ memberAssignment allocationMode (memberName, _) = "    instance" ++ sep ++ membe
 
 -- | Helper function to create the binder for the 'delete' template.
 binderForDelete :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either TypeError ((String, Binder), [XObj])
-binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForDelete typeEnv env insidePath structTy@(StructTy (ConcreteNameTy typeName) _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
   then Right (genericDelete insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "delete")
@@ -370,7 +370,7 @@ binderForDelete typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr
 
 -- | The template for the 'delete' function of a generic deftype.
 genericDelete :: [String] -> Ty -> [XObj] -> (String, Binder)
-genericDelete pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+genericDelete pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [originalStructTy] UnitTy StaticLifetimeTy) docs
   where path = SymPath pathStrings "delete"
         t = FuncTy [VarTy "p"] UnitTy StaticLifetimeTy
@@ -398,7 +398,7 @@ genericDelete pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
 
 -- | Helper function to create the binder for the 'copy' template.
 binderForCopy :: TypeEnv -> Env -> [String] -> Ty -> [XObj] -> Either TypeError ((String, Binder), [XObj])
-binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr membersXObjs) _ _] =
+binderForCopy typeEnv env insidePath structTy@(StructTy (ConcreteNameTy typeName) _) [XObj (Arr membersXObjs) _ _] =
   if isTypeGeneric structTy
   then Right (genericCopy insidePath structTy membersXObjs, [])
   else Right (instanceBinderWithDeps (SymPath insidePath "copy")
@@ -408,7 +408,7 @@ binderForCopy typeEnv env insidePath structTy@(StructTy typeName _) [XObj (Arr m
 
 -- | The template for the 'copy' function of a generic deftype.
 genericCopy :: [String] -> Ty -> [XObj] -> (String, Binder)
-genericCopy pathStrings originalStructTy@(StructTy typeName _) membersXObjs =
+genericCopy pathStrings originalStructTy@(StructTy (ConcreteNameTy typeName) _) membersXObjs =
   defineTypeParameterizedTemplate templateCreator path (FuncTy [RefTy originalStructTy (VarTy "q")] originalStructTy StaticLifetimeTy) docs
   where path = SymPath pathStrings "copy"
         t = FuncTy [RefTy (VarTy "p") (VarTy "q")] (VarTy "p") StaticLifetimeTy
