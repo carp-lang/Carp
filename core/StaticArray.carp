@@ -16,8 +16,6 @@
           (aset! a j tmp)
           (set! j (Int.dec j))))))
 
-  ;; NOTE: Following function declarations are copy of the ones in Array
-  ;; could we share inmplementation between Array and StaticArray?
   (defndynamic foreach-internal [var xs expr]
     (let [xsym (gensym-with 'xs)
           len (gensym-with 'len)
