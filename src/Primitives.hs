@@ -204,7 +204,6 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
                       })
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
--- primitiveRegister _ ctx [XObj (Sym (SymPath _ name) _) _ _, ty, XObj (Str override) _ _] =
 primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, ty, XObj (Str override) _ _] = do
   let pathStrings = contextPath ctx
       typeEnv = contextTypeEnv ctx
