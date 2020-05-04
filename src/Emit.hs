@@ -762,8 +762,10 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
       ""
     XObj (External _) _ _ : _ ->
       ""
-    XObj (ExternalType _) _ _ : _ ->
+    XObj (ExternalType Nothing) _ _ : _ ->
       ""
+    XObj (ExternalType (Just override)) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef " ++ override ++ " " ++ pathToC path ++ ";"
     XObj (Command _) _ _ : _ ->
       ""
     _ -> error ("Internal compiler error: Can't emit other kinds of definitions: " ++ show xobj)

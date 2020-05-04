@@ -187,7 +187,13 @@ primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] = do
   return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
 primitiveRegisterType _ ctx [x] =
   return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
-primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, ty, XObj (Str override) _ _] = do
+  let pathStrings = contextPath ctx
+      typeEnv = contextTypeEnv ctx
+      path = SymPath pathStrings t
+      typeDefinition = XObj (Lst [XObj (ExternalType (Just override)) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+  return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
+primitiveRegisterType _ ctx (x@(XObj (Sym (SymPath [] t) _) _ _):(XObj (Str override) _ _):members) = do
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
@@ -198,16 +204,30 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
   case bindingsForRegisteredType typeEnv globalEnv pathStrings t [members] Nothing preExistingModule of
     Left err -> return (makeEvalError ctx (Just err) (show err) (info x))
     Right (typeModuleName, typeModuleXObj, deps) -> do
+      let typeDefinition = XObj (Lst [XObj (ExternalType (Just override)) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+          ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
+                      , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)
+                      })
+      contextWithDefs <- liftIO $ foldM (define True) ctx' deps
+      return (contextWithDefs, dynamicNil)
+primitiveRegisterType _ ctx (x@(XObj (Sym (SymPath [] t) _) _ _):members) = do
+  let pathStrings = contextPath ctx
+      globalEnv = contextGlobalEnv ctx
+      typeEnv = contextTypeEnv ctx
+      path = SymPath pathStrings t
+      preExistingModule = case lookupInEnv (SymPath pathStrings t) globalEnv of
+                            Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
+                            _ -> Nothing
+  case bindingsForRegisteredType typeEnv globalEnv pathStrings t members Nothing preExistingModule of
+    Left err -> return (makeEvalError ctx (Just err) (show err) (info x))
+    Right (typeModuleName, typeModuleXObj, deps) -> do
       let typeDefinition = XObj (Lst [XObj (ExternalType Nothing) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
           ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                       , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)
                       })
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
-primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, ty, XObj (Str override) _ _] = do
-  let pathStrings = contextPath ctx
-      typeEnv = contextTypeEnv ctx
-      path = SymPath pathStrings t
+
       typeDefinition = XObj (Lst [XObj (ExternalType (Just override)) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
   return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
 primitiveRegisterType _ ctx _ =
