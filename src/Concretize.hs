@@ -686,7 +686,7 @@ manageMemory typeEnv globalEnv root =
                       return (Right xobj)
              case r of
                Right ok -> do MemState _ _ m <- get
-                              checkThatRefTargetIsAlive --trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
+                              checkThatRefTargetIsAlive -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
                                 ok
                Left err -> return (Left err)
 
@@ -746,7 +746,7 @@ manageMemory typeEnv globalEnv root =
                           (map getName captures)
                         mapM_ (addToLifetimesMappingsIfRef False) argList
                         mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
-                        visitedBody <- visit  body
+                        visitedBody <- visit body
                         result <- unmanage body
                         return $
                           case result of
@@ -874,7 +874,9 @@ manageMemory typeEnv globalEnv root =
                      do checkResult <- refCheck visitedValue
                         case checkResult of
                           Left e -> return (Left e)
-                          Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
+                          Right () -> do let reffed = XObj (Lst [refExpr, visitedValue]) i t
+                                         addToLifetimesMappingsIfRef True reffed
+                                         return $ Right reffed
 
             (XObj Deref _ _ : _) ->
               error "Shouldn't end up here, deref only works when calling a function, i.e. ((deref f) 1 2 3)."
