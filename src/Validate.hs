@@ -58,6 +58,7 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
         -- e.g. (deftype (Higher f a) (Of [(f a)]))
         t@(VarTy _) -> do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
                           canBeUsedAsMemberType typeEnv typeVariables t xobj
+    StructTy name tyvars -> return ()
     VarTy _ -> if t `elem` typeVariables
                then return ()
                else Left (InvalidMemberType t xobj)

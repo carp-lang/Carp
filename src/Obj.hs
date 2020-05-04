@@ -747,7 +747,7 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
   do okX <- xobjToTy x
      okXS <- mapM xobjToTy xs
      case okX of
-       (StructTy c@(ConcreteNameTy n) []) -> return (StructTy c okXS)
+       (StructTy n []) -> return (StructTy n okXS)
        v@(VarTy n) -> return (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
