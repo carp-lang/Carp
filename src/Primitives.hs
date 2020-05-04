@@ -204,6 +204,12 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
                       })
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
+primitiveRegisterType _ ctx _ =
+  return (evalError ctx (
+    "I don't understand this usage of `register-type`.\n\n" ++
+    "Valid usages :\n" ++
+    "  (register-type Name)\n" ++
+    "  (register-type Name [field0 Type, ...])") Nothing)
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path =
