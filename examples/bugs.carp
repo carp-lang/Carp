@@ -146,16 +146,24 @@
 ;;       (set! x 11)
 ;;       (println* x))))
 
-;;(defn make-array [] [1 2 3])
+
+
+(macro-log "BUGS")
+(defn make-array [] [1 2 3])
+
 
 
 ;; Nasty (and extremely simple!) reference error that apparently prevails
 (defn f []
-  (ref [1 2 3]))
+  (ref (make-array)))
 
-(defn g []
-  (let []
-    (ref [1 2 3])))
+
+;; This also does not get detected:
+;; (defn g []
+;;   (let []
+;;     &[1 2 3]))
+
+
 
 ;; (defn g []
 ;;   &(make-array))
@@ -163,5 +171,5 @@
 ;; (macro-log "--------")
 
 ;; (defn h []
-;;   (let [xs &(make-array)]
+;;   (let [xs (ref [1 2 3])]
 ;;     0))
