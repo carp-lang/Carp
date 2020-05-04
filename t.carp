@@ -1,6 +1,0 @@
-(defmodule Foo
-  (doc Bar "foobar")
-  (deftype Bar [baz Int])
-
-  (defn f [] (Bar.init 2))
-)
