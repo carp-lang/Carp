@@ -187,7 +187,7 @@ primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] = do
   return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
 primitiveRegisterType _ ctx [x] =
   return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
-primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, ty, XObj (Str override) _ _] = do
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, XObj (Str override) _ _] = do
   let pathStrings = contextPath ctx
       typeEnv = contextTypeEnv ctx
       path = SymPath pathStrings t
