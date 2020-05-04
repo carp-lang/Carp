@@ -177,6 +177,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#all?">
+                    <h3 id="all?">
+                        all?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
+                </p>
+                <pre class="args">
+                    (all? f a)
+                </pre>
+                <p class="doc">
+                    <p>checks whether all of the elements in <code>a</code> match the function <code>f</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#any?">
+                    <h3 id="any?">
+                        any?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] Bool)
+                </p>
+                <pre class="args">
+                    (any? f a)
+                </pre>
+                <p class="doc">
+                    <p>checks whether any of the elements in <code>a</code> match the function <code>f</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#aset!">
                     <h3 id="aset!">
                         aset!
@@ -197,6 +237,46 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#aupdate!">
+                    <h3 id="aupdate!">
+                        aupdate!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), Int, (Ref (λ [(Ref a b)] a c) d)] ())
+                </p>
+                <pre class="args">
+                    (aupdate! a i f)
+                </pre>
+                <p class="doc">
+                    <p>transmutes (i.e. updates) the element at index <code>i</code> of an array <code>a</code> using the function <code>f</code> in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#contains?">
+                    <h3 id="contains?">
+                        contains?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), (Ref a b)] Bool)
+                </p>
+                <pre class="args">
+                    (contains? arr el)
+                </pre>
+                <p class="doc">
+                    <p>checks wether an element exists in the array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#delete">
                     <h3 id="delete">
                         delete
@@ -213,6 +293,109 @@
                 </span>
                 <p class="doc">
                     <p>deletes a static array. This function should not be called manually (there shouldn't be a way to create value types of type StaticArray).</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#element-count">
+                    <h3 id="element-count">
+                        element-count
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), (Ref a b)] Int)
+                </p>
+                <pre class="args">
+                    (element-count a e)
+                </pre>
+                <p class="doc">
+                    <p>counts the occurrences of element <code>e</code> in an array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#empty?">
+                    <h3 id="empty?">
+                        empty?
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] Bool)
+                </p>
+                <pre class="args">
+                    (empty? a)
+                </pre>
+                <p class="doc">
+                    <p>checks whether the array <code>a</code> is empty.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#find">
+                    <h3 id="find">
+                        find
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (find f a)
+                </pre>
+                <p class="doc">
+                    <p>finds an element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an element, <code>Nothing</code> will be returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#find-index">
+                    <h3 id="find-index">
+                        find-index
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (λ [(Ref a b)] Bool c) d), (Ref (StaticArray a) b)] (Maybe Int))
+                </p>
+                <pre class="args">
+                    (find-index f a)
+                </pre>
+                <p class="doc">
+                    <p>finds the index of the first element in <code>a</code> that matches the function <code>f</code> and wraps it in a <code>Just</code>.</p>
+<p>If it doesn’t find an index, <code>Nothing</code> will be returned.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#first">
+                    <h3 id="first">
+                        first
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (first a)
+                </pre>
+                <p class="doc">
+                    <p>takes the first element of an array and returns a <code>Just</code>.</p>
+<p>Returns <code>Nothing</code> if the array is empty.</p>
 
                 </p>
             </div>
@@ -252,6 +435,48 @@
                 </pre>
                 <p class="doc">
                     
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#index-of">
+                    <h3 id="index-of">
+                        index-of
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), (Ref a b)] (Maybe Int))
+                </p>
+                <pre class="args">
+                    (index-of a e)
+                </pre>
+                <p class="doc">
+                    <p>gets the index of element <code>e</code> in an array and wraps it on a <code>Just</code>.</p>
+<p>If the element is not found, returns <code>Nothing</code></p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#last">
+                    <h3 id="last">
+                        last
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (last a)
+                </pre>
+                <p class="doc">
+                    <p>takes the last element of an array and returns a <code>Just</code>.</p>
+<p>Returns <code>Nothing</code> if the array is empty.</p>
+
                 </p>
             </div>
             <div class="binder">
@@ -295,6 +520,89 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#maximum">
+                    <h3 id="maximum">
+                        maximum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (maximum xs)
+                </pre>
+                <p class="doc">
+                    <p>gets the maximum in an array (elements must support <code>&lt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, it returns <code>Nothing</code>.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#minimum">
+                    <h3 id="minimum">
+                        minimum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] (Maybe a))
+                </p>
+                <pre class="args">
+                    (minimum xs)
+                </pre>
+                <p class="doc">
+                    <p>gets the minimum in an array (elements must support <code>&gt;</code>) and wraps it in a <code>Just</code>.</p>
+<p>If the array is empty, returns <code>Nothing</code></p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#nth">
+                    <h3 id="nth">
+                        nth
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), Int] (Maybe a))
+                </p>
+                <pre class="args">
+                    (nth xs index)
+                </pre>
+                <p class="doc">
+                    <p>gets a reference to the <code>n</code>th element from an array <code>arr</code> wrapped on a <code>Maybe</code>.</p>
+<p>If the <code>index</code> is out of bounds, return <code>Maybe.Nothing</code></p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#predicate-count">
+                    <h3 id="predicate-count">
+                        predicate-count
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), (Ref (λ [(Ref a b)] Bool c) d)] Int)
+                </p>
+                <pre class="args">
+                    (predicate-count a pred)
+                </pre>
+                <p class="doc">
+                    <p>counts the number of elements satisfying the predicate function <code>pred</code> in an array.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#reduce">
                     <h3 id="reduce">
                         reduce
@@ -314,6 +622,26 @@
                 </p>
             </div>
             <div class="binder">
+                <a class="anchor" href="#reverse!">
+                    <h3 id="reverse!">
+                        reverse!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] ())
+                </p>
+                <pre class="args">
+                    (reverse! a)
+                </pre>
+                <p class="doc">
+                    <p>Reverse array in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
                 <a class="anchor" href="#str">
                     <h3 id="str">
                         str
@@ -330,6 +658,88 @@
                 </span>
                 <p class="doc">
                     <p>converts a static array to a string.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#sum">
+                    <h3 id="sum">
+                        sum
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] a)
+                </p>
+                <pre class="args">
+                    (sum xs)
+                </pre>
+                <p class="doc">
+                    <p>sums an array (elements must support <code>+</code> and <code>zero</code>).</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#swap!">
+                    <h3 id="swap!">
+                        swap!
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b), Int, Int] ())
+                </p>
+                <pre class="args">
+                    (swap! a i j)
+                </pre>
+                <p class="doc">
+                    <p>swaps the indices <code>i</code> and <code>j</code> of an array <code>a</code> in place.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-first">
+                    <h3 id="unsafe-first">
+                        unsafe-first
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] a)
+                </p>
+                <pre class="args">
+                    (unsafe-first a)
+                </pre>
+                <p class="doc">
+                    <p>takes the first element of an array.</p>
+<p>Generates a runtime error if the array is empty.</p>
+
+                </p>
+            </div>
+            <div class="binder">
+                <a class="anchor" href="#unsafe-last">
+                    <h3 id="unsafe-last">
+                        unsafe-last
+                    </h3>
+                </a>
+                <div class="description">
+                    defn
+                </div>
+                <p class="sig">
+                    (λ [(Ref (StaticArray a) b)] a)
+                </p>
+                <pre class="args">
+                    (unsafe-last a)
+                </pre>
+                <p class="doc">
+                    <p>takes the last element of an array.</p>
+<p>Generates a runtime error if the array is empty.</p>
 
                 </p>
             </div>
