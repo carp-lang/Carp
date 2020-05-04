@@ -122,7 +122,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                      -- If the lambda captures anything it need an extra arg for its env:
                                 else XObj (Arr (XObj (Sym (SymPath [] "_env") Symbol)
                                                 (Just dummyInfo)
-                                                (Just (PointerTy (StructTy environmentTypeName []))) :
+                                                (Just (PointerTy (StructTy (ConcreteNameTy environmentTypeName) []))) :
                                                 argsArr)) ai at
                  lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 
@@ -132,7 +132,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                   [XObj (Sym path Symbol) Nothing Nothing, tyToXObj symTy])
                                      capturedVars
                  environmentTypeName = pathToC lambdaPath ++ "_env"
-                 environmentStructTy = StructTy environmentTypeName []
+                 environmentStructTy = StructTy (ConcreteNameTy environmentTypeName) []
                  environmentStruct = XObj (Lst [XObj (Deftype environmentStructTy) Nothing Nothing,
                                                 XObj (Sym (SymPath [] environmentTypeName) Symbol) Nothing Nothing,
                                                 XObj (Arr structMemberPairs) Nothing Nothing]
@@ -360,18 +360,19 @@ concretizeType _ ft@FuncTy{} =
   if isTypeGeneric ft
   then Right []
   else Right [defineFunctionTypeAlias ft]
-concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
+concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy "Array") varTys) =
   if isTypeGeneric arrayTy
   then Right []
   else do deps <- mapM (concretizeType typeEnv) varTys
           Right (defineArrayTypeAlias arrayTy : concat deps)
 -- TODO: Remove ugly duplication of code here:
-concretizeType typeEnv arrayTy@(StructTy "StaticArray" varTys) =
+concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy "StaticArray") varTys) =
   if isTypeGeneric arrayTy
   then Right []
   else do deps <- mapM (concretizeType typeEnv) varTys
           Right (defineStaticArrayTypeAlias arrayTy : concat deps)
-concretizeType typeEnv genericStructTy@(StructTy name _) =
+-- TODO: handle polymorphic constructors (a b)
+concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy name) _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder _ (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
@@ -395,6 +396,7 @@ concretizeType _ t =
     Right [] -- ignore all other types
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
+-- TODO: Handle polymorphic constructors (a b).
 instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
 instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
@@ -712,7 +714,7 @@ manageMemory typeEnv globalEnv root =
                Right _ ->
                  -- We know that we want to add a deleter for the static array here
                  do let var = varOfXObj xobj
-                        Just (RefTy t@(StructTy "StaticArray" [_]) _) = ty xobj
+                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = ty xobj
                         deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                                     Just pathOfDeleteFunc ->
                                       ProperDeleter pathOfDeleteFunc var
