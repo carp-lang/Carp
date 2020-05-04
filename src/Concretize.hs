@@ -875,7 +875,6 @@ manageMemory typeEnv globalEnv root =
                         case checkResult of
                           Left e -> return (Left e)
                           Right () -> do let reffed = XObj (Lst [refExpr, visitedValue]) i t
-                                         addToLifetimesMappingsIfRef True reffed
                                          return $ Right reffed
 
             (XObj Deref _ _ : _) ->
