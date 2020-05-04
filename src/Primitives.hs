@@ -227,7 +227,6 @@ primitiveRegisterTypeWithFields ctx x t override members = do
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
 
-
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path =
   return (evalError ctx ("I can’t find the symbol `" ++ show path ++ "`") (info x))

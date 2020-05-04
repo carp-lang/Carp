@@ -87,7 +87,7 @@ main = do setLocaleEncoding utf8
                       else return context
           finalContext <- loadFiles context' argFilesToLoad
           case execMode of
-            Repl -> do putStrLn "Welcome to Carp 0.3.0"
+            Repl -> do putStrLn "Welcome to Carp 0.3.1WIP"
                        putStrLn "This is free software with ABSOLUTELY NO WARRANTY."
                        putStrLn "Evaluate (help) for more information."
                        _ <- runRepl finalContext
