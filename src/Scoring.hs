@@ -24,7 +24,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
     DefSumtype s -> depthOfStruct s
     _ -> (500, b)
   where
-    depthOfStruct (StructTy structName varTys) =
+    depthOfStruct (StructTy (ConcreteNameTy structName) varTys) =
       case lookupInEnv (SymPath [] structName) (getTypeEnv typeEnv) of
         Just (_, Binder _ typedef) -> (depthOfDeftype typeEnv Set.empty typedef varTys + 1, b)
         Nothing -> error ("Can't find user defined type '" ++ structName ++ "' in type env.")
