@@ -1113,6 +1113,7 @@ manageMemory typeEnv globalEnv root =
 
         checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
+          -- TODO: Replace this whole thing with a function that collects all lifetime variables in a type.
           case ty xobj of
             Just (RefTy _ (VarTy lt)) ->
               performCheck lt
