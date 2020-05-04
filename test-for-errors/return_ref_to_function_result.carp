@@ -1,0 +1,7 @@
+(Project.config "file-path-print-length" "short")
+
+(defn make-data []
+  [1 2 3])
+
+(defn f []
+  &(make-data))
