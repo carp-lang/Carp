@@ -173,7 +173,7 @@ cTypeToCarpType ("long", 0) = LongTy
 cTypeToCarpType ("double", 0) = DoubleTy
 cTypeToCarpType ("float", 0) = FloatTy
 cTypeToCarpType ("void", 0) = UnitTy
-cTypeToCarpType (s, 0) = (StructTy s [])
+cTypeToCarpType (s, 0) = (StructTy (ConcreteNameTy s) [])
 cTypeToCarpType (x, stars) = (PointerTy (cTypeToCarpType (x, stars - 1)))
 
 identifierChar :: Parsec.Parsec String () Char
