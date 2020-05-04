@@ -122,7 +122,7 @@ solveOneInternal mappings constraint =
       let (Constraint _ _ i1 i2 ctx ord) = constraint
       in case solveOneInternal mappings (Constraint nameA nameB i1 i2 ctx ord) of
         Left err -> Left err
-        Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) mappings (zip varsA varsB)
+        Right ok -> foldM (\m (aa, bb) -> solveOneInternal m (Constraint aa bb i1 i2 ctx ord)) ok (zip varsA varsB)
 
     -- Func types
     Constraint (FuncTy argsA retA ltA) (FuncTy argsB retB ltB) _ _ _ _ ->
