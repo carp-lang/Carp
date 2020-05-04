@@ -1145,7 +1145,11 @@ in the list as an argument to the function.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>returns the column a symbol was defined on.</p>
+<p>Example Usage</p>
+<pre><code>(column mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1344,7 +1348,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new dynamic value, i.e. a value available at compile time.</p>
+<p>Example Usage</p>
+<pre><code>(defdynamic name value)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1363,7 +1371,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>checks whether a symbol is defined.</p>
+<p>Example Usage</p>
+<pre><code>(defined? mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1382,7 +1394,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new interface (which could be a function or symbol).</p>
+<p>Example Usage</p>
+<pre><code>(definterface mysymbol MyType)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1401,7 +1417,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new macro.</p>
+<p>Example Usage</p>
+<pre><code>(defmacro name [args :rest restargs] body)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1420,7 +1440,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new module in which <code>expressions</code> are defined.</p>
+<p>Example Usage</p>
+<pre><code>(defmodule MyModule &lt;expressions&gt;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1439,7 +1463,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new dynamic function, i.e. a function available at compile time.</p>
+<p>Example Usage</p>
+<pre><code>(defndynamic name [args] body)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1458,13 +1486,17 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>defines a new sumtype or struct.</p>
+<p>Example Usage</p>
+<pre><code>(deftype Name &lt;members&gt;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#dynand">
-                    <h3 id="dynand">
-                        dynand
+                <a class="anchor" href="#dynamic-and">
+                    <h3 id="dynamic-and">
+                        dynamic-and
                     </h3>
                 </a>
                 <div class="description">
@@ -1474,16 +1506,16 @@ and then to the following argument.</p>
                     Dynamic
                 </p>
                 <pre class="args">
-                    (dynand x y)
+                    (dynamic-and x y)
                 </pre>
                 <p class="doc">
                     
                 </p>
             </div>
             <div class="binder">
-                <a class="anchor" href="#dynor">
-                    <h3 id="dynor">
-                        dynor
+                <a class="anchor" href="#dynamic-or">
+                    <h3 id="dynamic-or">
+                        dynamic-or
                     </h3>
                 </a>
                 <div class="description">
@@ -1493,7 +1525,7 @@ and then to the following argument.</p>
                     Dynamic
                 </p>
                 <pre class="args">
-                    (dynor x y)
+                    (dynamic-or x y)
                 </pre>
                 <p class="doc">
                     
@@ -1602,7 +1634,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>evaluates a list.</p>
+<p>Example Usage</p>
+<pre><code>(eval mycode)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1678,7 +1714,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>returns the file a symbol was defined in.</p>
+<p>Example Usage</p>
+<pre><code>(file mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1789,7 +1829,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints all information associated with a symbol.</p>
+<p>Example Usage</p>
+<pre><code>(info mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -1846,7 +1890,11 @@ and then to the following argument.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>returns the line a symbol was defined on.</p>
+<p>Example Usage</p>
+<pre><code>(line mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2009,7 +2057,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>returns the members of a type as an array.</p>
+<p>Example Usage</p>
+<pre><code>(members MyType)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2028,7 +2080,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>gets the value under <code>&quot;mykey&quot;</code> in the meta map associated with a symbol. It returns <code>()</code> if the key isn’t found.</p>
+<p>Example Usage</p>
+<pre><code>(meta mysymbol &quot;mykey&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2047,7 +2103,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>sets a new key and value pair on the meta map associated with a symbol.</p>
+<p>Example Usage</p>
+<pre><code>(meta-set! mysymbol &quot;mykey&quot; &quot;myval&quot;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2200,7 +2260,11 @@ applications.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>quotes any value.</p>
+<p>Example Usage</p>
+<pre><code>(quote x) ; where x is an actual symbol
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2278,7 +2342,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>registers a new function. This is used to define C functions and other symbols that will be available at link time.</p>
+<p>Example Usage</p>
+<pre><code>(register name &lt;signature&gt; &lt;optional: override&gt;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2297,7 +2365,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>registers a new type from C.</p>
+<p>Example Usage</p>
+<pre><code>(register-type Name &lt;optional: members&gt;)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2503,7 +2575,11 @@ value through successive applications of <code>f</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>prints the type of a symbol.</p>
+<p>Example Usage</p>
+<pre><code>(type mysymbol)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
@@ -2551,7 +2627,11 @@ Collects results in the structure given by <code>acc</code>.</p>
                     
                 </span>
                 <p class="doc">
-                    
+                    <p>uses a module, i.e. imports the symbols inside that module into the current module.</p>
+<p>Example Usage</p>
+<pre><code>(use MyModule)
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
