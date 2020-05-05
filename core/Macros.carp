@@ -366,9 +366,29 @@
         acc
         (map-internal f (cdr xs) (cons-last (f (car xs)) acc))))
 
+  (doc any?
+    "checks whether any of the elements in `xs` conforms to the predicate
+    function `f`.
+
+    Example:
+
+    ```
+    (any? (fn [x] (= 'a x)) '(a b c)) ; => true
+    (any? (fn [x] (= 'a x)) '(e f g)) ; => false
+    ```")
   (defndynamic any? [f xs]
     (reduce (fn [acc x] (or acc (f x))) false xs))
 
+  (doc any?
+    "checks whether all of the elements in `xs` conform to the predicate
+    function `f`.
+
+    Example:
+
+    ```
+    (all? (fn [x] (< 1 x)) '(2 3 4)) ; => true
+    (all? (fn [x] (< 1 x)) '(-1 0 1)) ; => false
+    ```")
   (defndynamic all? [f xs]
     (reduce (fn [acc x] (and acc (f x))) true xs))
 

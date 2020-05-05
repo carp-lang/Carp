@@ -401,7 +401,16 @@
                     (any? f xs)
                 </pre>
                 <p class="doc">
-                    
+                    <p>checks whether all of the elements in <code>xs</code> conform to the predicate
+function <code>f</code>.</p>
+<pre><code>Example:
+
+```
+(all? (fn [x] (&lt; 1 x)) '(2 3 4)) ; =&gt; true
+(all? (fn [x] (&lt; 1 x)) '(-1 0 1)) ; =&gt; false
+```
+</code></pre>
+
                 </p>
             </div>
             <div class="binder">
