@@ -52,13 +52,35 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     StructTy name [tyVars] ->
       case name of
         (ConcreteNameTy name') ->
-          case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
-            Just _ -> return ()
-            Nothing -> Left (NotAmongRegisteredTypes t xobj)
+          -- ensure structs are filled with values
+          -- Prevents deftypes such as (deftype Player [pos Vector3])
+          do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
+             case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
+               Just _ -> return ()
+               Nothing -> Left (NotAmongRegisteredTypes t xobj)
         -- e.g. (deftype (Higher f a) (Of [(f a)]))
         t@(VarTy _) -> do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
                           canBeUsedAsMemberType typeEnv typeVariables t xobj
-    StructTy name tyvars -> return ()
+    s@(StructTy name tyvar) ->
+      if isExternalType typeEnv s
+      then return ()
+      else case name of
+             (ConcreteNameTy n) ->
+               case lookupInEnv (SymPath [] n) (getTypeEnv typeEnv) of
+                 Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (Deftype t') _ _ : _))_ _))) ->
+                     checkInhabitants t'
+                 Just (_, binder@(Binder _ xo@(XObj (Lst (XObj (DefSumtype t') _ _ : _))_ _))) ->
+                   checkInhabitants t'
+                 _ -> Left (InvalidMemberType t xobj)
+                 -- Make sure any struct types have arguments before they can be used as members.
+                 where checkInhabitants ty =
+                         case ty of
+                         (StructTy _ vars) ->
+                           if length vars == length tyvar
+                           then return ()
+                           else Left (UninhabitedConstructor ty xobj (length tyvar) (length vars))
+                         _ -> Left (InvalidMemberType ty xobj)
+             _ -> Left (InvalidMemberType t xobj)
     VarTy _ -> if t `elem` typeVariables
                then return ()
                else Left (InvalidMemberType t xobj)
