@@ -364,7 +364,7 @@ machineReadableErrorStrings fppl err =
     (UsingDeadReference xobj dependsOn) ->
       [machineReadableInfoFromXObj fppl xobj ++ " The reference '" ++ pretty xobj ++ "' isn't alive."]
     (UninhabitedConstructor ty xobj got wanted) ->
-      [machineReadableInfoFromXObj fppl xobj ++ "Can't use an uninhabited type constructor as a member type. The type constructor " ++ show ty ++ "expects " ++ show wanted ++ "arguments but got " ++ show got]
+      [machineReadableInfoFromXObj fppl xobj ++ "Can't use an uninhabited type constructor as a member type. The type constructor " ++ show ty ++ " expects " ++ show wanted ++ "arguments but got " ++ show got]
 
     _ ->
       [show err]
