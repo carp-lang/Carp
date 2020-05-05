@@ -294,49 +294,50 @@ dynamicModule = Env { envBindings = bindings
                     , envUseModules = []
                     , envMode = ExternalEnv
                     , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList $
-                    [ addCommand "list?" 1 commandIsList
-                    , addCommand "array?" 1 commandIsArray
-                    , addCommand "symbol?" 1 commandIsSymbol
-                    , addCommand "length" 1 commandLength
-                    , addCommand "car" 1 commandCar
-                    , addCommand "cdr" 1 commandCdr
-                    , addCommand "last" 1 commandLast
-                    , addCommand "all-but-last" 1 commandAllButLast
-                    , addCommand "cons" 2 commandCons
-                    , addCommand "cons-last" 2 commandConsLast
-                    , addCommand "append" 2 commandAppend
-                    , addCommandConfigurable "array" Nothing commandArray
-                    , addCommandConfigurable "list" Nothing commandList
-                    , addCommand "macro-error" 1 commandMacroError
-                    , addCommandConfigurable "macro-log" Nothing commandMacroLog
-                    , addCommandConfigurable "str" Nothing commandStr
-                    , addCommand "not" 1 commandNot
-                    , addCommand "=" 2 commandEq
-                    , addCommand "<" 2 commandLt
-                    , addCommand ">" 2 commandGt
-                    , addCommand "+" 2 commandPlus
-                    , addCommand "-" 2 commandMinus
-                    , addCommand "/" 2 commandDiv
-                    , addCommand "*" 2 commandMul
-                    , addCommand "c" 1 commandC
-                    , addCommand "quit" 0 commandQuit
-                    , addCommand "cat" 0 commandCat
-                    , addCommand "run" 0 commandRunExe
-                    , addCommand "build" 0 (commandBuild False)
-                    , addCommand "reload" 0 commandReload
-                    , addCommand "env" 0 commandListBindings
-                    , addCommandConfigurable "help" Nothing commandHelp
-                    , addCommand "project" 0 commandProject
-                    , addCommand "load" 1 commandLoad
-                    , addCommand "expand" 1 commandExpand
-                    , addCommand "os" 0 commandOS
-                    , addCommand "system-include" 1 commandAddSystemInclude
-                    , addCommand "relative-include" 1 commandAddRelativeInclude
-                    , addCommand "save-docs-internal" 1 commandSaveDocsInternal
-                    , addCommand "read-file" 1 commandReadFile
-                    , addCommand "write-file" 2 commandWriteFile
-                    , addCommand "bit-width" 0 commandBitWidth
+  where path = ["Dynamic"]
+        bindings = Map.fromList $
+                    [ addCommand (SymPath path "list?") 1 commandIsList
+                    , addCommand (SymPath path "array?") 1 commandIsArray
+                    , addCommand (SymPath path "symbol?") 1 commandIsSymbol
+                    , addCommand (SymPath path "length") 1 commandLength
+                    , addCommand (SymPath path "car") 1 commandCar
+                    , addCommand (SymPath path "cdr") 1 commandCdr
+                    , addCommand (SymPath path "last") 1 commandLast
+                    , addCommand (SymPath path "all-but-last") 1 commandAllButLast
+                    , addCommand (SymPath path "cons") 2 commandCons
+                    , addCommand (SymPath path "cons-last") 2 commandConsLast
+                    , addCommand (SymPath path "append") 2 commandAppend
+                    , addCommandConfigurable (SymPath path "array") Nothing commandArray
+                    , addCommandConfigurable (SymPath path "list") Nothing commandList
+                    , addCommand (SymPath path "macro-error") 1 commandMacroError
+                    , addCommandConfigurable (SymPath path "macro-log") Nothing commandMacroLog
+                    , addCommandConfigurable (SymPath path "str") Nothing commandStr
+                    , addCommand (SymPath path "not") 1 commandNot
+                    , addCommand (SymPath path "=") 2 commandEq
+                    , addCommand (SymPath path "<") 2 commandLt
+                    , addCommand (SymPath path ">") 2 commandGt
+                    , addCommand (SymPath path "+") 2 commandPlus
+                    , addCommand (SymPath path "-") 2 commandMinus
+                    , addCommand (SymPath path "/") 2 commandDiv
+                    , addCommand (SymPath path "*") 2 commandMul
+                    , addCommand (SymPath path "c") 1 commandC
+                    , addCommand (SymPath path "quit") 0 commandQuit
+                    , addCommand (SymPath path "cat") 0 commandCat
+                    , addCommand (SymPath path "run") 0 commandRunExe
+                    , addCommand (SymPath path "build") 0 (commandBuild False)
+                    , addCommand (SymPath path "reload") 0 commandReload
+                    , addCommand (SymPath path "env") 0 commandListBindings
+                    , addCommandConfigurable (SymPath path "help") Nothing commandHelp
+                    , addCommand (SymPath path "project") 0 commandProject
+                    , addCommand (SymPath path "load") 1 commandLoad
+                    , addCommand (SymPath path "expand") 1 commandExpand
+                    , addCommand (SymPath path "os") 0 commandOS
+                    , addCommand (SymPath path "system-include") 1 commandAddSystemInclude
+                    , addCommand (SymPath path "relative-include") 1 commandAddRelativeInclude
+                    , addCommand (SymPath path "save-docs-internal") 1 commandSaveDocsInternal
+                    , addCommand (SymPath path "read-file") 1 commandReadFile
+                    , addCommand (SymPath path "write-file") 2 commandWriteFile
+                    , addCommand (SymPath path "bit-width") 0 commandBitWidth
                     , makePrim "quote" 1 "quotes any value." "(quote x) ; where x is an actual symbol" (\_ ctx [x] -> return (ctx, Right x))
                     , makeVarPrim "file" "returns the file a symbol was defined in." "(file mysymbol)" primitiveFile
                     , makeVarPrim "line" "returns the line a symbol was defined on." "(line mysymbol)" primitiveLine
@@ -371,12 +372,13 @@ dynamicStringModule = Env { envBindings = bindings
                           , envUseModules = []
                           , envMode = ExternalEnv
                           , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "char-at" 2 commandCharAt
-                                , addCommand "index-of" 2 commandIndexOf
-                                , addCommand "slice" 3 commandSubstring
-                                , addCommand "length" 1 commandStringLength
-                                , addCommand "concat" 1 commandStringConcat
-                                , addCommand "directory" 1 commandStringDirectory
+  where path = ["Dynamic", "String"]
+        bindings = Map.fromList [ addCommand (SymPath path "char-at") 2 commandCharAt
+                                , addCommand (SymPath path "index-of") 2 commandIndexOf
+                                , addCommand (SymPath path "slice") 3 commandSubstring
+                                , addCommand (SymPath path "length") 1 commandStringLength
+                                , addCommand (SymPath path "concat") 1 commandStringConcat
+                                , addCommand (SymPath path "directory") 1 commandStringDirectory
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with symbols in the repl or during compilation.
@@ -387,10 +389,11 @@ dynamicSymModule = Env { envBindings = bindings
                        , envUseModules = []
                        , envMode = ExternalEnv
                        , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "concat" 1 commandSymConcat
-                                , addCommand "prefix" 2 commandSymPrefix
-                                , addCommand "from" 1 commandSymFrom
-                                , addCommand "str" 1 commandSymStr
+  where path = ["Dynamic", "Symbol"]
+        bindings = Map.fromList [ addCommand (SymPath path "concat") 1 commandSymConcat
+                                , addCommand (SymPath path "prefix") 2 commandSymPrefix
+                                , addCommand (SymPath path "from") 1 commandSymFrom
+                                , addCommand (SymPath path "str") 1 commandSymStr
                                 ]
 
 -- | A submodule of the Dynamic module. Contains functions for working with the active Carp project.
@@ -401,8 +404,9 @@ dynamicProjectModule = Env { envBindings = bindings
                            , envUseModules = []
                            , envMode = ExternalEnv
                            , envFunctionNestingLevel = 0 }
-  where bindings = Map.fromList [ addCommand "config" 2 commandProjectConfig
-                                , addCommand "get-config" 1 commandProjectGetConfig
+  where path = ["Dynamic", "Project"]
+        bindings = Map.fromList [ addCommand (SymPath path "config") 2 commandProjectConfig
+                                , addCommand (SymPath path "get-config") 1 commandProjectGetConfig
                                 ]
 
 -- | A hack-ish function for converting any enum to an int.

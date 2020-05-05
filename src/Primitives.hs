@@ -359,20 +359,26 @@ primitiveMetaSet _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _), XObj (S
   let env = contextGlobalEnv ctx
       pathStrings = contextPath ctx
       fppl = projectFilePathPrintLength (contextProj ctx)
-  case lookupInEnv (consPath pathStrings path) env of
+      fullPath = consPath pathStrings path
+  case lookupInEnv fullPath env of
     Just (_, binder@(Binder _ xobj)) ->
       -- | Set meta on existing binder
       setMetaOn ctx binder
     Nothing ->
-      case path of
-        -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
-        (SymPath [] name) ->
-          setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
-                                                      XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
-                                           (Just dummyInfo)
-                                           (Just (VarTy "a"))))
-        (SymPath _ _) ->
-          return (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
+      -- | Try dynamic scope
+      case lookupInEnv (consPath ["Dynamic"] fullPath) env of
+        Just (_, binder@(Binder _ xobj)) ->
+          setMetaOn ctx binder
+        Nothing ->
+          case path of
+            -- | If the path is unqualified, create a binder and set the meta on that one. This enables docstrings before function exists.
+            (SymPath [] name) ->
+              setMetaOn ctx (Binder emptyMeta (XObj (Lst [XObj DocStub Nothing Nothing,
+                                                          XObj (Sym (SymPath pathStrings name) Symbol) Nothing Nothing])
+                                               (Just dummyInfo)
+                                               (Just (VarTy "a"))))
+            (SymPath _ _) ->
+              return (evalError ctx ("`meta-set!` failed, I can't find the symbol `" ++ show path ++ "`") (info target))
     where
       setMetaOn :: Context -> Binder -> IO (Context, Either EvalError XObj)
       setMetaOn ctx binder@(Binder metaData xobj) =
