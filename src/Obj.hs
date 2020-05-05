@@ -622,7 +622,7 @@ incrementEnvNestLevel env = let current = envFunctionNestingLevel env
 data ReloadMode = DoesReload | Frozen deriving Show
 
 showLoader :: (FilePath, ReloadMode) -> String
-showLoader (fp, DoesReload) = fp ++ " (reloads)"
+showLoader (fp, DoesReload) = fp
 showLoader (fp, Frozen) = fp ++ " (frozen)"
 
 
