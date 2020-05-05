@@ -35,17 +35,17 @@
           (Nest.Nested (Nest.Nested (Nest.Nested x)))
           x)
     "Match matches nested sumtype constructors with variables")
-  (assert-equal test
-                "hello"
-                (let [m (Maybe.Just @"hello")]
+  (let [m (Maybe.Just @"hello")]
+    (assert-equal test
+                  "hello"
                   (match-ref &m
                              (Maybe.Nothing) "wrong"
-                             (Maybe.Just x ) x))
-                "match-ref works on simple sumtype")
-  (assert-equal test
-                "found"
-                (let [n (Nest.Nested (Nest.Nested (Nest.Nested @"found")))]
+                             (Maybe.Just x ) x)
+                  "match-ref works on simple sumtype"))
+  (let [n (Nest.Nested (Nest.Nested (Nest.Nested @"found")))]
+    (assert-equal test
+                  "found"
                   (match-ref &n
-                             (Nest.Nested (Nest.Nested (Nest.Nested s))) s))
-                "match-ref works on deeply nested sumtype")
+                             (Nest.Nested (Nest.Nested (Nest.Nested s))) s)
+                  "match-ref works on deeply nested sumtype"))
 )
