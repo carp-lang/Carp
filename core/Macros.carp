@@ -170,7 +170,7 @@
     ;; commands expand to (command <name>), fns expand to a non-list.
     ;;
     ;; TODO: Support passing anonymous functions.
-    (if (not (Dynamic.or (list? f) (list? g)))
+    (if (not (dynamic-or (list? f) (list? g)))
         (macro-error "compose can only compose named dynamic functions. To
                      compose anonymous functions, such as curried functions,
                      see comp.")
@@ -183,14 +183,10 @@
             ;; symbols such as '(p r a c)
             (list  f-name (list 'eval (list 'apply g-name (list 'quote arguments))))))))
 
-  ;; Dynamic.or already exists, but since it's a special form, it can't be passed
-  ;; to higher order functions like reduce. So, we define an alternative here.
-  (defndynamic or-internal [x y]
+  (defndynamic dynamic-or [x y]
     (if x true y))
 
-  ;; Dynamic.and already exists, but since it's a special form, it can't be passed
-  ;; to higher order functions like reduce. So, we define an alternative here.
-  (defndynamic and-internal [x y]
+  (defndynamic dynamic-and [x y]
     (if x y false))
 
   (doc curry
@@ -255,7 +251,7 @@
   (defndynamic unreduce-internal [f x lim acc counter]
     ;; Currently only works with anonymous functions and named functions.
     ;; does not work with commands.
-    (if (not (Dynamic.or (array? acc) (list? acc)))
+    (if (not (dynamic-or (array? acc) (list? acc)))
       (macro-error
         "Unreduce requires a dynamic data structure to collect results, such as
          (list) or (array).")
@@ -372,7 +368,7 @@
 
   (hidden zip-internal)
   (defndynamic zip-internal [f forms acc]
-    (if (reduce or-internal false (map-internal empty? forms (list)))
+    (if (reduce dynamic-or false (map-internal empty? forms (list)))
         acc
         (zip-internal
           f
@@ -537,12 +533,12 @@
     ()))
 
 (defmacro windows-only [:rest forms]
-  (if (Dynamic.or (= "windows" (os)) (= "mingw32" (os)))
+  (if (dynamic-or (= "windows" (os)) (= "mingw32" (os)))
     (eval (cons (quote do) forms))
     ()))
 
 (defmacro not-on-windows [:rest forms]
-  (if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
+  (if (not (dynamic-or (= "windows" (os)) (= "mingw32" (os))))
     (eval (cons (quote do) forms))
     ()))
 

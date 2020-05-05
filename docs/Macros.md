@@ -175,9 +175,7 @@ kinds of Carp constructs there are for the evaluator:
   as you would do in higher order functions.
 - Primitives: these are regular Carp forms that do not evaluate their
   arguments, and they resemble builtin macros implemented in Haskell. Examples
-  for this category include `defmacro`, `defn`, and `quote`. They can also not
-  be passed around by value, but this is considered a bug and should be
-  resolved.
+  for this category include `defmacro`, `defn`, and `quote`.
 - Commands: these, too, are regular Carp forms. They evaluate their arguments
   and behave like builtin functions. Examples for this category include
   `Project.config`, `car`, and `cons`.
@@ -212,6 +210,3 @@ are:
 - `let` for defining local variables,
 - `the` for type annotations,
 - `fn` for function literals.
-
-`Dynamic.or` and `Dynamic.and` are also currently special forms, but this is
-considered a bug and should be resolved.

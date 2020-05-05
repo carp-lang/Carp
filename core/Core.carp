@@ -15,12 +15,6 @@
 (system-include "core.h")
 (system-include "carp_memory.h")
 
-(if (not (Dynamic.or (= "windows" (os)) (= "mingw32" (os))))
-  (do
-    (system-include "sys/wait.h")
-    (system-include "unistd.h"))
-  ())
-
 (load "Interfaces.carp")
 (load "Bool.carp")
 (load "Macros.carp")
@@ -52,3 +46,10 @@
 (load "Sort.carp")
 (load "Binary.carp")
 (load "Control.carp")
+
+(if (not (dynamic-or (= "windows" (os)) (= "mingw32" (os))))
+  (do
+    (system-include "sys/wait.h")
+    (system-include "unistd.h"))
+  ())
+

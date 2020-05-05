@@ -82,6 +82,7 @@ data Obj = Sym SymPath SymbolMode
          | Dynamic -- DefnDynamic
          | DefDynamic
          | Command CommandFunctionType
+         | Primitive PrimitiveFunctionType
          | The
          | Ref
          | Deref
@@ -95,7 +96,17 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
-type CommandCallback = Context -> [XObj] -> IO (Context, (Either EvalError XObj))
+type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+
+newtype PrimitiveFunctionType = PrimitiveFunction { getPrimitive :: Primitive }
+
+instance Eq PrimitiveFunctionType where
+  a == b = True
+
+instance Show PrimitiveFunctionType where
+  show t = "Primitive { ... }"
+
+type CommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
 newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
 
@@ -196,6 +207,7 @@ getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = 
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
 getBinderDescription (XObj (Lst (XObj (Command _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "command"
+getBinderDescription (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "primitive"
 getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "template"
 getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "instantiate"
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
@@ -245,6 +257,7 @@ getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = pa
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -307,6 +320,7 @@ pretty = visit 0
             Dynamic -> "dynamic"
             DefDynamic -> "defdynamic"
             Command _ -> "command"
+            Primitive _ -> "primitive"
             The -> "the"
             Ref -> "ref"
             Deref -> "deref"
@@ -367,6 +381,7 @@ prettyUpTo max xobj =
             Dynamic -> ""
             DefDynamic -> ""
             Command _ -> ""
+            Primitive _ -> ""
             The -> ""
             Ref -> ""
             Deref -> ""
