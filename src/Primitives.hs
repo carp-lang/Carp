@@ -179,15 +179,34 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                 return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj) })
 
 primitiveRegisterType :: Primitive
-primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] = do
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
+  primitiveRegisterTypeWithoutFields ctx t Nothing
+primitiveRegisterType _ ctx [x] =
+  return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, XObj (Str override) _ _] =
+  primitiveRegisterTypeWithoutFields ctx t (Just override)
+primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), (XObj (Str override) _ _), members] =
+  primitiveRegisterTypeWithFields ctx x t (Just override) members
+primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] =
+  primitiveRegisterTypeWithFields ctx x t Nothing members
+primitiveRegisterType _ ctx _ =
+  return (evalError ctx (
+    "I don't understand this usage of `register-type`.\n\n" ++
+    "Valid usages :\n" ++
+    "  (register-type Name)\n" ++
+    "  (register-type Name [field0 Type, ...])") Nothing)
+
+
+primitiveRegisterTypeWithoutFields :: Context -> String -> (Maybe String) -> IO (Context, Either EvalError XObj)
+primitiveRegisterTypeWithoutFields ctx t override = do
   let pathStrings = contextPath ctx
       typeEnv = contextTypeEnv ctx
       path = SymPath pathStrings t
-      typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+      typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
   return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
-primitiveRegisterType _ ctx [x] =
-  return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
-primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
+
+primitiveRegisterTypeWithFields :: Context -> XObj -> String -> (Maybe String) -> XObj -> IO (Context, Either EvalError XObj)
+primitiveRegisterTypeWithFields ctx x t override members = do
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
@@ -198,18 +217,13 @@ primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] = do
   case bindingsForRegisteredType typeEnv globalEnv pathStrings t [members] Nothing preExistingModule of
     Left err -> return (makeEvalError ctx (Just err) (show err) (info x))
     Right (typeModuleName, typeModuleXObj, deps) -> do
-      let typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+      let typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
           ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                       , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)
                       })
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
-primitiveRegisterType _ ctx _ =
-  return (evalError ctx (
-    "I don't understand this usage of `register-type`.\n\n" ++
-    "Valid usages :\n" ++
-    "  (register-type Name)\n" ++
-    "  (register-type Name [field0 Type, ...])") Nothing)
+
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path =

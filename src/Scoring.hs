@@ -22,6 +22,7 @@ scoreTypeBinder typeEnv b@(Binder _ (XObj (Lst (XObj x _ _ : XObj (Sym _ _) _ _ 
       in  (depthOfType typeEnv Set.empty selfName aliasedType + 1, b)
     Deftype s -> depthOfStruct s
     DefSumtype s -> depthOfStruct s
+    ExternalType _ -> (0, b)
     _ -> (500, b)
   where
     depthOfStruct (StructTy structName varTys) =

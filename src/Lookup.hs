@@ -183,7 +183,7 @@ isExternalType typeEnv (PointerTy p) =
   isExternalType typeEnv p
 isExternalType typeEnv (StructTy name _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-    Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> True
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> True
     Just _ -> False
     Nothing -> False
 isExternalType _ _ =
@@ -194,7 +194,7 @@ isManaged :: TypeEnv -> Ty -> Bool
 isManaged typeEnv (StructTy name _) =
   (name == "Array") || (name == "StaticArray") || (name == "Dictionary") || (
     case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-         Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) -> False
+         Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) -> False
          Just (_, Binder _ (XObj (Lst (XObj (Deftype _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj (Lst (XObj (DefSumtype _) _ _ : _)) _ _)) -> True
          Just (_, Binder _ (XObj wrong _ _)) -> error ("Invalid XObj in type env: " ++ show wrong)

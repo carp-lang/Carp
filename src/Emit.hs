@@ -124,7 +124,7 @@ toC toCMode (Binder meta root) = emitterSrc (execState (visit startingIndent roo
             e@(DefSumtype _) -> error (show (DontVisitObj xobj))
             Mod _ -> error (show (CannotEmitModKeyword xobj))
             External _ -> error (show (CannotEmitExternal xobj))
-            ExternalType -> error (show (DontVisitObj xobj))
+            ExternalType _ -> error (show (DontVisitObj xobj))
             e@(Command _) -> error (show (DontVisitObj xobj))
             e@(Primitive _) -> error (show (DontVisitObj xobj))
             e@(Deftemplate _) ->  error (show (DontVisitObj xobj))
@@ -767,8 +767,10 @@ toDeclaration (Binder meta xobj@(XObj (Lst xobjs) _ t)) =
       ""
     XObj (External _) _ _ : _ ->
       ""
-    XObj ExternalType _ _ : _ ->
+    XObj (ExternalType Nothing) _ _ : _ ->
       ""
+    XObj (ExternalType (Just override)) _ _ : XObj (Sym path _) _ _ : _ ->
+      "typedef " ++ override ++ " " ++ pathToC path ++ ";"
     XObj (Command _) _ _ : _ ->
       ""
     XObj (Primitive _) _ _ : _ ->
@@ -795,7 +797,7 @@ binderToC toCMode binder =
   let xobj = binderXObj binder
   in  case xobj of
         XObj (External _) _ _ -> Right ""
-        XObj ExternalType _ _ -> Right ""
+        XObj (ExternalType _) _ _ -> Right ""
         XObj (Command _) _ _ -> Right ""
         XObj (Mod env) _ _ -> envToC env toCMode
         _ -> case ty xobj of

@@ -381,7 +381,7 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       if isTypeGeneric originalStructTy
       then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
       else Right []
-    Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
       Right []
     Just (_, Binder _ x) ->
       error ("Non-deftype found in type env: " ++ show x)
@@ -478,6 +478,8 @@ modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
   case lookupInEnv p env of
     Just (_, Binder _ (XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _)) ->
+      LookupGlobalOverride overrideWithName
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType (Just overrideWithName)) _ _ : _)) _ _)) ->
       LookupGlobalOverride overrideWithName
     Just (_, Binder _ found@(XObj (Lst (XObj (External _) _ _ : _)) _ _)) ->
       LookupGlobal ExternalCode (definitionMode found)
