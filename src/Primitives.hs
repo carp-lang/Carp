@@ -144,7 +144,7 @@ registerDefnOrDefInInterfaceIfNeeded ctx xobj =
     _ -> return ctx
 
 define :: Bool -> Context -> XObj -> IO Context
-define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
+define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _ _) annXObj =
   let previousType =
         case lookupInEnv (getPath annXObj) globalEnv of
           Just (_, Binder _ found) -> ty found

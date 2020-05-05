@@ -367,7 +367,7 @@ executeCommand ctx s@(XObj (Sym _ _) _ _) =
   executeCommand ctx
     (XObj (Lst [ XObj (Sym (SymPath [] "info") Symbol) (Just dummyInfo) Nothing
                , s]) (Just dummyInfo) Nothing)
-executeCommand ctx@(Context env _ _ _ _ _ _ _) xobj =
+executeCommand ctx@(Context env _ _ _ _ _ _ _ _) xobj =
   do when (isJust (envModuleName env)) $
        error ("Global env module name is " ++ fromJust (envModuleName env) ++ " (should be Nothing).")
      (newCtx, result) <- eval ctx xobj
@@ -490,7 +490,7 @@ annotateWithinContext qualifyDefn ctx xobj = do
                   Right ok -> return (ctx, Right ok)
 
 primitiveDefmodule :: Primitive
-primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history) (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
+primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput execMode history inlined) (XObj (Sym (SymPath [] moduleName) _) _ _:innerExpressions) = do
   let fppl = projectFilePathPrintLength proj
 
       defineIt :: MetaData -> IO (Context, Either EvalError XObj)
@@ -499,14 +499,14 @@ primitiveDefmodule xobj ctx@(Context env i typeEnv pathStrings proj lastInput ex
             innerEnv = Env (Map.fromList []) (Just parentEnv) (Just moduleName) [] ExternalEnv 0
             newModule = XObj (Mod innerEnv) (info xobj) (Just ModuleTy)
             globalEnvWithModuleAdded = envInsertAt env (SymPath pathStrings moduleName) (Binder meta newModule)
-            ctx' = Context globalEnvWithModuleAdded (Just (innerEnv{envParent=i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history
+            ctx' = Context globalEnvWithModuleAdded (Just (innerEnv{envParent=i})) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history inlined
         (ctxAfterModuleDef, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         return (popModulePath ctxAfterModuleDef{contextInternalEnv=i}, res)
 
   (newCtx, result) <-
     case lookupInEnv (SymPath pathStrings moduleName) env of
       Just (_, Binder _ (XObj (Mod innerEnv) _ _)) -> do
-        let ctx' = Context env (Just innerEnv) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history -- TODO: use { = } syntax instead
+        let ctx' = Context env (Just innerEnv) typeEnv (pathStrings ++ [moduleName]) proj lastInput execMode history inlined -- TODO: use { = } syntax instead
         (ctxAfterModuleAdditions, res) <- liftIO $ foldM folder (ctx', dynamicNil) innerExpressions
         return (popModulePath ctxAfterModuleAdditions{contextInternalEnv=i}, res) -- TODO: propagate errors...
       Just (_, Binder existingMeta (XObj (Lst [XObj DocStub _ _, _]) _ _)) ->

@@ -898,6 +898,7 @@ data Context = Context { contextGlobalEnv :: Env
                        , contextLastInput :: String
                        , contextExecMode :: ExecutionMode
                        , contextHistory :: ![XObj]
+                       , contextInlinedC :: String
                        } deriving Show
 
 popModulePath :: Context -> Context
