@@ -62,11 +62,11 @@
 
   (doc to-int "acts as the identity function to implement the interface.")
   (sig to-int (Fn [Int] Int))
-  (defn to-int [a] a)
+  (defn to-int [a] (the Int a))
 
   (doc from-int "acts as the identity function to implement the interface.")
   (sig from-int (Fn [Int] Int))
-  (defn from-int [a] a)
+  (defn from-int [a] (the Int a))
 )
 
 (defmodule IntRef
