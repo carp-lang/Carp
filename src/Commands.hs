@@ -3,6 +3,7 @@ module Commands where
 import Control.Exception
 import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Data.Bits (finiteBitSize)
 import Data.List (elemIndex)
 import Data.Maybe (fromMaybe)
 import System.Exit (exitSuccess, exitFailure, exitWith, ExitCode(..))
@@ -669,23 +670,23 @@ commandStringLength ctx [a] =
       (ctx, Right (XObj (Num IntTy (fromIntegral (length s))) (Just dummyInfo) (Just IntTy)))
     _ -> evalError ctx ("Can't call length with " ++ pretty a) (info a)
 
-commandStringJoin :: CommandCallback
-commandStringJoin ctx [a] =
+commandStringConcat :: CommandCallback
+commandStringConcat ctx [a] =
   return $ case a of
     XObj (Arr strings) _ _ ->
       case mapM unwrapStringXObj strings of
         Left err -> evalError ctx err (info a)
         Right result -> (ctx, Right (XObj (Str (join result)) (Just dummyInfo) (Just StringTy)))
-    _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
+    _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
 
-commandSymJoin :: CommandCallback
-commandSymJoin ctx [a] =
+commandSymConcat :: CommandCallback
+commandSymConcat ctx [a] =
   return $ case a of
     XObj (Arr syms) _ _ ->
       case mapM unwrapSymPathXObj syms of
         Left err -> evalError ctx err (info a)
         Right result -> (ctx, Right (XObj (Sym (SymPath [] (join (map show result))) (LookupGlobal CarpLand AVariable)) (Just dummyInfo) Nothing))
-    _ -> evalError ctx ("Can't call join with " ++ pretty a) (info a)
+    _ -> evalError ctx ("Can't call concat with " ++ pretty a) (info a)
 
 commandSymPrefix :: CommandCallback
 commandSymPrefix ctx [XObj (Sym (SymPath [] prefix) _) _ _, XObj (Sym (SymPath [] suffix) _) i t] =
@@ -812,6 +813,11 @@ commandWriteFile ctx [filename, contents] =
           return (evalError ctx ("The second argument to `write-file` must be a string, I got `" ++ pretty contents ++ "`") (info contents))
     _ ->
       return (evalError ctx ("The first argument to `write-file` must be a string, I got `" ++ pretty filename ++ "`") (info filename))
+
+commandBitWidth :: CommandCallback
+commandBitWidth ctx [] =
+  let bitSize = fromIntegral (finiteBitSize (undefined :: Int))
+  in return (ctx, Right (XObj (Num IntTy bitSize) (Just dummyInfo) (Just IntTy)))
 
 commandSaveDocsInternal :: CommandCallback
 commandSaveDocsInternal ctx [modulePath] = do

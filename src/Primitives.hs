@@ -18,19 +18,17 @@ import Util
 
 import Debug.Trace
 
-type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
-
 found ctx binder =
   liftIO $ do putStrLnWithColor White (show binder)
               return (ctx, dynamicNil)
 
-makePrim :: String -> Int -> String -> Primitive -> (SymPath, Primitive)
-makePrim name arity example callback =
-  makePrim' name (Just arity) example callback
+makePrim :: String -> Int -> String -> String -> Primitive -> (String, Binder)
+makePrim name arity doc example callback =
+  makePrim' name (Just arity) doc example callback
 
-makeVarPrim :: String -> String -> Primitive -> (SymPath, Primitive)
-makeVarPrim name example callback =
-  makePrim' name Nothing example callback
+makeVarPrim :: String -> String -> String -> Primitive -> (String, Binder)
+makeVarPrim name doc example callback =
+  makePrim' name Nothing doc example callback
 
 argumentErr :: Context -> String -> String -> String -> XObj -> IO (Context, Either EvalError XObj)
 argumentErr ctx fun ty number actual =
@@ -38,10 +36,15 @@ argumentErr ctx fun ty number actual =
             "`" ++ fun ++ "` expected " ++ ty ++ " as its " ++ number ++
             " argument, but got `" ++ pretty actual ++ "`") (info actual))
 
-makePrim' :: String -> Maybe Int -> String -> Primitive -> (SymPath, Primitive)
-makePrim' name maybeArity example callback =
+makePrim' :: String -> Maybe Int -> String -> String -> Primitive -> (String, Binder)
+makePrim' name maybeArity docString example callback =
   let path = SymPath [] name
-  in (path, wrapped)
+      prim = XObj (Lst [ XObj (Primitive (PrimitiveFunction wrapped)) (Just dummyInfo) Nothing
+                       , XObj (Sym path Symbol) Nothing Nothing
+                       ])
+            (Just dummyInfo) (Just DynamicTy)
+      meta = MetaData (Map.insert "doc" (XObj (Str doc) Nothing Nothing) Map.empty)
+  in (name, Binder meta prim)
   where wrapped =
           case maybeArity of
             Just a ->
@@ -53,8 +56,9 @@ makePrim' name maybeArity example callback =
         err x ctx a l =
           return (evalError ctx (
             "The primitive `" ++ name ++ "` expected " ++ show a ++
-            " arguments, but got " ++ show l ++ ".\n\nExample Usage:\n```\n" ++
-            example ++ "\n```\n") (info x))
+            " arguments, but got " ++ show l ++ ".\n\n" ++ exampleUsage) (info x))
+        doc = docString ++ "\n\n" ++ exampleUsage
+        exampleUsage = "Example Usage\n```\n" ++ example ++ "\n```\n"
 
 primitiveFile :: Primitive
 primitiveFile x@(XObj _ i t) ctx [] =
@@ -175,15 +179,34 @@ define hidden ctx@(Context globalEnv _ typeEnv _ proj _ _ _) annXObj =
                 return (ctx' { contextGlobalEnv = envInsertAt globalEnv (getPath annXObj) (Binder adjustedMeta annXObj) })
 
 primitiveRegisterType :: Primitive
-primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] = do
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _] =
+  primitiveRegisterTypeWithoutFields ctx t Nothing
+primitiveRegisterType _ ctx [x] =
+  return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
+primitiveRegisterType _ ctx [XObj (Sym (SymPath [] t) _) _ _, XObj (Str override) _ _] =
+  primitiveRegisterTypeWithoutFields ctx t (Just override)
+primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), (XObj (Str override) _ _), members] =
+  primitiveRegisterTypeWithFields ctx x t (Just override) members
+primitiveRegisterType _ ctx [x@(XObj (Sym (SymPath [] t) _) _ _), members] =
+  primitiveRegisterTypeWithFields ctx x t Nothing members
+primitiveRegisterType _ ctx _ =
+  return (evalError ctx (
+    "I don't understand this usage of `register-type`.\n\n" ++
+    "Valid usages :\n" ++
+    "  (register-type Name)\n" ++
+    "  (register-type Name [field0 Type, ...])") Nothing)
+
+
+primitiveRegisterTypeWithoutFields :: Context -> String -> (Maybe String) -> IO (Context, Either EvalError XObj)
+primitiveRegisterTypeWithoutFields ctx t override = do
   let pathStrings = contextPath ctx
       typeEnv = contextTypeEnv ctx
       path = SymPath pathStrings t
-      typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+      typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
   return (ctx { contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition) }, dynamicNil)
-primitiveRegisterType _ ctx [x] =
-  return (evalError ctx ("`register-type` takes a symbol, but it got " ++ pretty x) (info x))
-primitiveRegisterType _ ctx (x@(XObj (Sym (SymPath [] t) _) _ _):members) = do
+
+primitiveRegisterTypeWithFields :: Context -> XObj -> String -> (Maybe String) -> XObj -> IO (Context, Either EvalError XObj)
+primitiveRegisterTypeWithFields ctx x t override members = do
   let pathStrings = contextPath ctx
       globalEnv = contextGlobalEnv ctx
       typeEnv = contextTypeEnv ctx
@@ -191,15 +214,16 @@ primitiveRegisterType _ ctx (x@(XObj (Sym (SymPath [] t) _) _ _):members) = do
       preExistingModule = case lookupInEnv (SymPath pathStrings t) globalEnv of
                             Just (_, Binder _ (XObj (Mod found) _ _)) -> Just found
                             _ -> Nothing
-  case bindingsForRegisteredType typeEnv globalEnv pathStrings t members Nothing preExistingModule of
+  case bindingsForRegisteredType typeEnv globalEnv pathStrings t [members] Nothing preExistingModule of
     Left err -> return (makeEvalError ctx (Just err) (show err) (info x))
     Right (typeModuleName, typeModuleXObj, deps) -> do
-      let typeDefinition = XObj (Lst [XObj ExternalType Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
+      let typeDefinition = XObj (Lst [XObj (ExternalType override) Nothing Nothing, XObj (Sym path Symbol) Nothing Nothing]) Nothing (Just TypeTy)
           ctx' = (ctx { contextGlobalEnv = envInsertAt globalEnv (SymPath pathStrings typeModuleName) (Binder emptyMeta typeModuleXObj)
                       , contextTypeEnv = TypeEnv (extendEnv (getTypeEnv typeEnv) t typeDefinition)
                       })
       contextWithDefs <- liftIO $ foldM (define True) ctx' deps
       return (contextWithDefs, dynamicNil)
+
 
 notFound :: Context -> XObj -> SymPath -> IO (Context, Either EvalError XObj)
 notFound ctx x path =
@@ -235,10 +259,13 @@ primitiveInfo _ ctx [target@(XObj (Sym path@(SymPath _ name) _) _ _)] = do
                         return (ctx,  dynamicNil)
                 binders -> do liftIO $
                                 mapM_
-                                  (\ (env, binder@(Binder _ (XObj _ i _))) ->
+                                  (\ (env, binder@(Binder metaData x@(XObj _ i _))) ->
                                      case i of
-                                         Just i' -> putStrLnWithColor White
-                                                      (show binder ++ " Defined at " ++ prettyInfo i')
+                                         Just i' -> do
+                                          putStrLnWithColor White
+                                                    (show binder ++ "\nDefined at " ++ prettyInfo i')
+                                          _ <- printDoc metaData proj x
+                                          return ()
                                          Nothing -> putStrLnWithColor White (show binder))
                                   binders
                               return (ctx, dynamicNil)
@@ -479,7 +506,7 @@ primitiveDeftype xobj ctx (name:rest) =
            (XObj (Sym (SymPath _ typeName) _) i _, Just okTypeVariables) ->
              case creatorFunction typeEnv env pathStrings typeName okTypeVariables rest i preExistingModule of
                Right (typeModuleName, typeModuleXObj, deps) ->
-                 let structTy = StructTy typeName okTypeVariables
+                 let structTy = StructTy (ConcreteNameTy typeName) okTypeVariables
                      typeDefinition =
                        -- NOTE: The type binding is needed to emit the type definition and all the member functions of the type.
                        XObj (Lst (XObj (typeConstructor structTy) Nothing Nothing :

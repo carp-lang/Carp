@@ -3,9 +3,9 @@
 
 (defndynamic _make-exe-path [pth]
   (let [out (Project.get-config "output-directory")
-        sep (if (Dynamic.or (= (os) "windows") (= (os) "mingw32")) "\\" "/")
-        lst (String.suffix out (- (String.length out) 1))]
-    (String.join (array out (if (= lst sep) "" sep) pth))))
+        sep (if (dynamic-or (= (os) "windows") (= (os) "mingw32")) "\\" "/")
+        lst (Dynamic.String.suffix out (- (String.length out) 1))]
+    (Dynamic.String.concat (array out (if (= lst sep) "" sep) pth))))
 
 (defmacro make-exe-path [pth]
   (_make-exe-path pth))

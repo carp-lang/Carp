@@ -48,7 +48,8 @@ renameVarTys rootType = do n <- get
                                           put (n + 1, newMappings)
                                           return varTy
     rename (StructTy name tyArgs) = do tyArgs' <- mapM rename tyArgs
-                                       return (StructTy name tyArgs')
+                                       name' <- rename name
+                                       return (StructTy name' tyArgs')
 
     rename (PointerTy x) = do x' <- rename x
                               return (PointerTy x')
@@ -92,7 +93,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
                        (Mod _)            -> return (Left (InvalidObj If xobj))
                        e@(Deftype _)      -> return (Left (InvalidObj e xobj))
                        e@(External _)     -> return (Left (InvalidObj e xobj))
-                       ExternalType       -> return (Left (InvalidObj ExternalType xobj))
+                       e@(ExternalType _) -> return (Left (InvalidObj e xobj))
                        e@(Deftemplate _)  -> return (Left (InvalidObj e xobj))
                        e@(Instantiate _)  -> return (Left (InvalidObj e xobj))
                        e@(Defalias _)     -> return (Left (InvalidObj e xobj))
@@ -144,7 +145,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       do visited <- mapM (visit env) xobjs
          arrayVarTy <- genVarTy
          return $ do okVisited <- sequence visited
-                     Right (XObj (Arr okVisited) i (Just (StructTy "Array" [arrayVarTy])))
+                     Right (XObj (Arr okVisited) i (Just (StructTy (ConcreteNameTy "Array") [arrayVarTy])))
 
     visitArray _ _ = error "The function 'visitArray' only accepts XObj:s with arrays in them."
 
@@ -154,7 +155,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
          arrayVarTy <- genVarTy
          lt <- genVarTy
          return $ do okVisited <- sequence visited
-                     Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy "StaticArray" [arrayVarTy]) lt)))
+                     Right (XObj (StaticArr okVisited) i (Just (RefTy (StructTy (ConcreteNameTy "StaticArray") [arrayVarTy]) lt)))
 
     visitStaticArray _ _ = error "The function 'visitStaticArray' only accepts XObj:s with arrays in them."
 
@@ -163,7 +164,7 @@ initialTypes typeEnv rootEnv root = evalState (visit rootEnv root) 0
       do visited <- mapM (visit env) xobjs
          arrayVarTy <- genVarTy
          return $ do okVisited <- sequence visited
-                     Right (XObj (Dict okVisited) i (Just (StructTy "Dictionary" [arrayVarTy])))
+                     Right (XObj (Dict okVisited) i (Just (StructTy (ConcreteNameTy "Dictionary") [arrayVarTy])))
 
     visitDictionary _ _ = error "The function 'visitArray' only accepts XObj:s with dictionaries in them."
 

@@ -1,0 +1,1 @@
+return_ref_to_function_result.carp:6:1 The reference '(defn f [] (ref (make-data)))' isn't alive.

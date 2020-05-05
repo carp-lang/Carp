@@ -17,14 +17,14 @@ import qualified ArrayTemplates
 -- since there are some small differences here and there I'v decided to not
 -- try to abstract over them and just duplicate the templates instead.
 
-
+concreteArray = (ConcreteNameTy "StaticArray")
 
 templateUnsafeNth :: (String, Binder)
 templateUnsafeNth =
   let t = VarTy "t"
   in defineTemplate
   (SymPath ["StaticArray"] "unsafe-nth")
-  (FuncTy [RefTy (StructTy "StaticArray" [t]) (VarTy "q"), IntTy] (RefTy t (VarTy "q")) StaticLifetimeTy)
+  (FuncTy [RefTy (StructTy concreteArray [t]) (VarTy "q"), IntTy] (RefTy t (VarTy "q")) StaticLifetimeTy)
   "gets a reference to the `n`th element from a static array `a`."
   (toTemplate "$t* $NAME (Array *aRef, int n)")
   (toTemplate $ unlines ["$DECL {"
@@ -39,7 +39,7 @@ templateUnsafeNth =
 templateLength :: (String, Binder)
 templateLength = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["StaticArray"] "length"
-        t = FuncTy [RefTy (StructTy "StaticArray" [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
+        t = FuncTy [RefTy (StructTy concreteArray [VarTy "t"]) (VarTy "q")] IntTy StaticLifetimeTy
         docs = "gets the length of the static array."
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -53,7 +53,7 @@ templateLength = defineTypeParameterizedTemplate templateCreator path t docs
 templateDeleteArray :: (String, Binder)
 templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["StaticArray"] "delete"
-        t = FuncTy [StructTy "StaticArray" [VarTy "a"]] UnitTy StaticLifetimeTy
+        t = FuncTy [StructTy concreteArray [VarTy "a"]] UnitTy StaticLifetimeTy
         docs = "deletes a static array. This function should not be called manually (there shouldn't be a way to create value types of type StaticArray)."
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -64,7 +64,7 @@ templateDeleteArray = defineTypeParameterizedTemplate templateCreator path t doc
                 [TokDecl, TokC "{\n"] ++
                 deleteTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy [arrayType@(StructTy "StaticArray" [insideType])] UnitTy _) ->
+             (\(FuncTy [arrayType@(StructTy concreteArray [insideType])] UnitTy _) ->
                 depsForDeleteFunc typeEnv env insideType)
 
 deleteTy :: TypeEnv -> Env -> Ty -> [Token]
@@ -78,7 +78,7 @@ deleteTy _ _ _ = []
 templateAsetBang :: (String, Binder)
 templateAsetBang = defineTypeParameterizedTemplate templateCreator path t docs
   where path = SymPath ["StaticArray"] "aset!"
-        t = FuncTy [RefTy (StructTy "StaticArray" [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
+        t = FuncTy [RefTy (StructTy concreteArray [VarTy "t"]) (VarTy "q"), IntTy, VarTy "t"] UnitTy StaticLifetimeTy
         docs = "sets a static array element at the index `n` to a new value in place."
         templateCreator = TemplateCreator $
           \typeEnv env ->
@@ -108,8 +108,8 @@ templateStrArray = defineTypeParameterizedTemplate templateCreator path t docs
                 [TokDecl, TokC " {\n"] ++
                 ArrayTemplates.strTy typeEnv env arrayType ++
                 [TokC "}\n"])
-             (\(FuncTy [RefTy arrayType@(StructTy "StaticArray" [insideType]) _] StringTy _) ->
+             (\(FuncTy [RefTy arrayType@(StructTy concreteArray [insideType]) _] StringTy _) ->
                 depsForPrnFunc typeEnv env insideType)
         path = SymPath ["StaticArray"] "str"
-        t = FuncTy [RefTy (StructTy "StaticArray" [VarTy "a"]) (VarTy "q")] StringTy StaticLifetimeTy
+        t = FuncTy [RefTy (StructTy concreteArray [VarTy "a"]) (VarTy "q")] StringTy StaticLifetimeTy
         docs = "converts a static array to a string."

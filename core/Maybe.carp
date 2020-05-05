@@ -66,4 +66,7 @@ It is the inverse of [`just?`](#just?).")
    (if (null? a)
      (Nothing)
      (Just @(Pointer.to-ref a))))
+
+  (doc zero "returns `Nothing`.")
+  (defn zero [] (Nothing))
 )

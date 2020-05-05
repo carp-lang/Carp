@@ -47,12 +47,18 @@ canBeUsedAsMemberType typeEnv typeVariables t xobj =
     FuncTy{} -> return ()
     PointerTy inner -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
                           return ()
-    StructTy "Array" [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
-                                   return ()
-    StructTy name tyVars ->
-      case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
-        Just _ -> return ()
-        Nothing -> Left (NotAmongRegisteredTypes t xobj)
+    StructTy (ConcreteNameTy "Array") [inner] -> do _ <- canBeUsedAsMemberType typeEnv typeVariables inner xobj
+                                                    return ()
+    StructTy name [tyVars] ->
+      case name of
+        (ConcreteNameTy name') ->
+          case lookupInEnv (SymPath [] name') (getTypeEnv typeEnv) of
+            Just _ -> return ()
+            Nothing -> Left (NotAmongRegisteredTypes t xobj)
+        -- e.g. (deftype (Higher f a) (Of [(f a)]))
+        t@(VarTy _) -> do _ <- canBeUsedAsMemberType typeEnv typeVariables tyVars xobj
+                          canBeUsedAsMemberType typeEnv typeVariables t xobj
+    StructTy name tyvars -> return ()
     VarTy _ -> if t `elem` typeVariables
                then return ()
                else Left (InvalidMemberType t xobj)

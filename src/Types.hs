@@ -42,7 +42,8 @@ data Ty = IntTy
         | PointerTy Ty
         | RefTy Ty Ty -- second Ty is the lifetime
         | StaticLifetimeTy
-        | StructTy String [Ty] -- the name of the struct, and it's type parameters -- TODO: Need to move away from name being a String here!
+        | StructTy Ty [Ty] -- the name (possibly a var) of the struct, and it's type parameters
+        | ConcreteNameTy String -- the name of a struct
         | TypeTy -- the type of types
         | MacroTy
         | DynamicTy -- the type of dynamic functions (used in REPL and macros)
@@ -86,8 +87,9 @@ instance Show Ty where
   show ModuleTy              = "Module"
   show TypeTy                = "Type"
   show InterfaceTy           = "Interface"
-  show (StructTy s [])       = s
-  show (StructTy s typeArgs) = "(" ++ s ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
+  show (StructTy s [])       = (show s)
+  show (StructTy s typeArgs) = "(" ++ (show s) ++ " " ++ joinWithSpace (map show typeArgs) ++ ")"
+  show (ConcreteNameTy name) = name
   show (PointerTy p)         = "(Ptr " ++ show p ++ ")"
   show (RefTy r lt)          =
     -- case r of
@@ -134,9 +136,10 @@ tyToCManglePtr _ (VarTy x)               = x
 tyToCManglePtr _ (FuncTy argTys retTy _) = "Fn__" ++ joinWithUnderscore (map (tyToCManglePtr True) argTys) ++ "_" ++ tyToCManglePtr True retTy
 tyToCManglePtr _ ModuleTy                = error "Can't emit module type."
 tyToCManglePtr b (PointerTy p)           = tyToCManglePtr b p ++ (if b then mangle "*" else "*")
-tyToCManglePtr b (RefTy r _)               = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
-tyToCManglePtr _ (StructTy s [])         = mangle s
-tyToCManglePtr _ (StructTy s typeArgs)   = mangle s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
+tyToCManglePtr b (RefTy r _)             = tyToCManglePtr b r ++ (if b then mangle "*" else "*")
+tyToCManglePtr _ (StructTy s [])         = tyToCManglePtr False s
+tyToCManglePtr _ (StructTy s typeArgs)   = tyToCManglePtr False s ++ "__" ++ joinWithUnderscore (map (tyToCManglePtr True) typeArgs)
+tyToCManglePtr _ (ConcreteNameTy name)   = mangle name
 tyToCManglePtr _ TypeTy                  = error "Can't emit the type of types."
 tyToCManglePtr _ MacroTy                 = error "Can't emit the type of macros."
 tyToCManglePtr _ DynamicTy               = error "Can't emit the type of dynamic functions."
@@ -144,7 +147,7 @@ tyToCManglePtr _ DynamicTy               = error "Can't emit the type of dynamic
 isTypeGeneric :: Ty -> Bool
 isTypeGeneric (VarTy _) = True
 isTypeGeneric (FuncTy argTys retTy _) = any isTypeGeneric argTys || isTypeGeneric retTy
-isTypeGeneric (StructTy _ tyArgs) = any isTypeGeneric tyArgs
+isTypeGeneric (StructTy n tyArgs) = isTypeGeneric n || any isTypeGeneric tyArgs
 isTypeGeneric (PointerTy p) = isTypeGeneric p
 isTypeGeneric (RefTy r _) = isTypeGeneric r
 isTypeGeneric _ = False
@@ -155,7 +158,7 @@ doesTypeContainTyVarWithName name (FuncTy argTys retTy lt) =
   doesTypeContainTyVarWithName name lt ||
   any (doesTypeContainTyVarWithName name) argTys ||
   doesTypeContainTyVarWithName name retTy
-doesTypeContainTyVarWithName name (StructTy _ tyArgs) = any (doesTypeContainTyVarWithName name) tyArgs
+doesTypeContainTyVarWithName name (StructTy n tyArgs) = doesTypeContainTyVarWithName name n || any (doesTypeContainTyVarWithName name) tyArgs
 doesTypeContainTyVarWithName name (PointerTy p) = doesTypeContainTyVarWithName name p
 doesTypeContainTyVarWithName name (RefTy r lt) = doesTypeContainTyVarWithName name r ||
                                                  doesTypeContainTyVarWithName name lt
@@ -236,8 +239,10 @@ unifySignatures v t = Map.fromList (unify v t)
 
         unify (VarTy a) value = [(a, value)]
 
-        unify (StructTy a aArgs) (StructTy b bArgs) | a == b    = concat (zipWith unify aArgs bArgs)
-                                                    | otherwise = [] -- error ("Can't unify " ++ a ++ " with " ++ b)
+        unify (StructTy v@(VarTy a) aArgs) (StructTy n bArgs) = unify v n ++ concat (zipWith unify aArgs bArgs)
+        unify (StructTy a@(ConcreteNameTy _) aArgs) (StructTy b bArgs)
+            | a == b = concat (zipWith unify aArgs bArgs)
+            | otherwise = [] -- error ("Can't unify " ++ a ++ " with " ++ b)
         unify a@(StructTy _ _) b = [] -- error ("Can't unify " ++ show a ++ " with " ++ show b)
 
         unify (PointerTy a) (PointerTy b) = unify a b
@@ -262,8 +267,8 @@ areUnifiable (VarTy _) _ = True
 areUnifiable _ (VarTy _) = True
 areUnifiable (StructTy a aArgs) (StructTy b bArgs)
   | length aArgs /= length bArgs = False
-  | a == b = let argBools = zipWith areUnifiable aArgs bArgs
-             in  all (== True) argBools
+  | areUnifiable a b = let argBools = zipWith areUnifiable aArgs bArgs
+                       in  all (== True) argBools
   | otherwise = False
 areUnifiable (StructTy _ _) _ = False
 areUnifiable (PointerTy a) (PointerTy b) = areUnifiable a b
@@ -288,7 +293,7 @@ replaceTyVars mappings t =
   case t of
     (VarTy key) -> fromMaybe t (Map.lookup key mappings)
     (FuncTy argTys retTy lt) -> FuncTy (map (replaceTyVars mappings) argTys) (replaceTyVars mappings retTy) (replaceTyVars mappings lt)
-    (StructTy name tyArgs) -> StructTy name (fmap (replaceTyVars mappings) tyArgs)
+    (StructTy name tyArgs) -> StructTy (replaceTyVars mappings name) (fmap (replaceTyVars mappings) tyArgs)
     (PointerTy x) -> PointerTy (replaceTyVars mappings x)
     (RefTy x lt) -> RefTy (replaceTyVars mappings x) (replaceTyVars mappings lt)
     _ -> t
@@ -306,4 +311,4 @@ isFullyGenericType _ = False
 
 -- | The type of environments sent to Lambdas (used in emitted C code)
 lambdaEnvTy :: Ty
-lambdaEnvTy = StructTy "LambdaEnv" []
+lambdaEnvTy = StructTy (ConcreteNameTy "LambdaEnv") []

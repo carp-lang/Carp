@@ -34,8 +34,8 @@
     1 true
     false))
 
-(defmacro test-and [a b] (Dynamic.and a b))
-(defmacro test-or [a b] (Dynamic.or a b))
+(defmacro test-and [a b] (dynamic-and a b))
+(defmacro test-or [a b] (dynamic-or a b))
 (defmacro test-not [a] (not a))
 (defmacro test-< [a b] (< a b))
 (defmacro test-> [a b] (> a b))
@@ -45,7 +45,7 @@
 (defmacro gc [key] (gc- key))
 
 (def xy 1)
-(defndynamic test-join- [] (Symbol.join ['x 'y]))
+(defndynamic test-join- [] (Symbol.concat ['x 'y]))
 (defmacro test-join [] (test-join-))
 (defmacro test-gensym []
   (let [x (gensym)]
@@ -60,13 +60,13 @@
 
 (defmacro test-map []
   (let [mapped (Dynamic.map length '((a) (b c) (d e f)))]
-    (Dynamic.and (Dynamic.and (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
+    (dynamic-and (dynamic-and (= 1 (Dynamic.car mapped)) (= 2 (Dynamic.cadr mapped))) (= 3
     (Dynamic.caddr mapped)))))
 
 (defmacro test-zip []
   (let [zipped (Dynamic.zip array '('a 'd) '('c 'o) '('e 'g))]
-    (Dynamic.and (= 'ace (Symbol.join (eval (Dynamic.car zipped))))
-      (= 'dog (Symbol.join (eval (Dynamic.cadr zipped)))))))
+    (dynamic-and (= 'ace (Symbol.concat (eval (Dynamic.car zipped))))
+      (= 'dog (Symbol.concat (eval (Dynamic.cadr zipped)))))))
 
 (defmacro test-curry []
   (= 3 ((Dynamic.curry + 1) 2)))
@@ -81,31 +81,31 @@
   (= 10 (Dynamic.reduce + 0 '(1 2 3 4))))
 
 (defmacro test-unreduce []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynamic-and true
     (Dynamic.map 'eval
       (Dynamic.zip = '(1 2 3 4) (Dynamic.unreduce (curry + 1) 0 4 (list))))))
 
 (defmacro test-filter []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynamic-and true
     (Dynamic.map 'eval
       (Dynamic.zip = '('a 'a 'a 'a)
         (Dynamic.map Dynamic.quoted
-	  (Dynamic.filter (fn [x] (= 'a x)) '(a b a b a b a b)))))))
+          (Dynamic.filter (fn [x] (= 'a x)) '(a b a b a b a b)))))))
 
 (defmacro test-empty []
   ;; We can't compare '[] and '[] for some reason.
   ;; But '() and '() are comparable
-  (Dynamic.and (= '() (Dynamic.empty '(1 2 3 4)))
+  (dynamic-and (= '() (Dynamic.empty '(1 2 3 4)))
                (empty? (Dynamic.empty '[1 2 3 4]))))
 
 (defmacro test-reverse []
-  (Dynamic.reduce Dynamic.and-internal true
+  (Dynamic.reduce dynamic-and true
     (Dynamic.map 'eval
       (Dynamic.zip = '(4 3 2 1) (Dynamic.reverse '(1 2 3 4))))))
 
 (defmacro test-take []
   (let [result  (Dynamic.take 2 '(1 2 3 4))]
-    (Dynamic.and (= 1 (car result ))
+    (dynamic-and (= 1 (car result ))
                  (= '() (cddr result)))))
 
 (deftest test
@@ -260,7 +260,7 @@
   (assert-equal test
                 1
                 (test-join)
-                "Symbol.join works as expected")
+                "Symbol.concat works as expected")
   (assert-equal test
                 "test file contents\n"
                 (test-read-file)

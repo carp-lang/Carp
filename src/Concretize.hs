@@ -122,7 +122,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                      -- If the lambda captures anything it need an extra arg for its env:
                                 else XObj (Arr (XObj (Sym (SymPath [] "_env") Symbol)
                                                 (Just dummyInfo)
-                                                (Just (PointerTy (StructTy environmentTypeName []))) :
+                                                (Just (PointerTy (StructTy (ConcreteNameTy environmentTypeName) []))) :
                                                 argsArr)) ai at
                  lambdaCallback = XObj (Lst [XObj (Defn (Just (Set.fromList capturedVars))) (Just dummyInfo) Nothing, lambdaNameSymbol, extendedArgs, okBody]) i t
 
@@ -132,7 +132,7 @@ concretizeXObj allowAmbiguityRoot typeEnv rootEnv visitedDefinitions root =
                                                   [XObj (Sym path Symbol) Nothing Nothing, tyToXObj symTy])
                                      capturedVars
                  environmentTypeName = pathToC lambdaPath ++ "_env"
-                 environmentStructTy = StructTy environmentTypeName []
+                 environmentStructTy = StructTy (ConcreteNameTy environmentTypeName) []
                  environmentStruct = XObj (Lst [XObj (Deftype environmentStructTy) Nothing Nothing,
                                                 XObj (Sym (SymPath [] environmentTypeName) Symbol) Nothing Nothing,
                                                 XObj (Arr structMemberPairs) Nothing Nothing]
@@ -360,18 +360,19 @@ concretizeType _ ft@FuncTy{} =
   if isTypeGeneric ft
   then Right []
   else Right [defineFunctionTypeAlias ft]
-concretizeType typeEnv arrayTy@(StructTy "Array" varTys) =
+concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy "Array") varTys) =
   if isTypeGeneric arrayTy
   then Right []
   else do deps <- mapM (concretizeType typeEnv) varTys
           Right (defineArrayTypeAlias arrayTy : concat deps)
 -- TODO: Remove ugly duplication of code here:
-concretizeType typeEnv arrayTy@(StructTy "StaticArray" varTys) =
+concretizeType typeEnv arrayTy@(StructTy (ConcreteNameTy "StaticArray") varTys) =
   if isTypeGeneric arrayTy
   then Right []
   else do deps <- mapM (concretizeType typeEnv) varTys
           Right (defineStaticArrayTypeAlias arrayTy : concat deps)
-concretizeType typeEnv genericStructTy@(StructTy name _) =
+-- TODO: handle polymorphic constructors (a b)
+concretizeType typeEnv genericStructTy@(StructTy (ConcreteNameTy name) _) =
   case lookupInEnv (SymPath [] name) (getTypeEnv typeEnv) of
     Just (_, Binder _ (XObj (Lst (XObj (Deftype originalStructTy) _ _ : _ : rest)) _ _)) ->
       if isTypeGeneric originalStructTy
@@ -381,7 +382,7 @@ concretizeType typeEnv genericStructTy@(StructTy name _) =
       if isTypeGeneric originalStructTy
       then instantiateGenericSumtype typeEnv originalStructTy genericStructTy rest
       else Right []
-    Just (_, Binder _ (XObj (Lst (XObj ExternalType _ _ : _)) _ _)) ->
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType _) _ _ : _)) _ _)) ->
       Right []
     Just (_, Binder _ x) ->
       error ("Non-deftype found in type env: " ++ show x)
@@ -395,6 +396,7 @@ concretizeType _ t =
     Right [] -- ignore all other types
 
 -- | Given an generic struct type and a concrete version of it, generate all dependencies needed to use the concrete one.
+-- TODO: Handle polymorphic constructors (a b).
 instantiateGenericStructType :: TypeEnv -> Ty -> Ty -> [XObj] -> Either TypeError [XObj]
 instantiateGenericStructType typeEnv originalStructTy@(StructTy _ originalTyVars) genericStructTy membersXObjs =
   -- Turn (deftype (A a) [x a, y a]) into (deftype (A Int) [x Int, y Int])
@@ -478,6 +480,8 @@ modeFromPath :: Env -> SymPath -> SymbolMode
 modeFromPath env p =
   case lookupInEnv p env of
     Just (_, Binder _ (XObj (Lst (XObj (External (Just overrideWithName)) _ _ : _)) _ _)) ->
+      LookupGlobalOverride overrideWithName
+    Just (_, Binder _ (XObj (Lst (XObj (ExternalType (Just overrideWithName)) _ _ : _)) _ _)) ->
       LookupGlobalOverride overrideWithName
     Just (_, Binder _ found@(XObj (Lst (XObj (External _) _ _ : _)) _ _)) ->
       LookupGlobal ExternalCode (definitionMode found)
@@ -663,31 +667,32 @@ manageMemory typeEnv globalEnv root =
       case finalObj of
         Left err -> Left err
         Right ok -> let newInfo = fmap (\i -> i { infoDelete = deleteThese }) (info ok)
-                    in  Right (ok { info = newInfo }, deps)
+                    in -- This final check of lifetimes works on the lifetimes mappings after analyzing the function form, and
+                       --  after all the local variables in it have been deleted. This is needed for values that are created
+                       --  directly in body position, e.g. (defn f [] &[1 2 3])
+                       case evalState (checkThatRefTargetIsAlive ok) (MemState (Set.fromList []) [] (memStateLifetimes finalState)) of
+                         Left err -> Left err
+                         Right _ -> Right (ok { info = newInfo }, deps)
 
   where visit :: XObj -> State MemState (Either TypeError XObj)
         visit xobj =
           do r <- case obj xobj of
-                    Lst _ -> {-do-} visitList xobj
-                                -- res <- visitList xobj
-                                -- case res of
-                                --   Right ok -> do addToLifetimesMappingsIfRef True ok
-                                --                  return res
-                                --   Left err -> return (Left err)
+                    Lst _ -> visitList xobj
                     Arr _ -> visitArray xobj
                     StaticArr _ -> visitStaticArray xobj
                     Str _ -> do manage xobj
-                                addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here?
+                                addToLifetimesMappingsIfRef False xobj -- TODO: Should "internal = True" here? TODO: Possible to remove this one?
                                 return (Right xobj)
                     Pattern _ -> do manage xobj
-                                    addToLifetimesMappingsIfRef False xobj
+                                    addToLifetimesMappingsIfRef False xobj -- TODO: Also possible to remove, *should* be superseeded by (***) below?
                                     return (Right xobj)
                     _ ->
                       return (Right xobj)
              case r of
                Right ok -> do MemState _ _ m <- get
-                              checkThatRefTargetIsAlive --trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
-                                ok
+                              r <- checkThatRefTargetIsAlive ok -- $ trace ("CHECKING " ++ pretty ok ++ " : " ++ showMaybeTy (ty xobj) ++ ", mappings: " ++ prettyLifetimeMappings m) $
+                              addToLifetimesMappingsIfRef True ok -- (***)
+                              return r
                Left err -> return (Left err)
 
         visitArray :: XObj -> State MemState (Either TypeError XObj)
@@ -711,7 +716,7 @@ manageMemory typeEnv globalEnv root =
                Right _ ->
                  -- We know that we want to add a deleter for the static array here
                  do let var = varOfXObj xobj
-                        Just (RefTy t@(StructTy "StaticArray" [_]) _) = ty xobj
+                        Just (RefTy t@(StructTy (ConcreteNameTy "StaticArray") [_]) _) = ty xobj
                         deleter = case nameOfPolymorphicFunction typeEnv globalEnv (FuncTy [t] UnitTy StaticLifetimeTy) "delete" of
                                     Just pathOfDeleteFunc ->
                                       ProperDeleter pathOfDeleteFunc var
@@ -746,7 +751,7 @@ manageMemory typeEnv globalEnv root =
                           (map getName captures)
                         mapM_ (addToLifetimesMappingsIfRef False) argList
                         mapM_ (addToLifetimesMappingsIfRef False) captures -- For captured variables inside of lifted lambdas
-                        visitedBody <- visit  body
+                        visitedBody <- visit body
                         result <- unmanage body
                         return $
                           case result of
@@ -874,7 +879,8 @@ manageMemory typeEnv globalEnv root =
                      do checkResult <- refCheck visitedValue
                         case checkResult of
                           Left e -> return (Left e)
-                          Right () -> return $ Right (XObj (Lst [refExpr, visitedValue]) i t)
+                          Right () -> do let reffed = XObj (Lst [refExpr, visitedValue]) i t
+                                         return $ Right reffed
 
             (XObj Deref _ _ : _) ->
               error "Shouldn't end up here, deref only works when calling a function, i.e. ((deref f) 1 2 3)."
@@ -1113,13 +1119,18 @@ manageMemory typeEnv globalEnv root =
 
         checkThatRefTargetIsAlive :: XObj -> State MemState (Either TypeError XObj)
         checkThatRefTargetIsAlive xobj =
+          -- TODO: Replace this whole thing with a function that collects all lifetime variables in a type.
           case ty xobj of
             Just (RefTy _ (VarTy lt)) ->
               performCheck lt
             Just (FuncTy _ _ (VarTy lt)) ->
               performCheck lt
+            -- HACK (not exhaustive):
+            Just (FuncTy _ (RefTy _ (VarTy lt)) _) ->
+              performCheck lt
             _ ->
-              return (Right xobj)
+              return -- $ trace ("Won't check " ++ pretty xobj ++ " : " ++ show (ty xobj))
+                (Right xobj)
 
           where performCheck :: String -> State MemState (Either TypeError XObj)
                 performCheck lt =
@@ -1139,20 +1150,20 @@ manageMemory typeEnv globalEnv root =
                                 --return (Right xobj)
                                 return (Left (UsingDeadReference xobj deleterName))
                               _ ->
-                                -- trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
+                                --trace ("CAN use reference " ++ pretty xobj ++ " (with lifetime '" ++ lt ++ "', depending on " ++ show deleterName ++ ") at " ++ prettyInfoFromXObj xobj ++ ", it's not alive here:\n" ++ show xobj ++ "\nMappings: " ++ prettyLifetimeMappings lifetimeMappings ++ "\nAlive: " ++ show deleters ++ "\n") $
                                 return (Right xobj)
                        Just LifetimeOutsideFunction ->
                          --trace ("Lifetime OUTSIDE function: " ++ pretty xobj ++ " at " ++ prettyInfoFromXObj xobj) $
                          return (Right xobj)
                        Nothing ->
                          return (Right xobj)
-                         --case xobj of
-                           -- XObj (Sym _ (LookupLocal Capture)) _ _ ->
-                           --   -- Ignore these for the moment! TODO: FIX!!!
-                           --   return (Right xobj)
-                           --_ ->
-                             --trace ("Failed to find lifetime key (when checking) '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
-                             --return (Right xobj)
+                         -- case xobj of
+                         --   XObj (Sym _ (LookupLocal Capture)) _ _ ->
+                         --     -- Ignore these for the moment! TODO: FIX!!!
+                         --     return (Right xobj)
+                         --   _ ->
+                         --     trace ("Failed to find lifetime key (when checking) '" ++ lt ++ "' for " ++ pretty xobj ++ " in mappings at " ++ prettyInfoFromXObj xobj) $
+                         --     return (Right xobj)
 
         visitLetBinding :: (XObj, XObj) -> State MemState (Either TypeError (XObj, XObj))
         visitLetBinding  (name, expr) =

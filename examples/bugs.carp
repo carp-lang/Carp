@@ -148,10 +148,18 @@
 
 
 
-;; Failing to instantiate deps
-;;(deftype Z [x (Array String)])
-(deftype X (Y [(Array String)]))
 
-(defn main []
-  (let [s @&(X.Y [])]
-    (println* "I did compile.")))
+
+
+;; The ref error is detected when the forms inside (= ...) are reversed.
+;; Right now the lifetime (that is shared by both arguments to =) becomes
+;; set to [111], which is alive for the rest of the scope.
+;; So the memory error inside (let ...) doesn't get detected since the
+;; lifetime is alive before, during, and after its scope.
+(defn f []
+  (=
+     &[111]
+     (let [xs &[222]]
+       xs)
+
+     ))

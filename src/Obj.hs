@@ -73,7 +73,7 @@ data Obj = Sym SymPath SymbolMode
          | DefSumtype Ty
          | With
          | External (Maybe String)
-         | ExternalType
+         | ExternalType (Maybe String)
          | DocStub
          | Deftemplate TemplateCreator
          | Instantiate Template
@@ -84,6 +84,7 @@ data Obj = Sym SymPath SymbolMode
          | Dynamic -- DefnDynamic
          | DefDynamic
          | Command CommandFunctionType
+         | Primitive PrimitiveFunctionType
          | The
          | Ref
          | Deref
@@ -97,7 +98,17 @@ instance Ord Obj where
   compare a b = compare (show a) (show b)
   -- TODO: handle comparison of lists, arrays and dictionaries
 
-type CommandCallback = Context -> [XObj] -> IO (Context, (Either EvalError XObj))
+type Primitive = XObj -> Context -> [XObj] -> IO (Context, Either EvalError XObj)
+
+newtype PrimitiveFunctionType = PrimitiveFunction { getPrimitive :: Primitive }
+
+instance Eq PrimitiveFunctionType where
+  a == b = True
+
+instance Show PrimitiveFunctionType where
+  show t = "Primitive { ... }"
+
+type CommandCallback = Context -> [XObj] -> IO (Context, Either EvalError XObj)
 
 newtype CommandFunctionType = CommandFunction { getCommand :: CommandCallback }
 
@@ -198,11 +209,12 @@ getBinderDescription (XObj (Lst (XObj Def _ _ : XObj (Sym _ _) _ _ : _)) _ _) = 
 getBinderDescription (XObj (Lst (XObj Macro _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "macro"
 getBinderDescription (XObj (Lst (XObj Dynamic _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "dynamic"
 getBinderDescription (XObj (Lst (XObj (Command _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "command"
+getBinderDescription (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "primitive"
 getBinderDescription (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "template"
 getBinderDescription (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "instantiate"
 getBinderDescription (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "alias"
 getBinderDescription (XObj (Lst (XObj (External _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external"
-getBinderDescription (XObj (Lst (XObj ExternalType _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
+getBinderDescription (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "external-type"
 getBinderDescription (XObj (Lst (XObj DocStub _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "doc-stub"
 getBinderDescription (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
 getBinderDescription (XObj (Lst (XObj (DefSumtype _) _ _ : XObj (Sym _ _) _ _ : _)) _ _) = "deftype"
@@ -241,12 +253,13 @@ getPath (XObj (Lst (XObj (Deftemplate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) 
 getPath (XObj (Lst (XObj (Instantiate _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Defalias _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (External _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
-getPath (XObj (Lst (XObj ExternalType _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (ExternalType _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj DocStub _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Deftype _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Mod _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Interface _ _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Lst (XObj (Command _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
+getPath (XObj (Lst (XObj (Primitive _) _ _ : XObj (Sym path _) _ _ : _)) _ _) = path
 getPath (XObj (Sym path _) _ _) = path
 getPath x = SymPath [] (pretty x)
 
@@ -301,7 +314,7 @@ pretty = visit 0
             Instantiate _ -> "instantiate"
             External Nothing -> "external"
             External (Just override) -> "external (override: " ++ show override ++ ")"
-            ExternalType -> "external-type"
+            ExternalType (Just override) -> "external-type (override: " ++ show override ++ ")"
             DocStub -> "doc-stub"
             Defalias _ -> "defalias"
             Address -> "address"
@@ -310,6 +323,7 @@ pretty = visit 0
             Dynamic -> "dynamic"
             DefDynamic -> "defdynamic"
             Command _ -> "command"
+            Primitive _ -> "primitive"
             The -> "the"
             Ref -> "ref"
             Deref -> "deref"
@@ -361,7 +375,8 @@ prettyUpTo max xobj =
             Instantiate _ -> ""
             External Nothing -> ""
             External (Just override) -> ")"
-            ExternalType -> ""
+            ExternalType Nothing -> ""
+            ExternalType (Just override) -> ")"
             DocStub -> ""
             Defalias _ -> ""
             Address -> ""
@@ -370,6 +385,7 @@ prettyUpTo max xobj =
             Dynamic -> ""
             DefDynamic -> ""
             Command _ -> ""
+            Primitive _ -> ""
             The -> ""
             Ref -> ""
             Deref -> ""
@@ -508,8 +524,8 @@ replaceGenericTypeSymbols _ xobj = xobj
 -- | Convert a Ty to the s-expression that represents that type.
 -- | TODO: Add more cases and write tests for this.
 tyToXObj :: Ty -> XObj
-tyToXObj (StructTy n []) = XObj (Sym (SymPath [] n) Symbol) Nothing Nothing
-tyToXObj (StructTy n vs) = XObj (Lst (XObj (Sym (SymPath [] n) Symbol) Nothing Nothing : map tyToXObj vs)) Nothing Nothing
+tyToXObj (StructTy n []) = tyToXObj n
+tyToXObj (StructTy n vs) = XObj (Lst (tyToXObj n : map tyToXObj vs)) Nothing Nothing
 tyToXObj (RefTy t lt) = XObj (Lst [XObj (Sym (SymPath [] "Ref") Symbol) Nothing Nothing, tyToXObj t, tyToXObj lt]) Nothing Nothing
 tyToXObj (PointerTy t) = XObj (Lst [XObj (Sym (SymPath [] "Ptr") Symbol) Nothing Nothing, tyToXObj t]) Nothing Nothing
 tyToXObj (FuncTy argTys returnTy StaticLifetimeTy) = XObj (Lst [XObj (Sym (SymPath [] "Fn") Symbol) Nothing Nothing, XObj (Arr (map tyToXObj argTys)) Nothing Nothing, tyToXObj returnTy]) Nothing Nothing
@@ -714,7 +730,7 @@ xobjToTy (XObj (Sym (SymPath _ "Char") _) _ _) = Just CharTy
 xobjToTy (XObj (Sym (SymPath _ "Bool") _) _ _) = Just BoolTy
 xobjToTy (XObj (Sym (SymPath _ "Static") _) _ _) = Just StaticLifetimeTy
 xobjToTy (XObj (Sym (SymPath _ s@(firstLetter:_)) _) _ _) | isLower firstLetter = Just (VarTy s)
-                                                          | otherwise = Just (StructTy s [])
+                                                          | otherwise = Just (StructTy (ConcreteNameTy s) [])
 xobjToTy (XObj (Lst [XObj (Sym (SymPath _ "Ptr") _) _ _, innerTy]) _ _) =
   do okInnerTy <- xobjToTy innerTy
      return (PointerTy okInnerTy)
@@ -751,7 +767,7 @@ xobjToTy (XObj (Lst (x:xs)) _ _) =
      okXS <- mapM xobjToTy xs
      case okX of
        (StructTy n []) -> return (StructTy n okXS)
-       (VarTy n) -> return (StructTy n okXS) -- Struct type with type variable as a name, i.e. "(a b)"
+       v@(VarTy n) -> return (StructTy v okXS) -- Struct type with type variable as a name, i.e. "(a b)"
        _ -> Nothing
 xobjToTy _ = Nothing
 
@@ -841,10 +857,10 @@ defineFunctionTypeAlias :: Ty -> XObj
 defineFunctionTypeAlias aliasTy = defineTypeAlias (tyToC aliasTy) aliasTy
 
 defineArrayTypeAlias :: Ty -> XObj
-defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
+defineArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
 
 defineStaticArrayTypeAlias :: Ty -> XObj
-defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy "Array" [])
+defineStaticArrayTypeAlias t = defineTypeAlias (tyToC t) (StructTy (ConcreteNameTy "Array") [])
 
 -- |
 defineInterface :: String -> Ty -> [SymPath] -> Maybe Info -> XObj

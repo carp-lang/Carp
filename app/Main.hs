@@ -55,6 +55,7 @@ main = do setLocaleEncoding utf8
           let (argFilesToLoad, execMode, otherOptions) = parseArgs args
               logMemory = LogMemory `elem` otherOptions
               noCore = NoCore `elem` otherOptions
+              noProfile = NoProfile `elem` otherOptions
               optimize = Optimize `elem` otherOptions
               generateOnly = GenerateOnly `elem` otherOptions
               projectWithFiles = defaultProject { projectCFlags = ["-D LOG_MEMORY" | logMemory] ++
@@ -80,7 +81,7 @@ main = do setLocaleEncoding utf8
           context <- loadFiles startingContext coreModulesToLoad
           carpProfile <- configPath "profile.carp"
           hasProfile <- doesFileExist carpProfile
-          context' <- if hasProfile
+          context' <- if (not noProfile) && hasProfile
                       then loadFiles context [carpProfile]
                       else return context
           finalContext <- loadFiles context' argFilesToLoad
@@ -104,6 +105,7 @@ main = do setLocaleEncoding utf8
 
 -- | Options for how to run the compiler.
 data OtherOptions = NoCore
+                  | NoProfile
                   | LogMemory
                   | Optimize
                   | GenerateOnly
@@ -123,6 +125,7 @@ parseArgs args = parseArgsInternal [] Repl [] args
             "-i" -> parseArgsInternal filesToLoad (Install (head restArgs)) otherOptions (tail restArgs)
             "--check" -> parseArgsInternal filesToLoad Check otherOptions restArgs
             "--no-core" -> parseArgsInternal filesToLoad execMode (NoCore : otherOptions) restArgs
+            "--no-profile" -> parseArgsInternal filesToLoad execMode (NoProfile : otherOptions) restArgs
             "--log-memory" -> parseArgsInternal filesToLoad execMode (LogMemory : otherOptions) restArgs
             "--optimize" -> parseArgsInternal filesToLoad execMode (Optimize : otherOptions) restArgs
             "--generate-only" -> parseArgsInternal filesToLoad execMode (GenerateOnly : otherOptions) restArgs

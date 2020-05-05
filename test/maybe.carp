@@ -64,6 +64,11 @@
                 "or-zero works on Nothing"
   )
   (assert-equal test
+                &(Nothing)
+                &(the (Maybe Int) (zero))
+                "zero works"
+  )
+  (assert-equal test
                 &(Result.Success 1)
                 &(to-result (Just 1) @"error")
                 "to-result works on Just"
