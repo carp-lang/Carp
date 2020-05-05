@@ -156,10 +156,19 @@
 ;; set to [111], which is alive for the rest of the scope.
 ;; So the memory error inside (let ...) doesn't get detected since the
 ;; lifetime is alive before, during, and after its scope.
-(defn f []
-  (=
-     &[111]
-     (let [xs &[222]]
-       xs)
+;; (defn f []
+;;   (=
+;;      &[111]
+;;      (let [xs &[222]]
+;;        xs)
 
-     ))
+;;      ))
+
+
+
+;; Bug! (issue https://github.com/carp-lang/Carp/issues/570)
+(defn returning-refs-from-match []
+  (println*
+   (match (Maybe.Just 1)
+     (Maybe.Just _) &@"hej"))
+  )

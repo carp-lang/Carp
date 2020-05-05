@@ -184,6 +184,9 @@ Primitives are mostly defined in [`src/Primitives.hs`](/src/Primitives.hs),
 commands can be found in [`src/Commands.hs`](/src/Commands.hs), and special
 forms can be found directly inside `eval`.
 
+They are wired up into the environment and given names in
+[`src/StartingEnv.hs`](/src/StartingEnv.hs).
+
 #### Adding your own special forms, primitives, or commands
 
 While there is a lot of machinery involved in getting your own primitives or

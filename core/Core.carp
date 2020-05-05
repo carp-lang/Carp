@@ -47,9 +47,6 @@
 (load "Binary.carp")
 (load "Control.carp")
 
-(if (not (dynamic-or (= "windows" (os)) (= "mingw32" (os))))
-  (do
-    (system-include "sys/wait.h")
-    (system-include "unistd.h"))
-  ())
-
+(not-on-windows
+  (system-include "sys/wait.h")
+  (system-include "unistd.h"))
