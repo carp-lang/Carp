@@ -24,6 +24,7 @@ import Lookup
 import RenderDocs
 import TypeError
 import Path
+import StringUtils
 
 data CarpException =
     ShellOutException { shellOutMessage :: String, returnCode :: Int }
@@ -870,4 +871,4 @@ commandInlineC ctx args =
         stringify :: XObj -> String
         stringify (XObj (Sym p _) _ _) = show p
         stringify x@(XObj (Num _ _) _ _) = pretty x
-        stringify (XObj (Str s) _ _) = joinWith "\n" (split "\\n" s)
+        stringify (XObj (Str s) _ _) = unescapeString s
